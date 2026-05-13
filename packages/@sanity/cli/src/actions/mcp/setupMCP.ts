@@ -5,7 +5,7 @@ import {logSymbols} from '@sanity/cli-core/ux'
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
 import {setupSkills} from '../skills/setupSkills.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
-import {EDITOR_CONFIGS, type EditorName} from './editorConfigs.js'
+import {EDITOR_CONFIGS, type EditorName, getSkillsCliAgent} from './editorConfigs.js'
 import {promptForMCPSetup} from './promptForMCPSetup.js'
 import {validateEditorTokens} from './validateEditorTokens.js'
 import {writeMCPConfig} from './writeMCPConfig.js'
@@ -101,7 +101,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   // configured globally doesn't imply project-local skills exist.
   const needsMCPSetup = (e: (typeof editors)[number]) => !e.configured || e.authStatus !== 'valid'
   const needsSkillsSetup = (e: (typeof editors)[number]) =>
-    Boolean(cwd && (EDITOR_CONFIGS[e.name] as {skillsCliAgent?: string}).skillsCliAgent)
+    Boolean(cwd && e.configured && e.authStatus === 'valid' && getSkillsCliAgent(e.name))
   const actionable = editors.filter((e) => needsMCPSetup(e) || needsSkillsSetup(e))
 
   if (actionable.length === 0) {

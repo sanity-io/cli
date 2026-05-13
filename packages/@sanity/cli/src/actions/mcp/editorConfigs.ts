@@ -394,3 +394,10 @@ export const EDITOR_CONFIGS = {
 
 /** Derived from EDITOR_CONFIGS keys - add a new editor there and this updates automatically */
 export type EditorName = keyof typeof EDITOR_CONFIGS
+
+export function getSkillsCliAgent(editorName: EditorName): string | undefined {
+  if (editorName in EDITOR_CONFIGS) {
+    const config = EDITOR_CONFIGS[editorName]
+    return 'skillsCliAgent' in config ? config.skillsCliAgent : undefined
+  }
+}

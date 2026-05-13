@@ -6,7 +6,7 @@ import {logSymbols} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 
 import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
-import {EDITOR_CONFIGS} from '../mcp/editorConfigs.js'
+import {getSkillsCliAgent} from '../mcp/editorConfigs.js'
 import {type Editor} from '../mcp/types.js'
 
 const skillsDebug = subdebug('skills:setup')
@@ -64,7 +64,7 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
   }
 
   const agents = editors.flatMap((editor) => {
-    const agent = (EDITOR_CONFIGS[editor.name] as {skillsCliAgent?: string}).skillsCliAgent
+    const agent = getSkillsCliAgent(editor.name)
     return agent ? [agent] : []
   })
 
