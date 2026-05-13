@@ -82,8 +82,8 @@ export async function buildRequestBody(inputs: BodyInputs): Promise<BuildBodyRes
   if (BODYLESS_METHODS.has(method)) {
     if (hasAnyBody) {
       throw new Error(
-        `${method} requests cannot carry a body. ` +
-          `Drop -f/-F/--input or use -X with a body-bearing method (POST/PUT/PATCH).`,
+        `${method} requests do not take a body. ` +
+          `Drop -f/-F/--input, or switch to POST/PUT/PATCH with -X.`,
       )
     }
     return {body: null, contentType: null}

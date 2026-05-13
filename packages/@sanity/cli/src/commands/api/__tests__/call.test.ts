@@ -477,7 +477,7 @@ paths:
     vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
     const {error} = await testCommand(ApiCallCommand, ['v2021-06-07/jobs/abc123', '-f', 'foo=bar'])
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('GET requests cannot carry a body')
+    expect(error?.message).toContain('GET requests do not take a body')
   })
 
   test('-f and --input are mutually exclusive', async () => {
@@ -609,7 +609,7 @@ paths:
     expect(error?.message).toContain('"Name: Value" form')
   })
 
-  test('refuses DELETE in unattended mode without --yes', async () => {
+  test('destructive op without TTY requires --yes', async () => {
     mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
     // Force unattended. `isUnattended` is `protected` on SanityCommand;
     // the cast through `unknown` is the simplest path to vi.spyOn.
@@ -626,7 +626,7 @@ paths:
       'v2024-01-01/projects/abc123',
     ])
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Refusing to execute a destructive operation')
+    expect(error?.message).toContain('Destructive operation (DELETE) needs --yes')
     expect(error?.message).toContain('--yes')
 
     isUnattended.mockRestore()

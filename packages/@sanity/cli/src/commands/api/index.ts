@@ -52,7 +52,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     },
     {
       command: '<%= config.bin %> <%= command.id %> v2024-01-01/data/query/:dataset -q tag=my-app',
-      description: 'Append an arbitrary query parameter (repeatable, URL-encoded)',
+      description: 'Append a query parameter (repeatable; values are URL-encoded)',
     },
     {
       command:
@@ -67,18 +67,16 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     {
       command:
         '<%= config.bin %> <%= command.id %> -X POST v2024-01-01/mutate/:dataset --input ./body.json',
-      description:
-        'Send a request body verbatim from file (or `--input -` for stdin). Deterministic JSON shape — bypasses `-f` value coercion.',
+      description: 'Send a request body from a file (or stdin with `--input -`)',
     },
     {
       command:
         '<%= config.bin %> <%= command.id %> -X POST v.../endpoint -f count=5 -f name=hello -f \'tag="5"\'',
-      description:
-        '-f values JSON-parse when valid (numbers/booleans), fall back to string. Force string with embedded quotes (`tag="5"`).',
+      description: 'Build a JSON body — values coerce to numbers/booleans; quote to force string',
     },
     {
       command: '<%= config.bin %> <%= command.id %> -X DELETE v2024-01-01/projects/abc --yes',
-      description: 'Destructive ops (PATCH/PUT/DELETE) need --yes in unattended contexts',
+      description: 'PATCH/PUT/DELETE need `--yes` in scripts (no TTY)',
     },
   ]
 
@@ -91,22 +89,24 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     field: Flags.string({
       char: 'f',
       description:
-        'Repeatable `key=value` JSON body field. Values JSON-parse when valid (numbers/booleans/objects); ' +
-        'fall back to a string otherwise. Force a string by embedding quotes: `-f tag=\'"5"\'`. ' +
-        'Dotted keys nest (`profile.name=Bob` → `{profile: {name: "Bob"}}`). ' +
-        'For deterministic body shape, prefer `--input <path>`.',
+        'Repeatable `key=value` JSON body field. Values coerce to numbers/booleans/objects when ' +
+        'valid; otherwise sent as strings. Quote to force string: `-f tag=\'"5"\'`. ' +
+        'Dotted keys nest: `-f profile.name=Bob` → `{profile: {name: "Bob"}}`. ' +
+        'To send a JSON file as-is (no coercion), use `--input`.',
       multiple: true,
     }),
     fieldFile: Flags.string({
       char: 'F',
       description:
-        'Repeatable `key=@path` body field — value is the file contents (JSON-parsed when valid, ' +
-        'falls back to a string). For deterministic body shape, prefer `--input <path>`.',
+        'Repeatable `key=@path` body field — value is the file contents (coerces to JSON when ' +
+        'valid, otherwise sent as a string). To send a JSON file as-is, use `--input`.',
       multiple: true,
     }),
     header: Flags.string({
       char: 'H',
-      description: 'Repeatable `Name: Value` header. Overrides CLI defaults on collision.',
+      description:
+        'Repeatable `Name: Value` header. Wins over defaults (Authorization, Content-Type) ' +
+        'when the same name is passed.',
       multiple: true,
     }),
     input: Flags.string({
@@ -226,8 +226,8 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       // `--yes` already short-circuits via isUnattended()'s false branch.
       if (this.flags.yes) return
       this.error(
-        `Refusing to execute a destructive operation (${method}) in unattended mode.\n` +
-          'Hint: pass --yes to confirm (e.g. `sanity api -X DELETE … --yes`).',
+        `Destructive operation (${method}) needs --yes when there's no TTY (scripts, CI).\n` +
+          'Example: `sanity api -X DELETE … --yes`',
         {exit: 1},
       )
     }
@@ -244,7 +244,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       default: false,
       message: `This will ${method} ${displayUrl} (modifies server state). Continue?`,
     })
-    if (!confirmed) this.error('Aborted.', {exit: 1})
+    if (!confirmed) this.error('Aborted — no changes sent.', {exit: 1})
   }
 
   /**

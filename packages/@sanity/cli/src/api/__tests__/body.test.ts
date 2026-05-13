@@ -25,7 +25,7 @@ describe('buildRequestBody', () => {
         inputPath: null,
         method: 'GET',
       }),
-    ).rejects.toThrow(/GET requests cannot carry a body/)
+    ).rejects.toThrow(/GET requests do not take a body/)
   })
 
   test('POST with no body flags errors with a hint at -f/-F/--input', async () => {
