@@ -66,6 +66,7 @@
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/node": "catalog:",
+    "@types/semver": "^7.7.1",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",
