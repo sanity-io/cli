@@ -1,4 +1,5 @@
 import http from 'node:http'
+import {Readable} from 'node:stream'
 
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -6,6 +7,7 @@ import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {AUTH_API_VERSION} from '../../services/auth.js'
+import {USERS_API_VERSION} from '../../services/user.js'
 import {canLaunchBrowser} from '../../util/canLaunchBrowser.js'
 import {LoginCommand} from '../login.js'
 
@@ -40,18 +42,19 @@ const mockConfigStoreDelete = vi.hoisted(() => vi.fn())
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
 
-  const testClient = createTestClient({
-    apiVersion: 'v2025-09-23',
-    token: undefined,
-  })
-
   return {
     ...actual,
     getCliToken: mockedGetCliToken,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      request: testClient.request,
-      withConfig: vi.fn().mockReturnValue({request: testClient.request}),
-    }),
+    getGlobalCliClient: vi
+      .fn()
+      .mockImplementation((options: {apiVersion: string; token?: string}) => {
+        const {client} = createTestClient({
+          apiVersion: options.apiVersion,
+          token: options.token,
+        })
+
+        return Promise.resolve(client)
+      }),
     getUserConfig: vi.fn().mockReturnValue({
       delete: mockConfigStoreDelete,
       get: vi.fn(),
@@ -64,6 +67,18 @@ vi.mock('@sanity/cli-core', async () => {
 
 const mockedOpen = vi.mocked(open)
 const mockedCanLaunchBrowser = vi.mocked(canLaunchBrowser)
+const originalStdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin')
+type MockStdin = Readable & {isTTY?: boolean}
+
+function mockStdin(input: string, options: {isTTY?: boolean} = {}) {
+  const stdin: MockStdin = Readable.from([input])
+  stdin.isTTY = options.isTTY
+
+  Object.defineProperty(process, 'stdin', {
+    configurable: true,
+    value: stdin,
+  })
+}
 
 /**
  * Simulates OAuth provider redirecting back to local callback server.
@@ -110,12 +125,271 @@ function mockSingleProviderLogin(sessionId = 'test-session-id') {
   }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 }
 
+function testTokenLogin(token: string) {
+  mockStdin(token)
+  return testCommand(LoginCommand, ['--with-token'])
+}
+
 describe('#login', {timeout: 10_000}, () => {
   afterEach(() => {
+    if (originalStdinDescriptor) {
+      Object.defineProperty(process, 'stdin', originalStdinDescriptor)
+    }
     vi.clearAllMocks()
+    mockedIsInteractive.mockReturnValue(true)
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'pending mocks').toEqual([])
+  })
+
+  describe('Token Login', () => {
+    test('stores a valid token', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer valid-token')
+        .reply(200, {
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+          provider: 'github',
+        })
+
+      const {error, stdout} = await testTokenLogin(' valid-token\n')
+
+      if (error) throw error
+      expect(stdout).toContain('Login successful')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'valid-token')
+      expect(mockConfigStoreDelete).toHaveBeenCalledWith('telemetryConsent')
+      expect(mockedOpen).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    test('stores a valid token in non-interactive mode', async () => {
+      mockedIsInteractive.mockReturnValue(false)
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer non-interactive-token')
+        .reply(200, {
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+          provider: 'github',
+        })
+
+      const {error, stdout} = await testTokenLogin('non-interactive-token')
+
+      if (error) throw error
+      expect(stdout).toContain('Login successful')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'non-interactive-token')
+      expect(mockConfigStoreDelete).toHaveBeenCalledWith('telemetryConsent')
+      expect(mockedOpen).not.toHaveBeenCalled()
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    test('does not store an invalid token', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer invalid-token')
+        .reply(401, {message: 'Unauthorized'})
+
+      const {error} = await testTokenLogin('invalid-token')
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Token is invalid or expired')
+      expect(error?.oclif?.exit).toBe(1)
+      expect(mockedSetCliUserConfig).not.toHaveBeenCalled()
+      expect(mockConfigStoreDelete).not.toHaveBeenCalled()
+      expect(mockedOpen).not.toHaveBeenCalled()
+    })
+
+    test('does not store a token that cannot be verified', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      }).reply(500, {message: 'Internal Server Error'})
+
+      const {error} = await testTokenLogin('server-error-token')
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Could not verify token')
+      expect(error?.message).toContain('Internal Server Error')
+      expect(error?.oclif?.exit).toBe(1)
+      expect(mockedSetCliUserConfig).not.toHaveBeenCalled()
+      expect(mockConfigStoreDelete).not.toHaveBeenCalled()
+      expect(mockedOpen).not.toHaveBeenCalled()
+    })
+
+    test('stores a valid Sanity API token', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer robot-token')
+        .reply(200, {
+          id: 'robot-123',
+          name: 'Deploy Token',
+          provider: 'sanity-token',
+        })
+
+      const {error, stdout} = await testTokenLogin('robot-token')
+
+      if (error) throw error
+      expect(stdout).toContain('Login successful')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'robot-token')
+      expect(mockConfigStoreDelete).toHaveBeenCalledWith('telemetryConsent')
+      expect(mockedOpen).not.toHaveBeenCalled()
+    })
+
+    test('requires a non-empty token', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      const {error} = await testTokenLogin('  \n')
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain(
+        'Token is required on standard input. Run `sanity login --with-token < token.txt`.',
+      )
+      expect(error?.oclif?.exit).toBe(1)
+      expect(mockedSetCliUserConfig).not.toHaveBeenCalled()
+    })
+
+    test('requires token input from stdin', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+      mockStdin('', {isTTY: true})
+
+      const {error} = await testCommand(LoginCommand, ['--with-token'])
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain(
+        'Token is required on standard input. Run `sanity login --with-token < token.txt`.',
+      )
+      expect(error?.oclif?.exit).toBe(1)
+      expect(mockedSetCliUserConfig).not.toHaveBeenCalled()
+      expect(mockedOpen).not.toHaveBeenCalled()
+    })
+
+    test('invalidates an existing session after token login', async () => {
+      mockedGetCliToken.mockResolvedValue('old-auth-token')
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer new-auth-token')
+        .reply(200, {
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+          provider: 'github',
+        })
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer old-auth-token')
+        .reply(200, {
+          email: 'old@example.com',
+          id: 'old-user-123',
+          name: 'Old User',
+          provider: 'github',
+        })
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'post',
+        uri: '/auth/logout',
+      })
+        .matchHeader('authorization', 'Bearer old-auth-token')
+        .reply(200)
+
+      const {error} = await testTokenLogin('new-auth-token')
+
+      if (error) throw error
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+    })
+
+    test('does not invalidate an existing Sanity API token after token login', async () => {
+      mockedGetCliToken.mockResolvedValue('old-api-token')
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer new-auth-token')
+        .reply(200, {
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+          provider: 'github',
+        })
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer old-api-token')
+        .reply(200, {
+          id: 'robot-123',
+          name: 'Deploy Token',
+          provider: 'sanity-token',
+        })
+
+      const {error, stderr} = await testTokenLogin('new-auth-token')
+
+      if (error) throw error
+      expect(stderr).not.toContain('Failed to invalidate previous session')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+    })
+
+    test('does not invalidate an unchanged token after token login', async () => {
+      mockedGetCliToken.mockResolvedValue('same-token')
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer same-token')
+        .reply(200, {
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+          provider: 'github',
+        })
+
+      const {error, stderr} = await testTokenLogin('same-token')
+
+      if (error) throw error
+      expect(stderr).not.toContain('Failed to invalidate previous session')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'same-token')
+    })
   })
 
   describe('Provider Selection', () => {
@@ -126,6 +400,15 @@ describe('#login', {timeout: 10_000}, () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('--provider=github cannot also be provided when using --sso')
+    })
+
+    test('errors when --provider and --with-token are both specified', async () => {
+      mockStdin('token')
+
+      const {error} = await testCommand(LoginCommand, ['--provider', 'github', '--with-token'])
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('--provider=github cannot also be provided')
     })
 
     test('throws error for invalid --provider flag', async () => {
@@ -812,12 +1095,26 @@ describe('#login', {timeout: 10_000}, () => {
       mockedGetCliToken.mockResolvedValue('old-auth-token')
       mockSingleProviderLogin()
 
-      // Mock logout call
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer old-auth-token')
+        .reply(200, {
+          email: 'old@example.com',
+          id: 'old-user-123',
+          name: 'Old User',
+          provider: 'github',
+        })
+
       mockApi({
         apiVersion: AUTH_API_VERSION,
         method: 'post',
         uri: '/auth/logout',
-      }).reply(200)
+      })
+        .matchHeader('authorization', 'Bearer old-auth-token')
+        .reply(200)
 
       const commandPromise = testCommand(LoginCommand, [])
       await simulateOAuthCallback(4321, 'test-session-id')
@@ -827,15 +1124,14 @@ describe('#login', {timeout: 10_000}, () => {
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
 
-    test('handles session invalidation errors gracefully', async () => {
-      // 401 should be silently ignored (expired token)
+    test('clears an expired previous token without invalidating it', async () => {
       mockedGetCliToken.mockResolvedValue('expired-token')
       mockSingleProviderLogin('session-401')
 
       mockApi({
-        apiVersion: AUTH_API_VERSION,
-        method: 'post',
-        uri: '/auth/logout',
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
       }).reply(401, {message: 'Unauthorized'})
 
       const commandPromise = testCommand(LoginCommand, [])
@@ -853,10 +1149,25 @@ describe('#login', {timeout: 10_000}, () => {
       mockSingleProviderLogin()
 
       mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer old-token')
+        .reply(200, {
+          email: 'old@example.com',
+          id: 'old-user-123',
+          name: 'Old User',
+          provider: 'github',
+        })
+
+      mockApi({
         apiVersion: AUTH_API_VERSION,
         method: 'post',
         uri: '/auth/logout',
-      }).reply(500, {message: 'Internal Server Error'})
+      })
+        .matchHeader('authorization', 'Bearer old-token')
+        .reply(500, {message: 'Internal Server Error'})
 
       const commandPromise = testCommand(LoginCommand, [])
       await simulateOAuthCallback(4321, 'test-session-id')
@@ -864,6 +1175,60 @@ describe('#login', {timeout: 10_000}, () => {
 
       expect(error).toBeUndefined()
       expect(stderr).toContain('Failed to invalidate previous session')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+    })
+
+    test('does not invalidate a previous Sanity API token on new login', async () => {
+      mockedGetCliToken.mockResolvedValue('old-api-token')
+      mockSingleProviderLogin()
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer old-api-token')
+        .reply(200, {
+          id: 'robot-123',
+          name: 'Deploy Token',
+          provider: 'sanity-token',
+        })
+
+      const commandPromise = testCommand(LoginCommand, [])
+      await simulateOAuthCallback(4321, 'test-session-id')
+      const {error, stderr} = await commandPromise
+
+      expect(error).toBeUndefined()
+      expect(stderr).not.toContain('Failed to invalidate previous session')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+    })
+
+    test('attempts logout when previous token type check fails', async () => {
+      mockedGetCliToken.mockResolvedValue('old-token')
+      mockSingleProviderLogin()
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        method: 'get',
+        uri: '/users/me',
+      })
+        .matchHeader('authorization', 'Bearer old-token')
+        .reply(500, {message: 'Internal Server Error'})
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'post',
+        uri: '/auth/logout',
+      })
+        .matchHeader('authorization', 'Bearer old-token')
+        .reply(200)
+
+      const commandPromise = testCommand(LoginCommand, [])
+      await simulateOAuthCallback(4321, 'test-session-id')
+      const {error, stderr} = await commandPromise
+
+      if (error) throw error
+      expect(stderr).not.toContain('Failed to invalidate previous session')
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
   })
