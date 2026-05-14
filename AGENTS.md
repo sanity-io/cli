@@ -166,7 +166,7 @@ jq '{total: .numTotalTests, passed: .numPassedTests, failed: .numFailedTests, fi
 ## Cursor Cloud specific instructions
 
 - The update script runs `pnpm install --frozen-lockfile` and `pnpm build:cli` on startup. Dependencies and build artifacts should already be up to date when a session begins.
-- The test results JSON file (used for reading failures) is only written when `CLAUDECODE=1` or `CODEX_CI=1` is set. In Cursor Cloud, read test output from the terminal directly instead, or set `CLAUDECODE=1` before running tests if you need the JSON workflow.
-- The full test suite takes ~10 minutes. Prefer scoped runs (`--changed`, `--filter`, or single files) during development. Some test files (e.g. `deploy.studio.test.ts`, `graphql/deploy.test.ts`, `schemas/deploy.test.ts`, `schemas/delete.test.ts`) have pre-existing failures on `main`; do not spend time fixing these unless your changes touch those areas.
+- The test results JSON file requires `CLAUDECODE=1` (or `CODEX_CI=1`). Set `export CLAUDECODE=1` before running tests so the `$TEST_RESULTS` / `jq` workflow described above works as expected.
+- The full test suite takes ~10 minutes. Prefer scoped runs (`--changed`, `--filter`, or single files) during development. Before assuming a test failure is caused by your changes, check whether the same test also fails on `origin/main`.
 - CLI commands that hit the Sanity API (e.g. `documents query`, `login`) require authentication. Use fixture directories (e.g. `fixtures/basic-studio`) to run commands like `npx sanity debug`, `npx sanity doctor`, or `npx sanity versions` without authentication.
 - `pnpm install` may warn about ignored build scripts for `sharp` and `unrs-resolver`. These are safe to ignore; the `pnpm.onlyBuiltDependencies` allowlist in `package.json` already covers the required native modules (`@swc/core`, `esbuild`, `node-pty`).
