@@ -1,5 +1,6 @@
 import {styleText} from 'node:util'
 
+import {checkStudioDependencyVersions} from '@sanity/cli-build/_internal'
 import {getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'
@@ -12,7 +13,6 @@ import {compareDependencyVersions} from '../../util/compareDependencyVersions.js
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
-import {checkStudioDependencyVersions} from '../build/checkStudioDependencyVersions.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {devDebug} from './devDebug.js'
 import {getDashboardAppURL} from './getDashboardAppUrl.js'

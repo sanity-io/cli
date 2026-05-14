@@ -52,7 +52,9 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "read-package-up": "catalog:"
+    "@sanity/cli-core": "workspace:^",
+    "read-package-up": "catalog:",
+    "semver": "^7.7.4"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
