@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import {execute} from '@oclif/core'
+import {execute, settings} from '@oclif/core'
 
 var err = '\u001B[31m\u001B[1mERROR:\u001B[22m\u001B[39m '
 var nodeVersionParts = process.version.replace(/^v/i, '').split('.').map(Number)
@@ -29,5 +29,7 @@ if (!isSupportedNodeVersion(majorVersion, minorVersion, patchVersion)) {
   console.error('')
   process.exit(1)
 }
+
+settings.enableAutoTranspile = false
 
 await execute({dir: import.meta.url})
