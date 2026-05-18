@@ -1,5 +1,13 @@
 # Change Log
 
+## [6.6.0](https://github.com/sanity-io/cli/compare/cli-v6.5.3...cli-v6.6.0)
+
+_2026-05-18_
+
+### Features
+
+- **login:** add token login ([#1082](https://github.com/sanity-io/cli/pull/1082)) ([5f93b50](https://github.com/sanity-io/cli/commit/5f93b505d8afd692dbfef23faf3061cd6dc2179b))
+
 ## [6.5.3](https://github.com/sanity-io/cli/compare/cli-v6.5.2...cli-v6.5.3)
 
 _2026-05-13_
