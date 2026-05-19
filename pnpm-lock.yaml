@@ -1125,9 +1125,6 @@ importers:
       '@sanity/cli':
         specifier: workspace:*
         version: link:../@sanity/cli
-      import-meta-resolve:
-        specifier: 'catalog:'
-        version: 4.2.0
     devDependencies:
       publint:
         specifier: 'catalog:'
