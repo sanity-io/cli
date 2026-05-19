@@ -6,16 +6,23 @@ import {readPackageUp} from 'read-package-up'
 import {copyDir} from '../../util/copyDir.js'
 import {writeWebManifest} from './writeWebManifest.js'
 
-export async function writeFavicons(basePath: string, destDir: string): Promise<void> {
-  const sanityPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
-
-  const faviconsPath = sanityPkgPath
-    ? path.join(path.dirname(sanityPkgPath), 'static', 'favicons')
-    : undefined
-
-  if (!faviconsPath) {
-    throw new Error('Unable to resolve `@sanity/cli` module root')
+/**
+ * @internal
+ */
+export async function getDefaultFaviconsPath(): Promise<string> {
+  const sanityCliPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
+  if (!sanityCliPkgPath) {
+    throw new Error('Unable to resolve `@sanity/cli-build` module root')
   }
+
+  return path.join(path.dirname(sanityCliPkgPath), 'static', 'favicons')
+}
+
+/**
+ * @internal
+ */
+export async function writeFavicons(basePath: string, destDir: string): Promise<void> {
+  const faviconsPath = await getDefaultFaviconsPath()
 
   await fs.mkdir(destDir, {recursive: true})
   await copyDir(faviconsPath, destDir, true)

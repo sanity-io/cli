@@ -26,6 +26,7 @@ jobs:
           filters: |
             cli:
               - 'packages/@sanity/cli/**'
+              - 'packages/@sanity/cli-build/**'
               - 'packages/@sanity/cli-core/**'
               - 'packages/@sanity/cli-e2e/**'
               - 'packages/@sanity/cli-test/**'

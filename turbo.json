@@ -27,7 +27,7 @@
       "cache": false,
       "persistent": true
     },
-    "check:types": {},
+    "check:types": {"dependsOn": ["^build:types"]},
     "watch": {},
     "test": {},
     "test:coverage": {},

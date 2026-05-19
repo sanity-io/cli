@@ -5,6 +5,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {startServerForTokenCallback} from '../../authServer.js'
 import {getProvider} from '../getProvider.js'
 import {login} from '../login.js'
+import {validateToken} from '../validateToken.js'
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -36,6 +37,10 @@ vi.mock('../../authServer.js', () => ({
 vi.mock('../getProvider.js', () => ({
   getProvider: vi.fn(),
 }))
+vi.mock('../validateToken.js', () => ({
+  isSanityApiToken: vi.fn(),
+  validateToken: vi.fn(),
+}))
 vi.mock('../../../../util/canLaunchBrowser.js', () => ({
   canLaunchBrowser: vi.fn(() => true),
 }))
@@ -44,19 +49,21 @@ const mockedGetCliToken = vi.mocked(getCliToken)
 const mockedSetCliUserConfig = vi.mocked(setCliUserConfig)
 const mockedStartServerForTokenCallback = vi.mocked(startServerForTokenCallback)
 const mockedGetProvider = vi.mocked(getProvider)
+const mockedValidateToken = vi.mocked(validateToken)
 const mockedOpen = vi.mocked(open)
+const mockTrace = {
+  complete: vi.fn(),
+  error: vi.fn(),
+  log: vi.fn(),
+  start: vi.fn(),
+}
 
 const output = {
   log: vi.fn(),
   warn: vi.fn(),
 } as unknown as Parameters<typeof login>[0]['output']
 const telemetry = {
-  trace: vi.fn(() => ({
-    complete: vi.fn(),
-    error: vi.fn(),
-    log: vi.fn(),
-    start: vi.fn(),
-  })),
+  trace: vi.fn(() => mockTrace),
 } as unknown as Parameters<typeof login>[0]['telemetry']
 
 describe('#login vercel provider', () => {
@@ -108,5 +115,19 @@ describe('#login vercel provider', () => {
     )
     expect(mockedOpen).not.toHaveBeenCalled()
     expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'test-token')
+  })
+
+  test('records telemetry errors for token validation failures', async () => {
+    const validationError = new Error('Token is invalid or expired')
+    mockedValidateToken.mockRejectedValue(validationError)
+
+    await expect(login({output, telemetry, token: 'invalid-token'})).rejects.toThrow(
+      validationError,
+    )
+
+    expect(mockTrace.start).toHaveBeenCalled()
+    expect(mockTrace.error).toHaveBeenCalledWith(validationError)
+    expect(mockTrace.complete).not.toHaveBeenCalled()
+    expect(mockedSetCliUserConfig).not.toHaveBeenCalled()
   })
 })

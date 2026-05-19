@@ -1,3 +1,5 @@
+import {text} from 'node:stream/consumers'
+
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {SanityCommand} from '@sanity/cli-core'
@@ -24,6 +26,10 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
         '<%= config.bin %> <%= command.id %> --sso my-organization --sso-provider "Okta SSO"',
       description: 'Log in using a specific SSO provider within an organization',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --with-token < token.txt',
+      description: 'Log in using a token from standard input',
+    },
   ]
   static override flags = {
     experimental: Flags.boolean({
@@ -37,12 +43,12 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
     }),
     provider: Flags.string({
       description: 'Log in using the given provider',
-      exclusive: ['sso'],
+      exclusive: ['sso', 'with-token'],
       helpValue: '<providerId>',
     }),
     sso: Flags.string({
       description: 'Log in using Single Sign-On, using the given organization slug',
-      exclusive: ['provider'],
+      exclusive: ['provider', 'with-token'],
       helpValue: '<slug>',
     }),
     'sso-provider': Flags.string({
@@ -50,17 +56,25 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       description: 'Select a specific SSO provider by name (use with --sso)',
       helpValue: '<name>',
     }),
+    'with-token': Flags.boolean({
+      description: 'Read token from standard input',
+      exclusive: ['provider', 'sso'],
+    }),
   } satisfies FlagInput
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(LoginCommand)
+    const {'sso-provider': ssoProvider, 'with-token': withToken, ...loginFlags} = flags
 
     try {
+      const token = withToken ? await readTokenFromStdin() : undefined
+
       await login({
-        ...flags,
+        ...loginFlags,
         output: this.output,
-        ssoProvider: flags['sso-provider'],
+        ssoProvider,
         telemetry: this.telemetry,
+        token,
       })
       this.log('Login successful')
     } catch (error) {
@@ -68,4 +82,14 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       this.error(`Login failed: ${message}`, {exit: 1})
     }
   }
+}
+
+async function readTokenFromStdin(): Promise<string> {
+  if (process.stdin.isTTY) {
+    throw new Error(
+      'Token is required on standard input. Run `sanity login --with-token < token.txt`.',
+    )
+  }
+
+  return text(process.stdin)
 }

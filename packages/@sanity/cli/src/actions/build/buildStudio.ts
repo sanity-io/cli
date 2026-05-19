@@ -2,6 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {buildDebug, checkStudioDependencyVersions} from '@sanity/cli-build/_internal'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -22,16 +23,13 @@ import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
-import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
-import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
-import {getStudioEnvVars} from './getStudioEnvVars.js'
+import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
-import {shouldAutoUpdate} from './shouldAutoUpdate.js'
 import {type BuildOptions} from './types.js'
 
 interface InternalBuildOptions {
@@ -62,10 +60,6 @@ interface InternalBuildOptions {
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  const autoUpdatesEnabled = options.calledFromDeploy
-    ? options.autoUpdatesEnabled
-    : shouldAutoUpdate({cliConfig, flags, output})
-
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
   }): Promise<void> => {
@@ -80,7 +74,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   await internalBuildStudio({
     appId: getAppId(cliConfig),
-    autoUpdatesEnabled,
+    autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
@@ -104,6 +98,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
  * @param options - options for the build
  */
 async function internalBuildStudio(options: InternalBuildOptions): Promise<void> {
+  buildDebug(`Building studio`)
+
   const timer = getTimer()
   const {
     appId,
@@ -122,7 +118,6 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     vite,
     workDir,
   } = options
-  let autoUpdatesEnabled = options.autoUpdatesEnabled
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
   const outputDir = path.resolve(outDir || defaultOutputDir)
 
@@ -135,6 +130,8 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     output,
     workDir,
   })
+
+  let autoUpdatesEnabled = options.autoUpdatesEnabled
 
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []
@@ -236,7 +233,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     }
   }
 
-  const envVarKeys = getStudioEnvVars()
+  const envVarKeys = Object.keys(getStudioEnvironmentVariables())
   if (envVarKeys.length > 0) {
     output.log('\nIncluding the following environment variables as part of the JavaScript bundle:')
     for (const key of envVarKeys) {

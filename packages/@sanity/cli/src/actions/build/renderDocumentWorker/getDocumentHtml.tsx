@@ -1,8 +1,8 @@
 import {type MessagePort} from 'node:worker_threads'
 
+import {buildDebug} from '@sanity/cli-build/_internal'
 import {renderToStaticMarkup} from 'react-dom/server'
 
-import {buildDebug} from '../buildDebug.js'
 import {addTimestampedImportMapScriptToHtml} from './addTimestampImportMapScriptToHtml.js'
 import {getDocumentComponent} from './getDocumentComponent.js'
 import {type DocumentProps} from './types.js'

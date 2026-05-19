@@ -28,19 +28,22 @@ export async function setup(project: TestProject): Promise<void> {
     console.log('Packing @sanity/cli-core...')
     const cliCoreTarball = packPackage('@sanity/cli-core')
 
+    console.log('Packing @sanity/cli-build...')
+    const cliBuildTarball = packPackage('@sanity/cli-build')
+
     console.log('Packing @sanity/cli...')
     const cliTarball = packCli()
 
     console.log('Packing create-sanity...')
     const createSanityTarball = packPackage('create-sanity')
-    tarballPaths = [cliCoreTarball, cliTarball, createSanityTarball]
+    tarballPaths = [cliCoreTarball, cliBuildTarball, cliTarball, createSanityTarball]
 
     const tmpDir = mkdtempSync(join(tmpdir(), 'cli-e2e-'))
     cleanupDir = tmpDir
 
     console.log(`Installing tarballs into ${tmpDir}...`)
     const binaryPath = installFromTarball(
-      [cliCoreTarball, cliTarball, createSanityTarball],
+      [cliCoreTarball, cliBuildTarball, cliTarball, createSanityTarball],
       tmpDir,
       'sanity',
     )

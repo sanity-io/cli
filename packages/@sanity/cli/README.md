@@ -2489,13 +2489,14 @@ Log in to your Sanity account
 
 ```
 USAGE
-  $ sanity login [--open] [--provider <providerId> | --sso <slug>] [--sso-provider <name> ]
+  $ sanity login [--open] [--provider <providerId> | --sso <slug> | --with-token] [--sso-provider <name> ]
 
 FLAGS
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
   --provider=<providerId>  Log in using the given provider
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
+  --with-token             Read token from standard input
 
 DESCRIPTION
   Log in to your Sanity account
@@ -2516,6 +2517,10 @@ EXAMPLES
   Log in using a specific SSO provider within an organization
 
     $ sanity login --sso my-organization --sso-provider "Okta SSO"
+
+  Log in using a token from standard input
+
+    $ sanity login --with-token < token.txt
 ```
 
 ## `sanity logout`

@@ -3,6 +3,7 @@ linkWorkspacePackages: true
 packages:
   - 'packages/@repo/*'
   - 'packages/@sanity/cli'
+  - 'packages/@sanity/cli-build'
   - 'packages/@sanity/cli-core'
   - 'packages/@sanity/cli-e2e'
   - 'packages/@sanity/cli-test'
@@ -50,9 +51,9 @@ catalog:
 
   # Utilities
   debug: ^4.4.3
-  jsdom: ^29.0.2
+  jsdom: ^29.1.1
   zod: ^4.3.6
-  'get-tsconfig': ^4.13.7
+  'get-tsconfig': ^4.14.0
   'import-meta-resolve': ^4.2.0
   execa: ^9.6.0
   read-package-up: ^12.0.0
@@ -73,7 +74,7 @@ catalog:
   # Type Definitions
   '@types/node': ^20.19.39
   '@types/debug': ^4.1.13
-  '@types/jsdom': ^28.0.1
+  '@types/jsdom': ^28.0.3
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
@@ -91,3 +92,5 @@ minimumReleaseAgeExclude:
   - '@oxfmt/*'
   # Bump for jiti with ts path support, can remove after ~May 9th
   - 'jiti@2.7.0'
+  # Renovate security update: turbo@2.9.14
+  - turbo@2.9.14

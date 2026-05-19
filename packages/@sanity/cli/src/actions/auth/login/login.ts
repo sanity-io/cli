@@ -7,6 +7,7 @@ import {
   subdebug,
 } from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {isHttpError} from '@sanity/client'
 import open from 'open'
 
 import {logout} from '../../../services/auth.js'
@@ -14,6 +15,7 @@ import {LoginTrace} from '../../../telemetry/login.telemetry.js'
 import {canLaunchBrowser} from '../../../util/canLaunchBrowser.js'
 import {startServerForTokenCallback} from '../authServer.js'
 import {getProvider} from './getProvider.js'
+import {isSanityApiToken, validateToken} from './validateToken.js'
 
 const debug = subdebug('login')
 
@@ -27,12 +29,14 @@ interface LoginOptions {
   provider?: string
   sso?: string
   ssoProvider?: string
+  token?: string
 }
 
 /**
  * Trigger the authentication flow for the CLI.
  *
- * NOTE: This uses terminal prompts and will not work for non-interactive/programmatic uses.
+ * NOTE: Without a token option, this uses terminal prompts and will not work for
+ * non-interactive/programmatic uses.
  *
  * @param options - Options for the login operation
  * @returns Promise that resolves when the login operation is complete
@@ -42,10 +46,21 @@ interface LoginOptions {
 export async function login(options: LoginOptions) {
   const {output, telemetry} = options
   const previousToken = await getCliToken()
-  const hasExistingToken = Boolean(previousToken)
 
   const trace = telemetry.trace(LoginTrace)
   trace.start()
+
+  if (typeof options.token === 'string') {
+    try {
+      const authToken = await validateToken(options.token)
+      await storeAuthToken(authToken, previousToken, output)
+      trace.complete()
+    } catch (err: unknown) {
+      trace.error(err as Error)
+      throw err
+    }
+    return
+  }
 
   const provider = await getProvider({
     experimental: options.experimental,
@@ -92,21 +107,37 @@ export async function login(options: LoginOptions) {
     })
   }
 
-  // Store the token
-  setCliUserConfig('authToken', authToken)
+  await storeAuthToken(authToken, previousToken, output)
 
-  // Clear cached telemetry consent
+  trace.complete()
+}
+
+async function storeAuthToken(
+  authToken: string,
+  previousToken: string | undefined,
+  output: Output,
+) {
+  setCliUserConfig('authToken', authToken)
   getUserConfig().delete('telemetryConsent')
 
   // If we had a session previously, attempt to clear it
-  if (hasExistingToken) {
-    await logout(previousToken).catch((err) => {
-      const statusCode = err && err.response && err.response.statusCode
-      if (statusCode !== 401) {
-        output.warn('Failed to invalidate previous session')
-      }
-    })
+  if (previousToken && previousToken !== authToken) {
+    await invalidateAuthToken(previousToken, output)
+  }
+}
+
+async function invalidateAuthToken(token: string, output: Output) {
+  try {
+    if (await isSanityApiToken(token)) return
+  } catch (err) {
+    if (isHttpError(err) && err.statusCode === 401) return
   }
 
-  trace.complete()
+  try {
+    await logout(token)
+  } catch (err) {
+    if (!isHttpError(err) || err.statusCode !== 401) {
+      output.warn('Failed to invalidate previous session')
+    }
+  }
 }

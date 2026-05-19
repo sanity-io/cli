@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli",
-  "version": "6.5.1",
+  "version": "6.6.0",
   "description": "Sanity CLI tool for managing Sanity projects and organizations",
   "keywords": [
     "cli",
@@ -30,7 +30,6 @@
     "!./dist/**/__tests__",
     "./oclif.config.js",
     "./oclif.manifest.json",
-    "./static",
     "./templates"
   ],
   "type": "module",
@@ -75,6 +74,7 @@
     "@oclif/core": "catalog:",
     "@oclif/plugin-help": "catalog:",
     "@oclif/plugin-not-found": "catalog:",
+    "@sanity/cli-build": "workspace:^",
     "@sanity/cli-core": "workspace:^",
     "@sanity/client": "catalog:",
     "@sanity/codegen": "catalog:",
@@ -125,7 +125,6 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-is": "^19.2.4",
-    "read-package-up": "catalog:",
     "rxjs": "catalog:",
     "semver": "^7.7.4",
     "smol-toml": "^1.6.1",

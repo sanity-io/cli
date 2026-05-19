@@ -1,10 +1,11 @@
 import {loadEnv} from '../../util/loadEnv.js'
 
-const envPrefix = 'SANITY_STUDIO_'
 const appEnvPrefix = 'SANITY_APP_'
+const studioEnvPrefix = 'SANITY_STUDIO_'
 
 /**
- * The params for the `getStudioEnvironmentVariables` function that gets Studio focused environment variables.
+ * The params for the `getStudioEnvironmentVariables` and `getAppEnvironmentVariables` function
+ * that gets Studio/App-focused environment variables.
  *
  * @public
  */
@@ -45,20 +46,7 @@ export interface StudioEnvVariablesOptions {
 export function getStudioEnvironmentVariables(
   options: StudioEnvVariablesOptions = {},
 ): Record<string, string> {
-  const {envFile = false, jsonEncode = false, prefix = ''} = options
-  const fullEnv = envFile
-    ? {...process.env, ...loadEnv(envFile.mode, envFile.envDir || process.cwd(), [envPrefix])}
-    : process.env
-
-  const studioEnv: Record<string, string> = {}
-  for (const key in fullEnv) {
-    if (key.startsWith(envPrefix)) {
-      studioEnv[`${prefix}${key}`] = jsonEncode
-        ? JSON.stringify(fullEnv[key] || '')
-        : fullEnv[key] || ''
-    }
-  }
-  return studioEnv
+  return getEnvironmentVariables({...options, varTypePrefix: studioEnvPrefix})
 }
 
 /**
@@ -73,14 +61,20 @@ export function getStudioEnvironmentVariables(
 export function getAppEnvironmentVariables(
   options: StudioEnvVariablesOptions = {},
 ): Record<string, string> {
-  const {envFile = false, jsonEncode = false, prefix = ''} = options
+  return getEnvironmentVariables({...options, varTypePrefix: appEnvPrefix})
+}
+
+function getEnvironmentVariables(
+  options: StudioEnvVariablesOptions & {varTypePrefix: string},
+): Record<string, string> {
+  const {envFile = false, jsonEncode = false, prefix = '', varTypePrefix} = options
   const fullEnv = envFile
-    ? {...process.env, ...loadEnv(envFile.mode, envFile.envDir || process.cwd(), [appEnvPrefix])}
+    ? {...process.env, ...loadEnv(envFile.mode, envFile.envDir || process.cwd(), [varTypePrefix])}
     : process.env
 
   const appEnv: Record<string, string> = {}
   for (const key in fullEnv) {
-    if (key.startsWith(appEnvPrefix)) {
+    if (key.startsWith(varTypePrefix)) {
       appEnv[`${prefix}${key}`] = jsonEncode
         ? JSON.stringify(fullEnv[key] || '')
         : fullEnv[key] || ''

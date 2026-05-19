@@ -20,6 +20,7 @@ For detailed setup, see [Development Workflow](#development-workflow).
 ### Repository Structure
 
 - **`@sanity/cli`**: Main CLI package containing all commands
+- **`@sanity/cli-build`**: Base logic for building Apps and Studios
 - **`@sanity/cli-core`**: Base command class and shared utilities
   - Contains `SanityCommand` that all commands extend
   - Provides helper methods for API clients, logging, and error handling
@@ -736,6 +737,7 @@ npm install https://pkg.pr.new/@sanity/cli@<commit-sha>
 # Install all preview packages
 npm install \
   https://pkg.pr.new/@sanity/cli@<commit-sha> \
+  https://pkg.pr.new/@sanity/cli-build@<commit-sha> \
   https://pkg.pr.new/@sanity/cli-core@<commit-sha> \
   https://pkg.pr.new/@sanity/cli-test@<commit-sha> \
   https://pkg.pr.new/@sanity/eslint-config-cli@<commit-sha>

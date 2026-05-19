@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import {getDefaultFaviconsPath} from '@sanity/cli-build/_internal'
 import {
   type CliConfig,
   findProjectRoot,
@@ -9,7 +10,6 @@ import {
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
-import {readPackageUp} from 'read-package-up'
 import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
@@ -22,7 +22,7 @@ import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
-} from './getStudioEnvironmentVariables.js'
+} from './getEnvironmentVariables.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 
 interface ViteOptions {
@@ -105,15 +105,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
 
   const basePath = normalizeBasePath(rawBasePath)
 
-  const sanityCliPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
-  if (!sanityCliPkgPath) {
-    throw new Error('Unable to resolve `@sanity/cli` module root')
-  }
-
   const configPath = (await findProjectRoot(cwd)).path
 
   const customFaviconsPath = path.join(cwd, 'static')
-  const defaultFaviconsPath = path.join(path.dirname(sanityCliPkgPath), 'static', 'favicons')
+  const defaultFaviconsPath = await getDefaultFaviconsPath()
   const staticPath = `${basePath}static`
 
   const envVars = isApp

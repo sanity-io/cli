@@ -2,6 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {buildDebug} from '@sanity/cli-build/_internal'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -19,12 +20,11 @@ import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
-import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAppEnvVars} from './getAppEnvVars.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
+import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 
@@ -80,9 +80,12 @@ export async function buildApp(options: BuildOptions): Promise<void> {
  * @param options - options for the build
  */
 async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
+  buildDebug(`Building app`)
+
   const {appId, determineBasePath, outDir, output, workDir} = options
   let {autoUpdatesEnabled} = options
   const unattendedMode = options.unattendedMode
+
   const timer = getTimer()
 
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
@@ -167,7 +170,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
     }
   }
 
-  const envVarKeys = getAppEnvVars()
+  const envVarKeys = Object.keys(getAppEnvironmentVariables())
   if (envVarKeys.length > 0) {
     output.log('\nIncluding the following environment variables as part of the JavaScript bundle:')
     for (const key of envVarKeys) output.log(`- ${key}`)
