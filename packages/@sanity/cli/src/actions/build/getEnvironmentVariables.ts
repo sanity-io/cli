@@ -4,7 +4,8 @@ const appEnvPrefix = 'SANITY_APP_'
 const studioEnvPrefix = 'SANITY_STUDIO_'
 
 /**
- * The params for the `getStudioEnvironmentVariables` function that gets Studio focused environment variables.
+ * The params for the `getStudioEnvironmentVariables` and `getAppEnvironmentVariables` function
+ * that gets Studio/App-focused environment variables.
  *
  * @public
  */
