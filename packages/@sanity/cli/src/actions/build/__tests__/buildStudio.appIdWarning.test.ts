@@ -56,6 +56,7 @@ vi.mock('../../../telemetry/build.telemetry.js', () => ({
 }))
 
 vi.mock('@sanity/cli-build/_internal', () => ({
+  buildDebug: vi.fn(),
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
 }))
 

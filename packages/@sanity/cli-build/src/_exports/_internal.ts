@@ -1,3 +1,4 @@
+export {buildDebug} from '../actions/build/buildDebug.js'
 export {checkStudioDependencyVersions} from '../actions/build/checkStudioDependencyVersions.js'
 export {generateWebManifest} from '../actions/build/generateWebManifest.js'
 export {getDefaultFaviconsPath, writeFavicons} from '../actions/build/writeFavicons.js'
