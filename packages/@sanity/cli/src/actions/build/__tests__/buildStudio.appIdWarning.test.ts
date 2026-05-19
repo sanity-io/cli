@@ -39,8 +39,8 @@ vi.mock('../getAutoUpdatesImportMap.js', () => ({
   getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
 }))
 
-vi.mock('../getStudioEnvVars.js', () => ({
-  getStudioEnvVars: vi.fn().mockReturnValue([]),
+vi.mock('../getEnvironmentVariables.js', () => ({
+  getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),
 }))
 
 vi.mock('../buildStaticFiles.js', () => ({

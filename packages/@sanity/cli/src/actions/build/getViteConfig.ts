@@ -22,7 +22,7 @@ import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
-} from './getStudioEnvironmentVariables.js'
+} from './getEnvironmentVariables.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 
 interface ViteOptions {

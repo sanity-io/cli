@@ -23,8 +23,8 @@ import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAppEnvVars} from './getAppEnvVars.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
+import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 
@@ -170,7 +170,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
     }
   }
 
-  const envVarKeys = getAppEnvVars()
+  const envVarKeys = Object.keys(getAppEnvironmentVariables())
   if (envVarKeys.length > 0) {
     output.log('\nIncluding the following environment variables as part of the JavaScript bundle:')
     for (const key of envVarKeys) output.log(`- ${key}`)

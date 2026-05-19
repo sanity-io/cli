@@ -29,7 +29,7 @@ import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
-import {getStudioEnvVars} from './getStudioEnvVars.js'
+import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 
@@ -234,7 +234,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     }
   }
 
-  const envVarKeys = getStudioEnvVars()
+  const envVarKeys = Object.keys(getStudioEnvironmentVariables())
   if (envVarKeys.length > 0) {
     output.log('\nIncluding the following environment variables as part of the JavaScript bundle:')
     for (const key of envVarKeys) {

@@ -3,7 +3,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
-} from '../getStudioEnvironmentVariables.js'
+} from '../getEnvironmentVariables.js'
 
 describe('#getStudioEnvironmentVariables', () => {
   beforeEach(() => {

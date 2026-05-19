@@ -36,7 +36,7 @@ vi.mock('../getBrowserAliases.js', () => ({
   getSanityPkgExportAliases: vi.fn(() => Promise.resolve({alias1: 'path1', alias2: 'path2'})),
 }))
 
-vi.mock('../getStudioEnvironmentVariables.js', () => ({
+vi.mock('../getEnvironmentVariables.js', () => ({
   getAppEnvironmentVariables: vi.fn(() => ({
     'process.env.APP_VAR': '"app-value"',
   })),
