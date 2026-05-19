@@ -80,9 +80,12 @@ export async function buildApp(options: BuildOptions): Promise<void> {
  * @param options - options for the build
  */
 async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
+  buildDebug(`Building app`)
+
   const {appId, determineBasePath, outDir, output, workDir} = options
   let {autoUpdatesEnabled} = options
   const unattendedMode = options.unattendedMode
+
   const timer = getTimer()
 
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))

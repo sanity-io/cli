@@ -36,7 +36,7 @@ import {type BuildOptions} from './types.js'
 
 interface InternalBuildOptions {
   appId: string | undefined
-  autoUpdatesEnabled: boolean
+  autoUpdatesEnabled: () => boolean
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   isApp: boolean
@@ -62,9 +62,10 @@ interface InternalBuildOptions {
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  const autoUpdatesEnabled = options.calledFromDeploy
-    ? options.autoUpdatesEnabled
-    : shouldAutoUpdate({cliConfig, flags, output})
+  const autoUpdatesEnabled = () =>
+    options.calledFromDeploy
+      ? options.autoUpdatesEnabled
+      : shouldAutoUpdate({cliConfig, flags, output})
 
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
@@ -104,6 +105,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
  * @param options - options for the build
  */
 async function internalBuildStudio(options: InternalBuildOptions): Promise<void> {
+  buildDebug(`Building studio`)
+
   const timer = getTimer()
   const {
     appId,
@@ -122,7 +125,6 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     vite,
     workDir,
   } = options
-  let autoUpdatesEnabled = options.autoUpdatesEnabled
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
   const outputDir = path.resolve(outDir || defaultOutputDir)
 
@@ -135,6 +137,8 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     output,
     workDir,
   })
+
+  let autoUpdatesEnabled = options.autoUpdatesEnabled()
 
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []
