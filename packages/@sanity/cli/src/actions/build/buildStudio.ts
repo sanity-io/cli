@@ -31,7 +31,6 @@ import {determineBasePath} from './determineBasePath.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvVars} from './getStudioEnvVars.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
-import {shouldAutoUpdate} from './shouldAutoUpdate.js'
 import {type BuildOptions} from './types.js'
 
 interface InternalBuildOptions {
