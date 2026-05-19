@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules
+.pnpm-store/
 # Allow node_modules in test fixtures (needed for install detection tests)
 !**/__fixtures__/**/node_modules
 .pnp
