@@ -125,7 +125,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
 
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
 
-    // Warn if no appId configured.
+    // Warn if auto updates enabled but no appId configured.
     // Skip when called from deploy, since deploy handles appId itself
     // (prompts the user and tells them to add it to config).
     if (!appId && !options.calledFromDeploy) {
