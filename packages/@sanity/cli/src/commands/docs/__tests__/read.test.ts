@@ -12,6 +12,7 @@ const mockOpen = vi.mocked(open)
 afterEach(() => {
   const pending = pendingMocks()
   cleanAll()
+  vi.clearAllMocks()
   expect(pending, 'pending mocks').toEqual([])
 })
 
@@ -46,7 +47,7 @@ describe('#docs:read', () => {
     expect(mockOpen).toHaveBeenCalledWith('https://www.sanity.io/docs/studio/installation')
   })
 
-  test('normalizes full URLs', async () => {
+  test('reads full Sanity URLs', async () => {
     const markdownContent = '# Installation\n\nContent here.'
 
     nock('https://www.sanity.io').get('/docs/studio/installation.md').reply(200, markdownContent, {
@@ -59,6 +60,60 @@ describe('#docs:read', () => {
 
     expect(stdout).toContain('Reading article: /docs/studio/installation')
     expect(stdout).toContain('# Installation')
+  })
+
+  test('reads full URLs using their pathname', async () => {
+    const markdownContent = '# Installation\n\nContent here.'
+
+    nock('https://www.sanity.io').get('/docs/studio/installation.md').reply(200, markdownContent, {
+      'Content-Type': 'text/plain',
+    })
+
+    const {stdout} = await testCommand(DocsReadCommand, [
+      'https://docs.sanity.io/docs/studio/installation?utm_source=cli#requirements',
+    ])
+
+    expect(stdout).toContain('Reading article: /docs/studio/installation')
+    expect(stdout).toContain('# Installation')
+  })
+
+  test('opens full URLs with query strings and fragments', async () => {
+    const {stdout} = await testCommand(DocsReadCommand, [
+      'https://docs.sanity.io/docs/studio/installation?utm_source=cli#requirements',
+      '--web',
+    ])
+
+    const url = 'https://www.sanity.io/docs/studio/installation?utm_source=cli#requirements'
+
+    expect(stdout).toContain(`Opening ${url}`)
+    expect(mockOpen).toHaveBeenCalledWith(url)
+  })
+
+  test('opens path inputs with query strings and fragments', async () => {
+    const {stdout} = await testCommand(DocsReadCommand, [
+      '/docs/studio/installation?utm_source=cli#requirements',
+      '--web',
+    ])
+
+    const url = 'https://www.sanity.io/docs/studio/installation?utm_source=cli#requirements'
+
+    expect(stdout).toContain(`Opening ${url}`)
+    expect(mockOpen).toHaveBeenCalledWith(url)
+  })
+
+  test('rejects lookalike Sanity URLs', async () => {
+    const inputs = [
+      'https://www.sanity.io.evil.example/docs/studio/installation',
+      'https://evil-sanity.io/docs/studio/installation',
+      'https://www.sanity.io@evil.example/docs/studio/installation',
+    ]
+
+    for (const input of inputs) {
+      const result = await testCommand(DocsReadCommand, [input]).catch((err) => err)
+      expect(result.error.message).toContain(
+        'Invalid path or URL. Expected a Sanity docs path or URL.',
+      )
+    }
   })
 
   test('handles invalid paths', async () => {

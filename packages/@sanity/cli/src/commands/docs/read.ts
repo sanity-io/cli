@@ -2,8 +2,45 @@ import {Args, Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 import open from 'open'
 
-import {normalizeDocsPath} from '../../actions/docs/normalizeDocsPath.js'
 import {readDoc} from '../../services/docs.js'
+
+interface DocsInput {
+  readPath: string
+  webPath: string
+}
+
+function isSanityHostname(hostname: string): boolean {
+  return hostname === 'sanity.io' || hostname.endsWith('.sanity.io')
+}
+
+function parseDocsInput(input: string): DocsInput {
+  try {
+    const url = new URL(input)
+
+    if (isSanityHostname(url.hostname)) {
+      return {
+        readPath: url.pathname,
+        webPath: `${url.pathname}${url.search}${url.hash}`,
+      }
+    }
+  } catch {
+    // Input is not an absolute URL.
+  }
+
+  if (input.startsWith('/') && !input.startsWith('//')) {
+    const url = new URL(input, 'https://www.sanity.io')
+
+    return {
+      readPath: url.pathname,
+      webPath: `${url.pathname}${url.search}${url.hash}`,
+    }
+  }
+
+  return {
+    readPath: input,
+    webPath: input,
+  }
+}
 
 export class DocsReadCommand extends SanityCommand<typeof DocsReadCommand> {
   static override args = {
@@ -47,11 +84,9 @@ export class DocsReadCommand extends SanityCommand<typeof DocsReadCommand> {
     const {path: input} = args
     const {web} = flags
 
-    // Normalize URL to path
-    const path = normalizeDocsPath(input)
+    const {readPath, webPath} = parseDocsInput(input)
 
-    // Validate the normalized path
-    if (!path.startsWith('/')) {
+    if (!readPath.startsWith('/')) {
       this.error(
         'Invalid path or URL. Expected a Sanity docs path or URL.\nExamples:\n  /docs/studio/installation\n  https://www.sanity.io/docs/studio/installation',
         {
@@ -60,8 +95,7 @@ export class DocsReadCommand extends SanityCommand<typeof DocsReadCommand> {
       )
     }
 
-    // Enhanced validation for security and correctness
-    if (path.includes('..') || !path.startsWith('/docs/')) {
+    if (readPath.includes('..') || !readPath.startsWith('/docs/')) {
       this.error(
         'Invalid path. Must be a valid Sanity docs path starting with /docs/\nExample: /docs/studio/installation',
         {
@@ -70,19 +104,17 @@ export class DocsReadCommand extends SanityCommand<typeof DocsReadCommand> {
       )
     }
 
-    // Open in web browser if --web or -w flag is provided
     if (web) {
-      const url = `https://www.sanity.io${path}`
+      const url = `https://www.sanity.io${webPath}`
       this.log(`Opening ${url}`)
       await open(url)
       return
     }
 
-    // Default behavior: read as markdown in terminal
-    this.log(`Reading article: ${path}`)
+    this.log(`Reading article: ${readPath}`)
 
     try {
-      const content = await readDoc({path})
+      const content = await readDoc({path: readPath})
       this.log('\n---\n')
       this.log(content)
     } catch (error) {
