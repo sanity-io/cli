@@ -92,3 +92,5 @@ minimumReleaseAgeExclude:
   - '@oxfmt/*'
   # Bump for jiti with ts path support, can remove after ~May 9th
   - 'jiti@2.7.0'
+  # Renovate security update: turbo@2.9.14
+  - turbo@2.9.14
