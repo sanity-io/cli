@@ -127,9 +127,9 @@ export class Add extends SanityCommand<typeof Add> {
       this.log(oneline`
       ${styleText('yellow', `${logSymbols.warning} Warning:`)}
       We ${styleText(['red', 'underline'], 'HIGHLY')} recommend NOT allowing credentials
-      on origins containing wildcards. If you are logged in to a studio or app, people will
-      be able to send requests ${styleText('underline', 'on your behalf')} to read and modify
-      data, from any matching origin. Please tread carefully!
+      on origins containing wildcards. If you are logged in to a Sanity studio or an app built with
+      the Sanity App SDK, people will be able to send requests ${styleText('underline', 'on your behalf')}
+      to read and modify data, from any matching origin. Please tread carefully!
     `)
     } else {
       this.log(oneline`
@@ -137,7 +137,7 @@ export class Add extends SanityCommand<typeof Add> {
       Should this origin be allowed to send requests using authentication tokens or
       session cookies? Be aware that any script on this origin will be able to send
       requests ${styleText('underline', 'on your behalf')} to read and modify data if you
-      are logged in to a Sanity studio. If this origin hosts a studio or an app built with
+      are logged in to a Sanity studio or app. If this origin hosts a studio or an app built with
       the Sanity App SDK, you will need this, otherwise you should probably answer "No" (n).
     `)
     }
