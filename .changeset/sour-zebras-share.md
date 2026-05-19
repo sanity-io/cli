@@ -2,4 +2,4 @@
 "@sanity/cli": patch
 ---
 
-Restore auto update check logic ordering when building a studio
+Prevent auto update check from running twice when building a studio
