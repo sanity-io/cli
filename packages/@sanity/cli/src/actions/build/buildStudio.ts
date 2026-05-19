@@ -2,6 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {checkStudioDependencyVersions} from '@sanity/cli-build/_internal'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -26,7 +27,6 @@ import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
-import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvVars} from './getStudioEnvVars.js'

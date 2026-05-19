@@ -1,3 +1,4 @@
-export * from '../actions/build/generateWebManifest.js'
-export * from '../actions/build/writeFavicons.js'
+export {checkStudioDependencyVersions} from '../actions/build/checkStudioDependencyVersions.js'
+export {generateWebManifest} from '../actions/build/generateWebManifest.js'
+export {getDefaultFaviconsPath, writeFavicons} from '../actions/build/writeFavicons.js'
 export {copyDir} from '../util/copyDir.js'

@@ -26,10 +26,6 @@ vi.mock('../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
 }))
 
-vi.mock('../checkStudioDependencyVersions.js', () => ({
-  checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
-}))
-
 vi.mock('../checkRequiredDependencies.js', () => ({
   checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
 }))
@@ -61,6 +57,10 @@ vi.mock('../buildVendorDependencies.js', () => ({
 
 vi.mock('../../../telemetry/build.telemetry.js', () => ({
   StudioBuildTrace: {},
+}))
+
+vi.mock('@sanity/cli-build/_internal', () => ({
+  checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
