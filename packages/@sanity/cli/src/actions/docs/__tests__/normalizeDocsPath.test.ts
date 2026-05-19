@@ -13,6 +13,12 @@ describe('#normalizeDocsPath', () => {
     expect(normalizeDocsPath('/docs/studio/installation')).toBe('/docs/studio/installation')
   })
 
+  test('leaves non-Sanity URLs unchanged', () => {
+    const input = 'https://www.sanity.io.evil.example/docs/studio/installation'
+
+    expect(normalizeDocsPath(input)).toBe(input)
+  })
+
   test('handles root paths', () => {
     expect(normalizeDocsPath('https://www.sanity.io/')).toBe('/')
     expect(normalizeDocsPath('/')).toBe('/')

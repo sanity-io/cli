@@ -6,9 +6,14 @@
  * @internal
  */
 export function normalizeDocsPath(input: string): string {
-  const sanityDocsPrefix = 'https://www.sanity.io'
-  if (input.startsWith(sanityDocsPrefix)) {
-    return input.replace(sanityDocsPrefix, '')
+  try {
+    const url = new URL(input)
+    if (url.origin === 'https://www.sanity.io') {
+      return url.pathname
+    }
+  } catch {
+    // Input is already a path or another non-URL value.
   }
+
   return input
 }
