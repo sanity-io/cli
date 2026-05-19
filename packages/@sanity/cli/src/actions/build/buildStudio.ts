@@ -31,7 +31,6 @@ import {determineBasePath} from './determineBasePath.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvVars} from './getStudioEnvVars.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
-import {shouldAutoUpdate} from './shouldAutoUpdate.js'
 import {type BuildOptions} from './types.js'
 
 interface InternalBuildOptions {
@@ -62,10 +61,6 @@ interface InternalBuildOptions {
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  const autoUpdatesEnabled = options.calledFromDeploy
-    ? options.autoUpdatesEnabled
-    : shouldAutoUpdate({cliConfig, flags, output})
-
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
   }): Promise<void> => {
@@ -80,7 +75,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   await internalBuildStudio({
     appId: getAppId(cliConfig),
-    autoUpdatesEnabled,
+    autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
@@ -104,6 +99,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
  * @param options - options for the build
  */
 async function internalBuildStudio(options: InternalBuildOptions): Promise<void> {
+  buildDebug(`Building studio`)
+
   const timer = getTimer()
   const {
     appId,
@@ -122,7 +119,6 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     vite,
     workDir,
   } = options
-  let autoUpdatesEnabled = options.autoUpdatesEnabled
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
   const outputDir = path.resolve(outDir || defaultOutputDir)
 
@@ -135,6 +131,8 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     output,
     workDir,
   })
+
+  let autoUpdatesEnabled = options.autoUpdatesEnabled
 
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []

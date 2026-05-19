@@ -30,10 +30,6 @@ vi.mock('../checkRequiredDependencies.js', () => ({
   checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
 }))
 
-vi.mock('../shouldAutoUpdate.js', () => ({
-  shouldAutoUpdate: vi.fn().mockReturnValue(true),
-}))
-
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
@@ -85,7 +81,6 @@ vi.mock('@sanity/cli-core/ux', () => ({
 
 // Import after mocks are set up
 const {buildStudio} = await import('../buildStudio.js')
-const {shouldAutoUpdate} = await import('../shouldAutoUpdate.js')
 
 function createMockOutput(): Output {
   return {
@@ -137,7 +132,6 @@ describe('buildStudio appId warning', () => {
 
   test('should not warn about missing appId when auto-updates are disabled', async () => {
     mockGetAppId.mockReturnValue(undefined)
-    vi.mocked(shouldAutoUpdate).mockReturnValueOnce(false)
     const output = createMockOutput()
 
     await buildStudio({
@@ -150,23 +144,6 @@ describe('buildStudio appId warning', () => {
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
-  })
-
-  test('should not call shouldAutoUpdate when called from deploy', async () => {
-    mockGetAppId.mockReturnValue('my-app-id')
-    const output = createMockOutput()
-
-    await buildStudio({
-      autoUpdatesEnabled: true,
-      calledFromDeploy: true,
-      cliConfig: {deployment: {autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
-
-    expect(shouldAutoUpdate).not.toHaveBeenCalled()
   })
 
   test('should not warn about missing appId when appId is configured', async () => {
