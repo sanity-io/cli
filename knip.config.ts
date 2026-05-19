@@ -65,6 +65,8 @@ const baseConfig = {
     },
     'packages/@sanity/cli-build': {
       entry: ['package.config.ts'],
+      // debug is used for type checking
+      ignoreDependencies: ['@types/debug'],
       project,
     },
     'packages/@sanity/cli-core': {
