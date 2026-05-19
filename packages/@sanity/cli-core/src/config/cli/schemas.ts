@@ -1,8 +1,70 @@
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {z} from 'zod/mini'
 
-import {type CliConfig, type TypeGenConfig} from './types/cliConfig'
+import {
+  type CliConfig,
+  type GoLanguageConfig,
+  type PhpLanguageConfig,
+  type PolyglotTypeGenConfig,
+  type SwiftLanguageConfig,
+  type TypeGenConfig,
+  type TypeScriptLanguageConfig,
+} from './types/cliConfig'
 import {type UserViteConfig} from './types/userViteConfig'
+
+const K_NEW = ['typescript', 'go', 'php', 'swift'] as const
+const K_LEGACY = [
+  'schema',
+  'generates',
+  'path',
+  'overloadClientMethods',
+  'formatGeneratedCode',
+] as const
+
+const GO_PACKAGE_RE = /^[a-z][a-z0-9_]*$/
+const PHP_NAMESPACE_RE = /^[A-Z][A-Za-z0-9_]*(\\[A-Z][A-Za-z0-9_]*)*$/
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v)
+
+const present = (block: Record<string, unknown>, keys: readonly string[]): string[] =>
+  keys.filter((k) => block[k] !== undefined)
+
+const typegenSchema = z.custom<
+  (Partial<TypeGenConfig> & {enabled?: boolean}) | PolyglotTypeGenConfig
+>((raw) => {
+  if (raw === undefined || raw === null) return true
+  if (!isRecord(raw)) return false
+  const block = raw as Record<string, unknown>
+
+  const newKeys = present(block, K_NEW)
+  const legacyKeys = present(block, K_LEGACY)
+  if (newKeys.length > 0 && legacyKeys.length > 0) return false
+
+  if (block.go !== undefined) {
+    const go = block.go as GoLanguageConfig
+    if (!isRecord(go)) return false
+    if (typeof go.schema !== 'string' || typeof go.generates !== 'string') return false
+    if (go.packageName !== undefined && !GO_PACKAGE_RE.test(String(go.packageName))) return false
+  }
+  if (block.php !== undefined) {
+    const php = block.php as PhpLanguageConfig
+    if (!isRecord(php)) return false
+    if (typeof php.schema !== 'string' || typeof php.generates !== 'string') return false
+    if (php.namespace !== undefined && !PHP_NAMESPACE_RE.test(String(php.namespace))) return false
+  }
+  if (block.swift !== undefined) {
+    const swift = block.swift as SwiftLanguageConfig
+    if (!isRecord(swift)) return false
+    if (typeof swift.schema !== 'string' || typeof swift.generates !== 'string') return false
+  }
+  if (block.typescript !== undefined) {
+    const ts = block.typescript as TypeScriptLanguageConfig
+    if (!isRecord(ts)) return false
+    if (typeof ts.schema !== 'string' || typeof ts.generates !== 'string') return false
+  }
+  return true
+}, 'typegen: invalid shape — mixed legacy+per-language form or invalid per-language fields')
 
 /**
  * @public
@@ -86,5 +148,5 @@ export const cliConfigSchema = z.object({
 
   vite: z.optional(z.custom<UserViteConfig>()),
 
-  typegen: z.optional(z.custom<Partial<TypeGenConfig> & {enabled?: boolean}>()),
+  typegen: z.optional(typegenSchema),
 }) satisfies z.core.$ZodType<CliConfig>

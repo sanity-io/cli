@@ -2,12 +2,80 @@ import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-comp
 
 import {type UserViteConfig} from './userViteConfig'
 
+/**
+ * Legacy flat-form typegen config. Equivalent to nesting these fields under `typegen.typescript`.
+ * @public
+ */
 export interface TypeGenConfig {
-  formatGeneratedCode: boolean
+  formatGeneratedCode: 'oxfmt' | 'prettier' | boolean
   generates: string
   overloadClientMethods: boolean
   path: string | string[]
   schema: string
+}
+
+/**
+ * Fields shared by every per-language typegen sub-block.
+ * @public
+ */
+export interface BaseLanguageConfig {
+  /** Output file path. Must end in the language's file extension. */
+  generates: string
+  /** Path to the pre-extracted Sanity schema JSON file. */
+  schema: string
+
+  /** Format the emitted source. Defaults to `true`. */
+  formatGeneratedCode?: 'oxfmt' | 'prettier' | boolean
+}
+
+/**
+ * TypeScript per-language typegen config.
+ * @public
+ */
+export interface TypeScriptLanguageConfig extends BaseLanguageConfig {
+  /** Overload `@sanity/client` methods to return typed results. Default true. */
+  overloadClientMethods?: boolean
+  /** Source file globs for GROQ query extraction. */
+  path?: string | string[]
+}
+
+/**
+ * Go per-language typegen config.
+ * @public
+ */
+export interface GoLanguageConfig extends BaseLanguageConfig {
+  /** Go package name. Defaults to the basename of `dirname(generates)`. */
+  packageName?: string
+}
+
+/**
+ * PHP per-language typegen config.
+ * @public
+ */
+export interface PhpLanguageConfig extends BaseLanguageConfig {
+  /** PHP namespace. Defaults to `Sanity\\Generated`. */
+  namespace?: string
+}
+
+/**
+ * Swift per-language typegen config. Reserved for future per-language knobs.
+ * @public
+ */
+export type SwiftLanguageConfig = BaseLanguageConfig
+
+/**
+ * Polyglot typegen configuration. Configure one or more language sub-blocks under
+ * `typegen`. The legacy flat shape (`typegen: {schema, generates, ...}`) is still
+ * accepted and folds into `typegen.typescript` with a deprecation warning.
+ * @public
+ */
+export interface PolyglotTypeGenConfig {
+  /** Enable typegen as part of sanity dev and sanity build. */
+  enabled?: boolean
+  go?: GoLanguageConfig
+  php?: PhpLanguageConfig
+  swift?: SwiftLanguageConfig
+  typescript?: TypeScriptLanguageConfig
 }
 
 /**
@@ -134,16 +202,22 @@ export interface CliConfig {
   studioHost?: string
 
   /**
-   * Configuration for Sanity typegen
+   * Configuration for Sanity typegen.
+   *
+   * Accepts either:
+   * - The new per-language form: `{ typescript?, go?, php?, swift?, enabled? }`
+   * - The legacy flat form: `{ schema, generates, path?, overloadClientMethods?, formatGeneratedCode?, enabled? }` (deprecated; folds into `typegen.typescript`)
    */
-  typegen?: Partial<TypeGenConfig> & {
-    /**
-     * Enable typegen as part of sanity dev and sanity build.
-     * When enabled, types are generated on startup and when files change.
-     * Defaults to `false`
-     */
-    enabled?: boolean
-  }
+  typegen?:
+    | (Partial<TypeGenConfig> & {
+        /**
+         * Enable typegen as part of sanity dev and sanity build.
+         * When enabled, types are generated on startup and when files change.
+         * Defaults to `false`
+         */
+        enabled?: boolean
+      })
+    | PolyglotTypeGenConfig
 
   /** Exposes the default Vite configuration for custom apps and the Studio so it can be changed and extended. */
   vite?: UserViteConfig
