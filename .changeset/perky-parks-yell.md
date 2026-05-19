@@ -2,4 +2,4 @@
 "@sanity/cli": patch
 ---
 
-chore: parse docs url origin before normalizing
+Reject lookalike hostnames when reading docs by URL.
