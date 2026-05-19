@@ -65,6 +65,7 @@
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
+    "@types/debug": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "^7.7.1",
     "@vitest/coverage-istanbul": "catalog:",

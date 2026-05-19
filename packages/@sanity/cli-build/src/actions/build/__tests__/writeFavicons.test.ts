@@ -11,8 +11,8 @@ vi.mock('read-package-up', () => ({
 
 vi.mock('node:fs/promises', () => ({
   default: {
-    mkdir: vi.fn().mockResolvedValue(undefined),
     copyFile: vi.fn().mockResolvedValue(undefined),
+    mkdir: vi.fn().mockResolvedValue(undefined),
   },
 }))
 

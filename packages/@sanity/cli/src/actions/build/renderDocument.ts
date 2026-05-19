@@ -1,7 +1,6 @@
 import {ux} from '@oclif/core'
+import {buildDebug} from '@sanity/cli-build/_internal'
 import {tsxWorkerTask} from '@sanity/cli-core'
-
-import {buildDebug} from './buildDebug.js'
 
 interface DocumentProps {
   basePath: string

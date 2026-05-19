@@ -1,11 +1,10 @@
 import path from 'node:path'
 
-import {copyDir, writeFavicons} from '@sanity/cli-build/_internal'
+import {buildDebug, copyDir, writeFavicons} from '@sanity/cli-build/_internal'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build} from 'vite'
 
-import {buildDebug} from './buildDebug.js'
 import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
 import {writeSanityRuntime} from './writeSanityRuntime.js'
 

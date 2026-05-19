@@ -58,6 +58,7 @@ export class BuildCommand extends SanityCommand<typeof BuildCommand> {
 
     const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
 
+    // eslint-disable-next-line unicorn/prefer-ternary
     if (isApp) {
       await buildApp({
         autoUpdatesEnabled,

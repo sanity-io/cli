@@ -2,6 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {buildDebug} from '@sanity/cli-build/_internal'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -19,7 +20,6 @@ import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
-import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
