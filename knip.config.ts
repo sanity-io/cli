@@ -87,7 +87,6 @@ const baseConfig = {
       entry: ['package.config.ts'],
       project,
     },
-    'packages/create-sanity': {},
   },
 } satisfies KnipConfig
 
