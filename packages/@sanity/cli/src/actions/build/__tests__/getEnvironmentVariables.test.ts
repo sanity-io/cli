@@ -3,7 +3,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
-} from '../getStudioEnvironmentVariables.js'
+} from '../getEnvironmentVariables.js'
 
 describe('#getStudioEnvironmentVariables', () => {
   beforeEach(() => {
@@ -13,6 +13,8 @@ describe('#getStudioEnvironmentVariables', () => {
     vi.stubEnv('SANITY_APP_SECRET', 'app-secret-456')
     vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://next.example.com')
     vi.stubEnv('VITE_CUSTOM_VAR', 'vite-value')
+    vi.stubEnv('sanity_studio_foo', 'bar')
+    vi.stubEnv('sanity_app_foo', 'bar')
   })
 
   afterEach(() => {
@@ -40,6 +42,8 @@ describe('#getStudioEnvironmentVariables', () => {
     expect(result).not.toHaveProperty('NEXT_PUBLIC_API_URL')
     expect(result).not.toHaveProperty('VITE_CUSTOM_VAR')
     expect(result).not.toHaveProperty('SANITY_APP_SECRET')
+    expect(result).not.toHaveProperty('sanity_studio_foo')
+    expect(result).not.toHaveProperty('sanity_app_foo')
   })
 
   test('applies jsonEncode option', () => {
@@ -85,6 +89,8 @@ describe('#getAppEnvironmentVariables', () => {
     vi.stubEnv('SANITY_STUDIO_API_KEY', 'studio-key-123')
     vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://next.example.com')
     vi.stubEnv('VITE_CUSTOM_VAR', 'vite-value')
+    vi.stubEnv('sanity_studio_foo', 'bar')
+    vi.stubEnv('sanity_app_foo', 'bar')
   })
 
   afterEach(() => {
@@ -112,6 +118,8 @@ describe('#getAppEnvironmentVariables', () => {
     expect(result).not.toHaveProperty('NEXT_PUBLIC_API_URL')
     expect(result).not.toHaveProperty('VITE_CUSTOM_VAR')
     expect(result).not.toHaveProperty('SANITY_STUDIO_API_KEY')
+    expect(result).not.toHaveProperty('sanity_studio_foo')
+    expect(result).not.toHaveProperty('sanity_app_foo')
   })
 
   test('applies jsonEncode option', () => {
