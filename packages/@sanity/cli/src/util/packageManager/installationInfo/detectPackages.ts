@@ -1,8 +1,6 @@
 import fs from 'node:fs/promises'
+import {createRequire} from 'node:module'
 import path from 'node:path'
-import {fileURLToPath, pathToFileURL} from 'node:url'
-
-import {resolve as resolveImport} from 'import-meta-resolve'
 
 import {readJsonFile} from './readJsonFile.js'
 import {resolveVersionRange} from './resolveVersionRange.js'
@@ -233,9 +231,8 @@ async function resolvePackagePath(packagePath: string): Promise<string | null> {
 async function resolveCliFromSanity(sanityPath: string): Promise<InstalledPackage | null> {
   try {
     // Resolve @sanity/cli/package.json from sanity's perspective
-    const sanityPkgUrl = pathToFileURL(path.join(sanityPath, 'package.json')).href
-    const cliPkgUrl = resolveImport('@sanity/cli/package.json', sanityPkgUrl)
-    const cliPkgPath = fileURLToPath(cliPkgUrl)
+    const resolveFromSanity = createRequire(path.join(sanityPath, 'package.json'))
+    const cliPkgPath = resolveFromSanity.resolve('@sanity/cli/package.json')
     const cliPath = path.dirname(cliPkgPath)
 
     const packageJson = await readJsonFile<PackageJson>(cliPkgPath)

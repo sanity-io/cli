@@ -1,9 +1,8 @@
 import {resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
 
-import {moduleResolve} from 'import-meta-resolve'
-
 import {doImport} from './doImport.js'
+import {resolveModuleUrl} from './resolveModuleUrl.js'
 
 /**
  * Resolves and imports a package from the local project's node_modules,
@@ -53,7 +52,7 @@ export function resolveLocalPackagePath(packageName: string, workDir: string): U
   const fakeCliConfigUrl = pathToFileURL(resolve(workDir, 'sanity.cli.mjs'))
 
   try {
-    return moduleResolve(packageName, fakeCliConfigUrl)
+    return resolveModuleUrl(packageName, fakeCliConfigUrl)
   } catch (error) {
     throw new Error(
       `Failed to resolve package "${packageName}" from "${workDir}": ${error instanceof Error ? error.message : String(error)}`,
@@ -85,7 +84,7 @@ export async function resolveLocalPackageFrom<T = unknown>(
   parentUrl: URL,
 ): Promise<T> {
   try {
-    const packageUrl = moduleResolve(packageName, parentUrl)
+    const packageUrl = resolveModuleUrl(packageName, parentUrl)
     const module = await doImport(packageUrl.href)
     return module as T
   } catch (error) {

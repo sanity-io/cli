@@ -78,9 +78,6 @@ catalogs:
     groq-js:
       specifier: ^1.30.1
       version: 1.30.1
-    import-meta-resolve:
-      specifier: ^4.2.0
-      version: 4.2.0
     jsdom:
       specifier: ^29.1.1
       version: 29.1.1
@@ -580,9 +577,6 @@ importers:
       gunzip-maybe:
         specifier: ^1.4.2
         version: 1.4.2
-      import-meta-resolve:
-        specifier: 'catalog:'
-        version: 4.2.0
       is-installed-globally:
         specifier: ^1.0.0
         version: 1.0.0
@@ -873,9 +867,6 @@ importers:
       get-tsconfig:
         specifier: 'catalog:'
         version: 4.14.0
-      import-meta-resolve:
-        specifier: 'catalog:'
-        version: 4.2.0
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
