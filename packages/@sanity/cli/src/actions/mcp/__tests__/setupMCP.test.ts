@@ -5,7 +5,6 @@ import {setupMCP} from '../setupMCP.js'
 const mockDetectAvailableEditors = vi.hoisted(() => vi.fn())
 const mockPromptForMCPSetup = vi.hoisted(() => vi.fn())
 const mockValidateEditorTokens = vi.hoisted(() => vi.fn())
-const mockCreateMCPToken = vi.hoisted(() => vi.fn())
 const mockWriteMCPConfig = vi.hoisted(() => vi.fn())
 const mockRemoveMCPConfig = vi.hoisted(() => vi.fn())
 
@@ -22,7 +21,6 @@ vi.mock('../validateEditorTokens.js', () => ({
 }))
 
 vi.mock('../../../services/mcp.js', () => ({
-  createMCPToken: mockCreateMCPToken,
   MCP_SERVER_URL: 'https://mcp.sanity.io',
 }))
 
@@ -38,7 +36,6 @@ function setupPromptedEditors(editors: unknown[]): void {
   mockDetectAvailableEditors.mockResolvedValue(editors)
   mockValidateEditorTokens.mockResolvedValue(undefined)
   mockPromptForMCPSetup.mockResolvedValue(editors)
-  mockCreateMCPToken.mockResolvedValue('test-token')
   mockWriteMCPConfig.mockResolvedValue(undefined)
 }
 
@@ -73,10 +70,9 @@ describe('setupMCP', () => {
     const result = await setupMCP({mode: 'auto'})
 
     expect(mockPromptForMCPSetup).not.toHaveBeenCalled()
-    expect(mockCreateMCPToken).not.toHaveBeenCalled()
     expect(mockWriteMCPConfig).toHaveBeenCalledTimes(2)
-    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[0], 'existing-token')
-    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[1], 'existing-token')
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[0])
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[1])
     expect(result.configuredEditors).toEqual(['Claude Code', 'VS Code'])
     expect(result.skipped).toBe(false)
   })
@@ -128,10 +124,9 @@ describe('setupMCP', () => {
     const result = await setupMCP({mode: 'prompt'})
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(editors)
-    expect(mockCreateMCPToken).not.toHaveBeenCalled()
     expect(mockWriteMCPConfig).toHaveBeenCalledTimes(2)
-    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[0], 'reusable-token')
-    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[1], 'reusable-token')
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[0])
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[1])
     expect(mockRemoveMCPConfig).not.toHaveBeenCalled()
     expect(result.configuredEditors).toEqual(['VS Code', 'Gemini CLI'])
   })
@@ -148,14 +143,12 @@ describe('setupMCP', () => {
     mockDetectAvailableEditors.mockResolvedValue(editors)
     mockValidateEditorTokens.mockResolvedValue(undefined)
     mockPromptForMCPSetup.mockResolvedValue([vscode])
-    mockCreateMCPToken.mockResolvedValue('new-token')
     mockWriteMCPConfig.mockResolvedValue(undefined)
     mockRemoveMCPConfig.mockResolvedValue(undefined)
 
     const result = await setupMCP({mode: 'prompt'})
 
-    expect(mockCreateMCPToken).toHaveBeenCalledTimes(1)
-    expect(mockWriteMCPConfig).toHaveBeenCalledWith(vscode, 'new-token')
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(vscode)
     expect(mockRemoveMCPConfig).toHaveBeenCalledWith(cursor)
     expect(result.configuredEditors).toEqual(['VS Code'])
     expect(result.removedEditors).toEqual(['Cursor'])

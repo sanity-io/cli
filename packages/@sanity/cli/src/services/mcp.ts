@@ -12,38 +12,6 @@ interface PostInitPromptResponse {
 }
 
 /**
- * Create a child token for MCP usage
- * This token is tied to the parent CLI token and will be invalidated
- * when the parent token is invalidated (e.g., on logout)
- *
- * @returns The MCP token string
- * @internal
- */
-export async function createMCPToken(): Promise<string> {
-  const client = await getGlobalCliClient({
-    apiVersion: MCP_API_VERSION,
-    requireUser: true,
-  })
-
-  const sessionResponse = await client.request<{id: string; sid: string}>({
-    body: {
-      sourceId: 'sanity-mcp',
-      withStamp: false,
-    },
-    method: 'POST',
-    uri: '/auth/session/create',
-  })
-
-  const tokenResponse = await client.request<{label: string; token: string}>({
-    method: 'GET',
-    query: {sid: sessionResponse.sid},
-    uri: '/auth/fetch',
-  })
-
-  return tokenResponse.token
-}
-
-/**
  * Validate an MCP token by checking it against the Sanity API.
  *
  * MCP tokens are standard Sanity session tokens (`sk…`), so we validate

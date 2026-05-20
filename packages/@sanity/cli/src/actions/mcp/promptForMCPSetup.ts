@@ -1,27 +1,14 @@
 import {checkbox} from '@sanity/cli-core/ux'
 
-import {EDITOR_CONFIGS} from './editorConfigs.js'
 import {type Editor} from './types.js'
 
 function getEditorLabel(editor: Editor): string {
-  if (editor.configured && editor.authStatus === 'unauthorized') {
-    return `${editor.name} (auth expired)`
-  }
-  if (editor.configured && !editor.existingToken && !EDITOR_CONFIGS[editor.name].oauthOnly) {
-    return `${editor.name} (missing credentials)`
-  }
   return editor.name
 }
 
 function getEditorDescription(editor: Editor): string {
   if (!editor.configured) {
     return 'Not configured'
-  }
-  if (editor.authStatus === 'unauthorized') {
-    return 'Auth expired. Keep selected to refresh the configuration.'
-  }
-  if (!editor.existingToken && !EDITOR_CONFIGS[editor.name].oauthOnly) {
-    return 'Missing credentials. Keep selected to update the configuration.'
   }
   return 'Configured'
 }

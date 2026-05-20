@@ -52,6 +52,17 @@ describe('buildServerConfig', () => {
     })
   })
 
+  test('all editors use OAuth config without auth credentials by default', () => {
+    for (const name of Object.keys(EDITOR_CONFIGS) as Array<keyof typeof EDITOR_CONFIGS>) {
+      const config = EDITOR_CONFIGS[name].buildServerConfig()
+      const hasAuth =
+        (config.headers as Record<string, string> | undefined)?.Authorization ||
+        (config.http_headers as Record<string, string> | undefined)?.Authorization
+
+      expect(hasAuth, `${name} should not include auth credentials`).toBeUndefined()
+    }
+  })
+
   test('Claude Code config includes Authorization header with token', () => {
     const config = EDITOR_CONFIGS['Claude Code'].buildServerConfig(testToken)
 
@@ -82,13 +93,14 @@ describe('buildServerConfig', () => {
     })
   })
 
-  test('all editors except Cursor include auth credentials', () => {
+  test('all editors can include auth credentials when a token is provided', () => {
     const editorsWithToken = [
       'Antigravity',
       'Claude Code',
       'Cline',
       'Cline CLI',
       'Codex CLI',
+      'Cursor',
       'Gemini CLI',
       'GitHub Copilot CLI',
       'MCPorter',

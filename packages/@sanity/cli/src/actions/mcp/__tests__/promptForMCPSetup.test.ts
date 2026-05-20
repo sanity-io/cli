@@ -36,8 +36,8 @@ describe('promptForMCPSetup', () => {
     )
   })
 
-  test('preselects editors that are already configured', async () => {
-    mockCheckbox.mockResolvedValue(['Cursor'])
+  test('preselects configured editors and labels them as configured', async () => {
+    mockCheckbox.mockResolvedValue(['Cursor', 'VS Code', 'Claude Code'])
 
     const editors = [
       makeEditor({
@@ -46,6 +46,13 @@ describe('promptForMCPSetup', () => {
         existingToken: 'token',
         name: 'Cursor',
       }),
+      makeEditor({
+        authStatus: 'unauthorized',
+        configured: true,
+        existingToken: 'old',
+        name: 'VS Code',
+      }),
+      makeEditor({configured: true, name: 'Claude Code'}),
     ]
     await promptForMCPSetup(editors)
 
@@ -58,52 +65,17 @@ describe('promptForMCPSetup', () => {
             name: 'Cursor',
             value: 'Cursor',
           },
-        ],
-      }),
-    )
-  })
-
-  test('labels editors with expired auth as "(auth expired)"', async () => {
-    mockCheckbox.mockResolvedValue(['Cursor'])
-
-    const editors = [
-      makeEditor({
-        authStatus: 'unauthorized',
-        configured: true,
-        existingToken: 'old',
-        name: 'Cursor',
-      }),
-    ]
-    await promptForMCPSetup(editors)
-
-    expect(mockCheckbox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        choices: [
           {
             checked: true,
-            description: 'Auth expired. Keep selected to refresh the configuration.',
-            name: 'Cursor (auth expired)',
-            value: 'Cursor',
-          },
-        ],
-      }),
-    )
-  })
-
-  test('labels configured editors without token as "(missing credentials)"', async () => {
-    mockCheckbox.mockResolvedValue(['VS Code'])
-
-    const editors = [makeEditor({configured: true, name: 'VS Code'})]
-    await promptForMCPSetup(editors)
-
-    expect(mockCheckbox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        choices: [
-          {
-            checked: true,
-            description: 'Missing credentials. Keep selected to update the configuration.',
-            name: 'VS Code (missing credentials)',
+            description: 'Configured',
+            name: 'VS Code',
             value: 'VS Code',
+          },
+          {
+            checked: true,
+            description: 'Configured',
+            name: 'Claude Code',
+            value: 'Claude Code',
           },
         ],
       }),

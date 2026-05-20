@@ -33,17 +33,14 @@ export function createDetectionEnv(): DetectionEnv {
 }
 
 interface EditorConfig {
-  /** Builds the server config with API token. If oauthOnly is true, the token is not used */
-  buildServerConfig: (token: string) => Record<string, unknown>
+  /** Builds the server config, optionally with an API token. */
+  buildServerConfig: (token?: string) => Record<string, unknown>
   configKey: string
   /** Returns the config file path if editor is detected, null otherwise */
   detect: (env: DetectionEnv) => Promise<string | null>
   format: 'jsonc' | 'toml'
   /** Extracts the auth token from a parsed Sanity server config block */
   readToken: (serverConfig: Record<string, unknown>) => string | undefined
-
-  /** If true, this editor uses OAuth natively and does not need an embedded API token */
-  oauthOnly?: boolean
 }
 
 /**
@@ -228,57 +225,70 @@ const EDITOR_DEFAULTS = {
   buildServerConfig: defaultHttpConfig,
   configKey: 'mcpServers',
   format: 'jsonc' as const,
-  oauthOnly: false,
   readToken: readTokenFromHeaders,
 }
 
-function buildAntigravityServerConfig(token: string): Record<string, unknown> {
-  return {
-    headers: {Authorization: `Bearer ${token}`},
-    serverUrl: MCP_SERVER_URL,
-  }
+function buildAntigravityServerConfig(token?: string): Record<string, unknown> {
+  return token
+    ? {headers: {Authorization: `Bearer ${token}`}, serverUrl: MCP_SERVER_URL}
+    : {serverUrl: MCP_SERVER_URL}
 }
 
-function buildClineServerConfig(token: string): Record<string, unknown> {
-  return {
+function buildClineServerConfig(token?: string): Record<string, unknown> {
+  const config: Record<string, unknown> = {
     disabled: false,
-    headers: {Authorization: `Bearer ${token}`},
     type: 'streamableHttp',
     url: MCP_SERVER_URL,
   }
+  if (token) {
+    config.headers = {Authorization: `Bearer ${token}`}
+  }
+  return config
 }
 
-function buildCodexCliServerConfig(token: string): Record<string, unknown> {
-  return {
-    http_headers: {Authorization: `Bearer ${token}`},
+function buildCodexCliServerConfig(token?: string): Record<string, unknown> {
+  const config: Record<string, unknown> = {
     type: 'http',
     url: MCP_SERVER_URL,
   }
+  if (token) {
+    config.http_headers = {Authorization: `Bearer ${token}`}
+  }
+  return config
 }
 
-function buildGitHubCopilotCliServerConfig(token: string): Record<string, unknown> {
-  return {
-    headers: {Authorization: `Bearer ${token}`},
+function buildGitHubCopilotCliServerConfig(token?: string): Record<string, unknown> {
+  const config: Record<string, unknown> = {
     tools: ['*'],
     type: 'http',
     url: MCP_SERVER_URL,
   }
+  if (token) {
+    config.headers = {Authorization: `Bearer ${token}`}
+  }
+  return config
 }
 
-function buildOpenCodeServerConfig(token: string): Record<string, unknown> {
-  return {
-    headers: {Authorization: `Bearer ${token}`},
+function buildOpenCodeServerConfig(token?: string): Record<string, unknown> {
+  const config: Record<string, unknown> = {
     type: 'remote',
     url: MCP_SERVER_URL,
   }
+  if (token) {
+    config.headers = {Authorization: `Bearer ${token}`}
+  }
+  return config
 }
 
-function buildZedServerConfig(token: string): Record<string, unknown> {
-  return {
-    headers: {Authorization: `Bearer ${token}`},
+function buildZedServerConfig(token?: string): Record<string, unknown> {
+  const config: Record<string, unknown> = {
     settings: {},
     url: MCP_SERVER_URL,
   }
+  if (token) {
+    config.headers = {Authorization: `Bearer ${token}`}
+  }
+  return config
 }
 
 /**
@@ -321,11 +331,7 @@ export const EDITOR_CONFIGS = {
   },
   // Doc: https://docs.cursor.com/context/model-context-protocol
   // Path: ~/.cursor/mcp.json  Key: mcpServers
-  Cursor: {
-    ...EDITOR_DEFAULTS,
-    detect: detectCursor,
-    oauthOnly: true,
-  },
+  Cursor: {...EDITOR_DEFAULTS, detect: detectCursor},
   // Doc: https://googlegemini.wiki/gemini-cli/mcp-servers
   // Path: ~/.gemini/settings.json  Key: mcpServers
   'Gemini CLI': {...EDITOR_DEFAULTS, detect: detectGeminiCli},

@@ -85,10 +85,8 @@ interface EditorTestCase {
   /** Editor name as it appears in EDITOR_CONFIGS */
   name: string
 
-  /** Extra substrings the written content must contain (beyond the token) */
+  /** Extra substrings the written content must contain */
   expectedContentChecks?: string[]
-  /** If true, this editor uses OAuth natively and does not need an embedded API token */
-  oauthOnly?: boolean
   /** Only run on this platform (skipped otherwise) */
   platform?: NodeJS.Platform
 }
@@ -129,84 +127,22 @@ function mockClaudeCodeDetected(): void {
   }) as never)
 }
 
-/** Shared helper: sets up mocks, runs command, asserts outputs for a single editor. */
-async function runEditorTest(tc: EditorTestCase): Promise<void> {
+function applyPlatformOverride(platform?: NodeJS.Platform): () => void {
+  if (!platform) return () => undefined
   const originalPlatform = process.platform
+  Object.defineProperty(process, 'platform', {value: platform})
+  return () => Object.defineProperty(process, 'platform', {value: originalPlatform})
+}
+
+function applyEnvOverrides(env?: Record<string, string>): () => void {
   const envBackups: Record<string, string | undefined> = {}
 
-  try {
-    // Platform override
-    if (tc.detect.overridePlatform) {
-      Object.defineProperty(process, 'platform', {value: tc.detect.overridePlatform})
-    }
+  for (const [key, value] of Object.entries(env ?? {})) {
+    envBackups[key] = process.env[key]
+    process.env[key] = value
+  }
 
-    // Env var overrides
-    if (tc.detect.env) {
-      for (const [key, value] of Object.entries(tc.detect.env)) {
-        envBackups[key] = process.env[key]
-        process.env[key] = value
-      }
-    }
-
-    // existsSync mock
-    if (tc.detect.existsSync) {
-      const predicate = tc.detect.existsSync
-      mockExistsSync.mockImplementation((p: PathLike) => predicate(String(p)))
-    }
-
-    // CLI mock — resolve for specific commands, reject for everything else
-    if (tc.detect.cliCommands) {
-      const commands = tc.detect.cliCommands
-      mockExeca.mockImplementation((async (command: string | URL) => {
-        if (commands.includes(String(command))) return EXECA_SUCCESS
-        throw new Error('Not installed')
-      }) as never)
-    }
-
-    mockCheckbox.mockResolvedValue([tc.name])
-
-    const sessionId = `session-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
-    const token = `test-token-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
-
-    if (!tc.oauthOnly) {
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'post',
-        uri: '/auth/session/create',
-      }).reply(200, {id: sessionId, sid: sessionId})
-
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'get',
-        query: {sid: sessionId},
-        uri: '/auth/fetch',
-      }).reply(200, {label: 'MCP Token', token})
-    }
-
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    // Assert config was written to the expected path with the token
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining(convertToSystemPath(tc.expectedConfigPath)),
-      tc.oauthOnly ? expect.not.stringContaining(token) : expect.stringContaining(token),
-      'utf8',
-    )
-
-    // Assert extra content checks
-    if (tc.expectedContentChecks) {
-      const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
-      for (const check of tc.expectedContentChecks) {
-        expect(writtenContent, `written content should contain "${check}"`).toContain(check)
-      }
-    }
-
-    expect(stdout).toContain(`MCP configured for ${tc.name}`)
-  } finally {
-    // Restore platform
-    if (tc.detect.overridePlatform) {
-      Object.defineProperty(process, 'platform', {value: originalPlatform})
-    }
-    // Restore env vars
+  return () => {
     for (const [key, original] of Object.entries(envBackups)) {
       if (original === undefined) {
         delete process.env[key]
@@ -214,6 +150,55 @@ async function runEditorTest(tc: EditorTestCase): Promise<void> {
         process.env[key] = original
       }
     }
+  }
+}
+
+function mockEditorDetection(detect: EditorTestCase['detect']): void {
+  if (detect.existsSync) {
+    const predicate = detect.existsSync
+    mockExistsSync.mockImplementation((p: PathLike) => predicate(String(p)))
+  }
+
+  if (detect.cliCommands) {
+    const commands = detect.cliCommands
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (commands.includes(String(command))) return EXECA_SUCCESS
+      throw new Error('Not installed')
+    }) as never)
+  }
+}
+
+function expectEditorConfigWritten(tc: EditorTestCase): void {
+  expect(mockWriteFile).toHaveBeenCalledWith(
+    expect.stringContaining(convertToSystemPath(tc.expectedConfigPath)),
+    expect.not.stringContaining('Authorization'),
+    'utf8',
+  )
+}
+
+function expectContentChecks(tc: EditorTestCase): void {
+  const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
+  for (const check of tc.expectedContentChecks ?? []) {
+    expect(writtenContent, `written content should contain "${check}"`).toContain(check)
+  }
+}
+
+/** Shared helper: sets up mocks, runs command, asserts outputs for a single editor. */
+async function runEditorTest(tc: EditorTestCase): Promise<void> {
+  const restorePlatform = applyPlatformOverride(tc.detect.overridePlatform)
+  const restoreEnv = applyEnvOverrides(tc.detect.env)
+
+  try {
+    mockEditorDetection(tc.detect)
+    mockCheckbox.mockResolvedValue([tc.name])
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expectEditorConfigWritten(tc)
+    expectContentChecks(tc)
+    expect(stdout).toContain(`MCP configured for ${tc.name}`)
+  } finally {
+    restorePlatform()
+    restoreEnv()
   }
 }
 
@@ -226,7 +211,6 @@ const editorTestCases: EditorTestCase[] = [
     detect: {existsSync: (p) => p.endsWith('.cursor')},
     expectedConfigPath: '.cursor/mcp.json',
     name: 'Cursor',
-    oauthOnly: true,
   },
   {
     detect: {
@@ -350,7 +334,7 @@ const editorTestCases: EditorTestCase[] = [
   {
     detect: {cliCommands: ['codex']},
     expectedConfigPath: '.codex/config.toml',
-    expectedContentChecks: ['[mcp_servers.Sanity]', '[mcp_servers.Sanity.http_headers]'],
+    expectedContentChecks: ['[mcp_servers.Sanity]'],
     name: 'Codex CLI',
   },
   {
@@ -387,6 +371,16 @@ const editorTestCases: EditorTestCase[] = [
   },
 ]
 
+function existsForMCPorterFiles(options: {json: boolean; jsonc: boolean}): (p: string) => boolean {
+  return (p) => {
+    const n = p.replaceAll('\\', '/')
+    if (n.endsWith('/.mcporter')) return true
+    if (n.endsWith('/.mcporter/mcporter.json')) return options.json
+    if (n.endsWith('/.mcporter/mcporter.jsonc')) return options.jsonc
+    return false
+  }
+}
+
 // MCPorter has three variants for file format detection
 const mcporterTestCases: Array<{
   existsSync: (p: string) => boolean
@@ -394,35 +388,17 @@ const mcporterTestCases: Array<{
   label: string
 }> = [
   {
-    existsSync: (p) => {
-      const n = p.replaceAll('\\', '/')
-      if (n.endsWith('/.mcporter')) return true
-      if (n.endsWith('/.mcporter/mcporter.json')) return false
-      if (n.endsWith('/.mcporter/mcporter.jsonc')) return true
-      return false
-    },
+    existsSync: existsForMCPorterFiles({json: false, jsonc: true}),
     expectedConfigPath: '.mcporter/mcporter.jsonc',
     label: 'existing jsonc config',
   },
   {
-    existsSync: (p) => {
-      const n = p.replaceAll('\\', '/')
-      if (n.endsWith('/.mcporter')) return true
-      if (n.endsWith('/.mcporter/mcporter.json')) return true
-      if (n.endsWith('/.mcporter/mcporter.jsonc')) return false
-      return false
-    },
+    existsSync: existsForMCPorterFiles({json: true, jsonc: false}),
     expectedConfigPath: '.mcporter/mcporter.json',
     label: 'existing json config',
   },
   {
-    existsSync: (p) => {
-      const n = p.replaceAll('\\', '/')
-      if (n.endsWith('/.mcporter')) return true
-      if (n.endsWith('/.mcporter/mcporter.json')) return false
-      if (n.endsWith('/.mcporter/mcporter.jsonc')) return false
-      return false
-    },
+    existsSync: existsForMCPorterFiles({json: false, jsonc: false}),
     expectedConfigPath: '.mcporter/mcporter.json',
     label: 'fresh install (defaults to json)',
   },
@@ -555,13 +531,18 @@ describe('#mcp:configure', () => {
     expectConfiguredPrompt('Claude Code')
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.claude.json')),
-      expect.stringContaining('existing-token'),
+      expect.not.stringContaining('existing-token'),
+      'utf8',
+    )
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.claude.json')),
+      expect.not.stringContaining('Authorization'),
       'utf8',
     )
     expect(stdout).toContain('MCP configured for Claude Code')
   })
 
-  test('shows oauthOnly editor configured without a bearer token in the prompt', async () => {
+  test('shows OAuth editor configured without a bearer token in the prompt', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
@@ -578,7 +559,7 @@ describe('#mcp:configure', () => {
       }),
     )
 
-    // No /users/me mock — oauthOnly editors with no token skip validation entirely
+    // No /users/me mock — OAuth configs with no token skip validation entirely
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
@@ -593,7 +574,7 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Cursor')
   })
 
-  test('shows auth expired annotation when configured token is invalid', async () => {
+  test('shows legacy token configs as configured when token is invalid', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
@@ -621,16 +602,14 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
-    // Cursor is oauthOnly so no new token is created — config is rewritten without a token
-
     await testCommand(ConfigureMcpCommand, [])
 
     expect(mockCheckbox).toHaveBeenCalledWith({
       choices: [
         {
           checked: true,
-          description: 'Auth expired. Keep selected to refresh the configuration.',
-          name: 'Cursor (auth expired)',
+          description: 'Configured',
+          name: 'Cursor',
           value: 'Cursor',
         },
       ],
@@ -674,7 +653,7 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP removed from Cursor')
   })
 
-  test('reuses valid token from another editor instead of creating new one', async () => {
+  test('does not reuse a valid legacy token when configuring OAuth clients', async () => {
     mockClaudeCodeDetected()
 
     // Detect both Claude Code (configured with valid token) and Gemini (unconfigured)
@@ -708,14 +687,16 @@ describe('#mcp:configure', () => {
     // User keeps Claude Code selected and adds Gemini CLI
     mockCheckbox.mockResolvedValue(['Claude Code', 'Gemini CLI'])
 
-    // NO /auth/session/create or /auth/fetch mocks — token should be reused
-
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    // Should write config with the reused token
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.gemini/settings.json')),
-      expect.stringContaining('valid-reusable-token'),
+      expect.not.stringContaining('valid-reusable-token'),
+      'utf8',
+    )
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.gemini/settings.json')),
+      expect.not.stringContaining('Authorization'),
       'utf8',
     )
 
@@ -744,31 +725,18 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor', 'VS Code'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-multi', sid: 'session-multi'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-multi'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'multi-token-123'})
-
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
     expect(mockWriteFile).toHaveBeenCalledTimes(2)
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
-      expect.not.stringContaining('multi-token-123'),
+      expect.not.stringContaining('Authorization'),
       'utf8',
     )
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('Code/User/mcp.json')),
-      expect.stringContaining('multi-token-123'),
+      expect.not.stringContaining('Authorization'),
       'utf8',
     )
 
@@ -780,25 +748,12 @@ describe('#mcp:configure', () => {
 
     mockClaudeCodeDetected()
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-ci', sid: 'session-ci'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-ci'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-ci'})
-
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
     expect(mockCheckbox).not.toHaveBeenCalled()
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining('.claude.json'),
-      expect.stringContaining('test-token-ci'),
+      expect.not.stringContaining('Authorization'),
       'utf8',
     )
     expect(stdout).toContain('MCP configured for Claude Code')
@@ -808,41 +763,25 @@ describe('#mcp:configure', () => {
   // Error handling
   // -------------------------------------------------------------------------
 
-  test('handles token creation error gracefully', async () => {
+  test('configures OAuth clients without creating a token', async () => {
     mockClaudeCodeDetected()
 
     mockCheckbox.mockResolvedValue(['Claude Code'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(401, {message: 'Not authenticated'})
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    const {stderr} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(stderr).toContain('Could not configure MCP')
-    expect(stderr).toContain('https://mcp.sanity.io')
-    expect(mockWriteFile).not.toHaveBeenCalled()
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('.claude.json'),
+      expect.not.stringContaining('Authorization'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for Claude Code')
   })
 
   test('handles file write error gracefully', async () => {
     mockClaudeCodeDetected()
 
     mockCheckbox.mockResolvedValue(['Claude Code'])
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-write-error', sid: 'session-write-error'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-write-error'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'token-write-error'})
 
     mockWriteFile.mockRejectedValue(new Error('Permission denied'))
 
@@ -898,19 +837,6 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Claude Code'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-merge', sid: 'session-merge'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-merge'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'merge-token-123'})
-
     await testCommand(ConfigureMcpCommand, [])
 
     expect(mockWriteFile).toHaveBeenCalledWith(
@@ -921,6 +847,11 @@ describe('#mcp:configure', () => {
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.anything(),
       expect.stringContaining('Sanity'),
+      'utf8',
+    )
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.not.stringContaining('Authorization'),
       'utf8',
     )
   })

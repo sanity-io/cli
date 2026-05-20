@@ -2,10 +2,10 @@ import {ux} from '@oclif/core'
 import {subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
-import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
+import {MCP_SERVER_URL} from '../../services/mcp.js'
 import {toError} from '../../util/getErrorMessage.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
-import {EDITOR_CONFIGS, type EditorName} from './editorConfigs.js'
+import {type EditorName} from './editorConfigs.js'
 import {promptForMCPSetup} from './promptForMCPSetup.js'
 import {removeMCPConfig} from './removeMCPConfig.js'
 import {type Editor} from './types.js'
@@ -43,25 +43,10 @@ interface MCPSetupResult {
   removedEditors?: EditorName[]
 }
 
-async function getTokenForConfiguration(editorsToConfigure: Editor[]): Promise<string | undefined> {
-  const validEditor = editorsToConfigure.find((e) => e.authStatus === 'valid' && e.existingToken)
-  if (validEditor?.existingToken) {
-    mcpDebug('Reusing valid token from %s', validEditor.name)
-    return validEditor.existingToken
-  }
-
-  const allOAuth = editorsToConfigure.every((e) => EDITOR_CONFIGS[e.name].oauthOnly)
-  if (editorsToConfigure.length === 0 || allOAuth) {
-    return undefined
-  }
-
-  return createMCPToken()
-}
-
-async function writeMCPConfigs(editors: Editor[], token?: string): Promise<EditorName[]> {
+async function writeMCPConfigs(editors: Editor[]): Promise<EditorName[]> {
   const configuredEditors: EditorName[] = []
   for (const editor of editors) {
-    await writeMCPConfig(editor, token)
+    await writeMCPConfig(editor)
     configuredEditors.push(editor.name)
   }
   return configuredEditors
@@ -133,26 +118,9 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     }
   }
 
-  let token: string | undefined
-  try {
-    token = await getTokenForConfiguration(editorsToConfigure)
-  } catch (error) {
-    const err = toError(error)
-    mcpDebug('Error creating MCP token', error)
-    ux.warn(`Could not configure MCP: ${err.message}`)
-    ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
-    return {
-      configuredEditors: [],
-      detectedEditors,
-      error: err,
-      removedEditors: [],
-      skipped: false,
-    }
-  }
-
   let configuredEditors: EditorName[] = []
   try {
-    configuredEditors = await writeMCPConfigs(editorsToConfigure, token)
+    configuredEditors = await writeMCPConfigs(editorsToConfigure)
   } catch (error) {
     const err = toError(error)
     mcpDebug('Error writing MCP config', error)

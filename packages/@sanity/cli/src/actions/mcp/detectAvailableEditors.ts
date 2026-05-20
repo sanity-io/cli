@@ -19,6 +19,26 @@ interface MCPConfig {
   [key: string]: Record<string, unknown> | undefined
 }
 
+function isConfigObject(value: unknown): value is MCPConfig {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function parseTomlConfig(content: string): MCPConfig | null {
+  try {
+    const parsed = parseToml(content)
+    return isConfigObject(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function parseJsoncConfig(content: string): MCPConfig | null {
+  const errors: ParseError[] = []
+  const parsed = parseJsonc(content, errors, {allowTrailingComma: true})
+
+  return errors.length === 0 && isConfigObject(parsed) ? parsed : null
+}
+
 /**
  * Safely parse config file content
  * Returns parsed config or null if unparseable
@@ -29,27 +49,32 @@ function parseConfig(content: string, format: 'jsonc' | 'toml'): MCPConfig | nul
     return {} // Empty file - safe to write, treat as empty config
   }
 
-  if (format === 'toml') {
-    try {
-      const parsed = parseToml(content)
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        return null
-      }
+  return format === 'toml' ? parseTomlConfig(content) : parseJsoncConfig(content)
+}
 
-      return parsed as MCPConfig
-    } catch {
-      return null
+async function readConfig(
+  name: EditorName,
+  configPath: string,
+  format: 'jsonc' | 'toml',
+): Promise<MCPConfig | null> {
+  try {
+    const content = await fs.readFile(configPath, 'utf8')
+    const config = parseConfig(content, format)
+    if (config === null) {
+      debug('Skipping %s: could not parse %s', name, configPath)
     }
+    return config
+  } catch (err) {
+    debug('Skipping %s: could not read %s: %s', name, configPath, err)
+    return null
   }
+}
 
-  const errors: ParseError[] = []
-  const parsed = parseJsonc(content, errors, {allowTrailingComma: true})
-
-  if (errors.length > 0 || typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    return null // Parse failed
-  }
-
-  return parsed as MCPConfig
+function readExistingToken(
+  sanityConfig: unknown,
+  readToken: (serverConfig: Record<string, unknown>) => string | undefined,
+): string | undefined {
+  return isConfigObject(sanityConfig) ? readToken(sanityConfig) : undefined
 }
 
 /**
@@ -60,41 +85,23 @@ function parseConfig(content: string, format: 'jsonc' | 'toml'): MCPConfig | nul
 async function checkEditorConfig(name: EditorName, configPath: string): Promise<Editor | null> {
   const {configKey, format, readToken} = EDITOR_CONFIGS[name]
 
-  // Config file doesn't exist - can create it
   if (!existsSync(configPath)) {
     return {configPath, configured: false, name}
   }
 
-  // Config exists - try to parse it
-  try {
-    const content = await fs.readFile(configPath, 'utf8')
-    const config = parseConfig(content, format)
-
-    if (config === null) {
-      debug('Skipping %s: could not parse %s', name, configPath)
-      return null // Can't parse - skip this editor
-    }
-
-    // Check if Sanity MCP is already configured
-    const sanityConfig = config[configKey]?.Sanity
-    const configured = Boolean(sanityConfig)
-
-    // Extract existing token if configured
-    let existingToken: string | undefined
-    if (configured && typeof sanityConfig === 'object' && sanityConfig !== null) {
-      existingToken = readToken(sanityConfig as Record<string, unknown>)
-    }
-
-    const {oauthOnly} = EDITOR_CONFIGS[name]
-    if (configured && !existingToken && oauthOnly) {
-      return {authStatus: 'valid', configPath, configured, name}
-    }
-
-    return {configPath, configured, existingToken, name}
-  } catch (err) {
-    debug('Skipping %s: could not read %s: %s', name, configPath, err)
+  const config = await readConfig(name, configPath, format)
+  if (config === null) {
     return null
   }
+
+  const sanityConfig = config[configKey]?.Sanity
+  const configured = Boolean(sanityConfig)
+  const existingToken = readExistingToken(sanityConfig, readToken)
+  if (configured && !existingToken) {
+    return {authStatus: 'valid', configPath, configured, name}
+  }
+
+  return {configPath, configured, existingToken, name}
 }
 
 /**
