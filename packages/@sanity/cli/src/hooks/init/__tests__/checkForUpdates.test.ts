@@ -55,7 +55,13 @@ vi.mock('../../../util/update/resolveRunnerPackage.js', () => ({
 
 const mockIsCi = vi.mocked(isCi)
 const originalIsTTY = process.stdout.isTTY
+const originalStdoutGetWindowSize = process.stdout.getWindowSize
+const originalStderrGetWindowSize = process.stderr.getWindowSize
 const originalArgv1 = process.argv[1]
+
+function getWindowSize(): [number, number] {
+  return [80, 24]
+}
 
 function setCachedLatestVersion(options: {
   key?: string
@@ -85,6 +91,8 @@ describe('#checkForUpdates', () => {
       packageName: '@sanity/cli',
     })
     process.stdout.isTTY = true
+    process.stdout.getWindowSize = getWindowSize
+    process.stderr.getWindowSize = getWindowSize
     process.argv[1] = originalArgv1
 
     mockConfigStore.clear()
@@ -93,6 +101,8 @@ describe('#checkForUpdates', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     process.stdout.isTTY = originalIsTTY
+    process.stdout.getWindowSize = originalStdoutGetWindowSize
+    process.stderr.getWindowSize = originalStderrGetWindowSize
     process.argv[1] = originalArgv1
   })
 
