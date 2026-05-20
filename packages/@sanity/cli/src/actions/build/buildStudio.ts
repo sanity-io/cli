@@ -40,6 +40,7 @@ interface InternalBuildOptions {
   autoUpdatesEnabled: boolean
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
+  federation: CliConfig['federation']
   isApp: boolean
   minify: boolean
   outDir: string | undefined
@@ -80,6 +81,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
+    federation: cliConfig.federation,
     isApp: determineIsApp(cliConfig),
     minify: Boolean(flags.minify),
     outDir,
@@ -277,7 +279,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
 
   let importMap
 
-  if (autoUpdatesEnabled && !cliConfig.federation?.enabled) {
+  if (autoUpdatesEnabled && !options.federation?.enabled) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
@@ -293,7 +295,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
       cwd: workDir,
-      federation: cliConfig.federation,
+      federation: options.federation,
       importMap,
       minify,
       outputDir,
