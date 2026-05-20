@@ -1,6 +1,6 @@
 import {getUserConfig, isCi} from '@sanity/cli-core'
 import {testFixture, testHook} from '@sanity/cli-test'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
 import {checkForUpdates} from '../checkForUpdates.js'
@@ -58,9 +58,22 @@ const originalIsTTY = process.stdout.isTTY
 const originalStdoutGetWindowSize = process.stdout.getWindowSize
 const originalStderrGetWindowSize = process.stderr.getWindowSize
 const originalArgv1 = process.argv[1]
+const windowSize: [number, number] = [80, 24]
 
-function getWindowSize(): [number, number] {
-  return [80, 24]
+function mockGetWindowSize(stream: NodeJS.WriteStream): void {
+  stream.getWindowSize ||= () => windowSize
+  vi.spyOn(stream, 'getWindowSize').mockReturnValue(windowSize)
+}
+
+function restoreGetWindowSize(
+  stream: NodeJS.WriteStream,
+  getWindowSize: NodeJS.WriteStream['getWindowSize'] | undefined,
+): void {
+  if (getWindowSize) {
+    stream.getWindowSize = getWindowSize
+  } else {
+    Reflect.deleteProperty(stream, 'getWindowSize')
+  }
 }
 
 function setCachedLatestVersion(options: {
@@ -91,8 +104,8 @@ describe('#checkForUpdates', () => {
       packageName: '@sanity/cli',
     })
     process.stdout.isTTY = true
-    process.stdout.getWindowSize = getWindowSize
-    process.stderr.getWindowSize = getWindowSize
+    mockGetWindowSize(process.stdout)
+    mockGetWindowSize(process.stderr)
     process.argv[1] = originalArgv1
 
     mockConfigStore.clear()
@@ -101,9 +114,12 @@ describe('#checkForUpdates', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     process.stdout.isTTY = originalIsTTY
-    process.stdout.getWindowSize = originalStdoutGetWindowSize
-    process.stderr.getWindowSize = originalStderrGetWindowSize
     process.argv[1] = originalArgv1
+  })
+
+  afterAll(() => {
+    restoreGetWindowSize(process.stdout, originalStdoutGetWindowSize)
+    restoreGetWindowSize(process.stderr, originalStderrGetWindowSize)
   })
 
   test('returns early if running on CI', async () => {
