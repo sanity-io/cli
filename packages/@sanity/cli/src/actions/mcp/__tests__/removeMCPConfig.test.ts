@@ -93,4 +93,41 @@ url = "https://mcp.sanity.io"
     expect(mockReadFile).not.toHaveBeenCalled()
     expect(mockWriteFile).not.toHaveBeenCalled()
   })
+
+  test('does not write when the config file is empty', async () => {
+    mockExistsSync.mockReturnValue(true)
+    mockReadFile.mockResolvedValue('   ')
+
+    await removeMCPConfig(makeEditor({name: 'Cursor'}))
+
+    expect(mockReadFile).toHaveBeenCalledTimes(1)
+    expect(mockWriteFile).not.toHaveBeenCalled()
+  })
+
+  test('does not write JSONC when there is no Sanity MCP entry', async () => {
+    mockExistsSync.mockReturnValue(true)
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        unrelated: true,
+      }),
+    )
+
+    await removeMCPConfig(makeEditor({name: 'Cursor'}))
+
+    expect(mockReadFile).toHaveBeenCalledTimes(1)
+    expect(mockWriteFile).not.toHaveBeenCalled()
+  })
+
+  test('does not write TOML when there is no Sanity MCP entry', async () => {
+    mockExistsSync.mockReturnValue(true)
+    mockReadFile.mockResolvedValue(`
+[mcp_servers.OtherServer]
+type = "stdio"
+`)
+
+    await removeMCPConfig(makeEditor({configPath: '/fake/codex/config.toml', name: 'Codex CLI'}))
+
+    expect(mockReadFile).toHaveBeenCalledTimes(1)
+    expect(mockWriteFile).not.toHaveBeenCalled()
+  })
 })

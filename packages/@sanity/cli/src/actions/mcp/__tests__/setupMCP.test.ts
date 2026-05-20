@@ -56,20 +56,28 @@ describe('setupMCP', () => {
     expect(mockDetectAvailableEditors).not.toHaveBeenCalled()
   })
 
-  test('mode: auto auto-selects all actionable editors without prompting', async () => {
-    mockDetectAvailableEditors.mockResolvedValue([
-      {authStatus: 'unknown', configured: false, name: 'Cursor'},
+  test('mode: auto auto-selects all detected editors without prompting', async () => {
+    const editors = [
+      {
+        authStatus: 'valid',
+        configured: true,
+        existingToken: 'existing-token',
+        name: 'Claude Code',
+      },
       {authStatus: 'unknown', configured: false, name: 'VS Code'},
-    ])
+    ]
+    mockDetectAvailableEditors.mockResolvedValue(editors)
     mockValidateEditorTokens.mockResolvedValue(undefined)
-    mockCreateMCPToken.mockResolvedValue('test-token')
     mockWriteMCPConfig.mockResolvedValue(undefined)
 
     const result = await setupMCP({mode: 'auto'})
 
     expect(mockPromptForMCPSetup).not.toHaveBeenCalled()
+    expect(mockCreateMCPToken).not.toHaveBeenCalled()
     expect(mockWriteMCPConfig).toHaveBeenCalledTimes(2)
-    expect(result.configuredEditors).toEqual(['Cursor', 'VS Code'])
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[0], 'existing-token')
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[1], 'existing-token')
+    expect(result.configuredEditors).toEqual(['Claude Code', 'VS Code'])
     expect(result.skipped).toBe(false)
   })
 
@@ -102,15 +110,15 @@ describe('setupMCP', () => {
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(editors)
   })
 
-  test('does not rewrite editors that are already valid and still selected', async () => {
+  test('prompt mode overwrites all selected editors', async () => {
     const editors = [
       {
         authStatus: 'valid',
         configured: true,
         existingToken: 'reusable-token',
-        name: 'Cursor',
+        name: 'VS Code',
       },
-      {configured: false, name: 'VS Code'},
+      {configured: false, name: 'Gemini CLI'},
     ]
     mockDetectAvailableEditors.mockResolvedValue(editors)
     mockValidateEditorTokens.mockResolvedValue(undefined)
@@ -121,11 +129,11 @@ describe('setupMCP', () => {
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(editors)
     expect(mockCreateMCPToken).not.toHaveBeenCalled()
-    expect(mockWriteMCPConfig).toHaveBeenCalledTimes(1)
+    expect(mockWriteMCPConfig).toHaveBeenCalledTimes(2)
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[0], 'reusable-token')
     expect(mockWriteMCPConfig).toHaveBeenCalledWith(editors[1], 'reusable-token')
     expect(mockRemoveMCPConfig).not.toHaveBeenCalled()
-    expect(result.alreadyConfiguredEditors).toEqual(['Cursor'])
-    expect(result.configuredEditors).toEqual(['VS Code'])
+    expect(result.configuredEditors).toEqual(['VS Code', 'Gemini CLI'])
   })
 
   test('removes configured editors that are deselected', async () => {
@@ -140,14 +148,15 @@ describe('setupMCP', () => {
     mockDetectAvailableEditors.mockResolvedValue(editors)
     mockValidateEditorTokens.mockResolvedValue(undefined)
     mockPromptForMCPSetup.mockResolvedValue([vscode])
+    mockCreateMCPToken.mockResolvedValue('new-token')
     mockWriteMCPConfig.mockResolvedValue(undefined)
     mockRemoveMCPConfig.mockResolvedValue(undefined)
 
     const result = await setupMCP({mode: 'prompt'})
 
-    expect(mockWriteMCPConfig).toHaveBeenCalledWith(vscode, 'existing-token')
+    expect(mockCreateMCPToken).toHaveBeenCalledTimes(1)
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(vscode, 'new-token')
     expect(mockRemoveMCPConfig).toHaveBeenCalledWith(cursor)
-    expect(result.alreadyConfiguredEditors).toEqual([])
     expect(result.configuredEditors).toEqual(['VS Code'])
     expect(result.removedEditors).toEqual(['Cursor'])
   })

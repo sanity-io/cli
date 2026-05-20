@@ -1,7 +1,7 @@
 import {existsSync} from 'node:fs'
 import fs from 'node:fs/promises'
 
-import {applyEdits, modify} from 'jsonc-parser'
+import {applyEdits, findNodeAtLocation, modify, parseTree} from 'jsonc-parser'
 import {parse as parseToml, stringify as stringifyToml} from 'smol-toml'
 
 import {EDITOR_CONFIGS} from './editorConfigs.js'
@@ -45,6 +45,11 @@ export async function removeMCPConfig(editor: Editor): Promise<void> {
 
     content = stringifyToml(tomlConfig)
   } else {
+    const root = parseTree(content)
+    if (!root || !findNodeAtLocation(root, [configKey, 'Sanity'])) {
+      return
+    }
+
     const edits = modify(content, [configKey, 'Sanity'], undefined, {
       formattingOptions: {insertSpaces: true, tabSize: 2},
     })

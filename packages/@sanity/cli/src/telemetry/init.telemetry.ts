@@ -85,6 +85,8 @@ interface MCPSetupStep {
   detectedEditors: EditorName[]
   skipped: boolean
   step: 'mcpSetup'
+
+  removedEditors?: EditorName[]
 }
 
 interface ConfigureAppProjectStep {

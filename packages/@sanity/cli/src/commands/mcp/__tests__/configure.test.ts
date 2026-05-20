@@ -521,9 +521,11 @@ describe('#mcp:configure', () => {
   // Token lifecycle
   // -------------------------------------------------------------------------
 
-  test('shows already configured editors in the prompt without rewriting them', async () => {
+  test('shows already configured editors in the prompt and overwrites selected config', async () => {
+    mockClaudeCodeDetected()
+
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.cursor')
+      return String(path).endsWith('.claude.json')
     })
 
     mockReadFile.mockResolvedValue(
@@ -546,13 +548,17 @@ describe('#mcp:configure', () => {
       name: 'Test User',
     })
 
-    mockCheckbox.mockResolvedValue(['Cursor'])
+    mockCheckbox.mockResolvedValue(['Claude Code'])
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    expectConfiguredPrompt('Cursor')
-    expect(mockWriteFile).not.toHaveBeenCalled()
-    expect(stdout).toContain('Sanity MCP configuration unchanged')
+    expectConfiguredPrompt('Claude Code')
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.claude.json')),
+      expect.stringContaining('existing-token'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for Claude Code')
   })
 
   test('shows oauthOnly editor configured without a bearer token in the prompt', async () => {
@@ -579,8 +585,12 @@ describe('#mcp:configure', () => {
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
     expectConfiguredPrompt('Cursor')
-    expect(mockWriteFile).not.toHaveBeenCalled()
-    expect(stdout).toContain('Sanity MCP configuration unchanged')
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
+      expect.not.stringContaining('Bearer'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for Cursor')
   })
 
   test('shows auth expired annotation when configured token is invalid', async () => {
@@ -665,15 +675,17 @@ describe('#mcp:configure', () => {
   })
 
   test('reuses valid token from another editor instead of creating new one', async () => {
-    // Detect both Cursor (configured with valid token) and Gemini (unconfigured)
+    mockClaudeCodeDetected()
+
+    // Detect both Claude Code (configured with valid token) and Gemini (unconfigured)
     mockExistsSync.mockImplementation((path: PathLike) => {
       const normalized = String(path).replaceAll('\\', '/')
-      return normalized.includes('/.cursor') || normalized.endsWith('/.gemini/settings.json')
+      return normalized.endsWith('/.claude.json') || normalized.endsWith('/.gemini/settings.json')
     })
 
-    // Cursor has existing config with valid token, Gemini has empty config
+    // Claude Code has existing config with valid token, Gemini has empty config
     mockReadFile.mockImplementation(async (filePath: unknown) => {
-      if (String(filePath).includes('.cursor')) {
+      if (String(filePath).includes('.claude.json')) {
         return JSON.stringify({
           mcpServers: {
             Sanity: {
@@ -693,8 +705,8 @@ describe('#mcp:configure', () => {
       name: 'Test User',
     })
 
-    // User keeps Cursor selected and adds Gemini CLI
-    mockCheckbox.mockResolvedValue(['Cursor', 'Gemini CLI'])
+    // User keeps Claude Code selected and adds Gemini CLI
+    mockCheckbox.mockResolvedValue(['Claude Code', 'Gemini CLI'])
 
     // NO /auth/session/create or /auth/fetch mocks — token should be reused
 
@@ -707,7 +719,7 @@ describe('#mcp:configure', () => {
       'utf8',
     )
 
-    expect(stdout).toContain('MCP configured for Gemini CLI')
+    expect(stdout).toContain('MCP configured for Claude Code, Gemini CLI')
   })
 
   // -------------------------------------------------------------------------

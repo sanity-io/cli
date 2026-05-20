@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
-import {logSymbols, spinner} from '@sanity/cli-core/ux'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import deburr from 'lodash-es/deburr.js'
@@ -192,6 +192,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   trace.log({
     configuredEditors: mcpResult.configuredEditors,
     detectedEditors: mcpResult.detectedEditors,
+    removedEditors: mcpResult.removedEditors,
     skipped: mcpResult.skipped,
     step: 'mcpSetup',
   })
@@ -199,15 +200,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     trace.error(mcpResult.error)
   }
   const mcpConfigured = mcpResult.configuredEditors
-
-  const {alreadyConfiguredEditors} = mcpResult
-  if (alreadyConfiguredEditors.length > 0) {
-    const label =
-      alreadyConfiguredEditors.length === 1
-        ? `${alreadyConfiguredEditors[0]} already configured for Sanity MCP`
-        : `${alreadyConfiguredEditors.length} editors already configured for Sanity MCP`
-    spinner(label).start().succeed()
-  }
 
   if (isNextJs) {
     await checkNextJsReactCompatibility({

@@ -3,6 +3,7 @@ import {subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
+import {toError} from '../../util/getErrorMessage.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
 import {EDITOR_CONFIGS, type EditorName} from './editorConfigs.js'
 import {promptForMCPSetup} from './promptForMCPSetup.js'
@@ -33,8 +34,6 @@ interface MCPSetupOptions {
 }
 
 interface MCPSetupResult {
-  /** Editors that were already configured with valid credentials (nothing to do) */
-  alreadyConfiguredEditors: EditorName[]
   configuredEditors: EditorName[]
   detectedEditors: EditorName[]
   skipped: boolean
@@ -44,23 +43,8 @@ interface MCPSetupResult {
   removedEditors?: EditorName[]
 }
 
-function hasValidConfig(editor: Editor): boolean {
-  return editor.configured && editor.authStatus === 'valid'
-}
-
-function needsConfiguration(editor: Editor): boolean {
-  return !hasValidConfig(editor)
-}
-
-function toError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error))
-}
-
-async function getTokenForConfiguration(
-  editors: Editor[],
-  editorsToConfigure: Editor[],
-): Promise<string | undefined> {
-  const validEditor = editors.find((e) => e.authStatus === 'valid' && e.existingToken)
+async function getTokenForConfiguration(editorsToConfigure: Editor[]): Promise<string | undefined> {
+  const validEditor = editorsToConfigure.find((e) => e.authStatus === 'valid' && e.existingToken)
   if (validEditor?.existingToken) {
     mcpDebug('Reusing valid token from %s', validEditor.name)
     return validEditor.existingToken
@@ -103,7 +87,6 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   if (mode === 'skip') {
     mcpDebug('Skipping MCP configuration (mode: skip)')
     return {
-      alreadyConfiguredEditors: [],
       configuredEditors: [],
       detectedEditors: [],
       removedEditors: [],
@@ -122,7 +105,6 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       ux.warn(NO_EDITORS_DETECTED_MESSAGE)
     }
     return {
-      alreadyConfiguredEditors: [],
       configuredEditors: [],
       detectedEditors,
       removedEditors: [],
@@ -133,45 +115,17 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   // 3. Validate existing tokens against the Sanity API
   await validateEditorTokens(editors)
 
-  // 4. Check if there's anything actionable
-  const actionable = editors.filter((editor) => needsConfiguration(editor))
-
-  if (mode === 'auto' && actionable.length === 0) {
-    mcpDebug('All editors configured with valid credentials')
-    const alreadyConfiguredEditors = editors
-      .filter((editor) => hasValidConfig(editor))
-      .map((e) => e.name)
-    if (explicit) {
-      ux.stdout(`${logSymbols.success} All detected editors are already configured`)
-    }
-    return {
-      alreadyConfiguredEditors,
-      configuredEditors: [],
-      detectedEditors,
-      removedEditors: [],
-      skipped: true,
-    }
-  }
-
-  // 5. Select the desired final state — prompt interactively or auto-select actionable editors
-  const selected = mode === 'auto' ? actionable : await promptForMCPSetup(editors)
+  // 4. Select the desired final state.
+  // Auto mode has no toggles, so every detected editor is selected and rewritten.
+  const selected = mode === 'auto' ? editors : await promptForMCPSetup(editors)
   const selectedNames = new Set(selected.map((e) => e.name))
-  const configuredNames = new Set(editors.filter((e) => e.configured).map((e) => e.name))
-  const alreadyConfiguredEditors = editors
-    .filter((e) => hasValidConfig(e) && (mode === 'auto' || selectedNames.has(e.name)))
-    .map((e) => e.name)
-  const editorsToConfigure = selected.filter((editor) => needsConfiguration(editor))
+  const editorsToConfigure = selected
   const editorsToRemove =
     mode === 'auto' ? [] : editors.filter((e) => e.configured && !selectedNames.has(e.name))
 
   if (editorsToConfigure.length === 0 && editorsToRemove.length === 0) {
-    if (selected.length === 0 && configuredNames.size === 0) {
-      ux.stdout('MCP configuration skipped')
-    } else if (explicit) {
-      ux.stdout(`${logSymbols.success} Sanity MCP configuration unchanged`)
-    }
+    ux.stdout('MCP configuration skipped')
     return {
-      alreadyConfiguredEditors,
       configuredEditors: [],
       detectedEditors,
       removedEditors: [],
@@ -181,14 +135,13 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
 
   let token: string | undefined
   try {
-    token = await getTokenForConfiguration(editors, editorsToConfigure)
+    token = await getTokenForConfiguration(editorsToConfigure)
   } catch (error) {
     const err = toError(error)
     mcpDebug('Error creating MCP token', error)
     ux.warn(`Could not configure MCP: ${err.message}`)
     ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
     return {
-      alreadyConfiguredEditors,
       configuredEditors: [],
       detectedEditors,
       error: err,
@@ -206,7 +159,6 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     ux.warn(`Could not configure MCP: ${err.message}`)
     ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
     return {
-      alreadyConfiguredEditors,
       configuredEditors,
       detectedEditors,
       error: err,
@@ -224,7 +176,6 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     ux.warn(`Could not remove MCP configuration: ${err.message}`)
     ux.warn('You can update MCP manually later using https://mcp.sanity.io')
     return {
-      alreadyConfiguredEditors,
       configuredEditors,
       detectedEditors,
       error: err,
@@ -242,7 +193,6 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   }
 
   return {
-    alreadyConfiguredEditors,
     configuredEditors,
     detectedEditors,
     removedEditors,
