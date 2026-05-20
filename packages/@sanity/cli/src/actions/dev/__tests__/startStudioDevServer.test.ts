@@ -119,14 +119,6 @@ describe('startStudioDevServer', () => {
     expect(result.server).toBeDefined()
   })
 
-  test('passes reactRefreshHost through to startDevServer', async () => {
-    await startStudioDevServer(createDevOptions({reactRefreshHost: 'http://localhost:3333'}))
-
-    expect(mockStartDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({reactRefreshHost: 'http://localhost:3333'}),
-    )
-  })
-
   test('logs schema-extraction info line when enabled in cliConfig', async () => {
     const output = createMockOutput()
     await startStudioDevServer(

@@ -10,7 +10,4 @@ export interface DevActionOptions {
   isApp: boolean
   output: Output
   workDir: string
-
-  reactRefreshHost?: string
-  workbenchAvailable?: boolean
 }

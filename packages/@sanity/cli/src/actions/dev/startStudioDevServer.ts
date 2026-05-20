@@ -21,7 +21,7 @@ import {type DevActionOptions} from './types.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<{close: () => Promise<void>; server: ViteDevServer}> {
-  const {cliConfig, flags, output, workbenchAvailable, workDir} = options
+  const {cliConfig, flags, output, workDir} = options
 
   // Check studio dependency versions
   await checkStudioDependencyVersions(workDir, output)
@@ -101,17 +101,11 @@ export async function startStudioDevServer(
   try {
     const startTime = Date.now()
     const spin = spinner('Starting dev server').start()
-    const {close, server} = await startDevServer({
-      ...config,
-      reactRefreshHost: options.reactRefreshHost,
-    })
+    const {close, server} = await startDevServer(config)
 
     const {info: loggerInfo} = server.config.logger
-    const {port} = server.config.server
-    const httpHost = config.httpHost || 'localhost'
 
     const startupDuration = Date.now() - startTime
-    const url = `http://${httpHost || 'localhost'}:${port}${config.basePath}`
     const appType = 'Sanity Studio'
 
     const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
@@ -120,8 +114,7 @@ export async function startStudioDevServer(
     loggerInfo(
       `${appType} ` +
         `using ${styleText('cyan', `vite@${viteVersion}`)} ` +
-        `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)}` +
-        (workbenchAvailable ? '' : ` and running at ${styleText('cyan', url)}`),
+        `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)}`,
     )
 
     return {close, server}

@@ -98,34 +98,6 @@ describe('startAppDevServer', () => {
     expect(result.close).toBeDefined()
   })
 
-  test('passes reactRefreshHost through to startDevServer', async () => {
-    await startAppDevServer(createOptions({reactRefreshHost: 'http://localhost:3333'}))
-
-    expect(mockStartDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({reactRefreshHost: 'http://localhost:3333'}),
-    )
-  })
-
-  test('logs "App dev server started" when workbench is not available', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
-    const output = createMockOutput()
-
-    await startAppDevServer(createOptions({output, workbenchAvailable: false}))
-
-    expect(output.log).toHaveBeenCalledWith(expect.stringContaining('3334'))
-  })
-
-  test('skips the port log line when workbench is available', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
-    const output = createMockOutput()
-
-    await startAppDevServer(createOptions({output, workbenchAvailable: true}))
-
-    // 'Starting dev server' is still logged, but the port announcement is not
-    const logCalls = (output.log as ReturnType<typeof vi.fn>).mock.calls.flat()
-    expect(logCalls.some((c) => String(c).includes('App dev server started'))).toBe(false)
-  })
-
   test('wraps startup failures via gracefulServerDeath', async () => {
     const originalErr = Object.assign(new Error('boom'), {code: 'EADDRINUSE'})
     const wrappedErr = new Error('friendly message')

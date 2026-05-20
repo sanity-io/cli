@@ -35,15 +35,9 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // Use workbenchPort + 1 when workbench claims the configured port
   const desiredAppPort = workbenchAvailable ? workbenchPort + 1 : workbenchPort
 
-  const reactRefreshHost = workbenchAvailable
-    ? `http://${workbenchHost || 'localhost'}:${workbenchPort}`
-    : undefined
-
   const appOptions: DevActionOptions = {
     ...options,
     flags: {...options.flags, port: String(desiredAppPort)},
-    reactRefreshHost,
-    workbenchAvailable,
   }
 
   let closeAppDevServer: () => Promise<void> = noop
@@ -73,13 +67,18 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       })
     : undefined
 
+  const addr = server.httpServer?.address()
+  const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
+
   if (workbenchAvailable) {
     const workbenchUrl = `http://${workbenchHost || 'localhost'}:${workbenchPort}`
-    const addr = server.httpServer?.address()
-    const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
     output.log(
       `Workbench dev server started at ${styleText(['blue', 'underline'], workbenchUrl)} (app on port ${appPort})`,
     )
+  } else {
+    const appUrl = `http://${httpHost || 'localhost'}:${appPort}`
+    const label = options.isApp ? 'App' : 'Studio'
+    output.log(`${label} dev server started at ${styleText(['blue', 'underline'], appUrl)}`)
   }
 
   const close = async () => {
