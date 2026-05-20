@@ -27,5 +27,3 @@
 
 # Dotenv and similar local-only files
 *.local
-
-.__mf__temp
