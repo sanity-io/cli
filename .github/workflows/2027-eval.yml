@@ -1,0 +1,121 @@
+name: 2027 eval
+on:
+  pull_request:
+    types: [labeled, synchronize, opened, reopened]
+  issue_comment:
+    types: [created]
+
+# Concurrency note: GitHub evaluates concurrency BEFORE the job's `if:`,
+# so keying off issue.number means unrelated bot comments on the same PR
+# (e.g. claude[bot], dependabot) cancel an in-flight eval even when their
+# bodies fail the @2027dev filter. Key on comment.id instead so each
+# comment is its own group; pull_request events still group by head_ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.comment.id || github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+  statuses: write
+  contents: read
+
+env:
+  PROMPT_ID: 1d8004c6-d00c-432e-998b-e868a957807c
+
+jobs:
+  eval:
+    # Fires on:
+    # - any labeled/synchronize/opened/reopened PR that carries the
+    #   `trigger: preview` label (existing behavior)
+    # - any PR comment that mentions @2027dev (new — issue_comment loads
+    #   the workflow from the default branch, so this YAML must be on main)
+    if: >-
+      (github.event_name == 'pull_request' &&
+        contains(github.event.pull_request.labels.*.name, 'trigger: preview')) ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '@2027dev'))
+    runs-on: ubuntu-latest
+    steps:
+      # Resolve the PR head sha. pull_request payloads carry it directly;
+      # issue_comment doesn't, so fetch via pulls.get. Downstream steps key
+      # off steps.pr.outputs.sha so they stay event-agnostic.
+      - name: Resolve PR head sha
+        id: pr
+        uses: actions/github-script@v9
+        with:
+          script: |
+            if (context.eventName === 'pull_request') {
+              core.setOutput('sha', context.payload.pull_request.head.sha)
+              core.setOutput('number', String(context.payload.pull_request.number))
+              return
+            }
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.payload.issue.number,
+            })
+            core.setOutput('sha', pr.head.sha)
+            core.setOutput('number', String(pr.number))
+
+      - name: Wait for pkg-pr-new on this SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.pr.outputs.sha }}
+        run: |
+          set -euo pipefail
+          # Poll pkg-pr-new's "Continuous Releases" commit status. This is
+          # pkg-pr-new's authoritative "package is uploaded and reachable"
+          # signal — stronger than our internal publish workflow exiting 0.
+          # success wins, hard failure aborts, anything else keeps polling.
+          for i in $(seq 1 30); do
+            STATE=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs" \
+              --jq '
+                [.check_runs[] | select(.name == "Continuous Releases")] as $c
+                | if any($c[]; .conclusion == "success") then "success"
+                  elif any($c[]; .conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required") then "hard_fail"
+                  else "pending" end
+              ')
+            case "$STATE" in
+              success)
+                echo "pkg-pr-new succeeded on $SHA"
+                exit 0
+                ;;
+              hard_fail)
+                echo "::error::pkg-pr-new failed on $SHA — aborting eval"
+                exit 1
+                ;;
+            esac
+            echo "waiting for Continuous Releases on $SHA (attempt $i/30, state: $STATE)..."
+            sleep 20
+          done
+          echo "::error::Timed out waiting for Continuous Releases — is the pkg-pr-new GitHub App installed on $GITHUB_REPOSITORY?"
+          exit 1
+
+      - name: Compute cliInstall + url-map target
+        id: cli
+        env:
+          SHA: ${{ steps.pr.outputs.sha }}
+        run: |
+          set -euo pipefail
+          # url-map preserves path, so the agent's package suffix gets appended
+          # to the url-map target. Keep target as the org/repo root; the
+          # agent's `/@sanity/cli@<sha>` path completes the real URL.
+          # Agent sees a sanity.io subdomain instead of pkg.pr.new/<org>/<repo>.
+          echo "install=npm i -g https://preview.sanity.io/@sanity/cli@${SHA:0:7}" >> "$GITHUB_OUTPUT"
+          echo "pkg_url=https://pkg.pr.new/${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
+
+      - name: Run 2027 eval
+        # team2027/evals-action@v0.7.0 — SHA-pinned per GitHub's hardening
+        # guidance for third-party actions that handle secrets.
+        uses: team2027/evals-action@f322589b36320fcbc0ea4756686d240bc7fcda88
+        with:
+          api-key: ${{ secrets.EVALS_API_KEY }}
+          prompt-id: ${{ env.PROMPT_ID }}
+          # preview.sanity.io is a stand-in domain; the eval sandbox's URL_MAP
+          # rewrites it to the per-PR pkg.pr.new tarball so the agent sees a
+          # clean install URL without a branch/sha pinning tell.
+          url-map: |
+            { "preview.sanity.io": "${{ steps.cli.outputs.pkg_url }}" }
+          template-vars: |
+            { "cliInstall": "${{ steps.cli.outputs.install }}" }
+          wait-timeout-minutes: 60
