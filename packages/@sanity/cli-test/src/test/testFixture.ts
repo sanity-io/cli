@@ -137,8 +137,33 @@ export async function testFixture(
   // Copy the fixture to the temp directory
   await testCopyDirectory(tempFixturePath, tempPath, skipDirs)
 
-  // Symlink the node_modules directory for performance
-  await symlink(join(tempFixturePath, 'node_modules'), join(tempPath, 'node_modules'))
+  // Mirror node_modules as per-entry symlinks excluding `.sanity` so each fixture
+  // gets its own Vite dep cache — sharing it across parallel tests races on
+  // dependency optimization.
+  const srcNodeModules = join(tempFixturePath, 'node_modules')
+  const destNodeModules = join(tempPath, 'node_modules')
+  let srcEntries
+  try {
+    srcEntries = await readdir(srcNodeModules, {withFileTypes: true})
+  } catch (err) {
+    if (!(err instanceof Error && 'code' in err && err.code === 'ENOENT')) throw err
+  }
+  if (srcEntries) {
+    await mkdir(destNodeModules, {recursive: true})
+    for (const entry of srcEntries) {
+      if (entry.name === '.sanity') continue
+      const srcPath = join(srcNodeModules, entry.name)
+      // Follow symlinks (e.g. pnpm's `node_modules/<pkg>` → `.pnpm/...`) so
+      // they get a 'dir' type on Windows — a file-typed symlink to a directory
+      // throws EPERM on stat.
+      const targetStats = entry.isSymbolicLink() ? await stat(srcPath) : entry
+      await symlink(
+        srcPath,
+        join(destNodeModules, entry.name),
+        targetStats.isDirectory() ? 'dir' : 'file',
+      )
+    }
+  }
 
   // Replace the package.json name with a temp name
   const packageJsonPath = join(tempPath, 'package.json')
