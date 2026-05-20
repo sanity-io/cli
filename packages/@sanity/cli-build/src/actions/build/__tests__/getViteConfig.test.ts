@@ -41,15 +41,15 @@ vi.mock('../normalizeBasePath.js', () => ({
   normalizeBasePath: vi.fn((path: string) => `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/')),
 }))
 
-vi.mock('../vite/plugin-sanity-build-entries.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-build-entries.js', () => ({
   sanityBuildEntries: vi.fn(() => ({name: 'sanity-build-entries'})),
 }))
 
-vi.mock('../vite/plugin-sanity-favicons.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-favicons.js', () => ({
   sanityFaviconsPlugin: vi.fn(() => ({name: 'sanity-favicons'})),
 }))
 
-vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
@@ -59,15 +59,15 @@ vi.mock('@sanity/federation/vite', () => ({
   }),
 }))
 
-vi.mock('../../../server/vite/plugin-typegen.js', () => ({
-  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
-    name: 'sanity/typegen',
+vi.mock('../../../server/vite/plugin-schema-extraction.js', () => ({
+  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
+    name: 'sanity/schema-extraction',
   }),
 }))
 
-vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
-  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
-    name: 'sanity/schema-extraction',
+vi.mock('../../../server/vite/plugin-typegen.js', () => ({
+  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
+    name: 'sanity/typegen',
   }),
 }))
 
@@ -361,7 +361,7 @@ describe('#getViteConfig', () => {
     }
 
     const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
-    const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
+    const {sanityBuildEntries} = await import('../../../server/vite/plugin-sanity-build-entries.js')
 
     await getViteConfig(options)
 
@@ -392,9 +392,8 @@ describe('#getViteConfig', () => {
     )
   })
 
-
   test('should configure favicon plugin with correct paths', async () => {
-    const {sanityFaviconsPlugin} = await import('../vite/plugin-sanity-favicons.js')
+    const {sanityFaviconsPlugin} = await import('../../../server/vite/plugin-sanity-favicons.js')
 
     const options = {
       basePath: '/studio',
@@ -480,13 +479,8 @@ describe('#getViteConfig', () => {
     expect(schemaPlugin).toBeUndefined()
   })
 
-  test('should include additional plugins when provided', async () => {
+  test('should include typegen plugin when enabled', async () => {
     const options = {
-      additionalPlugins: [
-        {
-          name: 'sanity/typegen',
-        },
-      ],
       cwd: mockTestCwd,
 <<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
       getEnvironmentVariables,
@@ -495,6 +489,11 @@ describe('#getViteConfig', () => {
 >>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
       mode: 'development' as const,
       reactCompiler: undefined,
+      typegen: {
+        enabled: true,
+        generates: 'sanity.types.ts',
+        schema: 'custom-schema.json',
+      },
     }
 
     const config = await getViteConfig(options)
@@ -503,6 +502,15 @@ describe('#getViteConfig', () => {
       (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
     )
 
+    expect(mockTypegenPlugin).toHaveBeenCalledWith({
+      config: {
+        enabled: true,
+        generates: 'sanity.types.ts',
+        schema: 'custom-schema.json',
+      },
+      telemetryLogger: noopLogger,
+      workDir: mockTestCwd,
+    })
     expect(typegenPlugin).toBeDefined()
   })
 
