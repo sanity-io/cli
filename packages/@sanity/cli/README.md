@@ -408,8 +408,8 @@ FLAGS
 DESCRIPTION
   Destroy a remote Stack deployment and its resources
 
-  Permanently removes the remote Stack and all its provisioned resources. Your local Blueprint files remain untouched,
-  allowing you to redeploy later with 'blueprints init' + 'blueprints deploy'.
+  Permanently removes the remote Stack and all its provisioned resources. Your Blueprint manifest and resource files
+  remain intact; "stackId" is unset in your local config.
 
   This is a destructive operation. You will be prompted to confirm unless --force is specified.
 
@@ -529,9 +529,17 @@ EXAMPLES
 
   $ sanity blueprints init --blueprint-type <json|js|ts>
 
-  $ sanity blueprints init --blueprint-type <json|js|ts> --project-id <projectId> --stack-id <stackId>
+  $ sanity blueprints init --organization-id <organizationId>
 
-  $ sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
+  $ sanity blueprints init --project-id <projectId>
+
+  $ sanity blueprints init --stack-name <newStackName>
+
+  $ sanity blueprints init --stack-id <existingStackId>
+
+  $ sanity blueprints init new-stack --type <json|js|ts> --org <organizationId> --name <newStackName>
+
+  $ sanity blueprints init old-stack --type <json|js|ts> --project-id <projectId> --stack-id <existingStackId>
 ```
 
 ## `sanity blueprints logs`
