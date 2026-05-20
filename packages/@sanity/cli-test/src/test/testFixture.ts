@@ -137,15 +137,9 @@ export async function testFixture(
   // Copy the fixture to the temp directory
   await testCopyDirectory(tempFixturePath, tempPath, skipDirs)
 
-  // Mirror node_modules as a directory of per-entry symlinks (instead of a
-  // single symlink to the source). This preserves the perf benefit of not
-  // copying installed deps, while letting us shadow specific subpaths per
-  // fixture. `.sanity` is excluded so each fixture instance gets its own
-  // Vite dep cache — sharing the cache across parallel tests causes
-  // dependency-optimization races ("Cannot read properties of undefined
-  // (reading 'imports')").
-  // If the source has no node_modules yet (test will install fresh), skip
-  // the mirroring entirely.
+  // Mirror node_modules as per-entry symlinks excluding `.sanity` so each fixture
+  // gets its own Vite dep cache — sharing it across parallel tests races on
+  // dependency optimization.
   const srcNodeModules = join(tempFixturePath, 'node_modules')
   const destNodeModules = join(tempPath, 'node_modules')
   let srcEntries
@@ -158,10 +152,15 @@ export async function testFixture(
     await mkdir(destNodeModules, {recursive: true})
     for (const entry of srcEntries) {
       if (entry.name === '.sanity') continue
+      const srcPath = join(srcNodeModules, entry.name)
+      // Follow symlinks (e.g. pnpm's `node_modules/<pkg>` → `.pnpm/...`) so
+      // they get a 'dir' type on Windows — a file-typed symlink to a directory
+      // throws EPERM on stat.
+      const targetStats = entry.isSymbolicLink() ? await stat(srcPath) : entry
       await symlink(
-        join(srcNodeModules, entry.name),
+        srcPath,
         join(destNodeModules, entry.name),
-        entry.isDirectory() ? 'dir' : 'file',
+        targetStats.isDirectory() ? 'dir' : 'file',
       )
     }
   }
