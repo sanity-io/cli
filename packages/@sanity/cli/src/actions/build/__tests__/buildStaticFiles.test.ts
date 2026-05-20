@@ -31,12 +31,10 @@ vi.mock('../writeSanityRuntime.js', () => ({
   writeSanityRuntime: mockWriteSanityRuntime,
 }))
 
-vi.mock('../writeFavicons.js', () => ({
-  writeFavicons: vi.fn().mockResolvedValue(undefined),
-}))
-
-vi.mock('../../../util/copyDir.js', () => ({
+vi.mock('@sanity/cli-build/_internal', () => ({
+  buildDebug: vi.fn(),
   copyDir: vi.fn().mockResolvedValue(undefined),
+  writeFavicons: vi.fn().mockResolvedValue(undefined),
 }))
 
 const cwd = convertToSystemPath('/test/cwd')

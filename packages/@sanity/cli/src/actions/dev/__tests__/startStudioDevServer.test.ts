@@ -27,7 +27,7 @@ vi.mock('../../../server/gracefulServerDeath.js', () => ({
 vi.mock('../getDevServerConfig.js', () => ({
   getDevServerConfig: mockGetDevServerConfig,
 }))
-vi.mock('../../build/checkStudioDependencyVersions.js', () => ({
+vi.mock('@sanity/cli-build/_internal', () => ({
   checkStudioDependencyVersions: mockCheckStudioDependencyVersions,
 }))
 vi.mock('../../build/checkRequiredDependencies.js', () => ({
@@ -38,9 +38,6 @@ vi.mock('../../build/shouldAutoUpdate.js', () => ({
 }))
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: mockCompareDependencyVersions,
-}))
-vi.mock('../../../util/getLocalPackageVersion.js', () => ({
-  getLocalPackageVersion: mockGetLocalPackageVersion,
 }))
 vi.mock('../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
@@ -55,6 +52,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    getLocalPackageVersion: mockGetLocalPackageVersion,
     isInteractive: mockIsInteractive,
   }
 })
