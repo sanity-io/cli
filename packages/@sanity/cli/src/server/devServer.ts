@@ -1,4 +1,4 @@
-import {CliConfig, type UserViteConfig} from '@sanity/cli-core'
+import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
@@ -6,6 +6,7 @@ import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
 import {extendViteConfigWithUserConfig, getViteConfig} from '../actions/build/getViteConfig.js'
 import {writeSanityRuntime} from '../actions/build/writeSanityRuntime.js'
 import {serverDebug} from './serverDebug.js'
+import {sanityTypegenPlugin} from './vite/plugin-typegen.js'
 
 const debug = serverDebug.extend('dev')
 
@@ -67,6 +68,18 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   const mode = 'development'
 
   let viteConfig: InlineConfig = await getViteConfig({
+    additionalPlugins: [
+      // Add typegen when enabled
+      ...(typegen?.enabled
+        ? [
+            sanityTypegenPlugin({
+              config: typegen,
+              telemetryLogger: getCliTelemetry(),
+              workDir: cwd,
+            }),
+          ]
+        : []),
+    ],
     basePath,
     cwd,
     isApp,
@@ -74,7 +87,6 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     reactCompiler,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
-    typegen,
   })
 
   // Extend Vite configuration with user-provided config

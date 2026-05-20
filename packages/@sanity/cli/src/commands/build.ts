@@ -58,25 +58,14 @@ export class BuildCommand extends SanityCommand<typeof BuildCommand> {
 
     const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
 
-    // eslint-disable-next-line unicorn/prefer-ternary
-    if (isApp) {
-      await buildApp({
-        autoUpdatesEnabled,
-        cliConfig,
-        flags,
-        outDir: this.args.outputDir,
-        output,
-        workDir,
-      })
-    } else {
-      await buildStudio({
-        autoUpdatesEnabled,
-        cliConfig,
-        flags,
-        outDir: this.args.outputDir,
-        output,
-        workDir,
-      })
-    }
+    const buildFunc = isApp ? buildApp : buildStudio
+    await buildFunc({
+      autoUpdatesEnabled,
+      cliConfig,
+      flags,
+      outDir: this.args.outputDir,
+      output,
+      workDir,
+    })
   }
 }

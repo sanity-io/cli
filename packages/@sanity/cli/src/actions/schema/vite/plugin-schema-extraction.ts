@@ -7,14 +7,14 @@ import mean from 'lodash-es/mean.js'
 import once from 'lodash-es/once.js'
 import {type Plugin} from 'vite'
 
-import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidation.js'
-import {createSchemaPatternMatcher} from '../../actions/schema/matchSchemaPattern.js'
-import {runSchemaExtraction} from '../../actions/schema/runSchemaExtraction.js'
-import {SchemaExtractionError} from '../../actions/schema/utils/SchemaExtractionError.js'
 import {
   SchemaExtractedTrace,
   SchemaExtractionWatchModeTrace,
-} from '../../telemetry/extractSchema.telemetry.js'
+} from '../../../telemetry/extractSchema.telemetry.js'
+import {formatSchemaValidation} from '../formatSchemaValidation.js'
+import {createSchemaPatternMatcher} from '../matchSchemaPattern.js'
+import {runSchemaExtraction} from '../runSchemaExtraction.js'
+import {SchemaExtractionError} from '../utils/SchemaExtractionError.js'
 
 /**
  * Default glob patterns to watch for schema changes.
