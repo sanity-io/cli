@@ -21,17 +21,11 @@ vi.mock('read-package-up', () => ({
   readPackageUp: vi.fn(),
 }))
 
-vi.mock('@rolldown/plugin-babel', () => ({
-  default: vi.fn(() => ({name: 'babel-plugin'})),
-}))
-
 vi.mock('@vitejs/plugin-react', () => ({
-  default: vi.fn(() => [{name: 'react-plugin'}]),
-  reactCompilerPreset: vi.fn(() => ({name: 'react-compiler-preset'})),
+  default: vi.fn(() => ({name: 'react-plugin'})),
 }))
 
 vi.mock('vite', () => ({
-  esmExternalRequirePlugin: vi.fn(() => ({name: 'esm-external-require'})),
   mergeConfig: vi.fn((base: InlineConfig, override: InlineConfig) => ({...base, ...override})),
 }))
 
@@ -47,15 +41,15 @@ vi.mock('../normalizeBasePath.js', () => ({
   normalizeBasePath: vi.fn((path: string) => `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/')),
 }))
 
-vi.mock('../vite/plugin-sanity-build-entries.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-build-entries.js', () => ({
   sanityBuildEntries: vi.fn(() => ({name: 'sanity-build-entries'})),
 }))
 
-vi.mock('../vite/plugin-sanity-favicons.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-favicons.js', () => ({
   sanityFaviconsPlugin: vi.fn(() => ({name: 'sanity-favicons'})),
 }))
 
-vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
@@ -65,15 +59,15 @@ vi.mock('@sanity/federation/vite', () => ({
   }),
 }))
 
-vi.mock('../../../server/vite/plugin-typegen.js', () => ({
-  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
-    name: 'sanity/typegen',
+vi.mock('../../../server/vite/plugin-schema-extraction.js', () => ({
+  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
+    name: 'sanity/schema-extraction',
   }),
 }))
 
-vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
-  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
-    name: 'sanity/schema-extraction',
+vi.mock('../../../server/vite/plugin-typegen.js', () => ({
+  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
+    name: 'sanity/typegen',
   }),
 }))
 
@@ -220,23 +214,17 @@ describe('#getViteConfig', () => {
     expect(config.build).toMatchObject({
       assetsDir: 'static',
       emptyOutDir: false,
-      minify: 'oxc',
+      minify: 'esbuild',
       outDir: mockCustomOutput,
       sourcemap: false,
     })
 
-    expect(config.build?.rolldownOptions).toMatchObject({
+    expect(config.build?.rollupOptions).toMatchObject({
+      external: ['external1', 'external2'],
       input: {
         sanity: join(mockTestCwd, '.sanity/runtime/app.js'),
       },
     })
-
-    // Externals are handled by esmExternalRequirePlugin (so external require() is
-    // rewritten to ESM imports), not by rolldownOptions.external.
-    expect(config.build?.rolldownOptions).not.toHaveProperty('external')
-    const {esmExternalRequirePlugin} = await import('vite')
-    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
-    expect(config.plugins).toContainEqual({name: 'esm-external-require'})
   })
 
   test('should create production config without minification', async () => {
@@ -303,11 +291,11 @@ describe('#getViteConfig', () => {
   })
 
   test('should handle react compiler configuration', async () => {
-    const {default: babel} = await import('@rolldown/plugin-babel')
-    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+    const {default: viteReact} = await import('@vitejs/plugin-react')
 
     const reactCompilerConfig = {
-      target: '19' as const,
+      sources: ['src/**/*.tsx'],
+      target: '18' as const,
     }
 
     const options = {
@@ -323,11 +311,13 @@ describe('#getViteConfig', () => {
 
     await getViteConfig(options)
 
-    expect(reactCompilerPreset).toHaveBeenCalledWith({
-      target: '19',
-    })
-    expect(babel).toHaveBeenCalledWith({
-      presets: [expect.objectContaining({name: 'react-compiler-preset'})],
+    expect(viteReact).toHaveBeenCalledWith({
+      babel: {
+        generatorOpts: {
+          compact: true,
+        },
+        plugins: [['babel-plugin-react-compiler', reactCompilerConfig]],
+      },
     })
   })
 
@@ -371,14 +361,11 @@ describe('#getViteConfig', () => {
     }
 
     const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
-    const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
-    const {esmExternalRequirePlugin} = await import('vite')
+    const {sanityBuildEntries} = await import('../../../server/vite/plugin-sanity-build-entries.js')
 
     await getViteConfig(options)
 
     expect(createExternalFromImportMap).toHaveBeenCalledWith(importMap)
-    // The import-map externals are handed to esmExternalRequirePlugin.
-    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
     expect(sanityBuildEntries).toHaveBeenCalledWith({
       basePath: '/',
       cwd: mockTestCwd,
@@ -405,9 +392,8 @@ describe('#getViteConfig', () => {
     )
   })
 
-
   test('should configure favicon plugin with correct paths', async () => {
-    const {sanityFaviconsPlugin} = await import('../vite/plugin-sanity-favicons.js')
+    const {sanityFaviconsPlugin} = await import('../../../server/vite/plugin-sanity-favicons.js')
 
     const options = {
       basePath: '/studio',
@@ -493,13 +479,8 @@ describe('#getViteConfig', () => {
     expect(schemaPlugin).toBeUndefined()
   })
 
-  test('should include additional plugins when provided', async () => {
+  test('should include typegen plugin when enabled', async () => {
     const options = {
-      additionalPlugins: [
-        {
-          name: 'sanity/typegen',
-        },
-      ],
       cwd: mockTestCwd,
 <<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
       getEnvironmentVariables,
@@ -508,6 +489,11 @@ describe('#getViteConfig', () => {
 >>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
       mode: 'development' as const,
       reactCompiler: undefined,
+      typegen: {
+        enabled: true,
+        generates: 'sanity.types.ts',
+        schema: 'custom-schema.json',
+      },
     }
 
     const config = await getViteConfig(options)
@@ -516,6 +502,15 @@ describe('#getViteConfig', () => {
       (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
     )
 
+    expect(mockTypegenPlugin).toHaveBeenCalledWith({
+      config: {
+        enabled: true,
+        generates: 'sanity.types.ts',
+        schema: 'custom-schema.json',
+      },
+      telemetryLogger: noopLogger,
+      workDir: mockTestCwd,
+    })
     expect(typegenPlugin).toBeDefined()
   })
 
@@ -660,7 +655,7 @@ describe('#finalizeViteConfig', () => {
 
     const inputConfig: InlineConfig = {
       build: {
-        rolldownOptions: {
+        rollupOptions: {
           input: {
             main: mockTestMain,
           },
@@ -671,7 +666,7 @@ describe('#finalizeViteConfig', () => {
 
     const expectedMerge = {
       build: {
-        rolldownOptions: {
+        rollupOptions: {
           input: {
             sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
           },
@@ -682,7 +677,7 @@ describe('#finalizeViteConfig', () => {
     vi.mocked(mergeConfig).mockReturnValue({
       ...inputConfig,
       build: {
-        rolldownOptions: {
+        rollupOptions: {
           input: {
             main: mockTestMain,
             sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
@@ -696,10 +691,10 @@ describe('#finalizeViteConfig', () => {
     expect(mergeConfig).toHaveBeenCalledWith(inputConfig, expectedMerge)
   })
 
-  test('should throw error when build.rolldownOptions.input is not an object', async () => {
+  test('should throw error when build.rollupOptions.input is not an object', async () => {
     const inputConfig: InlineConfig = {
       build: {
-        rolldownOptions: {
+        rollupOptions: {
           input: convertToSystemPath('/single/entry.js'),
         },
       },
@@ -707,14 +702,14 @@ describe('#finalizeViteConfig', () => {
     }
 
     await expect(finalizeViteConfig(inputConfig)).rejects.toThrow(
-      'Vite config must contain `build.rolldownOptions.input`, and it must be an object',
+      'Vite config must contain `build.rollupOptions.input`, and it must be an object',
     )
   })
 
   test('should throw error when root is missing', async () => {
     const inputConfig: InlineConfig = {
       build: {
-        rolldownOptions: {
+        rollupOptions: {
           input: {
             main: mockTestMain,
           },
@@ -795,9 +790,9 @@ describe('#extendViteConfigWithUserConfig', () => {
   })
 })
 
-describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
+describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
   test('should suppress useDebugValue unused import warnings', async () => {
-    // Test the internal suppressUnusedImport function by testing its behavior through onRoll#onRolldownWarn
+    // Test the internal suppressUnusedImport function by testing its behavior through onRollupWarn
     const mockWarn = vi.fn()
 
     // Create a warning that should be suppressed
@@ -807,7 +802,7 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
       names: ['useDebugValue', 'useState'],
     }
 
-    // Access the onRoll#onRolldownWarn function by testing getViteConfig in production mode
+    // Access the onRollupWarn function by testing getViteConfig in production mode
     // which includes the onwarn callback
     const options = {
       cwd: mockTestCwd,
@@ -821,7 +816,7 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
     }
 
     const config = await getViteConfig(options)
-    const onwarn = config.build?.rolldownOptions?.onwarn
+    const onwarn = config.build?.rollupOptions?.onwarn
 
     expect(onwarn).toBeDefined()
 
@@ -854,7 +849,7 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
       reactCompiler: undefined,
     })
 
-    const onwarn = config.build?.rolldownOptions?.onwarn
+    const onwarn = config.build?.rollupOptions?.onwarn
     onwarn?.(warning, mockWarn)
 
     // Should not call warn at all when only useDebugValue was present
@@ -881,7 +876,7 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
       reactCompiler: undefined,
     })
 
-    const onwarn = config.build?.rolldownOptions?.onwarn
+    const onwarn = config.build?.rollupOptions?.onwarn
     onwarn?.(warning, mockWarn)
 
     // Should not call warn for node_modules warnings
@@ -907,7 +902,7 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
       reactCompiler: undefined,
     })
 
-    const onwarn = config.build?.rolldownOptions?.onwarn
+    const onwarn = config.build?.rollupOptions?.onwarn
     onwarn?.(warning, mockWarn)
 
     // Should call warn for other warning types
