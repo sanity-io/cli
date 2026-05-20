@@ -63,28 +63,6 @@ describe('devAction', () => {
     )
   })
 
-  test('logs studio URL on no-workbench branch', async () => {
-    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
-    const output = createMockOutput()
-
-    await devAction(createBaseDevOptions({output}))
-
-    expect(output.log).toHaveBeenCalledWith(
-      expect.stringMatching(/Studio dev server started at .*localhost:3333/),
-    )
-  })
-
-  test('logs app URL on no-workbench branch', async () => {
-    mockStartAppDevServer.mockResolvedValue(mockServer({port: 3333}))
-    const output = createMockOutput()
-
-    await devAction(createBaseDevOptions({isApp: true, output}))
-
-    expect(output.log).toHaveBeenCalledWith(
-      expect.stringMatching(/App dev server started at .*localhost:3333/),
-    )
-  })
-
   test('studio mode with workbench bumps port and logs workbench URL', async () => {
     mockStartWorkbenchDevServer.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
@@ -100,6 +78,7 @@ describe('devAction', () => {
     expect(mockStartStudioDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
         flags: expect.objectContaining({port: '3334'}),
+        workbenchAvailable: true,
       }),
     )
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('3333'))

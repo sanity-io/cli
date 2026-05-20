@@ -9,7 +9,7 @@ import {type DevActionOptions} from './types.js'
 export async function startAppDevServer(
   options: DevActionOptions,
 ): Promise<{close?: () => Promise<void>; server?: ViteDevServer}> {
-  const {cliConfig, flags, output, workDir} = options
+  const {cliConfig, flags, output, workbenchAvailable, workDir} = options
 
   let organizationId: string | undefined
   if (cliConfig && 'app' in cliConfig && cliConfig.app?.organizationId) {
@@ -34,6 +34,12 @@ export async function startAppDevServer(
       appTitle,
       isApp: true,
     })
+
+    const {port} = server.config.server
+
+    if (!workbenchAvailable) {
+      output.log(`App dev server started on port ${port}`)
+    }
 
     return {close, server}
   } catch (err) {

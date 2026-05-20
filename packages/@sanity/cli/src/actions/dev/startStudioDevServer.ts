@@ -21,7 +21,7 @@ import {type DevActionOptions} from './types.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<{close: () => Promise<void>; server: ViteDevServer}> {
-  const {cliConfig, flags, output, workDir} = options
+  const {cliConfig, flags, output, workbenchAvailable, workDir} = options
 
   // Check studio dependency versions
   await checkStudioDependencyVersions(workDir, output)
@@ -104,8 +104,11 @@ export async function startStudioDevServer(
     const {close, server} = await startDevServer(config)
 
     const {info: loggerInfo} = server.config.logger
+    const {port} = server.config.server
+    const httpHost = config.httpHost || 'localhost'
 
     const startupDuration = Date.now() - startTime
+    const url = `http://${httpHost || 'localhost'}:${port}${config.basePath}`
     const appType = 'Sanity Studio'
 
     const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
@@ -114,7 +117,8 @@ export async function startStudioDevServer(
     loggerInfo(
       `${appType} ` +
         `using ${styleText('cyan', `vite@${viteVersion}`)} ` +
-        `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)}`,
+        `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)}` +
+        (workbenchAvailable ? '' : ` and running at ${styleText('cyan', url)}`),
     )
 
     return {close, server}
