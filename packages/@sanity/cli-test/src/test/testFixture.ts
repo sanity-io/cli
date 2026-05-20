@@ -137,8 +137,34 @@ export async function testFixture(
   // Copy the fixture to the temp directory
   await testCopyDirectory(tempFixturePath, tempPath, skipDirs)
 
-  // Symlink the node_modules directory for performance
-  await symlink(join(tempFixturePath, 'node_modules'), join(tempPath, 'node_modules'))
+  // Mirror node_modules as a directory of per-entry symlinks (instead of a
+  // single symlink to the source). This preserves the perf benefit of not
+  // copying installed deps, while letting us shadow specific subpaths per
+  // fixture. `.sanity` is excluded so each fixture instance gets its own
+  // Vite dep cache — sharing the cache across parallel tests causes
+  // dependency-optimization races ("Cannot read properties of undefined
+  // (reading 'imports')").
+  // If the source has no node_modules yet (test will install fresh), skip
+  // the mirroring entirely.
+  const srcNodeModules = join(tempFixturePath, 'node_modules')
+  const destNodeModules = join(tempPath, 'node_modules')
+  let srcEntries
+  try {
+    srcEntries = await readdir(srcNodeModules, {withFileTypes: true})
+  } catch (err) {
+    if (!(err instanceof Error && 'code' in err && err.code === 'ENOENT')) throw err
+  }
+  if (srcEntries) {
+    await mkdir(destNodeModules, {recursive: true})
+    for (const entry of srcEntries) {
+      if (entry.name === '.sanity') continue
+      await symlink(
+        join(srcNodeModules, entry.name),
+        join(destNodeModules, entry.name),
+        entry.isDirectory() ? 'dir' : 'file',
+      )
+    }
+  }
 
   // Replace the package.json name with a temp name
   const packageJsonPath = join(tempPath, 'package.json')

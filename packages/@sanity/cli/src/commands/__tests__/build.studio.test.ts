@@ -1,5 +1,5 @@
 import {exec} from 'node:child_process'
-import {readdir, readFile, rm, unlink, writeFile} from 'node:fs/promises'
+import {readdir, readFile, rm, writeFile} from 'node:fs/promises'
 import {platform, tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {promisify} from 'node:util'
@@ -150,7 +150,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     await writeFile(join(cwd, 'package.json'), JSON.stringify(packageJsonData, null, 2))
 
     // Remove node_modules so the package can't be found
-    await unlink(join(cwd, 'node_modules'))
+    await rm(join(cwd, 'node_modules'), {force: true, recursive: true})
     // Install from pnpm without updating the lockfile
     await execAsync(`pnpm install --prefer-offline --config.minimum-release-age=0`, {
       cwd,
