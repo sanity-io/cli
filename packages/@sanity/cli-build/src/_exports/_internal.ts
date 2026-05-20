@@ -3,4 +3,5 @@ export {checkStudioDependencyVersions} from '../actions/build/checkStudioDepende
 export {generateWebManifest} from '../actions/build/generateWebManifest.js'
 export {getDefaultFaviconsPath, writeFavicons} from '../actions/build/writeFavicons.js'
 export {type ExtractOptions, getExtractOptions} from '../actions/schema/getExtractOptions.js'
+export {SchemaExtractionError} from '../actions/schema/utils/SchemaExtractionError.js'
 export {copyDir} from '../util/copyDir.js'

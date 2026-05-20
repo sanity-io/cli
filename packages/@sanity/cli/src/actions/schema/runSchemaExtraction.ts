@@ -1,12 +1,11 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {dirname} from 'node:path'
 
-import {type ExtractOptions} from '@sanity/cli-build/_internal'
+import {type ExtractOptions, SchemaExtractionError} from '@sanity/cli-build/_internal'
 import {studioWorkerTask} from '@sanity/cli-core'
 import {type extractSchema as extractSchemaInternal} from '@sanity/schema/_internal'
 
 import {type ExtractSchemaWorkerData, type ExtractSchemaWorkerError} from './types.js'
-import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
 
 interface ExtractSchemaWorkerResult {
   schema: ReturnType<typeof extractSchemaInternal>
