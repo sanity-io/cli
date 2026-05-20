@@ -10,20 +10,19 @@ import {
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
-import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'
+import {type ConfigEnv, type InlineConfig, mergeConfig, type Plugin, type Rollup} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
-import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
-import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
-import {sanityRuntimeRewritePlugin} from '../../server/vite/plugin-sanity-runtime-rewrite.js'
-import {sanitySchemaExtractionPlugin} from '../../server/vite/plugin-schema-extraction.js'
-import {sanityTypegenPlugin} from '../../server/vite/plugin-typegen.js'
+import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
 } from './getEnvironmentVariables.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
+import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
+import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
+import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
 
 interface ViteOptions {
   /**
@@ -37,6 +36,11 @@ interface ViteOptions {
   mode: 'development' | 'production'
 
   reactCompiler: ReactCompilerConfig | undefined
+
+  /**
+   * Additional plugins when configured, eg. typegen
+   */
+  additionalPlugins?: Plugin[]
 
   /**
    * CSS URLs for auto-updated packages (loaded via module server)
@@ -74,10 +78,6 @@ interface ViteOptions {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
-  /**
-   * Typegen configuration
-   */
-  typegen?: CliConfig['typegen']
 }
 
 /**
@@ -87,6 +87,7 @@ interface ViteOptions {
  */
 export async function getViteConfig(options: ViteOptions): Promise<InlineConfig> {
   const {
+    additionalPlugins,
     autoUpdatesCssUrls,
     basePath: rawBasePath = '/',
     cwd,
@@ -100,7 +101,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
-    typegen,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -173,16 +173,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             }),
           ]
         : []),
-      // Add typegen when enabled
-      ...(typegen?.enabled
-        ? [
-            sanityTypegenPlugin({
-              config: typegen,
-              telemetryLogger: getCliTelemetry(),
-              workDir: cwd,
-            }),
-          ]
-        : []),
+      ...(additionalPlugins || []),
     ],
     resolve: {
       dedupe: ['react', 'react-dom', 'sanity', 'styled-components'],

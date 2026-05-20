@@ -1,8 +1,8 @@
 import {type ChunkMetadata, type Plugin} from 'vite'
 
-import {decorateIndexWithBridgeScript} from '../../actions/build/decorateIndexWithBridgeScript.js'
-import {decorateIndexWithStagingScript} from '../../actions/build/decorateIndexWithStagingScript.js'
-import {renderDocument} from '../../actions/build/renderDocument.js'
+import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
+import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript.js'
+import {renderDocument} from '../renderDocument.js'
 
 interface ViteOutputBundle {
   [fileName: string]: ViteRenderedAsset | ViteRenderedChunk
