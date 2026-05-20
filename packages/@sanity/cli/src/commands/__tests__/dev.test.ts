@@ -15,6 +15,8 @@ import {getPackageManagerChoice} from '../../util/packageManager/packageManagerC
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {DevCommand} from '../dev.js'
 
+const mockTypegenPlugin = vi.hoisted(() => vi.fn())
+
 vi.mock('../../actions/build/checkRequiredDependencies.js', () => ({
   checkRequiredDependencies: vi.fn().mockResolvedValue({
     installedSanityVersion: '3.0.0',
@@ -31,6 +33,12 @@ const mockGetDashboardAppURL = vi.hoisted(() =>
 
 vi.mock('../../actions/dev/getDashboardAppUrl.js', () => ({
   getDashboardAppURL: mockGetDashboardAppURL,
+}))
+
+vi.mock('../../server/vite/plugin-typegen.js', () => ({
+  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
+    name: 'sanity/typegen',
+  }),
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -89,6 +97,48 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       expect(stdout).toContain('View your app in the Sanity dashboard here:')
       expect(stderr).toContain('Checking configuration files')
       await tryCloseServer(result)
+
+      expect(mockTypegenPlugin).not.toHaveBeenCalled()
+    })
+
+    test('should load the typegen plugin when configured', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      // Modify the config to add typegen config
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+      const modifiedConfig = existingConfig.replace(
+        /}\)/,
+        `  typegen: {
+    enabled: true,
+    generates: 'sanity.types.ts',
+    schema: 'custom-schema.json',
+  },
+})`,
+      )
+      await writeFile(configPath, modifiedConfig)
+
+      const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5333'], {
+        config: {root: cwd},
+        mocks: {isInteractive: true},
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Dev server started on port 5333')
+      expect(stdout).toContain('View your app in the Sanity dashboard here:')
+      expect(stderr).toContain('Checking configuration files')
+      await tryCloseServer(result)
+
+      expect(mockTypegenPlugin).toHaveBeenCalledWith({
+        config: {
+          enabled: true,
+          generates: 'sanity.types.ts',
+          schema: 'custom-schema.json',
+        },
+        telemetryLogger: expect.anything(),
+        workDir: cwd,
+      })
     })
 
     test('should warn when --no-load-in-dashboard is used with app', async () => {

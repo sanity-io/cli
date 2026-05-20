@@ -380,7 +380,7 @@ describe('#getViteConfig', () => {
     expect(schemaPlugin).toBeUndefined()
   })
 
-  test('should include typegen plugin when enabled', async () => {
+  test('should include additional plugins when provided', async () => {
     const options = {
       additionalPlugins: [
         {
@@ -399,22 +399,6 @@ describe('#getViteConfig', () => {
     )
 
     expect(typegenPlugin).toBeDefined()
-  })
-
-  test('should not include typegen plugin when disabled', async () => {
-    const options = {
-      cwd: mockTestCwd,
-      mode: 'development' as const,
-      reactCompiler: undefined,
-    }
-
-    const config = await getViteConfig(options)
-
-    const typegenPlugin = config.plugins?.find(
-      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
-    )
-
-    expect(typegenPlugin).toBeUndefined()
   })
 })
 
