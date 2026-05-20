@@ -245,6 +245,7 @@ const editorTestCases: EditorTestCase[] = [
     detect: {cliCommands: ['claude']},
     expectedConfigPath: '.claude.json',
     name: 'Claude Code',
+    oauthOnly: true,
   },
   {
     detect: {

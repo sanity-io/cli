@@ -52,11 +52,10 @@ describe('buildServerConfig', () => {
     })
   })
 
-  test('Claude Code config includes Authorization header with token', () => {
-    const config = EDITOR_CONFIGS['Claude Code'].buildServerConfig(testToken)
+  test('Claude Code config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS['Claude Code'].buildServerConfig()
 
     expect(config).toStrictEqual({
-      headers: {Authorization: `Bearer ${testToken}`},
       type: 'http',
       url: 'https://mcp.sanity.io',
     })
@@ -82,10 +81,9 @@ describe('buildServerConfig', () => {
     })
   })
 
-  test('all editors except Cursor include auth credentials', () => {
+  test('all editors except Cursor and Claude Code include auth credentials', () => {
     const editorsWithToken = [
       'Antigravity',
-      'Claude Code',
       'Cline',
       'Cline CLI',
       'Codex CLI',
