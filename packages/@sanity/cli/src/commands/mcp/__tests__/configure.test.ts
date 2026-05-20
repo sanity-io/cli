@@ -104,6 +104,31 @@ const EXECA_SUCCESS = {
   timedOut: false,
 } as never
 
+const MCP_SETUP_PROMPT_MESSAGE = 'Where should Sanity MCP be configured?'
+
+function configuredPromptChoice(name: string) {
+  return {
+    checked: true,
+    description: 'Configured',
+    name,
+    value: name,
+  }
+}
+
+function expectConfiguredPrompt(name: string): void {
+  expect(mockCheckbox).toHaveBeenCalledWith({
+    choices: [configuredPromptChoice(name)],
+    message: MCP_SETUP_PROMPT_MESSAGE,
+  })
+}
+
+function mockClaudeCodeDetected(): void {
+  mockExeca.mockImplementation((async (command: string | URL) => {
+    if (command === 'claude') return EXECA_SUCCESS
+    throw new Error('Not installed')
+  }) as never)
+}
+
 /** Shared helper: sets up mocks, runs command, asserts outputs for a single editor. */
 async function runEditorTest(tc: EditorTestCase): Promise<void> {
   const originalPlatform = process.platform
@@ -496,7 +521,7 @@ describe('#mcp:configure', () => {
   // Token lifecycle
   // -------------------------------------------------------------------------
 
-  test('skips prompt when all configured editors have valid auth', async () => {
+  test('shows already configured editors in the prompt without rewriting them', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
@@ -521,14 +546,16 @@ describe('#mcp:configure', () => {
       name: 'Test User',
     })
 
+    mockCheckbox.mockResolvedValue(['Cursor'])
+
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    // Should NOT prompt the user — everything is already configured
-    expect(mockCheckbox).not.toHaveBeenCalled()
-    expect(stdout).toContain('All detected editors are already configured')
+    expectConfiguredPrompt('Cursor')
+    expect(mockWriteFile).not.toHaveBeenCalled()
+    expect(stdout).toContain('Sanity MCP configuration unchanged')
   })
 
-  test('skips prompt for oauthOnly editor configured without a bearer token', async () => {
+  test('shows oauthOnly editor configured without a bearer token in the prompt', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
@@ -547,10 +574,13 @@ describe('#mcp:configure', () => {
 
     // No /users/me mock — oauthOnly editors with no token skip validation entirely
 
+    mockCheckbox.mockResolvedValue(['Cursor'])
+
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(mockCheckbox).not.toHaveBeenCalled()
-    expect(stdout).toContain('All detected editors are already configured')
+    expectConfiguredPrompt('Cursor')
+    expect(mockWriteFile).not.toHaveBeenCalled()
+    expect(stdout).toContain('Sanity MCP configuration unchanged')
   })
 
   test('shows auth expired annotation when configured token is invalid', async () => {
@@ -589,12 +619,49 @@ describe('#mcp:configure', () => {
       choices: [
         {
           checked: true,
+          description: 'Auth expired. Keep selected to refresh the configuration.',
           name: 'Cursor (auth expired)',
           value: 'Cursor',
         },
       ],
-      message: 'Configure Sanity MCP server?',
+      message: MCP_SETUP_PROMPT_MESSAGE,
     })
+  })
+
+  test('removes Sanity MCP config for already configured editors that are deselected', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.cursor')
+    })
+
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          OtherServer: {
+            type: 'stdio',
+          },
+          Sanity: {
+            type: 'http',
+            url: 'https://mcp.sanity.io',
+          },
+        },
+      }),
+    )
+
+    mockCheckbox.mockResolvedValue([])
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
+      expect.not.stringContaining('"Sanity"'),
+      'utf8',
+    )
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
+      expect.stringContaining('OtherServer'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP removed from Cursor')
   })
 
   test('reuses valid token from another editor instead of creating new one', async () => {
@@ -626,8 +693,8 @@ describe('#mcp:configure', () => {
       name: 'Test User',
     })
 
-    // User selects only the unconfigured editor (Gemini CLI)
-    mockCheckbox.mockResolvedValue(['Gemini CLI'])
+    // User keeps Cursor selected and adds Gemini CLI
+    mockCheckbox.mockResolvedValue(['Cursor', 'Gemini CLI'])
 
     // NO /auth/session/create or /auth/fetch mocks — token should be reused
 
@@ -699,10 +766,7 @@ describe('#mcp:configure', () => {
   test('auto-selects all editors in non-interactive mode without prompting', async () => {
     mockIsInteractive.mockReturnValue(false)
 
-    mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'claude') return EXECA_SUCCESS
-      throw new Error('Not installed')
-    }) as never)
+    mockClaudeCodeDetected()
 
     mockApi({
       apiVersion: MCP_API_VERSION,
@@ -733,10 +797,7 @@ describe('#mcp:configure', () => {
   // -------------------------------------------------------------------------
 
   test('handles token creation error gracefully', async () => {
-    mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'claude') return EXECA_SUCCESS
-      throw new Error('Not installed')
-    }) as never)
+    mockClaudeCodeDetected()
 
     mockCheckbox.mockResolvedValue(['Claude Code'])
 
@@ -754,10 +815,7 @@ describe('#mcp:configure', () => {
   })
 
   test('handles file write error gracefully', async () => {
-    mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'claude') return EXECA_SUCCESS
-      throw new Error('Not installed')
-    }) as never)
+    mockClaudeCodeDetected()
 
     mockCheckbox.mockResolvedValue(['Claude Code'])
 
@@ -810,10 +868,7 @@ describe('#mcp:configure', () => {
   // -------------------------------------------------------------------------
 
   test('merges with existing config file', async () => {
-    mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'claude') return EXECA_SUCCESS
-      throw new Error('Not installed')
-    }) as never)
+    mockClaudeCodeDetected()
 
     mockExistsSync.mockImplementation((p: PathLike) => {
       return String(p).endsWith('.claude.json')

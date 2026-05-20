@@ -31,7 +31,34 @@ describe('promptForMCPSetup', () => {
 
     expect(mockCheckbox).toHaveBeenCalledWith(
       expect.objectContaining({
-        choices: [{checked: true, name: 'Cursor', value: 'Cursor'}],
+        choices: [{checked: false, description: 'Not configured', name: 'Cursor', value: 'Cursor'}],
+      }),
+    )
+  })
+
+  test('preselects editors that are already configured', async () => {
+    mockCheckbox.mockResolvedValue(['Cursor'])
+
+    const editors = [
+      makeEditor({
+        authStatus: 'valid',
+        configured: true,
+        existingToken: 'token',
+        name: 'Cursor',
+      }),
+    ]
+    await promptForMCPSetup(editors)
+
+    expect(mockCheckbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        choices: [
+          {
+            checked: true,
+            description: 'Configured',
+            name: 'Cursor',
+            value: 'Cursor',
+          },
+        ],
       }),
     )
   })
@@ -51,31 +78,45 @@ describe('promptForMCPSetup', () => {
 
     expect(mockCheckbox).toHaveBeenCalledWith(
       expect.objectContaining({
-        choices: [{checked: true, name: 'Cursor (auth expired)', value: 'Cursor'}],
+        choices: [
+          {
+            checked: true,
+            description: 'Auth expired. Keep selected to refresh the configuration.',
+            name: 'Cursor (auth expired)',
+            value: 'Cursor',
+          },
+        ],
       }),
     )
   })
 
   test('labels configured editors without token as "(missing credentials)"', async () => {
-    mockCheckbox.mockResolvedValue(['Cursor'])
+    mockCheckbox.mockResolvedValue(['VS Code'])
 
-    const editors = [makeEditor({configured: true, name: 'Cursor'})]
+    const editors = [makeEditor({configured: true, name: 'VS Code'})]
     await promptForMCPSetup(editors)
 
     expect(mockCheckbox).toHaveBeenCalledWith(
       expect.objectContaining({
-        choices: [{checked: true, name: 'Cursor (missing credentials)', value: 'Cursor'}],
+        choices: [
+          {
+            checked: true,
+            description: 'Missing credentials. Keep selected to update the configuration.',
+            name: 'VS Code (missing credentials)',
+            value: 'VS Code',
+          },
+        ],
       }),
     )
   })
 
-  test('returns null when user deselects all editors', async () => {
+  test('returns an empty list when user deselects all editors', async () => {
     mockCheckbox.mockResolvedValue([])
 
     const editors = [makeEditor({name: 'Cursor'})]
     const result = await promptForMCPSetup(editors)
 
-    expect(result).toBeNull()
+    expect(result).toEqual([])
   })
 
   test('returns only selected editors', async () => {
