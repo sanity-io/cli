@@ -354,7 +354,6 @@ describe('#getViteConfig', () => {
     )
   })
 
-
   test('should configure favicon plugin with correct paths', async () => {
     const {sanityFaviconsPlugin} = await import('../../../server/vite/plugin-sanity-favicons.js')
 

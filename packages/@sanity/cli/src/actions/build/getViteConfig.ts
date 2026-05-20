@@ -12,13 +12,7 @@ import {federation as viteFederation} from '@sanity/federation/vite'
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
-import {
-  type ConfigEnv,
-  type InlineConfig,
-  mergeConfig,
-  type PluginOption,
-  type Rollup,
-} from 'vite'
+import {type ConfigEnv, type InlineConfig, mergeConfig, type PluginOption, type Rollup} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
