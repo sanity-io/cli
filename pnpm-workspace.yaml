@@ -90,7 +90,16 @@ minimumReleaseAgeExclude:
   - 'dotenv'
   - 'oxfmt'
   - '@oxfmt/*'
-  # Bump for jiti with ts path support, can remove after ~May 9th
-  - 'jiti@2.7.0'
   # Renovate security update: turbo@2.9.14
   - turbo@2.9.14
+
+allowBuilds:
+  swc/core: true
+  esbuild: true
+  node-pty: true
+  '@swc/core': false
+  sharp: false
+  unrs-resolver: false
+
+overrides:
+  '@sanity/cli': workspace:*
