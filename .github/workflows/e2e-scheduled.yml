@@ -2,13 +2,13 @@ name: E2E Tests (Scheduled)
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: "0 * * * *"
   workflow_dispatch:
     inputs:
       cli_version:
-        description: 'npm version/tag to test (e.g., latest, 5.20.0)'
+        description: "npm version/tag to test (e.g., latest, 5.20.0)"
         required: true
-        default: 'latest'
+        default: "latest"
 
 concurrency:
   group: ${{ github.workflow }}
@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node-version: [20, 22, 24]
+        node-version: [22, 24]
       fail-fast: false
 
     steps:

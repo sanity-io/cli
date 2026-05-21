@@ -1,13 +1,13 @@
-import {styleText} from 'node:util'
+import { styleText } from 'node:util'
 
-import {Flags} from '@oclif/core'
-import {CLIError} from '@oclif/core/errors'
-import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {SanityCommand} from '@sanity/cli-core'
+import { Flags } from '@oclif/core'
+import { CLIError } from '@oclif/core/errors'
+import { formatSchemaValidation, SchemaExtractionError } from '@sanity/cli-build/_internal/extract'
+import { SanityCommand } from '@sanity/cli-core'
 
-import {deploySchemas} from '../../actions/schema/deploySchemas.js'
-import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
-import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
+import { deploySchemas } from '../../actions/schema/deploySchemas.js'
+import { schemasDeployDebug } from '../../actions/schema/utils/debug.js'
+import { parseTag } from '../../actions/schema/utils/schemaStoreValidation.js'
 
 const description = `
 Deploy schema documents into workspace datasets.
@@ -55,7 +55,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
       description: 'The name of the workspace to deploy a schema for',
       helpValue: '<name>',
       parse: async (input) => {
-        if (!input) throw new CLIError('workspace argument cannot be empty if specified', {exit: 1})
+        if (!input) throw new CLIError('workspace argument cannot be empty if specified', { exit: 1 })
         return input
       },
     }),
@@ -64,8 +64,8 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
   static override hiddenAliases: string[] = ['schema:deploy']
 
   public async run(): Promise<void> {
-    const {flags} = await this.parse(DeploySchemaCommand)
-    const {tag, workspace} = flags
+    const { flags } = await this.parse(DeploySchemaCommand)
+    const { tag, workspace } = flags
 
     try {
       const workDir = (await this.getProjectRoot()).directory
@@ -92,7 +92,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
 
       schemasDeployDebug('Failed to deploy schemas', error)
       const errorMessage = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to deploy schemas:\n${errorMessage}`, {exit: 1})
+      this.error(`Failed to deploy schemas:\n${errorMessage}`, { exit: 1 })
     }
   }
 }

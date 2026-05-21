@@ -71,7 +71,7 @@
     "@sanity/client": "^7.22.1"
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   },
   "packageManager": "pnpm@10.34.2",
   "pnpm": {

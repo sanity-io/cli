@@ -4,17 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'npm dist-tag for the snapshot release'
+        description: "npm dist-tag for the snapshot release"
         required: false
-        default: 'snapshot'
+        default: "snapshot"
         type: string
       forceBump:
-        description: 'Force a version bump for all packages'
+        description: "Force a version bump for all packages"
         required: false
-        default: 'false'
+        default: "false"
         type: choice
         options:
-          - 'false'
+          - "false"
           - patch
           - minor
           - major
@@ -54,7 +54,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Configure npm registry
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > .npmrc

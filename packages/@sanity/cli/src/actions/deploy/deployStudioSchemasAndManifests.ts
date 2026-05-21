@@ -1,23 +1,23 @@
-import {styleText} from 'node:util'
+import { styleText } from 'node:util'
 
-import {ux} from '@oclif/core/ux'
-import {SchemaDeploy, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {getCliTelemetry, studioWorkerTask, subdebug} from '@sanity/cli-core'
-import {type SchemaValidationProblemGroup} from '@sanity/types'
-import {type StudioManifest} from 'sanity'
+import { ux } from '@oclif/core/ux'
+import { SchemaDeploy, SchemaExtractionError } from '@sanity/cli-build/_internal/extract'
+import { getCliTelemetry, studioWorkerTask, subdebug } from '@sanity/cli-core'
+import { type SchemaValidationProblemGroup } from '@sanity/types'
+import { type StudioManifest } from 'sanity'
 
-import {type DeployStudioSchemasAndManifestsWorkerData} from './types.js'
+import { type DeployStudioSchemasAndManifestsWorkerData } from './types.js'
 
 type DeployStudioSchemasAndManifestsWorkerMessage =
   | {
-      error: string
-      type: 'error'
-      validation?: SchemaValidationProblemGroup[]
-    }
+    error: string
+    type: 'error'
+    validation?: SchemaValidationProblemGroup[]
+  }
   | {
-      studioManifest: StudioManifest | null
-      type: 'success'
-    }
+    studioManifest: StudioManifest | null
+    type: 'success'
+  }
 
 const debug = subdebug('deployStudioSchemasAndManifests')
 
@@ -29,7 +29,7 @@ const debug = subdebug('deployStudioSchemasAndManifests')
 export async function deployStudioSchemasAndManifests(
   options: DeployStudioSchemasAndManifestsWorkerData,
 ): Promise<StudioManifest | null> {
-  const {configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir} = options
+  const { configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir } = options
 
   const trace = getCliTelemetry().trace(SchemaDeploy, {
     // If the studio is externally hosted, we don't need to extract the manifest
@@ -46,7 +46,7 @@ export async function deployStudioSchemasAndManifests(
         env: {
           ...process.env,
           // Workers don't inherit TTY state — propagate color support from parent
-          ...(process.stdout.isTTY && !process.env.NO_COLOR ? {FORCE_COLOR: '1'} : {}),
+          ...(process.stdout.isTTY && !process.env.NO_COLOR ? { FORCE_COLOR: '1' } : {}),
         },
         name: 'deployStudioSchemasAndManifests',
         studioRootPath: workDir,
