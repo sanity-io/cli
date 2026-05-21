@@ -1,4 +1,4 @@
-import {JSDOM} from 'jsdom'
+import { JSDOM } from 'jsdom'
 
 const html = `<!doctype html>
 <html>
@@ -8,11 +8,11 @@ const html = `<!doctype html>
 
 interface AbortSignalLike {
   aborted: boolean
-  addEventListener(type: 'abort', listener: () => void, options?: {once?: boolean}): void
+  addEventListener(type: 'abort', listener: () => void, options?: { once?: boolean }): void
   removeEventListener(type: 'abort', listener: () => void): void
 }
 
-type EventListenerOptionsWithSignal = AddEventListenerOptions & {signal?: unknown}
+type EventListenerOptionsWithSignal = AddEventListenerOptions & { signal?: unknown }
 
 function isAbortSignalLike(value: unknown): value is AbortSignalLike {
   return (
@@ -58,14 +58,14 @@ function patchEventTargetSignalSupport(dom: JSDOM): void {
       return
     }
 
-    const {signal: _signal, ...optionsWithoutSignal} = options as EventListenerOptionsWithSignal
+    const { signal: _signal, ...optionsWithoutSignal } = options as EventListenerOptionsWithSignal
     addEventListener.call(this, type, listener, optionsWithoutSignal)
 
     const removeOnAbort = () => {
       this.removeEventListener(type, listener, options)
     }
 
-    signal.addEventListener('abort', removeOnAbort, {once: true})
+    signal.addEventListener('abort', removeOnAbort, { once: true })
   }
 }
 
@@ -105,19 +105,19 @@ function createBrowserDom(): JSDOM {
   if (dom.window.ResizeObserver === undefined) {
     dom.window.ResizeObserver = class ResizeObserver {
       // eslint-disable-next-line @typescript-eslint/no-useless-constructor
-      constructor(_callback: unknown) {}
-      disconnect() {}
-      observe(_target: unknown, _options: unknown) {}
-      unobserve(_target: unknown) {}
+      constructor(_callback: unknown) { }
+      disconnect() { }
+      observe(_target: unknown, _options: unknown) { }
+      unobserve(_target: unknown) { }
     }
   }
 
   if (dom.window.IntersectionObserver === undefined) {
     dom.window.IntersectionObserver = class IntersectionObserver {
-      options: {root?: unknown; rootMargin?: string; threshold?: number}
+      options: { root?: unknown; rootMargin?: string; threshold?: number }
       constructor(
         _callback: unknown,
-        options?: {root?: unknown; rootMargin?: string; threshold?: number},
+        options?: { root?: unknown; rootMargin?: string; threshold?: number },
       ) {
         this.options = options || {}
       }
@@ -133,12 +133,12 @@ function createBrowserDom(): JSDOM {
           : [this.options.threshold || 0]
       }
 
-      disconnect() {}
-      observe(_el: unknown) {}
+      disconnect() { }
+      observe(_el: unknown) { }
       takeRecords() {
         return []
       }
-      unobserve(_el: unknown) {}
+      unobserve(_el: unknown) { }
     }
   }
 
@@ -155,17 +155,6 @@ function createBrowserDom(): JSDOM {
 }
 
 /**
- * Collects all browser globals from the JSDOM window that should be injected
- * into the Node.js global scope to emulate a browser environment.
- *
- * This dynamically iterates over all own properties of the JSDOM window,
- * skipping internal JSDOM properties (prefixed with `_`) and properties that
- * already exist in Node.js globals to avoid conflicts.
- *
- * This approach ensures that any new properties added by JSDOM upgrades are
- * automatically included, preventing "missing global" bugs (e.g. `Element`,
- * `HTMLElement`, `SVGElement` needed by libraries like styled-components).
- *
  * Web globals that Node.js may provide but whose JSDOM implementations we
  * always prefer, so that behavior is consistent across Node versions.
  *
@@ -177,6 +166,18 @@ function createBrowserDom(): JSDOM {
  */
 const ALWAYS_INCLUDE_FROM_JSDOM = new Set(['localStorage', 'sessionStorage', 'Storage'])
 
+/**
+ * Collects all browser globals from the JSDOM window that should be injected
+ * into the Node.js global scope to emulate a browser environment.
+ *
+ * This dynamically iterates over all own properties of the JSDOM window,
+ * skipping internal JSDOM properties (prefixed with `_`) and properties that
+ * already exist in Node.js globals to avoid conflicts.
+ *
+ * This approach ensures that any new properties added by JSDOM upgrades are
+ * automatically included, preventing "missing global" bugs (e.g. `Element`,
+ * `HTMLElement`, `SVGElement` needed by libraries like styled-components).
+ */
 function collectBrowserStubs(): Record<string, unknown> {
   const dom = createBrowserDom()
   const stubs: Record<string, unknown> = Object.create(null)
