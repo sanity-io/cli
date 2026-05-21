@@ -1,3 +1,5 @@
+import {fileURLToPath} from 'node:url'
+
 import {ux} from '@oclif/core'
 import {subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
@@ -11,11 +13,20 @@ import {promptForSkillsSetup} from './promptForSkillsSetup.js'
 
 const skillsDebug = subdebug('skills:setup')
 
-/** Source repo for `npx skills add`. See https://www.sanity.io/docs/ai/skills. */
+/** Source repo for the bundled `skills` CLI. See https://www.sanity.io/docs/ai/skills. */
 export const SANITY_SKILLS_REPO = 'sanity-io/agent-toolkit'
 
+/**
+ * Absolute path to the bundled `skills` CLI bin. Resolved once at module load
+ * via `import.meta.resolve` so we run the version pinned in our package.json
+ * instead of paying the `npx -y` registry lookup at runtime.
+ */
+export const SKILLS_BIN_PATH = fileURLToPath(
+  import.meta.resolve('skills/bin/cli.mjs', import.meta.url),
+)
+
 interface SetupSkillsOptions {
-  /** Working directory for `npx skills add`. Must already exist. */
+  /** Working directory for the `skills add` invocation. Must already exist. */
   cwd: string
 
   /** Pre-detected editors. When omitted, `detectAvailableEditors()` is called. */
@@ -31,7 +42,7 @@ interface SetupSkillsOptions {
 }
 
 interface SetupSkillsResult {
-  /** `--agent` values passed to `npx skills add` */
+  /** `--agent` values passed to `skills add` */
   installedAgents: string[]
   installedForEditors: string[]
   skipped: boolean
@@ -40,9 +51,10 @@ interface SetupSkillsResult {
 }
 
 /**
- * Runs `npx skills add` for every detected editor with a mapped skills agent.
- * Failures are surfaced as warnings and do not throw — skills install is
- * best-effort and must never abort `sanity init`.
+ * Runs the bundled `skills add` for every detected editor with a mapped
+ * skills agent, scoped to the project (`--project`). Failures are surfaced
+ * as warnings and do not throw — skills install is best-effort and must
+ * never abort `sanity init`.
  */
 export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSkillsResult> {
   const {cwd, mode = 'prompt'} = options
@@ -77,18 +89,18 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
   }
 
   const args = [
-    '-y',
-    'skills',
+    SKILLS_BIN_PATH,
     'add',
     SANITY_SKILLS_REPO,
+    '--project',
     ...uniqueAgents.flatMap((agent) => ['-a', agent]),
     '-y',
   ]
 
-  skillsDebug('Running: npx %s (cwd: %s)', args.join(' '), cwd)
+  skillsDebug('Running: %s %s (cwd: %s)', process.execPath, args.join(' '), cwd)
 
   try {
-    const result = await execa('npx', args, {cwd, stdio: 'pipe', timeout: 90_000})
+    const result = await execa(process.execPath, args, {cwd, stdio: 'pipe', timeout: 90_000})
     skillsDebug('skills stdout: %s', result.stdout)
     skillsDebug('skills stderr: %s', result.stderr)
     ux.stdout(`${logSymbols.success} Installed Sanity agent skills for ${editorLabels.join(', ')}`)

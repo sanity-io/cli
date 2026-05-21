@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {type Editor} from '../../mcp/types.js'
-import {SANITY_SKILLS_REPO, setupSkills} from '../setupSkills.js'
+import {SANITY_SKILLS_REPO, setupSkills, SKILLS_BIN_PATH} from '../setupSkills.js'
 
 const mockExeca = vi.hoisted(() => vi.fn())
 const mockDetectAvailableEditors = vi.hoisted(() => vi.fn())
@@ -63,8 +63,18 @@ describe('setupSkills', () => {
 
     expect(mockPromptForSkillsSetup).not.toHaveBeenCalled()
     expect(mockExeca).toHaveBeenCalledWith(
-      'npx',
-      ['-y', 'skills', 'add', SANITY_SKILLS_REPO, '-a', 'cursor', '-a', 'claude-code', '-y'],
+      process.execPath,
+      [
+        SKILLS_BIN_PATH,
+        'add',
+        SANITY_SKILLS_REPO,
+        '--project',
+        '-a',
+        'cursor',
+        '-a',
+        'claude-code',
+        '-y',
+      ],
       expect.objectContaining({cwd: PROJECT_DIR, stdio: 'pipe'}),
     )
     expect(result.installedAgents).toEqual(['cursor', 'claude-code'])
@@ -113,8 +123,8 @@ describe('setupSkills', () => {
 
     expect(result.installedAgents).toEqual(['cline'])
     expect(mockExeca).toHaveBeenCalledWith(
-      'npx',
-      ['-y', 'skills', 'add', SANITY_SKILLS_REPO, '-a', 'cline', '-y'],
+      process.execPath,
+      [SKILLS_BIN_PATH, 'add', SANITY_SKILLS_REPO, '--project', '-a', 'cline', '-y'],
       expect.any(Object),
     )
   })
@@ -129,8 +139,8 @@ describe('setupSkills', () => {
     expect(mockExeca).toHaveBeenCalled()
   })
 
-  test('returns an error result when npx fails (does not throw)', async () => {
-    const installErr = new Error('npx exited 1')
+  test('returns an error result when the skills CLI fails (does not throw)', async () => {
+    const installErr = new Error('skills exited 1')
     mockExeca.mockRejectedValue(installErr)
 
     const result = await setupSkills({
@@ -142,7 +152,7 @@ describe('setupSkills', () => {
     expect(result.skipped).toBe(false)
     expect(result.installedAgents).toEqual([])
     expect(result.error).toBeInstanceOf(Error)
-    expect(result.error?.message).toBe('npx exited 1')
+    expect(result.error?.message).toBe('skills exited 1')
   })
 
   test('VS Code maps to github-copilot agent', async () => {
@@ -155,9 +165,13 @@ describe('setupSkills', () => {
     })
 
     expect(mockExeca).toHaveBeenCalledWith(
-      'npx',
-      ['-y', 'skills', 'add', SANITY_SKILLS_REPO, '-a', 'github-copilot', '-y'],
+      process.execPath,
+      [SKILLS_BIN_PATH, 'add', SANITY_SKILLS_REPO, '--project', '-a', 'github-copilot', '-y'],
       expect.any(Object),
     )
+  })
+
+  test('resolves SKILLS_BIN_PATH to a path that points at the bundled cli', () => {
+    expect(SKILLS_BIN_PATH).toMatch(/skills\/bin\/cli\.mjs$/)
   })
 })
