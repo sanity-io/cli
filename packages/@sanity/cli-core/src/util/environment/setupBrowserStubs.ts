@@ -36,7 +36,7 @@ export async function setupBrowserStubs(): Promise<() => void> {
       // `localStorage`/`sessionStorage`), so replace the property outright.
       Object.defineProperty(globalThis, key, {
         configurable: true,
-        enumerable: descriptor.enumerable ?? true,
+        enumerable: descriptor.enumerable,
         value: stubs[key],
         writable: true,
       })
