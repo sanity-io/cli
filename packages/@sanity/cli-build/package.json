@@ -54,6 +54,7 @@
   "dependencies": {
     "@sanity/cli-core": "workspace:^",
     "@sanity/schema": "catalog:",
+    "@sanity/types": "catalog:",
     "read-package-up": "catalog:",
     "semver": "^7.7.4",
     "zod": "catalog:"
@@ -65,7 +66,6 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:^",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/types": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/debug": "catalog:",

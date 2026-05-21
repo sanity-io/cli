@@ -794,6 +794,9 @@ importers:
       '@sanity/schema':
         specifier: 'catalog:'
         version: 5.23.0(@types/react@19.2.14)
+      '@sanity/types':
+        specifier: 'catalog:'
+        version: 5.23.0(@types/react@19.2.14)
       read-package-up:
         specifier: 'catalog:'
         version: 12.0.0
@@ -822,9 +825,6 @@ importers:
       '@sanity/pkg-utils':
         specifier: 'catalog:'
         version: 10.4.18(@types/babel__core@7.20.5)(@types/node@20.19.41)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(oxc-resolver@11.19.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(typescript@5.9.3)
-      '@sanity/types':
-        specifier: 'catalog:'
-        version: 5.23.0(@types/react@19.2.14)
       '@swc/cli':
         specifier: 'catalog:'
         version: 0.8.1(@swc/core@1.15.33)(chokidar@5.0.0)
