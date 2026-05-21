@@ -165,6 +165,9 @@ importers:
       '@sanity/eslint-config-cli':
         specifier: workspace:*
         version: link:packages/@sanity/eslint-config-cli
+      '@vercel/detect-agent':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.5(vitest@4.1.5)
@@ -5724,6 +5727,10 @@ packages:
     resolution: {integrity: sha512-c6sHCjArGv2ejGLnz2Z2VaDKpFhbAQxZuD0Bw6PKobxOdDZ8OPIyP5mPEAJBHjCZuRHUi47rIVEapsg5c/Y11g==}
     peerDependencies:
       rollup: ^2.0.0 || ^3.0.0 || ^4.0.0
+
+  '@vercel/detect-agent@1.2.3':
+    resolution: {integrity: sha512-VYNCgUc0nOmC4WJmWw9GkrKdfr8Zl4/rxhC5SvgacBgxiW9W/9NRttUoHHXV8xdII3MaRgkZZVX8Ikzc/Jmjag==}
+    engines: {node: '>=14'}
 
   '@vercel/edge@1.2.2':
     resolution: {integrity: sha512-1+y+f6rk0Yc9ss9bRDgz/gdpLimwoRteKHhrcgHvEpjbP1nyT3ByqEMWm2BTcpIO5UtDmIFXc8zdq4LR190PDA==}
@@ -15584,6 +15591,8 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
+
+  '@vercel/detect-agent@1.2.3': {}
 
   '@vercel/edge@1.2.2': {}
 

@@ -87,6 +87,15 @@ interface MCPSetupStep {
   step: 'mcpSetup'
 }
 
+interface SkillsSetupStep {
+  /** `--agent` values that received the Sanity skills bundle */
+  installedAgents: string[]
+  /** Editor display names that received skills (e.g. "Cursor", "Claude Code") */
+  installedForEditors: string[]
+  skipped: boolean
+  step: 'skillsSetup'
+}
+
 interface ConfigureAppProjectStep {
   selectedOption: 'create' | 'existing' | 'skip'
   step: 'configureAppProject'
@@ -103,6 +112,7 @@ export type InitStepResult =
   | SelectPackageManagerStep
   | SelectTemplateStep
   | SendCommunityInviteStep
+  | SkillsSetupStep
   | StartStep
   | UseDefaultPlanCoupon
   | UseDefaultPlanId

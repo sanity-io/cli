@@ -95,6 +95,18 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
   }),
 }))
 
+vi.mock('../../../actions/mcp/detectAvailableEditors.js', () => ({
+  detectAvailableEditors: vi.fn().mockResolvedValue([]),
+}))
+
+vi.mock('../../../actions/skills/setupSkills.js', () => ({
+  setupSkills: vi.fn().mockResolvedValue({
+    installedAgents: [],
+    installedForEditors: [],
+    skipped: true,
+  }),
+}))
+
 vi.mock('../../../util/packageManager/installPackages.js', () => ({
   installDeclaredPackages: mocks.installDeclaredPackages.mockResolvedValue(undefined),
 }))

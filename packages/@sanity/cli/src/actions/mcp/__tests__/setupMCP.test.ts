@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {setupMCP} from '../setupMCP.js'
+import {type Editor} from '../types.js'
 
 const mockDetectAvailableEditors = vi.hoisted(() => vi.fn())
 const mockPromptForMCPSetup = vi.hoisted(() => vi.fn())
@@ -99,5 +100,30 @@ describe('setupMCP', () => {
     await setupMCP({explicit: true})
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(editors)
+  })
+
+  test('uses caller-provided editors without re-detecting', async () => {
+    const editors: Editor[] = [{configPath: '/tmp/cursor', configured: false, name: 'Cursor'}]
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    mockPromptForMCPSetup.mockResolvedValue(editors)
+    mockCreateMCPToken.mockResolvedValue('test-token')
+    mockWriteMCPConfig.mockResolvedValue(undefined)
+
+    const result = await setupMCP({editors, mode: 'auto'})
+
+    expect(mockDetectAvailableEditors).not.toHaveBeenCalled()
+    expect(result.configuredEditors).toEqual(['Cursor'])
+  })
+
+  test('returns skipped when all detected editors are already configured', async () => {
+    const editors = [{authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}]
+    mockDetectAvailableEditors.mockResolvedValue(editors)
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+
+    const result = await setupMCP({mode: 'auto'})
+
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
+    expect(result.skipped).toBe(true)
+    expect(result.alreadyConfiguredEditors).toEqual(['Cursor'])
   })
 })

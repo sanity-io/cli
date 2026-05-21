@@ -93,6 +93,18 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
   }),
 }))
 
+vi.mock('../../../actions/mcp/detectAvailableEditors.js', () => ({
+  detectAvailableEditors: vi.fn().mockResolvedValue([]),
+}))
+
+vi.mock('../../../actions/skills/setupSkills.js', () => ({
+  setupSkills: vi.fn().mockResolvedValue({
+    installedAgents: [],
+    installedForEditors: [],
+    skipped: true,
+  }),
+}))
+
 vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
   checkNextJsReactCompatibility: vi.fn().mockResolvedValue(undefined),
 }))

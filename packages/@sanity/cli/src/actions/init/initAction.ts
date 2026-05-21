@@ -14,7 +14,9 @@ import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
 import {getProviderName} from '../auth/getProviderName.js'
 import {login} from '../auth/login/login.js'
+import {detectAvailableEditors} from '../mcp/detectAvailableEditors.js'
 import {setupMCP} from '../mcp/setupMCP.js'
+import {setupSkills} from '../skills/setupSkills.js'
 import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
@@ -187,7 +189,11 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     workDir,
   })
 
-  const mcpResult = await setupMCP({mode: options.mcpMode})
+  // Detect editors once, then share the result with MCP and skills setup so
+  // we don't pay the detection cost (filesystem probes + CLI execa calls) twice.
+  const detectedEditors = options.mcpMode === 'skip' ? [] : await detectAvailableEditors()
+
+  const mcpResult = await setupMCP({editors: detectedEditors, mode: options.mcpMode})
 
   trace.log({
     configuredEditors: mcpResult.configuredEditors,
@@ -199,6 +205,22 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     trace.error(mcpResult.error)
   }
   const mcpConfigured = mcpResult.configuredEditors
+
+  const skillsResult = await setupSkills({
+    cwd: outputPath,
+    editors: detectedEditors,
+    mode: options.mcpMode,
+  })
+
+  trace.log({
+    installedAgents: skillsResult.installedAgents,
+    installedForEditors: skillsResult.installedForEditors,
+    skipped: skillsResult.skipped,
+    step: 'skillsSetup',
+  })
+  if (skillsResult.error) {
+    trace.error(skillsResult.error)
+  }
 
   const {alreadyConfiguredEditors} = mcpResult
   if (alreadyConfiguredEditors.length > 0) {

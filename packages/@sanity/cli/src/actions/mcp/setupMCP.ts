@@ -6,6 +6,7 @@ import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
 import {EDITOR_CONFIGS, type EditorName} from './editorConfigs.js'
 import {promptForMCPSetup} from './promptForMCPSetup.js'
+import {type Editor} from './types.js'
 import {validateEditorTokens} from './validateEditorTokens.js'
 import {writeMCPConfig} from './writeMCPConfig.js'
 
@@ -14,6 +15,14 @@ const mcpDebug = subdebug('mcp:setup')
 const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server for your editor. Visit ${MCP_SERVER_URL} for setup instructions.`
 
 interface MCPSetupOptions {
+  /**
+   * Pre-detected editors. When omitted, `detectAvailableEditors()` is called.
+   * Accepting this from the caller avoids re-running detection (which probes
+   * the filesystem and shells out to CLI binaries) when the result is already
+   * available — e.g. when `sanity init` runs both MCP and skills setup.
+   */
+  editors?: Editor[]
+
   /**
    * Whether the user explicitly requested MCP configuration (e.g. `sanity mcp configure`).
    * When true, shows status messages even when there's nothing to do.
@@ -59,7 +68,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   }
 
   // 2. Detect available editors (filters out unparseable configs)
-  const editors = await detectAvailableEditors()
+  const editors = options?.editors ?? (await detectAvailableEditors())
   const detectedEditors = editors.map((e) => e.name)
 
   mcpDebug('Detected %d editors: %s', detectedEditors.length, detectedEditors)
