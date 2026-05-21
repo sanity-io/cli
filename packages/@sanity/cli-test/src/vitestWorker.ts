@@ -34,7 +34,7 @@ function esbuildOptions(filePath: string, outputFile: string): BuildOptions {
     packages: 'external',
     platform: 'node',
     sourcemap: false,
-    target: 'node20',
+    target: 'node22',
   }
 }
 
