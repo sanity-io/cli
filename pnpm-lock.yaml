@@ -793,10 +793,10 @@ importers:
         version: link:../cli-core
       '@sanity/schema':
         specifier: 'catalog:'
-        version: 5.23.0(@types/react@19.2.14)
+        version: 5.26.0(@types/react@19.2.14)
       '@sanity/types':
         specifier: 'catalog:'
-        version: 5.23.0(@types/react@19.2.14)
+        version: 5.26.0(@types/react@19.2.14)
       read-package-up:
         specifier: 'catalog:'
         version: 12.0.0
@@ -851,7 +851,7 @@ importers:
         version: 0.3.18
       sanity:
         specifier: 'catalog:'
-        version: 5.23.0(@emotion/is-prop-valid@1.4.0)(@oclif/core@4.11.0)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(styled-components@6.4.0(css-to-react-native@3.2.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)
+        version: 5.26.0(@emotion/is-prop-valid@1.4.0)(@oclif/core@4.11.0)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(styled-components@6.4.0(css-to-react-native@3.2.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -15633,7 +15633,7 @@ snapshots:
       magicast: 0.5.2
       obug: 2.1.1
       tinyrainbow: 3.1.0
-      vitest: 4.1.5(@types/node@20.19.41)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.1.1(@noble/hashes@2.0.1))(vite@8.0.10(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+      vitest: 4.1.5(@types/node@25.0.10)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.1.1(@noble/hashes@2.0.1))(vite@8.0.10(@types/node@25.0.10)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
     transitivePeerDependencies:
       - supports-color
 
