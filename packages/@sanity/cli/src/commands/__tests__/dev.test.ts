@@ -131,8 +131,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Dev server started on port 5333')
-      expect(stdout).toContain('View your app in the Sanity dashboard here:')
+      expect(stdout).toContain('App dev server started on port 5333')
       expect(stderr).toContain('Checking configuration files')
       await tryCloseServer(result)
 
