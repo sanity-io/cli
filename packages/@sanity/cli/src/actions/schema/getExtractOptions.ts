@@ -1,8 +1,8 @@
 import {
-  ExtractOptions,
+  type ExtractOptions,
   getExtractOptions as internalExtractOptions,
 } from '@sanity/cli-build/_internal'
-import {type CliConfig, ProjectRootResult} from '@sanity/cli-core'
+import {type CliConfig, type ProjectRootResult} from '@sanity/cli-core'
 
 import {type ExtractSchemaCommand} from '../../commands/schemas/extract.js'
 
