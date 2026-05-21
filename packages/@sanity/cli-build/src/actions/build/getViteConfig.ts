@@ -120,9 +120,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     reactRefreshHost,
     schemaExtraction,
     server,
-    typegen,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
+    typegen,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
