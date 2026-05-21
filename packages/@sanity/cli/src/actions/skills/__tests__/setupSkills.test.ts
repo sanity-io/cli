@@ -52,6 +52,21 @@ describe('setupSkills', () => {
     expect(mockExeca).not.toHaveBeenCalled()
   })
 
+  test('explicit: surfaces a warning when no eligible editors are detected', async () => {
+    const warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const result = await setupSkills({
+      cwd: PROJECT_DIR,
+      editors: [editor('Zed')],
+      explicit: true,
+      mode: 'auto',
+    })
+
+    expect(result.skipped).toBe(true)
+    expect(warnSpy).toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
   test('mode: auto installs for all eligible editors without prompting', async () => {
     mockExeca.mockResolvedValue({exitCode: 0})
 

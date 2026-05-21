@@ -33,9 +33,16 @@ interface SetupSkillsOptions {
   editors?: Editor[]
 
   /**
+   * Whether the user explicitly requested skills install (e.g. via
+   * `sanity skills add`). When true, surfaces status messages even when
+   * there's nothing to do. When false (e.g. called from `sanity init`),
+   * stays quiet.
+   */
+  explicit?: boolean
+
+  /**
    * - `'auto'`: install for all eligible editors without prompting
-   * - `'prompt'`: ask the user with a single yes/no (reserved for a future
-   *   `sanity skills add` command — `sanity init` never uses this)
+   * - `'prompt'`: ask the user with a single yes/no
    * - `'skip'`: skip skills installation entirely
    */
   mode?: 'auto' | 'prompt' | 'skip'
@@ -57,7 +64,7 @@ interface SetupSkillsResult {
  * never abort `sanity init`.
  */
 export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSkillsResult> {
-  const {cwd, mode = 'prompt'} = options
+  const {cwd, explicit = false, mode = 'prompt'} = options
   const empty: SetupSkillsResult = {installedAgents: [], installedForEditors: [], skipped: true}
 
   if (mode === 'skip') {
@@ -74,6 +81,11 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
 
   if (eligible.length === 0) {
     skillsDebug('No detected editors have a skills agent mapping — skipping')
+    if (explicit) {
+      ux.warn(
+        "Couldn't detect any AI editors with skills support. Skills are installed alongside detected editor configs (Claude Code, Cursor, Codex, etc.).",
+      )
+    }
     return empty
   }
 
