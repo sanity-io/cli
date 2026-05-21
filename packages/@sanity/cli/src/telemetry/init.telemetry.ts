@@ -83,6 +83,7 @@ interface SelectPackageManagerStep {
 interface MCPSetupStep {
   configuredEditors: EditorName[]
   detectedEditors: EditorName[]
+  removedEditors: EditorName[]
   skipped: boolean
   step: 'mcpSetup'
 }

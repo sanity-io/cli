@@ -12,10 +12,16 @@ interface TomlConfig {
   [key: string]: Record<string, unknown> | undefined
 }
 
-/** Stable JSON for structural comparison — sorts object keys recursively. */
+/**
+ * Stable JSON for structural comparison — sorts object keys recursively.
+ *
+ * Scope: only handles strings and plain nested objects. That is the entire
+ * shape produced by `buildServerConfig` across every editor in
+ * `EDITOR_CONFIGS` (type/url/headers/etc — no arrays, no null, no numbers).
+ * If a future server config grows new value types, extend this here.
+ */
 function canonical(value: unknown): string {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value)
-  if (Array.isArray(value)) return `[${value.map((v) => canonical(v)).join(',')}]`
+  if (typeof value !== 'object' || value === null) return JSON.stringify(value)
   const record = value as Record<string, unknown>
   const entries = Object.keys(record)
     .toSorted()
