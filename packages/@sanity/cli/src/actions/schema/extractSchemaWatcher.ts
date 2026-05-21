@@ -1,6 +1,10 @@
 import {dirname, isAbsolute, join, relative} from 'node:path'
 
-import {type ExtractOptions, SchemaExtractionError} from '@sanity/cli-build/_internal'
+import {
+  type ExtractOptions,
+  runSchemaExtraction,
+  SchemaExtractionError,
+} from '@sanity/cli-build/_internal'
 import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
@@ -8,7 +12,6 @@ import debounce from 'lodash-es/debounce.js'
 
 import {formatSchemaValidation} from './formatSchemaValidation.js'
 import {createSchemaPatternMatcher} from './matchSchemaPattern.js'
-import {runSchemaExtraction} from './runSchemaExtraction.js'
 import {schemasExtractDebug} from './utils/debug.js'
 
 /** Default glob patterns to watch for schema changes */

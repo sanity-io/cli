@@ -1,3 +1,6 @@
+/**
+ * @internal
+ */
 export function getWorkspace<T extends {name: string}>(workspaces: T[], workspaceName?: string) {
   if (workspaces.length === 0) {
     throw new Error('No workspaces found')

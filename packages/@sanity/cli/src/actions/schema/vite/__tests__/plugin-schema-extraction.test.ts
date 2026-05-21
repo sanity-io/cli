@@ -10,9 +10,13 @@ import {sanitySchemaExtractionPlugin} from '../plugin-schema-extraction.js'
 
 const mockRunSchemaExtraction = vi.hoisted(() => vi.fn())
 
-vi.mock('../../runSchemaExtraction.js', () => ({
-  runSchemaExtraction: mockRunSchemaExtraction,
-}))
+vi.mock('@sanity/cli-build/_internal', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-build/_internal')>()
+  return {
+    ...actual,
+    runSchemaExtraction: mockRunSchemaExtraction,
+  }
+})
 
 const output = {error: vi.fn(), info: vi.fn(), log: vi.fn()}
 
