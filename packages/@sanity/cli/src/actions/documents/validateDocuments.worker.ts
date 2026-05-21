@@ -5,7 +5,7 @@ import readline from 'node:readline'
 import {Readable} from 'node:stream'
 import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_threads'
 
-import {getStudioWorkspaces, resolveLocalPackage} from '@sanity/cli-core'
+import {getStudioWorkspaces, getWorkspace, resolveLocalPackage} from '@sanity/cli-core'
 import {type ClientConfig, createClient, type SanityDocument} from '@sanity/client'
 import {type ValidationContext, type ValidationMarker} from '@sanity/types'
 import {WorkerChannelReporter} from '@sanity/worker-channels'
@@ -18,7 +18,6 @@ import {
   getDocumentCount,
 } from '../../services/documents.js'
 import {extractDocumentsFromNdjsonOrTarball} from '../../util/extractDocumentsFromNdjsonOrTarball.js'
-import {getWorkspace} from '../../util/getWorkspace.js'
 import {
   DOCUMENT_VALIDATION_TIMEOUT,
   getReferenceIds,

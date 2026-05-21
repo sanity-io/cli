@@ -1,14 +1,4 @@
-import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {z} from 'zod/mini'
-
-export const extractSchemaWorkerData = z.object({
-  configPath: z.string(),
-  enforceRequiredFields: z.boolean(),
-  workDir: z.string(),
-  workspaceName: z.optional(z.string()),
-})
-
-export type ExtractSchemaWorkerData = z.infer<typeof extractSchemaWorkerData>
 
 /**
  * Contains debug information about the serialized schema.
@@ -32,14 +22,6 @@ export type SerializedTypeDebug = {
   fields?: Record<string, SerializedTypeDebug>
   of?: Record<string, SerializedTypeDebug>
   size: number
-}
-
-/** @internal */
-export interface ExtractSchemaWorkerError {
-  error: string
-  type: 'error'
-
-  validation?: SchemaValidationProblemGroup[]
 }
 
 export const uniqWorkspaceWorkerDataSchema = z.object({
