@@ -1,15 +1,15 @@
-import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import {execFileSync} from 'node:child_process'
+import {mkdtempSync, rmSync} from 'node:fs'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 
-import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
-import { getAvailablePackageManagers } from '../helpers/packageManagers.js'
+import {getAvailablePackageManagers} from '../helpers/packageManagers.js'
 
 const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
-describe.skipIf(!isRegistryMode)('create-sanity via package managers', { timeout: 120_000 }, () => {
+describe.skipIf(!isRegistryMode)('create-sanity via package managers', {timeout: 120_000}, () => {
   const version = 'latest'
   const managers = getAvailablePackageManagers()
 
@@ -18,7 +18,7 @@ describe.skipIf(!isRegistryMode)('create-sanity via package managers', { timeout
     tempDir = mkdtempSync(join(tmpdir(), 'sanity-e2e-'))
   })
   afterEach(() => {
-    rmSync(tempDir, { force: true, recursive: true })
+    rmSync(tempDir, {force: true, recursive: true})
   })
 
   for (const pm of managers) {
@@ -40,8 +40,8 @@ describe.skipIf(!isRegistryMode)('create-sanity via package managers', { timeout
             timeout: 120_000,
           })
         } catch (err) {
-          const stderr = (err as { stderr?: Buffer | string }).stderr
-          throw new Error(`${cmd} failed:\n${String(stderr || err)}`, { cause: err })
+          const stderr = (err as {stderr?: Buffer | string}).stderr
+          throw new Error(`${cmd} failed:\n${String(stderr || err)}`, {cause: err})
         }
 
         expect(result).toContain('Initialize a new Sanity Studio')

@@ -4,12 +4,12 @@
  * This script runs during the build process to bundle fixtures with the package.
  */
 
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import {cp, mkdir, readFile, writeFile} from 'node:fs/promises'
+import {dirname, join, resolve} from 'node:path'
 
-import { parse as parseYaml } from 'yaml'
+import {parse as parseYaml} from 'yaml'
 
-import { DEFAULT_FIXTURES } from '../src/index.js'
+import {DEFAULT_FIXTURES} from '../src/index.js'
 
 const packageRoot = dirname(import.meta.dirname)
 // Go up 3 levels to get to the repo root (packages/@sanity/cli-test -> packages/@sanity -> packages -> root)
@@ -77,7 +77,7 @@ async function copyFixtures() {
   // Load catalog once at the start
   const catalog = await parseCatalog(join(repoRoot, 'pnpm-workspace.yaml'))
 
-  await mkdir(targetFixturesDir, { recursive: true })
+  await mkdir(targetFixturesDir, {recursive: true})
 
   for (const [fixture, options] of Object.entries(DEFAULT_FIXTURES)) {
     const sourceDir = join(sourceFixturesDir, fixture)

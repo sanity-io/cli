@@ -1,5 +1,5 @@
-import { getProjectCliClient } from '@sanity/cli-core'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import {getProjectCliClient} from '@sanity/cli-core'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   checkDocumentAvailability,
@@ -38,7 +38,7 @@ describe('#getDocumentCount', () => {
   test('calls client.fetch with length(*) query', async () => {
     mockClient.fetch.mockResolvedValue(42)
 
-    const result = await getDocumentCount({ dataset: 'production', projectId: 'test-project' })
+    const result = await getDocumentCount({dataset: 'production', projectId: 'test-project'})
 
     expect(mockGetProjectCliClient).toHaveBeenCalledWith({
       apiVersion: DOCUMENTS_API_VERSION,
@@ -53,7 +53,7 @@ describe('#getDocumentCount', () => {
   test('returns 0 when dataset is empty', async () => {
     mockClient.fetch.mockResolvedValue(0)
 
-    const result = await getDocumentCount({ dataset: 'production', projectId: 'test-project' })
+    const result = await getDocumentCount({dataset: 'production', projectId: 'test-project'})
 
     expect(result).toBe(0)
   })
@@ -63,7 +63,7 @@ describe('#getDocumentCount', () => {
     mockClient.fetch.mockRejectedValue(error)
 
     await expect(
-      getDocumentCount({ dataset: 'production', projectId: 'test-project' }),
+      getDocumentCount({dataset: 'production', projectId: 'test-project'}),
     ).rejects.toThrow('API error')
   })
 })
@@ -79,7 +79,7 @@ describe('#exportDocuments', () => {
     })
     mockClient.getUrl.mockReturnValue('https://abc123.api.sanity.io/v1/data/export/production')
 
-    const result = await exportDocuments({ dataset: 'production', projectId: 'test-project' })
+    const result = await exportDocuments({dataset: 'production', projectId: 'test-project'})
 
     expect(mockGetProjectCliClient).toHaveBeenCalledWith({
       apiVersion: DOCUMENTS_API_VERSION,
@@ -116,7 +116,7 @@ describe('#exportDocuments', () => {
     })
     mockClient.getUrl.mockReturnValue('https://abc123.api.sanity.io/v1/data/export/production')
 
-    await exportDocuments({ dataset: 'production', projectId: 'test-project' })
+    await exportDocuments({dataset: 'production', projectId: 'test-project'})
 
     const callArgs = mockFetch.mock.calls[0]
     const headers = callArgs[1]?.headers as Headers
@@ -135,7 +135,7 @@ describe('#exportDocuments', () => {
     mockClient.getUrl.mockReturnValue('https://abc123.api.sanity.io/v1/data/export/production')
 
     await expect(
-      exportDocuments({ dataset: 'production', projectId: 'test-project' }),
+      exportDocuments({dataset: 'production', projectId: 'test-project'}),
     ).rejects.toThrow('Network error')
 
     mockFetch.mockRestore()
@@ -145,7 +145,7 @@ describe('#exportDocuments', () => {
 describe('#checkDocumentAvailability', () => {
   test('calls client.request with correct parameters', async () => {
     const mockResponse = {
-      omitted: [{ id: 'doc1', reason: 'existence' as const }],
+      omitted: [{id: 'doc1', reason: 'existence' as const}],
     }
     mockClient.getDataUrl.mockReturnValue('/data/doc/doc1,doc2,doc3')
     mockClient.request.mockResolvedValue(mockResponse)
@@ -165,7 +165,7 @@ describe('#checkDocumentAvailability', () => {
     expect(mockClient.getDataUrl).toHaveBeenCalledWith('doc', 'doc1,doc2,doc3')
     expect(mockClient.request).toHaveBeenCalledWith({
       json: true,
-      query: { excludeContent: 'true' },
+      query: {excludeContent: 'true'},
       tag: 'documents-availability',
       uri: '/data/doc/doc1,doc2,doc3',
     })
@@ -173,7 +173,7 @@ describe('#checkDocumentAvailability', () => {
   })
 
   test('handles empty document IDs array', async () => {
-    const mockResponse = { omitted: [] }
+    const mockResponse = {omitted: []}
     mockClient.getDataUrl.mockReturnValue('/data/doc/')
     mockClient.request.mockResolvedValue(mockResponse)
 
@@ -190,8 +190,8 @@ describe('#checkDocumentAvailability', () => {
   test('returns documents omitted due to permission', async () => {
     const mockResponse = {
       omitted: [
-        { id: 'doc1', reason: 'permission' as const },
-        { id: 'doc2', reason: 'existence' as const },
+        {id: 'doc1', reason: 'permission' as const},
+        {id: 'doc2', reason: 'existence' as const},
       ],
     }
     mockClient.getDataUrl.mockReturnValue('/data/doc/doc1,doc2')
@@ -204,8 +204,8 @@ describe('#checkDocumentAvailability', () => {
     })
 
     expect(result.omitted).toHaveLength(2)
-    expect(result.omitted[0]).toEqual({ id: 'doc1', reason: 'permission' })
-    expect(result.omitted[1]).toEqual({ id: 'doc2', reason: 'existence' })
+    expect(result.omitted[0]).toEqual({id: 'doc1', reason: 'permission'})
+    expect(result.omitted[1]).toEqual({id: 'doc2', reason: 'existence'})
   })
 
   test('propagates errors from client', async () => {
