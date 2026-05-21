@@ -23,7 +23,7 @@ describe('promptForMCPSetup', () => {
     vi.clearAllMocks()
   })
 
-  test('labels unconfigured editors with plain name', async () => {
+  test('leaves unconfigured editors unchecked with plain name', async () => {
     mockCheckbox.mockResolvedValue(['Cursor'])
 
     const editors = [makeEditor({name: 'Cursor'})]
@@ -31,7 +31,22 @@ describe('promptForMCPSetup', () => {
 
     expect(mockCheckbox).toHaveBeenCalledWith(
       expect.objectContaining({
-        choices: [{checked: true, name: 'Cursor', value: 'Cursor'}],
+        choices: [{checked: false, name: 'Cursor', value: 'Cursor'}],
+      }),
+    )
+  })
+
+  test('pre-checks configured editors with valid credentials', async () => {
+    mockCheckbox.mockResolvedValue(['Cursor'])
+
+    const editors = [
+      makeEditor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
+    ]
+    await promptForMCPSetup(editors)
+
+    expect(mockCheckbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        choices: [{checked: true, name: 'Cursor (configured)', value: 'Cursor'}],
       }),
     )
   })
@@ -69,13 +84,13 @@ describe('promptForMCPSetup', () => {
     )
   })
 
-  test('returns null when user deselects all editors', async () => {
+  test('returns an empty array when user deselects all editors', async () => {
     mockCheckbox.mockResolvedValue([])
 
     const editors = [makeEditor({name: 'Cursor'})]
     const result = await promptForMCPSetup(editors)
 
-    expect(result).toBeNull()
+    expect(result).toEqual([])
   })
 
   test('returns only selected editors', async () => {
@@ -85,6 +100,6 @@ describe('promptForMCPSetup', () => {
     const result = await promptForMCPSetup(editors)
 
     expect(result).toHaveLength(1)
-    expect(result![0].name).toBe('VS Code')
+    expect(result[0].name).toBe('VS Code')
   })
 })

@@ -496,11 +496,14 @@ describe('#mcp:configure', () => {
   // Token lifecycle
   // -------------------------------------------------------------------------
 
-  test('skips prompt when all configured editors have valid auth', async () => {
+  test('rewrites an oauthOnly editor whose existing config still has a stale bearer header', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
 
+    // Cursor is oauthOnly today, but the existing config has a stale bearer
+    // header from a previous CLI version. The shape no longer matches what
+    // we'd write, so the file should be rewritten without the header.
     mockReadFile.mockResolvedValue(
       JSON.stringify({
         mcpServers: {
@@ -521,14 +524,19 @@ describe('#mcp:configure', () => {
       name: 'Test User',
     })
 
+    mockCheckbox.mockResolvedValue(['Cursor'])
+
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    // Should NOT prompt the user — everything is already configured
-    expect(mockCheckbox).not.toHaveBeenCalled()
-    expect(stdout).toContain('All detected editors are already configured')
+    expect(mockCheckbox).toHaveBeenCalled()
+    expect(mockWriteFile).toHaveBeenCalledTimes(1)
+    const written = mockWriteFile.mock.calls[0]?.[1] as string
+    expect(written).not.toContain('Bearer')
+    expect(written).not.toContain('Authorization')
+    expect(stdout).toContain('MCP configured for Cursor')
   })
 
-  test('skips prompt for oauthOnly editor configured without a bearer token', async () => {
+  test('leaves an oauthOnly configured editor untouched when user accepts the default selection', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
@@ -547,9 +555,12 @@ describe('#mcp:configure', () => {
 
     // No /users/me mock — oauthOnly editors with no token skip validation entirely
 
+    mockCheckbox.mockResolvedValue(['Cursor'])
+
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockCheckbox).toHaveBeenCalled()
+    expect(mockWriteFile).not.toHaveBeenCalled()
     expect(stdout).toContain('All detected editors are already configured')
   })
 

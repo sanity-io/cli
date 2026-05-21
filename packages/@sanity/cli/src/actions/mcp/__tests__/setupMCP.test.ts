@@ -7,6 +7,7 @@ const mockPromptForMCPSetup = vi.hoisted(() => vi.fn())
 const mockValidateEditorTokens = vi.hoisted(() => vi.fn())
 const mockCreateMCPToken = vi.hoisted(() => vi.fn())
 const mockWriteMCPConfig = vi.hoisted(() => vi.fn())
+const mockRemoveMCPConfig = vi.hoisted(() => vi.fn())
 
 vi.mock('../detectAvailableEditors.js', () => ({
   detectAvailableEditors: mockDetectAvailableEditors,
@@ -27,6 +28,10 @@ vi.mock('../../../services/mcp.js', () => ({
 
 vi.mock('../writeMCPConfig.js', () => ({
   writeMCPConfig: mockWriteMCPConfig,
+}))
+
+vi.mock('../removeMCPConfig.js', () => ({
+  removeMCPConfig: mockRemoveMCPConfig,
 }))
 
 describe('setupMCP', () => {
@@ -50,7 +55,7 @@ describe('setupMCP', () => {
     ])
     mockValidateEditorTokens.mockResolvedValue(undefined)
     mockCreateMCPToken.mockResolvedValue('test-token')
-    mockWriteMCPConfig.mockResolvedValue(undefined)
+    mockWriteMCPConfig.mockResolvedValue(true)
 
     const result = await setupMCP({mode: 'auto'})
 
@@ -66,7 +71,7 @@ describe('setupMCP', () => {
     mockValidateEditorTokens.mockResolvedValue(undefined)
     mockPromptForMCPSetup.mockResolvedValue(editors)
     mockCreateMCPToken.mockResolvedValue('test-token')
-    mockWriteMCPConfig.mockResolvedValue(undefined)
+    mockWriteMCPConfig.mockResolvedValue(true)
 
     const result = await setupMCP({mode: 'prompt'})
 
@@ -81,7 +86,7 @@ describe('setupMCP', () => {
     mockValidateEditorTokens.mockResolvedValue(undefined)
     mockPromptForMCPSetup.mockResolvedValue(editors)
     mockCreateMCPToken.mockResolvedValue('test-token')
-    mockWriteMCPConfig.mockResolvedValue(undefined)
+    mockWriteMCPConfig.mockResolvedValue(true)
 
     await setupMCP()
 
@@ -94,10 +99,79 @@ describe('setupMCP', () => {
     mockValidateEditorTokens.mockResolvedValue(undefined)
     mockPromptForMCPSetup.mockResolvedValue(editors)
     mockCreateMCPToken.mockResolvedValue('test-token')
-    mockWriteMCPConfig.mockResolvedValue(undefined)
+    mockWriteMCPConfig.mockResolvedValue(true)
 
     await setupMCP({explicit: true})
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(editors)
+  })
+
+  test('reports an editor whose config already matches as already-configured (no write needed)', async () => {
+    // VS Code is configured with a valid bearer token. writeMCPConfig returns
+    // false to signal a no-op — setupMCP should classify this as
+    // "alreadyConfigured" rather than "configured".
+    const vscode = {
+      authStatus: 'valid',
+      configured: true,
+      existingToken: 'valid-token',
+      name: 'VS Code',
+    }
+    mockDetectAvailableEditors.mockResolvedValue([vscode])
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    mockPromptForMCPSetup.mockResolvedValue([vscode])
+    mockWriteMCPConfig.mockResolvedValue(false)
+
+    const result = await setupMCP({mode: 'prompt'})
+
+    expect(mockCreateMCPToken).not.toHaveBeenCalled()
+    expect(result.configuredEditors).toEqual([])
+    expect(result.alreadyConfiguredEditors).toEqual(['VS Code'])
+  })
+
+  test('reports an editor whose config needed rewriting as configured', async () => {
+    // Existing config shape diverges from what writeMCPConfig would produce
+    // (e.g. oauthOnly toggled, token changed). writeMCPConfig returns true to
+    // signal it wrote.
+    const cursor = {
+      authStatus: 'valid',
+      configured: true,
+      existingToken: 'stale-bearer-token',
+      name: 'Cursor',
+    }
+    mockDetectAvailableEditors.mockResolvedValue([cursor])
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    mockPromptForMCPSetup.mockResolvedValue([cursor])
+    mockWriteMCPConfig.mockResolvedValue(true)
+
+    const result = await setupMCP({mode: 'prompt'})
+
+    expect(mockWriteMCPConfig).toHaveBeenCalled()
+    expect(result.configuredEditors).toEqual(['Cursor'])
+    expect(result.alreadyConfiguredEditors).toEqual([])
+  })
+
+  test('removes Sanity entry from configured editors that the user deselects', async () => {
+    const cursor = {
+      authStatus: 'valid',
+      configured: true,
+      existingToken: 'existing-token',
+      name: 'Cursor',
+    }
+    const vscode = {authStatus: 'unknown', configured: false, name: 'VS Code'}
+    mockDetectAvailableEditors.mockResolvedValue([cursor, vscode])
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    // User keeps VS Code, drops Cursor
+    mockPromptForMCPSetup.mockResolvedValue([vscode])
+    mockWriteMCPConfig.mockResolvedValue(true)
+    mockRemoveMCPConfig.mockResolvedValue(undefined)
+
+    const result = await setupMCP({mode: 'prompt'})
+
+    // Reuses Cursor's still-valid token for the new VS Code write
+    expect(mockCreateMCPToken).not.toHaveBeenCalled()
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(vscode, 'existing-token')
+    expect(mockRemoveMCPConfig).toHaveBeenCalledWith(cursor)
+    expect(result.configuredEditors).toEqual(['VS Code'])
+    expect(result.removedEditors).toEqual(['Cursor'])
   })
 })

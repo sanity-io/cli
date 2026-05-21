@@ -350,6 +350,7 @@ describe('#init: create new project', () => {
       alreadyConfiguredEditors: ['VS Code'],
       configuredEditors: [],
       detectedEditors: ['VS Code'],
+      removedEditors: [],
       skipped: true,
     })
 
@@ -401,6 +402,7 @@ describe('#init: create new project', () => {
       alreadyConfiguredEditors: ['VS Code', 'Cursor'],
       configuredEditors: [],
       detectedEditors: ['VS Code', 'Cursor'],
+      removedEditors: [],
       skipped: true,
     })
 
