@@ -1,4 +1,4 @@
-import { JSDOM } from 'jsdom'
+import {JSDOM} from 'jsdom'
 
 const html = `<!doctype html>
 <html>
@@ -8,11 +8,11 @@ const html = `<!doctype html>
 
 interface AbortSignalLike {
   aborted: boolean
-  addEventListener(type: 'abort', listener: () => void, options?: { once?: boolean }): void
+  addEventListener(type: 'abort', listener: () => void, options?: {once?: boolean}): void
   removeEventListener(type: 'abort', listener: () => void): void
 }
 
-type EventListenerOptionsWithSignal = AddEventListenerOptions & { signal?: unknown }
+type EventListenerOptionsWithSignal = AddEventListenerOptions & {signal?: unknown}
 
 function isAbortSignalLike(value: unknown): value is AbortSignalLike {
   return (
@@ -58,14 +58,14 @@ function patchEventTargetSignalSupport(dom: JSDOM): void {
       return
     }
 
-    const { signal: _signal, ...optionsWithoutSignal } = options as EventListenerOptionsWithSignal
+    const {signal: _signal, ...optionsWithoutSignal} = options as EventListenerOptionsWithSignal
     addEventListener.call(this, type, listener, optionsWithoutSignal)
 
     const removeOnAbort = () => {
       this.removeEventListener(type, listener, options)
     }
 
-    signal.addEventListener('abort', removeOnAbort, { once: true })
+    signal.addEventListener('abort', removeOnAbort, {once: true})
   }
 }
 
@@ -105,19 +105,19 @@ function createBrowserDom(): JSDOM {
   if (dom.window.ResizeObserver === undefined) {
     dom.window.ResizeObserver = class ResizeObserver {
       // eslint-disable-next-line @typescript-eslint/no-useless-constructor
-      constructor(_callback: unknown) { }
-      disconnect() { }
-      observe(_target: unknown, _options: unknown) { }
-      unobserve(_target: unknown) { }
+      constructor(_callback: unknown) {}
+      disconnect() {}
+      observe(_target: unknown, _options: unknown) {}
+      unobserve(_target: unknown) {}
     }
   }
 
   if (dom.window.IntersectionObserver === undefined) {
     dom.window.IntersectionObserver = class IntersectionObserver {
-      options: { root?: unknown; rootMargin?: string; threshold?: number }
+      options: {root?: unknown; rootMargin?: string; threshold?: number}
       constructor(
         _callback: unknown,
-        options?: { root?: unknown; rootMargin?: string; threshold?: number },
+        options?: {root?: unknown; rootMargin?: string; threshold?: number},
       ) {
         this.options = options || {}
       }
@@ -133,12 +133,12 @@ function createBrowserDom(): JSDOM {
           : [this.options.threshold || 0]
       }
 
-      disconnect() { }
-      observe(_el: unknown) { }
+      disconnect() {}
+      observe(_el: unknown) {}
       takeRecords() {
         return []
       }
-      unobserve(_el: unknown) { }
+      unobserve(_el: unknown) {}
     }
   }
 

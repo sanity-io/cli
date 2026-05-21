@@ -32,8 +32,17 @@ export async function setupBrowserStubs(): Promise<() => void> {
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, key)
     if (descriptor) {
       originalDescriptors.set(key, descriptor)
+      // Assignment would throw for getter-only accessors (e.g. Node 26's
+      // `localStorage`/`sessionStorage`), so replace the property outright.
+      Object.defineProperty(globalThis, key, {
+        configurable: true,
+        enumerable: descriptor.enumerable ?? true,
+        value: stubs[key],
+        writable: true,
+      })
+    } else {
+      mockedGlobalThis[key] = stubs[key]
     }
-    mockedGlobalThis[key] = stubs[key]
     stubbedKeys.push(key)
   }
 
