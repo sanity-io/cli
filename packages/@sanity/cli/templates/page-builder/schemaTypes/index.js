@@ -6,14 +6,12 @@ const {defineCta, defineImage, definePage, defineRichText} = createPresetsRegist
   link: {internalTypes: ['page']},
 })
 
-const page = definePage({
-  name: 'page',
-  title: 'Page',
-  pageBuilderBlocks: ['hero', 'imageBlock', 'cta', 'richText'],
-})
-
 export const schemaTypes = [
-  page,
+  definePage({
+    name: 'page',
+    title: 'Page',
+    pageBuilderBlocks: ['hero', 'imageBlock', 'cta', 'richText'],
+  }),
   hero,
   defineImage({name: 'imageBlock', title: 'Image'}),
   defineCta({name: 'cta', title: 'Call to action'}),
