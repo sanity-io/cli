@@ -179,6 +179,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Reconfigure an existing project',
       hidden: true,
     }),
+    skills: Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Install Sanity agent skills into the project',
+    }),
     template: Flags.string({
       description: 'Project template to use [default: "clean"]',
       exclusive: ['bare'],
@@ -217,12 +222,22 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       mcpMode = 'auto'
     }
 
+    // Mirror MCP's environment gating: skip skills install in non-production
+    // Sanity envs so e2e / UI tests don't shell out to `npx skills add`.
+    let skillsMode: 'auto' | 'prompt' | 'skip' = 'auto'
+    if (!this.flags.skills || !this.resolveIsInteractive() || getSanityEnv() !== 'production') {
+      skillsMode = 'skip'
+    }
+
     try {
-      await initAction(flagsToInitOptions(this.flags, this.isUnattended(), this.args, mcpMode), {
-        output: this.output,
-        telemetry: this.telemetry,
-        workDir: process.cwd(),
-      })
+      await initAction(
+        flagsToInitOptions(this.flags, this.isUnattended(), this.args, mcpMode, skillsMode),
+        {
+          output: this.output,
+          telemetry: this.telemetry,
+          workDir: process.cwd(),
+        },
+      )
     } catch (error) {
       if (error instanceof InitError) {
         this.error(error.message, {exit: error.exitCode})

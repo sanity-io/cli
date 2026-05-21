@@ -191,7 +191,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
 
   // Detect editors once, then share the result with MCP and skills setup so
   // we don't pay the detection cost (filesystem probes + CLI execa calls) twice.
-  const detectedEditors = options.mcpMode === 'skip' ? [] : await detectAvailableEditors()
+  const detectedEditors =
+    options.mcpMode === 'skip' && options.skillsMode === 'skip'
+      ? []
+      : await detectAvailableEditors()
 
   const mcpResult = await setupMCP({editors: detectedEditors, mode: options.mcpMode})
 
@@ -206,20 +209,29 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
   const mcpConfigured = mcpResult.configuredEditors
 
-  const skillsResult = await setupSkills({
-    cwd: outputPath,
-    editors: detectedEditors,
-    mode: options.mcpMode,
-  })
-
-  trace.log({
-    installedAgents: skillsResult.installedAgents,
-    installedForEditors: skillsResult.installedForEditors,
-    skipped: skillsResult.skipped,
-    step: 'skillsSetup',
-  })
-  if (skillsResult.error) {
-    trace.error(skillsResult.error)
+  async function installSkills(): Promise<void> {
+    if (options.skillsMode === 'skip') return
+    try {
+      const skillsResult = await setupSkills({
+        cwd: outputPath,
+        editors: detectedEditors,
+        mode: 'auto',
+      })
+      trace.log({
+        installedAgents: skillsResult.installedAgents,
+        installedForEditors: skillsResult.installedForEditors,
+        skipped: skillsResult.skipped,
+        step: 'skillsSetup',
+      })
+      if (skillsResult.error) {
+        trace.error(skillsResult.error)
+      }
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      debug('Unexpected error from setupSkills %O', err)
+      output.warn(`Could not install Sanity agent skills: ${err.message}`)
+      trace.error(err)
+    }
   }
 
   const {alreadyConfiguredEditors} = mcpResult
@@ -251,6 +263,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       trace,
       workDir,
     })
+    await installSkills()
     trace.complete()
     return
   }
@@ -294,6 +307,8 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
         isFirstProject,
         projectId,
       }))
+
+  await installSkills()
 
   trace.complete()
 }

@@ -25,6 +25,7 @@ export interface InitOptions {
   datasetDefault: boolean
   fromCreate: boolean
   mcpMode: 'auto' | 'prompt' | 'skip'
+  skillsMode: 'auto' | 'prompt' | 'skip'
   unattended: boolean
 
   argType?: string
@@ -64,6 +65,7 @@ interface InitCommandFlags {
   'from-create': boolean
   mcp: boolean
   'no-git': boolean
+  skills: boolean
 
   coupon?: string
   'create-project'?: string
@@ -112,6 +114,7 @@ export function flagsToInitOptions(
   isUnattended: boolean,
   args: InitCommandArgs | undefined,
   mcpMode: InitOptions['mcpMode'],
+  skillsMode: InitOptions['skillsMode'],
 ): InitOptions {
   return {
     argType: args?.type,
@@ -137,6 +140,7 @@ export function flagsToInitOptions(
     projectPlan: flags['project-plan'],
     provider: flags.provider,
     reconfigure: flags.reconfigure,
+    skillsMode,
     template: flags.template,
     templateToken: flags['template-token'],
     typescript: flags.typescript,

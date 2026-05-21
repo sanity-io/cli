@@ -13,16 +13,17 @@ function defaultFlags(
     'from-create': false,
     mcp: true,
     'no-git': false,
+    skills: true,
     ...overrides,
   } as Parameters<typeof flagsToInitOptions>[0]
 }
 
-/** Shorthand that fills in the trailing `args` and `mcpMode` parameters. */
+/** Shorthand that fills in the trailing `args`, `mcpMode`, and `skillsMode`. */
 function toOptions(
   flags: Parameters<typeof flagsToInitOptions>[0],
   isUnattended: boolean,
 ): ReturnType<typeof flagsToInitOptions> {
-  return flagsToInitOptions(flags, isUnattended, undefined, 'prompt')
+  return flagsToInitOptions(flags, isUnattended, undefined, 'prompt', 'auto')
 }
 
 describe('flagsToInitOptions', () => {
@@ -136,13 +137,24 @@ describe('flagsToInitOptions', () => {
   })
 
   test('passes mcpMode through to options', () => {
-    const prompt = flagsToInitOptions(defaultFlags(), false, undefined, 'prompt')
+    const prompt = flagsToInitOptions(defaultFlags(), false, undefined, 'prompt', 'auto')
     expect(prompt.mcpMode).toBe('prompt')
 
-    const auto = flagsToInitOptions(defaultFlags(), false, undefined, 'auto')
+    const auto = flagsToInitOptions(defaultFlags(), false, undefined, 'auto', 'auto')
     expect(auto.mcpMode).toBe('auto')
 
-    const skip = flagsToInitOptions(defaultFlags(), false, undefined, 'skip')
+    const skip = flagsToInitOptions(defaultFlags(), false, undefined, 'skip', 'auto')
     expect(skip.mcpMode).toBe('skip')
+  })
+
+  test('passes skillsMode through to options', () => {
+    const auto = flagsToInitOptions(defaultFlags(), false, undefined, 'prompt', 'auto')
+    expect(auto.skillsMode).toBe('auto')
+
+    const skip = flagsToInitOptions(defaultFlags(), false, undefined, 'prompt', 'skip')
+    expect(skip.skillsMode).toBe('skip')
+
+    const prompt = flagsToInitOptions(defaultFlags(), false, undefined, 'prompt', 'prompt')
+    expect(prompt.skillsMode).toBe('prompt')
   })
 })
