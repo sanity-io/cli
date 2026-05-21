@@ -41,15 +41,15 @@ vi.mock('../normalizeBasePath.js', () => ({
   normalizeBasePath: vi.fn((path: string) => `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/')),
 }))
 
-vi.mock('../../../server/vite/plugin-sanity-build-entries.js', () => ({
+vi.mock('../vite/plugin-sanity-build-entries.js', () => ({
   sanityBuildEntries: vi.fn(() => ({name: 'sanity-build-entries'})),
 }))
 
-vi.mock('../../../server/vite/plugin-sanity-favicons.js', () => ({
+vi.mock('../vite/plugin-sanity-favicons.js', () => ({
   sanityFaviconsPlugin: vi.fn(() => ({name: 'sanity-favicons'})),
 }))
 
-vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
+vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
@@ -59,7 +59,7 @@ vi.mock('@sanity/federation/vite', () => ({
   }),
 }))
 
-vi.mock('../../../server/vite/plugin-schema-extraction.js', () => ({
+vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
   sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
     name: 'sanity/schema-extraction',
   }),
@@ -361,7 +361,7 @@ describe('#getViteConfig', () => {
     }
 
     const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
-    const {sanityBuildEntries} = await import('../../../server/vite/plugin-sanity-build-entries.js')
+    const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
 
     await getViteConfig(options)
 
@@ -393,7 +393,7 @@ describe('#getViteConfig', () => {
   })
 
   test('should configure favicon plugin with correct paths', async () => {
-    const {sanityFaviconsPlugin} = await import('../../../server/vite/plugin-sanity-favicons.js')
+    const {sanityFaviconsPlugin} = await import('../vite/plugin-sanity-favicons.js')
 
     const options = {
       basePath: '/studio',
