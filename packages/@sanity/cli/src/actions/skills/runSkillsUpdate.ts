@@ -104,7 +104,7 @@ export async function runSkillsUpdate({
 
   if (sanitySkills.length === 0) {
     ux.stdout(
-      `No Sanity agent skills found in ${SKILLS_LOCK_FILENAME}. Run \`sanity skills add\` to install them first.`,
+      `No official Sanity skills to update. Run \`sanity skills add\` to install Sanity agent skills.`,
     )
     return {noOp: true, stdout: '', succeeded: true, updatedSkills: []}
   }

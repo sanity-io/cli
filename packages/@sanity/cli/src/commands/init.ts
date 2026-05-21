@@ -223,7 +223,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     // Mirror MCP's environment gating: skip skills install in non-production
-    // Sanity envs so e2e / UI tests don't shell out to `npx skills add`.
+    // Sanity envs so e2e / UI tests don't run the bundled skills CLI.
     let skillsMode: 'auto' | 'prompt' | 'skip' = 'auto'
     if (!this.flags.skills || !this.resolveIsInteractive() || getSanityEnv() !== 'production') {
       skillsMode = 'skip'
