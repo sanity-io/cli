@@ -165,7 +165,18 @@ function createBrowserDom(): JSDOM {
  * This approach ensures that any new properties added by JSDOM upgrades are
  * automatically included, preventing "missing global" bugs (e.g. `Element`,
  * `HTMLElement`, `SVGElement` needed by libraries like styled-components).
+ *
+ * Web globals that Node.js may provide but whose JSDOM implementations we
+ * always prefer, so that behavior is consistent across Node versions.
+ *
+ * Node 26+ exposes `localStorage`/`sessionStorage`/`Storage` as built-in globals,
+ * but `localStorage` is `undefined` unless started with `--localstorage-file`, and
+ * the `Storage` constructor identity differs from JSDOM's. Mixing realms would
+ * break code that does `localStorage instanceof Storage`, so we override all
+ * three together.
  */
+const ALWAYS_INCLUDE_FROM_JSDOM = new Set(['localStorage', 'sessionStorage', 'Storage'])
+
 function collectBrowserStubs(): Record<string, unknown> {
   const dom = createBrowserDom()
   const stubs: Record<string, unknown> = Object.create(null)
@@ -178,8 +189,9 @@ function collectBrowserStubs(): Record<string, unknown> {
     // Skip numeric indices (e.g. '0' for window[0])
     if (/^\d+$/.test(key)) continue
 
-    // Skip properties that Node.js already provides to avoid conflicts
-    if (nodeGlobals.has(key)) continue
+    // Skip properties that Node.js already provides to avoid conflicts, unless
+    // we explicitly want to override Node's version with JSDOM's
+    if (nodeGlobals.has(key) && !ALWAYS_INCLUDE_FROM_JSDOM.has(key)) continue
 
     stubs[key] = (dom.window as Record<string, unknown>)[key]
   }
