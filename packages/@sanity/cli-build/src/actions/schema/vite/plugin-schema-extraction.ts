@@ -12,8 +12,8 @@ import {
   SchemaExtractionWatchModeTrace,
 } from '../../../telemetry/extractSchema.telemetry.js'
 import {formatSchemaValidation} from '../formatSchemaValidation.js'
-import {runSchemaExtraction} from '../runSchemaExtraction.js'
 import {createSchemaPatternMatcher} from '../matchSchemaPattern.js'
+import {runSchemaExtraction} from '../runSchemaExtraction.js'
 import {SchemaExtractionError} from '../utils/SchemaExtractionError.js'
 
 /**
