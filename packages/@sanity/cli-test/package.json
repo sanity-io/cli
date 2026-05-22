@@ -65,8 +65,7 @@
     "esbuild": "^0.27.4",
     "nock": "catalog:",
     "ora": "catalog:",
-    "tinyglobby": "catalog:",
-    "vitest": "catalog:"
+    "tinyglobby": "catalog:"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
@@ -83,6 +82,7 @@
     "rimraf": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:",
     "yaml": "catalog:"
   },
   "peerDependencies": {
