@@ -158,7 +158,7 @@ export async function testFixture(
       // throws EPERM on stat. Skip dangling symlinks: stat throws ENOENT when
       // the target is missing (can happen with cross-OS turbo cache replay
       // where Windows-absolute symlink targets don't resolve on Linux).
-      let targetStats: {isDirectory: () => boolean} | undefined
+      let targetStats: {isDirectory: () => boolean}
       if (entry.isSymbolicLink()) {
         try {
           targetStats = await stat(srcPath)
