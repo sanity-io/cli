@@ -187,6 +187,7 @@ describe('setupSkills', () => {
   })
 
   test('resolves SKILLS_BIN_PATH to a path that points at the bundled cli', () => {
-    expect(SKILLS_BIN_PATH).toMatch(/skills\/bin\/cli\.mjs$/)
+    // Accept both POSIX and Windows path separators
+    expect(SKILLS_BIN_PATH).toMatch(/skills[\\/]bin[\\/]cli\.mjs$/)
   })
 })
