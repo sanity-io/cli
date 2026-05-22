@@ -62,12 +62,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
-    getAppEnvironmentVariables: vi.fn(() => ({
-      'process.env.APP_VAR': '"app-value"',
-    })),
-    getStudioEnvironmentVariables: vi.fn(() => ({
-      'process.env.STUDIO_VAR': '"studio-value"',
-    })),
   }
 })
 

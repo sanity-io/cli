@@ -1,5 +1,3 @@
-import {vi} from 'vitest'
-
 /**
  * Interface representing a closable server or resource.
  *
