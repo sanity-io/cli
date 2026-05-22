@@ -155,8 +155,20 @@ export async function testFixture(
       const srcPath = join(srcNodeModules, entry.name)
       // Follow symlinks (e.g. pnpm's `node_modules/<pkg>` → `.pnpm/...`) so
       // they get a 'dir' type on Windows — a file-typed symlink to a directory
-      // throws EPERM on stat.
-      const targetStats = entry.isSymbolicLink() ? await stat(srcPath) : entry
+      // throws EPERM on stat. Skip dangling symlinks: stat throws ENOENT when
+      // the target is missing (can happen with cross-OS turbo cache replay
+      // where Windows-absolute symlink targets don't resolve on Linux).
+      let targetStats: {isDirectory: () => boolean} | undefined
+      if (entry.isSymbolicLink()) {
+        try {
+          targetStats = await stat(srcPath)
+        } catch (err) {
+          if (err instanceof Error && 'code' in err && err.code === 'ENOENT') continue
+          throw err
+        }
+      } else {
+        targetStats = entry
+      }
       await symlink(
         srcPath,
         join(destNodeModules, entry.name),

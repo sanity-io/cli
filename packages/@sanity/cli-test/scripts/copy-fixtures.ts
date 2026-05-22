@@ -6,7 +6,7 @@
 
 // eslint-disable-next-line n/no-unsupported-features/node-builtins
 import {cp, mkdir, readFile, writeFile} from 'node:fs/promises'
-import {dirname, join, resolve} from 'node:path'
+import {basename, dirname, join, resolve} from 'node:path'
 
 import {parse as parseYaml} from 'yaml'
 
@@ -89,7 +89,7 @@ async function copyFixtures() {
     // Copy the fixture, excluding node_modules, .turbo and (unless specified) dist directories
     await cp(sourceDir, targetDir, {
       filter: (src) => {
-        const name = src.split('/').pop()
+        const name = basename(src)
         return (
           name !== 'node_modules' &&
           name !== '.turbo' &&
