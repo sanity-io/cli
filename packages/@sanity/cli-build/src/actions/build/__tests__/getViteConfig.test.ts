@@ -15,8 +15,8 @@ import {
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
-vi.mock('@sanity/cli-build/_internal', () => ({
-  getDefaultFaviconsPath: vi.fn(),
+vi.mock('read-package-up', () => ({
+  readPackageUp: vi.fn(),
 }))
 
 vi.mock('@vitejs/plugin-react', () => ({
@@ -33,15 +33,6 @@ vi.mock('../createExternalFromImportMap.js', () => ({
 
 vi.mock('../getBrowserAliases.js', () => ({
   getSanityPkgExportAliases: vi.fn(() => Promise.resolve({alias1: 'path1', alias2: 'path2'})),
-}))
-
-vi.mock('../getEnvironmentVariables.js', () => ({
-  getAppEnvironmentVariables: vi.fn(() => ({
-    'process.env.APP_VAR': '"app-value"',
-  })),
-  getStudioEnvironmentVariables: vi.fn(() => ({
-    'process.env.STUDIO_VAR': '"studio-value"',
-  })),
 }))
 
 vi.mock('../normalizeBasePath.js', () => ({
@@ -71,6 +62,12 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
+    getAppEnvironmentVariables: vi.fn(() => ({
+      'process.env.APP_VAR': '"app-value"',
+    })),
+    getStudioEnvironmentVariables: vi.fn(() => ({
+      'process.env.STUDIO_VAR': '"studio-value"',
+    })),
   }
 })
 
@@ -78,13 +75,20 @@ const mockTestCwd = convertToSystemPath('/test/cwd')
 const mockSanityPath = convertToSystemPath('/mock/path/to/sanity')
 const mockCustomOutput = convertToSystemPath('/custom/output')
 
+function getEnvironmentVariables() {
+  return {}
+}
+
 describe('#getViteConfig', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
 
     // Setup default mock for readPackageUp
-    const {getDefaultFaviconsPath} = await import('@sanity/cli-build/_internal')
-    vi.mocked(getDefaultFaviconsPath).mockResolvedValue(join(mockSanityPath, 'static', 'favicons'))
+    const {readPackageUp} = await import('read-package-up')
+    vi.mocked(readPackageUp).mockResolvedValue({
+      packageJson: {name: 'sanity'},
+      path: join(mockSanityPath, 'package.json'),
+    })
   })
 
   afterEach(() => {
@@ -96,6 +100,9 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables() {
+        return {'process.env.STUDIO_VAR': '"studio-value"'}
+      },
     }
 
     const config = await getViteConfig(options)
@@ -144,6 +151,9 @@ describe('#getViteConfig', () => {
       isApp: true,
       mode: 'development' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables() {
+        return {'process.env.APP_VAR': '"app-value"'}
+      },
     }
 
     const config = await getViteConfig(options)
@@ -169,6 +179,7 @@ describe('#getViteConfig', () => {
       outputDir: mockCustomOutput,
       reactCompiler: undefined,
       sourceMap: false,
+      getEnvironmentVariables,
     }
 
     const config = await getViteConfig(options)
@@ -197,6 +208,7 @@ describe('#getViteConfig', () => {
       minify: false,
       mode: 'production' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     }
 
     const config = await getViteConfig(options)
@@ -212,6 +224,7 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     }
 
     await getViteConfig(options)
@@ -228,6 +241,7 @@ describe('#getViteConfig', () => {
         host: '0.0.0.0',
         port: 8080,
       },
+      getEnvironmentVariables,
     }
 
     const config = await getViteConfig(options)
@@ -251,6 +265,7 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: reactCompilerConfig,
+      getEnvironmentVariables,
     }
 
     await getViteConfig(options)
@@ -272,6 +287,7 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     }
 
     const config = await getViteConfig(options)
@@ -292,6 +308,7 @@ describe('#getViteConfig', () => {
       importMap,
       mode: 'production' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     }
 
     const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
@@ -316,6 +333,7 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     }
 
     await getViteConfig(options)
@@ -339,6 +357,7 @@ describe('#getViteConfig', () => {
         watchPatterns: ['custom/**/*.ts'],
         workspace: 'production',
       },
+      getEnvironmentVariables,
     }
 
     const config = await getViteConfig(options)
@@ -368,6 +387,7 @@ describe('#getViteConfig', () => {
         enabled: false,
         path: 'schema.json',
       },
+      getEnvironmentVariables,
     }
 
     const config = await getViteConfig(options)
@@ -390,6 +410,7 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     }
 
     const config = await getViteConfig(options)
@@ -572,6 +593,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
       cwd: mockTestCwd,
       mode: 'production' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     }
 
     const config = await getViteConfig(options)
@@ -601,6 +623,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
       cwd: mockTestCwd,
       mode: 'production' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     })
 
     const onwarn = config.build?.rollupOptions?.onwarn
@@ -623,6 +646,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
       cwd: mockTestCwd,
       mode: 'production' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     })
 
     const onwarn = config.build?.rollupOptions?.onwarn
@@ -644,6 +668,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
       cwd: mockTestCwd,
       mode: 'production' as const,
       reactCompiler: undefined,
+      getEnvironmentVariables,
     })
 
     const onwarn = config.build?.rollupOptions?.onwarn

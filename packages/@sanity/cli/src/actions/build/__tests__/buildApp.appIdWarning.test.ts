@@ -40,13 +40,14 @@ vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
 
-vi.mock('../buildVendorDependencies.js', () => ({
-  buildVendorDependencies: vi.fn().mockResolvedValue({}),
-}))
-
-vi.mock('../../../telemetry/build.telemetry.js', () => ({
-  AppBuildTrace: {},
-}))
+vi.mock('@sanity/cli-build/_internal', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-build/_internal')>()
+  return {
+    ...actual,
+    AppBuildTrace: {},
+    buildVendorDependencies: vi.fn().mockResolvedValue({}),
+  }
+})
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()

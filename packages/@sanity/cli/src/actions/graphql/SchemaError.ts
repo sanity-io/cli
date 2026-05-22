@@ -1,7 +1,6 @@
+import {formatSchemaValidation} from '@sanity/cli-build/_internal'
 import {type Output} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
-
-import {formatSchemaValidation} from '../schema/formatSchemaValidation.js'
 
 export class SchemaError extends Error {
   problemGroups: SchemaValidationProblemGroup[]

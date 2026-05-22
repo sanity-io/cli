@@ -1,12 +1,22 @@
 import path from 'node:path'
 
-import {buildDebug, copyDir, writeFavicons} from '@sanity/cli-build/_internal'
+import {
+  buildDebug,
+  copyDir,
+  extendViteConfigWithUserConfig,
+  finalizeViteConfig,
+  getViteConfig,
+  writeFavicons,
+  writeSanityRuntime,
+} from '@sanity/cli-build/_internal'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build} from 'vite'
 
-import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
-import {writeSanityRuntime} from './writeSanityRuntime.js'
+import {
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
+} from './getEnvironmentVariables.js'
 
 export interface ChunkModule {
   name: string
@@ -72,12 +82,19 @@ export async function buildStaticFiles(
     watch: false,
   })
 
+  function getEnvironmentVariables() {
+    return isApp
+      ? getAppEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
+      : getStudioEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
+  }
+
   buildDebug('Resolving vite config')
   const mode = 'production'
   let viteConfig = await getViteConfig({
     autoUpdatesCssUrls,
     basePath,
     cwd,
+    getEnvironmentVariables,
     importMap,
     isApp,
     minify,

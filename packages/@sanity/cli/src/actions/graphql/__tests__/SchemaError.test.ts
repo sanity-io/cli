@@ -6,7 +6,7 @@ import {SchemaError} from '../SchemaError.js'
 
 const mockFormatSchemaValidation = vi.hoisted(() => vi.fn())
 
-vi.mock('../../schema/formatSchemaValidation.js', () => ({
+vi.mock('@sanity/cli-build/_internal', () => ({
   formatSchemaValidation: mockFormatSchemaValidation,
 }))
 
