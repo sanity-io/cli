@@ -119,7 +119,7 @@ jobs:
           # Windows worker crash diagnostics: write Node diagnostic reports on
           # fatal errors / uncaught exceptions / signals, and bump heap to
           # rule out OOM. Vitest forks inherit NODE_OPTIONS.
-          NODE_OPTIONS: ${{ matrix.os == 'windows-8core' && '--report-on-fatalerror --report-uncaught-exception --report-on-signal --report-directory=node-reports --max-old-space-size=8192' || '' }}
+          NODE_OPTIONS: ${{ matrix.os == 'windows-8core' && '--report-on-fatalerror --report-uncaught-exception --report-on-signal --report-directory=node-reports' || '' }}
         run: |
           mkdir -p node-reports
           ARGS="--test-timeout=60000 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
