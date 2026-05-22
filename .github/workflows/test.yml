@@ -116,12 +116,22 @@ jobs:
         shell: bash
         env:
           SANITY_AUTH_TOKEN: 'test-token'
+          # Windows worker crash diagnostics: write Node diagnostic reports on
+          # fatal errors / uncaught exceptions / signals, and bump heap to
+          # rule out OOM. Vitest forks inherit NODE_OPTIONS.
+          NODE_OPTIONS: ${{ matrix.os == 'windows-8core' && '--report-on-fatalerror --report-uncaught-exception --report-on-signal --report-directory=node-reports --max-old-space-size=8192' || '' }}
         run: |
+          mkdir -p node-reports
           ARGS="--test-timeout=60000 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
           # We only gather coverage from Node 20 on Ubuntu
           if [ "${{ matrix.node-version }}" == "20" ] && [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
             # We pass in `--reporter=blob` so that we can combine the results from all shards.
             ARGS="$ARGS --coverage --reporter=default --reporter=blob"
+          fi
+          # Verbose reporter on Windows so we can see which test file the worker
+          # was on when it died (default reporter only prints completed files).
+          if [ "${{ matrix.os }}" == "windows-8core" ]; then
+            ARGS="$ARGS --reporter=verbose"
           fi
           pnpm test $ARGS
 
@@ -133,6 +143,17 @@ jobs:
           path: '.vitest-reports/*'
           include-hidden-files: true
           retention-days: 1
+
+      - name: Upload Windows diagnostic reports
+        if: ${{ failure() && matrix.os == 'windows-8core' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: win-diag-${{ matrix.node-version }}-${{ matrix.shardIndex }}
+          path: |
+            node-reports/
+            **/report.*.json
+          if-no-files-found: warn
+          retention-days: 7
 
   report-coverage:
     needs: [changes, test]
