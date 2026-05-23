@@ -1,8 +1,14 @@
+import {mkdtempSync, rmSync, writeFileSync} from 'node:fs'
+import {tmpdir} from 'node:os'
+import path from 'node:path'
+
 import {createTestClient, mockApi} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
+import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
+import {CREATE_PROJECT_API_VERSION} from '../../../services/projects.js'
 import {initAction} from '../initAction.js'
 import {InitError} from '../initError.js'
 import {type InitContext, type InitOptions} from '../types.js'
@@ -49,6 +55,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
       return {
         datasets: {
+          create: vi.fn().mockResolvedValue(undefined),
           list: vi.fn().mockResolvedValue([{aclMode: 'public', name: 'production'}]),
         },
         request: client.request,
@@ -82,7 +89,7 @@ const defaultOptions: InitOptions = {
   unattended: false,
 }
 
-function createTestContext(): InitContext {
+function createTestContext(workDir = '/tmp/test-work-dir'): InitContext {
   return {
     output: {
       // output.error has a `never` return type in the Output interface, but
@@ -101,7 +108,7 @@ function createTestContext(): InitContext {
         start: vi.fn(),
       }),
     } as unknown as InitContext['telemetry'],
-    workDir: '/tmp/test-work-dir',
+    workDir,
   }
 }
 
@@ -203,5 +210,195 @@ describe('initAction (direct)', () => {
       'Must be logged in to run this command in unattended mode, run `sanity login`',
     )
     expect(initError.exitCode).toBe(1)
+  })
+
+  test('unattended --project-name with single org with attach grant auto-picks org', async () => {
+    mockValidateSession.mockResolvedValue({
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+      provider: 'google',
+    })
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Only Org', slug: 'only-org'}])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations/org-1/grants',
+    }).reply(200, {
+      'sanity.organization.projects': [{grants: [{name: 'attach'}]}],
+    })
+
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {displayName: 'My New Project', projectId: 'test-project'})
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    const context = createTestContext()
+    const options: InitOptions = {
+      ...defaultOptions,
+      bare: true,
+      projectName: 'My New Project',
+      unattended: true,
+    }
+
+    await initAction(options, context)
+
+    const logCalls = vi.mocked(context.output.log).mock.calls.map((call) => call[0])
+    const combined = logCalls.join('\n')
+
+    expect(combined).toContain('test-project')
+  })
+
+  test('unattended --project-name with zero orgs throws descriptive error pointing to organizations list', async () => {
+    mockValidateSession.mockResolvedValue({
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+      provider: 'google',
+    })
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [])
+
+    const context = createTestContext()
+    const options: InitOptions = {
+      ...defaultOptions,
+      bare: true,
+      projectName: 'My New Project',
+      unattended: true,
+    }
+
+    let caughtError: unknown
+    try {
+      await initAction(options, context)
+    } catch (error) {
+      caughtError = error
+    }
+
+    expect(caughtError).toBeInstanceOf(InitError)
+    const initError = caughtError as InitError
+    expect(initError.message).toContain('No organization found for new project')
+    expect(initError.message).toContain('sanity organizations list')
+    expect(initError.exitCode).toBe(1)
+  })
+
+  test('unattended without --project/--project-name derives projectName from package.json name', async () => {
+    mockValidateSession.mockResolvedValue({
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+      provider: 'google',
+    })
+
+    const tmpDir = mkdtempSync(path.join(tmpdir(), 'sanity-init-test-'))
+    writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'my-pkg-name', version: '1.0.0'}),
+    )
+
+    try {
+      mockApi({
+        apiVersion: ORGANIZATIONS_API_VERSION,
+        uri: '/organizations',
+      }).reply(200, [{id: 'org-1', name: 'Only Org', slug: 'only-org'}])
+
+      mockApi({
+        apiVersion: ORGANIZATIONS_API_VERSION,
+        uri: '/organizations/org-1/grants',
+      }).reply(200, {
+        'sanity.organization.projects': [{grants: [{name: 'attach'}]}],
+      })
+
+      mockApi({
+        apiVersion: CREATE_PROJECT_API_VERSION,
+        method: 'post',
+        uri: '/projects',
+      }).reply(200, (_uri, body: Record<string, unknown>) => {
+        expect(body.displayName).toBe('my-pkg-name')
+        return {displayName: 'my-pkg-name', projectId: 'test-project'}
+      })
+
+      mockApi({
+        apiVersion: PROJECT_FEATURES_API_VERSION,
+        method: 'get',
+        uri: '/features',
+      }).reply(200, ['privateDataset'])
+
+      const context = createTestContext(tmpDir)
+      const options: InitOptions = {
+        ...defaultOptions,
+        bare: true,
+        unattended: true,
+      }
+
+      await initAction(options, context)
+    } finally {
+      rmSync(tmpDir, {force: true, recursive: true})
+    }
+  })
+
+  test('unattended without --project/--project-name and no package.json derives projectName from basename(cwd)', async () => {
+    mockValidateSession.mockResolvedValue({
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+      provider: 'google',
+    })
+
+    const tmpDir = mkdtempSync(path.join(tmpdir(), 'my-folder-name-'))
+    const expectedName = path.basename(tmpDir)
+
+    try {
+      mockApi({
+        apiVersion: ORGANIZATIONS_API_VERSION,
+        uri: '/organizations',
+      }).reply(200, [{id: 'org-1', name: 'Only Org', slug: 'only-org'}])
+
+      mockApi({
+        apiVersion: ORGANIZATIONS_API_VERSION,
+        uri: '/organizations/org-1/grants',
+      }).reply(200, {
+        'sanity.organization.projects': [{grants: [{name: 'attach'}]}],
+      })
+
+      mockApi({
+        apiVersion: CREATE_PROJECT_API_VERSION,
+        method: 'post',
+        uri: '/projects',
+      }).reply(200, (_uri, body: Record<string, unknown>) => {
+        expect(body.displayName).toBe(expectedName)
+        return {displayName: expectedName, projectId: 'test-project'}
+      })
+
+      mockApi({
+        apiVersion: PROJECT_FEATURES_API_VERSION,
+        method: 'get',
+        uri: '/features',
+      }).reply(200, ['privateDataset'])
+
+      const context = createTestContext(tmpDir)
+      const options: InitOptions = {
+        ...defaultOptions,
+        bare: true,
+        unattended: true,
+      }
+
+      await initAction(options, context)
+    } finally {
+      rmSync(tmpDir, {force: true, recursive: true})
+    }
   })
 })

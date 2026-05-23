@@ -1,0 +1,8 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`#list > displays organizations correctly 1`] = `
+"id      name        slug 
+org-a   Alpha Org   alpha
+org-b   Beta Org    beta 
+"
+`;

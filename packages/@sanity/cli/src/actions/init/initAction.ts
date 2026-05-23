@@ -1,3 +1,5 @@
+import {readFile} from 'node:fs/promises'
+import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
@@ -83,6 +85,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
 
   const isAppTemplate = options.template ? determineAppTemplate(options.template) : false
 
+  if (options.unattended && !isAppTemplate && !options.project && !options.projectName) {
+    const derived = await deriveProjectName(workDir)
+    if (derived) {
+      debug('Deriving --project-name from %s: %s', derived.source, derived.name)
+      options.projectName = derived.name
+    }
+  }
+
   if (options.unattended) {
     checkFlagsInUnattendedMode(options, {isAppTemplate, isNextJs})
   }
@@ -124,6 +134,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       dataset: options.dataset,
       organization: options.organization,
       planId,
+      unattended: options.unattended,
       user,
       visibility: options.visibility,
     })
@@ -282,10 +293,6 @@ function checkFlagsInUnattendedMode(
 ): void {
   debug('Unattended mode, validating required options')
 
-  if (options.projectName && !options.organization) {
-    throw new InitError('`--project-name` requires `--organization <id>` in unattended mode', 1)
-  }
-
   if (isAppTemplate) {
     if (!options.outputPath) {
       throw new InitError('`--output-path` must be specified in unattended mode', 1)
@@ -314,6 +321,33 @@ function checkFlagsInUnattendedMode(
       1,
     )
   }
+}
+
+async function deriveProjectName(
+  workDir: string,
+): Promise<{name: string; source: 'directory' | 'package.json'} | undefined> {
+  try {
+    const raw = await readFile(path.join(workDir, 'package.json'), 'utf8')
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      'name' in parsed &&
+      typeof parsed.name === 'string' &&
+      parsed.name.trim().length > 0
+    ) {
+      return {name: parsed.name.trim(), source: 'package.json'}
+    }
+  } catch {
+    // package.json missing or unreadable — fall through to basename
+  }
+
+  const basename = path.basename(workDir)
+  if (basename) {
+    return {name: basename, source: 'directory'}
+  }
+
+  return undefined
 }
 
 async function ensureAuthenticated(

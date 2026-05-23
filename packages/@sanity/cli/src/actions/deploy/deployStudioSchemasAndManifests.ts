@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
-import {SchemaExtractionError} from '@sanity/cli-build/_internal'
 import {ux} from '@oclif/core/ux'
+import {SchemaExtractionError} from '@sanity/cli-build/_internal'
 import {getCliTelemetry, studioWorkerTask, subdebug} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'

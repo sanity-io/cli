@@ -1,8 +1,8 @@
 import {styleText} from 'node:util'
 
-import {SchemaExtractionError} from '@sanity/cli-build/_internal'
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
+import {SchemaExtractionError} from '@sanity/cli-build/_internal'
 import {SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'

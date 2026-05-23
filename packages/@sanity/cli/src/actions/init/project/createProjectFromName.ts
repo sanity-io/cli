@@ -5,6 +5,8 @@ import {type DatasetAclMode} from '@sanity/client'
 import {createDataset as createDatasetService} from '../../../services/datasets.js'
 import {listOrganizations} from '../../../services/organizations.js'
 import {createProject} from '../../../services/projects.js'
+import {getOrganizationsWithAttachGrantInfo} from '../../organizations/getOrganizationsWithAttachGrantInfo.js'
+import {InitError} from '../initError.js'
 import {promptUserForOrganization} from './promptUserForOrganization.js'
 
 const debug = subdebug('init')
@@ -15,6 +17,7 @@ export async function createProjectFromName({
   dataset,
   organization,
   planId,
+  unattended,
   user,
   visibility,
 }: {
@@ -23,6 +26,7 @@ export async function createProjectFromName({
   dataset: string | undefined
   organization: string | undefined
   planId: string | undefined
+  unattended: boolean | undefined
   user: SanityOrgUser
   visibility: 'private' | 'public' | undefined
 }): Promise<string> {
@@ -33,10 +37,24 @@ export async function createProjectFromName({
   if (!orgForCreateProjectFlag) {
     debug('no organization specified, selecting one')
     const organizations = await listOrganizations()
-    orgForCreateProjectFlag = await promptUserForOrganization({
-      organizations,
-      user,
-    })
+
+    if (unattended) {
+      const withGrantInfo = await getOrganizationsWithAttachGrantInfo(organizations)
+      const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
+      if (withAttach.length === 0) {
+        throw new InitError(
+          "No organization found for new project. Run 'sanity organizations list' to find your organization ID, or create one at https://sanity.io/manage",
+          1,
+        )
+      }
+      orgForCreateProjectFlag = withAttach[0].organization.id
+      debug('unattended mode: picked first org with attach grant: %s', orgForCreateProjectFlag)
+    } else {
+      orgForCreateProjectFlag = await promptUserForOrganization({
+        organizations,
+        user,
+      })
+    }
   }
 
   debug('creating a new project')
