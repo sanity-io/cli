@@ -27,7 +27,6 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "./dist/_exports/index.js",
   "exports": {
     "./_internal/build": {
       "source": "./src/_exports/_internal/build.ts",
