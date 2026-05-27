@@ -80,6 +80,11 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
       default: false,
       description: 'Export only published versions of documents',
     }),
+    'no-strict-asset-verification': Flags.boolean({
+      default: false,
+      description:
+        'Skip aborting the export when an asset fails hash/content-length verification (keeps the asset with a warning)',
+    }),
     overwrite: Flags.boolean({
       default: false,
       description: 'Overwrite any file with the same name',
@@ -193,6 +198,7 @@ dataset: ${dataset.padEnd(46)}`,
       onProgress,
       outputPath,
       raw: flags.raw,
+      strictAssetVerification: !flags['no-strict-asset-verification'],
       types: flags.types ? flags.types.split(',') : undefined,
     }
 
