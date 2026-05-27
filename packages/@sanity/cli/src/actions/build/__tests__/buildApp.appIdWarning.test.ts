@@ -40,8 +40,8 @@ vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
 
-vi.mock('@sanity/cli-build/_internal', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-build/_internal')>()
+vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
   return {
     ...actual,
     AppBuildTrace: {},

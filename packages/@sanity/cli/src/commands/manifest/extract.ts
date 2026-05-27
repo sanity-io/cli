@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal'
+import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {SanityCommand} from '@sanity/cli-core'
 
 import {manifestDebug} from '../../actions/manifest/debug.js'

@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {extendViteConfigWithUserConfig} from '@sanity/cli-build/_internal'
+import {extendViteConfigWithUserConfig} from '@sanity/cli-build/_internal/build'
 import {getLocalPackageVersion, type UserViteConfig} from '@sanity/cli-core'
 import {type InlineConfig, preview} from 'vite'
 

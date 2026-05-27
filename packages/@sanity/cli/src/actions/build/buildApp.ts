@@ -2,7 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {AppBuildTrace, buildDebug, buildVendorDependencies} from '@sanity/cli-build/_internal'
+import {AppBuildTrace, buildDebug, buildVendorDependencies} from '@sanity/cli-build/_internal/build'
 import {
   type CliConfig,
   getCliTelemetry,

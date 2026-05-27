@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal'
+import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest} from 'sanity'

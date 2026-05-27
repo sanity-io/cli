@@ -27,12 +27,14 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "./dist/_exports/_internal.js",
-  "types": "./dist/_exports/_internal.d.ts",
   "exports": {
-    "./_internal": {
-      "source": "./src/_exports/_internal.ts",
-      "default": "./dist/_exports/_internal.js"
+    "./_internal/build": {
+      "source": "./src/_exports/_internal/build.ts",
+      "default": "./dist/_exports/_internal/build.js"
+    },
+    "./_internal/extract": {
+      "source": "./src/_exports/_internal/extract.ts",
+      "default": "./dist/_exports/_internal/extract.js"
     },
     "./package.json": "./package.json"
   },

@@ -2,7 +2,7 @@ import {
   extendViteConfigWithUserConfig,
   getViteConfig,
   writeSanityRuntime,
-} from '@sanity/cli-build/_internal'
+} from '@sanity/cli-build/_internal/build'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'

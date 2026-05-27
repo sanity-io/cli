@@ -1,4 +1,7 @@
-import {type ExtractOptions, SchemaExtractionWatchModeTrace} from '@sanity/cli-build/_internal'
+import {
+  type ExtractOptions,
+  SchemaExtractionWatchModeTrace,
+} from '@sanity/cli-build/_internal/extract'
 import {getCliTelemetry, type Output} from '@sanity/cli-core'
 import mean from 'lodash-es/mean.js'
 import once from 'lodash-es/once.js'

@@ -5,7 +5,7 @@ import {
   runSchemaExtraction,
   SchemaExtractedTrace,
   SchemaExtractionError,
-} from '@sanity/cli-build/_internal'
+} from '@sanity/cli-build/_internal/extract'
 import {getCliTelemetry, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 

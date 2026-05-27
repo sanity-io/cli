@@ -6,7 +6,7 @@ import {
   formatSchemaValidation,
   runSchemaExtraction,
   SchemaExtractionError,
-} from '@sanity/cli-build/_internal'
+} from '@sanity/cli-build/_internal/extract'
 import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'

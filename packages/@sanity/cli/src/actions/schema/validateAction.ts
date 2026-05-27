@@ -1,6 +1,6 @@
 import {writeFileSync} from 'node:fs'
 
-import {formatSchemaValidation, getAggregatedSeverity} from '@sanity/cli-build/_internal'
+import {formatSchemaValidation, getAggregatedSeverity} from '@sanity/cli-build/_internal/extract'
 import {Output, studioWorkerTask} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 

@@ -7,7 +7,7 @@ import {
   buildVendorDependencies,
   checkStudioDependencyVersions,
   StudioBuildTrace,
-} from '@sanity/cli-build/_internal'
+} from '@sanity/cli-build/_internal/build'
 import {
   type CliConfig,
   getCliTelemetry,
