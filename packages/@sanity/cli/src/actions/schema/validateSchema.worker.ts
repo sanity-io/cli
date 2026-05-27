@@ -1,6 +1,6 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {findStudioConfigPath, getStudioWorkspaces} from '@sanity/cli-core'
+import {findStudioConfigPath, getStudioWorkspaces, getWorkspace} from '@sanity/cli-core'
 import {
   type EncodableObject,
   type EncodableValue,
@@ -13,7 +13,6 @@ import {
   type SchemaValidationProblemGroup,
 } from '@sanity/types'
 
-import {getWorkspace} from '../../util/getWorkspace.js'
 import {isSchemaError} from '../../util/isSchemaError.js'
 import {type SerializedSchemaDebug, type SerializedTypeDebug} from './types.js'
 

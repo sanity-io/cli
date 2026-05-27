@@ -816,12 +816,21 @@ importers:
       '@sanity/cli-core':
         specifier: workspace:^
         version: link:../cli-core
+      '@sanity/schema':
+        specifier: 'catalog:'
+        version: 5.26.0(@types/react@19.2.14)
+      '@sanity/types':
+        specifier: 'catalog:'
+        version: 5.26.0(@types/react@19.2.14)
       read-package-up:
         specifier: 'catalog:'
         version: 12.0.0
       semver:
         specifier: ^7.7.4
         version: 7.7.4
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
     devDependencies:
       '@eslint/compat':
         specifier: 'catalog:'
@@ -865,6 +874,9 @@ importers:
       publint:
         specifier: 'catalog:'
         version: 0.3.18
+      sanity:
+        specifier: 'catalog:'
+        version: 5.26.0(@emotion/is-prop-valid@1.4.0)(@oclif/core@4.11.0)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(styled-components@6.4.0(css-to-react-native@3.2.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

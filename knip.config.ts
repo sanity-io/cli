@@ -64,7 +64,11 @@ const baseConfig = {
       project,
     },
     'packages/@sanity/cli-build': {
-      entry: ['package.config.ts'],
+      entry: [
+        // Worker files
+        'src/**/*.worker.ts',
+        'package.config.ts',
+      ],
       // debug is used for type checking
       ignoreDependencies: ['@types/debug'],
       project,

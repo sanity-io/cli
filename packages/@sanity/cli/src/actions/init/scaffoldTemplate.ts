@@ -4,6 +4,7 @@ import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {promptForTypeScript} from '../../prompts/init/promptForTypescript.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
+import {getSanityEnv} from '../../util/getSanityEnv.js'
 import {installDeclaredPackages} from '../../util/packageManager/installPackages.js'
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {bootstrapTemplate} from './bootstrapTemplate.js'
@@ -20,6 +21,28 @@ interface SelectedTemplate {
   useTypeScript: boolean
 }
 
+interface TemplateChoice {
+  name: string
+  value: string
+}
+
+const baseTemplateChoices: TemplateChoice[] = [
+  {name: 'Clean project with no predefined schema types', value: 'clean'},
+  {name: 'Blog (schema)', value: 'blog'},
+  {name: 'E-commerce (Shopify)', value: 'shopify'},
+  {name: 'Movie project (schema + sample data)', value: 'moviedb'},
+]
+
+const stagingTemplateChoices: TemplateChoice[] = [
+  {name: 'Page Builder (presets)', value: 'page-builder'},
+]
+
+export function getTemplateChoices(env: string): TemplateChoice[] {
+  return env === 'production'
+    ? baseTemplateChoices
+    : [...baseTemplateChoices, ...stagingTemplateChoices]
+}
+
 async function promptForTemplate(params: {
   template?: string
   unattended: boolean
@@ -30,24 +53,7 @@ async function promptForTemplate(params: {
   }
 
   return select({
-    choices: [
-      {
-        name: 'Clean project with no predefined schema types',
-        value: 'clean',
-      },
-      {
-        name: 'Blog (schema)',
-        value: 'blog',
-      },
-      {
-        name: 'E-commerce (Shopify)',
-        value: 'shopify',
-      },
-      {
-        name: 'Movie project (schema + sample data)',
-        value: 'moviedb',
-      },
-    ],
+    choices: getTemplateChoices(getSanityEnv()),
     message: 'Select project template',
   })
 }

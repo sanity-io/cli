@@ -53,8 +53,11 @@
   },
   "dependencies": {
     "@sanity/cli-core": "workspace:^",
+    "@sanity/schema": "catalog:",
+    "@sanity/types": "catalog:",
     "read-package-up": "catalog:",
-    "semver": "^7.7.4"
+    "semver": "^7.7.4",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
@@ -71,6 +74,7 @@
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",
+    "sanity": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
