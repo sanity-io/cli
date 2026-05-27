@@ -35,7 +35,6 @@ const knownTopicsWithoutAliases: Set<string> = new Set([
   'mcp',
   'media',
   'openapi',
-  'skills',
   'telemetry',
 ])
 

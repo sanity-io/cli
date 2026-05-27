@@ -90,8 +90,6 @@ interface MCPSetupStep {
 interface SkillsSetupStep {
   /** `--agent` values that received the Sanity skills bundle */
   installedAgents: string[]
-  /** Editor display names that received skills (e.g. "Cursor", "Claude Code") */
-  installedForEditors: string[]
   skipped: boolean
   step: 'skillsSetup'
 }

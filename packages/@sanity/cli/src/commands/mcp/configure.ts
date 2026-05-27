@@ -40,7 +40,11 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
     }
 
     try {
-      const mcpResult = await setupMCP({explicit: true, mode: isInteractive() ? 'prompt' : 'auto'})
+      const mcpResult = await setupMCP({
+        explicit: true,
+        mode: isInteractive() ? 'prompt' : 'auto',
+        skillsMode: 'skip',
+      })
 
       trace.log({
         configuredEditors: mcpResult.configuredEditors,

@@ -27,7 +27,6 @@ export default {
     openapi: {description: 'Manage OpenAPI specifications'},
     projects: {description: 'Manage Sanity projects'},
     schemas: {description: 'Manage and validate schemas'},
-    skills: {description: 'Install and update Sanity agent skills'},
     telemetry: {description: 'Manage telemetry consent'},
     tokens: {description: 'Manage API tokens for your project'},
     users: {description: 'Manage project users and invitations'},

@@ -92,6 +92,7 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
     configuredEditors: ['Cursor'],
     detectedEditors: [],
     error: undefined,
+    skillsToInstall: ['cursor'],
     skipped: false,
   }),
 }))
@@ -102,9 +103,8 @@ vi.mock('../../../actions/mcp/detectAvailableEditors.js', () => ({
 
 vi.mock('../../../actions/skills/setupSkills.js', () => ({
   setupSkills: mocks.setupSkills.mockResolvedValue({
-    installedAgents: [],
-    installedForEditors: [],
-    skipped: true,
+    installedAgents: ['cursor'],
+    skipped: false,
   }),
 }))
 
@@ -221,10 +221,9 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(stdout).toContain('npx sanity manage')
     expect(stdout).toContain('npx sanity help')
 
-    // Skills install runs in 'auto' mode after scaffolding has completed.
-    expect(mocks.setupSkills).toHaveBeenCalledWith(
-      expect.objectContaining({cwd: convertToSystemPath('/test/output'), mode: 'auto'}),
-    )
+    // Skills install runs after scaffolding has completed, with the agents
+    // setupMCP told us to install.
+    expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor']})
     const bootstrapOrder = mocks.bootstrapTemplate.mock.invocationCallOrder[0]
     const skillsOrder = mocks.setupSkills.mock.invocationCallOrder[0]
     expect(skillsOrder).toBeGreaterThan(bootstrapOrder)

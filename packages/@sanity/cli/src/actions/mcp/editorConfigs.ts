@@ -401,3 +401,26 @@ export function getSkillsCliAgent(editorName: EditorName): string | undefined {
     return 'skillsCliAgent' in config ? config.skillsCliAgent : undefined
   }
 }
+
+/**
+ * Skills-CLI agent ID → display name. Mirrors `displayName` from
+ * `~/git/skills/src/agents.ts` for the subset of agents we install for. Used
+ * to match `skills list --json` output (which keys by display name) against
+ * our editors.
+ */
+const SKILLS_CLI_AGENT_DISPLAY_NAMES: Record<string, string> = {
+  antigravity: 'Antigravity',
+  'claude-code': 'Claude Code',
+  cline: 'Cline',
+  codex: 'Codex',
+  cursor: 'Cursor',
+  'gemini-cli': 'Gemini CLI',
+  'github-copilot': 'GitHub Copilot',
+  opencode: 'OpenCode',
+}
+
+/** Display name used by the skills CLI for the given editor, if it has a mapping. */
+export function getSkillsCliAgentDisplayName(editorName: EditorName): string | undefined {
+  const agent = getSkillsCliAgent(editorName)
+  return agent ? SKILLS_CLI_AGENT_DISPLAY_NAMES[agent] : undefined
+}

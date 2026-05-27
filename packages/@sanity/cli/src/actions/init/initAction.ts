@@ -196,7 +196,11 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       ? []
       : await detectAvailableEditors()
 
-  const mcpResult = await setupMCP({editors: detectedEditors, mode: options.mcpMode})
+  const mcpResult = await setupMCP({
+    editors: detectedEditors,
+    mode: options.mcpMode,
+    skillsMode: options.skillsMode,
+  })
 
   trace.log({
     configuredEditors: mcpResult.configuredEditors,
@@ -210,16 +214,11 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   const mcpConfigured = mcpResult.configuredEditors
 
   async function installSkills(): Promise<void> {
-    if (options.skillsMode === 'skip') return
+    if (mcpResult.skillsToInstall.length === 0) return
     try {
-      const skillsResult = await setupSkills({
-        cwd: outputPath,
-        editors: detectedEditors,
-        mode: 'auto',
-      })
+      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall})
       trace.log({
         installedAgents: skillsResult.installedAgents,
-        installedForEditors: skillsResult.installedForEditors,
         skipped: skillsResult.skipped,
         step: 'skillsSetup',
       })

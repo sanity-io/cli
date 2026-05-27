@@ -112,6 +112,7 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
     configuredEditors: ['Cursor'],
     detectedEditors: [],
     error: undefined,
+    skillsToInstall: [],
     skipped: false,
   }),
 }))
@@ -123,7 +124,6 @@ vi.mock('../../../actions/mcp/detectAvailableEditors.js', () => ({
 vi.mock('../../../actions/skills/setupSkills.js', () => ({
   setupSkills: vi.fn().mockResolvedValue({
     installedAgents: [],
-    installedForEditors: [],
     skipped: true,
   }),
 }))

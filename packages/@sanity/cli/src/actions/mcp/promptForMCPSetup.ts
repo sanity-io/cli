@@ -2,7 +2,19 @@ import {checkbox} from '@sanity/cli-core/ux'
 
 import {type Editor} from './types.js'
 
-function getEditorLabel(editor: Editor): string {
+/** Action to take for an editor in the combined MCP + skills setup prompt. */
+export type EditorAction = 'mcp-and-skill' | 'mcp-only' | 'skill-only'
+
+export interface EditorChoice {
+  action: EditorAction
+  editor: Editor
+}
+
+function getEditorLabel(choice: EditorChoice): string {
+  const {action, editor} = choice
+  if (action === 'skill-only') {
+    return `${editor.name} (skill only — MCP already configured)`
+  }
   if (editor.configured && editor.authStatus === 'unauthorized') {
     return `${editor.name} (auth expired)`
   }
@@ -12,28 +24,37 @@ function getEditorLabel(editor: Editor): string {
   return editor.name
 }
 
+interface PromptOptions {
+  choices: EditorChoice[]
+  message: string
+}
+
 /**
- * Prompt user to select which editors to configure.
+ * Prompt the user to select editors for MCP / skills setup. The caller is
+ * responsible for classifying editors into actions (see `EditorAction`) and
+ * for choosing an appropriate prompt message.
  *
- * Expects only actionable editors (unconfigured, or configured with
- * invalid/missing credentials). Annotates entries with auth status.
+ * Returns the subset of `choices` the user kept, or `null` when the user
+ * deselected everything.
  */
-export async function promptForMCPSetup(editors: Editor[]): Promise<Editor[] | null> {
-  const editorChoices = editors.map((e) => ({
-    checked: true, // Pre-select all actionable editors
-    name: getEditorLabel(e),
-    value: e.name,
+export async function promptForMCPSetup({
+  choices,
+  message,
+}: PromptOptions): Promise<EditorChoice[] | null> {
+  const editorChoices = choices.map((choice) => ({
+    checked: true,
+    name: getEditorLabel(choice),
+    value: choice.editor.name,
   }))
 
   const selectedNames = await checkbox({
     choices: editorChoices,
-    message: 'Configure Sanity MCP server?',
+    message,
   })
 
-  // User can deselect all to skip
   if (!selectedNames || selectedNames.length === 0) {
     return null
   }
 
-  return editors.filter((e) => selectedNames.includes(e.name))
+  return choices.filter((c) => selectedNames.includes(c.editor.name))
 }
