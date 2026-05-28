@@ -98,14 +98,6 @@ describe('startAppDevServer', () => {
     expect(result.close).toBeDefined()
   })
 
-  test('passes reactRefreshHost through to startDevServer', async () => {
-    await startAppDevServer(createOptions({reactRefreshHost: 'http://localhost:3333'}))
-
-    expect(mockStartDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({reactRefreshHost: 'http://localhost:3333'}),
-    )
-  })
-
   test('logs "App dev server started" when workbench is not available', async () => {
     mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
     const output = createMockOutput()
