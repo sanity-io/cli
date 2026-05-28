@@ -89,6 +89,12 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const cwd = await testFixture('federated-studio')
     process.chdir(cwd)
 
+    // `@module-federation/vite` short-circuits to an empty plugin array when
+    // it detects vitest/jest in the env, which leaves the federation env without
+    // its plugins and skips emitting `remote-entry.js` / `mf-manifest.json`.
+    // Opt out of that guard for this in-process build.
+    vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
+
     const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
     })

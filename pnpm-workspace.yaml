@@ -94,3 +94,5 @@ minimumReleaseAgeExclude:
   - 'jiti@2.7.0'
   # Renovate security update: turbo@2.9.14
   - turbo@2.9.14
+  # Required by @sanity/federation@0.1.0-alpha.8
+  - '@module-federation/vite@1.16.0'
