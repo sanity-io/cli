@@ -1,12 +1,13 @@
 import path from 'node:path'
 
+import babel from '@rolldown/plugin-babel'
 import {
   type CliConfig,
   findProjectRoot,
   getCliTelemetry,
   type UserViteConfig,
 } from '@sanity/cli-core'
-import viteReact from '@vitejs/plugin-react'
+import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
 import {type ConfigEnv, type InlineConfig, mergeConfig, type Plugin, type Rollup} from 'vite'
@@ -145,16 +146,19 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     logLevel: mode === 'production' ? 'silent' : 'info',
     mode,
     plugins: [
-      viteReact(
-        reactCompiler
-          ? {
-              babel: {
-                generatorOpts: {compact: true},
-                plugins: [['babel-plugin-react-compiler', reactCompiler]],
-              },
-            }
-          : {},
-      ),
+      ...viteReact(),
+      ...(reactCompiler
+        ? [
+            babel({
+              presets: [
+                reactCompilerPreset({
+                  compilationMode: reactCompiler.compilationMode,
+                  target: reactCompiler.target,
+                }),
+              ],
+            }),
+          ]
+        : []),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
       sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),

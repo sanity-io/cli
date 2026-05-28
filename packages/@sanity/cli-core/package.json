@@ -81,7 +81,7 @@
     "rxjs": "catalog:",
     "tsx": "catalog:",
     "vite": "catalog:",
-    "vite-node": "^5.3.0",
+    "vite-node": "^6.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
