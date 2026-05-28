@@ -94,32 +94,6 @@ describe('devAction', () => {
     expect(mockStartStudioDevServer).not.toHaveBeenCalled()
   })
 
-  test('passes reactRefreshHost pointing to workbench when workbench is running', async () => {
-    mockStartWorkbenchDevServer.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
-      httpHost: 'localhost',
-      workbenchAvailable: true,
-      workbenchPort: 3333,
-    })
-    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
-
-    await devAction(createBaseDevOptions())
-
-    expect(mockStartStudioDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({reactRefreshHost: 'http://localhost:3333'}),
-    )
-  })
-
-  test('does not pass reactRefreshHost when workbench is not running', async () => {
-    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
-
-    await devAction(createBaseDevOptions())
-
-    expect(mockStartStudioDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({reactRefreshHost: undefined}),
-    )
-  })
-
   test('cleans up workbench and re-throws when app/studio startup fails', async () => {
     const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
     mockStartWorkbenchDevServer.mockResolvedValue({
@@ -268,12 +242,9 @@ describe('devAction', () => {
 
     await devAction(createBaseDevOptions({output}))
 
-    // The workbench is running on mydev.local — the URL and reactRefreshHost
-    // should reflect the existing workbench's host, not the caller's.
+    // The workbench is running on mydev.local — the URL should reflect the
+    // existing workbench's host, not the caller's.
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('mydev.local:3333'))
-    expect(mockStartStudioDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({reactRefreshHost: 'http://mydev.local:3333'}),
-    )
   })
 
   test('returns early with workbench-only close when app server exits without a server', async () => {

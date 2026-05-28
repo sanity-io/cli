@@ -35,14 +35,9 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // Use workbenchPort + 1 when workbench claims the configured port
   const desiredAppPort = workbenchAvailable ? workbenchPort + 1 : workbenchPort
 
-  const reactRefreshHost = workbenchAvailable
-    ? `http://${workbenchHost || 'localhost'}:${workbenchPort}`
-    : undefined
-
   const appOptions: DevActionOptions = {
     ...options,
     flags: {...options.flags, port: String(desiredAppPort)},
-    reactRefreshHost,
     workbenchAvailable,
   }
 
