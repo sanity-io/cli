@@ -2,8 +2,6 @@ import {isAbsolute, relative} from 'node:path'
 
 import picomatch from 'picomatch'
 
-import {toForwardSlashes} from '../../util/toForwardSlashes.js'
-
 /**
  * Creates a pattern matcher function for schema watch patterns.
  * Normalizes file paths to forward slashes and makes them relative before matching.
@@ -20,7 +18,7 @@ export function createSchemaPatternMatcher(patterns: string[]): {
   return {
     isMatch: (filePath: string, workDir: string): boolean => {
       const relativePath = isAbsolute(filePath) ? relative(workDir, filePath) : filePath
-      const normalizedPath = toForwardSlashes(relativePath)
+      const normalizedPath = relativePath.replaceAll('\\', '/')
       return matcher(normalizedPath)
     },
   }

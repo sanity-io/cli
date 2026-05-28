@@ -1,14 +1,14 @@
 import {exit} from '@oclif/core/errors'
 import {
   type ExtractOptions,
+  formatSchemaValidation,
   runSchemaExtraction,
+  SchemaExtractedTrace,
   SchemaExtractionError,
-} from '@sanity/cli-build/_internal'
+} from '@sanity/cli-build/_internal/extract'
 import {getCliTelemetry, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
-import {SchemaExtractedTrace} from '../../telemetry/extractSchema.telemetry.js'
-import {formatSchemaValidation} from './formatSchemaValidation.js'
 import {schemasExtractDebug} from './utils/debug.js'
 
 interface ExtractSchemaActionOptions {

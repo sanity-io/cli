@@ -1,4 +1,6 @@
 export * from './test/constants.js'
+export * from './test/createMockHttpServer.js'
+export * from './test/createMockWatcher.js'
 export * from './test/createTestClient.js'
 export * from './test/createTestToken.js'
 export * from './test/mockApi.js'
