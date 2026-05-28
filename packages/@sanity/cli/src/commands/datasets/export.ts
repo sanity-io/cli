@@ -51,6 +51,11 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
       command: '<%= config.bin %> <%= command.id %> staging staging.tar.gz --types products,shops',
       description: 'Export specific document types',
     },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> moviedb moviedb.tar.gz --no-strict-asset-verification',
+      description: 'Export dataset without aborting on asset verification failures',
+    },
   ]
 
   static override flags = {
@@ -79,6 +84,11 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     'no-drafts': Flags.boolean({
       default: false,
       description: 'Export only published versions of documents',
+    }),
+    'no-strict-asset-verification': Flags.boolean({
+      default: false,
+      description:
+        'Do not abort the export when an asset fails hash or content-length verification',
     }),
     overwrite: Flags.boolean({
       default: false,
@@ -193,6 +203,7 @@ dataset: ${dataset.padEnd(46)}`,
       onProgress,
       outputPath,
       raw: flags.raw,
+      strictAssetVerification: !flags['no-strict-asset-verification'],
       types: flags.types ? flags.types.split(',') : undefined,
     }
 

@@ -176,6 +176,7 @@ describe('#dataset:export', () => {
             onProgress: expect.any(Function),
             outputPath: expect.stringMatching(expectedPathPattern),
             raw: false,
+            strictAssetVerification: true,
             types: undefined,
           }),
         )
@@ -461,6 +462,22 @@ describe('#dataset:export', () => {
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
           raw: true,
+        }),
+      )
+    })
+
+    test('sets strictAssetVerification:false when --no-strict-asset-verification flag is used', async () => {
+      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+
+      await testCommand(
+        DatasetExportCommand,
+        ['production', TEST_OUTPUTS.TAR_GZ, '--no-strict-asset-verification'],
+        {mocks},
+      )
+
+      expect(mockExportDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          strictAssetVerification: false,
         }),
       )
     })
