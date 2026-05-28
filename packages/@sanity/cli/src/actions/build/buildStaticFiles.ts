@@ -20,7 +20,6 @@ import {
 
 export interface ChunkModule {
   name: string
-  originalLength: number
   renderedLength: number
 }
 
@@ -148,7 +147,6 @@ export async function buildStaticFiles(
 
         return {
           name: path.isAbsolute(filePath) ? path.relative(cwd, filePath) : filePath,
-          originalLength: chunkModule.originalLength,
           renderedLength: chunkModule.renderedLength,
         }
       }),

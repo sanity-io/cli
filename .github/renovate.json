@@ -118,7 +118,11 @@
         "oxfmt",
         "@oxfmt/*",
         "jiti",
-        "turbo"
+        "turbo",
+        "vite",
+        "@vitejs/*",
+        "vitest",
+        "@vitest/*"
       ],
       "minimumReleaseAge": "0 days"
     }
