@@ -45,6 +45,6 @@ export const SchemaExtractionWatchModeTrace = defineTrace<SchemaExtractionWatchM
 export const SchemaDeploy = defineTrace<SchemaDeployTraceData>({
   description:
     'Schema deploy action was executed, either via sanity schema deploy or as sanity deploy',
-  name: 'Schema deploy action executed',
+  name: 'Schema Deployed',
   version: 1,
 })
