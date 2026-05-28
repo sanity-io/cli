@@ -101,10 +101,7 @@ export async function startStudioDevServer(
   try {
     const startTime = Date.now()
     const spin = spinner('Starting dev server').start()
-    const {close, server} = await startDevServer({
-      ...config,
-      reactRefreshHost: options.reactRefreshHost,
-    })
+    const {close, server} = await startDevServer(config)
 
     const {info: loggerInfo} = server.config.logger
     const {port} = server.config.server

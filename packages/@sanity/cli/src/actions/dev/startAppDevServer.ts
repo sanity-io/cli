@@ -33,7 +33,6 @@ export async function startAppDevServer(
       ...config,
       appTitle,
       isApp: true,
-      reactRefreshHost: options.reactRefreshHost,
     })
 
     const {port} = server.config.server
