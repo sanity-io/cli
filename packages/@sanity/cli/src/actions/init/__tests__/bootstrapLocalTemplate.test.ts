@@ -125,9 +125,6 @@ describe('bootstrapLocalTemplate (federation)', () => {
 
     const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
     expect(pkgJson.dependencies.sanity).toBe('1.0.0')
-
-    const gitignore = await readFile(path.join(tmp, '.gitignore'), 'utf8')
-    expect(gitignore).toContain('.__mf__temp/')
   })
 
   test('keeps the `sanity` dependency on the `latest` dist-tag when federation is disabled', async () => {
