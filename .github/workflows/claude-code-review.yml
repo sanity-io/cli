@@ -2,15 +2,15 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [labeled]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}-${{ github.event.label.name }}
+  cancel-in-progress: true
 
 jobs:
   claude-review:
-    if: >-
-      !contains(github.event.pull_request.labels.*.name, 'skip-review') &&
-      github.actor != 'squiggler[bot]' &&
-      github.actor != 'squiggler-app[bot]' &&
-      (github.actor != 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, '⚠️ major'))
+    if: github.event.label.name == 'claude:review'
 
     runs-on: ubuntu-latest
     permissions:
@@ -35,7 +35,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Run Claude Code Review
-        if: github.actor != 'renovate[bot]'
+        if: github.event.pull_request.user.login != 'renovate[bot]'
         id: claude-review
         uses: anthropics/claude-code-action@1dc994ee7a008f0ecc866d9ac23ef036b7229f84 # v1
         with:
@@ -52,7 +52,7 @@ jobs:
           allowed_bots: 'cursor,renovate'
 
       - name: Run Claude Review for Renovate Major Update
-        if: github.actor == 'renovate[bot]'
+        if: github.event.pull_request.user.login == 'renovate[bot]'
         id: claude-review-renovate
         uses: anthropics/claude-code-action@1dc994ee7a008f0ecc866d9ac23ef036b7229f84 # v1
         with:
