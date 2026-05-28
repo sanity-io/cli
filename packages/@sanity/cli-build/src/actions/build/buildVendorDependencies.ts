@@ -1,11 +1,14 @@
+import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {getLocalPackageDir, getLocalPackageVersion} from '@sanity/cli-core'
 import {gt, minVersion, rcompare, satisfies} from 'semver'
-import {build} from 'vite'
+import {build, esmExternalRequirePlugin} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
+import {getCjsNamedExports} from './getCjsNamedExports.js'
+import {createVendorNamedExportsPlugin} from './vite/plugin-sanity-vendor-named-exports.js'
 
 // Directory where vendor packages will be stored
 const VENDOR_DIR = 'vendor'
@@ -113,6 +116,9 @@ export async function buildVendorDependencies({
   const entry: Record<string, string> = {}
   const imports: Record<string, string> = {}
 
+  // Named exports each CommonJS entry must re-expose as ESM, keyed by chunk name.
+  const namesByChunkName: Record<string, readonly string[]> = {}
+
   // If we're building an app, we don't need to build the styled-components package
   const vendorImports = isApp ? VENDOR_IMPORTS : {...VENDOR_IMPORTS, ...STYLED_COMPONENTS_IMPORTS}
 
@@ -165,32 +171,51 @@ export async function buildVendorDependencies({
         path.relative(packageName, specifier) || 'index',
       )
 
-      entry[chunkName] = path.join(packageDir, relativeEntryPoint)
+      const entryPath = path.join(packageDir, relativeEntryPoint)
+      entry[chunkName] = entryPath
       imports[specifier] = path.posix.join('/', basePath, VENDOR_DIR, `${chunkName}.mjs`)
+
+      // React and React-DOM ship CommonJS. Rolldown lowers a CJS entry to an ESM
+      // chunk that only emits `export default`, so collect the named exports it
+      // must additionally re-expose (see `createVendorNamedExportsPlugin`).
+      // `styled-components` is native ESM and `package.json` is JSON, so both are
+      // skipped here.
+      if (packageName in VENDOR_IMPORTS && subpath !== './package.json') {
+        const source = await readFile(entryPath, 'utf8')
+        namesByChunkName[chunkName] = await getCjsNamedExports(source, chunkName)
+      }
     }
   }
 
-  // removes the `RollupWatcher` type
+  // Externals are handled by `esmExternalRequirePlugin` (below) rather than
+  // `rolldownOptions.external`: the plugin both marks them external AND rewrites
+  // CommonJS `require('react')` calls (e.g. in react-dom) into ESM imports.
+  // Also setting `rolldownOptions.external` short-circuits that rewrite, leaving a
+  // runtime `require` shim that throws in the browser.
+  const external = createExternalFromImportMap({imports})
+
+  // removes the `RolldownWatcher` type
   type BuildResult = Exclude<Awaited<ReturnType<typeof build>>, {close: unknown}>
 
   // Use Vite to build the packages into the output directory
   let buildResult = (await build({
     appType: 'custom',
     build: {
-      commonjsOptions: {strictRequires: 'auto'},
       emptyOutDir: false, // Rely on CLI to do this
       lib: {entry, formats: ['es']},
       minify: true,
       outDir: path.join(outputDir, VENDOR_DIR),
-      rollupOptions: {
-        external: createExternalFromImportMap({imports}),
+      rolldownOptions: {
+        // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so the
+        // vendor named-exports plugin can edit chunks without a JS dependency.
+        experimental: {nativeMagicString: true},
         output: {
           chunkFileNames: '[name]-[hash].mjs',
           entryFileNames: '[name]-[hash].mjs',
           exports: 'named',
           format: 'es',
         },
-        treeshake: {preset: 'recommended'},
+        treeshake: true,
       },
     },
     // Define a custom cache directory so that sanity's vite cache
@@ -200,6 +225,14 @@ export async function buildVendorDependencies({
     define: {'process.env.NODE_ENV': JSON.stringify('production')},
     logLevel: 'silent',
     mode: 'production',
+    plugins: [
+      // Re-expose CommonJS named exports (react, react-dom) as real ESM exports;
+      // Rolldown only emits `export default` for a CommonJS entry.
+      createVendorNamedExportsPlugin(namesByChunkName),
+      // Rewrite external `require(...)` (e.g. react-dom requiring react) into ESM
+      // imports so the vendored output runs in the browser without `require`.
+      esmExternalRequirePlugin({external}),
+    ],
     root: cwd,
   })) as BuildResult
 

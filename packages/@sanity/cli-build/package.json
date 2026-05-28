@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "@oclif/core": "catalog:",
+    "@rolldown/plugin-babel": "^0.2.3",
     "@sanity/cli-core": "workspace:^",
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/schema": "catalog:",
@@ -62,6 +63,7 @@
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
+    "cjs-module-lexer": "^2.2.0",
     "debug": "catalog:",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
@@ -94,8 +96,10 @@
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
+    "magic-string": "^0.30.21",
     "publint": "catalog:",
     "sanity": "catalog:",
+    "styled-components": "^6.4.0",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

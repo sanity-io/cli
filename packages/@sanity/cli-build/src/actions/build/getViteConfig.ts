@@ -1,15 +1,23 @@
 import path from 'node:path'
 
+import babel from '@rolldown/plugin-babel'
 import {
   type CliConfig,
   findProjectRoot,
   getCliTelemetry,
   type UserViteConfig,
 } from '@sanity/cli-core'
-import viteReact from '@vitejs/plugin-react'
+import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
-import {type ConfigEnv, type InlineConfig, mergeConfig, type Plugin, type Rollup} from 'vite'
+import {
+  type ConfigEnv,
+  esmExternalRequirePlugin,
+  type InlineConfig,
+  mergeConfig,
+  type Plugin,
+  type Rolldown,
+} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
@@ -145,16 +153,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     logLevel: mode === 'production' ? 'silent' : 'info',
     mode,
     plugins: [
-      viteReact(
-        reactCompiler
-          ? {
-              babel: {
-                generatorOpts: {compact: true},
-                plugins: [['babel-plugin-react-compiler', reactCompiler]],
-              },
-            }
-          : {},
-      ),
+      ...viteReact(),
+      ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
       sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),
@@ -176,6 +176,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     ],
     resolve: {
       dedupe: ['react', 'react-dom', 'sanity', 'styled-components'],
+      // Honor the studio's tsconfig `paths`, consistent with studioWorkerLoader.worker.ts.
+      tsconfigPaths: true,
     },
     root: cwd,
     server: {
@@ -199,19 +201,30 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   if (mode === 'production') {
+    // For auto-updating studios the import map externalizes react/react-dom/etc.
+    // Hand those externals to `esmExternalRequirePlugin` rather than
+    // `rolldownOptions.external`, so any bundled CommonJS `require()` of an external
+    // is rewritten to an ESM import instead of a runtime `require` shim that throws
+    // in the browser. The plugin both marks them external AND converts the requires;
+    // also setting `rolldownOptions.external` would short-circuit that conversion.
+    // With no import map (auto-updates off) the external list is empty and this is a
+    // no-op (everything is bundled, so requires resolve internally).
+    viteConfig.plugins!.push(
+      esmExternalRequirePlugin({external: createExternalFromImportMap(importMap)}),
+    )
+
     viteConfig.build = {
       ...viteConfig.build,
 
       assetsDir: 'static',
       emptyOutDir: false, // Rely on CLI to do this
-      minify: minify ? 'esbuild' : false,
+      minify: minify ? 'oxc' : false,
 
-      rollupOptions: {
-        external: createExternalFromImportMap(importMap),
+      rolldownOptions: {
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
         },
-        onwarn: onRollupWarn,
+        onwarn: onRolldownWarn,
       },
     }
   }
@@ -219,7 +232,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   return viteConfig
 }
 
-function onRollupWarn(warning: Rollup.RollupLog, warn: Rollup.LoggingFunction) {
+function onRolldownWarn(warning: Rolldown.RolldownLog, warn: Rolldown.LoggingFunction) {
   if (suppressUnusedImport(warning)) {
     return
   }
@@ -227,7 +240,7 @@ function onRollupWarn(warning: Rollup.RollupLog, warn: Rollup.LoggingFunction) {
   warn(warning)
 }
 
-function suppressUnusedImport(warning: Rollup.RollupLog & {ids?: string[]}): boolean {
+function suppressUnusedImport(warning: Rolldown.RolldownLog & {ids?: string[]}): boolean {
   if (warning.code !== 'UNUSED_EXTERNAL_IMPORT') return false
 
   // Suppress:
@@ -254,9 +267,9 @@ function suppressUnusedImport(warning: Rollup.RollupLog & {ids?: string[]}): boo
  * @internal
  */
 export async function finalizeViteConfig(config: InlineConfig): Promise<InlineConfig> {
-  if (typeof config.build?.rollupOptions?.input !== 'object') {
+  if (typeof config.build?.rolldownOptions?.input !== 'object') {
     throw new TypeError(
-      'Vite config must contain `build.rollupOptions.input`, and it must be an object',
+      'Vite config must contain `build.rolldownOptions.input`, and it must be an object',
     )
   }
 
@@ -268,7 +281,7 @@ export async function finalizeViteConfig(config: InlineConfig): Promise<InlineCo
 
   return mergeConfig(config, {
     build: {
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
         },
