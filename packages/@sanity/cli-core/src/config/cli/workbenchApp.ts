@@ -30,5 +30,8 @@ export function parseWorkbenchCliConfig(cliConfig: unknown): CliConfig {
   if (!success) {
     throw new Error(`Invalid CLI config: ${error.message}`, {cause: error})
   }
-  return {...data, app} as CliConfig
+  // Calling `unstable_defineApp` is the sole workbench opt-in — there's no
+  // separate `federation: {enabled: true}` flag for branded apps. Force it on
+  // so the workbench dev server and federation registration start.
+  return {...data, app, federation: {enabled: true}} as CliConfig
 }
