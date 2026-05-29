@@ -1,5 +1,6 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {resolveLocalPackage} from '@sanity/cli-core'
+import {isWorkbenchApp} from '@sanity/federation'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
 import {z} from 'zod/mini'
@@ -53,8 +54,9 @@ export async function startWorkbenchDevServer(
 ): Promise<WorkbenchDevServerResult> {
   const {cliConfig, httpHost, httpPort: workbenchPort, output, workDir} = options
 
-  if (!cliConfig?.federation?.enabled) {
-    devDebug('Federation not enabled, skipping workbench dev server')
+  // Workbench is opted into solely by calling `unstable_defineApp`.
+  if (!isWorkbenchApp(cliConfig?.app)) {
+    devDebug('Not a workbench app, skipping workbench dev server')
     return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
   }
 

@@ -2,13 +2,14 @@ import {existsSync} from 'node:fs'
 import {createRequire} from 'node:module'
 import {join} from 'node:path'
 
+import {isWorkbenchApp} from '@sanity/federation'
 import {register} from 'tsx/esm/api'
 
 import {NotFoundError} from '../../errors/NotFoundError.js'
 import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
-import {isWorkbenchApp, parseWorkbenchCliConfig} from './workbenchApp.js'
+import {parseWorkbenchCliConfig} from './workbenchApp.js'
 
 /**
  * Get the CLI config for a project synchronously, given the root path.
@@ -51,7 +52,7 @@ export function getCliConfigSync(rootPath: string): CliConfig {
   // Branch as early as possible: a branded `unstable_defineApp(...)` opts into
   // workbench behavior, so its `app` skips the legacy `app` schema entirely.
   if (isWorkbenchApp(cliConfig?.app)) {
-    return parseWorkbenchCliConfig(cliConfig)
+    return parseWorkbenchCliConfig(cliConfig, rootPath)
   }
 
   const {data, error, success} = cliConfigSchema.safeParse(cliConfig)

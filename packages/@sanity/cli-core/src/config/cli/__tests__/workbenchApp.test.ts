@@ -1,56 +1,55 @@
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+
 import {describe, expect, test} from 'vitest'
 
-import {isWorkbenchApp, parseWorkbenchCliConfig} from '../workbenchApp'
+import {parseWorkbenchCliConfig} from '../workbenchApp'
 
 const BRAND = Symbol.for('sanity.workbench.defineApp')
+// A dir with no `sanity.config.*`, so detection resolves to a core app.
+const APP_DIR = tmpdir()
 
 /** Mimics what `unstable_defineApp` returns: the input plus the brand. */
 function brandedApp(input: Record<string, unknown>) {
   return Object.defineProperty({...input}, BRAND, {enumerable: false, value: true})
 }
 
-describe('isWorkbenchApp', () => {
-  test('detects a branded app', () => {
-    expect(isWorkbenchApp(brandedApp({name: 'mini', title: 'Mini'}))).toBe(true)
-  })
-
-  test('ignores a plain app config', () => {
-    expect(isWorkbenchApp({organizationId: 'o1', title: 'Mini'})).toBe(false)
-    expect(isWorkbenchApp(null)).toBe(false)
-    expect(isWorkbenchApp(undefined)).toBe(false)
-  })
-})
-
 describe('parseWorkbenchCliConfig', () => {
-  test('enables federation implicitly (no federation.enabled needed)', () => {
+  test('keeps the branded app untouched, brand and identity fields intact', () => {
     const app = brandedApp({
       entry: './src/App.tsx',
-      icon: './icon.svg',
-      name: 'mini-desk',
+      name: 'drop-desk',
       organizationId: 'o1',
-      title: 'Mini Desk',
+      title: 'Drop Desk',
     })
 
-    const config = parseWorkbenchCliConfig({app, server: {port: 3337}})
+    const config = parseWorkbenchCliConfig({app, server: {port: 3333}}, APP_DIR)
 
-    expect(config.federation).toEqual({enabled: true})
+    expect(config.app).toBe(app)
+    expect((config.app as {name?: string}).name).toBe('drop-desk')
+    expect(BRAND in (config.app as object)).toBe(true)
   })
 
-  test('keeps the branded app untouched (identity fields survive)', () => {
-    const app = brandedApp({name: 'mini-desk', organizationId: 'o1', title: 'Mini Desk'})
+  test('infers applicationType "coreApp" when there is no sanity.config', () => {
+    const app = brandedApp({name: 'drop-desk', title: 'Drop Desk'})
 
-    const config = parseWorkbenchCliConfig({app})
+    parseWorkbenchCliConfig({app}, APP_DIR)
 
-    // `name` would be stripped by the legacy `app` object schema — the branded
-    // app must bypass it.
-    expect(config.app).toBe(app)
-    expect((config.app as {name?: string}).name).toBe('mini-desk')
+    expect((app as {applicationType?: string}).applicationType).toBe('coreApp')
+  })
+
+  test('keeps an explicit applicationType (no detection)', () => {
+    const app = brandedApp({applicationType: 'media-library', name: 'media', title: 'Media'})
+
+    parseWorkbenchCliConfig({app}, join(APP_DIR, 'nope'))
+
+    expect((app as {applicationType?: string}).applicationType).toBe('media-library')
   })
 
   test('still validates the non-app fields', () => {
-    const app = brandedApp({name: 'mini', title: 'Mini'})
+    const app = brandedApp({name: 'drop-desk', title: 'Drop Desk'})
 
-    expect(() => parseWorkbenchCliConfig({app, server: {port: 'not-a-number'}})).toThrow(
+    expect(() => parseWorkbenchCliConfig({app, server: {port: 'nope'}}, APP_DIR)).toThrow(
       /Invalid CLI config/,
     )
   })

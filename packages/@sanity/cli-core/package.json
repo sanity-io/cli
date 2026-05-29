@@ -66,6 +66,7 @@
     "@inquirer/prompts": "^8.3.0",
     "@oclif/core": "catalog:",
     "@sanity/client": "catalog:",
+    "@sanity/federation": "https://pkg.pr.new/sanity-io/workbench/@sanity/federation@22d5aceac853d8279381fbfd23072d2a1a8b1847",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
     "debug": "catalog:",

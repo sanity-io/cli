@@ -66,7 +66,7 @@ describe('buildStaticFiles', () => {
       await buildStaticFiles({
         basePath: '/',
         cwd,
-        federation: {enabled: true},
+        isWorkbench: true,
         outputDir,
         vite: userVite,
       })
@@ -93,7 +93,7 @@ describe('buildStaticFiles', () => {
       await buildStaticFiles({
         basePath: '/',
         cwd,
-        federation: {enabled: true},
+        isWorkbench: true,
         outputDir,
       })
 
@@ -105,7 +105,7 @@ describe('buildStaticFiles', () => {
       await buildStaticFiles({
         basePath: '/',
         cwd,
-        federation: {enabled: true},
+        isWorkbench: true,
         outputDir,
       })
 

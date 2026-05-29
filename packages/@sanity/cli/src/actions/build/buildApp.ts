@@ -13,6 +13,7 @@ import {
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {isWorkbenchApp} from '@sanity/federation'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -33,7 +34,7 @@ interface InternalBuildOptions {
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   entry: string | undefined
-  federation: CliConfig['federation']
+  isWorkbench: boolean
   minify: boolean
   outDir: string | undefined
   output: Output
@@ -61,7 +62,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     calledFromDeploy: options.calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
-    federation: cliConfig.federation,
+    isWorkbench: isWorkbenchApp(cliConfig && 'app' in cliConfig ? cliConfig.app : undefined),
     minify: flags.minify,
     outDir,
     output,
@@ -204,7 +205,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
 
   let importMap: {imports?: Record<string, string>} | undefined
 
-  if (autoUpdatesEnabled && !options.federation?.enabled) {
+  if (autoUpdatesEnabled && !options.isWorkbench) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
@@ -222,9 +223,9 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
       basePath,
       cwd: workDir,
       entry: options.entry,
-      federation: options.federation,
       importMap,
       isApp: true,
+      isWorkbench: options.isWorkbench,
       minify: options.minify,
       outputDir,
       reactCompiler: options.reactCompiler,

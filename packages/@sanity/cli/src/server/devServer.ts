@@ -29,9 +29,9 @@ export interface DevServerOptions {
 
   appTitle?: string
   entry?: string
-  federation?: CliConfig['federation']
   httpHost?: string
   isApp?: boolean
+  isWorkbench?: boolean
   projectName?: string
   schemaExtraction?: CliConfig['schemaExtraction']
   typegen?: CliConfig['typegen']
@@ -51,10 +51,10 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     basePath,
     cwd,
     entry,
-    federation,
     httpHost,
     httpPort,
     isApp,
+    isWorkbench,
     reactCompiler,
     reactStrictMode,
     schemaExtraction,
@@ -98,9 +98,9 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     basePath,
     cwd,
     entries,
-    federation,
     getEnvironmentVariables,
     isApp,
+    isWorkbench,
     mode: 'development',
     reactCompiler,
     schemaExtraction,
