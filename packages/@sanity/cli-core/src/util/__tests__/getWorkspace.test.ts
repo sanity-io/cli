@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {getWorkspace} from '../getWorkspace'
+import {getWorkspace} from '../getWorkspace.js'
 
 const mockWorkspaces = [
   {

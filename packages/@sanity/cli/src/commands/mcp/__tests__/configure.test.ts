@@ -247,6 +247,7 @@ const editorTestCases: EditorTestCase[] = [
     detect: {cliCommands: ['claude']},
     expectedConfigPath: '.claude.json',
     name: 'Claude Code',
+    oauthOnly: true,
   },
   {
     detect: {
@@ -680,7 +681,7 @@ describe.sequential('#mcp:configure', () => {
     mockIsInteractive.mockReturnValue(false)
 
     mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'claude') return EXECA_SUCCESS
+      if (command === 'opencode') return EXECA_SUCCESS
       throw new Error('Not installed')
     }) as never)
 
@@ -690,11 +691,11 @@ describe.sequential('#mcp:configure', () => {
 
     expect(mockCheckbox).not.toHaveBeenCalled()
     expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('.claude.json'),
+      expect.stringContaining(convertToSystemPath('.config/opencode/opencode.json')),
       expect.stringContaining('test-token-ci'),
       'utf8',
     )
-    expect(stdout).toContain('MCP configured for Claude Code')
+    expect(stdout).toContain('MCP configured for OpenCode')
   })
 
   // -------------------------------------------------------------------------
@@ -703,11 +704,11 @@ describe.sequential('#mcp:configure', () => {
 
   test('handles token creation error gracefully', async () => {
     mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'claude') return EXECA_SUCCESS
+      if (command === 'opencode') return EXECA_SUCCESS
       throw new Error('Not installed')
     }) as never)
 
-    mockCheckbox.mockResolvedValue(['Claude Code'])
+    mockCheckbox.mockResolvedValue(['OpenCode'])
 
     mockCreateMCPToken.mockRejectedValueOnce(new Error('Not authenticated'))
 
@@ -720,11 +721,11 @@ describe.sequential('#mcp:configure', () => {
 
   test('handles file write error gracefully', async () => {
     mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'claude') return EXECA_SUCCESS
+      if (command === 'opencode') return EXECA_SUCCESS
       throw new Error('Not installed')
     }) as never)
 
-    mockCheckbox.mockResolvedValue(['Claude Code'])
+    mockCheckbox.mockResolvedValue(['OpenCode'])
 
     mockMCPTokenCreation('token-write-error')
 
@@ -765,17 +766,17 @@ describe.sequential('#mcp:configure', () => {
 
   test('merges with existing config file', async () => {
     mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'claude') return EXECA_SUCCESS
+      if (command === 'opencode') return EXECA_SUCCESS
       throw new Error('Not installed')
     }) as never)
 
     mockExistsSync.mockImplementation((p: PathLike) => {
-      return String(p).endsWith('.claude.json')
+      return String(p).endsWith('opencode.json')
     })
 
     mockReadFile.mockResolvedValue(
       JSON.stringify({
-        mcpServers: {
+        mcp: {
           OtherServer: {
             type: 'stdio',
           },
@@ -783,7 +784,7 @@ describe.sequential('#mcp:configure', () => {
       }),
     )
 
-    mockCheckbox.mockResolvedValue(['Claude Code'])
+    mockCheckbox.mockResolvedValue(['OpenCode'])
 
     mockMCPTokenCreation('merge-token-123')
 

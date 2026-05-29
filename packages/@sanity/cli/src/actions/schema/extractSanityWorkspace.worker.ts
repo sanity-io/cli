@@ -1,11 +1,11 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
+import {extractValidationFromSchemaError} from '@sanity/cli-build/_internal/extract'
 import {getStudioWorkspaces, safeStructuredClone} from '@sanity/cli-core'
 import {type Schema} from '@sanity/types'
 
 import {extractManifestSchemaTypes} from '../manifest/extractWorkspaceManifest.js'
 import {extractWorkspaceWorkerData} from './types.js'
-import {extractValidationFromSchemaError} from './utils/extractValidationFromSchemaError.js'
 
 if (isMainThread || !parentPort) {
   throw new Error('Should only be run in a worker!')

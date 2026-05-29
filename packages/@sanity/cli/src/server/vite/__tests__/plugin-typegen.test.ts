@@ -1,9 +1,9 @@
 import path from 'node:path'
 
 import {CLITelemetryStore} from '@sanity/cli-core'
+import {createMockHttpServer, createMockWatcher} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {createMockHttpServer, createMockWatcher} from '../../../../test/testUtils.js'
 import {sanityTypegenPlugin} from '../plugin-typegen.js'
 
 const TEST_PROJECT_DIR = path.resolve('/project')

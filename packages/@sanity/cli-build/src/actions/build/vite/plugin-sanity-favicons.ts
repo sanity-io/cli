@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {generateWebManifest} from '@sanity/cli-build/_internal'
 import {type Plugin} from 'vite'
+
+import {generateWebManifest} from '../generateWebManifest.js'
 
 const mimeTypes: Record<string, string | undefined> = {
   '.ico': 'image/x-icon',

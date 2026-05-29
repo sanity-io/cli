@@ -304,7 +304,12 @@ export const EDITOR_CONFIGS = {
   },
   // Doc: https://docs.anthropic.com/en/docs/claude-code/mcp
   // Path: ~/.claude.json  Key: mcpServers
-  'Claude Code': {...EDITOR_DEFAULTS, detect: detectClaudeCode, skillsCliAgent: 'claude-code'},
+  'Claude Code': {
+    ...EDITOR_DEFAULTS,
+    detect: detectClaudeCode,
+    oauthOnly: true,
+    skillsCliAgent: 'claude-code',
+  },
   // Doc: https://github.com/cline/cline — VS Code extension (saoudrizwan.claude-dev)
   // Path: <VS Code User>/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
   Cline: {

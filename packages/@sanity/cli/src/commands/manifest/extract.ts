@@ -1,10 +1,9 @@
 import {Flags} from '@oclif/core'
+import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {SanityCommand} from '@sanity/cli-core'
 
 import {manifestDebug} from '../../actions/manifest/debug.js'
 import {extractManifest} from '../../actions/manifest/extractManifest.js'
-import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidation.js'
-import {SchemaExtractionError} from '../../actions/schema/utils/SchemaExtractionError.js'
 
 const description = `
 Extract studio configuration as JSON manifest files.
