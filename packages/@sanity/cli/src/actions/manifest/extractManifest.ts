@@ -1,4 +1,7 @@
-import {type ExtractSchemaWorkerError, SchemaExtractionError} from '@sanity/cli-build/_internal'
+import {
+  type ExtractSchemaWorkerError,
+  SchemaExtractionError,
+} from '@sanity/cli-build/_internal/extract'
 import {findProjectRoot, getTimer, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 

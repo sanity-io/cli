@@ -1,8 +1,7 @@
 import path from 'node:path'
 import {type MessagePort} from 'node:worker_threads'
 
-import {buildDebug} from '@sanity/cli-build/_internal'
-
+import {buildDebug} from '../buildDebug.js'
 import {BasicDocument} from './components/BasicDocument.js'
 import {DefaultDocument} from './components/DefaultDocument.js'
 import {tryLoadDocumentComponent} from './tryLoadDocumentComponent.js'

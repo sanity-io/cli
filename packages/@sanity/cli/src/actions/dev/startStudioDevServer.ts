@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {checkStudioDependencyVersions} from '@sanity/cli-build/_internal'
+import {checkStudioDependencyVersions} from '@sanity/cli-build/_internal/build'
 import {getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'

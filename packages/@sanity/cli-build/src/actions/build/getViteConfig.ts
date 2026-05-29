@@ -1,6 +1,5 @@
 import path from 'node:path'
 
-import {getDefaultFaviconsPath} from '@sanity/cli-build/_internal'
 import {
   type CliConfig,
   findProjectRoot,
@@ -15,20 +14,22 @@ import {type ConfigEnv, type InlineConfig, mergeConfig, type Plugin, type Rollup
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
-import {
-  getAppEnvironmentVariables,
-  getStudioEnvironmentVariables,
-} from './getEnvironmentVariables.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
+import {getDefaultFaviconsPath} from './writeFavicons.js'
 
 interface ViteOptions {
   /**
    * Root path of the studio/sanity app
    */
   cwd: string
+
+  /**
+   * Returns the environment variables to be injected into the config.
+   */
+  getEnvironmentVariables(): Record<string, string>
 
   /**
    * Mode to run vite in - eg development or production
@@ -111,9 +112,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const defaultFaviconsPath = await getDefaultFaviconsPath()
   const staticPath = `${basePath}static`
 
-  const envVars = isApp
-    ? getAppEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
-    : getStudioEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
+  const envVars = options.getEnvironmentVariables()
 
   const viteConfig: InlineConfig = {
     base: basePath,

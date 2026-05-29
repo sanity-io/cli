@@ -1,6 +1,5 @@
 import path, {isAbsolute} from 'node:path'
 
-import {runSchemaExtraction, SchemaExtractionError} from '@sanity/cli-build/_internal'
 import {type CLITelemetryStore} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import debounce from 'lodash-es/debounce.js'
@@ -14,6 +13,8 @@ import {
 } from '../../../telemetry/extractSchema.telemetry.js'
 import {formatSchemaValidation} from '../formatSchemaValidation.js'
 import {createSchemaPatternMatcher} from '../matchSchemaPattern.js'
+import {runSchemaExtraction} from '../runSchemaExtraction.js'
+import {SchemaExtractionError} from '../utils/SchemaExtractionError.js'
 
 /**
  * Default glob patterns to watch for schema changes.

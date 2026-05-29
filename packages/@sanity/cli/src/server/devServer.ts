@@ -1,10 +1,17 @@
+import {
+  extendViteConfigWithUserConfig,
+  getViteConfig,
+  writeSanityRuntime,
+} from '@sanity/cli-build/_internal/build'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
 
-import {extendViteConfigWithUserConfig, getViteConfig} from '../actions/build/getViteConfig.js'
-import {writeSanityRuntime} from '../actions/build/writeSanityRuntime.js'
+import {
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
+} from '../actions/build/getEnvironmentVariables.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityTypegenPlugin} from './vite/plugin-typegen.js'
 
@@ -67,6 +74,12 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   debug('Resolving vite config')
   const mode = 'development'
 
+  function getEnvironmentVariables() {
+    return isApp
+      ? getAppEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
+      : getStudioEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
+  }
+
   let viteConfig: InlineConfig = await getViteConfig({
     additionalPlugins: [
       // Add typegen when enabled
@@ -82,6 +95,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     ],
     basePath,
     cwd,
+    getEnvironmentVariables,
     isApp,
     mode: 'development',
     reactCompiler,
