@@ -1,5 +1,5 @@
-import {cliConfigSchema} from './schemas'
-import {type CliConfig} from './types/cliConfig'
+import {cliConfigSchema} from './schemas.js'
+import {type CliConfig} from './types/cliConfig.js'
 
 /**
  * Brand `@sanity/federation`'s `unstable_defineApp` stamps onto its result.
