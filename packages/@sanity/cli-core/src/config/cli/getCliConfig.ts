@@ -6,6 +6,7 @@ import {importModule} from '../../util/importModule.js'
 import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
+import {isWorkbenchApp, parseWorkbenchCliConfig} from './workbenchApp.js'
 
 const cache = new Map<string, Promise<CliConfig>>()
 
@@ -95,6 +96,12 @@ export async function getCliConfigUncached(rootPath: string): Promise<CliConfig>
     debug('Failed to load CLI config in worker thread: %s', err)
 
     throw new Error('CLI config cannot be loaded', {cause: err})
+  }
+
+  // Branch as early as possible: a branded `unstable_defineApp(...)` opts into
+  // workbench behavior, so its `app` skips the legacy `app` schema entirely.
+  if (isWorkbenchApp(cliConfig?.app)) {
+    return parseWorkbenchCliConfig(cliConfig)
   }
 
   const {data, error, success} = cliConfigSchema.safeParse(cliConfig)
