@@ -15,16 +15,12 @@ export default defineCliConfig({
      */
     autoUpdates: __BOOL__autoUpdates__,
   },
-  federation: {
-    enabled: __BOOL__federation__,
-  },
 })
 `
 
 interface GenerateCliConfigOptions {
   autoUpdates: boolean
   dataset: string
-  federation: boolean
   projectId: string
 }
 
