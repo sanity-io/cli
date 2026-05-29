@@ -16,6 +16,14 @@ const mockedSelect = vi.hoisted(() => vi.fn())
 const mockedCompareDependencyVersions = vi.hoisted(() => vi.fn())
 const mockedIsInteractive = vi.hoisted(() => vi.fn(() => true))
 
+vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
+  return {
+    ...original,
+    compareDependencyVersions: mockedCompareDependencyVersions,
+  }
+})
+
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
   return {
@@ -24,10 +32,6 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
     select: mockedSelect,
   }
 })
-
-vi.mock('../../util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: mockedCompareDependencyVersions,
-}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core')>()

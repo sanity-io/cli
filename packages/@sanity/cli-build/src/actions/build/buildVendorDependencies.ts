@@ -145,7 +145,9 @@ export async function buildVendorDependencies({
       }
 
       if (gt(min.version, version)) {
-        throw new Error(`Package '${packageName}' requires at least ${min.version}.`)
+        throw new Error(
+          `Package '${packageName}' requires at least ${min.version} (currently ${version}).`,
+        )
       }
 
       throw new Error(`Version '${version}' of package '${packageName}' is not supported yet.`)

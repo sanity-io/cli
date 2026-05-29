@@ -1,5 +1,6 @@
 import {type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
+import {BuildOptions} from '../buildApp.js'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
@@ -13,8 +14,31 @@ const FLAGS = {
   yes: true,
 } as const
 
+const buildOptions: Omit<BuildOptions, 'output'> = {
+  appId: undefined,
+  appTitle: undefined,
+  autoUpdatesEnabled: true,
+  calledFromDeploy: false,
+  determineBasePath: () => '/',
+  entry: undefined,
+  getEnvironmentVariables: () => ({}),
+  minify: true,
+  outDir: '/tmp/dist',
+  reactCompiler: undefined,
+  schemaExtraction: undefined,
+  sourceMap: true,
+  stats: true,
+  unattendedMode: true,
+  vite: undefined,
+  workDir: '/tmp',
+}
+
 // Mock heavy dependencies to isolate appId warning logic
 // Paths are relative to the test file location (__tests__/)
+vi.mock('../../../telemetry/build.telemetry.js', () => ({
+  AppBuildTrace: {},
+}))
+
 vi.mock('../../../util/warnAboutMissingAppId.js', () => ({
   warnAboutMissingAppId: mockWarnAboutMissingAppId,
 }))
@@ -40,14 +64,9 @@ vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
-  return {
-    ...actual,
-    AppBuildTrace: {},
-    buildVendorDependencies: vi.fn().mockResolvedValue({}),
-  }
-})
+vi.mock('../buildVendorDependencies.js', () => ({
+  buildVendorDependencies: vi.fn().mockResolvedValue({}),
+}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -89,12 +108,9 @@ describe('buildApp appId warning', () => {
     const output = createMockOutput()
 
     await buildApp({
+      ...buildOptions,
       autoUpdatesEnabled: true,
-      cliConfig: {deployment: {autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
       output,
-      workDir: '/tmp',
     })
 
     expect(mockWarnAboutMissingAppId).toHaveBeenCalledWith(
@@ -107,13 +123,10 @@ describe('buildApp appId warning', () => {
     const output = createMockOutput()
 
     await buildApp({
+      ...buildOptions,
       autoUpdatesEnabled: true,
       calledFromDeploy: true,
-      cliConfig: {deployment: {autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
       output,
-      workDir: '/tmp',
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
@@ -124,12 +137,9 @@ describe('buildApp appId warning', () => {
     const output = createMockOutput()
 
     await buildApp({
+      ...buildOptions,
       autoUpdatesEnabled: false,
-      cliConfig: {deployment: {autoUpdates: false}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
       output,
-      workDir: '/tmp',
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
@@ -140,12 +150,10 @@ describe('buildApp appId warning', () => {
     const output = createMockOutput()
 
     await buildApp({
+      ...buildOptions,
+      appId: 'my-app-id',
       autoUpdatesEnabled: true,
-      cliConfig: {deployment: {appId: 'my-app-id', autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
       output,
-      workDir: '/tmp',
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()

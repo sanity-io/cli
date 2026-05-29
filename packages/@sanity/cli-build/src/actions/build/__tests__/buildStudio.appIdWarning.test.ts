@@ -2,22 +2,39 @@ import {type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
+import {BuildOptions} from '../buildStudio.js'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+
 /** These are not relevant for what we are testing, but still needed to pass type checker */
-const FLAGS = {
-  'auto-updates': true,
-  json: false,
+const buildOptions: Omit<BuildOptions, 'output'> = {
+  appId: undefined,
+  autoUpdatesEnabled: true,
+  calledFromDeploy: false,
+  determineBasePath: () => '/',
+  getEnvironmentVariables: () => ({}),
+  isApp: false,
   minify: true,
-  'source-maps': true,
+  outDir: '/tmp/dist',
+  projectId: undefined,
+  reactCompiler: undefined,
+  schemaExtraction: undefined,
+  sourceMap: true,
   stats: true,
-  yes: true,
-} as const
+  unattendedMode: true,
+  upgradePackages: async () => {},
+  vite: undefined,
+  workDir: '/tmp',
+}
 
 // Mock heavy dependencies to isolate appId warning logic
 // Paths are relative to the test file location (__tests__/)
+vi.mock('../../../telemetry/build.telemetry.ts', () => ({
+  StudioBuildTrace: {},
+}))
+
 vi.mock('../../../util/warnAboutMissingAppId.js', () => ({
   warnAboutMissingAppId: mockWarnAboutMissingAppId,
 }))
@@ -28,6 +45,10 @@ vi.mock('../../../util/appId.js', () => ({
 
 vi.mock('../checkRequiredDependencies.js', () => ({
   checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
+}))
+
+vi.mock('../checkStudioDepenencyVersions.js', () => ({
+  checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
@@ -43,15 +64,16 @@ vi.mock('../getEnvironmentVariables.js', () => ({
   getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),
 }))
 
+vi.mock('../buildDebug.js', () => ({
+  buildDebug: vi.fn(),
+}))
+
 vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', () => ({
-  buildDebug: vi.fn(),
+vi.mock('../buildVendorDependencies.js', () => ({
   buildVendorDependencies: vi.fn().mockResolvedValue({}),
-  checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
-  StudioBuildTrace: {},
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -95,12 +117,9 @@ describe('buildStudio appId warning', () => {
     const output = createMockOutput()
 
     await buildStudio({
-      autoUpdatesEnabled: true,
-      cliConfig: {deployment: {autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
+      ...buildOptions,
+      calledFromDeploy: false,
       output,
-      workDir: '/tmp',
     })
 
     expect(mockWarnAboutMissingAppId).toHaveBeenCalledWith(
@@ -113,13 +132,9 @@ describe('buildStudio appId warning', () => {
     const output = createMockOutput()
 
     await buildStudio({
-      autoUpdatesEnabled: true,
+      ...buildOptions,
       calledFromDeploy: true,
-      cliConfig: {deployment: {autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
       output,
-      workDir: '/tmp',
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
@@ -130,12 +145,9 @@ describe('buildStudio appId warning', () => {
     const output = createMockOutput()
 
     await buildStudio({
+      ...buildOptions,
       autoUpdatesEnabled: false,
-      cliConfig: {deployment: {autoUpdates: false}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
       output,
-      workDir: '/tmp',
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
@@ -146,12 +158,9 @@ describe('buildStudio appId warning', () => {
     const output = createMockOutput()
 
     await buildStudio({
-      autoUpdatesEnabled: true,
-      cliConfig: {deployment: {appId: 'my-app-id', autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
+      ...buildOptions,
+      appId: 'my-app-id',
       output,
-      workDir: '/tmp',
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
@@ -164,12 +173,10 @@ describe('buildStudio appId warning', () => {
     mockGetLocalPackageVersion.mockResolvedValueOnce('3.5.0')
 
     await buildStudio({
+      ...buildOptions,
+      appId: 'my-app-id',
       autoUpdatesEnabled: true,
-      cliConfig: {deployment: {appId: 'my-app-id', autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
       output,
-      workDir: '/tmp',
     })
 
     const sanityDependencies = vi.mocked(getAutoUpdatesImportMap).mock.calls[0][0]

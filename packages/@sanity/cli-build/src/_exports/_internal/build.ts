@@ -1,12 +1,7 @@
-export {buildDebug} from '../../actions/build/buildDebug.js'
-export {buildVendorDependencies} from '../../actions/build/buildVendorDependencies.js'
+export {buildApp} from '../../actions/build/buildApp.js'
+export {buildStudio} from '../../actions/build/buildStudio.js'
+export {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
 export {checkStudioDependencyVersions} from '../../actions/build/checkStudioDependencyVersions.js'
-export {
-  extendViteConfigWithUserConfig,
-  finalizeViteConfig,
-  getViteConfig,
-} from '../../actions/build/getViteConfig.js'
-export {writeFavicons} from '../../actions/build/writeFavicons.js'
+export {extendViteConfigWithUserConfig, getViteConfig} from '../../actions/build/getViteConfig.js'
 export {writeSanityRuntime} from '../../actions/build/writeSanityRuntime.js'
-export {AppBuildTrace, StudioBuildTrace} from '../../telemetry/build.telemetry.js'
-export {copyDir} from '../../util/copyDir.js'
+export {compareDependencyVersions} from '../../util/compareDependencyVersions.js'

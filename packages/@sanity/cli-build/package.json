@@ -65,6 +65,7 @@
     "debug": "catalog:",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
+    "oneline": "^2.0.0",
     "picomatch": "^4.0.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
