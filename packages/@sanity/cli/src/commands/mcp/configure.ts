@@ -45,6 +45,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       trace.log({
         configuredEditors: mcpResult.configuredEditors,
         detectedEditors: mcpResult.detectedEditors,
+        removedEditors: mcpResult.removedEditors,
       })
 
       if (mcpResult.error) {
