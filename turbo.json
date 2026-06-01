@@ -15,6 +15,11 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".sanity/**", "lib/**", "fixtures/**"]
     },
+    "@sanity/cli-test#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/fixtures/**", "$TURBO_ROOT$/pnpm-workspace.yaml"],
+      "outputs": ["dist/**", "fixtures/**"]
+    },
     "build:types": {
       "dependsOn": ["^build", "^build:types", "build"],
       "outputs": ["dist/**/*.d.ts"]
