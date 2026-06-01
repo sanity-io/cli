@@ -78,6 +78,8 @@ export async function extractCoreAppManifest(
       version: '1',
       ...(icon ? {icon} : {}),
       ...(app.title ? {title: app.title} : {}),
+      ...(app.group ? {group: app.group} : {}),
+      ...(app.priority === undefined ? {} : {priority: app.priority}),
     })
 
     spin.succeed(`Extracted manifest`)

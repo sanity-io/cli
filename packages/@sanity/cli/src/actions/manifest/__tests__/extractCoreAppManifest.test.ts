@@ -50,6 +50,26 @@ describe('extractCoreAppManifest', () => {
     expect(mockReadFile).not.toHaveBeenCalled()
   })
 
+  test('merges group and priority into the manifest', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: {group: 'dock.system', organizationId: 'org-1', priority: 20, title: 'My App'},
+    } as never)
+
+    const result = await extractCoreAppManifest({workDir: '/project'})
+
+    expect(result).toEqual({group: 'dock.system', priority: 20, title: 'My App', version: '1'})
+  })
+
+  test('keeps priority 0 (not dropped as a falsy value)', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: {organizationId: 'org-1', priority: 0, title: 'My App'},
+    } as never)
+
+    const result = await extractCoreAppManifest({workDir: '/project'})
+
+    expect(result?.priority).toBe(0)
+  })
+
   test('reads icon from file path and inlines in manifest', async () => {
     const workDir = '/project'
     mockGetCliConfig.mockResolvedValue({
