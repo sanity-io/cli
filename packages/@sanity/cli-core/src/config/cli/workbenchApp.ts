@@ -13,12 +13,29 @@ const STUDIO_CONFIG_FILES = [
   'sanity.config.cjs',
 ]
 
+// Mirrors `@sanity/federation`'s `ApplicationType` enum. `unstable_defineApp`
+// is a pure identity wrapper that doesn't validate its input, so the loader is
+// the first place an explicit `applicationType` can be checked.
+const APPLICATION_TYPES = [
+  'coreApp',
+  'studio',
+  'canvas',
+  'dashboard',
+  'media-library',
+  'system',
+] as const
+type ApplicationType = (typeof APPLICATION_TYPES)[number]
+
+function isApplicationType(value: unknown): value is ApplicationType {
+  return typeof value === 'string' && (APPLICATION_TYPES as readonly string[]).includes(value)
+}
+
 /**
  * Infer the application type for a workbench app when `unstable_defineApp`
  * didn't set one: a project with a `sanity.config.*` is a studio, otherwise a
  * core (SDK) app. An explicit `applicationType` always wins.
  */
-function detectApplicationType(projectDir: string): 'coreApp' | 'studio' {
+function detectApplicationType(projectDir: string): ApplicationType {
   return STUDIO_CONFIG_FILES.some((file) => existsSync(join(projectDir, file)))
     ? 'studio'
     : 'coreApp'
@@ -32,7 +49,9 @@ function detectApplicationType(projectDir: string): 'coreApp' | 'studio' {
  * `isWorkbenchApp` identity (from `@sanity/federation`) instead of a flag.
  *
  * Resolves `applicationType` here — as early as possible — so studio-vs-app
- * classification is settled once and read off the app everywhere else.
+ * classification is settled once and read off the app everywhere else. The
+ * resolved value lands on a clone, never the caller's object, so re-parsing the
+ * same `app` for a different directory can't inherit a stale inference.
  */
 export function parseWorkbenchCliConfig(cliConfig: unknown, projectDir: string): CliConfig {
   const {app, ...rest} = cliConfig as Record<string, unknown> & {
@@ -42,8 +61,23 @@ export function parseWorkbenchCliConfig(cliConfig: unknown, projectDir: string):
   if (!success) {
     throw new Error(`Invalid CLI config: ${error.message}`, {cause: error})
   }
-  if (!app.applicationType) {
-    app.applicationType = detectApplicationType(projectDir)
+
+  const explicit = app.applicationType
+  if (explicit !== undefined && !isApplicationType(explicit)) {
+    throw new Error(
+      `Invalid \`applicationType\` "${explicit}" in \`unstable_defineApp\` — expected one of: ${APPLICATION_TYPES.join(', ')}`,
+    )
   }
-  return {...data, app} as CliConfig
+  const applicationType = explicit ?? detectApplicationType(projectDir)
+
+  // Clone the branded app rather than mutating the caller's object. Copying own
+  // property descriptors carries over the non-enumerable `unstable_defineApp`
+  // brand, which a spread would drop.
+  const resolvedApp = Object.defineProperties({}, Object.getOwnPropertyDescriptors(app)) as Record<
+    string,
+    unknown
+  >
+  resolvedApp.applicationType = applicationType
+
+  return {...data, app: resolvedApp} as CliConfig
 }
