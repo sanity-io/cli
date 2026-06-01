@@ -138,8 +138,10 @@ export async function teardownWorkerBuild(): Promise<void> {
     try {
       await unlink(filePath)
       console.log(`✓ Deleted ${filePath}`)
-    } catch (error) {
-      console.error(`Failed to delete ${filePath}:`, error)
+    } catch (err) {
+      if (!(err instanceof Error) || !('code' in err) || err.code !== 'ENOENT') {
+        console.error(`Failed to delete ${filePath}:`, err)
+      }
     }
   }
   compiledFiles.clear()

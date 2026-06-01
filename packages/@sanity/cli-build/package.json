@@ -97,6 +97,7 @@
     "jsdom": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
+    "tinyglobby": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

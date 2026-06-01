@@ -47,7 +47,7 @@ vi.mock('../checkRequiredDependencies.js', () => ({
   checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
 }))
 
-vi.mock('../checkStudioDepenencyVersions.js', () => ({
+vi.mock('../checkStudioDependencyVersions.js', () => ({
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
 }))
 
