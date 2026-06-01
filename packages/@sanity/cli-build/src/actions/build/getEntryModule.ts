@@ -41,7 +41,7 @@ export function getEntryModule(options: {
   basePath?: string
   entry?: string
   isApp?: boolean
-  reactStrictMode: boolean
+  reactStrictMode: boolean | undefined
   relativeConfigLocation: string | null
 }): string {
   const {basePath, entry, isApp, reactStrictMode, relativeConfigLocation} = options
@@ -53,7 +53,10 @@ export function getEntryModule(options: {
   const sourceModule = relativeConfigLocation ? entryModule : noConfigEntryModule
 
   return sourceModule
-    .replace(/%STUDIO_REACT_STRICT_MODE%/, JSON.stringify(Boolean(reactStrictMode)))
+    .replace(
+      /%STUDIO_REACT_STRICT_MODE%/,
+      reactStrictMode === undefined ? 'undefined' : JSON.stringify(reactStrictMode),
+    )
     .replace(/%STUDIO_CONFIG_LOCATION%/, JSON.stringify(relativeConfigLocation))
     .replace(/%STUDIO_BASE_PATH%/, JSON.stringify(basePath || '/'))
 }

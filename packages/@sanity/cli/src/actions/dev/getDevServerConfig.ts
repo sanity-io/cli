@@ -35,7 +35,7 @@ export function getDevServerConfig({
   const env = process.env
   const reactStrictMode = env.SANITY_STUDIO_REACT_STRICT_MODE
     ? env.SANITY_STUDIO_REACT_STRICT_MODE === 'true'
-    : (cliConfig?.reactStrictMode ?? true)
+    : cliConfig?.reactStrictMode
 
   const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
   if (envBasePath && cliConfig?.project?.basePath) {

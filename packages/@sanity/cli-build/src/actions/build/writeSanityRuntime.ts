@@ -14,7 +14,7 @@ import {renderDocument} from './renderDocument.js'
 
 interface RuntimeOptions {
   cwd: string
-  reactStrictMode: boolean
+  reactStrictMode: boolean | undefined
   watch: boolean
 
   appTitle?: string

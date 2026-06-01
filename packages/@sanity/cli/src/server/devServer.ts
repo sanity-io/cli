@@ -23,7 +23,7 @@ export interface DevServerOptions {
   httpPort: number
 
   reactCompiler: ReactCompilerConfig | undefined
-  reactStrictMode: boolean
+  reactStrictMode: boolean | undefined
 
   staticPath: string
 
