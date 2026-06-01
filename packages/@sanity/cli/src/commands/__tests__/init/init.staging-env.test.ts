@@ -3,6 +3,7 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {setupMCP} from '../../../actions/mcp/setupMCP.js'
+import {setupSkills} from '../../../actions/skills/setupSkills.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp.js'
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
@@ -219,6 +220,44 @@ describe('#init: staging env propagation', () => {
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
     })
+  })
+
+  test('installs agent skills on the --env flag path when MCP is configured', async () => {
+    mocks.getSanityEnv.mockReturnValue('staging')
+
+    // MCP setup populates skillsToInstall for detected editors regardless of the
+    // exit path, so the --env early-return must still install them.
+    vi.mocked(setupMCP).mockResolvedValueOnce({
+      alreadyConfiguredEditors: [],
+      configuredEditors: ['Claude Code'],
+      detectedEditors: [],
+      error: undefined,
+      skillsToInstall: ['claude-code'],
+      skipped: false,
+    })
+
+    // The --env flag path exits early, so only features are needed
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--output-path=/test/output', '--project=test', '--dataset=test', '--env=.env'],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    if (error) throw error
+
+    expect(setupSkills).toHaveBeenCalledTimes(1)
+    expect(setupSkills).toHaveBeenCalledWith({agents: ['claude-code']})
   })
 
   test('writes SANITY_INTERNAL_ENV to .env when in staging (template bootstrap path)', async () => {

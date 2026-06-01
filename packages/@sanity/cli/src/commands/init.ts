@@ -182,7 +182,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     skills: Flags.boolean({
       allowNo: true,
       default: true,
-      description: 'Install Sanity agent skills globally for detecated AI editors',
+      description: 'Install Sanity agent skills globally for detected AI editors',
     }),
     template: Flags.string({
       description: 'Project template to use [default: "clean"]',

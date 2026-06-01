@@ -280,6 +280,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       outputPath,
     })
     await writeStagingEnvIfNeeded(output, outputPath)
+    await installSkills()
     trace.complete()
     return
   }
