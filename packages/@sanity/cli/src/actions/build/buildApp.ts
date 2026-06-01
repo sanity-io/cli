@@ -2,8 +2,8 @@ import {buildApp as internalBuildApp} from '@sanity/cli-build/_internal/build'
 
 import {getAppId} from '../../util/appId.js'
 import {determineBasePath} from './determineBasePath.js'
-import {type BuildOptions} from './types.js'
 import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
+import {type BuildOptions} from './types.js'
 
 /**
  * Build the Sanity app.

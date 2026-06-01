@@ -1,12 +1,10 @@
 import {platform} from 'node:os'
-import {join} from 'node:path'
-import {readdir} from 'node:fs/promises'
 
+import {type Output} from '@sanity/cli-core'
 import {testFixture} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {BuildOptions, buildApp} from '../buildApp'
-import {type Output} from '@sanity/cli-core'
+import {buildApp, BuildOptions} from '../buildApp'
 
 const mockedConfirm = vi.hoisted(() => vi.fn())
 const mockedSelect = vi.hoisted(() => vi.fn())
@@ -69,7 +67,7 @@ function createMockOutput(): Output {
           exit?: false | number
         },
       ) => {
-        if (options.exit) throw new Error()
+        if (options.exit) throw new Error('output.error called with exit')
       },
     ),
     log: vi.fn(),

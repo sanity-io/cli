@@ -14,10 +14,10 @@ import {
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'
 
+import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
-import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'

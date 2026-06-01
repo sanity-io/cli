@@ -1,19 +1,12 @@
 import {type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
+
 import {BuildOptions} from '../buildApp.js'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
-/** These are not relevant for what we are testing, but still needed to pass type checker */
-const FLAGS = {
-  'auto-updates': true,
-  json: false,
-  minify: true,
-  'source-maps': true,
-  stats: true,
-  yes: true,
-} as const
 
+/** These are not relevant for what we are testing, but still needed to pass type checker */
 const buildOptions: Omit<BuildOptions, 'output'> = {
   appId: undefined,
   appTitle: undefined,

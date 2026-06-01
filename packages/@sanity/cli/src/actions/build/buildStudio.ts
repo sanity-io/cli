@@ -5,8 +5,8 @@ import {determineIsApp} from '../../util/determineIsApp.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {determineBasePath} from './determineBasePath.js'
-import {type BuildOptions} from './types.js'
 import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
+import {type BuildOptions} from './types.js'
 
 /**
  * Build the Sanity Studio.

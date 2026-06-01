@@ -24,12 +24,13 @@ export interface ChunkStats {
 interface StaticBuildOptions {
   basePath: string
   cwd: string
+  getEnvironmentVariables(options?: {jsonEncode: boolean; prefix: string}): Record<string, string>
+
   outputDir: string
 
   appTitle?: string
   autoUpdatesCssUrls?: string[]
   entry?: string
-  getEnvironmentVariables(options?: {jsonEncode: boolean; prefix: string}): Record<string, string>
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
   minify?: boolean
