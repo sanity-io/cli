@@ -107,4 +107,59 @@ describe('getDevServerConfig', () => {
 
     expect(output.warn).not.toHaveBeenCalled()
   })
+
+  test('should resolve reactStrictMode to true when SANITY_STUDIO_REACT_STRICT_MODE env var is "true"', () => {
+    vi.stubEnv('SANITY_STUDIO_REACT_STRICT_MODE', 'true')
+    const output = createMockOutput()
+
+    const config = getDevServerConfig({
+      cliConfig: {},
+      flags: FLAGS,
+      output,
+      workDir: '/tmp',
+    })
+
+    expect(config.reactStrictMode).toBe(true)
+  })
+
+  test('should resolve reactStrictMode to false when SANITY_STUDIO_REACT_STRICT_MODE env var is "false"', () => {
+    vi.stubEnv('SANITY_STUDIO_REACT_STRICT_MODE', 'false')
+    const output = createMockOutput()
+
+    const config = getDevServerConfig({
+      cliConfig: {},
+      flags: FLAGS,
+      output,
+      workDir: '/tmp',
+    })
+
+    expect(config.reactStrictMode).toBe(false)
+  })
+
+  test('should resolve reactStrictMode to false when env var is absent and cliConfig opts out explicitly', () => {
+    const output = createMockOutput()
+    const cliConfig: CliConfig = {reactStrictMode: false}
+
+    const config = getDevServerConfig({
+      cliConfig,
+      flags: FLAGS,
+      output,
+      workDir: '/tmp',
+    })
+
+    expect(config.reactStrictMode).toBe(false)
+  })
+
+  test('should resolve reactStrictMode to true by default when env var is absent and cliConfig is unset', () => {
+    const output = createMockOutput()
+
+    const config = getDevServerConfig({
+      cliConfig: {},
+      flags: FLAGS,
+      output,
+      workDir: '/tmp',
+    })
+
+    expect(config.reactStrictMode).toBe(true)
+  })
 })
