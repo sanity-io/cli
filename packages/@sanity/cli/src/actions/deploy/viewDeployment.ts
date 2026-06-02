@@ -19,12 +19,12 @@ const viewRecordSchema = z
  * payload is validated and logged only — never sent. Builds the contract the
  * application-service endpoint will accept.
  */
-export const viewDeploymentPayloadSchema = z.object({
+const viewDeploymentPayloadSchema = z.object({
   applicationId: z.string(),
   views: z.array(viewRecordSchema),
 })
 
-export type ViewDeploymentPayload = z.infer<typeof viewDeploymentPayloadSchema>
+type ViewDeploymentPayload = z.infer<typeof viewDeploymentPayloadSchema>
 
 /**
  * Validate an app's declared views into the application-service payload.
