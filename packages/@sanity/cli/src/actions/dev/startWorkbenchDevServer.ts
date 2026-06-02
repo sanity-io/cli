@@ -20,13 +20,14 @@ import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 const noop = async () => {}
 
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
-  applications: servers.map(({host, id, manifest, port, projectId, type}) => ({
+  applications: servers.map(({host, id, manifest, port, projectId, type, views}) => ({
     host,
     id,
     manifest,
     port,
     projectId,
     type,
+    views,
   })),
 })
 
