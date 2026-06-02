@@ -1,5 +1,19 @@
 # Changelog
 
+## [5.2.20](https://github.com/sanity-io/cli/compare/create-sanity-v5.2.19...create-sanity-v5.2.20)
+
+_2026-06-02_
+
+### Bug Fixes
+
+- **create-sanity:** use native import.meta.resolve to support yarn pnp ([#1063](https://github.com/sanity-io/cli/pull/1063)) ([fd83ce2](https://github.com/sanity-io/cli/commit/fd83ce2847bd97ad029e6284857b5f445799f805))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 6.7.0
+
 ## [5.2.19](https://github.com/sanity-io/cli/compare/create-sanity-v5.2.18...create-sanity-v5.2.19)
 
 _2026-05-18_
