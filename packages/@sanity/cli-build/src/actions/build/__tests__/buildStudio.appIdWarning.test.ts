@@ -12,6 +12,7 @@ const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const buildOptions: Omit<BuildOptions, 'output'> = {
   appId: undefined,
   autoUpdatesEnabled: true,
+  buildViteReactPlugin: () => [],
   calledFromDeploy: false,
   determineBasePath: () => '/',
   getEnvironmentVariables: () => ({}),
@@ -19,7 +20,6 @@ const buildOptions: Omit<BuildOptions, 'output'> = {
   minify: true,
   outDir: '/tmp/dist',
   projectId: undefined,
-  reactCompiler: undefined,
   schemaExtraction: undefined,
   sourceMap: true,
   stats: true,

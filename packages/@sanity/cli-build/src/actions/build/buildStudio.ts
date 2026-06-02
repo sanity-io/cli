@@ -13,6 +13,7 @@ import {
 } from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'
+import {Plugin} from 'vite'
 
 import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
@@ -29,6 +30,7 @@ import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 export interface BuildOptions {
   appId: string | undefined
   autoUpdatesEnabled: boolean
+  buildViteReactPlugin: () => Plugin[]
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   getEnvironmentVariables(options?: {jsonEncode: boolean; prefix: string}): Record<string, string>
@@ -37,7 +39,6 @@ export interface BuildOptions {
   outDir: string | undefined
   output: Output
   projectId: string | undefined
-  reactCompiler: CliConfig['reactCompiler']
   schemaExtraction: CliConfig['schemaExtraction']
   sourceMap: boolean
   stats: boolean
@@ -63,7 +64,6 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     outDir,
     output,
     projectId,
-    reactCompiler,
     schemaExtraction,
     sourceMap,
     stats,
@@ -243,12 +243,12 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     const bundle = await buildStaticFiles({
       autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
+      buildViteReactPlugin: options.buildViteReactPlugin,
       cwd: workDir,
       getEnvironmentVariables: options.getEnvironmentVariables,
       importMap,
       minify,
       outputDir,
-      reactCompiler,
       schemaExtraction,
       sourceMap,
       vite,

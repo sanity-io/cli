@@ -7,6 +7,7 @@ import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {type BuildOptions} from './types.js'
+import {viteReactPluginFactory} from './viteReactPluginFactory.js'
 
 /**
  * Build the Sanity Studio.
@@ -31,6 +32,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   await internalBuildStudio({
     appId: getAppId(cliConfig),
     autoUpdatesEnabled: options.autoUpdatesEnabled,
+    buildViteReactPlugin: viteReactPluginFactory(cliConfig.reactCompiler),
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     getEnvironmentVariables(options) {
@@ -44,7 +46,6 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     outDir,
     output,
     projectId: cliConfig?.api?.projectId,
-    reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,

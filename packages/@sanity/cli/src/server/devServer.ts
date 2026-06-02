@@ -12,6 +12,7 @@ import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
 } from '../actions/build/getEnvironmentVariables.js'
+import {viteReactPluginFactory} from '../actions/build/viteReactPluginFactory.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityTypegenPlugin} from './vite/plugin-typegen.js'
 
@@ -94,11 +95,11 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
         : []),
     ],
     basePath,
+    buildViteReactPlugin: viteReactPluginFactory(reactCompiler),
     cwd,
     getEnvironmentVariables,
     isApp,
     mode: 'development',
-    reactCompiler,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
   })

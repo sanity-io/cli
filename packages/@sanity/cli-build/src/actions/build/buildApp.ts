@@ -13,6 +13,7 @@ import {
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'
+import {Plugin} from 'vite'
 
 import {AppBuildTrace} from '../../telemetry/build.telemetry.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
@@ -28,6 +29,7 @@ export interface BuildOptions {
   appId: string | undefined
   appTitle: string | undefined
   autoUpdatesEnabled: boolean
+  buildViteReactPlugin: () => Plugin[]
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   entry: string | undefined
@@ -35,7 +37,6 @@ export interface BuildOptions {
   minify: boolean
   outDir: string | undefined
   output: Output
-  reactCompiler: CliConfig['reactCompiler']
   schemaExtraction: CliConfig['schemaExtraction']
   sourceMap: boolean
   stats: boolean
@@ -189,6 +190,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       appTitle: options.appTitle,
       autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
+      buildViteReactPlugin: options.buildViteReactPlugin,
       cwd: workDir,
       entry: options.entry,
       getEnvironmentVariables: options.getEnvironmentVariables,
@@ -196,7 +198,6 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       isApp: true,
       minify: options.minify,
       outputDir,
-      reactCompiler: options.reactCompiler,
       schemaExtraction: options.schemaExtraction,
       sourceMap: options.sourceMap,
       vite: options.vite,

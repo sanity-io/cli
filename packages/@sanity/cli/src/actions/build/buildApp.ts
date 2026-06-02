@@ -4,6 +4,7 @@ import {getAppId} from '../../util/appId.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {type BuildOptions} from './types.js'
+import {viteReactPluginFactory} from './viteReactPluginFactory.js'
 
 /**
  * Build the Sanity app.
@@ -13,10 +14,14 @@ import {type BuildOptions} from './types.js'
 export async function buildApp(options: BuildOptions): Promise<void> {
   const {cliConfig, flags, outDir, output, workDir} = options
 
+  const reactCompiler =
+    cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined
+
   await internalBuildApp({
     appId: getAppId(cliConfig),
     appTitle: cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
+    buildViteReactPlugin: viteReactPluginFactory(reactCompiler),
     calledFromDeploy: options.calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
@@ -26,7 +31,6 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     minify: flags.minify,
     outDir,
     output,
-    reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     schemaExtraction: cliConfig?.schemaExtraction,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,

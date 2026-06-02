@@ -60,7 +60,6 @@
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@sanity/types": "catalog:",
-    "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "debug": "catalog:",
     "lodash-es": "catalog:",
@@ -91,15 +90,20 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/semver": "^7.7.1",
+    "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "catalog:",
+    "get-it": "^8.7.2",
     "jsdom": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
     "tinyglobby": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "get-it": "^8.7.2"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"

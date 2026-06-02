@@ -17,6 +17,7 @@ function buildOptions(cwd: string, output: Output): BuildOptions {
   return {
     appId: undefined,
     autoUpdatesEnabled: true,
+    buildViteReactPlugin: () => [],
     calledFromDeploy: false,
     determineBasePath: () => '/',
     getEnvironmentVariables: () => ({}),
@@ -25,7 +26,6 @@ function buildOptions(cwd: string, output: Output): BuildOptions {
     outDir: `${cwd}/dist`,
     output,
     projectId: undefined,
-    reactCompiler: undefined,
     schemaExtraction: undefined,
     sourceMap: true,
     stats: true,

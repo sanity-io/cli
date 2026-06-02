@@ -6,8 +6,6 @@ import {
   getCliTelemetry,
   type UserViteConfig,
 } from '@sanity/cli-core'
-import viteReact from '@vitejs/plugin-react'
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
 import {type ConfigEnv, type InlineConfig, mergeConfig, type Plugin, type Rollup} from 'vite'
 
@@ -22,6 +20,11 @@ import {getDefaultFaviconsPath} from './writeFavicons.js'
 
 interface ViteOptions {
   /**
+   * Build the react vite plugin.
+   */
+  buildViteReactPlugin: () => Plugin[]
+
+  /**
    * Root path of the studio/sanity app
    */
   cwd: string
@@ -35,8 +38,6 @@ interface ViteOptions {
    * Mode to run vite in - eg development or production
    */
   mode: 'development' | 'production'
-
-  reactCompiler: ReactCompilerConfig | undefined
 
   /**
    * Additional plugins when configured, eg. typegen
@@ -91,13 +92,13 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     additionalPlugins,
     autoUpdatesCssUrls,
     basePath: rawBasePath = '/',
+    buildViteReactPlugin,
     cwd,
     importMap,
     isApp,
     minify,
     mode,
     outputDir,
-    reactCompiler,
     schemaExtraction,
     server,
     // default to `true` when `mode=development`
@@ -145,16 +146,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     logLevel: mode === 'production' ? 'silent' : 'info',
     mode,
     plugins: [
-      viteReact(
-        reactCompiler
-          ? {
-              babel: {
-                generatorOpts: {compact: true},
-                plugins: [['babel-plugin-react-compiler', reactCompiler]],
-              },
-            }
-          : {},
-      ),
+      buildViteReactPlugin(),
+
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
       sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),

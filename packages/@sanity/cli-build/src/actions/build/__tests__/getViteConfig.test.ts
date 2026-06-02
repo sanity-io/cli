@@ -91,12 +91,12 @@ describe('#getViteConfig', () => {
 
   test('should create basic vite config with default options', async () => {
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables() {
         return {'process.env.STUDIO_VAR': '"studio-value"'}
       },
       mode: 'development' as const,
-      reactCompiler: undefined,
     }
 
     const config = await getViteConfig(options)
@@ -141,13 +141,13 @@ describe('#getViteConfig', () => {
 
   test('should create vite config for app mode', async () => {
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables() {
         return {'process.env.APP_VAR': '"app-value"'}
       },
       isApp: true,
       mode: 'development' as const,
-      reactCompiler: undefined,
     }
 
     const config = await getViteConfig(options)
@@ -167,12 +167,12 @@ describe('#getViteConfig', () => {
 
   test('should create production config with minification', async () => {
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       minify: true,
       mode: 'production' as const,
       outputDir: mockCustomOutput,
-      reactCompiler: undefined,
       sourceMap: false,
     }
 
@@ -198,11 +198,11 @@ describe('#getViteConfig', () => {
 
   test('should create production config without minification', async () => {
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       minify: false,
       mode: 'production' as const,
-      reactCompiler: undefined,
     }
 
     const config = await getViteConfig(options)
@@ -215,10 +215,10 @@ describe('#getViteConfig', () => {
 
     const options = {
       basePath: 'custom/path',
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'development' as const,
-      reactCompiler: undefined,
     }
 
     await getViteConfig(options)
@@ -228,10 +228,10 @@ describe('#getViteConfig', () => {
 
   test('should handle custom server options', async () => {
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'development' as const,
-      reactCompiler: undefined,
       server: {
         host: '0.0.0.0',
         port: 8080,
@@ -256,6 +256,13 @@ describe('#getViteConfig', () => {
     }
 
     const options = {
+      buildViteReactPlugin: () =>
+        viteReact({
+          babel: {
+            generatorOpts: {compact: true},
+            plugins: [['babel-plugin-react-compiler', reactCompilerConfig]],
+          },
+        }),
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'development' as const,
@@ -278,10 +285,10 @@ describe('#getViteConfig', () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
 
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'development' as const,
-      reactCompiler: undefined,
     }
 
     const config = await getViteConfig(options)
@@ -298,11 +305,11 @@ describe('#getViteConfig', () => {
     }
 
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       importMap,
       mode: 'production' as const,
-      reactCompiler: undefined,
     }
 
     const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
@@ -324,10 +331,10 @@ describe('#getViteConfig', () => {
 
     const options = {
       basePath: '/studio',
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'development' as const,
-      reactCompiler: undefined,
     }
 
     await getViteConfig(options)
@@ -341,10 +348,10 @@ describe('#getViteConfig', () => {
 
   test('should include schema extraction plugin when enabled', async () => {
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'development' as const,
-      reactCompiler: undefined,
       schemaExtraction: {
         enabled: true,
         enforceRequiredFields: true,
@@ -374,10 +381,10 @@ describe('#getViteConfig', () => {
 
   test('should not include schema extraction plugin when disabled', async () => {
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'development' as const,
-      reactCompiler: undefined,
       schemaExtraction: {
         enabled: false,
         path: 'schema.json',
@@ -401,10 +408,10 @@ describe('#getViteConfig', () => {
           name: 'sanity/typegen',
         },
       ],
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'development' as const,
-      reactCompiler: undefined,
     }
 
     const config = await getViteConfig(options)
@@ -584,10 +591,10 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     // Access the onRollupWarn function by testing getViteConfig in production mode
     // which includes the onwarn callback
     const options = {
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'production' as const,
-      reactCompiler: undefined,
     }
 
     const config = await getViteConfig(options)
@@ -614,10 +621,10 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     }
 
     const config = await getViteConfig({
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'production' as const,
-      reactCompiler: undefined,
     })
 
     const onwarn = config.build?.rollupOptions?.onwarn
@@ -637,10 +644,10 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     }
 
     const config = await getViteConfig({
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'production' as const,
-      reactCompiler: undefined,
     })
 
     const onwarn = config.build?.rollupOptions?.onwarn
@@ -659,10 +666,10 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     }
 
     const config = await getViteConfig({
+      buildViteReactPlugin: () => [],
       cwd: mockTestCwd,
       getEnvironmentVariables,
       mode: 'production' as const,
-      reactCompiler: undefined,
     })
 
     const onwarn = config.build?.rollupOptions?.onwarn

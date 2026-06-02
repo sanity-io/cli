@@ -1,8 +1,7 @@
 import path from 'node:path'
 
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
-import {build} from 'vite'
+import {build, Plugin} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
 import {buildDebug} from './buildDebug.js'
@@ -23,6 +22,7 @@ export interface ChunkStats {
 
 interface StaticBuildOptions {
   basePath: string
+  buildViteReactPlugin: () => Plugin[]
   cwd: string
   getEnvironmentVariables(options?: {jsonEncode: boolean; prefix: string}): Record<string, string>
 
@@ -35,7 +35,6 @@ interface StaticBuildOptions {
   isApp?: boolean
   minify?: boolean
   profile?: boolean
-  reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
   vite?: UserViteConfig
@@ -53,13 +52,13 @@ export async function buildStaticFiles(
     appTitle,
     autoUpdatesCssUrls,
     basePath,
+    buildViteReactPlugin,
     cwd,
     entry,
     importMap,
     isApp,
     minify = true,
     outputDir,
-    reactCompiler,
     schemaExtraction,
     sourceMap = false,
     vite: extendViteConfig,
@@ -85,6 +84,7 @@ export async function buildStaticFiles(
   let viteConfig = await getViteConfig({
     autoUpdatesCssUrls,
     basePath,
+    buildViteReactPlugin,
     cwd,
     getEnvironmentVariables,
     importMap,
@@ -92,7 +92,6 @@ export async function buildStaticFiles(
     minify,
     mode,
     outputDir,
-    reactCompiler,
     schemaExtraction,
     sourceMap,
   })
