@@ -4,6 +4,7 @@ import {
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
+import {type ViewArtifact} from '@sanity/federation/vite'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
@@ -35,6 +36,7 @@ export interface DevServerOptions {
   projectName?: string
   schemaExtraction?: CliConfig['schemaExtraction']
   typegen?: CliConfig['typegen']
+  views?: readonly ViewArtifact[]
   vite?: UserViteConfig
 }
 
@@ -59,6 +61,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     reactStrictMode,
     schemaExtraction,
     typegen,
+    views,
     vite: extendViteConfig,
   } = options
 
@@ -105,6 +108,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     reactCompiler,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
+    views,
   })
 
   // Extend Vite configuration with user-provided config

@@ -43,6 +43,7 @@ interface InternalBuildOptions {
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
+  views: NonNullable<CliConfig['app']>['views']
   vite: UserViteConfig | undefined
   workDir: string
 }
@@ -71,6 +72,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: flags.yes,
+    views: cliConfig && 'app' in cliConfig ? cliConfig.app?.views : undefined,
     vite: cliConfig.vite,
     workDir,
   })
@@ -231,6 +233,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
       reactCompiler: options.reactCompiler,
       schemaExtraction: options.schemaExtraction,
       sourceMap: options.sourceMap,
+      views: options.views,
       vite: options.vite,
     })
 

@@ -20,6 +20,7 @@ import {createUserApplicationForApp} from './createUserApplicationForApp.js'
 import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
 import {type DeployAppOptions} from './types.js'
+import {buildViewDeploymentPayload} from './viewDeployment.js'
 
 /**
  * Deploy a Sanity application.
@@ -134,6 +135,28 @@ export async function deployApp(options: DeployAppOptions) {
         const message = getErrorMessage(err)
         deployDebug('Error updating application title', {message})
         output.warn(`Error updating application title: ${message}`)
+      }
+    }
+
+    // Register the app's declared views with the application service. That
+    // service doesn't exist yet, so validate the payload and log it (no store);
+    // a malformed view declaration fails the deploy before we ship the bundle.
+    const declaredViews = cliConfig.app?.views ?? []
+    if (declaredViews.length > 0) {
+      try {
+        const payload = buildViewDeploymentPayload({
+          applicationId: userApplication.id,
+          views: declaredViews,
+        })
+        output.log(
+          `Validated ${payload.views.length} view(s) for the application service (not yet persisted):`,
+        )
+        output.log(JSON.stringify(payload, null, 2))
+        deployDebug('View deployment payload', payload)
+      } catch (err) {
+        const message = getErrorMessage(err)
+        output.error(`Invalid view declaration: ${message}`, {exit: 1})
+        return
       }
     }
 
