@@ -79,6 +79,7 @@ const defaultOptions: InitOptions = {
   datasetDefault: false,
   fromCreate: false,
   mcpMode: 'skip',
+  skillsMode: 'skip',
   unattended: false,
 }
 

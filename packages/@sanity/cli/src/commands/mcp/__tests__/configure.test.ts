@@ -2,16 +2,17 @@ import {existsSync, type PathLike} from 'node:fs'
 import fs from 'node:fs/promises'
 
 import {checkbox} from '@sanity/cli-core/ux'
-import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, createTestToken, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {MCP_API_VERSION} from '../../../services/mcp.js'
 import {ConfigureMcpCommand} from '../configure.js'
 
+const mockCreateMCPToken = vi.hoisted(() => vi.fn())
 const mockEnsureAuthenticated = vi.hoisted(() => vi.fn())
 const mockIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
+const mockValidateMCPToken = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../actions/auth/ensureAuthenticated.js', async (importOriginal) => {
   const actual =
@@ -27,6 +28,15 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     isInteractive: mockIsInteractive,
+  }
+})
+
+vi.mock('../../../services/mcp.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../services/mcp.js')>()
+  return {
+    ...actual,
+    createMCPToken: mockCreateMCPToken,
+    validateMCPToken: mockValidateMCPToken,
   }
 })
 
@@ -63,6 +73,10 @@ const mockExistsSync = vi.mocked(existsSync)
 const mockReadFile = vi.mocked(fs.readFile)
 const mockWriteFile = vi.mocked(fs.writeFile)
 const mockExeca = vi.mocked(execa)
+
+function mockMCPTokenCreation(token: string): void {
+  mockCreateMCPToken.mockResolvedValueOnce(token)
+}
 
 // ---------------------------------------------------------------------------
 // Helpers for table-driven per-editor tests
@@ -140,22 +154,10 @@ async function runEditorTest(tc: EditorTestCase): Promise<void> {
 
     mockCheckbox.mockResolvedValue([tc.name])
 
-    const sessionId = `session-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
     const token = `test-token-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
 
     if (!tc.oauthOnly) {
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'post',
-        uri: '/auth/session/create',
-      }).reply(200, {id: sessionId, sid: sessionId})
-
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'get',
-        query: {sid: sessionId},
-        uri: '/auth/fetch',
-      }).reply(200, {label: 'MCP Token', token})
+      mockMCPTokenCreation(token)
     }
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
@@ -408,7 +410,7 @@ const mcporterTestCases: Array<{
 // Main test suite
 // ---------------------------------------------------------------------------
 
-describe('#mcp:configure', () => {
+describe.sequential('#mcp:configure', () => {
   beforeEach(async () => {
     mockEnsureAuthenticated.mockResolvedValue({
       email: 'test@example.com',
@@ -417,10 +419,12 @@ describe('#mcp:configure', () => {
       provider: 'github',
     })
     mockExistsSync.mockReturnValue(false)
-    mockReadFile.mockResolvedValue('{}') // Default: empty config file
+    mockReadFile.mockResolvedValue('{}')
     mockWriteFile.mockResolvedValue()
     mockExeca.mockRejectedValue(new Error('Not installed'))
-    createTestToken('test-token')
+    mockCreateMCPToken.mockReset()
+    mockValidateMCPToken.mockReset()
+    createTestToken('eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEyMyJ9.signature')
   })
 
   afterEach(() => {
@@ -516,11 +520,7 @@ describe('#mcp:configure', () => {
       }),
     )
 
-    // Token validation succeeds against Sanity API
-    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(200, {
-      id: 'user-123',
-      name: 'Test User',
-    })
+    mockValidateMCPToken.mockResolvedValueOnce(true)
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
@@ -573,12 +573,7 @@ describe('#mcp:configure', () => {
       }),
     )
 
-    // Token validation fails against Sanity API (dead token)
-    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(401, {
-      error: 'Unauthorized',
-      message: 'Invalid token',
-      statusCode: 401,
-    })
+    mockValidateMCPToken.mockResolvedValueOnce(false)
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
@@ -621,11 +616,7 @@ describe('#mcp:configure', () => {
       return '{}'
     })
 
-    // Token validation succeeds against Sanity API
-    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(200, {
-      id: 'user-123',
-      name: 'Test User',
-    })
+    mockValidateMCPToken.mockResolvedValueOnce(true)
 
     // User selects only the unconfigured editor (Gemini CLI)
     mockCheckbox.mockResolvedValue(['Gemini CLI'])
@@ -666,18 +657,7 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor', 'VS Code'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-multi', sid: 'session-multi'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-multi'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'multi-token-123'})
+    mockMCPTokenCreation('multi-token-123')
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
@@ -705,18 +685,7 @@ describe('#mcp:configure', () => {
       throw new Error('Not installed')
     }) as never)
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-ci', sid: 'session-ci'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-ci'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-ci'})
+    mockMCPTokenCreation('test-token-ci')
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
@@ -741,11 +710,7 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['OpenCode'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(401, {message: 'Not authenticated'})
+    mockCreateMCPToken.mockRejectedValueOnce(new Error('Not authenticated'))
 
     const {stderr} = await testCommand(ConfigureMcpCommand, [])
 
@@ -762,18 +727,7 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['OpenCode'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-write-error', sid: 'session-write-error'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-write-error'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'token-write-error'})
+    mockMCPTokenCreation('token-write-error')
 
     mockWriteFile.mockRejectedValue(new Error('Permission denied'))
 
@@ -832,18 +786,7 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['OpenCode'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-merge', sid: 'session-merge'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-merge'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'merge-token-123'})
+    mockMCPTokenCreation('merge-token-123')
 
     await testCommand(ConfigureMcpCommand, [])
 

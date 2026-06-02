@@ -14,7 +14,9 @@ import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
 import {getProviderName} from '../auth/getProviderName.js'
 import {login} from '../auth/login/login.js'
+import {detectAvailableEditors} from '../mcp/detectAvailableEditors.js'
 import {setupMCP} from '../mcp/setupMCP.js'
+import {setupSkills} from '../skills/setupSkills.js'
 import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
@@ -187,7 +189,18 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     workDir,
   })
 
-  const mcpResult = await setupMCP({mode: options.mcpMode})
+  // Detect editors once, then share the result with MCP and skills setup so
+  // we don't pay the detection cost (filesystem probes + CLI execa calls) twice.
+  const detectedEditors =
+    options.mcpMode === 'skip' && options.skillsMode === 'skip'
+      ? []
+      : await detectAvailableEditors()
+
+  const mcpResult = await setupMCP({
+    editors: detectedEditors,
+    mode: options.mcpMode,
+    skillsMode: options.skillsMode,
+  })
 
   trace.log({
     configuredEditors: mcpResult.configuredEditors,
@@ -199,6 +212,26 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     trace.error(mcpResult.error)
   }
   const mcpConfigured = mcpResult.configuredEditors
+
+  async function installSkills(): Promise<void> {
+    if (mcpResult.skillsToInstall.length === 0) return
+    try {
+      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall})
+      trace.log({
+        installedAgents: skillsResult.installedAgents,
+        skipped: skillsResult.skipped,
+        step: 'skillsSetup',
+      })
+      if (skillsResult.error) {
+        trace.error(skillsResult.error)
+      }
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      debug('Unexpected error from setupSkills %O', err)
+      output.warn(`Could not install Sanity agent skills: ${err.message}`)
+      trace.error(err)
+    }
+  }
 
   const {alreadyConfiguredEditors} = mcpResult
   if (alreadyConfiguredEditors.length > 0) {
@@ -229,6 +262,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       trace,
       workDir,
     })
+    await installSkills()
     trace.complete()
     return
   }
@@ -246,6 +280,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       outputPath,
     })
     await writeStagingEnvIfNeeded(output, outputPath)
+    await installSkills()
     trace.complete()
     return
   }
@@ -272,6 +307,8 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
         isFirstProject,
         projectId,
       }))
+
+  await installSkills()
 
   trace.complete()
 }

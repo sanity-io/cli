@@ -309,6 +309,7 @@ const baseOptions = {
   datasetDefault: false,
   fromCreate: false,
   mcpMode: 'skip' as const,
+  skillsMode: 'skip' as const,
   template: 'clean',
   unattended: true,
 }

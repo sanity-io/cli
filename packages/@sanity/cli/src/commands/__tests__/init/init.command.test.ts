@@ -83,6 +83,80 @@ describe('mcpMode resolution', () => {
   })
 })
 
+describe('skillsMode resolution', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    mockIsInteractive.mockReturnValue(true)
+  })
+
+  test('sets skillsMode to "auto" by default (interactive)', async () => {
+    mockInitAction.mockResolvedValue(undefined)
+
+    const {error} = await testCommand(InitCommand, [], {
+      mocks: {isInteractive: true, token: 'test-token'},
+    })
+
+    if (error) throw error
+    expect(mockInitAction).toHaveBeenCalledWith(
+      expect.objectContaining({skillsMode: 'auto'}),
+      expect.any(Object),
+    )
+  })
+
+  test('sets skillsMode to "skip" when --no-skills is passed', async () => {
+    mockInitAction.mockResolvedValue(undefined)
+
+    const {error} = await testCommand(InitCommand, ['--no-skills'], {
+      mocks: {isInteractive: true, token: 'test-token'},
+    })
+
+    if (error) throw error
+    expect(mockInitAction).toHaveBeenCalledWith(
+      expect.objectContaining({skillsMode: 'skip'}),
+      expect.any(Object),
+    )
+  })
+
+  test('sets skillsMode to "skip" when not interactive (CI)', async () => {
+    mockIsInteractive.mockReturnValue(false)
+    mockInitAction.mockResolvedValue(undefined)
+
+    const {error} = await testCommand(InitCommand, [], {
+      mocks: {isInteractive: false, token: 'test-token'},
+    })
+
+    if (error) throw error
+    expect(mockInitAction).toHaveBeenCalledWith(
+      expect.objectContaining({skillsMode: 'skip'}),
+      expect.any(Object),
+    )
+  })
+
+  test('sets skillsMode to "skip" in non-production Sanity env (e2e / UI tests)', async () => {
+    const previous = process.env.SANITY_INTERNAL_ENV
+    process.env.SANITY_INTERNAL_ENV = 'staging'
+    mockInitAction.mockResolvedValue(undefined)
+
+    try {
+      const {error} = await testCommand(InitCommand, [], {
+        mocks: {isInteractive: true, token: 'test-token'},
+      })
+
+      if (error) throw error
+      expect(mockInitAction).toHaveBeenCalledWith(
+        expect.objectContaining({skillsMode: 'skip'}),
+        expect.any(Object),
+      )
+    } finally {
+      if (previous === undefined) {
+        delete process.env.SANITY_INTERNAL_ENV
+      } else {
+        process.env.SANITY_INTERNAL_ENV = previous
+      }
+    }
+  })
+})
+
 describe('error handling', () => {
   afterEach(() => {
     vi.clearAllMocks()

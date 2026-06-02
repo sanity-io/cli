@@ -109,7 +109,19 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
     configuredEditors: [],
     detectedEditors: [],
     error: undefined,
+    skillsToInstall: [],
     skipped: false,
+  }),
+}))
+
+vi.mock('../../../actions/mcp/detectAvailableEditors.js', () => ({
+  detectAvailableEditors: vi.fn().mockResolvedValue([]),
+}))
+
+vi.mock('../../../actions/skills/setupSkills.js', () => ({
+  setupSkills: vi.fn().mockResolvedValue({
+    installedAgents: [],
+    skipped: true,
   }),
 }))
 
@@ -350,6 +362,7 @@ describe('#init: create new project', () => {
       alreadyConfiguredEditors: ['VS Code'],
       configuredEditors: [],
       detectedEditors: ['VS Code'],
+      skillsToInstall: [],
       skipped: true,
     })
 
@@ -401,6 +414,7 @@ describe('#init: create new project', () => {
       alreadyConfiguredEditors: ['VS Code', 'Cursor'],
       configuredEditors: [],
       detectedEditors: ['VS Code', 'Cursor'],
+      skillsToInstall: [],
       skipped: true,
     })
 

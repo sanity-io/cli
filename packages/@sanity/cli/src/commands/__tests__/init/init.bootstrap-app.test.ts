@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   installDeclaredPackages: vi.fn(),
   select: vi.fn(),
   setupMCP: vi.fn(),
+  setupSkills: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -91,6 +92,18 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
     configuredEditors: ['Cursor'],
     detectedEditors: [],
     error: undefined,
+    skillsToInstall: ['cursor'],
+    skipped: false,
+  }),
+}))
+
+vi.mock('../../../actions/mcp/detectAvailableEditors.js', () => ({
+  detectAvailableEditors: vi.fn().mockResolvedValue([]),
+}))
+
+vi.mock('../../../actions/skills/setupSkills.js', () => ({
+  setupSkills: mocks.setupSkills.mockResolvedValue({
+    installedAgents: ['cursor'],
     skipped: false,
   }),
 }))
@@ -207,6 +220,13 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(stdout).toContain('npx sanity docs browse')
     expect(stdout).toContain('npx sanity manage')
     expect(stdout).toContain('npx sanity help')
+
+    // Skills install runs after scaffolding has completed, with the agents
+    // setupMCP told us to install.
+    expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor']})
+    const bootstrapOrder = mocks.bootstrapTemplate.mock.invocationCallOrder[0]
+    const skillsOrder = mocks.setupSkills.mock.invocationCallOrder[0]
+    expect(skillsOrder).toBeGreaterThan(bootstrapOrder)
   })
 
   test('initializes app with env file', async () => {

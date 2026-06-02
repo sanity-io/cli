@@ -44,6 +44,11 @@ interface EditorConfig {
 
   /** If true, this editor uses OAuth natively and does not need an embedded API token */
   oauthOnly?: boolean
+  /**
+   * Corresponding `--agent` value for the `skills` CLI (https://github.com/vercel-labs/skills).
+   * Omit when the editor has no skills CLI equivalent.
+   */
+  skillsCliAgent?: string
 }
 
 /**
@@ -295,19 +300,31 @@ export const EDITOR_CONFIGS = {
     ...EDITOR_DEFAULTS,
     buildServerConfig: buildAntigravityServerConfig,
     detect: detectAntigravity,
+    skillsCliAgent: 'antigravity',
   },
   // Doc: https://docs.anthropic.com/en/docs/claude-code/mcp
   // Path: ~/.claude.json  Key: mcpServers
-  'Claude Code': {...EDITOR_DEFAULTS, detect: detectClaudeCode, oauthOnly: true},
+  'Claude Code': {
+    ...EDITOR_DEFAULTS,
+    detect: detectClaudeCode,
+    oauthOnly: true,
+    skillsCliAgent: 'claude-code',
+  },
   // Doc: https://github.com/cline/cline — VS Code extension (saoudrizwan.claude-dev)
   // Path: <VS Code User>/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-  Cline: {...EDITOR_DEFAULTS, buildServerConfig: buildClineServerConfig, detect: detectCline},
+  Cline: {
+    ...EDITOR_DEFAULTS,
+    buildServerConfig: buildClineServerConfig,
+    detect: detectCline,
+    skillsCliAgent: 'cline',
+  },
   // Doc: https://github.com/cline/cline — standalone CLI mode
   // Path: $CLINE_DIR || ~/.cline/data/settings/cline_mcp_settings.json
   'Cline CLI': {
     ...EDITOR_DEFAULTS,
     buildServerConfig: buildClineServerConfig,
     detect: detectClineCli,
+    skillsCliAgent: 'cline',
   },
   // Doc: https://platform.openai.com/docs/guides/tools-remote-mcp#codex-cli
   // Path: $CODEX_HOME || ~/.codex/config.toml  Key: mcp_servers  Format: TOML
@@ -318,6 +335,7 @@ export const EDITOR_CONFIGS = {
     detect: detectCodexCli,
     format: 'toml' as const,
     readToken: readTokenFromHttpHeaders,
+    skillsCliAgent: 'codex',
   },
   // Doc: https://docs.cursor.com/context/model-context-protocol
   // Path: ~/.cursor/mcp.json  Key: mcpServers
@@ -325,16 +343,18 @@ export const EDITOR_CONFIGS = {
     ...EDITOR_DEFAULTS,
     detect: detectCursor,
     oauthOnly: true,
+    skillsCliAgent: 'cursor',
   },
   // Doc: https://googlegemini.wiki/gemini-cli/mcp-servers
   // Path: ~/.gemini/settings.json  Key: mcpServers
-  'Gemini CLI': {...EDITOR_DEFAULTS, detect: detectGeminiCli},
+  'Gemini CLI': {...EDITOR_DEFAULTS, detect: detectGeminiCli, skillsCliAgent: 'gemini-cli'},
   // Doc: https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-coding-agent-with-mcp
   // Path: ~/.copilot/mcp-config.json (or $XDG_CONFIG_HOME/copilot on Linux)  Key: mcpServers
   'GitHub Copilot CLI': {
     ...EDITOR_DEFAULTS,
     buildServerConfig: buildGitHubCopilotCliServerConfig,
     detect: detectGitHubCopilotCli,
+    skillsCliAgent: 'github-copilot',
   },
   // Doc: https://github.com/nicobailon/mcporter
   // Path: ~/.mcporter/mcporter.{json,jsonc}  Key: mcpServers
@@ -346,15 +366,29 @@ export const EDITOR_CONFIGS = {
     buildServerConfig: buildOpenCodeServerConfig,
     configKey: 'mcp',
     detect: detectOpenCode,
+    skillsCliAgent: 'opencode',
   },
   // Doc: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
   // Path: <VS Code User dir>/mcp.json  Key: servers
-  'VS Code': {...EDITOR_DEFAULTS, configKey: 'servers', detect: detectVSCode},
+  // VS Code uses GitHub Copilot for AI features; skills are installed via the
+  // `github-copilot` agent (see https://code.visualstudio.com/docs/copilot/customization/agent-skills).
+  'VS Code': {
+    ...EDITOR_DEFAULTS,
+    configKey: 'servers',
+    detect: detectVSCode,
+    skillsCliAgent: 'github-copilot',
+  },
   // Doc: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
   // Path: <VS Code Insiders User dir>/mcp.json  Key: servers
-  'VS Code Insiders': {...EDITOR_DEFAULTS, configKey: 'servers', detect: detectVSCodeInsiders},
+  'VS Code Insiders': {
+    ...EDITOR_DEFAULTS,
+    configKey: 'servers',
+    detect: detectVSCodeInsiders,
+    skillsCliAgent: 'github-copilot',
+  },
   // Doc: https://zed.dev/docs/assistant/model-context-protocol
   // Path: ~/.config/zed/settings.json (or $APPDATA/Zed on Windows)  Key: context_servers
+  // Zed doesn't support agent skills - https://github.com/zed-industries/zed/issues/49057
   Zed: {
     ...EDITOR_DEFAULTS,
     buildServerConfig: buildZedServerConfig,
@@ -365,3 +399,33 @@ export const EDITOR_CONFIGS = {
 
 /** Derived from EDITOR_CONFIGS keys - add a new editor there and this updates automatically */
 export type EditorName = keyof typeof EDITOR_CONFIGS
+
+export function getSkillsCliAgent(editorName: EditorName): string | undefined {
+  if (editorName in EDITOR_CONFIGS) {
+    const config = EDITOR_CONFIGS[editorName]
+    return 'skillsCliAgent' in config ? config.skillsCliAgent : undefined
+  }
+}
+
+/**
+ * Skills-CLI agent ID → display name. Mirrors `displayName` from
+ * `~/git/skills/src/agents.ts` for the subset of agents we install for. Used
+ * to match `skills list --json` output (which keys by display name) against
+ * our editors.
+ */
+const SKILLS_CLI_AGENT_DISPLAY_NAMES: Record<string, string> = {
+  antigravity: 'Antigravity',
+  'claude-code': 'Claude Code',
+  cline: 'Cline',
+  codex: 'Codex',
+  cursor: 'Cursor',
+  'gemini-cli': 'Gemini CLI',
+  'github-copilot': 'GitHub Copilot',
+  opencode: 'OpenCode',
+}
+
+/** Display name used by the skills CLI for the given editor, if it has a mapping. */
+export function getSkillsCliAgentDisplayName(editorName: EditorName): string | undefined {
+  const agent = getSkillsCliAgent(editorName)
+  return agent ? SKILLS_CLI_AGENT_DISPLAY_NAMES[agent] : undefined
+}
