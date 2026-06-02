@@ -9,4 +9,8 @@ export type {CliConfig, UserViteConfig} from '@sanity/cli-core'
 // Workbench application extension API. Canonical implementation in
 // `@sanity/federation`; re-exported here so `sanity/cli` can surface it to
 // app authors via `import {unstable_defineApp} from 'sanity/cli'`.
-export {type DefineAppInput, unstable_defineApp} from '@sanity/federation'
+// `unstable_defineView` is the runtime view-authoring helper; its long-term
+// home is the `sanity` runtime package, but it's surfaced here for now so view
+// src files can `import {unstable_defineView} from '@sanity/cli'`. Component
+// props are inferred from the view type, so no prop types are re-exported.
+export {type DefineAppInput, unstable_defineApp, unstable_defineView} from '@sanity/federation'
