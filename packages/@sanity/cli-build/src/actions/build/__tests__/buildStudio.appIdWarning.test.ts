@@ -31,7 +31,7 @@ const buildOptions: Omit<BuildOptions, 'output'> = {
 
 // Mock heavy dependencies to isolate appId warning logic
 // Paths are relative to the test file location (__tests__/)
-vi.mock('../../../telemetry/build.telemetry.ts', () => ({
+vi.mock('../../../telemetry/build.telemetry.js', () => ({
   StudioBuildTrace: {},
 }))
 

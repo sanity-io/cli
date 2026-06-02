@@ -274,6 +274,7 @@ describe('#buildStudio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, 
     await buildStudio({
       ...buildOptions(cwd, output),
       unattendedMode: false,
+      upgradePackages: mockedUpgradePackages,
     })
 
     expect(output.warn).toHaveBeenCalledWith('Auto-updates disabled for this build')

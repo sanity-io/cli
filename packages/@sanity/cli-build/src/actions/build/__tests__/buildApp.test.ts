@@ -1,4 +1,6 @@
+import {readdir} from 'node:fs/promises'
 import {platform} from 'node:os'
+import {join} from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
 import {testFixture} from '@sanity/cli-test'
@@ -104,235 +106,235 @@ describe('#buildApp', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, () 
     expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
   })
 
-  // test('should exit when user declines version diff prompt', async () => {
-  //   const output = createMockOutput()
+  test('should exit when user declines version diff prompt', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedIsInteractive.mockReturnValue(true)
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
-  //     unresolvedPrerelease: [],
-  //   })
-  //   mockedConfirm.mockResolvedValue(false)
+    mockedIsInteractive.mockReturnValue(true)
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
+      unresolvedPrerelease: [],
+    })
+    mockedConfirm.mockResolvedValue(false)
 
-  //   await expect(
-  //     buildApp({
-  //       ...buildOptions(cwd, output),
-  //     }),
-  //   ).rejects.toThrow()
+    await expect(
+      buildApp({
+        ...buildOptions(cwd, output),
+      }),
+    ).rejects.toThrow()
 
-  //   expect(output.error).toHaveBeenCalledWith(
-  //     expect.stringContaining('Declined to continue with build'),
-  //     {exit: 1},
-  //   )
-  // })
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('Declined to continue with build'),
+      {exit: 1},
+    )
+  })
 
-  // test('should continue build when user confirms version diff prompt', async () => {
-  //   const output = createMockOutput()
+  test('should continue build when user confirms version diff prompt', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedIsInteractive.mockReturnValue(true)
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
-  //     unresolvedPrerelease: [],
-  //   })
-  //   mockedConfirm.mockResolvedValue(true)
+    mockedIsInteractive.mockReturnValue(true)
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
+      unresolvedPrerelease: [],
+    })
+    mockedConfirm.mockResolvedValue(true)
 
-  //   await buildApp({
-  //     ...buildOptions(cwd, output),
-  //   })
+    await buildApp({
+      ...buildOptions(cwd, output),
+    })
 
-  //   expect(mockedConfirm).toHaveBeenCalledWith(
-  //     expect.objectContaining({
-  //       message: expect.stringContaining('different from the versions currently served'),
-  //     }),
-  //   )
-  //   expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
+    expect(mockedConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('different from the versions currently served'),
+      }),
+    )
+    expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
 
-  //   const outputFolder = join(cwd, 'dist')
-  //   const files = await readdir(outputFolder)
-  //   expect(files).toContain('index.html')
-  // })
+    const outputFolder = join(cwd, 'dist')
+    const files = await readdir(outputFolder)
+    expect(files).toContain('index.html')
+  })
 
-  // test('should error in unattended mode when prerelease versions are detected', async () => {
-  //   const output = createMockOutput()
+  test('should error in unattended mode when prerelease versions are detected', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedIsInteractive.mockReturnValue(true)
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [],
-  //     unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-  //   })
+    mockedIsInteractive.mockReturnValue(true)
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [],
+      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+    })
 
-  //   await expect(
-  //     buildApp({
-  //       ...buildOptions(cwd, output),
-  //       unattendedMode: true,
-  //     }),
-  //   ).rejects.toThrow()
+    await expect(
+      buildApp({
+        ...buildOptions(cwd, output),
+        unattendedMode: true,
+      }),
+    ).rejects.toThrow()
 
-  //   expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
-  //     exit: 1,
-  //   })
-  //   expect(output.error).toHaveBeenCalledWith(expect.stringContaining('--no-auto-updates'), {
-  //     exit: 1,
-  //   })
-  //   expect(mockedSelect).not.toHaveBeenCalled()
-  // })
+    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
+      exit: 1,
+    })
+    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('--no-auto-updates'), {
+      exit: 1,
+    })
+    expect(mockedSelect).not.toHaveBeenCalled()
+  })
 
-  // test('should exit when user selects "cancel" for prerelease prompt', async () => {
-  //   const output = createMockOutput()
+  test('should exit when user selects "cancel" for prerelease prompt', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedIsInteractive.mockReturnValue(true)
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [],
-  //     unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-  //   })
-  //   mockedSelect.mockResolvedValue('cancel')
+    mockedIsInteractive.mockReturnValue(true)
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [],
+      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+    })
+    mockedSelect.mockResolvedValue('cancel')
 
-  //   await expect(
-  //     buildApp({
-  //       ...buildOptions(cwd, output),
-  //     }),
-  //   ).rejects.toThrow()
+    await expect(
+      buildApp({
+        ...buildOptions(cwd, output),
+      }),
+    ).rejects.toThrow()
 
-  //   expect(output.error).toHaveBeenCalledWith(
-  //     expect.stringContaining('Declined to continue with build'),
-  //     {exit: 1},
-  //   )
-  // })
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('Declined to continue with build'),
+      {exit: 1},
+    )
+  })
 
-  // test('should build without auto-updates when user selects "disable-auto-updates" for prerelease', async () => {
-  //   const output = createMockOutput()
+  test('should build without auto-updates when user selects "disable-auto-updates" for prerelease', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedIsInteractive.mockReturnValue(true)
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [],
-  //     unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-  //   })
-  //   mockedSelect.mockResolvedValue('disable-auto-updates')
+    mockedIsInteractive.mockReturnValue(true)
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [],
+      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+    })
+    mockedSelect.mockResolvedValue('disable-auto-updates')
 
-  //   await buildApp({
-  //     ...buildOptions(cwd, output),
-  //   })
+    await buildApp({
+      ...buildOptions(cwd, output),
+    })
 
-  //   expect(output.warn).toHaveBeenCalledWith(
-  //     expect.stringContaining('Auto-updates disabled for this build'),
-  //   )
-  //   expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
+    expect(output.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Auto-updates disabled for this build'),
+    )
+    expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
 
-  //   const outputFolder = join(cwd, 'dist')
-  //   const files = await readdir(outputFolder)
-  //   expect(files).toContain('index.html')
-  // })
+    const outputFolder = join(cwd, 'dist')
+    const files = await readdir(outputFolder)
+    expect(files).toContain('index.html')
+  })
 
-  // test('should skip version mismatch prompt after disabling auto-updates for prerelease', async () => {
-  //   const output = createMockOutput()
+  test('should skip version mismatch prompt after disabling auto-updates for prerelease', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedIsInteractive.mockReturnValue(true)
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk', remote: '1.1.0'}],
-  //     unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-  //   })
-  //   mockedSelect.mockResolvedValue('disable-auto-updates')
+    mockedIsInteractive.mockReturnValue(true)
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk', remote: '1.1.0'}],
+      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+    })
+    mockedSelect.mockResolvedValue('disable-auto-updates')
 
-  //   await buildApp({
-  //     ...buildOptions(cwd, output),
-  //   })
+    await buildApp({
+      ...buildOptions(cwd, output),
+    })
 
-  //   expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
-  //   // select should only be called once (for the prerelease prompt), not twice
-  //   expect(mockedSelect).toHaveBeenCalledTimes(1)
-  //   // confirm for version mismatch should not have been called
-  //   expect(mockedConfirm).not.toHaveBeenCalledWith(
-  //     expect.objectContaining({
-  //       message: expect.stringContaining('different from the versions currently served'),
-  //     }),
-  //   )
-  // })
+    expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
+    // select should only be called once (for the prerelease prompt), not twice
+    expect(mockedSelect).toHaveBeenCalledTimes(1)
+    // confirm for version mismatch should not have been called
+    expect(mockedConfirm).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('different from the versions currently served'),
+      }),
+    )
+  })
 
-  // test('should skip version diff prompt in unattended mode', async () => {
-  //   const output = createMockOutput()
+  test('should skip version diff prompt in unattended mode', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
-  //     unresolvedPrerelease: [],
-  //   })
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
+      unresolvedPrerelease: [],
+    })
 
-  //   await buildApp({
-  //     ...buildOptions(cwd, output),
-  //     unattendedMode: true,
-  //   })
+    await buildApp({
+      ...buildOptions(cwd, output),
+      unattendedMode: true,
+    })
 
-  //   expect(mockedConfirm).not.toHaveBeenCalled()
-  //   expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
-  // })
+    expect(mockedConfirm).not.toHaveBeenCalled()
+    expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
+  })
 
-  // test('should skip version diff prompt in non-interactive mode and show warning', async () => {
-  //   const output = createMockOutput()
+  test('should skip version diff prompt in non-interactive mode and show warning', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedIsInteractive.mockReturnValue(false)
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
-  //     unresolvedPrerelease: [],
-  //   })
+    mockedIsInteractive.mockReturnValue(false)
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
+      unresolvedPrerelease: [],
+    })
 
-  //   await buildApp({
-  //     ...buildOptions(cwd, output),
-  //   })
+    await buildApp({
+      ...buildOptions(cwd, output),
+    })
 
-  //   expect(mockedConfirm).not.toHaveBeenCalled()
-  //   expect(output.warn).toHaveBeenCalledWith(
-  //     expect.stringContaining('@sanity/sdk-react (local version: 1.0.0, runtime version: 1.1.0)'),
-  //   )
-  //   expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
-  // })
+    expect(mockedConfirm).not.toHaveBeenCalled()
+    expect(output.warn).toHaveBeenCalledWith(
+      expect.stringContaining('@sanity/sdk-react (local version: 1.0.0, runtime version: 1.1.0)'),
+    )
+    expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
+  })
 
-  // test('should error in non-interactive mode when prerelease versions are detected', async () => {
-  //   const output = createMockOutput()
+  test('should error in non-interactive mode when prerelease versions are detected', async () => {
+    const output = createMockOutput()
 
-  //   const cwd = await testFixture('basic-app')
-  //   process.chdir(cwd)
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
 
-  //   mockedIsInteractive.mockReturnValue(false)
-  //   mockedCompareDependencyVersions.mockResolvedValue({
-  //     mismatched: [],
-  //     unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-  //   })
+    mockedIsInteractive.mockReturnValue(false)
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [],
+      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+    })
 
-  //   await expect(
-  //     buildApp({
-  //       ...buildOptions(cwd, output),
-  //     }),
-  //   ).rejects.toThrow()
+    await expect(
+      buildApp({
+        ...buildOptions(cwd, output),
+      }),
+    ).rejects.toThrow()
 
-  //   expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
-  //     exit: 1,
-  //   })
-  //   expect(output.error).toHaveBeenCalledWith(expect.stringContaining('--no-auto-updates'), {
-  //     exit: 1,
-  //   })
-  //   expect(mockedSelect).not.toHaveBeenCalled()
-  // })
+    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
+      exit: 1,
+    })
+    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('--no-auto-updates'), {
+      exit: 1,
+    })
+    expect(mockedSelect).not.toHaveBeenCalled()
+  })
 })

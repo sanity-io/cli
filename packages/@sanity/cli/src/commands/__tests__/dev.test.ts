@@ -34,7 +34,7 @@ vi.mock('../../server/vite/plugin-typegen.js', () => ({
 }))
 
 vi.mock('@sanity/cli-build/_internal/build', async (importActual) => {
-  const actual = await importActual<typeof import('@sanity/cli-core/ux')>()
+  const actual = await importActual<typeof import('@sanity/cli-build/_internal/build')>()
   return {
     ...actual,
     checkRequiredDependencies: vi.fn().mockResolvedValue({
