@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.1](https://github.com/sanity-io/cli/compare/cli-build-v0.2.0...cli-build-v0.2.1)
+
+_2026-06-02_
+
+### Bug Fixes
+
+- add missing changeset for `@sanity/cli-core` ([#1153](https://github.com/sanity-io/cli/pull/1153)) ([ef5b390](https://github.com/sanity-io/cli/commit/ef5b390a439ca8612584ce1c3c1f7d4dbab8172f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 1.3.3
+
 ## [0.2.0](https://github.com/sanity-io/cli/compare/cli-build-v0.1.1...cli-build-v0.2.0)
 
 _2026-06-02_
