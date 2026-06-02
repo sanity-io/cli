@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/sanity-io/cli/compare/cli-build-v0.1.1...cli-build-v0.2.0)
+
+_2026-06-02_
+
+### Features
+
+- Move more build/schema logic to cli-build package ([#1130](https://github.com/sanity-io/cli/pull/1130)) ([6165c80](https://github.com/sanity-io/cli/commit/6165c80c63ab6af0dd76b36e60f1d78f798eb13d))
+
 ## [0.1.1](https://github.com/sanity-io/cli/compare/cli-build-v0.1.0...cli-build-v0.1.1)
 
 _2026-05-13_
