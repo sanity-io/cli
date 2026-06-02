@@ -145,7 +145,7 @@ async function getSanityPackageTypeExports() {
 }
 
 // Value exports intentionally added in v6 that the v5 CLI didn't have.
-const NEW_EXPORTS = new Set(['unstable_defineApp', 'unstable_defineView'])
+const NEW_EXPORTS = new Set(['unstable_defineApp'])
 
 test('should match exports of the current cli package', async () => {
   const oldCliExports = await getSanityPackageExports()
