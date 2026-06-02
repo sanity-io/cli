@@ -253,12 +253,17 @@ function buildClineServerConfig(token: string): Record<string, unknown> {
   }
 }
 
-function buildCodexCliServerConfig(token: string): Record<string, unknown> {
-  return {
-    http_headers: {Authorization: `Bearer ${token}`},
+function buildCodexCliServerConfig(token?: string): Record<string, unknown> {
+  const config: Record<string, unknown> = {
     type: 'http',
     url: MCP_SERVER_URL,
   }
+
+  if (token) {
+    config.http_headers = {Authorization: `Bearer ${token}`}
+  }
+
+  return config
 }
 
 function buildGitHubCopilotCliServerConfig(token: string): Record<string, unknown> {
@@ -334,6 +339,7 @@ export const EDITOR_CONFIGS = {
     configKey: 'mcp_servers',
     detect: detectCodexCli,
     format: 'toml' as const,
+    oauthOnly: true,
     readToken: readTokenFromHttpHeaders,
     skillsCliAgent: 'codex',
   },
