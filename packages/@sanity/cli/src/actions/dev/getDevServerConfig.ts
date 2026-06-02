@@ -35,6 +35,9 @@ export function getDevServerConfig({
 
   const isApp = cliConfig ? determineIsApp(cliConfig) : false
   const reactStrictMode = resolveReactStrictMode(cliConfig)
+  // `views` is declared via `unstable_defineApp`, so read it off the branded
+  // app result rather than the legacy `app` config type.
+  const app = cliConfig?.app
 
   const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
   if (envBasePath && cliConfig?.project?.basePath) {
@@ -45,11 +48,11 @@ export function getDevServerConfig({
 
   return {
     ...baseConfig,
-    isWorkbenchApp: isWorkbenchApp(cliConfig?.app),
+    isWorkbenchApp: isWorkbenchApp(app),
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
-    views: cliConfig?.app?.views,
+    views: isWorkbenchApp(app) ? app.views : undefined,
   }
 }
