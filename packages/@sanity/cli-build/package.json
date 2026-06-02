@@ -94,7 +94,6 @@
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "catalog:",
-    "get-it": "^8.7.2",
     "jsdom": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
