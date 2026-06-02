@@ -1,4 +1,5 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {isWorkbenchApp} from '@sanity/federation'
 import {type ViteDevServer} from 'vite'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
@@ -37,12 +38,18 @@ export async function startFederationRegistration(
   const addr = server.httpServer?.address()
   const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
 
+  // Views live on the branded `unstable_defineApp` result. Forward them on the
+  // registry entry (alongside, not inside, the manifest) so the workbench can
+  // render local panels without a deploy.
+  const views = isWorkbenchApp(cliConfig.app) ? cliConfig.app.views : undefined
+
   const registration = registerDevServer({
     host: appHost,
     id: getAppId(cliConfig),
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     type: isApp ? 'coreApp' : 'studio',
+    views,
     workDir,
   })
 

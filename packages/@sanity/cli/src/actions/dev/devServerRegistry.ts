@@ -40,6 +40,13 @@ const devServerManifestSchema = z.extend(workbenchLockSchema, {
   manifestUpdatedAt: z.optional(z.string()),
   projectId: z.optional(z.string()),
   type: z.enum(['coreApp', 'studio']),
+  /**
+   * Views the app declares (e.g. dock panels). Carried separately from the
+   * manifest — views live in the application service, not the manifest — so the
+   * workbench can render local panels without a deploy. Lenient by design;
+   * `@sanity/federation` is the authority on the view shape.
+   */
+  views: z.optional(z.array(z.object({name: z.string(), src: z.string(), type: z.string()}))),
   workDir: z.string(),
 })
 /**
