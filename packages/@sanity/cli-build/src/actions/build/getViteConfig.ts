@@ -7,7 +7,7 @@ import {
   readPackageJson,
   type UserViteConfig,
 } from '@sanity/cli-core'
-import {federation as viteFederation} from '@sanity/federation/vite'
+import {type ViewArtifact, federation as viteFederation} from '@sanity/federation/vite'
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -95,6 +95,12 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
+
+  /**
+   * Views the workbench app declares. Built into render-contract artifacts and
+   * exposed through module federation as `./views/<name>`.
+   */
+  views?: readonly ViewArtifact[]
 }
 
 /**
@@ -120,6 +126,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
+    views,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -206,6 +213,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
                     studioConfigPath: entries.relativeConfigLocation!,
                   }),
               pkgJson: await readPackageJson(path.join(cwd, 'package.json')),
+              views,
               workDir: cwd,
             }),
           ]

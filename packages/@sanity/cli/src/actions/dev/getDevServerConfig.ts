@@ -51,5 +51,6 @@ export function getDevServerConfig({
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
+    views: cliConfig?.app?.views,
   }
 }
