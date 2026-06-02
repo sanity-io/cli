@@ -5,6 +5,7 @@ import {createGzip} from 'node:zlib'
 import {CLIError} from '@oclif/core/errors'
 import {getLocalPackageVersion} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {isWorkbenchApp} from '@sanity/federation'
 import {pack} from 'tar-fs'
 
 import {createDeployment, updateUserApplication} from '../../services/userApplications.js'
@@ -141,7 +142,9 @@ export async function deployApp(options: DeployAppOptions) {
     // Register the app's declared views with the application service. That
     // service doesn't exist yet, so validate the payload and log it (no store);
     // a malformed view declaration fails the deploy before we ship the bundle.
-    const declaredViews = cliConfig.app?.views ?? []
+    // `views` lives on the branded `unstable_defineApp` result, not the legacy
+    // `app` config object.
+    const declaredViews = isWorkbenchApp(cliConfig.app) ? (cliConfig.app.views ?? []) : []
     if (declaredViews.length > 0) {
       try {
         const payload = buildViewDeploymentPayload({

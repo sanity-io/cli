@@ -39,21 +39,6 @@ export interface CliConfig {
     priority?: number
     /** The title of the custom app, as it is seen in Dashboard UI */
     title?: string
-    /**
-     * Views the app exposes (e.g. dock panels). Each is built into a render
-     * artifact on `sanity build` and persisted to the application service on
-     * `sanity deploy`. View types may carry extra attributes that are stored
-     * alongside `type`/`name`/`src`.
-     */
-    views?: Array<{
-      [attribute: string]: unknown
-      /** View name, unique within the app. */
-      name: string
-      /** Path to the view src file (default-exports `unstable_defineView`). */
-      src: string
-      /** View type — selects the render contract the build generates. */
-      type: 'panel'
-    }>
   }
 
   /** @deprecated Use deployment.autoUpdates */
