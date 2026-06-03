@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.5](https://github.com/sanity-io/cli/compare/cli-test-v0.3.4...cli-test-v0.3.5)
+
+_2026-06-03_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1163](https://github.com/sanity-io/cli/pull/1163)) ([5313459](https://github.com/sanity-io/cli/commit/5313459399be83686d500d1fb3b1fc19483cebcd))
+- **deps:** update dependency esbuild to ^0.28.0 ([#1166](https://github.com/sanity-io/cli/pull/1166)) ([79f353f](https://github.com/sanity-io/cli/commit/79f353fe7c9ecb9282ef7d65d0dbbfd655f33ba5))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 1.3.4
+
 ## [0.3.4](https://github.com/sanity-io/cli/compare/cli-test-v0.3.3...cli-test-v0.3.4)
 
 _2026-06-02_

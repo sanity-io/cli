@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.2](https://github.com/sanity-io/cli/compare/cli-build-v0.2.1...cli-build-v0.2.2)
+
+_2026-06-03_
+
+### Bug Fixes
+
+- ensure babel-plugin-react-compiler is a peer dependency ([#1175](https://github.com/sanity-io/cli/pull/1175)) ([d2de934](https://github.com/sanity-io/cli/commit/d2de934fa3bfbe3d82ca37ad9db3eae567677a4b))
+- **deps:** Update react monorepo to ^19.2.6 ([#1173](https://github.com/sanity-io/cli/pull/1173)) ([c847618](https://github.com/sanity-io/cli/commit/c8476184695ec6331abefd8dfb3f8ad2402d6e55))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 1.3.4
+
 ## [0.2.1](https://github.com/sanity-io/cli/compare/cli-build-v0.2.0...cli-build-v0.2.1)
 
 _2026-06-02_

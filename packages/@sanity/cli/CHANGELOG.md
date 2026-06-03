@@ -1,5 +1,23 @@
 # Change Log
 
+## [6.7.2](https://github.com/sanity-io/cli/compare/cli-v6.7.1...cli-v6.7.2)
+
+_2026-06-03_
+
+### Bug Fixes
+
+- ensure babel-plugin-react-compiler is a peer dependency ([#1175](https://github.com/sanity-io/cli/pull/1175)) ([d2de934](https://github.com/sanity-io/cli/commit/d2de934fa3bfbe3d82ca37ad9db3eae567677a4b))
+- **deps:** update oclif-tooling ([#1161](https://github.com/sanity-io/cli/pull/1161)) ([b8bc554](https://github.com/sanity-io/cli/commit/b8bc55407d18517e64aba9e8553ddb1fd8316d16))
+- **deps:** update sanity-tooling ([#1163](https://github.com/sanity-io/cli/pull/1163)) ([5313459](https://github.com/sanity-io/cli/commit/5313459399be83686d500d1fb3b1fc19483cebcd))
+- **deps:** Update react monorepo to ^19.2.6 ([#1173](https://github.com/sanity-io/cli/pull/1173)) ([c847618](https://github.com/sanity-io/cli/commit/c8476184695ec6331abefd8dfb3f8ad2402d6e55))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 1.3.4
+    - @sanity/cli-build bumped to 0.2.2
+
 ## [6.7.1](https://github.com/sanity-io/cli/compare/cli-v6.7.0...cli-v6.7.1)
 
 _2026-06-02_
