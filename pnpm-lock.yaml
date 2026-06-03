@@ -142,6 +142,7 @@ catalogs:
 overrides:
   '@sanity/client': ^7.22.0
   '@sanity/cli': workspace:*
+  '@sanity/federation': https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
 
 importers:
 
@@ -265,8 +266,8 @@ importers:
   fixtures/federated-studio:
     dependencies:
       '@sanity/federation':
-        specifier: 0.1.0-alpha.9
-        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
+        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -537,8 +538,8 @@ importers:
         specifier: ^6.2.0
         version: 6.2.0
       '@sanity/federation':
-        specifier: 0.1.0-alpha.9
-        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
+        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -826,8 +827,8 @@ importers:
         specifier: workspace:^
         version: link:../cli-core
       '@sanity/federation':
-        specifier: 0.1.0-alpha.9
-        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
+        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -962,8 +963,8 @@ importers:
         specifier: ^7.22.0
         version: 7.22.0
       '@sanity/federation':
-        specifier: 0.1.0-alpha.9
-        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
+        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
@@ -4924,8 +4925,9 @@ packages:
     engines: {node: '>=20.19 <22 || >=22.12'}
     hasBin: true
 
-  '@sanity/federation@0.1.0-alpha.9':
-    resolution: {integrity: sha512-mSsRVzqSrniPtg50+hhbO2WE8vzX/PGkI123ysS8xrUECV0m/v/9YH3ha159dcuUxG0JzgjAtj1+gVy+TmqANQ==}
+  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091':
+    resolution: {tarball: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091}
+    version: 0.1.0-alpha.9
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       vite: ^7.0.0 || ^8.0.0
@@ -14543,7 +14545,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@sanity/federation@0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
+  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
     dependencies:
       '@module-federation/runtime': 2.5.0
       '@module-federation/vite': 1.16.0(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
@@ -14556,7 +14558,7 @@ snapshots:
       - utf-8-validate
       - vue-tsc
 
-  '@sanity/federation@0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
+  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
     dependencies:
       '@module-federation/runtime': 2.5.0
       '@module-federation/vite': 1.16.0(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
