@@ -14,6 +14,7 @@ import {getSanityDataDir} from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
 import {coreAppManifestSchema, studioManifestSchema} from '../manifest/types.js'
+import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {devDebug} from './devDebug.js'
 
 /** Bump when the manifest/lock shape changes in a breaking way. */
@@ -411,6 +412,10 @@ export function watchRegistry(callback: (servers: DevServerManifest[]) => void):
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
 
+  // Canonicalize to the real long path so `fs.watch` doesn't abort on Windows
+  // short-path dirs. See `canonicalizeWatchDir`.
+  const watchDir = canonicalizeWatchDir(registryDir)
+
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
   const notify = () => {
@@ -420,7 +425,7 @@ export function watchRegistry(callback: (servers: DevServerManifest[]) => void):
     }, 50)
   }
 
-  const watcher = watch(registryDir, notify)
+  const watcher = watch(watchDir, notify)
 
   return {
     close() {
