@@ -37,7 +37,7 @@ jobs:
       - name: Run Claude Code Review
         if: github.event.pull_request.user.login != 'renovate[bot]'
         id: claude-review
-        uses: anthropics/claude-code-action@1dc994ee7a008f0ecc866d9ac23ef036b7229f84 # v1
+        uses: anthropics/claude-code-action@36a69b6a90b850823f86de06fdfd56264772ad98 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
@@ -54,7 +54,7 @@ jobs:
       - name: Run Claude Review for Renovate Major Update
         if: github.event.pull_request.user.login == 'renovate[bot]'
         id: claude-review-renovate
-        uses: anthropics/claude-code-action@1dc994ee7a008f0ecc866d9ac23ef036b7229f84 # v1
+        uses: anthropics/claude-code-action@36a69b6a90b850823f86de06fdfd56264772ad98 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
