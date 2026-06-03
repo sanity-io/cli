@@ -629,13 +629,13 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
       react:
-        specifier: ^19.2.4
+        specifier: ^19.2.6
         version: 19.2.6
       react-dom:
-        specifier: ^19.2.4
+        specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
       react-is:
-        specifier: ^19.2.4
+        specifier: ^19.2.6
         version: 19.2.6
       rxjs:
         specifier: 'catalog:'
@@ -825,10 +825,10 @@ importers:
         specifier: ^4.0.4
         version: 4.0.4
       react:
-        specifier: ^19.2.4
+        specifier: ^19.2.6
         version: 19.2.6
       react-dom:
-        specifier: ^19.2.4
+        specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
       read-package-up:
         specifier: 'catalog:'
