@@ -1,9 +1,9 @@
+import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
 import {z} from 'zod/mini'
 
-import {SANITY_CACHE_DIR} from '../../constants.js'
 import {getProjectById} from '../../services/projects.js'
 import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
 import {devDebug} from './devDebug.js'
