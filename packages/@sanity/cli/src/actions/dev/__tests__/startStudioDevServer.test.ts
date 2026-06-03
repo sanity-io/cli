@@ -27,7 +27,7 @@ vi.mock('../../../server/gracefulServerDeath.js', () => ({
 vi.mock('../getDevServerConfig.js', () => ({
   getDevServerConfig: mockGetDevServerConfig,
 }))
-vi.mock('@sanity/cli-build/_internal', () => ({
+vi.mock('@sanity/cli-build/_internal/build', () => ({
   checkStudioDependencyVersions: mockCheckStudioDependencyVersions,
 }))
 vi.mock('../../build/checkRequiredDependencies.js', () => ({
