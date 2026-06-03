@@ -66,7 +66,6 @@
     "@inquirer/prompts": "^8.3.0",
     "@oclif/core": "catalog:",
     "@sanity/client": "catalog:",
-    "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
     "debug": "catalog:",
     "get-it": "^8.7.2",
@@ -81,7 +80,7 @@
     "rxjs": "catalog:",
     "tsx": "catalog:",
     "vite": "catalog:",
-    "vite-node": "^5.3.0",
+    "vite-node": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -96,11 +95,20 @@
     "@types/debug": "catalog:",
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",
+    "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "babel-plugin-react-compiler": "*"
+  },
+  "peerDependenciesMeta": {
+    "babel-plugin-react-compiler": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
