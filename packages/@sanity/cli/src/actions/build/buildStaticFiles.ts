@@ -88,6 +88,7 @@ export async function buildStaticFiles(
       cwd,
       entries,
       federation,
+      getEnvironmentVariables,
       isApp,
       minify,
       mode,

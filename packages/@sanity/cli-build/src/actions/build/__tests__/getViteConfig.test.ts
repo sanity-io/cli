@@ -14,7 +14,6 @@ import {
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
 const mockFederationPlugin = vi.hoisted(() => vi.fn())
-const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
 vi.mock('read-package-up', () => ({
@@ -65,10 +64,8 @@ vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
   }),
 }))
 
-vi.mock('../../../server/vite/plugin-typegen.js', () => ({
-  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
-    name: 'sanity/typegen',
-  }),
+vi.mock('../writeFavicons.js', () => ({
+  getDefaultFaviconsPath: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -102,6 +99,10 @@ describe('#getViteConfig', () => {
       packageJson: {name: 'sanity'},
       path: join(mockSanityPath, 'package.json'),
     })
+
+    // Default favicons path resolves under the sanity package
+    const {getDefaultFaviconsPath} = await import('../writeFavicons.js')
+    vi.mocked(getDefaultFaviconsPath).mockResolvedValue(join(mockSanityPath, 'static/favicons'))
   })
 
   afterEach(() => {
@@ -111,13 +112,10 @@ describe('#getViteConfig', () => {
   test('should create basic vite config with default options', async () => {
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
+      entries: mockEntries,
       getEnvironmentVariables() {
         return {'process.env.STUDIO_VAR': '"studio-value"'}
       },
-=======
-      entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -165,13 +163,10 @@ describe('#getViteConfig', () => {
   test('should create vite config for app mode', async () => {
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
+      entries: mockEntries,
       getEnvironmentVariables() {
         return {'process.env.APP_VAR': '"app-value"'}
       },
-=======
-      entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
       isApp: true,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -195,11 +190,8 @@ describe('#getViteConfig', () => {
   test('should create production config with minification', async () => {
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       minify: true,
       mode: 'production' as const,
       outputDir: mockCustomOutput,
@@ -230,11 +222,8 @@ describe('#getViteConfig', () => {
   test('should create production config without minification', async () => {
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       minify: false,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -251,11 +240,8 @@ describe('#getViteConfig', () => {
     const options = {
       basePath: 'custom/path',
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -268,11 +254,8 @@ describe('#getViteConfig', () => {
   test('should handle custom server options', async () => {
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
       server: {
@@ -300,11 +283,8 @@ describe('#getViteConfig', () => {
 
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: reactCompilerConfig,
     }
@@ -326,11 +306,8 @@ describe('#getViteConfig', () => {
 
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -350,11 +327,8 @@ describe('#getViteConfig', () => {
 
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       importMap,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -375,14 +349,15 @@ describe('#getViteConfig', () => {
   })
 
   test('should throw error when sanity package path cannot be resolved', async () => {
-    const {getDefaultFaviconsPath} = await import('@sanity/cli-build/_internal')
-    vi.mocked(getDefaultFaviconsPath).mockRejectedValue(
+    const {getDefaultFaviconsPath} = await import('../writeFavicons.js')
+    vi.mocked(getDefaultFaviconsPath).mockRejectedValueOnce(
       new Error('Unable to resolve `@sanity/cli-build` module root'),
     )
 
     const options = {
       cwd: mockTestCwd,
       entries: mockEntries,
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -398,11 +373,8 @@ describe('#getViteConfig', () => {
     const options = {
       basePath: '/studio',
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -419,11 +391,8 @@ describe('#getViteConfig', () => {
   test('should include schema extraction plugin when enabled', async () => {
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
       schemaExtraction: {
@@ -456,11 +425,8 @@ describe('#getViteConfig', () => {
   test('should not include schema extraction plugin when disabled', async () => {
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
       schemaExtraction: {
@@ -479,68 +445,12 @@ describe('#getViteConfig', () => {
     expect(schemaPlugin).toBeUndefined()
   })
 
-  test('should include typegen plugin when enabled', async () => {
-    const options = {
-      cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
-      entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
-      mode: 'development' as const,
-      reactCompiler: undefined,
-      typegen: {
-        enabled: true,
-        generates: 'sanity.types.ts',
-        schema: 'custom-schema.json',
-      },
-    }
-
-    const config = await getViteConfig(options)
-
-    const typegenPlugin = config.plugins?.find(
-      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
-    )
-
-    expect(mockTypegenPlugin).toHaveBeenCalledWith({
-      config: {
-        enabled: true,
-        generates: 'sanity.types.ts',
-        schema: 'custom-schema.json',
-      },
-      telemetryLogger: noopLogger,
-      workDir: mockTestCwd,
-    })
-    expect(typegenPlugin).toBeDefined()
-  })
-
-  test('should not include typegen plugin when disabled', async () => {
-    const options = {
-      cwd: mockTestCwd,
-      entries: mockEntries,
-      mode: 'development' as const,
-      reactCompiler: undefined,
-      typegen: {
-        enabled: false,
-        generates: 'sanity.types.ts',
-      },
-    }
-
-    const config = await getViteConfig(options)
-
-    const typegenPlugin = config.plugins?.find(
-      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
-    )
-
-    expect(mockTypegenPlugin).not.toHaveBeenCalled()
-    expect(typegenPlugin).toBeUndefined()
-  })
-
   test('should include federation plugin when enabled', async () => {
     const options = {
       cwd: mockTestCwd,
       entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
       federation: {enabled: true},
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -565,6 +475,7 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       entries: mockEntries,
       federation: {enabled: false},
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -583,6 +494,7 @@ describe('#getViteConfig', () => {
     const options = {
       cwd: mockTestCwd,
       entries: mockEntries,
+      getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -766,11 +678,8 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     // which includes the onwarn callback
     const options = {
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'production' as const,
       reactCompiler: undefined,
     }
@@ -800,11 +709,8 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
@@ -827,11 +733,8 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
@@ -853,11 +756,8 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
-<<<<<<< HEAD:packages/@sanity/cli-build/src/actions/build/__tests__/getViteConfig.test.ts
-      getEnvironmentVariables,
-=======
       entries: mockEntries,
->>>>>>> daddbd80 (feat(federation): pass additional props to federation plugin (#918)):packages/@sanity/cli/src/actions/build/__tests__/getViteConfig.test.ts
+      getEnvironmentVariables,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
