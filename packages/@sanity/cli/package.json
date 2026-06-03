@@ -166,7 +166,7 @@
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "nock": "catalog:",
-    "oclif": "^4.23.0",
+    "oclif": "^4.23.10",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",
