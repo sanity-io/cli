@@ -21,7 +21,7 @@
     },
     "lint": {},
     "publint": {
-      "dependsOn": ["build:types", "^build:types", "^publint"],
+      "dependsOn": ["^build:types", "^publint"],
       "cache": false
     },
     "dev": {
