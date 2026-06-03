@@ -264,6 +264,9 @@ importers:
 
   fixtures/federated-studio:
     dependencies:
+      '@sanity/federation':
+        specifier: 0.1.0-alpha.9
+        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -533,6 +536,9 @@ importers:
       '@sanity/export':
         specifier: ^6.2.0
         version: 6.2.0
+      '@sanity/federation':
+        specifier: 0.1.0-alpha.9
+        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -820,8 +826,8 @@ importers:
         specifier: workspace:^
         version: link:../cli-core
       '@sanity/federation':
-        specifier: 0.1.0-alpha.8
-        version: 0.1.0-alpha.8(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: 0.1.0-alpha.9
+        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -955,6 +961,9 @@ importers:
       '@sanity/client':
         specifier: ^7.22.0
         version: 7.22.0
+      '@sanity/federation':
+        specifier: 0.1.0-alpha.9
+        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
@@ -4915,8 +4924,8 @@ packages:
     engines: {node: '>=20.19 <22 || >=22.12'}
     hasBin: true
 
-  '@sanity/federation@0.1.0-alpha.8':
-    resolution: {integrity: sha512-FMVXDu9XM8+I6XO1jXE3AIfL399CP9aVDotL3KWipPppTuq7iexo0wuD6d7mcYOwrhMukET7Pooy2+Z3WwQ3Iw==}
+  '@sanity/federation@0.1.0-alpha.9':
+    resolution: {integrity: sha512-mSsRVzqSrniPtg50+hhbO2WE8vzX/PGkI123ysS8xrUECV0m/v/9YH3ha159dcuUxG0JzgjAtj1+gVy+TmqANQ==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       vite: ^7.0.0 || ^8.0.0
@@ -13373,6 +13382,22 @@ snapshots:
       - utf-8-validate
       - vue-tsc
 
+  '@module-federation/vite@1.16.0(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
+    dependencies:
+      '@module-federation/dts-plugin': 2.5.0(typescript@5.9.3)
+      '@module-federation/runtime': 2.5.0
+      '@module-federation/sdk': 2.5.0
+      es-module-lexer: 2.0.0
+      estree-walker: 3.0.3
+      pathe: 2.0.3
+      vite: 7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4)
+    transitivePeerDependencies:
+      - bufferutil
+      - node-fetch
+      - typescript
+      - utf-8-validate
+      - vue-tsc
+
   '@mswjs/interceptors@0.41.2':
     dependencies:
       '@open-draft/deferred-promise': 2.2.0
@@ -14518,11 +14543,25 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@sanity/federation@0.1.0-alpha.8(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
+  '@sanity/federation@0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
     dependencies:
       '@module-federation/runtime': 2.5.0
       '@module-federation/vite': 1.16.0(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       vite: 7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4)
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - bufferutil
+      - node-fetch
+      - typescript
+      - utf-8-validate
+      - vue-tsc
+
+  '@sanity/federation@0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
+    dependencies:
+      '@module-federation/runtime': 2.5.0
+      '@module-federation/vite': 1.16.0(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+      vite: 7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4)
+      zod: 4.3.6
     transitivePeerDependencies:
       - bufferutil
       - node-fetch
