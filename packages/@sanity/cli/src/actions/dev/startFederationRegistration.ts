@@ -39,14 +39,12 @@ export async function startFederationRegistration(
   const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
 
   // Interfaces live on the branded `unstable_defineApp` result as declared
-  // views. Map them to the local interface shape — the dev server is the
-  // `entry_point` the workbench loads each from — and forward them on the
-  // registry entry (alongside, not inside, the manifest) so the workbench can
-  // render local panels without a deploy.
-  const entryPoint = `http://${appHost}:${appPort}/mf-manifest.json`
+  // views. Forward each as `{interface_type, name}` on the registry entry
+  // (alongside, not inside, the manifest) so the workbench can render local
+  // panels without a deploy. The workbench derives each interface's
+  // `entry_point` from this entry's host/port.
   const interfaces = isWorkbenchApp(cliConfig.app)
     ? cliConfig.app.views?.map((view) => ({
-        entry_point: entryPoint,
         interface_type: view.type,
         name: view.name,
       }))

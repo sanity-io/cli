@@ -32,14 +32,13 @@ const devServerManifestSchema = z.extend(workbenchLockSchema, {
   id: z.optional(z.string()),
   /**
    * Interfaces the app exposes (e.g. dock panels), mapped from the declared
-   * views with the local dev server as their `entry_point`. Carried separately
-   * from the manifest — interfaces live in the application service, not the
-   * manifest — so the workbench can render local panels without a deploy.
-   * Lenient by design; the workbench is the authority on the interface shape.
+   * views. Carried separately from the manifest — interfaces live in the
+   * application service, not the manifest — so the workbench can render local
+   * panels without a deploy. The workbench derives each interface's
+   * `entry_point` from this entry's host/port. Lenient by design; the workbench
+   * is the authority on the interface shape.
    */
-  interfaces: z.optional(
-    z.array(z.object({entry_point: z.string(), interface_type: z.string(), name: z.string()})),
-  ),
+  interfaces: z.optional(z.array(z.object({interface_type: z.string(), name: z.string()}))),
   /** Inlined manifest — either a {@link StudioManifest} or {@link CoreAppManifest}. */
   manifest: z.optional(z.union([studioManifestSchema, coreAppManifestSchema])),
   /**
