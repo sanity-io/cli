@@ -19,15 +19,15 @@ catalog:
   publint: ^0.3.21
 
   # GROQ
-  groq-js: ^1.30.1
+  groq-js: ^1.30.2
 
   # Sanity
-  sanity: ^5.26.0
-  '@sanity/vision': ^5.26.0
-  '@sanity/types': ^5.26.0
-  '@sanity/schema': ^5.26.0
-  '@sanity/client': ^7.22.0
-  '@sanity/codegen': ^6.1.0
+  sanity: ^5.30.0
+  '@sanity/vision': ^5.30.0
+  '@sanity/types': ^5.30.0
+  '@sanity/schema': ^5.30.0
+  '@sanity/client': ^7.22.1
+  '@sanity/codegen': ^6.1.1
   '@sanity/telemetry': ^1.1.0
 
   # Build & Development Tools
@@ -68,7 +68,7 @@ catalog:
   '@swc/core': ^1.15.33
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.4.18
+  '@sanity/pkg-utils': ^10.5.2
   oxfmt: ^0.53.0
 
   # Type Definitions
