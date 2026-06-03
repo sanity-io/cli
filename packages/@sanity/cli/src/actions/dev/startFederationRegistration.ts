@@ -39,12 +39,12 @@ export async function startFederationRegistration(
   const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
 
   // Interfaces live on the branded `unstable_defineApp` result as declared
-  // views. Forward each as `{interface_type, name}` on the registry entry
-  // (alongside, not inside, the manifest) so the workbench can render local
-  // panels without a deploy. The workbench derives each interface's
-  // `entry_point` from this entry's host/port.
+  // views. Forward each on the registry entry (alongside, not inside, the
+  // manifest) so the workbench can render local panels without a deploy. The
+  // `entry_point` is the declared `src` — the raw value, not a resolved URL.
   const interfaces = isWorkbenchApp(cliConfig.app)
     ? cliConfig.app.views?.map((view) => ({
+        entry_point: view.src,
         interface_type: view.type,
         name: view.name,
       }))
