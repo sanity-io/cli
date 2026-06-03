@@ -3,6 +3,7 @@ import {basename, dirname} from 'node:path'
 
 import {findProjectRoot, type Output} from '@sanity/cli-core'
 
+import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {devDebug} from './devDebug.js'
 
 /**
@@ -100,7 +101,9 @@ export async function startDevManifestWatcher<T>({
   // Watching the file itself is unreliable across editors that perform
   // atomic-save (delete + rename) — the watcher loses its target once the
   // inode changes. Directory watches survive those transitions.
-  const configDir = dirname(configPath)
+  // Canonicalize to the real long path so `fs.watch` doesn't abort on Windows
+  // short-path dirs. See `canonicalizeWatchDir`.
+  const configDir = canonicalizeWatchDir(dirname(configPath))
   const configFilename = basename(configPath)
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
