@@ -41,19 +41,12 @@ export default defineConfig({
     },
     // Add explicit exclude for test execution
     exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
-    onUnhandledError(error) {
-      /**
-       * Ignore unhandled errors on Windows + Node 20 to avoid flaky tests
-       */
-      if (
-        process.platform === 'win32' &&
-        process.version.startsWith('v20.') &&
-        error.message.includes('Worker forks emitted error')
-      ) {
-        return false
-      }
-    },
     outputFile: OUTPUT_FILE,
+    // Use threads pool (worker_threads) instead of the default forks pool
+    // (child_process.fork). The forks pool has race conditions during process
+    // cleanup on Windows + Node 20 that cause spurious "Worker forks emitted
+    // error" failures.
+    pool: 'threads',
     projects: [
       'packages/@sanity/cli',
       'packages/@sanity/cli-build',
