@@ -121,7 +121,7 @@ catalogs:
       specifier: ^0.2.16
       version: 0.2.17
     tsx:
-      specifier: ^4.21.0
+      specifier: ^4.22.4
       version: 4.22.4
     typescript:
       specifier: ^5.9.3
