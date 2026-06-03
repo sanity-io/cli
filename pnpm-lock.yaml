@@ -88,8 +88,8 @@ catalogs:
       specifier: ^4.18.1
       version: 4.18.1
     nock:
-      specifier: ^14.0.14
-      version: 14.0.14
+      specifier: ^14.0.15
+      version: 14.0.15
     node-pty:
       specifier: ^1.1.0
       version: 1.1.0
@@ -763,7 +763,7 @@ importers:
         version: 29.1.1(@noble/hashes@2.0.1)
       nock:
         specifier: 'catalog:'
-        version: 14.0.14
+        version: 14.0.15
       oclif:
         specifier: ^4.23.0
         version: 4.23.0(@types/node@20.19.41)
@@ -1092,7 +1092,7 @@ importers:
         version: 0.27.4
       nock:
         specifier: 'catalog:'
-        version: 14.0.14
+        version: 14.0.15
       ora:
         specifier: 'catalog:'
         version: 9.4.0
@@ -7593,6 +7593,7 @@ packages:
   json-2-csv@5.5.10:
     resolution: {integrity: sha512-Dep8wO3Fr5wNjQevO2Z8Y7yeee/nYSGRsi7q6zJDKEVHxXkXT+v21vxHmDX923UzmCXXkSo62HaTz6eTWzFLaw==}
     engines: {node: '>= 16'}
+    deprecated: A security vulnerability has been reported with the preventCsvInjection option which has been fixed in version 5.5.11. Please upgrade as soon as possible.
 
   json-buffer@3.0.1:
     resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==}
@@ -8082,8 +8083,8 @@ packages:
   no-case@3.0.4:
     resolution: {integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==}
 
-  nock@14.0.14:
-    resolution: {integrity: sha512-PKk7tex0O3RRXUZC5XDKJ9yM3rYRPS13myduT85VIIYDBnib42Fpxoe6KxRSzqB4iL2NDxkcJ2yiskZ18hGLEQ==}
+  nock@14.0.15:
+    resolution: {integrity: sha512-S0a47C9pLvcYx/Ugf0H30BVBEcUgMMBDk9VJIDlJ8XGrfH2QDUD4Tgdp45qDIiHttokBG+IbsOtsvIjGR/j3bg==}
     engines: {node: '>=18.20.0 <20 || >=20.12.1'}
 
   node-addon-api@7.1.1:
@@ -17767,7 +17768,7 @@ snapshots:
       lower-case: 2.0.2
       tslib: 2.8.1
 
-  nock@14.0.14:
+  nock@14.0.15:
     dependencies:
       '@mswjs/interceptors': 0.41.2
       json-stringify-safe: 5.0.1
