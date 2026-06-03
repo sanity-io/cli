@@ -7,6 +7,7 @@
     "squiggler-app[bot]@users.noreply.github.com"
   ],
   "schedule": ["before 5am"],
+  "minimumReleaseAge": "3 days",
   "prConcurrentLimit": 3,
   "automerge": true,
   "dependencyDashboardApproval": false,
@@ -100,6 +101,26 @@
       "matchDepTypes": ["dependencies", "peerDependencies"],
       "rangeStrategy": "bump",
       "semanticCommitType": "fix"
+    },
+    {
+      "description": "Exclude minimum release age for packages matching pnpm-workspace.yaml minimumReleaseAgeExclude",
+      "matchPackageNames": [
+        "@portabletext/*",
+        "@sanity/*",
+        "@types/*",
+        "groq-js",
+        "groq",
+        "lodash-es",
+        "react-rx",
+        "sanity",
+        "use-effect-event",
+        "dotenv",
+        "oxfmt",
+        "@oxfmt/*",
+        "jiti",
+        "turbo"
+      ],
+      "minimumReleaseAge": "0 days"
     }
   ]
 }
