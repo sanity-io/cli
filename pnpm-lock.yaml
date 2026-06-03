@@ -14,7 +14,7 @@ catalogs:
       version: 4.11.3
     '@oclif/plugin-help':
       specifier: ^6.2.45
-      version: 6.2.45
+      version: 6.2.49
     '@oclif/plugin-not-found':
       specifier: ^3.2.81
       version: 3.2.81
@@ -95,7 +95,7 @@ catalogs:
       version: 1.1.0
     ora:
       specifier: ^9.0.0
-      version: 9.3.0
+      version: 9.4.0
     oxfmt:
       specifier: ^0.45.0
       version: 0.45.0
@@ -142,6 +142,7 @@ catalogs:
 overrides:
   '@sanity/client': ^7.22.0
   '@sanity/cli': workspace:*
+  '@sanity/federation': https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
 
 importers:
 
@@ -265,8 +266,8 @@ importers:
   fixtures/federated-studio:
     dependencies:
       '@sanity/federation':
-        specifier: 0.1.0-alpha.9
-        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
+        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -514,7 +515,7 @@ importers:
         version: 4.11.3
       '@oclif/plugin-help':
         specifier: 'catalog:'
-        version: 6.2.45
+        version: 6.2.49
       '@oclif/plugin-not-found':
         specifier: 'catalog:'
         version: 3.2.81(@types/node@20.19.41)
@@ -537,8 +538,8 @@ importers:
         specifier: ^6.2.0
         version: 6.2.0
       '@sanity/federation':
-        specifier: 0.1.0-alpha.9
-        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
+        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -826,8 +827,8 @@ importers:
         specifier: workspace:^
         version: link:../cli-core
       '@sanity/federation':
-        specifier: 0.1.0-alpha.9
-        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091
+        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -993,7 +994,7 @@ importers:
         version: 7.0.1
       ora:
         specifier: 'catalog:'
-        version: 9.3.0
+        version: 9.4.0
       read-package-up:
         specifier: 'catalog:'
         version: 12.0.0
@@ -1129,7 +1130,7 @@ importers:
         version: 14.0.14
       ora:
         specifier: 'catalog:'
-        version: 9.3.0
+        version: 9.4.0
       tinyglobby:
         specifier: 'catalog:'
         version: 0.2.16
@@ -2303,14 +2304,6 @@ packages:
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@csstools/css-tokenizer': ^4.0.0
-
-  '@csstools/css-syntax-patches-for-csstree@1.1.1':
-    resolution: {integrity: sha512-BvqN0AMWNAnLk9G8jnUT77D+mUbY/H2b3uDTvg2isJkHaOufUE2R3AOwxWo7VBQKT1lOdwdvorddo2B/lk64+w==}
-    peerDependencies:
-      css-tree: ^3.2.1
-    peerDependenciesMeta:
-      css-tree:
-        optional: true
 
   '@csstools/css-syntax-patches-for-csstree@1.1.4':
     resolution: {integrity: sha512-wgsqt92b7C7tQhIdPNxj0n9zuUbQlvAuI1exyzeNrOKOi62SD7ren8zqszmpVREjAOqg8cD2FqYhQfAuKjk4sw==}
@@ -3776,10 +3769,6 @@ packages:
     resolution: {integrity: sha512-k/ntRgDcUprTT+aaNoF+whk3cY3f9fRD2lkF6ul7JeCUg2MaMXVXZXfbRhJCfsiX51X8/5Pqo0LGdO9SLYXNHg==}
     engines: {node: '>=18.0.0'}
 
-  '@oclif/plugin-help@6.2.45':
-    resolution: {integrity: sha512-avWOKYmjANtyu8ipju/kopIIrSrbS/scJjiZTpBp/HKEHNm46v5riOo5LQj6MZ4bYJVQEoyHPg/2Seig5Ilkjw==}
-    engines: {node: '>=18.0.0'}
-
   '@oclif/plugin-help@6.2.49':
     resolution: {integrity: sha512-fEsO0YU7ThtzHE1RGuoHxFu/OGlqxm7PCfFp+U1PS8sde4E0cDqjVDuv78+VKrr45LpC5lWOApj7pm3FNfHrVA==}
     engines: {node: '>=18.0.0'}
@@ -4921,8 +4910,9 @@ packages:
     engines: {node: '>=20.19 <22 || >=22.12'}
     hasBin: true
 
-  '@sanity/federation@0.1.0-alpha.9':
-    resolution: {integrity: sha512-mSsRVzqSrniPtg50+hhbO2WE8vzX/PGkI123ysS8xrUECV0m/v/9YH3ha159dcuUxG0JzgjAtj1+gVy+TmqANQ==}
+  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091':
+    resolution: {integrity: sha512-GS7bCx0GBSSSw6g/qlVHN/uP0sQQHVioC880ljcVHWG0547AF3+Dxet7spl9+ZJVy/PH7VDm24CP/3+YjTOBbA==, tarball: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091}
+    version: 0.1.0-alpha.9
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       vite: ^7.0.0 || ^8.0.0
@@ -7488,9 +7478,6 @@ packages:
     resolution: {integrity: sha512-kVCxPF3vQM/N0B1PmoqVUqgHP+EeVjmZSQn+1oCRPxd2P21P2F19lIgbR3HBosbB1PUhOAoctJnfEn2GbN2eZA==}
     engines: {node: '>=18'}
 
-  get-tsconfig@4.13.7:
-    resolution: {integrity: sha512-7tN6rFgBlMgpBML5j8typ92BKFi2sFQvIdpAqLA2beia5avZDrMs0FLZiM5etShWq5irVyGcGMEA1jcDaK7A/Q==}
-
   get-tsconfig@4.14.0:
     resolution: {integrity: sha512-yTb+8DXzDREzgvYmh6s9vHsSVCHeC0G3PI5bEXNBHtmshPnO+S5O7qgLEOn0I5QvMy6kpZN8K1NKGyilLb93wA==}
 
@@ -8049,6 +8036,7 @@ packages:
   json-2-csv@5.5.10:
     resolution: {integrity: sha512-Dep8wO3Fr5wNjQevO2Z8Y7yeee/nYSGRsi7q6zJDKEVHxXkXT+v21vxHmDX923UzmCXXkSo62HaTz6eTWzFLaw==}
     engines: {node: '>= 16'}
+    deprecated: A security vulnerability has been reported with the preventCsvInjection option which has been fixed in version 5.5.11. Please upgrade as soon as possible.
 
   json-buffer@3.0.1:
     resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==}
@@ -8292,10 +8280,6 @@ packages:
 
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
-
-  lru-cache@11.2.7:
-    resolution: {integrity: sha512-aY/R+aEsRelme17KGQa/1ZSIpLpNYYrhcrepKTZgE+W3WM16YMCaPwOHLHsmopZHELU0Ojin1lPVxKR0MihncA==}
-    engines: {node: 20 || >=22}
 
   lru-cache@11.3.6:
     resolution: {integrity: sha512-Gf/KoL3C/MlI7Bt0PGI9I+TeTC/I6r/csU58N4BSNc4lppLBeKsOdFYkK+dX0ABDUMJNfCHTyPpzwwO21Awd3A==}
@@ -8651,10 +8635,6 @@ packages:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
 
-  ora@9.3.0:
-    resolution: {integrity: sha512-lBX72MWFduWEf7v7uWf5DHp9Jn5BI8bNPGuFgtXMmr2uDz2Gz2749y3am3agSDdkhHPHYmmxEGSKH85ZLGzgXw==}
-    engines: {node: '>=20'}
-
   ora@9.4.0:
     resolution: {integrity: sha512-84cglkRILFxdtA8hAvLNdMrtBpPNBTrQ9/ulg0FA7xLMnD6mifv+enAIeRmvtv+WgdCE+LPGOfQmtJRrVaIVhQ==}
     engines: {node: '>=20'}
@@ -8799,9 +8779,6 @@ packages:
 
   parse5@7.3.0:
     resolution: {integrity: sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==}
-
-  parse5@8.0.0:
-    resolution: {integrity: sha512-9m4m5GSgXjL4AjumKzq1Fgfp3Z8rsvjRNbnkVwfu2ImRqE5D0LnY2QfDen18FSY9C573YU5XxSapdHZTZ2WolA==}
 
   parse5@8.0.1:
     resolution: {integrity: sha512-z1e/HMG90obSGeidlli3hj7cbocou0/wa5HacvI3ASx34PecNjNQeaHNo5WIZpWofN9kgkqV1q5YvXe3F0FoPw==}
@@ -9572,10 +9549,6 @@ packages:
 
   std-env@4.0.0:
     resolution: {integrity: sha512-zUMPtQ/HBY3/50VbpkupYHbRroTRZJPRLvreamgErJVys0ceuzMkD44J/QjqhHjOzK42GQ3QZIeFG1OYfOtKqQ==}
-
-  stdin-discarder@0.3.1:
-    resolution: {integrity: sha512-reExS1kSGoElkextOcPkel4NE99S0BWxjUHQeDFnR8S993JxpPX7KU4MNmO19NXhlJp+8dmdCbKQVNgLJh2teA==}
-    engines: {node: '>=18'}
 
   stdin-discarder@0.3.2:
     resolution: {integrity: sha512-eCPu1qRxPVkl5605OTWF8Wz40b4Mf45NY5LQmVPQ599knfs5QhASUm9GbJ5BDMDOXgrnh0wyEdvzmL//YMlw0A==}
@@ -10539,7 +10512,7 @@ snapshots:
       '@csstools/css-color-parser': 3.1.0(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-tokenizer': 3.0.4
-      lru-cache: 11.2.7
+      lru-cache: 11.3.6
 
   '@asamuzakjp/css-color@5.1.11':
     dependencies:
@@ -10555,7 +10528,7 @@ snapshots:
       bidi-js: 1.0.3
       css-tree: 3.2.1
       is-potential-custom-element-name: 1.0.1
-      lru-cache: 11.2.7
+      lru-cache: 11.3.6
 
   '@asamuzakjp/dom-selector@7.1.1':
     dependencies:
@@ -11124,7 +11097,7 @@ snapshots:
     dependencies:
       '@babel/compat-data': 7.29.0
       '@babel/helper-validator-option': 7.27.1
-      browserslist: 4.28.1
+      browserslist: 4.28.2
       lru-cache: 5.1.1
       semver: 6.3.1
 
@@ -12256,10 +12229,6 @@ snapshots:
   '@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0)':
     dependencies:
       '@csstools/css-tokenizer': 4.0.0
-
-  '@csstools/css-syntax-patches-for-csstree@1.1.1(css-tree@3.2.1)':
-    optionalDependencies:
-      css-tree: 3.2.1
 
   '@csstools/css-syntax-patches-for-csstree@1.1.4(css-tree@3.2.1)':
     optionalDependencies:
@@ -13610,17 +13579,13 @@ snapshots:
       is-wsl: 2.2.0
       lilconfig: 3.1.3
       minimatch: 10.2.5
-      semver: 7.7.4
+      semver: 7.8.0
       string-width: 4.2.3
       supports-color: 8.1.1
       tinyglobby: 0.2.16
       widest-line: 3.1.0
       wordwrap: 1.0.0
       wrap-ansi: 7.0.0
-
-  '@oclif/plugin-help@6.2.45':
-    dependencies:
-      '@oclif/core': 4.11.3
 
   '@oclif/plugin-help@6.2.49':
     dependencies:
@@ -14540,7 +14505,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@sanity/federation@0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
+  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
     dependencies:
       '@module-federation/runtime': 2.5.0
       '@module-federation/vite': 1.16.0(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
@@ -14553,7 +14518,7 @@ snapshots:
       - utf-8-validate
       - vue-tsc
 
-  '@sanity/federation@0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
+  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))':
     dependencies:
       '@module-federation/runtime': 2.5.0
       '@module-federation/vite': 1.16.0(typescript@5.9.3)(vite@7.3.3(@types/node@25.0.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
@@ -15491,7 +15456,7 @@ snapshots:
       commander: 8.3.0
       minimatch: 9.0.9
       piscina: 4.9.2
-      semver: 7.7.4
+      semver: 7.8.0
       slash: 3.0.0
       source-map: 0.7.6
       tinyglobby: 0.2.16
@@ -15669,7 +15634,7 @@ snapshots:
 
   '@types/gunzip-maybe@1.4.3':
     dependencies:
-      '@types/node': 20.19.41
+      '@types/node': 25.0.10
 
   '@types/hast@3.0.4':
     dependencies:
@@ -15679,9 +15644,9 @@ snapshots:
 
   '@types/jsdom@28.0.3':
     dependencies:
-      '@types/node': 20.19.41
+      '@types/node': 25.0.10
       '@types/tough-cookie': 4.0.5
-      parse5: 8.0.0
+      parse5: 8.0.1
       undici-types: 7.22.0
 
   '@types/jsesc@2.5.1': {}
@@ -15709,7 +15674,7 @@ snapshots:
 
   '@types/mute-stream@0.0.4':
     dependencies:
-      '@types/node': 20.19.41
+      '@types/node': 25.0.10
 
   '@types/node@12.20.55': {}
 
@@ -15759,12 +15724,12 @@ snapshots:
 
   '@types/tar-fs@2.0.4':
     dependencies:
-      '@types/node': 20.19.41
+      '@types/node': 25.0.10
       '@types/tar-stream': 3.1.4
 
   '@types/tar-stream@3.1.4':
     dependencies:
-      '@types/node': 20.19.41
+      '@types/node': 25.0.10
 
   '@types/tough-cookie@4.0.5': {}
 
@@ -16469,7 +16434,7 @@ snapshots:
   binary-version-check@6.1.0:
     dependencies:
       binary-version: 7.1.0
-      semver: 7.7.4
+      semver: 7.8.0
       semver-truncate: 3.0.0
 
   binary-version@7.1.0:
@@ -16878,9 +16843,9 @@ snapshots:
   cssstyle@5.3.7:
     dependencies:
       '@asamuzakjp/css-color': 4.1.1
-      '@csstools/css-syntax-patches-for-csstree': 1.1.1(css-tree@3.2.1)
+      '@csstools/css-syntax-patches-for-csstree': 1.1.4(css-tree@3.2.1)
       css-tree: 3.2.1
-      lru-cache: 11.2.7
+      lru-cache: 11.3.6
 
   csstype@3.2.3: {}
 
@@ -17174,7 +17139,7 @@ snapshots:
   eslint-compat-utils@0.5.1(eslint@10.2.1(jiti@2.7.0)):
     dependencies:
       eslint: 10.2.1(jiti@2.7.0)
-      semver: 7.7.4
+      semver: 7.8.0
 
   eslint-config-prettier@10.1.8(eslint@10.2.1(jiti@2.7.0)):
     dependencies:
@@ -17697,10 +17662,6 @@ snapshots:
       '@sec-ant/readable-stream': 0.4.1
       is-stream: 4.0.1
 
-  get-tsconfig@4.13.7:
-    dependencies:
-      resolve-pkg-maps: 1.0.0
-
   get-tsconfig@4.14.0:
     dependencies:
       resolve-pkg-maps: 1.0.0
@@ -17897,7 +17858,7 @@ snapshots:
 
   hosted-git-info@9.0.2:
     dependencies:
-      lru-cache: 11.2.7
+      lru-cache: 11.3.6
 
   hotscript@1.0.13: {}
 
@@ -18029,7 +17990,7 @@ snapshots:
 
   is-bun-module@2.0.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.0
 
   is-core-module@2.16.1:
     dependencies:
@@ -18240,7 +18201,7 @@ snapshots:
       http-proxy-agent: 7.0.2
       https-proxy-agent: 7.0.6
       is-potential-custom-element-name: 1.0.1
-      parse5: 8.0.0
+      parse5: 8.0.1
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.1
@@ -18509,8 +18470,6 @@ snapshots:
 
   lru-cache@10.4.3: {}
 
-  lru-cache@11.2.7: {}
-
   lru-cache@11.3.6: {}
 
   lru-cache@5.1.1:
@@ -18542,7 +18501,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.0
 
   markdown-it@14.1.1:
     dependencies:
@@ -18759,13 +18718,13 @@ snapshots:
   normalize-package-data@6.0.2:
     dependencies:
       hosted-git-info: 7.0.2
-      semver: 7.7.4
+      semver: 7.8.0
       validate-npm-package-license: 3.0.4
 
   normalize-package-data@8.0.0:
     dependencies:
       hosted-git-info: 9.0.2
-      semver: 7.7.4
+      semver: 7.8.0
       validate-npm-package-license: 3.0.4
 
   normalize-path@3.0.0: {}
@@ -18807,7 +18766,7 @@ snapshots:
       '@inquirer/input': 2.3.0
       '@inquirer/select': 2.5.0
       '@oclif/core': 4.9.0
-      '@oclif/plugin-help': 6.2.45
+      '@oclif/plugin-help': 6.2.49
       '@oclif/plugin-not-found': 3.2.81(@types/node@20.19.41)
       '@oclif/plugin-warn-if-update-available': 3.1.57
       ansis: 3.17.0
@@ -18861,17 +18820,6 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
       word-wrap: 1.2.5
-
-  ora@9.3.0:
-    dependencies:
-      chalk: 5.6.2
-      cli-cursor: 5.0.0
-      cli-spinners: 3.4.0
-      is-interactive: 2.0.0
-      is-unicode-supported: 2.1.0
-      log-symbols: 7.0.1
-      stdin-discarder: 0.3.1
-      string-width: 8.1.0
 
   ora@9.4.0:
     dependencies:
@@ -19082,10 +19030,6 @@ snapshots:
     dependencies:
       entities: 6.0.1
 
-  parse5@8.0.0:
-    dependencies:
-      entities: 6.0.1
-
   parse5@8.0.1:
     dependencies:
       entities: 8.0.0
@@ -19114,7 +19058,7 @@ snapshots:
 
   path-scurry@2.0.2:
     dependencies:
-      lru-cache: 11.2.7
+      lru-cache: 11.3.6
       minipass: 7.1.3
 
   path-to-regexp@6.3.0: {}
@@ -19996,7 +19940,7 @@ snapshots:
 
   semver-truncate@3.0.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.0
 
   semver@5.7.2: {}
 
@@ -20116,7 +20060,7 @@ snapshots:
       get-stdin: 9.0.0
       git-hooks-list: 3.2.0
       is-plain-obj: 4.1.0
-      semver: 7.7.4
+      semver: 7.8.0
       sort-object-keys: 1.1.3
       tinyglobby: 0.2.16
 
@@ -20167,8 +20111,6 @@ snapshots:
   stackback@0.0.2: {}
 
   std-env@4.0.0: {}
-
-  stdin-discarder@0.3.1: {}
 
   stdin-discarder@0.3.2: {}
 
@@ -20454,7 +20396,7 @@ snapshots:
   tsx@4.21.0:
     dependencies:
       esbuild: 0.27.4
-      get-tsconfig: 4.13.7
+      get-tsconfig: 4.14.0
     optionalDependencies:
       fsevents: 2.3.3
 
