@@ -116,7 +116,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
-    typegen,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)

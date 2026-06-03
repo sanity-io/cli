@@ -57,6 +57,7 @@
     "@oclif/core": "catalog:",
     "@rolldown/plugin-babel": "^0.2.3",
     "@sanity/cli-core": "workspace:^",
+    "@sanity/federation": "0.1.0-alpha.8",
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
