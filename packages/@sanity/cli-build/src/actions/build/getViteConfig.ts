@@ -21,7 +21,6 @@ import {
 } from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
-import {sanityTypegenPlugin} from '../../server/vite/plugin-typegen.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
@@ -30,7 +29,7 @@ import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
 import {getDefaultFaviconsPath} from './writeFavicons.js'
 
-interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction' | 'typegen'> {
+interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction'> {
   /**
    * Root path of the studio/sanity app
    */
@@ -115,7 +114,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
-    typegen,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -149,15 +147,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             telemetryLogger: getCliTelemetry(),
             workDir: cwd,
             workspaceName: schemaExtraction.workspace,
-          }),
-        ]
-      : []),
-    ...(typegen?.enabled
-      ? [
-          sanityTypegenPlugin({
-            config: typegen,
-            telemetryLogger: getCliTelemetry(),
-            workDir: cwd,
           }),
         ]
       : []),
@@ -195,7 +184,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     mode,
     plugins: [
       // Federation builds only need the federation plugin — skip client-specific
-      // plugins (react, favicons, runtime rewrite, build entries, schema, typegen)
+      // plugins (react, favicons, runtime rewrite, build entries, schema)
       ...(federation?.enabled
         ? [
             ...sharedPlugins,

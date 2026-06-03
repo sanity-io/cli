@@ -56,6 +56,7 @@
   "dependencies": {
     "@oclif/core": "catalog:",
     "@sanity/cli-core": "workspace:^",
+    "@sanity/federation": "0.1.0-alpha.8",
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",

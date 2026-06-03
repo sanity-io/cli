@@ -20,21 +20,15 @@ vi.mock('vite', () => ({
   createBuilder: mockCreateBuilder,
 }))
 
-vi.mock('../getViteConfig.js', () => ({
+vi.mock('@sanity/cli-build/_internal/build', () => ({
+  buildDebug: vi.fn(),
+  copyDir: vi.fn().mockResolvedValue(undefined),
   extendViteConfigWithUserConfig: mockExtendViteConfigWithUserConfig,
   finalizeViteConfig: mockFinalizeViteConfig,
   getViteConfig: mockGetViteConfig,
-}))
-
-vi.mock('../writeSanityRuntime.js', () => ({
   resolveEntries: mockResolveEntries,
-  writeSanityRuntime: mockWriteSanityRuntime,
-}))
-
-vi.mock('@sanity/cli-build/_internal', () => ({
-  buildDebug: vi.fn(),
-  copyDir: vi.fn().mockResolvedValue(undefined),
   writeFavicons: vi.fn().mockResolvedValue(undefined),
+  writeSanityRuntime: mockWriteSanityRuntime,
 }))
 
 const cwd = convertToSystemPath('/test/cwd')
