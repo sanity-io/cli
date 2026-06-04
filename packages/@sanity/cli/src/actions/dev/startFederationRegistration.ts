@@ -39,9 +39,11 @@ export async function startFederationRegistration(
   const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
 
   // Interfaces live on the branded `unstable_defineApp` result as declared
-  // `views` (panels) and the app's navigable `entry`. Forward each on the
-  // registry entry (alongside, not inside, the manifest) so the workbench can
-  // render local panels and resolve the app view without a deploy. The
+  // `views` (panels), `services` (workers), and the app's navigable `entry`. A
+  // service is just an interface discriminated by `interface_type`, so map them
+  // into a single `interfaces` list and forward them on the registry entry
+  // (alongside, not inside, the manifest) so the workbench can render local
+  // panels, run local workers, and resolve the app view without a deploy.
   // `entry_point` is the declared `src` — the raw value, not a resolved URL.
   const app = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
 
@@ -59,6 +61,11 @@ export async function startFederationRegistration(
           entry_point: view.src,
           interface_type: view.type,
           name: view.name,
+        })) ?? []),
+        ...(app.services?.map((service) => ({
+          entry_point: service.src,
+          interface_type: service.type,
+          name: service.name,
         })) ?? []),
         // US5 — an SDK app's `entry` declares its navigable full-page `app`
         // view. Forward it as an `app` interface so the workbench knows the app

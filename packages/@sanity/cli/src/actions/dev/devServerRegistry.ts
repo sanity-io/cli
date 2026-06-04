@@ -31,11 +31,14 @@ const workbenchLockSchema = z.object({
 const devServerManifestSchema = z.extend(workbenchLockSchema, {
   id: z.optional(z.string()),
   /**
-   * Interfaces the app exposes (e.g. dock panels), mapped from the declared
-   * views. Carried separately from the manifest — interfaces live in the
-   * application service, not the manifest — so the workbench can render local
-   * panels without a deploy. `entry_point` is the declared `src`. Lenient by
-   * design; the workbench is the authority on the interface shape.
+   * Interfaces the app exposes, mapped from the declared `views` (dock panels,
+   * `interface_type: "panel"`) and `services` (background workers,
+   * `interface_type: "worker"`). A service is just an interface, so both live
+   * in this one list. Carried separately from the manifest — interfaces live in
+   * the application service, not the manifest — so the workbench can render
+   * local panels and run local workers without a deploy. `entry_point` is the
+   * declared `src`. Lenient by design; the workbench is the authority on the
+   * interface shape.
    */
   interfaces: z.optional(
     z.array(z.object({entry_point: z.string(), interface_type: z.string(), name: z.string()})),
