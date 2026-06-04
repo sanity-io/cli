@@ -43,13 +43,9 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
     onUnhandledError(error) {
       /**
-       * Ignore unhandled errors on Windows + Node 20 to avoid flaky tests
+       * Ignore flaky unhandled errors that only happen on the CI since upgrading to vite 8, which does not happen locally
        */
-      if (
-        process.platform === 'win32' &&
-        process.version.startsWith('v20.') &&
-        error.message.includes('Worker forks emitted error')
-      ) {
+      if (process.env.CI === 'true' && error.message.includes('Worker forks emitted error')) {
         return false
       }
     },
