@@ -1,5 +1,24 @@
 # Change Log
 
+## [7.0.1](https://github.com/sanity-io/cli/compare/cli-v7.0.0...cli-v7.0.1)
+
+_2026-06-04_
+
+### Bug Fixes
+
+- **deps:** update dependency nanoid to ^5.1.11 ([#1186](https://github.com/sanity-io/cli/pull/1186)) ([1017b0c](https://github.com/sanity-io/cli/commit/1017b0c53d31e41420b6e165b66f14fa84633e3b))
+- **deps:** update dependency semver to ^7.8.1 ([#1187](https://github.com/sanity-io/cli/pull/1187)) ([d34c1e6](https://github.com/sanity-io/cli/commit/d34c1e62f9696f0bbd9cb7d86e32998ae17c2669))
+- **deps:** update dependency skills to ^1.5.9 ([#1188](https://github.com/sanity-io/cli/pull/1188)) ([9bee1ae](https://github.com/sanity-io/cli/commit/9bee1aec26ca76f1a614907f92f042451be35f79))
+- **deps:** update dependency tar to ^7.5.15 ([#1189](https://github.com/sanity-io/cli/pull/1189)) ([6ed4ec6](https://github.com/sanity-io/cli/commit/6ed4ec61378ac054d77f8cead424fadef9a2647d))
+- **deps:** update dependency tar-stream to ^3.2.0 ([#1190](https://github.com/sanity-io/cli/pull/1190)) ([042366a](https://github.com/sanity-io/cli/commit/042366ab26d48164d08cd5bf75bdfc434c9d9e06))
+- upgrade @sanity/migrate to v7.0.0 ([#1198](https://github.com/sanity-io/cli/pull/1198)) ([abebf07](https://github.com/sanity-io/cli/commit/abebf07bbbef6eda7f470733d35c7b44be2c1442))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 1.0.1
+
 ## [7.0.0](https://github.com/sanity-io/cli/compare/cli-v6.7.2...cli-v7.0.0)
 
 _2026-06-04_
