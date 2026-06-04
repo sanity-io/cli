@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.0](https://github.com/sanity-io/cli/compare/cli-build-v0.2.2...cli-build-v1.0.0)
+
+_2026-06-04_
+
+### ⚠ BREAKING CHANGES
+
+- Upgrade to Vite v8, plugin-react to v6, vite-node to v6 ([#698](https://github.com/sanity-io/cli/pull/698)) ([8d77ae6](https://github.com/sanity-io/cli/commit/8d77ae6981f5b3986d19e928df28891f472baa03))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.0.0
+
 ## [0.2.2](https://github.com/sanity-io/cli/compare/cli-build-v0.2.1...cli-build-v0.2.2)
 
 _2026-06-03_
