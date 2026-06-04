@@ -123,7 +123,7 @@
     "react-dom": "^19.2.6",
     "react-is": "^19.2.6",
     "rxjs": "catalog:",
-    "semver": "^7.7.4",
+    "semver": "^7.8.1",
     "skills": "^1.5.9",
     "smol-toml": "^1.6.1",
     "tar": "^7.5.15",
