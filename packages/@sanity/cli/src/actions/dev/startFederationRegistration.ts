@@ -39,15 +39,26 @@ export async function startFederationRegistration(
   const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
 
   // Interfaces live on the branded `unstable_defineApp` result as declared
-  // views. Forward each on the registry entry (alongside, not inside, the
-  // manifest) so the workbench can render local panels without a deploy. The
-  // `entry_point` is the declared `src` — the raw value, not a resolved URL.
-  const interfaces = isWorkbenchApp(cliConfig.app)
-    ? cliConfig.app.views?.map((view) => ({
-        entry_point: view.src,
-        interface_type: view.type,
-        name: view.name,
-      }))
+  // `views` (panels) and `services` (workers). A service is just an interface
+  // discriminated by `interface_type`, so map both into a single `interfaces`
+  // list and forward them on the registry entry (alongside, not inside, the
+  // manifest) so the workbench can render local panels and run local workers
+  // without a deploy. `entry_point` is the declared `src` — the raw value, not
+  // a resolved URL.
+  const app = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
+  const interfaces = app
+    ? [
+        ...(app.views?.map((view) => ({
+          entry_point: view.src,
+          interface_type: view.type,
+          name: view.name,
+        })) ?? []),
+        ...(app.services?.map((service) => ({
+          entry_point: service.src,
+          interface_type: service.type,
+          name: service.name,
+        })) ?? []),
+      ]
     : undefined
 
   const registration = registerDevServer({

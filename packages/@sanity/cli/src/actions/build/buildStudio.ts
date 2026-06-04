@@ -49,6 +49,7 @@ interface InternalBuildOptions {
   projectId: string | undefined
   reactCompiler: CliConfig['reactCompiler']
   schemaExtraction: CliConfig['schemaExtraction']
+  services: DefineAppInput['services']
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
@@ -96,6 +97,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     projectId: cliConfig?.api?.projectId,
     reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
+    services: workbenchApp?.services,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: Boolean(flags.yes),
@@ -124,6 +126,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     projectId,
     reactCompiler,
     schemaExtraction,
+    services,
     sourceMap,
     stats,
     unattendedMode,
@@ -310,6 +313,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       outputDir,
       reactCompiler,
       schemaExtraction,
+      services,
       sourceMap,
       views,
       vite,
