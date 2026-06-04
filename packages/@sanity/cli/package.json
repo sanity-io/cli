@@ -109,7 +109,7 @@
     "jsonc-parser": "^3.3.1",
     "lodash-es": "catalog:",
     "minimist": "^1.2.8",
-    "nanoid": "^5.1.6",
+    "nanoid": "^5.1.11",
     "oneline": "^2.0.0",
     "open": "^11.0.0",
     "p-map": "^7.0.3",
