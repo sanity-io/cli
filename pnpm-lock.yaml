@@ -650,8 +650,8 @@ importers:
         specifier: ^7.7.4
         version: 7.8.1
       skills:
-        specifier: ^1.5.7
-        version: 1.5.7
+        specifier: ^1.5.9
+        version: 1.5.9
       smol-toml:
         specifier: ^1.6.1
         version: 1.6.1
@@ -8932,8 +8932,8 @@ packages:
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
-  skills@1.5.7:
-    resolution: {integrity: sha512-Df/2bXm/5Glp7o6n2Ft5v5EmowaD0x8lbvDwionoIhS1sxnWTy5KwMsMPlu3fqhfIZj95m7CC4p+jNVkXNQGYQ==}
+  skills@1.5.9:
+    resolution: {integrity: sha512-BjxnhlIy5IrQ30q1nGgNDSf4gy84iNA2o4Ieq4im/HsRvOjGtqvDNpb/xx15FZryXMnAPeDUWqU1ndPRQ0IyOQ==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -18743,7 +18743,7 @@ snapshots:
 
   sisteransi@1.0.5: {}
 
-  skills@1.5.7:
+  skills@1.5.9:
     dependencies:
       yaml: 2.9.0
 
