@@ -82,7 +82,7 @@
     ],
     "overrides": {
       "@sanity/cli": "workspace:*",
-      "@sanity/federation": "https://pkg.pr.new/sanity-io/workbench/@sanity/federation@1a9ececc8238fb63e5a8f7bd21b091c2067c2091"
+      "@sanity/federation": "https://pkg.pr.new/sanity-io/workbench/@sanity/federation@281d26d"
     }
   }
 }

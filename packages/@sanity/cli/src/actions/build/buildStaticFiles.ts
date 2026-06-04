@@ -11,7 +11,7 @@ import {
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
-import {type ViewArtifact} from '@sanity/federation/vite'
+import {type InterfaceArtifact} from '@sanity/federation/vite'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
 
@@ -48,7 +48,7 @@ interface StaticBuildOptions {
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
-  views?: readonly ViewArtifact[]
+  views?: readonly InterfaceArtifact[]
   vite?: UserViteConfig
 }
 

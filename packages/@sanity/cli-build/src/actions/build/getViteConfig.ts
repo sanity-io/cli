@@ -7,7 +7,7 @@ import {
   readPackageJson,
   type UserViteConfig,
 } from '@sanity/cli-core'
-import {type ViewArtifact, federation as viteFederation} from '@sanity/federation/vite'
+import {type InterfaceArtifact, federation as viteFederation} from '@sanity/federation/vite'
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -100,7 +100,7 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
    * Views the workbench app declares. Built into render-contract artifacts and
    * exposed through module federation as `./views/<name>`.
    */
-  views?: readonly ViewArtifact[]
+  views?: readonly InterfaceArtifact[]
 }
 
 /**
