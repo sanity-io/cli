@@ -7,7 +7,7 @@ settings:
 catalogs:
   default:
     '@eslint/compat':
-      specifier: ^2.0.5
+      specifier: ^2.1.0
       version: 2.1.0
     '@oclif/core':
       specifier: ^4.11.4
@@ -70,7 +70,7 @@ catalogs:
       specifier: ^17.3.1
       version: 17.4.2
     eslint:
-      specifier: ^10.2.1
+      specifier: ^10.4.1
       version: 10.4.1
     execa:
       specifier: ^9.6.0
@@ -1173,7 +1173,7 @@ importers:
         specifier: ^10.1.8
         version: 10.1.8(eslint@10.4.1(jiti@2.7.0))
       eslint-import-resolver-typescript:
-        specifier: ^4.4.4
+        specifier: ^4.4.5
         version: 4.4.5(eslint-plugin-import-x@4.16.2(@typescript-eslint/utils@8.60.0(eslint@10.4.1(jiti@2.7.0))(typescript@5.9.3))(eslint@10.4.1(jiti@2.7.0)))(eslint@10.4.1(jiti@2.7.0))
       eslint-plugin-import-x:
         specifier: ^4.16.2
@@ -1194,7 +1194,7 @@ importers:
         specifier: ^4.4.1
         version: 4.4.1(@typescript-eslint/eslint-plugin@8.60.0(@typescript-eslint/parser@8.60.0(eslint@10.4.1(jiti@2.7.0))(typescript@5.9.3))(eslint@10.4.1(jiti@2.7.0))(typescript@5.9.3))(eslint@10.4.1(jiti@2.7.0))
       typescript-eslint:
-        specifier: ^8.59.0
+        specifier: ^8.60.0
         version: 8.60.0(eslint@10.4.1(jiti@2.7.0))(typescript@5.9.3)
     devDependencies:
       eslint:
@@ -14129,8 +14129,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.60.0(typescript@5.9.3)
+      '@typescript-eslint/types': 8.60.0
       debug: 4.4.3(supports-color@8.1.1)
       typescript: 5.9.3
     transitivePeerDependencies:
