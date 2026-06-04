@@ -71,7 +71,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "read-package-up": "catalog:",
-    "semver": "^7.7.4",
+    "semver": "^7.8.1",
     "vite": "catalog:",
     "zod": "catalog:"
   },
