@@ -934,7 +934,7 @@ importers:
   packages/@sanity/cli-core:
     dependencies:
       '@inquirer/prompts':
-        specifier: ^8.3.0
+        specifier: ^8.5.2
         version: 8.5.2(@types/node@20.19.41)
       '@oclif/core':
         specifier: 'catalog:'
