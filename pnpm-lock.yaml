@@ -121,7 +121,7 @@ catalogs:
       specifier: ^7.1.0
       version: 7.1.2
     tinyglobby:
-      specifier: ^0.2.16
+      specifier: ^0.2.17
       version: 0.2.17
     tsx:
       specifier: ^4.22.4
