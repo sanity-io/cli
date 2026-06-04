@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.1](https://github.com/sanity-io/cli/compare/cli-test-v1.0.0...cli-test-v1.0.1)
+
+_2026-06-04_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.0.1
+
 ## [1.0.0](https://github.com/sanity-io/cli/compare/cli-test-v0.3.5...cli-test-v1.0.0)
 
 _2026-06-04_

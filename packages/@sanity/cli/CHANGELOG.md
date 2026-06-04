@@ -1,5 +1,22 @@
 # Change Log
 
+## [7.0.2](https://github.com/sanity-io/cli/compare/cli-v7.0.1...cli-v7.0.2)
+
+_2026-06-04_
+
+### Bug Fixes
+
+- **deps:** update dependency dotenv to ^17.4.2 ([#1195](https://github.com/sanity-io/cli/pull/1195)) ([ad8b829](https://github.com/sanity-io/cli/commit/ad8b829d53aff4489a9a0de14061c1ecfec47778))
+- **deps:** update dependency isomorphic-dompurify to ^2.36.0 ([#1196](https://github.com/sanity-io/cli/pull/1196)) ([df1415b](https://github.com/sanity-io/cli/commit/df1415bb1aefa51be1f91c570723a1db6484032e))
+- **deps:** update dependency package-directory to ^8.2.0 ([#1197](https://github.com/sanity-io/cli/pull/1197)) ([98eecd7](https://github.com/sanity-io/cli/commit/98eecd7eec781fd7a8212d310d2f25e46a41fcc2))
+- **deps:** update sanity-tooling to ^7.0.1 ([#1201](https://github.com/sanity-io/cli/pull/1201)) ([fdd0b87](https://github.com/sanity-io/cli/commit/fdd0b8797b42ea13b955cc4947b5583684addfa9))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.0.1
+
 ## [7.0.1](https://github.com/sanity-io/cli/compare/cli-v7.0.0...cli-v7.0.1)
 
 _2026-06-04_

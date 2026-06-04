@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1](https://github.com/sanity-io/cli/compare/cli-core-v2.0.0...cli-core-v2.0.1)
+
+_2026-06-04_
+
+### Bug Fixes
+
+- **deps:** update dependency @inquirer/prompts to ^8.5.2 ([#1193](https://github.com/sanity-io/cli/pull/1193)) ([4110e29](https://github.com/sanity-io/cli/commit/4110e296dde37a5a9fda6a0eb8576e9d780d1546))
+
 ## [2.0.0](https://github.com/sanity-io/cli/compare/cli-core-v1.3.4...cli-core-v2.0.0)
 
 _2026-06-04_
