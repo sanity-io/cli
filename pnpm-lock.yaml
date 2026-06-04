@@ -617,7 +617,7 @@ importers:
         specifier: ^7.0.3
         version: 7.0.4
       package-directory:
-        specifier: ^8.1.0
+        specifier: ^8.2.0
         version: 8.2.0
       peek-stream:
         specifier: ^1.1.3
