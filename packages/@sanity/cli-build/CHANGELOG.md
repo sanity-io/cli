@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/sanity-io/cli/compare/cli-build-v1.0.0...cli-build-v1.0.1)
+
+_2026-06-04_
+
+### Bug Fixes
+
+- **deps:** update dependency semver to ^7.8.1 ([#1187](https://github.com/sanity-io/cli/pull/1187)) ([d34c1e6](https://github.com/sanity-io/cli/commit/d34c1e62f9696f0bbd9cb7d86e32998ae17c2669))
+
 ## [1.0.0](https://github.com/sanity-io/cli/compare/cli-build-v0.2.2...cli-build-v1.0.0)
 
 _2026-06-04_
