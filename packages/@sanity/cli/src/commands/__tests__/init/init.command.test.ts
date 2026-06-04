@@ -132,7 +132,7 @@ describe('skillsMode resolution', () => {
     )
   })
 
-  test('sets skillsMode to "skip" in non-production Sanity env (e2e / UI tests)', async () => {
+  test('sets skillsMode to "auto" in staging Sanity env when interactive', async () => {
     const previous = process.env.SANITY_INTERNAL_ENV
     process.env.SANITY_INTERNAL_ENV = 'staging'
     mockInitAction.mockResolvedValue(undefined)
@@ -144,7 +144,7 @@ describe('skillsMode resolution', () => {
 
       if (error) throw error
       expect(mockInitAction).toHaveBeenCalledWith(
-        expect.objectContaining({skillsMode: 'skip'}),
+        expect.objectContaining({skillsMode: 'auto'}),
         expect.any(Object),
       )
     } finally {
