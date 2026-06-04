@@ -128,7 +128,7 @@
     "smol-toml": "^1.6.1",
     "tar": "^7.5.15",
     "tar-fs": "^3.1.2",
-    "tar-stream": "^3.1.8",
+    "tar-stream": "^3.2.0",
     "tinyglobby": "catalog:",
     "tsx": "catalog:",
     "typeid-js": "^1.2.0",
