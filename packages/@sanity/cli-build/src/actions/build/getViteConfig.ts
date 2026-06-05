@@ -37,7 +37,8 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
 
   entries: {
     relativeConfigLocation: string | null
-    relativeEntry: string
+    // `null` when a branded app declares no `entry` (US5) — no app view.
+    relativeEntry: string | null
   }
 
   /**
@@ -204,7 +205,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             viteFederation({
               ...(isApp
                 ? {
-                    appEntry: entries.relativeEntry,
+                    // `null` relativeEntry (a branded app with no `entry`, US5)
+                    // → omit `appEntry` so the plugin exposes no `./App`.
+                    ...(entries.relativeEntry ? {appEntry: entries.relativeEntry} : {}),
                     isApp: true as const,
                   }
                 : {

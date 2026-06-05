@@ -48,6 +48,9 @@ export function getDevServerConfig({
 
   return {
     ...baseConfig,
+    // The app's navigable entry. A branded app that omits `entry` has no app
+    // view (US5): the runtime/federation skip the `./App` render path entirely.
+    entry: app?.entry,
     isWorkbenchApp: isWorkbenchApp(app),
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
