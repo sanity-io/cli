@@ -81,7 +81,9 @@
       "node-pty"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*"
+      "@sanity/cli": "workspace:*",
+      "@sanity/schema": "https://pkg.pr.new/sanity-io/sanity/@sanity/schema@20d71a3",
+      "@sanity/types": "https://pkg.pr.new/sanity-io/sanity/@sanity/types@20d71a3"
     }
   }
 }
