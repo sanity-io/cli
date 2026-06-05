@@ -9,7 +9,13 @@ const mockExtractCoreAppManifest = vi.hoisted(() => vi.fn())
 const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
 const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
+const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
 
+// The core-app watcher re-reads the config to re-derive interfaces on each edit.
+vi.mock('@sanity/cli-core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+  getCliConfigUncached: mockGetCliConfigUncached,
+}))
 vi.mock('../devServerRegistry.js', () => ({
   registerDevServer: mockRegisterDevServer,
 }))
@@ -39,6 +45,7 @@ describe('startFederationRegistration', () => {
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
+    mockGetCliConfigUncached.mockResolvedValue({app: workbenchApp()})
     mockGetAppId.mockReturnValue(undefined)
   })
 
@@ -199,9 +206,13 @@ describe('startFederationRegistration', () => {
     )
   })
 
-  test('wires extractCoreAppManifest into the core-app watcher', async () => {
+  test('wires extractCoreAppManifest into the core-app watcher and re-derives interfaces', async () => {
     const appManifest = {icon: '<svg><path d="M0 0"/></svg>', title: 'My App', version: '1'}
     mockExtractCoreAppManifest.mockResolvedValue(appManifest)
+    // A fresh config read with a panel → the watcher re-derives + forwards it.
+    mockGetCliConfigUncached.mockResolvedValue({
+      app: workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]}),
+    })
 
     await startFederationRegistration({
       cliConfig: workbenchCliConfig(),
@@ -212,13 +223,20 @@ describe('startFederationRegistration', () => {
     })
 
     const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
+    // The manifest stays pure; interfaces ride alongside as a separate field.
     await expect(
       extract({configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}),
-    ).resolves.toEqual(appManifest)
+    ).resolves.toEqual({
+      interfaces: [{entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'}],
+      manifest: appManifest,
+    })
     expect(mockExtractCoreAppManifest).toHaveBeenCalledWith({workDir: '/tmp/sanity-project'})
   })
 
-  test('wires extractStudioManifest into the studio watcher', async () => {
+  test('wires extractStudioManifest into the studio watcher (no interfaces)', async () => {
+    const studioManifest = {version: 3, workspaces: []}
+    mockExtractStudioManifest.mockResolvedValue(studioManifest)
+
     await startFederationRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
@@ -228,7 +246,10 @@ describe('startFederationRegistration', () => {
     })
 
     const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
-    expect(extract).toBe(mockExtractStudioManifest)
+    await expect(
+      extract({configPath: '/tmp/sanity-project/sanity.config.ts', workDir: '/tmp/sanity-project'}),
+    ).resolves.toEqual({interfaces: undefined, manifest: studioManifest})
+    expect(mockExtractStudioManifest).toHaveBeenCalled()
   })
 
   test('calls manifest cleanup on close', async () => {

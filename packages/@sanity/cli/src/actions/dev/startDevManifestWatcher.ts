@@ -4,6 +4,7 @@ import {basename, dirname} from 'node:path'
 import {findProjectRoot, type Output} from '@sanity/cli-core'
 
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
+import {type DevServerInterface} from './deriveInterfaces.js'
 import {devDebug} from './devDebug.js'
 
 /**
@@ -21,17 +22,29 @@ interface DevManifestWatcher {
 interface ManifestPatch<T> {
   manifest: T | undefined
   manifestUpdatedAt: string
+
+  /**
+   * Workbench interfaces (views/services/app view) re-derived from the config
+   * on each change, so editing `views`/`services`/`entry` in `sanity.cli.ts`
+   * re-syncs live like `title`/`icon` (FR-024). `undefined` for project types
+   * that don't declare interfaces (e.g. studios).
+   */
+  interfaces?: DevServerInterface[] | undefined
 }
 
 interface StartDevManifestWatcherOptions<T> {
   /**
-   * Run the project-specific manifest extraction and resolve to the inlined
-   * manifest. Receives the resolved config path (e.g. `sanity.config.ts` for
-   * studios, `sanity.cli.ts` for core-apps) and the working directory.
+   * Run the project-specific extraction and resolve to the inlined manifest
+   * plus the workbench `interfaces[]` (when the project declares them).
+   * Receives the resolved config path (e.g. `sanity.config.ts` for studios,
+   * `sanity.cli.ts` for core-apps) and the working directory.
    */
-  extract: (params: {configPath: string; workDir: string}) => Promise<T | undefined>
+  extract: (params: {
+    configPath: string
+    workDir: string
+  }) => Promise<{interfaces?: DevServerInterface[] | undefined; manifest: T | undefined}>
   output: Output
-  /** Called after every successful extraction with the inlined manifest. */
+  /** Called after every successful extraction with the inlined manifest + interfaces. */
   update: (patch: ManifestPatch<T>) => void
   workDir: string
 }
@@ -72,9 +85,9 @@ export async function startDevManifestWatcher<T>({
     }
     running = true
     try {
-      const manifest = await extract({configPath, workDir})
+      const {interfaces, manifest} = await extract({configPath, workDir})
       if (closed) return
-      update({manifest, manifestUpdatedAt: new Date().toISOString()})
+      update({interfaces, manifest, manifestUpdatedAt: new Date().toISOString()})
     } catch (err) {
       // Extractors print their own spinner failure; log the reason here so
       // the user sees what went wrong alongside the spinner indicator.

@@ -1,9 +1,9 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/federation'
+import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
+import {deriveInterfaces} from './deriveInterfaces.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {extractStudioManifest} from './extractDevServerManifest.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
@@ -38,50 +38,13 @@ export async function startFederationRegistration(
   const addr = server.httpServer?.address()
   const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
 
-  // Interfaces live on the branded `unstable_defineApp` result as declared
-  // `views` (panels), `services` (workers), and the app's navigable `entry`. A
-  // service is just an interface discriminated by `interface_type`, so map them
-  // into a single `interfaces` list and forward them on the registry entry
-  // (alongside, not inside, the manifest) so the workbench can render local
-  // panels, run local workers, and resolve the app view without a deploy.
-  // `entry_point` is the declared `src` — the raw value, not a resolved URL.
-  const app = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
-
-  // US5 — studio app views are not implemented yet. A studio (not an SDK app)
-  // that declares `entry` reaches the app-view path; reject with a clear error
-  // rather than deriving an `app` interface for it. SDK app views are a later
-  // iteration for studios (FR-026).
-  if (app && !isApp && app.entry !== undefined) {
-    throw new Error('App views for studios are not implemented yet')
-  }
-
-  const interfaces = app
-    ? [
-        ...(app.views?.map((view) => ({
-          entry_point: view.src,
-          interface_type: view.type,
-          name: view.name,
-        })) ?? []),
-        ...(app.services?.map((service) => ({
-          entry_point: service.src,
-          interface_type: service.type,
-          name: service.name,
-        })) ?? []),
-        // US5 — an SDK app's `entry` declares its navigable full-page `app`
-        // view. Forward it as an `app` interface so the workbench knows the app
-        // is navigable; with no `entry` the app has no `app` view and is not
-        // reachable as a full-page app.
-        ...(app.entry === undefined
-          ? []
-          : [
-              {
-                entry_point: app.entry,
-                interface_type: 'app' as const,
-                name: app.name,
-              },
-            ]),
-      ]
-    : undefined
+  // Interfaces (panels/workers/app view) are derived from the branded
+  // `unstable_defineApp` config and forwarded on the registry entry (alongside,
+  // not inside, the manifest) so the workbench renders local panels, runs local
+  // workers, and resolves the app view without a deploy. The watcher below
+  // re-derives them on every `sanity.cli.ts` edit so adding/removing a view or
+  // service re-syncs live (FR-024) — the way `title`/`icon` already do.
+  const interfaces = deriveInterfaces(cliConfig.app, {isApp})
 
   const registration = registerDevServer({
     host: appHost,
@@ -95,8 +58,15 @@ export async function startFederationRegistration(
 
   const watcher = await startDevManifestWatcher({
     extract: isApp
-      ? ({workDir: wd}) => extractCoreAppManifest({workDir: wd})
-      : extractStudioManifest,
+      ? async ({workDir: wd}) => ({
+          // Interfaces are NOT part of the manifest — they're re-derived from the
+          // same config edit and forwarded as a separate registry field, so a
+          // `views`/`services`/`entry` change re-syncs live (FR-024).
+          interfaces: deriveInterfaces((await getCliConfigUncached(wd)).app, {isApp}),
+          manifest: await extractCoreAppManifest({workDir: wd}),
+        })
+      : (params) =>
+          extractStudioManifest(params).then((manifest) => ({interfaces: undefined, manifest})),
     output,
     update: registration.update,
     workDir,
