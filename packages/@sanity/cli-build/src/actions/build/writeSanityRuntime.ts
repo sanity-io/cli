@@ -32,7 +32,7 @@ interface RuntimeOptions {
  * @internal
  */
 export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
-  entries: {relativeConfigLocation: string | null; relativeEntry: string}
+  entries: {relativeConfigLocation: string | null; relativeEntry: string | null}
   watcher: FSWatcher | undefined
 }> {
   const {appTitle, basePath, cwd, entry, isApp, reactStrictMode, watch} = options
@@ -108,7 +108,7 @@ export async function resolveEntries(options: {
   entry?: string
   isApp?: boolean
   runtimeDir?: string
-}): Promise<{relativeConfigLocation: string | null; relativeEntry: string}> {
+}): Promise<{relativeConfigLocation: string | null; relativeEntry: string | null}> {
   const {cwd, entry, isApp} = options
   const runtimeDir = options.runtimeDir ?? path.join(cwd, '.sanity', 'runtime')
 
@@ -120,9 +120,13 @@ export async function resolveEntries(options: {
       : null
   }
 
-  const relativeEntry = toForwardSlashes(
-    path.relative(runtimeDir, path.resolve(cwd, entry || './src/App')),
-  )
+  // A branded app that declares no `entry` has no navigable app view (US5):
+  // `null` entry tells the runtime/federation to skip the `./App` render path.
+  // Studios ignore `relativeEntry`, so the legacy `./src/App` default is fine.
+  const relativeEntry =
+    isApp && !entry
+      ? null
+      : toForwardSlashes(path.relative(runtimeDir, path.resolve(cwd, entry || './src/App')))
 
   return {relativeConfigLocation, relativeEntry}
 }
