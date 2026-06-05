@@ -6,6 +6,7 @@ import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {deriveInterfaces} from './deriveInterfaces.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {extractStudioManifest} from './extractDevServerManifest.js'
+import {serializeInterfaces} from './interfacesChanged.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface FederationRegistrationOptions {
@@ -14,6 +15,16 @@ interface FederationRegistrationOptions {
   output: Output
   server: ViteDevServer
   workDir: string
+
+  /**
+   * Called when the declared interface *set* changes (a view/service added,
+   * removed, renamed, or repointed in `sanity.cli.ts`) — before the registry is
+   * patched. The remote's `exposes` map + codegen artifacts are computed once at
+   * server start, so a newly-declared interface has no expose until the app dev
+   * server is recreated with the fresh config; this hook does that recreation.
+   * Awaited so the rebuilt remote is live before the workbench page reloads.
+   */
+  onInterfacesChange?: () => Promise<void>
 }
 
 interface FederationRegistration {
@@ -28,7 +39,7 @@ interface FederationRegistration {
 export async function startFederationRegistration(
   options: FederationRegistrationOptions,
 ): Promise<FederationRegistration> {
-  const {cliConfig, isApp, output, server, workDir} = options
+  const {cliConfig, isApp, onInterfacesChange, output, server, workDir} = options
 
   checkForDeprecatedAppId({cliConfig, output})
 
@@ -56,6 +67,11 @@ export async function startFederationRegistration(
     workDir,
   })
 
+  // Track the registered set so a watcher pass can tell whether the *set* of
+  // interfaces changed (rebuild needed) vs. only the manifest (title/icon) or a
+  // view/service source file (HMR handles it — the set is unchanged).
+  let lastInterfaces = serializeInterfaces(interfaces)
+
   const watcher = await startDevManifestWatcher({
     extract: isApp
       ? async ({workDir: wd}) => ({
@@ -68,7 +84,18 @@ export async function startFederationRegistration(
       : (params) =>
           extractStudioManifest(params).then((manifest) => ({interfaces: undefined, manifest})),
     output,
-    update: registration.update,
+    update: async (patch) => {
+      const nextInterfaces = serializeInterfaces(patch.interfaces)
+      if (nextInterfaces !== lastInterfaces) {
+        lastInterfaces = nextInterfaces
+        // Rebuild the app remote first (so the new view/service has an expose +
+        // artifact), THEN patch the registry — the registry patch is what reloads
+        // the workbench page, and it must re-fetch a remote that already exposes
+        // the new interface.
+        await onInterfacesChange?.()
+      }
+      registration.update(patch)
+    },
     workDir,
   })
 

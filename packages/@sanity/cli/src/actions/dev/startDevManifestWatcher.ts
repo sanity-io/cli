@@ -44,8 +44,12 @@ interface StartDevManifestWatcherOptions<T> {
     workDir: string
   }) => Promise<{interfaces?: DevServerInterface[] | undefined; manifest: T | undefined}>
   output: Output
-  /** Called after every successful extraction with the inlined manifest + interfaces. */
-  update: (patch: ManifestPatch<T>) => void
+  /**
+   * Called after every successful extraction with the inlined manifest +
+   * interfaces. Awaited, so an interface-set change can rebuild the federation
+   * remote before the registry is patched (which is what reloads the workbench).
+   */
+  update: (patch: ManifestPatch<T>) => Promise<void> | void
   workDir: string
 }
 
@@ -87,7 +91,7 @@ export async function startDevManifestWatcher<T>({
     try {
       const {interfaces, manifest} = await extract({configPath, workDir})
       if (closed) return
-      update({interfaces, manifest, manifestUpdatedAt: new Date().toISOString()})
+      await update({interfaces, manifest, manifestUpdatedAt: new Date().toISOString()})
     } catch (err) {
       // Extractors print their own spinner failure; log the reason here so
       // the user sees what went wrong alongside the spinner indicator.

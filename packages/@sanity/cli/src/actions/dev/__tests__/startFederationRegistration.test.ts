@@ -369,4 +369,59 @@ describe('startFederationRegistration', () => {
       }),
     ).rejects.toThrow('App views for studios are not implemented yet')
   })
+
+  // FR-024 — adding/removing a view or service must rebuild the federation
+  // remote so the new interface gets an expose + artifact. The watcher drives it.
+  const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
+
+  test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {
+    const onInterfacesChange = vi.fn().mockResolvedValue(undefined)
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+
+    await startFederationRegistration({
+      cliConfig: {app: workbenchApp()}, // no interfaces yet
+      isApp: true,
+      onInterfacesChange,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    // A panel appears → rebuild, then patch the registry.
+    await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'a'})
+    expect(onInterfacesChange).toHaveBeenCalledTimes(1)
+    expect(update).toHaveBeenCalledTimes(1)
+
+    // Same set on the next pass → no rebuild, registry still patched.
+    await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'b'})
+    expect(onInterfacesChange).toHaveBeenCalledTimes(1)
+    expect(update).toHaveBeenCalledTimes(2)
+  })
+
+  test('does not rebuild when only the manifest changes (same interface set)', async () => {
+    const onInterfacesChange = vi.fn().mockResolvedValue(undefined)
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
+
+    await startFederationRegistration({
+      cliConfig: {
+        app: workbenchApp({views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}]}),
+      },
+      isApp: true,
+      onInterfacesChange,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    // Same interfaces as the initial registration; only title/icon moved.
+    await watcherUpdate({
+      interfaces: [feed],
+      manifest: {title: 'Renamed', version: '1'},
+      manifestUpdatedAt: 'a',
+    })
+    expect(onInterfacesChange).not.toHaveBeenCalled()
+  })
 })
