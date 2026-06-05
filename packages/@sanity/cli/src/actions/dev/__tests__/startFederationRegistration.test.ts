@@ -302,4 +302,50 @@ describe('startFederationRegistration', () => {
       expect.objectContaining({exit: 1}),
     )
   })
+
+  // US5 — `entry` declares an SDK app's navigable `app` view.
+  test('forwards an `app` interface derived from `entry` for an SDK app', async () => {
+    await startFederationRegistration({
+      cliConfig: {app: workbenchApp({entry: './src/App.tsx'})},
+      isApp: true,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interfaces: expect.arrayContaining([
+          {entry_point: './src/App.tsx', interface_type: 'app', name: 'test-app'},
+        ]),
+      }),
+    )
+  })
+
+  test('forwards no `app` interface when an SDK app declares no `entry`', async () => {
+    await startFederationRegistration({
+      cliConfig: {app: workbenchApp()},
+      isApp: true,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+
+    const {interfaces} = mockRegisterDevServer.mock.calls[0][0]
+    expect(
+      (interfaces ?? []).some((i: {interface_type: string}) => i.interface_type === 'app'),
+    ).toBe(false)
+  })
+
+  test('rejects a studio that declares `entry` — app views for studios are not implemented yet', async () => {
+    await expect(
+      startFederationRegistration({
+        cliConfig: {app: workbenchApp({entry: './src/App.tsx'})},
+        isApp: false,
+        output: createMockOutput(),
+        server: mockServer({port: 3334}) as any,
+        workDir: '/tmp/sanity-project',
+      }),
+    ).rejects.toThrow('App views for studios are not implemented yet')
+  })
 })
