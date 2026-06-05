@@ -46,6 +46,15 @@ export async function startFederationRegistration(
   // without a deploy. `entry_point` is the declared `src` — the raw value, not
   // a resolved URL.
   const app = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
+
+  // US5 — studio app views are not implemented yet. A studio (not an SDK app)
+  // that declares `entry` reaches the app-view path; reject with a clear error
+  // rather than deriving an `app` interface for it. SDK app views are a later
+  // iteration for studios (FR-026).
+  if (app && !isApp && app.entry !== undefined) {
+    throw new Error('App views for studios are not implemented yet')
+  }
+
   const interfaces = app
     ? [
         ...(app.views?.map((view) => ({
@@ -58,6 +67,19 @@ export async function startFederationRegistration(
           interface_type: service.type,
           name: service.name,
         })) ?? []),
+        // US5 — an SDK app's `entry` declares its navigable full-page `app`
+        // view. Forward it as an `app` interface so the workbench knows the app
+        // is navigable; with no `entry` the app has no `app` view and is not
+        // reachable as a full-page app.
+        ...(app.entry === undefined
+          ? []
+          : [
+              {
+                entry_point: app.entry,
+                interface_type: 'app' as const,
+                name: app.name,
+              },
+            ]),
       ]
     : undefined
 
