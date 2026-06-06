@@ -422,7 +422,8 @@ export function extractFromSanitySchema(
 
     const allTypeNames = candidates.map((c) => getTypeName(c.type.name))
     const targetTypes = [...new Set(allTypeNames)].toSorted()
-    const name = targetTypes.join('Or')
+    const declaredTargets = uniqBy(gatherDeclaredReferenceTargets(def), 'name')
+    const name = getDeclaredUnionTypeName(declaredTargets) ?? targetTypes.join('Or')
 
     // Register the union type if we haven't seen it before
     if (!unionTypes.some((item) => item.name === name)) {
@@ -777,6 +778,22 @@ export function extractFromSanitySchema(
   function gatherReferenceCandidates(type: SchemaType): ObjectSchemaType[] {
     const refTo = 'to' in type ? type.to : []
     return 'type' in type && type.type ? [...gatherReferenceCandidates(type.type), ...refTo] : refTo
+  }
+
+  function hasDeclaredTo(type: unknown): type is {declaredTo: ObjectSchemaType[]} {
+    return (
+      typeof type === 'object' &&
+      type !== null &&
+      'declaredTo' in type &&
+      Array.isArray(type.declaredTo)
+    )
+  }
+
+  function gatherDeclaredReferenceTargets(type: SchemaType): ObjectSchemaType[] {
+    const declared = hasDeclaredTo(type) ? type.declaredTo : []
+    return 'type' in type && type.type
+      ? [...gatherDeclaredReferenceTargets(type.type), ...declared]
+      : declared
   }
 
   function gatherAllFields(type: ObjectField | SchemaType) {

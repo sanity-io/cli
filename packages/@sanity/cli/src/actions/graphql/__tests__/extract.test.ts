@@ -134,6 +134,37 @@ describe('GraphQL - Schema extraction', () => {
     }
     expect(galleryOrPromotion.types).toEqual(['ArticlePromotion', 'Gallery', 'ProductPromotion'])
   })
+
+  it('Should name reference unions from the declared document union', () => {
+    const extracted = extractFromSanitySchema(nativeUnionsSchema, {
+      nonNullDocumentFields: false,
+    })
+
+    const campaign = extracted.types.find((type) => type.name === 'Campaign')
+    if (!campaign || !('fields' in campaign)) {
+      throw new Error('Expected a Campaign type with fields')
+    }
+
+    const target = campaign.fields.find((f) => f.fieldName === 'target')
+    expect(target?.type).toBe('EditorialTarget')
+    expect(target?.isReference).toBe(true)
+
+    const editorialTarget = extracted.types.find(
+      (type) => type.kind === 'Union' && type.name === 'EditorialTarget',
+    )
+    if (!editorialTarget || editorialTarget.kind !== 'Union') {
+      throw new Error('Expected an EditorialTarget union')
+    }
+    expect(editorialTarget.types).toEqual(['Author', 'Book'])
+
+    // Array of references to a document union -> list child uses the declared name
+    const relatedRefs = campaign.fields.find((f) => f.fieldName === 'relatedRefs')
+    expect(relatedRefs?.kind).toBe('List')
+    if (!relatedRefs || !('children' in relatedRefs)) {
+      throw new Error('Expected relatedRefs to be a list field')
+    }
+    expect(relatedRefs.children.type).toBe('EditorialTarget')
+  })
 })
 
 function sortExtracted(schema: ApiSpecification) {
