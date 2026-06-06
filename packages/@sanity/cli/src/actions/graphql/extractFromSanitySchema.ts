@@ -510,6 +510,47 @@ export function extractFromSanitySchema(
     return undefined
   }
 
+  function hasDeclaredOf(type: unknown): type is {declaredOf: SchemaType[]} {
+    return (
+      typeof type === 'object' &&
+      type !== null &&
+      'declaredOf' in type &&
+      Array.isArray(type.declaredOf)
+    )
+  }
+
+  function getDeclaredMembers(parent: SchemaType): SchemaType[] {
+    // `parent` may be the array schema type itself, or an `ObjectField` whose `.type` is
+    // the array. The authored members live on `declaredOf` of whichever holds the array.
+    if (hasDeclaredOf(parent)) {
+      return parent.declaredOf
+    }
+    if (parent.type && hasDeclaredOf(parent.type)) {
+      return parent.type.declaredOf
+    }
+    return []
+  }
+
+  function getDeclaredUnionTypeName(declared: SchemaType[] | undefined): string | undefined {
+    if (!declared || declared.length === 0) {
+      return undefined
+    }
+    // Only override naming when the declared view actually references a named union.
+    // Otherwise the effective-name behavior (below) is correct and unchanged.
+    if (!declared.some((member) => isUnionSchemaType(member))) {
+      return undefined
+    }
+    // Mixing a named union with references in one array is not GraphQL-nameable from the
+    // declared view; fall back to effective naming for that edge case.
+    if (declared.some((member) => isReference(member))) {
+      return undefined
+    }
+    if (declared.length === 1) {
+      return getTypeName(declared[0].name)
+    }
+    return [...new Set(declared.map((member) => getTypeName(member.name)))].toSorted().join('Or')
+  }
+
   function getUnionFieldDefinition(union: UnionSchemaType) {
     const members = union.of
     const possibleTypes = [...new Set(members.map((member) => getTypeName(member.name)))].toSorted()
@@ -547,9 +588,10 @@ export function extractFromSanitySchema(
       return {}
     }
 
+    const declaredMembers = getDeclaredMembers(parent)
     const unionCacheKey = `${options.grandParent}-${guardPathName}-${candidates
       .map((c) => c.type?.name)
-      .join('-')}`
+      .join('-')}-${declaredMembers.map((member) => member.name).join('-')}`
     if (withUnionCache && unionDefinitionCache.has(unionCacheKey)) {
       return unionDefinitionCache.get(unionCacheKey)
     }
@@ -619,7 +661,7 @@ export function extractFromSanitySchema(
         throw new Error(`Not enough types for a union type. Parent: ${parent.name}`)
       }
 
-      const name = possibleTypes.join('Or')
+      const name = getDeclaredUnionTypeName(declaredMembers) ?? possibleTypes.join('Or')
 
       if (!unionTypes.some((item) => item.name === name)) {
         unionTypes.push({

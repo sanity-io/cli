@@ -94,6 +94,46 @@ describe('GraphQL - Schema extraction', () => {
     // to the concrete members. The GraphQL union must list only concrete object types.
     expect(pageBlock.types).toEqual(['ArticlePromotion', 'Gallery', 'ProductPromotion'])
   })
+
+  it('Should name array unions from the declared view', () => {
+    const extracted = extractFromSanitySchema(nativeUnionsSchema, {
+      nonNullDocumentFields: false,
+    })
+
+    const campaign = extracted.types.find((type) => type.name === 'Campaign')
+    if (!campaign || !('fields' in campaign)) {
+      throw new Error('Expected a Campaign type with fields')
+    }
+
+    // Single declared union -> bare union name; members are the effective flattened set
+    const content = campaign.fields.find((f) => f.fieldName === 'content')
+    expect(content?.kind).toBe('List')
+    if (!content || !('children' in content)) {
+      throw new Error('Expected the content field to be a List with children')
+    }
+    expect(content.children.type).toBe('PageBlock')
+    const pageBlock = extracted.types.find(
+      (type) => type.kind === 'Union' && type.name === 'PageBlock',
+    )
+    if (!pageBlock || pageBlock.kind !== 'Union') {
+      throw new Error('Expected a PageBlock union')
+    }
+    expect(pageBlock.types).toEqual(['ArticlePromotion', 'Gallery', 'ProductPromotion'])
+
+    // Mixed union + concrete -> stable declared-name join, effective members
+    const mixed = campaign.fields.find((f) => f.fieldName === 'mixed')
+    if (!mixed || !('children' in mixed)) {
+      throw new Error('Expected the mixed field to be a List with children')
+    }
+    expect(mixed.children.type).toBe('GalleryOrPromotion')
+    const galleryOrPromotion = extracted.types.find(
+      (type) => type.kind === 'Union' && type.name === 'GalleryOrPromotion',
+    )
+    if (!galleryOrPromotion || galleryOrPromotion.kind !== 'Union') {
+      throw new Error('Expected a GalleryOrPromotion union')
+    }
+    expect(galleryOrPromotion.types).toEqual(['ArticlePromotion', 'Gallery', 'ProductPromotion'])
+  })
 })
 
 function sortExtracted(schema: ApiSpecification) {
