@@ -32,6 +32,35 @@ describe('GraphQL - Schema extraction', () => {
     expect(sortExtracted(extracted)).toMatchSnapshot()
   })
 
+  it('Should fall back to effective naming for a union mixed with a reference', () => {
+    const extracted = extractFromSanitySchema(nativeUnionsSchema, {
+      nonNullDocumentFields: false,
+    })
+
+    const campaign = extracted.types.find((type) => type.name === 'Campaign')
+    if (!campaign || !('fields' in campaign)) {
+      throw new Error('Expected a Campaign type with fields')
+    }
+
+    // `mixedRef` is an array combining the `promotion` union with a reference. That is not
+    // nameable from the declared view, so the name falls back to the effective concatenation
+    // (the union's concrete members plus the reference target), not a declared union name.
+    const mixedRef = campaign.fields.find((f) => f.fieldName === 'mixedRef')
+    expect(mixedRef?.kind).toBe('List')
+    if (!mixedRef || !('children' in mixedRef)) {
+      throw new Error('Expected mixedRef to be a list field')
+    }
+    expect(mixedRef.children.type).toBe('ArticlePromotionOrBookOrProductPromotion')
+
+    const union = extracted.types.find(
+      (type) => type.kind === 'Union' && type.name === 'ArticlePromotionOrBookOrProductPromotion',
+    )
+    if (!union || union.kind !== 'Union') {
+      throw new Error('Expected the effective-named union to be registered')
+    }
+    expect(union.types).toEqual(['ArticlePromotion', 'Book', 'ProductPromotion'])
+  })
+
   it('Should emit the authored name for a direct named-union field', () => {
     const extracted = extractFromSanitySchema(nativeUnionsSchema, {
       nonNullDocumentFields: false,

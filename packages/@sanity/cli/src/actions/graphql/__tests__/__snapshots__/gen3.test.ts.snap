@@ -10109,6 +10109,17 @@ exports[`GraphQL - Generation 3 > Should generate a graphql schema for native un
       "name": "ArticlePromotionFilter",
     },
     {
+      "fields": [],
+      "interfaces": undefined,
+      "kind": "Union",
+      "name": "ArticlePromotionOrBookOrProductPromotion",
+      "types": [
+        "ArticlePromotion",
+        "Book",
+        "ProductPromotion",
+      ],
+    },
+    {
       "fields": [
         {
           "fieldName": "_key",
@@ -10518,6 +10529,18 @@ exports[`GraphQL - Generation 3 > Should generate a graphql schema for native un
           },
           "description": undefined,
           "fieldName": "mixed",
+          "kind": "List",
+        },
+        {
+          "children": {
+            "inlineObjects": undefined,
+            "references": [
+              "Book",
+            ],
+            "type": "ArticlePromotionOrBookOrProductPromotion",
+          },
+          "description": undefined,
+          "fieldName": "mixedRef",
           "kind": "List",
         },
         {
@@ -34232,6 +34255,17 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
       "name": "ArticlePromotionFilter",
     },
     {
+      "fields": [],
+      "interfaces": undefined,
+      "kind": "Union",
+      "name": "ArticlePromotionOrBookOrProductPromotion",
+      "types": [
+        "ArticlePromotion",
+        "Book",
+        "ProductPromotion",
+      ],
+    },
+    {
       "fields": [
         {
           "fieldName": "_key",
@@ -34641,6 +34675,18 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
           },
           "description": undefined,
           "fieldName": "mixed",
+          "kind": "List",
+        },
+        {
+          "children": {
+            "inlineObjects": undefined,
+            "references": [
+              "Book",
+            ],
+            "type": "ArticlePromotionOrBookOrProductPromotion",
+          },
+          "description": undefined,
+          "fieldName": "mixedRef",
           "kind": "List",
         },
         {
@@ -37639,6 +37685,17 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
       "name": "ArticlePromotionFilter",
     },
     {
+      "fields": [],
+      "interfaces": undefined,
+      "kind": "Union",
+      "name": "ArticlePromotionOrBookOrProductPromotion",
+      "types": [
+        "ArticlePromotion",
+        "Book",
+        "ProductPromotion",
+      ],
+    },
+    {
       "fields": [
         {
           "fieldName": "_key",
@@ -38048,6 +38105,18 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
           },
           "description": undefined,
           "fieldName": "mixed",
+          "kind": "List",
+        },
+        {
+          "children": {
+            "inlineObjects": undefined,
+            "references": [
+              "Book",
+            ],
+            "type": "ArticlePromotionOrBookOrProductPromotion",
+          },
+          "description": undefined,
+          "fieldName": "mixedRef",
           "kind": "List",
         },
         {

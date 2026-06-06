@@ -161,6 +161,13 @@ export default Schema.compile({
           of: [{to: [{type: 'editorialTarget'}], type: 'reference'}],
           type: 'array',
         },
+        // Array mixing a named union with a reference: not nameable from the declared
+        // view, so naming must fall back to the effective concatenation.
+        {
+          name: 'mixedRef',
+          of: [{type: 'promotion'}, {to: [{type: 'book'}], type: 'reference'}],
+          type: 'array',
+        },
       ],
       name: 'campaign',
       type: 'document',
