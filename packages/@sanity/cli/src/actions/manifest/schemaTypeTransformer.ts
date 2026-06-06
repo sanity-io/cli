@@ -3,6 +3,7 @@ import {
   type BlockDefinition,
   type BooleanSchemaType,
   type FileSchemaType,
+  isUnionSchemaType,
   type MultiFieldSet,
   type NumberSchemaType,
   type ObjectField,
@@ -123,7 +124,8 @@ function transformCommonTypeFields(
 function transformFieldsets(
   type: SchemaType,
 ): Record<string, never> | {fieldsets: ManifestFieldset[]} {
-  if (type.jsonType !== 'object') {
+  if (type.jsonType !== 'object' || isUnionSchemaType(type)) {
+    // Unions share `jsonType: 'object'` but carry no fieldsets
     return {}
   }
   const fieldsets = type.fieldsets
