@@ -7,11 +7,13 @@ import {
   type CrossDatasetReferenceSchemaType,
   type IntrinsicTypeName,
   isDeprecationConfiguration,
+  isUnionSchemaType,
   type ObjectField,
   type ObjectFieldType,
   type ObjectSchemaType,
   type ReferenceSchemaType,
   type SchemaType,
+  type UnionSchemaType,
 } from '@sanity/types'
 import startCase from 'lodash-es/startCase.js'
 import uniqBy from 'lodash-es/uniqBy.js'
@@ -265,6 +267,12 @@ export function extractFromSanitySchema(
       return getArrayDefinition(type, parent, options)
     }
 
+    const unionType = resolveUnionType(type)
+    if (unionType) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return getUnionFieldDefinition(unionType) as any
+    }
+
     if (name === 'document') {
       return getDocumentDefinition(type as ObjectSchemaType)
     }
@@ -485,6 +493,37 @@ export function extractFromSanitySchema(
     }
 
     return false
+  }
+
+  function resolveUnionType(type: ObjectField | SchemaType): UnionSchemaType | undefined {
+    if (isUnionSchemaType(type)) {
+      return type
+    }
+    if (type.type && isUnionSchemaType(type.type)) {
+      return type.type
+    }
+    return undefined
+  }
+
+  function getUnionFieldDefinition(union: UnionSchemaType) {
+    const members = union.of
+    const possibleTypes = [...new Set(members.map((member) => getTypeName(member.name)))].toSorted()
+    if (possibleTypes.length < 2) {
+      throw new Error(`Not enough types for a union type. Union: ${union.name}`)
+    }
+
+    const allCandidatesAreDocuments = members.every((member) => {
+      const typeDef = sanityTypes.find((type) => type.name === member.name)
+      return Boolean(typeDef && typeDef.type === 'document')
+    })
+    const interfaces = allCandidatesAreDocuments ? ['Document'] : undefined
+    const name = getTypeName(union.name)
+
+    if (!unionTypes.some((item) => item.name === name)) {
+      unionTypes.push({interfaces, kind: 'Union', name, types: possibleTypes})
+    }
+
+    return {type: name}
   }
 
   function getUnionDefinition(

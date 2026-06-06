@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {extractFromSanitySchema} from '../extractFromSanitySchema.js'
 import {type ApiSpecification} from '../types.js'
+import nativeUnionsSchema from './fixtures/native-unions.js'
 import testStudioSchema from './fixtures/test-studio.js'
 import unionRefsSchema from './fixtures/union-refs.js'
 
@@ -29,6 +30,27 @@ describe('GraphQL - Schema extraction', () => {
     })
 
     expect(sortExtracted(extracted)).toMatchSnapshot()
+  })
+
+  it('Should emit the authored name for a direct named-union field', () => {
+    const extracted = extractFromSanitySchema(nativeUnionsSchema, {
+      nonNullDocumentFields: false,
+    })
+
+    const promotion = extracted.types.find(
+      (type) => type.kind === 'Union' && type.name === 'Promotion',
+    )
+    if (!promotion || promotion.kind !== 'Union') {
+      throw new Error('Expected a Promotion union to be registered')
+    }
+    expect(promotion.types).toEqual(['ArticlePromotion', 'ProductPromotion'])
+
+    const campaign = extracted.types.find((type) => type.name === 'Campaign')
+    if (!campaign || !('fields' in campaign)) {
+      throw new Error('Expected a Campaign type with fields')
+    }
+    const field = campaign.fields.find((f) => f.fieldName === 'featuredPromotion')
+    expect(field?.type).toBe('Promotion')
   })
 })
 
