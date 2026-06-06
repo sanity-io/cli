@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {extractFromSanitySchema} from '../extractFromSanitySchema.js'
 import generateSchema from '../gen3/index.js'
 import manySelfRefsSchema from './fixtures/many-self-refs.js'
+import nativeUnionsSchema from './fixtures/native-unions.js'
 import testStudioSchema from './fixtures/test-studio.js'
 import unionRefsSchema from './fixtures/union-refs.js'
 import {sortGraphQLSchema} from './helpers.js'
@@ -40,10 +41,26 @@ describe('GraphQL - Generation 3', () => {
     expect(sortGraphQLSchema(schema)).toMatchSnapshot()
   })
 
+  it('Should generate a graphql schema for native unions', () => {
+    const extracted = extractFromSanitySchema(nativeUnionsSchema, {
+      nonNullDocumentFields: false,
+    })
+
+    const schema = generateSchema(extracted)
+
+    expect(schema.generation).toBe('gen3')
+    const unionNames = schema.types.filter((type) => type.kind === 'Union').map((type) => type.name)
+    expect(unionNames).toEqual(
+      expect.arrayContaining(['Promotion', 'PageBlock', 'GalleryOrPromotion', 'EditorialTarget']),
+    )
+    expect(sortGraphQLSchema(schema)).toMatchSnapshot()
+  })
+
   describe.each([
     {name: 'testStudioSchema', sanitySchema: testStudioSchema},
     {name: 'manySelfRefsSchema', sanitySchema: manySelfRefsSchema},
     {name: 'unionRefsSchema', sanitySchema: unionRefsSchema},
+    {name: 'nativeUnionsSchema', sanitySchema: nativeUnionsSchema},
   ])(`Union cache: sanitySchema: $name`, ({sanitySchema}) => {
     it.each([true, false])(
       'Should be able to generate graphql schema, withUnionCache: %p',
