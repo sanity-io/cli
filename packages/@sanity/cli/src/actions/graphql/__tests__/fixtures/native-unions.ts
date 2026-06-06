@@ -152,6 +152,7 @@ export default Schema.compile({
     {
       fields: [
         {name: 'featuredPromotion', type: 'promotion'},
+        {name: 'featuredBlock', type: 'pageBlock'},
         {name: 'content', of: [{type: 'pageBlock'}], type: 'array'},
         {name: 'mixed', of: [{type: 'promotion'}, {type: 'gallery'}], type: 'array'},
         {name: 'target', to: [{type: 'editorialTarget'}], type: 'reference'},

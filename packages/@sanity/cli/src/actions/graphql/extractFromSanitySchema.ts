@@ -198,6 +198,11 @@ export function extractFromSanitySchema(
     if (!isBaseType(schemaType)) {
       continue
     }
+    // Native union declarations are not emitted as standalone top-level types; they are
+    // registered into `unionTypes` on demand when a field/array/reference references them.
+    if (isUnionSchemaType(schemaType)) {
+      continue
+    }
 
     const convertedType = convertType(schemaType)
     types.push(convertedType)

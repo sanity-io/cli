@@ -52,6 +52,48 @@ describe('GraphQL - Schema extraction', () => {
     const field = campaign.fields.find((f) => f.fieldName === 'featuredPromotion')
     expect(field?.type).toBe('Promotion')
   })
+
+  it('Should not emit native union declarations as top-level object types', () => {
+    const extracted = extractFromSanitySchema(nativeUnionsSchema, {
+      nonNullDocumentFields: false,
+    })
+
+    // Every top-level entry must be a well-formed definition with a string `kind`.
+    for (const type of extracted.types) {
+      expect(typeof type.kind).toBe('string')
+    }
+
+    // The union declarations must not leak in as malformed entries keyed by their original name.
+    const leaked = extracted.types.filter(
+      (type) =>
+        'originalName' in type &&
+        ['editorialTarget', 'pageBlock', 'promotion'].includes(type.originalName ?? ''),
+    )
+    expect(leaked).toEqual([])
+  })
+
+  it('Should flatten a direct union-of-union field to concrete members', () => {
+    const extracted = extractFromSanitySchema(nativeUnionsSchema, {
+      nonNullDocumentFields: false,
+    })
+
+    const campaign = extracted.types.find((type) => type.name === 'Campaign')
+    if (!campaign || !('fields' in campaign)) {
+      throw new Error('Expected a Campaign type with fields')
+    }
+    const field = campaign.fields.find((f) => f.fieldName === 'featuredBlock')
+    expect(field?.type).toBe('PageBlock')
+
+    const pageBlock = extracted.types.find(
+      (type) => type.kind === 'Union' && type.name === 'PageBlock',
+    )
+    if (!pageBlock || pageBlock.kind !== 'Union') {
+      throw new Error('Expected a PageBlock union')
+    }
+    // pageBlock reuses the `promotion` union, so its compiled `of` is already flattened
+    // to the concrete members. The GraphQL union must list only concrete object types.
+    expect(pageBlock.types).toEqual(['ArticlePromotion', 'Gallery', 'ProductPromotion'])
+  })
 })
 
 function sortExtracted(schema: ApiSpecification) {
