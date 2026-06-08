@@ -67,6 +67,7 @@ describe('installDeclaredPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
@@ -88,6 +89,7 @@ describe('installDeclaredPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -107,6 +109,7 @@ describe('installDeclaredPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -126,6 +129,7 @@ describe('installDeclaredPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -169,6 +173,67 @@ describe('installDeclaredPackages', () => {
     expect(mockOutput.log).toHaveBeenCalledWith('Command failed')
     expect(mockOutput.error).toHaveBeenCalledWith('Dependency installation failed', {exit: 1})
   })
+
+  test('treats pnpm ignored build scripts as a non-fatal result', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: ' ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: esbuild@0.28.0',
+      stdout: '',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as never)
+
+    const result = await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(result).toEqual({ignoredBuilds: ['esbuild']})
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockSpinnerInstance.fail).not.toHaveBeenCalled()
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('treats a non-ignored-builds pnpm error as fatal', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: ' ERR_PNPM_FETCH_404  registry exploded',
+      stdout: '',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as never)
+
+    await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(mockSpinnerInstance.fail).toHaveBeenCalled()
+    expect(mockOutput.error).toHaveBeenCalledWith('Dependency installation failed', {exit: 1})
+  })
+
+  test('does not parse npm output as pnpm ignored builds', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: '',
+      stdout: ' ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: esbuild@0.28.0',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as never)
+
+    await installDeclaredPackages(workDir, 'npm', context)
+
+    expect(mockSpinnerInstance.fail).toHaveBeenCalled()
+    expect(mockOutput.error).toHaveBeenCalledWith('Dependency installation failed', {exit: 1})
+  })
+
+  test('returns no ignored builds on a clean pnpm install', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 0,
+      failed: false,
+      stderr: '',
+      stdout: 'ok',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as never)
+
+    const result = await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(result).toEqual({ignoredBuilds: []})
+  })
 })
 
 describe('installNewPackages', () => {
@@ -190,6 +255,7 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
@@ -214,6 +280,7 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -234,6 +301,7 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -254,6 +322,7 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -317,6 +386,7 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()

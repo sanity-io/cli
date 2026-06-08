@@ -40,7 +40,7 @@ describe('#install', () => {
         chosen: 'npm',
         mostOptimal: 'npm',
       })
-      mockInstallDeclaredPackages.mockResolvedValueOnce()
+      mockInstallDeclaredPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
@@ -66,7 +66,7 @@ describe('#install', () => {
         chosen: 'yarn',
         mostOptimal: 'yarn',
       })
-      mockInstallDeclaredPackages.mockResolvedValueOnce()
+      mockInstallDeclaredPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
@@ -85,7 +85,7 @@ describe('#install', () => {
         chosen: 'pnpm',
         mostOptimal: 'pnpm',
       })
-      mockInstallDeclaredPackages.mockResolvedValueOnce()
+      mockInstallDeclaredPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
@@ -104,7 +104,7 @@ describe('#install', () => {
         chosen: 'bun',
         mostOptimal: 'bun',
       })
-      mockInstallDeclaredPackages.mockResolvedValueOnce()
+      mockInstallDeclaredPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
@@ -123,7 +123,7 @@ describe('#install', () => {
         chosen: 'manual',
         mostOptimal: 'npm',
       })
-      mockInstallDeclaredPackages.mockResolvedValueOnce()
+      mockInstallDeclaredPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
@@ -144,7 +144,7 @@ describe('#install', () => {
         chosen: 'npm',
         mostOptimal: 'npm',
       })
-      mockInstallNewPackages.mockResolvedValueOnce()
+      mockInstallNewPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       const {error} = await testCommand(Install, ['@sanity/vision'], {mocks: defaultMocks})
 
@@ -166,7 +166,7 @@ describe('#install', () => {
         chosen: 'yarn',
         mostOptimal: 'yarn',
       })
-      mockInstallNewPackages.mockResolvedValueOnce()
+      mockInstallNewPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       const {error} = await testCommand(Install, ['@sanity/vision', 'react-icons', 'lodash'], {
         mocks: defaultMocks,
@@ -190,7 +190,7 @@ describe('#install', () => {
         chosen: 'pnpm',
         mostOptimal: 'pnpm',
       })
-      mockInstallNewPackages.mockResolvedValueOnce()
+      mockInstallNewPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       const {error} = await testCommand(Install, ['some-package'], {mocks: defaultMocks})
 
@@ -254,7 +254,7 @@ describe('#install', () => {
         chosen: 'npm',
         mostOptimal: 'npm',
       })
-      mockInstallDeclaredPackages.mockResolvedValueOnce()
+      mockInstallDeclaredPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       await testCommand(Install, [], {mocks: defaultMocks})
 
@@ -278,7 +278,7 @@ describe('#install', () => {
         chosen: 'npm',
         mostOptimal: 'npm',
       })
-      mockInstallNewPackages.mockResolvedValueOnce()
+      mockInstallNewPackages.mockResolvedValueOnce({ignoredBuilds: []})
 
       await testCommand(Install, ['test-package'], {mocks: defaultMocks})
 
