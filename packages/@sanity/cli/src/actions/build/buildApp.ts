@@ -2,7 +2,11 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {AppBuildTrace, buildDebug, buildVendorDependencies} from '@sanity/cli-build/_internal/build'
+import {
+  AppBuildTrace,
+  buildDebug,
+  resolveVendorBuildConfig,
+} from '@sanity/cli-build/_internal/build'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -201,14 +205,11 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
   trace.start()
 
   let importMap: {imports?: Record<string, string>} | undefined
+  let vendorBuild
 
   if (autoUpdatesEnabled) {
-    importMap = {
-      imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
-        ...autoUpdatesImports,
-      },
-    }
+    vendorBuild = await resolveVendorBuildConfig({cwd: workDir, isApp: true})
+    importMap = {imports: autoUpdatesImports}
   }
 
   try {
@@ -227,6 +228,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
       reactCompiler: options.reactCompiler,
       schemaExtraction: options.schemaExtraction,
       sourceMap: options.sourceMap,
+      vendorBuild,
       vite: options.vite,
     })
 

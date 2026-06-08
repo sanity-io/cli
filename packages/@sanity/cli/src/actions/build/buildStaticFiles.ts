@@ -6,6 +6,7 @@ import {
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
   getViteConfig,
+  type VendorBuildConfig,
   writeFavicons,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
@@ -43,6 +44,7 @@ interface StaticBuildOptions {
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
+  vendorBuild?: VendorBuildConfig
   vite?: UserViteConfig
 }
 
@@ -67,6 +69,7 @@ export async function buildStaticFiles(
     reactCompiler,
     schemaExtraction,
     sourceMap = false,
+    vendorBuild,
     vite: extendViteConfig,
   } = options
 
@@ -102,6 +105,7 @@ export async function buildStaticFiles(
     reactCompiler,
     schemaExtraction,
     sourceMap,
+    vendorBuild,
   })
 
   if (extendViteConfig) {

@@ -6,6 +6,10 @@ export {
   finalizeViteConfig,
   getViteConfig,
 } from '../../actions/build/getViteConfig.js'
+export {
+  resolveVendorBuildConfig,
+  type VendorBuildConfig,
+} from '../../actions/build/resolveVendorBuildConfig.js'
 export {writeFavicons} from '../../actions/build/writeFavicons.js'
 export {writeSanityRuntime} from '../../actions/build/writeSanityRuntime.js'
 export {AppBuildTrace, StudioBuildTrace} from '../../telemetry/build.telemetry.js'

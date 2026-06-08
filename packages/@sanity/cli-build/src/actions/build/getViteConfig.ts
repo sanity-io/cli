@@ -23,9 +23,11 @@ import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
+import {type VendorBuildConfig} from './resolveVendorBuildConfig.js'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
+import {createVendorNamedExportsPlugin} from './vite/plugin-sanity-vendor-named-exports.js'
 import {getDefaultFaviconsPath} from './writeFavicons.js'
 
 interface ViteOptions {
@@ -75,6 +77,7 @@ interface ViteOptions {
    * Output directory (eg where to place the built files, if any)
    */
   outputDir?: string
+
   /**
    * Schema extraction configuration
    */
@@ -87,6 +90,12 @@ interface ViteOptions {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
+  /**
+   * Vendor package entries to emit as separate ESM chunks in a single build
+   * (auto-updating studios/apps). The import map for vendor chunks is derived
+   * from the build output rather than precomputed.
+   */
+  vendorBuild?: VendorBuildConfig
 }
 
 /**
@@ -110,6 +119,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
+    vendorBuild,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -157,7 +167,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),
+      sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp, vendorBuild}),
       // Add schema extraction when enabled
       ...(schemaExtraction?.enabled
         ? [
@@ -201,6 +211,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   if (mode === 'production') {
+    const vendorChunkNames = vendorBuild
+      ? new Set(Object.keys(vendorBuild.specifiersByChunkName))
+      : null
+
     // For auto-updating studios the import map externalizes react/react-dom/etc.
     // Hand those externals to `esmExternalRequirePlugin` rather than
     // `rolldownOptions.external`, so any bundled CommonJS `require()` of an external
@@ -209,9 +223,22 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     // also setting `rolldownOptions.external` would short-circuit that conversion.
     // With no import map (auto-updates off) the external list is empty and this is a
     // no-op (everything is bundled, so requires resolve internally).
+    const externalImports = {
+      ...importMap?.imports,
+      ...(vendorBuild
+        ? Object.fromEntries(
+            Object.values(vendorBuild.specifiersByChunkName).map((specifier) => [specifier, '']),
+          )
+        : {}),
+    }
+
     viteConfig.plugins!.push(
-      esmExternalRequirePlugin({external: createExternalFromImportMap(importMap)}),
+      esmExternalRequirePlugin({external: createExternalFromImportMap({imports: externalImports})}),
     )
+
+    if (vendorBuild) {
+      viteConfig.plugins!.push(createVendorNamedExportsPlugin(vendorBuild.namesByChunkName))
+    }
 
     viteConfig.build = {
       ...viteConfig.build,
@@ -221,10 +248,24 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       minify: minify ? 'oxc' : false,
 
       rolldownOptions: {
+        experimental: vendorBuild ? {nativeMagicString: true} : undefined,
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
+          ...vendorBuild?.entries,
         },
         onwarn: onRolldownWarn,
+        ...(vendorBuild
+          ? {
+              output: {
+                entryFileNames: (chunk) =>
+                  vendorChunkNames!.has(chunk.name)
+                    ? `vendor/${chunk.name}-[hash].mjs`
+                    : 'static/[name]-[hash].js',
+                exports: 'named',
+              },
+              treeshake: true,
+            }
+          : {}),
       },
     }
   }
@@ -279,12 +320,21 @@ export async function finalizeViteConfig(config: InlineConfig): Promise<InlineCo
     )
   }
 
+  const existingInput = config.build?.rolldownOptions?.input
+  const mergedInput =
+    typeof existingInput === 'object' && existingInput !== null && !Array.isArray(existingInput)
+      ? {
+          ...existingInput,
+          sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
+        }
+      : {
+          sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
+        }
+
   return mergeConfig(config, {
     build: {
       rolldownOptions: {
-        input: {
-          sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
-        },
+        input: mergedInput,
       },
     },
   })

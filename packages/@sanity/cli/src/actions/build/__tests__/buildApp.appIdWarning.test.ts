@@ -45,7 +45,11 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   return {
     ...actual,
     AppBuildTrace: {},
-    buildVendorDependencies: vi.fn().mockResolvedValue({}),
+    resolveVendorBuildConfig: vi.fn().mockResolvedValue({
+      entries: {},
+      namesByChunkName: {},
+      specifiersByChunkName: {},
+    }),
   }
 })
 

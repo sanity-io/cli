@@ -4,8 +4,8 @@ import {styleText} from 'node:util'
 
 import {
   buildDebug,
-  buildVendorDependencies,
   checkStudioDependencyVersions,
+  resolveVendorBuildConfig,
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
 import {
@@ -276,14 +276,11 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
   trace.start()
 
   let importMap
+  let vendorBuild
 
   if (autoUpdatesEnabled) {
-    importMap = {
-      imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
-        ...autoUpdatesImports,
-      },
-    }
+    vendorBuild = await resolveVendorBuildConfig({cwd: workDir, isApp: false})
+    importMap = {imports: autoUpdatesImports}
   }
 
   try {
@@ -299,6 +296,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       reactCompiler,
       schemaExtraction,
       sourceMap,
+      vendorBuild,
       vite,
     })
 

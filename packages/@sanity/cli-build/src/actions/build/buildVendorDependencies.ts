@@ -1,100 +1,12 @@
-import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {getLocalPackageDir, getLocalPackageVersion} from '@sanity/cli-core'
-import {gt, minVersion, rcompare, satisfies} from 'semver'
 import {build, esmExternalRequirePlugin} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
+import {VENDOR_DIR} from './constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
-import {getCjsNamedExports} from './getCjsNamedExports.js'
+import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
 import {createVendorNamedExportsPlugin} from './vite/plugin-sanity-vendor-named-exports.js'
-
-// Directory where vendor packages will be stored
-const VENDOR_DIR = 'vendor'
-
-/**
- * A type representing the imports of vendor packages, defining specific entry
- * points for various versions and subpaths of the packages.
- *
- * The `VendorImports` object is used to build ESM browser-compatible versions
- * of the specified packages. This approach ensures that the appropriate version
- * and entry points are used for each package, enabling compatibility and proper
- * functionality in the browser environment.
- *
- * ## Rationale
- *
- * The rationale for this structure is to handle different versions of the
- * packages carefully, especially major versions. Major version bumps often
- * introduce breaking changes, so the module scheme for the package needs to be
- * checked when there is a major version update. However, minor and patch
- * versions are generally backward compatible, so they are handled more
- * leniently. By assuming that new minor versions are compatible, we avoid
- * unnecessary warnings and streamline the update process.
- *
- * If a new minor version introduces an additional subpath export within the
- * package of this version range, the corresponding package can add a more
- * specific version range that includes the new subpath. This design allows for
- * flexibility and ease of maintenance, ensuring that the latest features and
- * fixes are incorporated without extensive manual intervention.
- *
- * An additional subpath export within the package of this version range that
- * could cause the build to break if that new export is used, can be treated as
- * a bug fix. It might make more sense to our users that this new subpath isn't
- * supported yet until we address it as a bug fix. This approach helps maintain
- * stability and prevents unexpected issues during the build process.
- *
- * ## Structure
- * The `VendorImports` type is a nested object where:
- * - The keys at the first level represent the package names.
- * - The keys at the second level represent the version ranges (e.g., `^19.0.0`).
- * - The keys at the third level represent the subpaths within the package (e.g., `.` for the main entry point).
- * - The values at the third level are the relative paths to the corresponding entry points within the package.
- *
- * This structure allows for precise specification of the entry points for
- * different versions and subpaths, ensuring that the correct files are used
- * during the build process.
- */
-type VendorImports = {
-  [packageName: string]: {
-    [versionRange: string]: {
-      [subpath: string]: string
-    }
-  }
-}
-
-// Define the vendor packages and their corresponding versions and entry points
-const VENDOR_IMPORTS: VendorImports = {
-  react: {
-    '^19.2.0': {
-      '.': './cjs/react.production.js',
-      './compiler-runtime': './cjs/react-compiler-runtime.production.js',
-      './jsx-dev-runtime': './cjs/react-jsx-dev-runtime.production.js',
-      './jsx-runtime': './cjs/react-jsx-runtime.production.js',
-      './package.json': './package.json',
-    },
-  },
-  'react-dom': {
-    '^19.2.0': {
-      '.': './cjs/react-dom.production.js',
-      './client': './cjs/react-dom-client.production.js',
-      './package.json': './package.json',
-      './server': './cjs/react-dom-server-legacy.browser.production.js',
-      './server.browser': './cjs/react-dom-server-legacy.browser.production.js',
-      './static': './cjs/react-dom-server.browser.production.js',
-      './static.browser': './cjs/react-dom-server.browser.production.js',
-    },
-  },
-}
-
-const STYLED_COMPONENTS_IMPORTS = {
-  'styled-components': {
-    '^6.1.0': {
-      '.': './dist/styled-components.browser.esm.js',
-      './package.json': './package.json',
-    },
-  },
-}
 
 interface VendorBuildOptions {
   basePath: string
@@ -106,6 +18,10 @@ interface VendorBuildOptions {
 /**
  * Builds the ESM browser compatible versions of the vendor packages
  * specified in VENDOR_IMPORTS. Returns the `imports` object of an import map.
+ *
+ * @deprecated Prefer resolving {@link resolveVendorBuildConfig} and building
+ * vendor chunks as part of the main studio/app Vite build.
+ * @internal
  */
 export async function buildVendorDependencies({
   basePath,
@@ -113,101 +29,30 @@ export async function buildVendorDependencies({
   isApp,
   outputDir,
 }: VendorBuildOptions): Promise<Record<string, string>> {
-  const entry: Record<string, string> = {}
-  const imports: Record<string, string> = {}
+  const {entries, namesByChunkName, specifiersByChunkName} = await resolveVendorBuildConfig({
+    cwd,
+    isApp,
+  })
 
-  // Named exports each CommonJS entry must re-expose as ESM, keyed by chunk name.
-  const namesByChunkName: Record<string, readonly string[]> = {}
+  const placeholderImports = Object.fromEntries(
+    Object.entries(specifiersByChunkName).map(([chunkName, specifier]) => [
+      specifier,
+      path.posix.join('/', basePath, VENDOR_DIR, `${chunkName}.mjs`),
+    ]),
+  )
 
-  // If we're building an app, we don't need to build the styled-components package
-  const vendorImports = isApp ? VENDOR_IMPORTS : {...VENDOR_IMPORTS, ...STYLED_COMPONENTS_IMPORTS}
+  const external = createExternalFromImportMap({imports: placeholderImports})
 
-  // Iterate over each package and its version ranges in VENDOR_IMPORTS
-  for (const [packageName, ranges] of Object.entries(vendorImports)) {
-    const version = await getLocalPackageVersion(packageName, cwd)
-    if (!version) {
-      throw new Error(`Could not get version for '${packageName}'`)
-    }
-
-    // Sort version ranges in descending order
-    const sortedRanges = Object.keys(ranges).toSorted((range1, range2) => {
-      const min1 = minVersion(range1)
-      const min2 = minVersion(range2)
-
-      if (!min1) throw new Error(`Could not parse range '${range1}'`)
-      if (!min2) throw new Error(`Could not parse range '${range2}'`)
-
-      // sort them in reverse so we can rely on array `.find` below
-      return rcompare(min1.version, min2.version)
-    })
-
-    // Find the first version range that satisfies the package version
-    const matchedRange = sortedRanges.find((range) => satisfies(version, range))
-
-    if (!matchedRange) {
-      const min = minVersion(sortedRanges.at(-1)!)
-      if (!min) {
-        throw new Error(`Could not find a minimum version for package '${packageName}'`)
-      }
-
-      if (gt(min.version, version)) {
-        throw new Error(`Package '${packageName}' requires at least ${min.version}.`)
-      }
-
-      throw new Error(`Version '${version}' of package '${packageName}' is not supported yet.`)
-    }
-
-    const subpaths = ranges[matchedRange]
-
-    // Resolve the actual package directory using Node module resolution,
-    // so that hoisted packages in monorepos/workspaces are found correctly
-    const packageDir = getLocalPackageDir(packageName, cwd)
-
-    // Iterate over each subpath and its corresponding entry point
-    for (const [subpath, relativeEntryPoint] of Object.entries(subpaths)) {
-      const specifier = path.posix.join(packageName, subpath)
-      const chunkName = path.posix.join(
-        packageName,
-        path.relative(packageName, specifier) || 'index',
-      )
-
-      const entryPath = path.join(packageDir, relativeEntryPoint)
-      entry[chunkName] = entryPath
-      imports[specifier] = path.posix.join('/', basePath, VENDOR_DIR, `${chunkName}.mjs`)
-
-      // React and React-DOM ship CommonJS. Rolldown lowers a CJS entry to an ESM
-      // chunk that only emits `export default`, so collect the named exports it
-      // must additionally re-expose (see `createVendorNamedExportsPlugin`).
-      // `styled-components` is native ESM and `package.json` is JSON, so both are
-      // skipped here.
-      if (packageName in VENDOR_IMPORTS && subpath !== './package.json') {
-        const source = await readFile(entryPath, 'utf8')
-        namesByChunkName[chunkName] = await getCjsNamedExports(source, chunkName)
-      }
-    }
-  }
-
-  // Externals are handled by `esmExternalRequirePlugin` (below) rather than
-  // `rolldownOptions.external`: the plugin both marks them external AND rewrites
-  // CommonJS `require('react')` calls (e.g. in react-dom) into ESM imports.
-  // Also setting `rolldownOptions.external` short-circuits that rewrite, leaving a
-  // runtime `require` shim that throws in the browser.
-  const external = createExternalFromImportMap({imports})
-
-  // removes the `RolldownWatcher` type
   type BuildResult = Exclude<Awaited<ReturnType<typeof build>>, {close: unknown}>
 
-  // Use Vite to build the packages into the output directory
   let buildResult = (await build({
     appType: 'custom',
     build: {
-      emptyOutDir: false, // Rely on CLI to do this
-      lib: {entry, formats: ['es']},
+      emptyOutDir: false,
+      lib: {entry: entries, formats: ['es']},
       minify: true,
       outDir: path.join(outputDir, VENDOR_DIR),
       rolldownOptions: {
-        // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so the
-        // vendor named-exports plugin can edit chunks without a JS dependency.
         experimental: {nativeMagicString: true},
         output: {
           chunkFileNames: '[name]-[hash].mjs',
@@ -218,19 +63,13 @@ export async function buildVendorDependencies({
         treeshake: true,
       },
     },
-    // Define a custom cache directory so that sanity's vite cache
-    // does not conflict with any potential local vite projects
     cacheDir: `${SANITY_CACHE_DIR}/vite-vendor`,
     configFile: false,
     define: {'process.env.NODE_ENV': JSON.stringify('production')},
     logLevel: 'silent',
     mode: 'production',
     plugins: [
-      // Re-expose CommonJS named exports (react, react-dom) as real ESM exports;
-      // Rolldown only emits `export default` for a CommonJS entry.
       createVendorNamedExportsPlugin(namesByChunkName),
-      // Rewrite external `require(...)` (e.g. react-dom requiring react) into ESM
-      // imports so the vendored output runs in the browser without `require`.
       esmExternalRequirePlugin({external}),
     ],
     root: cwd,
@@ -238,18 +77,16 @@ export async function buildVendorDependencies({
 
   buildResult = Array.isArray(buildResult) ? buildResult : [buildResult]
 
-  // Create a map of the original import specifiers to their hashed filenames
   const hashedImports: Record<string, string> = {}
-  const output = buildResult.flatMap((i) => i.output)
+  const output = buildResult.flatMap((result) => result.output)
 
   for (const chunk of output) {
     if (chunk.type === 'asset') continue
 
-    for (const [specifier, originalPath] of Object.entries(imports)) {
-      if (originalPath.endsWith(`${chunk.name}.mjs`)) {
-        hashedImports[specifier] = path.posix.join('/', basePath, VENDOR_DIR, chunk.fileName)
-      }
-    }
+    const specifier = specifiersByChunkName[chunk.name]
+    if (!specifier) continue
+
+    hashedImports[specifier] = path.posix.join('/', basePath, VENDOR_DIR, chunk.fileName)
   }
 
   return hashedImports

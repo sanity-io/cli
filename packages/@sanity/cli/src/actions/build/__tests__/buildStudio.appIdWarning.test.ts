@@ -49,8 +49,12 @@ vi.mock('../buildStaticFiles.js', () => ({
 
 vi.mock('@sanity/cli-build/_internal/build', () => ({
   buildDebug: vi.fn(),
-  buildVendorDependencies: vi.fn().mockResolvedValue({}),
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
+  resolveVendorBuildConfig: vi.fn().mockResolvedValue({
+    entries: {},
+    namesByChunkName: {},
+    specifiersByChunkName: {},
+  }),
   StudioBuildTrace: {},
 }))
 

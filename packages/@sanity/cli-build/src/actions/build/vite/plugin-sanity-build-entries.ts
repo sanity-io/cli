@@ -1,8 +1,10 @@
 import {type ChunkMetadata, type Plugin} from 'vite'
 
+import {createVendorImportMapFromBundle} from '../createVendorImportMapFromBundle.js'
 import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
 import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript.js'
 import {renderDocument} from '../renderDocument.js'
+import {type VendorBuildConfig} from '../resolveVendorBuildConfig.js'
 
 interface ViteOutputBundle {
   [fileName: string]: ViteRenderedAsset | ViteRenderedChunk
@@ -31,8 +33,9 @@ export function sanityBuildEntries(options: {
   cwd: string
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
+  vendorBuild?: VendorBuildConfig
 }): Plugin {
-  const {autoUpdatesCssUrls, basePath, cwd, importMap, isApp} = options
+  const {autoUpdatesCssUrls, basePath, cwd, importMap, isApp, vendorBuild} = options
 
   return {
     apply: 'build',
@@ -84,13 +87,27 @@ export function sanityBuildEntries(options: {
         }
       }
 
+      const vendorImports = vendorBuild
+        ? createVendorImportMapFromBundle(bundle, vendorBuild.specifiersByChunkName, basePath)
+        : {}
+
+      const resolvedImportMap =
+        importMap || Object.keys(vendorImports).length > 0
+          ? {
+              imports: {
+                ...vendorImports,
+                ...importMap?.imports,
+              },
+            }
+          : undefined
+
       this.emitFile({
         fileName: 'index.html',
         source: decorateIndexWithStagingScript(
           decorateIndexWithBridgeScript(
             await renderDocument({
               autoUpdatesCssUrls,
-              importMap,
+              importMap: resolvedImportMap,
               isApp,
               props: {
                 basePath,

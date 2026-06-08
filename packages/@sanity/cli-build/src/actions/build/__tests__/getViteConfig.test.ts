@@ -460,6 +460,7 @@ describe('#finalizeViteConfig', () => {
       build: {
         rolldownOptions: {
           input: {
+            main: mockTestMain,
             sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
           },
         },
