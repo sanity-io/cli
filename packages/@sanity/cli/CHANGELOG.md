@@ -1,5 +1,13 @@
 # Change Log
 
+## [7.1.0](https://github.com/sanity-io/cli/compare/cli-v7.0.2...cli-v7.1.0)
+
+_2026-06-08_
+
+### Features
+
+- **cli:** pass through reactStrictMode to let studio default take effect ([#1147](https://github.com/sanity-io/cli/pull/1147)) ([553ee70](https://github.com/sanity-io/cli/commit/553ee7059ea959bd2f8d5707908b899526a94084))
+
 ## [7.0.2](https://github.com/sanity-io/cli/compare/cli-v7.0.1...cli-v7.0.2)
 
 _2026-06-04_
