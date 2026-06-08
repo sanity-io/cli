@@ -2,7 +2,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {USER_ATTRIBUTES_API_VERSION} from '../../../../../actions/userAttributes/constants.js'
+import {USER_ATTRIBUTES_API_VERSION} from '../../../../../services/userAttributes.js'
 import {UserAttributeDefinitionsCreateCommand} from '../create.js'
 
 const testOrgId = 'test-org'
@@ -33,11 +33,11 @@ describe('#users:attributes:definitions:create', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsCreateCommand,
-      ['--org-id', testOrgId, '--key', 'location', '--type', 'string'],
+      ['--organization', testOrgId, '--key', 'location', '--type', 'string'],
       {mocks: defaultMocks},
     )
 
-    expect(stdout).toContain('Attribute definition "location" created successfully')
+    expect(stdout).toContain('User attribute definition "location" created successfully')
     expect(stdout).toContain('string')
   })
 
@@ -56,11 +56,11 @@ describe('#users:attributes:definitions:create', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsCreateCommand,
-      ['--org-id', testOrgId, '--key', 'location', '--type', 'string'],
+      ['--organization', testOrgId, '--key', 'location', '--type', 'string'],
       {mocks: defaultMocks},
     )
 
-    expect(stdout).toContain('Attribute definition "location" already exists')
+    expect(stdout).toContain('User attribute definition "location" already exists')
   })
 
   test('outputs JSON when --json flag is provided', async () => {
@@ -79,7 +79,7 @@ describe('#users:attributes:definitions:create', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsCreateCommand,
-      ['--org-id', testOrgId, '--key', 'location', '--type', 'string', '--json'],
+      ['--organization', testOrgId, '--key', 'location', '--type', 'string', '--json'],
       {mocks: defaultMocks},
     )
 
@@ -97,7 +97,7 @@ describe('#users:attributes:definitions:create', () => {
 
     const {error} = await testCommand(
       UserAttributeDefinitionsCreateCommand,
-      ['--org-id', testOrgId, '--key', 'location', '--type', 'string'],
+      ['--organization', testOrgId, '--key', 'location', '--type', 'string'],
       {mocks: defaultMocks},
     )
 
@@ -115,7 +115,7 @@ describe('#users:attributes:definitions:create', () => {
 
     const {error} = await testCommand(
       UserAttributeDefinitionsCreateCommand,
-      ['--org-id', testOrgId, '--key', 'location', '--type', 'integer'],
+      ['--organization', testOrgId, '--key', 'location', '--type', 'integer'],
       {mocks: defaultMocks},
     )
 
@@ -127,7 +127,7 @@ describe('#users:attributes:definitions:create', () => {
   test('handles missing --key flag', async () => {
     const {error} = await testCommand(
       UserAttributeDefinitionsCreateCommand,
-      ['--org-id', testOrgId, '--type', 'string'],
+      ['--organization', testOrgId, '--type', 'string'],
       {mocks: defaultMocks},
     )
 
@@ -138,7 +138,7 @@ describe('#users:attributes:definitions:create', () => {
   test('handles missing --type flag', async () => {
     const {error} = await testCommand(
       UserAttributeDefinitionsCreateCommand,
-      ['--org-id', testOrgId, '--key', 'location'],
+      ['--organization', testOrgId, '--key', 'location'],
       {mocks: defaultMocks},
     )
 
@@ -149,7 +149,7 @@ describe('#users:attributes:definitions:create', () => {
   test('handles invalid --type value', async () => {
     const {error} = await testCommand(
       UserAttributeDefinitionsCreateCommand,
-      ['--org-id', testOrgId, '--key', 'location', '--type', 'invalid-type'],
+      ['--organization', testOrgId, '--key', 'location', '--type', 'invalid-type'],
       {mocks: defaultMocks},
     )
 

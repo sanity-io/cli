@@ -1,12 +1,12 @@
 import {Flags} from '@oclif/core'
-import {NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
+import {colorizeJson, NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
 import {promptForOrganization} from '../../../prompts/promptForOrganization.js'
-import {getMyAttributes, getUserAttributes} from '../../../services/userAttributes.js'
+import {getCliUserAttributes, getUserAttributes} from '../../../services/userAttributes.js'
 import {formatAttributeValue} from '../../../util/formatAttributeValue.js'
 import {getErrorMessage} from '../../../util/getErrorMessage.js'
-import {getOrgIdFlag} from '../../../util/sharedFlags.js'
+import {getOrganizationFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('users:attributes:list')
 
@@ -15,21 +15,21 @@ export class UserAttributesListCommand extends SanityCommand<typeof UserAttribut
 
   static override examples = [
     {
-      command: '<%= config.bin %> <%= command.id %> --org-id o123',
+      command: '<%= config.bin %> <%= command.id %> --organization o123',
       description: 'List your own attributes in an organization',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --org-id o123 --user-id u456',
+      command: '<%= config.bin %> <%= command.id %> --organization o123 --user-id u456',
       description: "List a specific user's attributes",
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --org-id o123 --json',
+      command: '<%= config.bin %> <%= command.id %> --organization o123 --json',
       description: 'Output attributes as JSON',
     },
   ]
 
   static override flags = {
-    ...getOrgIdFlag({
+    ...getOrganizationFlag({
       description: 'Organization ID to list attributes for',
       semantics: 'specify',
     }),
@@ -47,32 +47,32 @@ export class UserAttributesListCommand extends SanityCommand<typeof UserAttribut
   static override hiddenAliases: string[] = ['user:attributes:list']
 
   public async run(): Promise<void> {
-    const {json: outputJson, 'org-id': orgIdFlag, 'user-id': userId} = this.flags
+    const {json: outputJson, organization: organizationFlag, 'user-id': userId} = this.flags
 
     let orgId: string
-    if (orgIdFlag) {
-      orgId = orgIdFlag
+    if (organizationFlag) {
+      orgId = organizationFlag
     } else {
       try {
         orgId = await promptForOrganization()
       } catch (err) {
         if (err instanceof NonInteractiveError) {
-          this.error('Organization ID is required. Use --org-id to specify it.', {exit: 1})
+          this.error('Organization ID is required. Use --organization to specify it.', {exit: 1})
         }
         throw err
       }
     }
 
-    let result: Awaited<ReturnType<typeof getMyAttributes>>
+    let result: Awaited<ReturnType<typeof getCliUserAttributes>>
     try {
-      result = userId ? await getUserAttributes(orgId, userId) : await getMyAttributes(orgId)
+      result = userId ? await getUserAttributes(orgId, userId) : await getCliUserAttributes(orgId)
     } catch (err) {
       debug('Error fetching user attributes', err)
       this.error(`Failed to fetch attributes:\n${getErrorMessage(err)}`, {exit: 1})
     }
 
     if (outputJson) {
-      this.log(JSON.stringify(result, null, 2))
+      this.log(colorizeJson(result))
       return
     }
 

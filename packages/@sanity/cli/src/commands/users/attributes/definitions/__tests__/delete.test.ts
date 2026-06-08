@@ -2,7 +2,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {USER_ATTRIBUTES_API_VERSION} from '../../../../../actions/userAttributes/constants.js'
+import {USER_ATTRIBUTES_API_VERSION} from '../../../../../services/userAttributes.js'
 import {UserAttributeDefinitionsDeleteCommand} from '../delete.js'
 
 const testOrgId = 'test-org'
@@ -28,11 +28,11 @@ describe('#users:attributes:definitions:delete', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsDeleteCommand,
-      ['--org-id', testOrgId, 'location'],
+      ['--organization', testOrgId, 'location'],
       {mocks: defaultMocks},
     )
 
-    expect(stdout).toBe('Attribute definition "location" deleted successfully.\n')
+    expect(stdout).toBe('User attribute definition "location" deleted successfully.\n')
   })
 
   test('handles 403 forbidden (SAML source exists)', async () => {
@@ -44,7 +44,7 @@ describe('#users:attributes:definitions:delete', () => {
 
     const {error} = await testCommand(
       UserAttributeDefinitionsDeleteCommand,
-      ['--org-id', testOrgId, 'location'],
+      ['--organization', testOrgId, 'location'],
       {mocks: defaultMocks},
     )
 
@@ -63,7 +63,7 @@ describe('#users:attributes:definitions:delete', () => {
 
     const {error} = await testCommand(
       UserAttributeDefinitionsDeleteCommand,
-      ['--org-id', testOrgId, 'nonexistent'],
+      ['--organization', testOrgId, 'nonexistent'],
       {mocks: defaultMocks},
     )
 
@@ -81,7 +81,7 @@ describe('#users:attributes:definitions:delete', () => {
 
     const {error} = await testCommand(
       UserAttributeDefinitionsDeleteCommand,
-      ['--org-id', testOrgId, 'location'],
+      ['--organization', testOrgId, 'location'],
       {mocks: defaultMocks},
     )
 
@@ -94,7 +94,7 @@ describe('#users:attributes:definitions:delete', () => {
   test('handles network error gracefully', async () => {
     const {error} = await testCommand(
       UserAttributeDefinitionsDeleteCommand,
-      ['--org-id', testOrgId, 'location'],
+      ['--organization', testOrgId, 'location'],
       {mocks: defaultMocks},
     )
 
@@ -106,7 +106,7 @@ describe('#users:attributes:definitions:delete', () => {
   test('handles missing key argument', async () => {
     const {error} = await testCommand(
       UserAttributeDefinitionsDeleteCommand,
-      ['--org-id', testOrgId],
+      ['--organization', testOrgId],
       {mocks: defaultMocks},
     )
 
@@ -122,7 +122,7 @@ describe('#users:attributes:definitions:delete', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsDeleteCommand,
-      ['--org-id', testOrgId, 'my attr'],
+      ['--organization', testOrgId, 'my attr'],
       {mocks: defaultMocks},
     )
 

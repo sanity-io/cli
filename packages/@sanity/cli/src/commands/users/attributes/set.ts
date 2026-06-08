@@ -1,13 +1,12 @@
 import {Flags} from '@oclif/core'
-import {NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
+import {colorizeJson, NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
-import {type SetAttributeInput} from '../../../actions/userAttributes/types.js'
 import {promptForOrganization} from '../../../prompts/promptForOrganization.js'
-import {updateUserAttributes} from '../../../services/userAttributes.js'
+import {type SetAttributeInput, updateUserAttributes} from '../../../services/userAttributes.js'
 import {formatAttributeValue} from '../../../util/formatAttributeValue.js'
 import {getErrorMessage} from '../../../util/getErrorMessage.js'
-import {getOrgIdFlag} from '../../../util/sharedFlags.js'
+import {getOrganizationFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('users:attributes:set')
 
@@ -17,23 +16,23 @@ export class UserAttributesSetCommand extends SanityCommand<typeof UserAttribute
   static override examples = [
     {
       command:
-        '<%= config.bin %> <%= command.id %> --org-id o123 --user-id u456 --attributes \'[{"key":"location","value":"UK"}]\'',
+        '<%= config.bin %> <%= command.id %> --organization o123 --user-id u456 --attributes \'[{"key":"location","value":"UK"}]\'',
       description: 'Set a single attribute for a user',
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> --org-id o123 --user-id u456 --attributes \'[{"key":"location","value":"UK"},{"key":"year_started","value":2020}]\'',
+        '<%= config.bin %> <%= command.id %> --organization o123 --user-id u456 --attributes \'[{"key":"location","value":"UK"},{"key":"year_started","value":2020}]\'',
       description: 'Set multiple attributes for a user',
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> --org-id o123 --user-id u456 --attributes \'[{"key":"departments","value":["hr","sales"]}]\' --json',
+        '<%= config.bin %> <%= command.id %> --organization o123 --user-id u456 --attributes \'[{"key":"departments","value":["hr","sales"]}]\' --json',
       description: 'Set an array attribute and output result as JSON',
     },
   ]
 
   static override flags = {
-    ...getOrgIdFlag({
+    ...getOrganizationFlag({
       description: 'Organization ID',
       semantics: 'specify',
     }),
@@ -59,19 +58,19 @@ export class UserAttributesSetCommand extends SanityCommand<typeof UserAttribute
     const {
       attributes: attributesJson,
       json: outputJson,
-      'org-id': orgIdFlag,
+      organization: organizationFlag,
       'user-id': userId,
     } = this.flags
 
     let orgId: string
-    if (orgIdFlag) {
-      orgId = orgIdFlag
+    if (organizationFlag) {
+      orgId = organizationFlag
     } else {
       try {
         orgId = await promptForOrganization()
       } catch (err) {
         if (err instanceof NonInteractiveError) {
-          this.error('Organization ID is required. Use --org-id to specify it.', {exit: 1})
+          this.error('Organization ID is required. Use --organization to specify it.', {exit: 1})
         }
         throw err
       }
@@ -92,8 +91,15 @@ export class UserAttributesSetCommand extends SanityCommand<typeof UserAttribute
     }
 
     for (const item of parsed) {
-      if (typeof item !== 'object' || item === null || !('key' in item) || !('value' in item)) {
-        this.error('Each item in --attributes must have "key" and "value" fields', {exit: 1})
+      if (
+        typeof item !== 'object' ||
+        item === null ||
+        typeof (item as {key?: unknown}).key !== 'string' ||
+        !('value' in item)
+      ) {
+        this.error('Each item in --attributes must have a string "key" and a "value" field', {
+          exit: 1,
+        })
       }
     }
 
@@ -108,7 +114,7 @@ export class UserAttributesSetCommand extends SanityCommand<typeof UserAttribute
     }
 
     if (outputJson) {
-      this.log(JSON.stringify(result, null, 2))
+      this.log(colorizeJson(result))
       return
     }
 

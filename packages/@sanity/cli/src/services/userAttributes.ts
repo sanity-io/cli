@@ -1,14 +1,74 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 
-import {USER_ATTRIBUTES_API_VERSION} from '../actions/userAttributes/constants.js'
-import {
-  type AttributeDefinition,
-  type AttributeDefinitionListResponse,
-  type AttributeType,
-  type SetAttributeInput,
-  type UserAttributesGetResponse,
-  type UserAttributesResponse,
-} from '../actions/userAttributes/types.js'
+/**
+ * API version for the user attributes endpoints.
+ * This is a preview/experimental API version.
+ */
+export const USER_ATTRIBUTES_API_VERSION = 'vX'
+
+export type AttributeType =
+  | 'boolean'
+  | 'integer'
+  | 'integer-array'
+  | 'number'
+  | 'number-array'
+  | 'string'
+  | 'string-array'
+
+type AttributeSource = 'saml' | 'sanity'
+
+interface AttributeDefinition {
+  createdAt: string
+  key: string
+  sources: AttributeSource[]
+  type: AttributeType
+
+  alreadyExists?: boolean
+}
+
+interface AttributeDefinitionListResponse {
+  definitions: AttributeDefinition[]
+  hasMore: boolean
+
+  nextCursor?: string | null
+}
+
+export type AttributeValue = (number | string)[] | boolean | number | string
+
+/**
+ * Raw per-source values for a single attribute. Each entry holds the value
+ * received from that source (e.g. asserted in a SAML assertion, or set
+ * explicitly through Sanity). Both may be present at once; the value the API
+ * and access rules use is `UserAttribute.activeValue`, picked according to
+ * `UserAttribute.activeSource`.
+ */
+interface UserAttributeValues {
+  saml?: AttributeValue
+  sanity?: AttributeValue
+}
+
+interface UserAttribute {
+  activeSource: AttributeSource
+  activeValue: AttributeValue
+  key: string
+  type: AttributeType
+  values: UserAttributeValues
+}
+
+interface UserAttributesGetResponse {
+  attributes: UserAttribute[]
+  organizationId: string
+  sanityUserId: string
+}
+
+interface UserAttributesResponse extends UserAttributesGetResponse {
+  updatedAt: string
+}
+
+export interface SetAttributeInput {
+  key: string
+  value: AttributeValue
+}
 
 async function getClient() {
   return getGlobalCliClient({
@@ -59,7 +119,7 @@ export async function deleteAttributeDefinition(orgId: string, key: string): Pro
 /**
  * Get the authenticated user's own attributes within an organization
  */
-export async function getMyAttributes(orgId: string): Promise<UserAttributesGetResponse> {
+export async function getCliUserAttributes(orgId: string): Promise<UserAttributesGetResponse> {
   const client = await getClient()
   return client.request<UserAttributesGetResponse>({
     uri: `/organizations/${orgId}/users/me/attributes`,

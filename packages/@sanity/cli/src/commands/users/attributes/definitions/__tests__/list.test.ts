@@ -2,7 +2,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {USER_ATTRIBUTES_API_VERSION} from '../../../../../actions/userAttributes/constants.js'
+import {USER_ATTRIBUTES_API_VERSION} from '../../../../../services/userAttributes.js'
 import {UserAttributeDefinitionsListCommand} from '../list.js'
 
 const testOrgId = 'test-org'
@@ -47,7 +47,7 @@ describe('#users:attributes:definitions:list', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsListCommand,
-      ['--org-id', testOrgId],
+      ['--organization', testOrgId],
       {mocks: defaultMocks},
     )
 
@@ -67,7 +67,7 @@ describe('#users:attributes:definitions:list', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsListCommand,
-      ['--org-id', testOrgId, '--json'],
+      ['--organization', testOrgId, '--json'],
       {mocks: defaultMocks},
     )
 
@@ -84,11 +84,11 @@ describe('#users:attributes:definitions:list', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsListCommand,
-      ['--org-id', testOrgId],
+      ['--organization', testOrgId],
       {mocks: defaultMocks},
     )
 
-    expect(stdout).toBe('No attribute definitions found.\n')
+    expect(stdout).toBe('No user attribute definitions found.\n')
   })
 
   test('handles API error gracefully', async () => {
@@ -99,7 +99,7 @@ describe('#users:attributes:definitions:list', () => {
 
     const {error} = await testCommand(
       UserAttributeDefinitionsListCommand,
-      ['--org-id', testOrgId],
+      ['--organization', testOrgId],
       {mocks: defaultMocks},
     )
 
@@ -117,7 +117,7 @@ describe('#users:attributes:definitions:list', () => {
 
     const {error} = await testCommand(
       UserAttributeDefinitionsListCommand,
-      ['--org-id', testOrgId],
+      ['--organization', testOrgId],
       {mocks: defaultMocks},
     )
 
@@ -134,7 +134,7 @@ describe('#users:attributes:definitions:list', () => {
 
     const {stdout} = await testCommand(
       UserAttributeDefinitionsListCommand,
-      ['--org-id', testOrgId],
+      ['--organization', testOrgId],
       {mocks: defaultMocks},
     )
 
@@ -144,7 +144,7 @@ describe('#users:attributes:definitions:list', () => {
   test('handles network error gracefully', async () => {
     const {error} = await testCommand(
       UserAttributeDefinitionsListCommand,
-      ['--org-id', testOrgId],
+      ['--organization', testOrgId],
       {mocks: defaultMocks},
     )
 

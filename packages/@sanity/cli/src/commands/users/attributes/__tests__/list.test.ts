@@ -2,7 +2,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {USER_ATTRIBUTES_API_VERSION} from '../../../../actions/userAttributes/constants.js'
+import {USER_ATTRIBUTES_API_VERSION} from '../../../../services/userAttributes.js'
 import {UserAttributesListCommand} from '../list.js'
 
 const testOrgId = 'test-org'
@@ -55,7 +55,7 @@ describe('#users:attributes:list', () => {
       uri: `/organizations/${testOrgId}/users/me/attributes`,
     }).reply(200, mockMeResponse)
 
-    const {stdout} = await testCommand(UserAttributesListCommand, ['--org-id', testOrgId], {
+    const {stdout} = await testCommand(UserAttributesListCommand, ['--organization', testOrgId], {
       mocks: defaultMocks,
     })
 
@@ -73,7 +73,7 @@ describe('#users:attributes:list', () => {
 
     const {stdout} = await testCommand(
       UserAttributesListCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId],
+      ['--organization', testOrgId, '--user-id', testUserId],
       {mocks: defaultMocks},
     )
 
@@ -89,7 +89,7 @@ describe('#users:attributes:list', () => {
 
     const {stdout} = await testCommand(
       UserAttributesListCommand,
-      ['--org-id', testOrgId, '--json'],
+      ['--organization', testOrgId, '--json'],
       {mocks: defaultMocks},
     )
 
@@ -104,7 +104,7 @@ describe('#users:attributes:list', () => {
       uri: `/organizations/${testOrgId}/users/me/attributes`,
     }).reply(200, {...mockMeResponse, attributes: []})
 
-    const {stdout} = await testCommand(UserAttributesListCommand, ['--org-id', testOrgId], {
+    const {stdout} = await testCommand(UserAttributesListCommand, ['--organization', testOrgId], {
       mocks: defaultMocks,
     })
 
@@ -117,7 +117,7 @@ describe('#users:attributes:list', () => {
       uri: `/organizations/${testOrgId}/users/me/attributes`,
     }).reply(403, {message: 'Forbidden'})
 
-    const {error} = await testCommand(UserAttributesListCommand, ['--org-id', testOrgId], {
+    const {error} = await testCommand(UserAttributesListCommand, ['--organization', testOrgId], {
       mocks: defaultMocks,
     })
 
@@ -128,7 +128,7 @@ describe('#users:attributes:list', () => {
   })
 
   test('handles network error gracefully', async () => {
-    const {error} = await testCommand(UserAttributesListCommand, ['--org-id', testOrgId], {
+    const {error} = await testCommand(UserAttributesListCommand, ['--organization', testOrgId], {
       mocks: defaultMocks,
     })
 
@@ -154,7 +154,7 @@ describe('#users:attributes:list', () => {
       ],
     })
 
-    const {stdout} = await testCommand(UserAttributesListCommand, ['--org-id', testOrgId], {
+    const {stdout} = await testCommand(UserAttributesListCommand, ['--organization', testOrgId], {
       mocks: defaultMocks,
     })
 

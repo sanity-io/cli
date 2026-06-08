@@ -2,7 +2,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {USER_ATTRIBUTES_API_VERSION} from '../../../../actions/userAttributes/constants.js'
+import {USER_ATTRIBUTES_API_VERSION} from '../../../../services/userAttributes.js'
 import {UserAttributesSetCommand} from '../set.js'
 
 const testOrgId = 'test-org'
@@ -45,7 +45,7 @@ describe('#users:attributes:set', () => {
     const {stdout} = await testCommand(
       UserAttributesSetCommand,
       [
-        '--org-id',
+        '--organization',
         testOrgId,
         '--user-id',
         testUserId,
@@ -70,7 +70,7 @@ describe('#users:attributes:set', () => {
     const {stdout} = await testCommand(
       UserAttributesSetCommand,
       [
-        '--org-id',
+        '--organization',
         testOrgId,
         '--user-id',
         testUserId,
@@ -90,7 +90,7 @@ describe('#users:attributes:set', () => {
   test('errors on invalid JSON in --attributes', async () => {
     const {error} = await testCommand(
       UserAttributesSetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId, '--attributes', 'not-json'],
+      ['--organization', testOrgId, '--user-id', testUserId, '--attributes', 'not-json'],
       {mocks: defaultMocks},
     )
 
@@ -103,7 +103,7 @@ describe('#users:attributes:set', () => {
     const {error} = await testCommand(
       UserAttributesSetCommand,
       [
-        '--org-id',
+        '--organization',
         testOrgId,
         '--user-id',
         testUserId,
@@ -121,24 +121,31 @@ describe('#users:attributes:set', () => {
   test('errors when an attribute item is missing the key field', async () => {
     const {error} = await testCommand(
       UserAttributesSetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId, '--attributes', '[{"value":"UK"}]'],
+      ['--organization', testOrgId, '--user-id', testUserId, '--attributes', '[{"value":"UK"}]'],
       {mocks: defaultMocks},
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('"key" and "value"')
+    expect(error?.message).toContain('string "key"')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors when an attribute item is missing the value field', async () => {
     const {error} = await testCommand(
       UserAttributesSetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId, '--attributes', '[{"key":"location"}]'],
+      [
+        '--organization',
+        testOrgId,
+        '--user-id',
+        testUserId,
+        '--attributes',
+        '[{"key":"location"}]',
+      ],
       {mocks: defaultMocks},
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('"key" and "value"')
+    expect(error?.message).toContain('string "key"')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -152,7 +159,7 @@ describe('#users:attributes:set', () => {
     const {error} = await testCommand(
       UserAttributesSetCommand,
       [
-        '--org-id',
+        '--organization',
         testOrgId,
         '--user-id',
         testUserId,
@@ -171,7 +178,7 @@ describe('#users:attributes:set', () => {
   test('handles missing --user-id flag', async () => {
     const {error} = await testCommand(
       UserAttributesSetCommand,
-      ['--org-id', testOrgId, '--attributes', '[{"key":"location","value":"UK"}]'],
+      ['--organization', testOrgId, '--attributes', '[{"key":"location","value":"UK"}]'],
       {mocks: defaultMocks},
     )
 
@@ -182,7 +189,7 @@ describe('#users:attributes:set', () => {
   test('handles missing --attributes flag', async () => {
     const {error} = await testCommand(
       UserAttributesSetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId],
+      ['--organization', testOrgId, '--user-id', testUserId],
       {mocks: defaultMocks},
     )
 

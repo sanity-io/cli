@@ -2,7 +2,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {USER_ATTRIBUTES_API_VERSION} from '../../../../actions/userAttributes/constants.js'
+import {USER_ATTRIBUTES_API_VERSION} from '../../../../services/userAttributes.js'
 import {UserAttributesUnsetCommand} from '../unset.js'
 
 const testOrgId = 'test-org'
@@ -36,7 +36,7 @@ describe('#users:attributes:unset', () => {
 
     const {stdout} = await testCommand(
       UserAttributesUnsetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId, '--key', 'location'],
+      ['--organization', testOrgId, '--user-id', testUserId, '--key', 'location'],
       {mocks: defaultMocks},
     )
 
@@ -52,7 +52,7 @@ describe('#users:attributes:unset', () => {
 
     const {stdout} = await testCommand(
       UserAttributesUnsetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId, '--key', 'location', '--key', 'dept'],
+      ['--organization', testOrgId, '--user-id', testUserId, '--key', 'location', '--key', 'dept'],
       {mocks: defaultMocks},
     )
 
@@ -68,7 +68,7 @@ describe('#users:attributes:unset', () => {
 
     const {error} = await testCommand(
       UserAttributesUnsetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId, '--key', 'location'],
+      ['--organization', testOrgId, '--user-id', testUserId, '--key', 'location'],
       {mocks: defaultMocks},
     )
 
@@ -87,7 +87,7 @@ describe('#users:attributes:unset', () => {
 
     const {error} = await testCommand(
       UserAttributesUnsetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId, '--key', 'location'],
+      ['--organization', testOrgId, '--user-id', testUserId, '--key', 'location'],
       {mocks: defaultMocks},
     )
 
@@ -99,7 +99,7 @@ describe('#users:attributes:unset', () => {
   test('handles missing --user-id flag', async () => {
     const {error} = await testCommand(
       UserAttributesUnsetCommand,
-      ['--org-id', testOrgId, '--key', 'location'],
+      ['--organization', testOrgId, '--key', 'location'],
       {mocks: defaultMocks},
     )
 
@@ -110,7 +110,7 @@ describe('#users:attributes:unset', () => {
   test('handles missing --key flag', async () => {
     const {error} = await testCommand(
       UserAttributesUnsetCommand,
-      ['--org-id', testOrgId, '--user-id', testUserId],
+      ['--organization', testOrgId, '--user-id', testUserId],
       {mocks: defaultMocks},
     )
 

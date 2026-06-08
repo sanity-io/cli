@@ -1,32 +1,37 @@
 import {Flags} from '@oclif/core'
-import {NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
+import {colorizeJson, NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
 import {promptForOrganization} from '../../../../prompts/promptForOrganization.js'
 import {listAttributeDefinitions} from '../../../../services/userAttributes.js'
 import {getErrorMessage} from '../../../../util/getErrorMessage.js'
-import {getOrgIdFlag} from '../../../../util/sharedFlags.js'
+import {getOrganizationFlag} from '../../../../util/sharedFlags.js'
 
 const debug = subdebug('users:attributes:definitions:list')
 
 export class UserAttributeDefinitionsListCommand extends SanityCommand<
   typeof UserAttributeDefinitionsListCommand
 > {
-  static override description = 'List attribute definitions for an organization'
+  static override description = 'List user attribute definitions for an organization'
 
   static override examples = [
     {
-      command: '<%= config.bin %> <%= command.id %> --org-id o123',
-      description: 'List attribute definitions for an organization',
+      command: '<%= config.bin %> <%= command.id %>',
+      description:
+        'List user attribute definitions (prompts for an organization in interactive mode)',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --org-id o123 --json',
+      command: '<%= config.bin %> <%= command.id %> --organization o123',
+      description: 'List user attribute definitions for a specific organization',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> --organization o123 --json',
       description: 'Output definitions as JSON',
     },
   ]
 
   static override flags = {
-    ...getOrgIdFlag({
+    ...getOrganizationFlag({
       description: 'Organization ID to list attribute definitions for',
       semantics: 'specify',
     }),
@@ -39,17 +44,17 @@ export class UserAttributeDefinitionsListCommand extends SanityCommand<
   static override hiddenAliases: string[] = ['user:attributes:definitions:list']
 
   public async run(): Promise<void> {
-    const {json: outputJson, 'org-id': orgIdFlag} = this.flags
+    const {json: outputJson, organization: organizationFlag} = this.flags
 
     let orgId: string
-    if (orgIdFlag) {
-      orgId = orgIdFlag
+    if (organizationFlag) {
+      orgId = organizationFlag
     } else {
       try {
         orgId = await promptForOrganization()
       } catch (err) {
         if (err instanceof NonInteractiveError) {
-          this.error('Organization ID is required. Use --org-id to specify it.', {exit: 1})
+          this.error('Organization ID is required. Use --organization to specify it.', {exit: 1})
         }
         throw err
       }
@@ -64,14 +69,14 @@ export class UserAttributeDefinitionsListCommand extends SanityCommand<
     }
 
     if (outputJson) {
-      this.log(JSON.stringify(result, null, 2))
+      this.log(colorizeJson(result))
       return
     }
 
     const {definitions} = result
 
     if (definitions.length === 0) {
-      this.log('No attribute definitions found.')
+      this.log('No user attribute definitions found.')
       return
     }
 

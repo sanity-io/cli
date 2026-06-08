@@ -1,11 +1,10 @@
 import {Flags} from '@oclif/core'
-import {NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
+import {colorizeJson, NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {type AttributeType} from '../../../../actions/userAttributes/types.js'
 import {promptForOrganization} from '../../../../prompts/promptForOrganization.js'
-import {createAttributeDefinition} from '../../../../services/userAttributes.js'
+import {type AttributeType, createAttributeDefinition} from '../../../../services/userAttributes.js'
 import {getErrorMessage} from '../../../../util/getErrorMessage.js'
-import {getOrgIdFlag} from '../../../../util/sharedFlags.js'
+import {getOrganizationFlag} from '../../../../util/sharedFlags.js'
 
 const debug = subdebug('users:attributes:definitions:create')
 
@@ -22,22 +21,28 @@ const ATTRIBUTE_TYPES: AttributeType[] = [
 export class UserAttributeDefinitionsCreateCommand extends SanityCommand<
   typeof UserAttributeDefinitionsCreateCommand
 > {
-  static override description = 'Create an attribute definition for an organization'
+  static override description = 'Create a user attribute definition for an organization'
 
   static override examples = [
     {
-      command: '<%= config.bin %> <%= command.id %> --org-id o123 --key location --type string',
-      description: 'Create a string attribute definition',
+      command: '<%= config.bin %> <%= command.id %> --key location --type string',
+      description:
+        'Create a string attribute definition (prompts for an organization in interactive mode)',
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> --org-id o123 --key departments --type string-array --json',
+        '<%= config.bin %> <%= command.id %> --organization o123 --key location --type string',
+      description: 'Create a string attribute definition in a specific organization',
+    },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> --organization o123 --key departments --type string-array --json',
       description: 'Create a string-array attribute definition and output as JSON',
     },
   ]
 
   static override flags = {
-    ...getOrgIdFlag({
+    ...getOrganizationFlag({
       description: 'Organization ID to create the attribute definition in',
       semantics: 'specify',
     }),
@@ -61,17 +66,17 @@ export class UserAttributeDefinitionsCreateCommand extends SanityCommand<
   static override hiddenAliases: string[] = ['user:attributes:definitions:create']
 
   public async run(): Promise<void> {
-    const {json: outputJson, key, 'org-id': orgIdFlag, type} = this.flags
+    const {json: outputJson, key, organization: organizationFlag, type} = this.flags
 
     let orgId: string
-    if (orgIdFlag) {
-      orgId = orgIdFlag
+    if (organizationFlag) {
+      orgId = organizationFlag
     } else {
       try {
         orgId = await promptForOrganization()
       } catch (err) {
         if (err instanceof NonInteractiveError) {
-          this.error('Organization ID is required. Use --org-id to specify it.', {exit: 1})
+          this.error('Organization ID is required. Use --organization to specify it.', {exit: 1})
         }
         throw err
       }
@@ -86,14 +91,14 @@ export class UserAttributeDefinitionsCreateCommand extends SanityCommand<
     }
 
     if (outputJson) {
-      this.log(JSON.stringify(result, null, 2))
+      this.log(colorizeJson(result))
       return
     }
 
     if (result.alreadyExists) {
-      this.log(`Attribute definition "${key}" already exists (type: ${result.type}).`)
+      this.log(`User attribute definition "${key}" already exists (type: ${result.type}).`)
     } else {
-      this.log(`Attribute definition "${key}" created successfully (type: ${result.type}).`)
+      this.log(`User attribute definition "${key}" created successfully (type: ${result.type}).`)
     }
   }
 }
