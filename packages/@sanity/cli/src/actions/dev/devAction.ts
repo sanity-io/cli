@@ -1,7 +1,6 @@
 import {styleText} from 'node:util'
 
-import {getCliConfigUncached} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/federation'
+import {getCliConfigUncached, isWorkbenchApp} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'

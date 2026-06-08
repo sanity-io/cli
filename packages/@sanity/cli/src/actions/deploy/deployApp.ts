@@ -3,9 +3,8 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {getLocalPackageVersion} from '@sanity/cli-core'
+import {getLocalPackageVersion, isWorkbenchApp} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {isWorkbenchApp} from '@sanity/federation'
 import {pack} from 'tar-fs'
 
 import {createDeployment, updateUserApplication} from '../../services/userApplications.js'

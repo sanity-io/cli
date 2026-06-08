@@ -1,5 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/federation'
+import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
 
 import {type DevServerManifest} from './devServerRegistry.js'
 
