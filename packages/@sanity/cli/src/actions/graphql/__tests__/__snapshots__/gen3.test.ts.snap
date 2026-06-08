@@ -11543,17 +11543,17 @@ exports[`GraphQL - Generation 3 > Should generate a graphql schema for native un
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "The unique ID for the asset within the originating source so you can programatically find back to it",
           "fieldName": "id",
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "A canonical name for the source this asset is originating from",
           "fieldName": "name",
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "A URL to find more information about this asset in the originating source",
           "fieldName": "url",
           "type": "String",
         },
@@ -11719,6 +11719,11 @@ exports[`GraphQL - Generation 3 > Should generate a graphql schema for native un
         },
         {
           "description": undefined,
+          "fieldName": "uploadId",
+          "type": "String",
+        },
+        {
+          "description": undefined,
           "fieldName": "url",
           "type": "String",
         },
@@ -11829,6 +11834,11 @@ exports[`GraphQL - Generation 3 > Should generate a graphql schema for native un
           "type": "StringFilter",
         },
         {
+          "fieldName": "uploadId",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
           "fieldName": "url",
           "isReference": undefined,
           "type": "StringFilter",
@@ -11909,6 +11919,10 @@ exports[`GraphQL - Generation 3 > Should generate a graphql schema for native un
         },
         {
           "fieldName": "title",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "uploadId",
           "type": "SortOrder",
         },
         {
@@ -12965,6 +12979,83 @@ exports[`GraphQL - Generation 3 > Should generate a graphql schema for native un
       "isConstraintFilter": true,
       "kind": "InputObject",
       "name": "Sanity_DocumentFilter",
+    },
+    {
+      "description": undefined,
+      "fields": [
+        {
+          "description": undefined,
+          "fieldName": "_key",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "_type",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "current",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "source",
+          "type": "String",
+        },
+      ],
+      "kind": "Type",
+      "name": "Slug",
+      "originalName": "slug",
+      "type": "Object",
+    },
+    {
+      "fields": [
+        {
+          "fieldName": "_key",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "_type",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "current",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "source",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+      ],
+      "kind": "InputObject",
+      "name": "SlugFilter",
+    },
+    {
+      "fields": [
+        {
+          "fieldName": "_key",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "_type",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "current",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "source",
+          "type": "SortOrder",
+        },
+      ],
+      "kind": "InputObject",
+      "name": "SlugSorting",
     },
     {
       "fields": [],
@@ -35689,17 +35780,17 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "The unique ID for the asset within the originating source so you can programatically find back to it",
           "fieldName": "id",
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "A canonical name for the source this asset is originating from",
           "fieldName": "name",
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "A URL to find more information about this asset in the originating source",
           "fieldName": "url",
           "type": "String",
         },
@@ -35865,6 +35956,11 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
         },
         {
           "description": undefined,
+          "fieldName": "uploadId",
+          "type": "String",
+        },
+        {
+          "description": undefined,
           "fieldName": "url",
           "type": "String",
         },
@@ -35975,6 +36071,11 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
           "type": "StringFilter",
         },
         {
+          "fieldName": "uploadId",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
           "fieldName": "url",
           "isReference": undefined,
           "type": "StringFilter",
@@ -36055,6 +36156,10 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
         },
         {
           "fieldName": "title",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "uploadId",
           "type": "SortOrder",
         },
         {
@@ -37111,6 +37216,83 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
       "isConstraintFilter": true,
       "kind": "InputObject",
       "name": "Sanity_DocumentFilter",
+    },
+    {
+      "description": undefined,
+      "fields": [
+        {
+          "description": undefined,
+          "fieldName": "_key",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "_type",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "current",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "source",
+          "type": "String",
+        },
+      ],
+      "kind": "Type",
+      "name": "Slug",
+      "originalName": "slug",
+      "type": "Object",
+    },
+    {
+      "fields": [
+        {
+          "fieldName": "_key",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "_type",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "current",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "source",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+      ],
+      "kind": "InputObject",
+      "name": "SlugFilter",
+    },
+    {
+      "fields": [
+        {
+          "fieldName": "_key",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "_type",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "current",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "source",
+          "type": "SortOrder",
+        },
+      ],
+      "kind": "InputObject",
+      "name": "SlugSorting",
     },
     {
       "fields": [],
@@ -39119,17 +39301,17 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "The unique ID for the asset within the originating source so you can programatically find back to it",
           "fieldName": "id",
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "A canonical name for the source this asset is originating from",
           "fieldName": "name",
           "type": "String",
         },
         {
-          "description": undefined,
+          "description": "A URL to find more information about this asset in the originating source",
           "fieldName": "url",
           "type": "String",
         },
@@ -39295,6 +39477,11 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
         },
         {
           "description": undefined,
+          "fieldName": "uploadId",
+          "type": "String",
+        },
+        {
+          "description": undefined,
           "fieldName": "url",
           "type": "String",
         },
@@ -39405,6 +39592,11 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
           "type": "StringFilter",
         },
         {
+          "fieldName": "uploadId",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
           "fieldName": "url",
           "isReference": undefined,
           "type": "StringFilter",
@@ -39485,6 +39677,10 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
         },
         {
           "fieldName": "title",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "uploadId",
           "type": "SortOrder",
         },
         {
@@ -40541,6 +40737,83 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'nativeUnionsSchema
       "isConstraintFilter": true,
       "kind": "InputObject",
       "name": "Sanity_DocumentFilter",
+    },
+    {
+      "description": undefined,
+      "fields": [
+        {
+          "description": undefined,
+          "fieldName": "_key",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "_type",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "current",
+          "type": "String",
+        },
+        {
+          "description": undefined,
+          "fieldName": "source",
+          "type": "String",
+        },
+      ],
+      "kind": "Type",
+      "name": "Slug",
+      "originalName": "slug",
+      "type": "Object",
+    },
+    {
+      "fields": [
+        {
+          "fieldName": "_key",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "_type",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "current",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+        {
+          "fieldName": "source",
+          "isReference": undefined,
+          "type": "StringFilter",
+        },
+      ],
+      "kind": "InputObject",
+      "name": "SlugFilter",
+    },
+    {
+      "fields": [
+        {
+          "fieldName": "_key",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "_type",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "current",
+          "type": "SortOrder",
+        },
+        {
+          "fieldName": "source",
+          "type": "SortOrder",
+        },
+      ],
+      "kind": "InputObject",
+      "name": "SlugSorting",
     },
     {
       "fields": [],
