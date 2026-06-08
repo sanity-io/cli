@@ -1,3 +1,4 @@
+import {fileURLToPath} from 'node:url'
 import {isMainThread} from 'node:worker_threads'
 
 import {
@@ -16,6 +17,7 @@ import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'
+import {StudioModuleEvaluator} from './studioModuleEvaluator.js'
 
 if (isMainThread) {
   throw new Error('Should be child of thread, not the main thread')
@@ -73,6 +75,16 @@ async function fetchHttpModule(url: string): Promise<{code: string}> {
 
 function isHttpsUrl(id: string): boolean {
   return id.startsWith('https://')
+}
+
+function isBareImport(id: string): boolean {
+  return (
+    id[0] !== '.' &&
+    id[0] !== '/' &&
+    !id.startsWith('file://') &&
+    !id.startsWith('data:') &&
+    !isHttpsUrl(id)
+  )
 }
 
 const defaultViteConfig: InlineConfig = {
@@ -149,6 +161,8 @@ if (!isRunnableDevEnvironment(ssrEnvironment)) {
   throw new Error('Expected SSR environment to be a runnable dev environment')
 }
 
+await ssrEnvironment.init()
+
 // Override fetchModule to support https:// imports and resolve relative imports from
 // remote modules (e.g. esm.sh re-exports with absolute paths).
 const defaultFetchModule = ssrEnvironment.fetchModule.bind(ssrEnvironment)
@@ -167,10 +181,42 @@ ssrEnvironment.fetchModule = async (id, importer, options) => {
       url: id,
     }
   }
+
+  // ModuleRunner externalizes bare imports when an importer is present. With
+  // ssr.noExternal: true, route them through Vite's transform pipeline instead.
+  if (isBareImport(id) && importer) {
+    const externalized = await defaultFetchModule(id, importer, options)
+    if ('externalize' in externalized) {
+      const filePath = externalized.externalize.startsWith('file://')
+        ? fileURLToPath(externalized.externalize)
+        : externalized.externalize
+      const mod = await ssrEnvironment.moduleGraph.ensureEntryFromUrl(filePath)
+      const cached = !!mod.transformResult
+      if (options?.cached && cached) return {cache: true}
+      const result = await ssrEnvironment.transformRequest(mod.url)
+      if (!result) {
+        throw new Error(
+          `[vite] transform failed for module '${filePath}' imported from '${importer}'.`,
+        )
+      }
+      return {
+        code: result.code,
+        file: mod.file ?? filePath,
+        id: mod.id ?? filePath,
+        invalidate: !cached,
+        url: mod.url,
+      }
+    }
+    return externalized
+  }
+
   return defaultFetchModule(id, importer, options)
 }
 
-const runner = createServerModuleRunner(ssrEnvironment, {hmr: false})
+const runner = createServerModuleRunner(ssrEnvironment, {
+  evaluator: new StudioModuleEvaluator(),
+  hmr: false,
+})
 
 // Applies the `define` config from vite. Also initializes import.meta.env.
 await runner.import('/@vite/env')
