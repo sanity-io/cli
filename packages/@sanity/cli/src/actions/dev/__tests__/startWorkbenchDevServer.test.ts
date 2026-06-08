@@ -472,6 +472,24 @@ describe('startWorkbenchDevServer', () => {
         expect.objectContaining({reactStrictMode: true}),
       )
     })
+
+    test('leaves reactStrictMode undefined when neither env var nor cliConfig set it', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(
+        createDevOptions({
+          cliConfig: {
+            app: {organizationId: 'org-test'},
+            federation: {enabled: true},
+          },
+        }),
+      )
+
+      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
+        expect.objectContaining({reactStrictMode: undefined}),
+      )
+    })
   })
 
   describe('server startup failure', () => {

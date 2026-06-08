@@ -163,7 +163,7 @@ describe('getDevServerConfig', () => {
     expect(config.reactStrictMode).toBe(true)
   })
 
-  test('should resolve reactStrictMode to false when env var is absent and cliConfig is unset', () => {
+  test('should leave reactStrictMode undefined when env var is absent and cliConfig is unset, deferring to the studio default', () => {
     const output = createMockOutput()
 
     const config = getDevServerConfig({
@@ -173,6 +173,6 @@ describe('getDevServerConfig', () => {
       workDir: '/tmp',
     })
 
-    expect(config.reactStrictMode).toBe(false)
+    expect(config.reactStrictMode).toBeUndefined()
   })
 })

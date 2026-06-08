@@ -42,7 +42,7 @@ const indexHtmlTemplate = `\
 export async function writeWorkbenchRuntime(options: {
   cwd: string
   organizationId?: string
-  reactStrictMode: boolean
+  reactStrictMode: boolean | undefined
   remoteUrl?: string
 }): Promise<string> {
   const {cwd, organizationId, reactStrictMode, remoteUrl} = options
@@ -53,7 +53,10 @@ export async function writeWorkbenchRuntime(options: {
       /%SANITY_WORKBENCH_ORGANIZATION_ID%/,
       organizationId === undefined ? 'undefined' : JSON.stringify(organizationId),
     )
-    .replace(/%SANITY_WORKBENCH_REACT_STRICT_MODE%/, JSON.stringify(reactStrictMode))
+    .replace(
+      /%SANITY_WORKBENCH_REACT_STRICT_MODE%/,
+      reactStrictMode === undefined ? 'undefined' : JSON.stringify(reactStrictMode),
+    )
 
   const prefetchHints = buildPrefetchHints(remoteUrl)
 

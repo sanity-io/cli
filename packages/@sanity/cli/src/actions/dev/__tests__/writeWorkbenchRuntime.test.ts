@@ -81,6 +81,18 @@ describe('writeWorkbenchRuntime', () => {
       expect(content).not.toContain('%SANITY_WORKBENCH_REACT_STRICT_MODE%')
     })
 
+    test('substitutes reactStrictMode: undefined into workbench.js when unset', async () => {
+      await writeWorkbenchRuntime({cwd: tmpDir, reactStrictMode: undefined})
+
+      const content = await fs.readFile(
+        join(tmpDir, '.sanity', 'workbench', 'workbench.js'),
+        'utf8',
+      )
+      // Left undefined so the studio's own default applies.
+      expect(content).toContain('{reactStrictMode: undefined}')
+      expect(content).not.toContain('%SANITY_WORKBENCH_REACT_STRICT_MODE%')
+    })
+
     test('passes the workbench element id to renderWorkbench', async () => {
       await writeWorkbenchRuntime({cwd: tmpDir, reactStrictMode: false})
 
