@@ -8,6 +8,10 @@ import {unlink} from 'node:fs/promises'
 
 import {build, type BuildContext, type BuildOptions, context} from 'esbuild'
 
+import {getShared, setShared} from './utils/sharedState'
+
+const STATE_KEY = Symbol.for('@sanity/cli-test/vitestWorker')
+
 const compiledFiles: Set<string> = new Set()
 let buildContexts: BuildContext[] = []
 
@@ -93,7 +97,8 @@ async function setupWatchMode(files: string[]) {
 }
 
 /**
- * Setup function to build the worker files with esbuild.
+ * Setup function to build the worker files with esbuild. This may be called from multiple projects
+ * and should only execute once so we use a shared state to track this.
  *
  * Bundles the worker files with esbuild and sets up watch mode if in watch mode.
  * All npm packages are automatically marked as external (loaded from node_modules at runtime).
@@ -107,15 +112,24 @@ async function setupWatchMode(files: string[]) {
  * @throws If the watcher cannot be set up
  */
 export async function setupWorkerBuild(filePaths: string[]) {
+  const existing = getShared(STATE_KEY)
+  if (existing) {
+    existing.refCount += 1
+    return existing.promise
+  }
+
   const isWatchMode =
     (process.env.VITEST_WATCH === 'true' || !process.argv.includes('run')) &&
     process.env.CI !== 'true'
 
-  await (isWatchMode ? setupWatchMode(filePaths) : setupBundling(filePaths))
+  const promise = isWatchMode ? setupWatchMode(filePaths) : setupBundling(filePaths)
+  setShared(STATE_KEY, {promise, refCount: 1})
+  return promise
 }
 
 /**
- * Teardown function to clean up the worker build.
+ * Teardown function to clean up the worker build. This may be called from multiple projects
+ * and should only execute once so we use a shared state to track this.
  *
  * Closes all build contexts and deletes the compiled JavaScript files.
  *
@@ -126,6 +140,15 @@ export async function setupWorkerBuild(filePaths: string[]) {
  * @throws If the compiled JavaScript files cannot be deleted
  */
 export async function teardownWorkerBuild(): Promise<void> {
+  const state = getShared(STATE_KEY)
+  if (!state) return
+  state.refCount -= 1
+  if (state.refCount > 0) {
+    console.warn('Skipping worker tear down, waiting on another package')
+    return
+  }
+  setShared(STATE_KEY, undefined)
+
   // Dispose all build contexts (for watch mode)
   for (const ctx of buildContexts) {
     await ctx.dispose()
@@ -138,8 +161,10 @@ export async function teardownWorkerBuild(): Promise<void> {
     try {
       await unlink(filePath)
       console.log(`✓ Deleted ${filePath}`)
-    } catch (error) {
-      console.error(`Failed to delete ${filePath}:`, error)
+    } catch (err) {
+      if (!(err instanceof Error) || !('code' in err) || err.code !== 'ENOENT') {
+        console.error(`Failed to delete ${filePath}:`, err)
+      }
     }
   }
   compiledFiles.clear()

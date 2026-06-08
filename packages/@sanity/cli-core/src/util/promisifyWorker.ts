@@ -46,8 +46,8 @@ export function promisifyWorker<T = unknown>(
     worker.addListener('error', function onWorkerError(err) {
       settled = true
       clearTimeout(timeoutId)
-      debug(`Worker error: ${err.message}`, err)
-      reject(new Error(`Worker error: ${err.message}`, {cause: err}))
+      debug(`${fileName}: Worker error: ${err.message}`, err)
+      reject(new Error(`${fileName}: Worker error: ${err.message}`, {cause: err}))
       cleanup()
     })
     // No cleanup() here — the worker is already dead after exiting,
@@ -56,17 +56,17 @@ export function promisifyWorker<T = unknown>(
       clearTimeout(timeoutId)
       if (code > 0) {
         debug(`${fileName} exited with code ${code}`)
-        reject(new Error(`Worker exited with code ${code}`))
+        reject(new Error(`${fileName}: Worker exited with code ${code}`))
       } else if (!settled) {
         debug(`${fileName} exited with code 0 without sending a message`)
-        reject(new Error('Worker exited without sending a message'))
+        reject(new Error(`${fileName}: Worker exited without sending a message`))
       }
     })
     worker.addListener('messageerror', function onWorkerMessageError(err) {
       settled = true
       clearTimeout(timeoutId)
       debug(`${fileName} message error: ${err.message}`, err)
-      reject(new Error(`Failed to deserialize worker message: ${err}`))
+      reject(new Error(`${fileName}: Failed to deserialize worker message: ${err}`))
       cleanup()
     })
     worker.addListener('message', function onWorkerMessage(message) {

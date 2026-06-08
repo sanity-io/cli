@@ -67,6 +67,7 @@
     "debug": "catalog:",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
+    "oneline": "^2.0.0",
     "picomatch": "^4.0.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -100,11 +101,13 @@
     "publint": "catalog:",
     "sanity": "catalog:",
     "styled-components": "^6.4.2",
+    "tinyglobby": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "babel-plugin-react-compiler": "*"
+    "babel-plugin-react-compiler": "*",
+    "get-it": "^8.7.2"
   },
   "peerDependenciesMeta": {
     "babel-plugin-react-compiler": {

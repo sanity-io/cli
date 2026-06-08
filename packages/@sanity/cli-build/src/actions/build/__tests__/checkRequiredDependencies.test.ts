@@ -1,7 +1,7 @@
 import {type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {checkRequiredDependencies} from '../checkRequiredDependencies'
+import {checkRequiredDependencies} from '../checkRequiredDependencies.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 const mockedGetLocalPackageVersion = vi.hoisted(() => vi.fn())

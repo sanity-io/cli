@@ -9,8 +9,11 @@ import {type TestProject} from 'vitest/node'
 
 import {fileExists} from '../utils/fileExists.js'
 import {getFixturesPath, getTempPath} from '../utils/paths.js'
+import {getShared, setShared} from '../utils/sharedState.js'
 import {DEFAULT_FIXTURES} from './constants.js'
 import {testCopyDirectory} from './testFixture.js'
+
+const STATE_KEY = Symbol.for('@sanity/cli-test/test/setupFixtures')
 
 const exec = promisify(execNode)
 
@@ -100,6 +103,18 @@ interface FixtureDetails {
  * ```
  */
 export async function setup(_: TestProject, options: SetupTestFixturesOptions = {}): Promise<void> {
+  const existing = getShared(STATE_KEY)
+  if (existing) {
+    existing.refCount += 1
+    return existing.promise
+  }
+
+  const promise = setupFixtures(options)
+  setShared(STATE_KEY, {promise, refCount: 1})
+  return promise
+}
+
+async function setupFixtures(options: SetupTestFixturesOptions): Promise<void> {
   const {additionalFixtures, ignoreWorkspace, tempDir} = options
 
   const spinner = ora({
@@ -201,6 +216,16 @@ export interface TeardownTestFixturesOptions {
  * @param options - Configuration options
  */
 export async function teardown(options: TeardownTestFixturesOptions = {}): Promise<void> {
+  const state = getShared(STATE_KEY)
+  if (!state) return
+  state.refCount -= 1
+  if (state.refCount > 0) return
+  setShared(STATE_KEY, undefined)
+
+  teardownFixtures(options)
+}
+
+async function teardownFixtures(options: TeardownTestFixturesOptions): Promise<void> {
   const {tempDir} = options
   const tempDirectory = getTempPath(tempDir)
 

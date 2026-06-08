@@ -1,7 +1,7 @@
 import {Output} from '@sanity/cli-core'
 import {describe, expect, test, vi} from 'vitest'
 
-import {warnAboutMissingAppId} from '../warnAboutMissingAppId'
+import {warnAboutMissingAppId} from '../warnAboutMissingAppId.js'
 
 describe('warnAboutMissingAppId', () => {
   const mockOutput = {

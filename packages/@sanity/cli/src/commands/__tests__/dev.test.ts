@@ -3,29 +3,21 @@ import {createServer} from 'node:http'
 import {platform} from 'node:os'
 import {join} from 'node:path'
 
+import {
+  checkRequiredDependencies,
+  compareDependencyVersions,
+} from '@sanity/cli-build/_internal/build'
 import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
-import {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
-import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {DevCommand} from '../dev.js'
 
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
-
-vi.mock('../../actions/build/checkRequiredDependencies.js', () => ({
-  checkRequiredDependencies: vi.fn().mockResolvedValue({
-    installedSanityVersion: '3.0.0',
-  }),
-}))
-
-vi.mock('../../util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
-}))
 
 const mockGetDashboardAppURL = vi.hoisted(() =>
   vi.fn().mockResolvedValue('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340'),
@@ -40,6 +32,19 @@ vi.mock('../../server/vite/plugin-typegen.js', () => ({
     name: 'sanity/typegen',
   }),
 }))
+
+vi.mock('@sanity/cli-build/_internal/build', async (importActual) => {
+  const actual = await importActual<typeof import('@sanity/cli-build/_internal/build')>()
+  return {
+    ...actual,
+    checkRequiredDependencies: vi.fn().mockResolvedValue({
+      installedSanityVersion: '3.0.0',
+    }),
+    compareDependencyVersions: vi
+      .fn()
+      .mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
+  }
+})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
