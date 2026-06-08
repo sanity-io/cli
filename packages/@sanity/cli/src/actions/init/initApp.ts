@@ -5,6 +5,7 @@ import {logSymbols} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
+import {printIgnoredBuildsNotice} from '../../util/packageManager/pnpmBuildApproval.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {InitError} from './initError.js'
 import {getPostInitMCPPrompt} from './initHelpers.js'
@@ -53,7 +54,7 @@ export async function initApp({
     throw new InitError(`Template "${templateName}" not found`, 1)
   }
 
-  await scaffoldAndInstall({
+  const {ignoredBuilds, pkgManager} = await scaffoldAndInstall({
     datasetName,
     defaults,
     displayName: '',
@@ -108,4 +109,6 @@ export async function initApp({
   output.log(`npx sanity docs browse     to open the documentation in a browser`)
   output.log(`npx sanity dev             to start the development server for your app`)
   output.log(`npx sanity deploy          to deploy your app`)
+
+  printIgnoredBuildsNotice(output, pkgManager, ignoredBuilds)
 }

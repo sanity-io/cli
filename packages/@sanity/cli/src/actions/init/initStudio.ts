@@ -7,6 +7,7 @@ import {type TelemetryTrace} from '@sanity/telemetry'
 import {updateProjectInitializedAt} from '../../services/projects.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
+import {printIgnoredBuildsNotice} from '../../util/packageManager/pnpmBuildApproval.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {InitError} from './initError.js'
 import {getPostInitMCPPrompt} from './initHelpers.js'
@@ -87,7 +88,7 @@ export async function initStudio({
     debug('Failed to update cliInitializedAt metadata', err)
   }
 
-  const {pkgManager} = await scaffoldAndInstall({
+  const {ignoredBuilds, pkgManager} = await scaffoldAndInstall({
     datasetName,
     defaults,
     displayName,
@@ -175,4 +176,6 @@ export async function initStudio({
     output.log(`\nJoin the Sanity community: ${styleText('cyan', DISCORD_INVITE_LINK)}`)
     output.log('We look forward to seeing you there!\n')
   }
+
+  printIgnoredBuildsNotice(output, pkgManager, ignoredBuilds)
 }
