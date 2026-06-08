@@ -14,7 +14,7 @@ import {
   readWorkbenchLock,
   watchRegistry,
 } from './devServerRegistry.js'
-import {serializeInterfaces} from './interfacesChanged.js'
+import {interfaceSetId} from './interfaceSetId.js'
 import {type DevActionOptions} from './types.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
@@ -227,11 +227,9 @@ async function createWorkbenchViteServer(
   const registryWatcher = watchRegistry((servers) => {
     const rebuiltApp = servers.some((s) => {
       const key = serverKey(s)
-      return (
-        knownInterfaces.has(key) && knownInterfaces.get(key) !== serializeInterfaces(s.interfaces)
-      )
+      return knownInterfaces.has(key) && knownInterfaces.get(key) !== interfaceSetId(s.interfaces)
     })
-    knownInterfaces = new Map(servers.map((s) => [serverKey(s), serializeInterfaces(s.interfaces)]))
+    knownInterfaces = new Map(servers.map((s) => [serverKey(s), interfaceSetId(s.interfaces)]))
 
     if (rebuiltApp) {
       server.ws.send({type: 'full-reload'})

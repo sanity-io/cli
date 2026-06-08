@@ -6,7 +6,7 @@ import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {deriveInterfaces} from './deriveInterfaces.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {extractStudioManifest} from './extractDevServerManifest.js'
-import {serializeInterfaces} from './interfacesChanged.js'
+import {interfaceSetId} from './interfaceSetId.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface FederationRegistrationOptions {
@@ -70,7 +70,7 @@ export async function startFederationRegistration(
   // Track the registered set so a watcher pass can tell whether the *set* of
   // interfaces changed (rebuild needed) vs. only the manifest (title/icon) or a
   // view/service source file (HMR handles it — the set is unchanged).
-  let lastInterfaces = serializeInterfaces(interfaces)
+  let lastInterfaceSetId = interfaceSetId(interfaces)
 
   const watcher = await startDevManifestWatcher({
     extract: isApp
@@ -85,9 +85,9 @@ export async function startFederationRegistration(
           extractStudioManifest(params).then((manifest) => ({interfaces: undefined, manifest})),
     output,
     update: async (patch) => {
-      const nextInterfaces = serializeInterfaces(patch.interfaces)
-      if (nextInterfaces !== lastInterfaces) {
-        lastInterfaces = nextInterfaces
+      const nextInterfaceSetId = interfaceSetId(patch.interfaces)
+      if (nextInterfaceSetId !== lastInterfaceSetId) {
+        lastInterfaceSetId = nextInterfaceSetId
         // Rebuild the app remote first (so the new view/service has an expose +
         // artifact), THEN patch the registry — the registry patch is what reloads
         // the workbench page, and it must re-fetch a remote that already exposes
