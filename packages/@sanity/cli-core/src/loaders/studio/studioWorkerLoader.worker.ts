@@ -179,7 +179,4 @@ const runner = createServerModuleRunner(ssrEnvironment, {
   hmr: false,
 })
 
-// Applies the `define` config from vite. Also initializes import.meta.env.
-await runner.import('/@vite/env')
-
 await runner.import(workerScriptPath)
