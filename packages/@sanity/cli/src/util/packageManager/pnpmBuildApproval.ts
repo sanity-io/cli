@@ -143,6 +143,9 @@ async function writePackageJsonApproval(
   allowlist: readonly string[],
 ): Promise<void> {
   const pkgPath = path.join(projectDir, 'package.json')
+  // Precondition: a valid `package.json` always exists at this point (it is written during
+  // scaffolding before build approval runs). A missing or malformed manifest throwing here is
+  // therefore intentional - it signals a broken scaffold rather than something to swallow.
   const parsed: unknown = JSON.parse(await readFile(pkgPath, 'utf8'))
 
   if (!isRecord(parsed)) {

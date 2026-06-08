@@ -177,6 +177,31 @@ describe('writePnpmBuildApproval', () => {
     })
   })
 
+  test('pnpm 10 replaces a non-object pnpm field with a fresh config', async () => {
+    writeFileSync(path.join(dir, 'package.json'), JSON.stringify({name: 'studio', pnpm: 'oops'}))
+
+    await writePnpmBuildApproval(dir, 10, ['esbuild'])
+
+    expect(JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'))).toEqual({
+      name: 'studio',
+      pnpm: {onlyBuiltDependencies: ['esbuild']},
+    })
+  })
+
+  test('pnpm 10 replaces a non-array onlyBuiltDependencies value', async () => {
+    writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name: 'studio', pnpm: {onlyBuiltDependencies: 'esbuild'}}),
+    )
+
+    await writePnpmBuildApproval(dir, 10, ['esbuild'])
+
+    expect(JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'))).toEqual({
+      name: 'studio',
+      pnpm: {onlyBuiltDependencies: ['esbuild']},
+    })
+  })
+
   test('pnpm 9 writes nothing', async () => {
     await writePnpmBuildApproval(dir, 9, ['esbuild'])
 
