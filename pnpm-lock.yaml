@@ -961,9 +961,6 @@ importers:
       '@sanity/client':
         specifier: ^7.22.0
         version: 7.22.0
-      '@sanity/federation':
-        specifier: 0.1.0-alpha.9
-        version: 0.1.0-alpha.9(typescript@5.9.3)(vite@7.3.3(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0

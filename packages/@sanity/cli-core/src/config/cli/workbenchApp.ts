@@ -4,6 +4,26 @@ import {join} from 'node:path'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
 
+/**
+ * The brand `unstable_defineApp` stamps on its result, registered in the global
+ * symbol registry. Inlined here rather than imported from `@sanity/federation`
+ * so cli-core — the hot path for every CLI command, most of which never touch
+ * workbench — doesn't pull that package (and its transitive deps) into startup
+ * just for this identity check. `Symbol.for` keys the same global symbol that
+ * federation stamps, so the check is identical; the only shared contract is the
+ * symbol string, which cli-core already mirrors (see `APPLICATION_TYPES` below).
+ */
+const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
+
+/**
+ * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
+ * workbench opt-in. Mirrors `@sanity/federation`'s `isWorkbenchApp` without the
+ * runtime dependency.
+ */
+export function isWorkbenchApp(app: CliConfig['app']): app is NonNullable<CliConfig['app']> {
+  return typeof app === 'object' && app !== null && WORKBENCH_APP_BRAND in app
+}
+
 const STUDIO_CONFIG_FILES = [
   'sanity.config.ts',
   'sanity.config.tsx',

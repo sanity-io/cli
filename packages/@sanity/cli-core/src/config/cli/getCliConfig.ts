@@ -1,15 +1,13 @@
 import {createRequire} from 'node:module'
 import {dirname} from 'node:path'
 
-import {isWorkbenchApp} from '@sanity/federation'
-
 import {debug} from '../../debug.js'
 import {NotFoundError} from '../../errors/NotFoundError.js'
 import {importModule} from '../../util/importModule.js'
 import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
-import {parseWorkbenchCliConfig} from './workbenchApp.js'
+import {isWorkbenchApp, parseWorkbenchCliConfig} from './workbenchApp.js'
 
 const cache = new Map<string, Promise<CliConfig>>()
 
