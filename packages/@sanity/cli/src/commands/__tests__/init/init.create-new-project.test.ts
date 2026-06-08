@@ -146,7 +146,7 @@ vi.mock('../../../actions/init/resolvePackageManager.js', () => ({
 }))
 
 vi.mock('../../../util/packageManager/installPackages.js', () => ({
-  installDeclaredPackages: vi.fn().mockResolvedValue(undefined),
+  installDeclaredPackages: vi.fn().mockResolvedValue({ignoredBuilds: []}),
 }))
 
 const setupInitSuccessMocks = () => {
