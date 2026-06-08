@@ -4,6 +4,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 import {parse as parseYaml, stringify as stringifyYaml} from 'yaml'
 
@@ -187,9 +188,7 @@ export function printIgnoredBuildsNotice(
     return
   }
 
-  output.log(
-    `${styleText('yellow', '⚠')} pnpm ignored build scripts for: ${ignoredBuilds.join(', ')}`,
-  )
+  output.log(`${logSymbols.warning} pnpm ignored build scripts for: ${ignoredBuilds.join(', ')}`)
   output.log(
     `Run ${styleText('cyan', 'pnpm approve-builds')} to allow these dependencies to run their build scripts.`,
   )

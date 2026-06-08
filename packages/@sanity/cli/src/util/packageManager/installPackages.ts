@@ -61,6 +61,7 @@ async function executePackageManagerCommand(
     progress.fail()
     output.log(String(result.stdout))
     output.error(errorMessage, {exit: 1})
+    // Unreachable at runtime (output.error throws with {exit}); required for the return type.
     return {ignoredBuilds: []}
   }
 
