@@ -1,4 +1,3 @@
-import {fileURLToPath} from 'node:url'
 import {isMainThread} from 'node:worker_threads'
 
 import {
@@ -75,16 +74,6 @@ async function fetchHttpModule(url: string): Promise<{code: string}> {
 
 function isHttpsUrl(id: string): boolean {
   return id.startsWith('https://')
-}
-
-function isBareImport(id: string): boolean {
-  return (
-    id[0] !== '.' &&
-    id[0] !== '/' &&
-    !id.startsWith('file://') &&
-    !id.startsWith('data:') &&
-    !isHttpsUrl(id)
-  )
 }
 
 const defaultViteConfig: InlineConfig = {
@@ -180,34 +169,6 @@ ssrEnvironment.fetchModule = async (id, importer, options) => {
       invalidate: false,
       url: id,
     }
-  }
-
-  // ModuleRunner externalizes bare imports when an importer is present. With
-  // ssr.noExternal: true, route them through Vite's transform pipeline instead.
-  if (isBareImport(id) && importer) {
-    const externalized = await defaultFetchModule(id, importer, options)
-    if ('externalize' in externalized) {
-      const filePath = externalized.externalize.startsWith('file://')
-        ? fileURLToPath(externalized.externalize)
-        : externalized.externalize
-      const mod = await ssrEnvironment.moduleGraph.ensureEntryFromUrl(filePath)
-      const cached = !!mod.transformResult
-      if (options?.cached && cached) return {cache: true}
-      const result = await ssrEnvironment.transformRequest(mod.url)
-      if (!result) {
-        throw new Error(
-          `[vite] transform failed for module '${filePath}' imported from '${importer}'.`,
-        )
-      }
-      return {
-        code: result.code,
-        file: mod.file ?? filePath,
-        id: mod.id ?? filePath,
-        invalidate: !cached,
-        url: mod.url,
-      }
-    }
-    return externalized
   }
 
   return defaultFetchModule(id, importer, options)

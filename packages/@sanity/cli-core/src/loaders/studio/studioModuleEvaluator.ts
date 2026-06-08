@@ -8,11 +8,6 @@ import {
   type EvaluatedModuleNode,
   type ModuleEvaluator,
   type ModuleRunnerContext,
-  ssrDynamicImportKey,
-  ssrExportAllKey,
-  ssrExportNameKey,
-  ssrImportKey,
-  ssrImportMetaKey,
   ssrModuleExportsKey,
 } from 'vite/module-runner'
 
@@ -60,8 +55,8 @@ function exportAll(exports: Record<string, unknown>, sourceModule: unknown) {
  * which ModuleRunner's default ESModulesEvaluator does not support.
  */
 export class StudioModuleEvaluator implements ModuleEvaluator {
-  readonly startOffset = new ESModulesEvaluator().startOffset
   private readonly esmEvaluator = new ESModulesEvaluator()
+  readonly startOffset = this.esmEvaluator.startOffset
 
   runExternalModule(filepath: string): Promise<unknown> {
     return this.esmEvaluator.runExternalModule(filepath)
@@ -101,7 +96,6 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
       getPrototypeOf: () => Object.prototype,
       set: (_, property, value) => {
         if (property === 'default') {
-          exportAll(exports, {default: value})
           exports.default = value
           return true
         }
@@ -134,17 +128,12 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
     }
 
     const cjsContext: Record<string, unknown> = {
+      ...context,
       __dirname,
       __filename,
       exports: cjsExports,
       module: moduleProxy,
       require: createRequire(href),
-      [ssrDynamicImportKey]: context[ssrDynamicImportKey],
-      [ssrExportAllKey]: context[ssrExportAllKey],
-      [ssrExportNameKey]: context[ssrExportNameKey],
-      [ssrImportKey]: context[ssrImportKey],
-      [ssrImportMetaKey]: context[ssrImportMetaKey],
-      [ssrModuleExportsKey]: exports,
     }
 
     let normalizedCode = code
