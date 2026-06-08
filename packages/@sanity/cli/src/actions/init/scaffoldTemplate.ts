@@ -7,6 +7,11 @@ import {type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {getSanityEnv} from '../../util/getSanityEnv.js'
 import {installDeclaredPackages} from '../../util/packageManager/installPackages.js'
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
+import {
+  BUILD_APPROVAL_ALLOWLIST,
+  getPnpmMajorVersion,
+  writePnpmBuildApproval,
+} from '../../util/packageManager/pnpmBuildApproval.js'
 import {bootstrapTemplate} from './bootstrapTemplate.js'
 import {tryGitInit} from './git.js'
 import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
@@ -124,7 +129,7 @@ export async function scaffoldAndInstall({
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
   useTypeScript: boolean
   workDir: string
-}): Promise<{pkgManager: PackageManager}> {
+}): Promise<{ignoredBuilds: string[]; pkgManager: PackageManager}> {
   const {autoUpdates, git, overwriteFiles, packageManager, templateToken, unattended} = options
   const noGit = typeof git === 'boolean' && !git ? true : undefined
 
@@ -156,8 +161,21 @@ export async function scaffoldAndInstall({
     step: 'selectPackageManager',
   })
 
+  // For pnpm, pre-approve known build-script dependencies so the install does
+  // not stop on ERR_PNPM_IGNORED_BUILDS, and so the generated project carries
+  // the approval forward for future installs. Best-effort: any failure here is
+  // non-fatal because the install step also tolerates ignored builds.
+  if (pkgManager === 'pnpm') {
+    try {
+      const pnpmMajor = await getPnpmMajorVersion(outputPath)
+      await writePnpmBuildApproval(outputPath, pnpmMajor, BUILD_APPROVAL_ALLOWLIST)
+    } catch {
+      // Ignore — the install-time safety net reports any ignored builds.
+    }
+  }
+
   // Now for the slow part... installing dependencies
-  await installDeclaredPackages(outputPath, pkgManager, {
+  const {ignoredBuilds} = await installDeclaredPackages(outputPath, pkgManager, {
     output,
     workDir,
   })
@@ -171,5 +189,5 @@ export async function scaffoldAndInstall({
     tryGitInit(outputPath, typeof commitMessage === 'string' ? commitMessage : undefined)
   }
 
-  return {pkgManager}
+  return {ignoredBuilds, pkgManager}
 }

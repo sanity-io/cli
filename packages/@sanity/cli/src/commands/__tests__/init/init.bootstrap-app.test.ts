@@ -109,7 +109,7 @@ vi.mock('../../../actions/skills/setupSkills.js', () => ({
 }))
 
 vi.mock('../../../util/packageManager/installPackages.js', () => ({
-  installDeclaredPackages: mocks.installDeclaredPackages.mockResolvedValue(undefined),
+  installDeclaredPackages: mocks.installDeclaredPackages.mockResolvedValue({ignoredBuilds: []}),
 }))
 
 vi.mock('../../../actions/init/env/createOrAppendEnvVars.js', () => ({
