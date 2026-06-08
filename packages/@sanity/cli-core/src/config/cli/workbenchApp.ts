@@ -16,11 +16,30 @@ import {type CliConfig} from './types/cliConfig.js'
 const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
 
 /**
+ * The workbench-only fields a branded `unstable_defineApp(...)` result carries
+ * on top of the shared `app` config: its `name`, dock panel `views`, and
+ * background worker `services`. Modeled here (rather than imported from
+ * `@sanity/federation`'s `DefineAppResult`) so the brand check narrows to the
+ * shape callers read without pulling the federation package onto the hot path.
+ * `type` uses the same literals federation does so `views`/`services` stay
+ * assignable to `DefineAppInput['views' | 'services']` downstream.
+ */
+export interface WorkbenchApp {
+  name: string
+
+  services?: {name: string; src: string; type: 'worker'}[]
+  views?: {name: string; src: string; type: 'panel'}[]
+}
+
+/**
  * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
  * workbench opt-in. Mirrors `@sanity/federation`'s `isWorkbenchApp` without the
- * runtime dependency.
+ * runtime dependency, narrowing to the shared `app` config plus its
+ * workbench-only fields ({@link WorkbenchApp}).
  */
-export function isWorkbenchApp(app: CliConfig['app']): app is NonNullable<CliConfig['app']> {
+export function isWorkbenchApp(
+  app: CliConfig['app'],
+): app is NonNullable<CliConfig['app']> & WorkbenchApp {
   return typeof app === 'object' && app !== null && WORKBENCH_APP_BRAND in app
 }
 

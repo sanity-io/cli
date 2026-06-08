@@ -9,11 +9,11 @@ import {
   getLocalPackageVersion,
   getTimer,
   isInteractive,
+  isWorkbenchApp,
   type Output,
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
-import {isWorkbenchApp} from '@sanity/federation'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'

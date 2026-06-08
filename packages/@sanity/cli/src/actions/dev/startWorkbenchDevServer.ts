@@ -1,6 +1,5 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
-import {resolveLocalPackage} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/federation'
+import {isWorkbenchApp, resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
 import {z} from 'zod/mini'

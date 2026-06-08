@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {isWorkbenchApp} from '@sanity/federation'
+import {isWorkbenchApp} from '@sanity/cli-core'
 
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {startAppDevServer} from './startAppDevServer.js'
