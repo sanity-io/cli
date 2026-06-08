@@ -7,18 +7,17 @@ export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[nu
 
 /**
  * Derive the workbench `interfaces[]` an app forwards to the dev-server
- * registry from its `unstable_defineApp` config: `views` → `panel`s and (SDK
- * apps) `entry` → the navigable `app` view. `entry_point` is the declared `src`
- * — the raw value, not a resolved URL. (Background `services` → `worker`s are
- * layered on in sanity-io/workbench spec 002-workbench-extension-api, US4.)
+ * registry from its `unstable_defineApp` config: `views` → `panel`s,
+ * `services` → `worker`s, and (SDK apps) `entry` → the navigable `app` view.
+ * `entry_point` is the declared `src` — the raw value, not a resolved URL.
  *
  * Returns `undefined` for a non-branded app (no `unstable_defineApp`). A studio
  * that declares `entry` reaches the not-yet-implemented studio app-view path and
  * is rejected (FR-026).
  *
  * Shared by the initial registration and the dev config watcher so editing
- * `views`/`entry` in `sanity.cli.ts` re-pushes the same shape live, the way
- * `title`/`icon` already re-sync (FR-024).
+ * `views`/`services`/`entry` in `sanity.cli.ts` re-pushes the same shape live,
+ * the way `title`/`icon` already re-sync (FR-024).
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
@@ -38,6 +37,11 @@ export function deriveInterfaces(
       entry_point: view.src,
       interface_type: view.type,
       name: view.name,
+    })) ?? []),
+    ...(app.services?.map((service) => ({
+      entry_point: service.src,
+      interface_type: service.type,
+      name: service.name,
     })) ?? []),
     // sanity-io/workbench spec 002-workbench-extension-api, US5 — with no `entry` the app has no `app` view and isn't reachable as a
     // full-page app; with one, forward it so the workbench gates navigability.
