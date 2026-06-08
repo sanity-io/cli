@@ -259,7 +259,7 @@ describe('setupMCP', () => {
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Configure Sanity MCP and install agent skills for these editors?',
+        message: 'Configure Sanity MCP and agent skill for these editors?',
       }),
     )
   })

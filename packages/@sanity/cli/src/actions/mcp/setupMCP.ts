@@ -142,7 +142,7 @@ function applyMasking(
 function getPromptMessage(mcpMode: Mode, skillsMode: Mode): string {
   if (mcpMode === 'skip') return 'Install Sanity agent skills for these editors?'
   if (skillsMode === 'skip') return 'Configure Sanity MCP server?'
-  return 'Configure Sanity MCP and install agent skills for these editors?'
+  return 'Configure Sanity MCP and agent skill for these editors?'
 }
 
 /**
