@@ -1,6 +1,8 @@
 import {styleText} from 'node:util'
 
-import {isWorkbenchApp} from '@sanity/cli-core'
+import {getCliConfigUncached} from '@sanity/cli-core'
+import {isWorkbenchApp} from '@sanity/federation'
+import {type ViteDevServer} from 'vite'
 
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {startAppDevServer} from './startAppDevServer.js'
@@ -44,13 +46,21 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   }
 
   let closeAppDevServer: () => Promise<void> = noop
-  let server
-  try {
+  let server: ViteDevServer | undefined
+
+  // (Re)start the app/studio dev server, tracking its close handle + server ref.
+  // Takes the config so a rebuild can feed a freshly-loaded one.
+  const startApp = async (config: DevActionOptions['cliConfig']) => {
     const result = options.isApp
-      ? await startAppDevServer(appOptions)
-      : await startStudioDevServer(appOptions)
+      ? await startAppDevServer({...appOptions, cliConfig: config})
+      : await startStudioDevServer({...appOptions, cliConfig: config})
     closeAppDevServer = result.close ?? noop
     server = result.server
+    return result.server
+  }
+
+  try {
+    await startApp(cliConfig)
   } catch (err) {
     await closeWorkbenchServer()
     throw err
@@ -60,12 +70,30 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     return {close: closeWorkbenchServer}
   }
 
+  // Adding/removing a view or service in `sanity.cli.ts` during dev requires
+  // rebuilding the federation remote: its module-federation `exposes` map +
+  // codegen artifacts are computed once at server start, so a newly-declared
+  // interface has no expose until the server is recreated. `server.restart()`
+  // can't do it — it re-uses the inline config — so we tear the app server down
+  // and bring it back up on the same port with a freshly-loaded config. The
+  // workbench page then reloads (driven by the registry watch in the workbench
+  // server) to re-fetch the rebuilt remote. A view/service *source* edit doesn't
+  // change the interface set, so it stays on the HMR path untouched.
+  const onInterfacesChange = options.isApp
+    ? async () => {
+        const freshConfig = await getCliConfigUncached(workDir)
+        await closeAppDevServer()
+        await startApp(freshConfig)
+      }
+    : undefined
+
   // Workbench is opted into solely by calling `unstable_defineApp` — its
   // branded identity is the only signal.
   const closeFederation = isWorkbenchApp(cliConfig?.app)
     ? await startFederationRegistration({
         cliConfig,
         isApp: options.isApp,
+        onInterfacesChange,
         output,
         server,
         workDir,
