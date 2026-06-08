@@ -1,5 +1,4 @@
 export {buildDebug} from '../../actions/build/buildDebug.js'
-export {buildVendorDependencies} from '../../actions/build/buildVendorDependencies.js'
 export {checkStudioDependencyVersions} from '../../actions/build/checkStudioDependencyVersions.js'
 export {
   extendViteConfigWithUserConfig,

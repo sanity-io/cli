@@ -3,10 +3,14 @@ import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {parseAst} from 'vite'
+import {build, esmExternalRequirePlugin, parseAst} from 'vite'
 import {afterAll, beforeAll, describe, expect, test} from 'vitest'
 
-import {buildVendorDependencies} from '../buildVendorDependencies.js'
+import {VENDOR_DIR} from '../constants.js'
+import {createExternalFromImportMap} from '../createExternalFromImportMap.js'
+import {createVendorImportMapFromBundle} from '../createVendorImportMapFromBundle.js'
+import {resolveVendorBuildConfig} from '../resolveVendorBuildConfig.js'
+import {createVendorNamedExportsPlugin} from '../vite/plugin-sanity-vendor-named-exports.js'
 
 // The `@sanity/cli-build` package root, where `react`/`react-dom` are installed.
 const packageRoot = fileURLToPath(new URL('../../../../', import.meta.url))
@@ -52,20 +56,100 @@ function collectExportNames(code: string): Set<string> {
   return names
 }
 
-describe('buildVendorDependencies', () => {
+/**
+ * Builds the vendor entries exactly the way the main studio/app build does (see
+ * the `vendorBuild` branch of `getViteConfig`): the resolved entries become
+ * Rolldown inputs, chunks are emitted to `vendor/`, and both the named-export
+ * and external-require plugins are applied. The import map is then derived from
+ * the emitted bundle with `createVendorImportMapFromBundle`, mirroring what the
+ * `sanity/server/build-entries` plugin does at `generateBundle` time.
+ *
+ * This is the single-build replacement for the former standalone vendor build:
+ * it exercises the real resolution, plugins, output naming, and import-map
+ * derivation against the actual `react`/`react-dom`/`styled-components`
+ * packages.
+ */
+async function buildVendorChunks(outputDir: string): Promise<Record<string, string>> {
+  // `isApp: false` builds the studio vendor set: react, react-dom (CommonJS)
+  // and styled-components (ESM). All resolve from the @sanity/cli-build root.
+  const {entries, namesByChunkName, specifiersByChunkName} = await resolveVendorBuildConfig({
+    cwd: packageRoot,
+    isApp: false,
+  })
+
+  const vendorChunkNames = new Set(Object.keys(specifiersByChunkName))
+
+  // Each vendor specifier is external so that e.g. react-dom and styled-components
+  // import `react` from the import map instead of bundling a second copy.
+  const external = createExternalFromImportMap({
+    imports: Object.fromEntries(
+      Object.values(specifiersByChunkName).map((specifier) => [specifier, '']),
+    ),
+  })
+
+  // removes the `RolldownWatcher` type
+  type BuildResult = Exclude<Awaited<ReturnType<typeof build>>, {close: unknown}>
+
+  const buildResult = (await build({
+    appType: 'custom',
+    build: {
+      emptyOutDir: false,
+      minify: 'oxc',
+      outDir: outputDir,
+      rolldownOptions: {
+        experimental: {nativeMagicString: true},
+        input: entries,
+        output: {
+          entryFileNames: (chunk) =>
+            vendorChunkNames.has(chunk.name)
+              ? `${VENDOR_DIR}/[name]-[hash].mjs`
+              : 'static/[name]-[hash].js',
+          exports: 'named',
+        },
+        // Mirror `getViteConfig`: keep entry exports so the browser can import
+        // them via the generated import map.
+        preserveEntrySignatures: 'exports-only',
+        treeshake: true,
+      },
+    },
+    cacheDir: path.join(outputDir, '.vite-cache'),
+    configFile: false,
+    define: {'process.env.NODE_ENV': JSON.stringify('production')},
+    logLevel: 'silent',
+    mode: 'production',
+    plugins: [
+      createVendorNamedExportsPlugin(namesByChunkName),
+      esmExternalRequirePlugin({external}),
+    ],
+    root: packageRoot,
+  })) as BuildResult
+
+  const results = Array.isArray(buildResult) ? buildResult : [buildResult]
+
+  const bundle: Record<string, {fileName: string; isEntry: boolean; name: string; type: 'chunk'}> =
+    {}
+  for (const result of results) {
+    for (const chunk of result.output) {
+      if (chunk.type !== 'chunk') continue
+      bundle[chunk.fileName] = {
+        fileName: chunk.fileName,
+        isEntry: chunk.isEntry,
+        name: chunk.name,
+        type: 'chunk',
+      }
+    }
+  }
+
+  return createVendorImportMapFromBundle(bundle, specifiersByChunkName, '/')
+}
+
+describe('vendor build (single vite build)', () => {
   let outputDir: string
   let imports: Record<string, string>
 
   beforeAll(async () => {
     outputDir = await mkdtemp(path.join(tmpdir(), 'sanity-vendor-'))
-    // `isApp: false` builds the studio vendor set: react, react-dom (CommonJS)
-    // and styled-components (ESM). All resolve from the @sanity/cli-build root.
-    imports = await buildVendorDependencies({
-      basePath: '/',
-      cwd: packageRoot,
-      isApp: false,
-      outputDir,
-    })
+    imports = await buildVendorChunks(outputDir)
   }, 120_000)
 
   afterAll(async () => {
@@ -80,6 +164,11 @@ describe('buildVendorDependencies', () => {
     const code = await readFile(path.join(outputDir, importPath.replace(/^\/+/, '')), 'utf8')
     return collectExportNames(code)
   }
+
+  test('import map entries are absolute (rooted) paths into /vendor', () => {
+    expect(imports.react).toMatch(/^\/vendor\/react\/index-[^/]+\.mjs$/)
+    expect(imports['react-dom/client']).toMatch(/^\/vendor\/react-dom\/client-[^/]+\.mjs$/)
+  })
 
   test('react exposes named exports alongside the default', async () => {
     const names = await exportsOf('react')
@@ -137,7 +226,7 @@ describe('buildVendorDependencies', () => {
   // leaves a runtime `require` shim that throws in the browser ("...doesn't expose the
   // `require` function"). The external require must instead become a real ESM import.
   test('external require() is converted to imports (no runtime require shim)', async () => {
-    const vendorDir = path.join(outputDir, 'vendor')
+    const vendorDir = path.join(outputDir, VENDOR_DIR)
     const files = (await readdir(vendorDir, {recursive: true})).filter((file) =>
       String(file).endsWith('.mjs'),
     )

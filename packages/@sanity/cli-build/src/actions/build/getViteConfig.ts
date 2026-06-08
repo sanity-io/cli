@@ -21,6 +21,7 @@ import {
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
+import {VENDOR_DIR} from './constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 import {type VendorBuildConfig} from './resolveVendorBuildConfig.js'
@@ -259,10 +260,17 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
               output: {
                 entryFileNames: (chunk) =>
                   vendorChunkNames!.has(chunk.name)
-                    ? `vendor/${chunk.name}-[hash].mjs`
+                    ? `${VENDOR_DIR}/[name]-[hash].mjs`
                     : 'static/[name]-[hash].js',
                 exports: 'named',
               },
+              // App-style builds default to `preserveEntrySignatures: false`, which
+              // treeshakes the exports off entry chunks. Vendor chunks are loaded by
+              // the browser via the import map, so their exports must survive (e.g.
+              // styled-components' native ESM exports). `exports-only` keeps exports
+              // for entries that have them, while the export-less `sanity` app entry
+              // still bundles as before.
+              preserveEntrySignatures: 'exports-only',
               treeshake: true,
             }
           : {}),

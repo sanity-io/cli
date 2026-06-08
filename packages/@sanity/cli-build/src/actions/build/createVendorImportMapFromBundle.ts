@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 interface OutputChunk {
   fileName: string
   isEntry: boolean
@@ -12,6 +14,10 @@ interface OutputBundle {
 /**
  * Builds the vendor portion of an import map from emitted Rolldown chunks.
  *
+ * The returned paths are absolute (rooted at the served `basePath`) so the
+ * browser can resolve the bare specifiers in the emitted import map regardless
+ * of the document's location.
+ *
  * @internal
  */
 export function createVendorImportMapFromBundle(
@@ -20,7 +26,6 @@ export function createVendorImportMapFromBundle(
   basePath: string,
 ): Record<string, string> {
   const imports: Record<string, string> = {}
-  const base = basePath.replace(/\/+$/, '') || ''
 
   for (const file of Object.values(outputBundle)) {
     if (file.type !== 'chunk' || !file.isEntry) continue
@@ -28,7 +33,7 @@ export function createVendorImportMapFromBundle(
     const specifier = specifiersByChunkName[file.name]
     if (!specifier) continue
 
-    imports[specifier] = [base, file.fileName].filter(Boolean).join('/')
+    imports[specifier] = path.posix.join('/', basePath, file.fileName)
   }
 
   return imports
