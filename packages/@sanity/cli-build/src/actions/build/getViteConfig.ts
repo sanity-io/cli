@@ -153,7 +153,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     logLevel: mode === 'production' ? 'silent' : 'info',
     mode,
     plugins: [
-      ...viteReact(),
+      viteReact(),
       ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
