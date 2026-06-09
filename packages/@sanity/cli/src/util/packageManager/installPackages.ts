@@ -34,6 +34,36 @@ const PACKAGE_MANAGER_COMMANDS: PackageManagerCommands = {
   },
 }
 
+const IGNORED_BUILDS_NOTICE =
+  'pnpm skipped build scripts for some dependencies. Run "pnpm approve-builds" in the project directory to pick which dependencies should be allowed to run scripts.'
+
+// Matches pnpm's `ERR_PNPM_IGNORED_BUILDS` error against whitespace-normalized
+// output (pnpm may wrap the message), capturing the list of skipped packages,
+// eg `esbuild@0.25.0, sharp@0.34.0.` - the `<pkg>@<version>` token sequence
+// ends the capture where the trailing `Run "pnpm approve-builds"…` hint starts
+const IGNORED_BUILDS_PATTERN =
+  /ERR_PNPM_IGNORED_BUILDS.*?Ignored build scripts: ?((?:[^\s,]+@[^\s,]+[, ]*)+)/
+
+function getIgnoredBuildScripts(commandOutput: string): string[] | undefined {
+  const match = commandOutput.replaceAll(/\s+/g, ' ').match(IGNORED_BUILDS_PATTERN)
+  if (!match) {
+    return undefined
+  }
+
+  // The capture allows both comma and whitespace separators (pnpm may print
+  // either, and wrapping can drop the comma), so split on both.
+  return match[1]
+    .split(/[\s,]+/)
+    .map((entry) => entry.replace(/\.$/, ''))
+    .filter(Boolean)
+}
+
+function isEsbuild(ignoredEntry: string): boolean {
+  // Entries are on the form `<pkg-name>@<version>` - strip the version,
+  // keeping in mind that scoped package names also start with `@`
+  return ignoredEntry.replace(/@[^@]+$/, '') === 'esbuild'
+}
+
 async function executePackageManagerCommand(
   packageManager: PackageManagerLibs,
   args: string[],
@@ -46,8 +76,28 @@ async function executePackageManagerCommand(
   const result = await execa(packageManager, args, execOptions)
 
   if (result?.exitCode || result?.failed) {
+    // pnpm exits non-zero if dependency build scripts were skipped, even though
+    // the install itself succeeded. Treat it as a success, but point to
+    // `pnpm approve-builds` if anything other than esbuild was skipped
+    // (esbuild works without its build script through a JS fallback).
+    const commandOutput = [result.stdout, result.stderr]
+      .filter((chunk): chunk is string => typeof chunk === 'string')
+      .join('\n')
+    const ignoredBuilds =
+      packageManager === 'pnpm' ? getIgnoredBuildScripts(commandOutput) : undefined
+
+    if (ignoredBuilds) {
+      progress.succeed()
+      if (ignoredBuilds.some((entry) => !isEsbuild(entry))) {
+        output.warn(IGNORED_BUILDS_NOTICE)
+      }
+      return
+    }
+
     progress.fail()
-    output.log(String(result.stdout))
+    // Log both streams - package managers often print the actionable error
+    // details to stderr, so logging stdout alone can hide the failure reason.
+    output.log(commandOutput)
     output.error(errorMessage, {exit: 1})
   } else {
     progress.succeed()
@@ -64,6 +114,7 @@ export async function installDeclaredPackages(
     cwd,
     encoding: 'utf8',
     env: getPartialEnvWithNpmPath(cwd),
+    reject: false,
     stdio: 'pipe',
   }
 
@@ -92,6 +143,7 @@ export async function installNewPackages(
     cwd: workDir,
     encoding: 'utf8',
     env: getPartialEnvWithNpmPath(workDir),
+    reject: false,
     stdio: 'pipe',
   }
 
