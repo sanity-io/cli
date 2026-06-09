@@ -1237,23 +1237,24 @@ Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 a
 ```
 USAGE
   $ sanity datasets export [NAME] [DESTINATION] [-p <id>] [--asset-concurrency <value>] [--mode stream|cursor]
-    [--no-assets] [--no-compress] [--no-drafts] [--overwrite] [--raw] [--types <value>]
+    [--no-assets] [--no-compress] [--no-drafts] [--no-strict-asset-verification] [--overwrite] [--raw] [--types <value>]
 
 ARGUMENTS
   [NAME]         Name of the dataset to export
   [DESTINATION]  Output destination file path
 
 FLAGS
-  --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-  --mode=<option>              [default: stream] Export mode ('cursor' is faster for large datasets but may miss
-                               concurrent changes)
-                               <options: stream|cursor>
-  --no-assets                  Export only non-asset documents and remove references to image assets
-  --no-compress                Skips compressing tarball entries (still generates a gzip file)
-  --no-drafts                  Export only published versions of documents
-  --overwrite                  Overwrite any file with the same name
-  --raw                        Extract only documents, without rewriting asset references
-  --types=<value>              Defines which document types to export (comma-separated)
+  --asset-concurrency=<value>     [default: 8] Concurrent number of asset downloads
+  --mode=<option>                 [default: stream] Export mode ('cursor' is faster for large datasets but may miss
+                                  concurrent changes)
+                                  <options: stream|cursor>
+  --no-assets                     Export only non-asset documents and remove references to image assets
+  --no-compress                   Skips compressing tarball entries (still generates a gzip file)
+  --no-drafts                     Export only published versions of documents
+  --no-strict-asset-verification  Do not abort the export when an asset fails hash or content-length verification
+  --overwrite                     Overwrite any file with the same name
+  --raw                           Extract only documents, without rewriting asset references
+  --types=<value>                 Defines which document types to export (comma-separated)
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to export dataset from (overrides CLI configuration)
@@ -1277,6 +1278,10 @@ EXAMPLES
   Export specific document types
 
     $ sanity datasets export staging staging.tar.gz --types products,shops
+
+  Export dataset without aborting on asset verification failures
+
+    $ sanity datasets export moviedb moviedb.tar.gz --no-strict-asset-verification
 ```
 
 ## `sanity datasets import SOURCE [TARGETDATASET]`
@@ -2399,7 +2404,7 @@ USAGE
     <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--import-dataset] [--mcp]
     [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path
     <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name <name>]
-    [--provider <provider>] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+    [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
   -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
@@ -2421,6 +2426,7 @@ FLAGS
       --project-name=<name>        Create a new project with the given name
       --project-plan=<name>        Optionally select a plan for a new project
       --provider=<provider>        Login provider to use
+      --[no-]skills                Install Sanity agent skills globally for detected AI editors
       --template=<template>        Project template to use [default: "clean"]
       --[no-]typescript            Enable TypeScript support
       --visibility=<mode>          Visibility mode for dataset
