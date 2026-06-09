@@ -53,10 +53,10 @@ describe('bootstrapLocalTemplate (app templates)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
-        extensionApi: false,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'my-app',
+        workbench: false,
       },
     })
 
@@ -77,10 +77,10 @@ describe('bootstrapLocalTemplate (app templates)', () => {
       variables: {
         autoUpdates: false,
         dataset: '',
-        extensionApi: false,
         organizationId: 'org1',
         projectId: '',
         projectName: 'my-app',
+        workbench: false,
       },
     })
 
@@ -92,7 +92,7 @@ describe('bootstrapLocalTemplate (app templates)', () => {
   })
 })
 
-describe('bootstrapLocalTemplate (extension API)', () => {
+describe('bootstrapLocalTemplate (workbench)', () => {
   let tmp: string
   beforeEach(async () => {
     tmp = await mkdtemp(path.join(tmpdir(), 'cli-bootstrap-'))
@@ -102,7 +102,7 @@ describe('bootstrapLocalTemplate (extension API)', () => {
     vi.clearAllMocks()
   })
 
-  test('overrides the `sanity` dependency with the `workbench` dist-tag when the extension API is enabled', async () => {
+  test('overrides the `sanity` dependency with the `workbench` dist-tag when workbench is enabled', async () => {
     await bootstrapLocalTemplate({
       output: makeOutput(),
       outputPath: tmp,
@@ -112,10 +112,10 @@ describe('bootstrapLocalTemplate (extension API)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
-        extensionApi: true,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'My Studio',
+        workbench: true,
       },
     })
 
@@ -127,7 +127,7 @@ describe('bootstrapLocalTemplate (extension API)', () => {
     expect(pkgJson.dependencies.sanity).toBe('1.0.0')
   })
 
-  test('keeps the `sanity` dependency on the `latest` dist-tag when the extension API is disabled', async () => {
+  test('keeps the `sanity` dependency on the `latest` dist-tag when workbench is disabled', async () => {
     await bootstrapLocalTemplate({
       output: makeOutput(),
       outputPath: tmp,
@@ -137,10 +137,10 @@ describe('bootstrapLocalTemplate (extension API)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
-        extensionApi: false,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'My Studio',
+        workbench: false,
       },
     })
 
@@ -149,7 +149,7 @@ describe('bootstrapLocalTemplate (extension API)', () => {
     expect(resolvedDeps.sanity).toBe('latest')
   })
 
-  test('overrides the `sanity` devDependency for app templates when the extension API is enabled', async () => {
+  test('overrides the `sanity` devDependency for app templates when workbench is enabled', async () => {
     await bootstrapLocalTemplate({
       output: makeOutput(),
       outputPath: tmp,
@@ -159,10 +159,10 @@ describe('bootstrapLocalTemplate (extension API)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
-        extensionApi: true,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'my-app',
+        workbench: true,
       },
     })
 
@@ -181,10 +181,10 @@ describe('bootstrapLocalTemplate (extension API)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
-        extensionApi: true,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'My Studio',
+        workbench: true,
       },
     })
 
@@ -207,10 +207,10 @@ describe('bootstrapLocalTemplate (extension API)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
-        extensionApi: true,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'My App',
+        workbench: true,
       },
     })
 
@@ -224,7 +224,7 @@ describe('bootstrapLocalTemplate (extension API)', () => {
     expect(cliConfig).toContain(`entry: './src/App.tsx'`)
   })
 
-  test('scaffolds the plain sanity.cli.ts when the extension API is disabled', async () => {
+  test('scaffolds the plain sanity.cli.ts when workbench is disabled', async () => {
     await bootstrapLocalTemplate({
       output: makeOutput(),
       outputPath: tmp,
@@ -234,10 +234,10 @@ describe('bootstrapLocalTemplate (extension API)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
-        extensionApi: false,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'My Studio',
+        workbench: false,
       },
     })
 

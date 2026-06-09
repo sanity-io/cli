@@ -15,7 +15,6 @@ import {type InitOptions} from './types.js'
 export async function initApp({
   datasetName,
   defaults,
-  extensionApi,
   mcpConfigured,
   options,
   organizationId,
@@ -25,11 +24,11 @@ export async function initApp({
   remoteTemplateInfo,
   sluggedName,
   trace,
+  workbench,
   workDir,
 }: {
   datasetName: string
   defaults: {projectName: string}
-  extensionApi: boolean
   mcpConfigured: EditorName[]
   options: InitOptions
   organizationId: string | undefined
@@ -39,6 +38,7 @@ export async function initApp({
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
+  workbench: boolean
   workDir: string
 }): Promise<void> {
   const {
@@ -59,7 +59,6 @@ export async function initApp({
     datasetName,
     defaults,
     displayName: '',
-    extensionApi,
     options,
     organizationId,
     output,
@@ -70,6 +69,7 @@ export async function initApp({
     templateName,
     trace,
     useTypeScript,
+    workbench,
     workDir,
   })
 

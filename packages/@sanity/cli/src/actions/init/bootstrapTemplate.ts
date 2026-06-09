@@ -9,7 +9,6 @@ interface BootstrapTemplateOptions {
   autoUpdates: boolean
   bearerToken: string | undefined
   dataset: string
-  extensionApi: boolean
   organizationId: string | undefined
   output: Output
   outputPath: string
@@ -20,6 +19,7 @@ interface BootstrapTemplateOptions {
   templateName: string
 
   useTypeScript: boolean
+  workbench: boolean
 
   overwriteFiles?: boolean
 }
@@ -28,7 +28,6 @@ export async function bootstrapTemplate({
   autoUpdates,
   bearerToken,
   dataset,
-  extensionApi,
   organizationId,
   output,
   outputPath,
@@ -39,14 +38,15 @@ export async function bootstrapTemplate({
   remoteTemplateInfo,
   templateName,
   useTypeScript,
+  workbench,
 }: BootstrapTemplateOptions) {
   const bootstrapVariables: GenerateConfigOptions['variables'] = {
     autoUpdates,
     dataset,
-    extensionApi,
     organizationId,
     projectId,
     projectName,
+    workbench,
   }
 
   if (remoteTemplateInfo) {

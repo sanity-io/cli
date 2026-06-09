@@ -98,7 +98,6 @@ export async function scaffoldAndInstall({
   datasetName,
   defaults,
   displayName,
-  extensionApi,
   options,
   organizationId,
   output,
@@ -109,12 +108,12 @@ export async function scaffoldAndInstall({
   templateName,
   trace,
   useTypeScript,
+  workbench,
   workDir,
 }: {
   datasetName: string
   defaults: {projectName: string}
   displayName: string
-  extensionApi: boolean
   options: InitOptions
   organizationId: string | undefined
   output: Output
@@ -125,6 +124,7 @@ export async function scaffoldAndInstall({
   templateName: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
   useTypeScript: boolean
+  workbench: boolean
   workDir: string
 }): Promise<{pkgManager: PackageManager}> {
   const {autoUpdates, git, overwriteFiles, packageManager, templateToken, unattended} = options
@@ -134,7 +134,6 @@ export async function scaffoldAndInstall({
     autoUpdates,
     bearerToken: templateToken,
     dataset: datasetName,
-    extensionApi,
     organizationId,
     output,
     outputPath,
@@ -145,6 +144,7 @@ export async function scaffoldAndInstall({
     remoteTemplateInfo,
     templateName,
     useTypeScript,
+    workbench,
   })
 
   const pkgManager = await resolvePackageManager({

@@ -31,12 +31,12 @@ export interface GenerateConfigOptions {
   variables: {
     autoUpdates: boolean
     dataset: string
-    extensionApi: boolean
     organizationId?: string
     projectId: string
     projectName?: string
     sourceName?: string
     sourceTitle?: string
+    workbench: boolean
   }
 
   template?: ((variables: GenerateConfigOptions['variables']) => string) | string

@@ -46,17 +46,17 @@ export default defineCliConfig({
 interface GenerateCliConfigOptions {
   autoUpdates: boolean
   dataset: string
-  extensionApi: boolean
   name: string
   projectId: string
   title: string
+  workbench: boolean
 }
 
 export function createCliConfig(options: GenerateCliConfigOptions): string {
-  const {extensionApi, ...variables} = options
+  const {workbench, ...variables} = options
   return processTemplate({
     includeBooleanTransform: true,
-    template: extensionApi ? workbenchTemplate : defaultTemplate,
+    template: workbench ? workbenchTemplate : defaultTemplate,
     variables,
   })
 }

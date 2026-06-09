@@ -91,7 +91,7 @@ export async function bootstrapLocalTemplate(
     ...template.devDependencies,
     // `unstable_defineApp` (re-exported via `sanity/cli`) only exists on the
     // workbench dist-tag of `sanity`.
-    ...(variables.extensionApi && {sanity: 'workbench'}),
+    ...(variables.workbench && {sanity: 'workbench'}),
   })
   spin.succeed()
 
@@ -144,18 +144,18 @@ export async function bootstrapLocalTemplate(
   const cliConfig = isAppTemplate
     ? createAppCliConfig({
         entry: template.entry!,
-        extensionApi: variables.extensionApi,
         name: packageJsonName,
         organizationId: variables.organizationId,
         title: variables.projectName || packageJsonName,
+        workbench: variables.workbench,
       })
     : createCliConfig({
         autoUpdates: variables.autoUpdates,
         dataset: variables.dataset,
-        extensionApi: variables.extensionApi,
         name: packageJsonName,
         projectId: variables.projectId,
         title: variables.projectName || packageJsonName,
+        workbench: variables.workbench,
       })
 
   // Write non-template files to disc

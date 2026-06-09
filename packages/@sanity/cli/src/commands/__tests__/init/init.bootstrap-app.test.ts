@@ -195,7 +195,6 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: 'test',
-      extensionApi: false,
       organizationId: undefined,
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -207,6 +206,7 @@ describe('#init: bootstrap-app-initialization', () => {
       schemaUrl: undefined,
       templateName: 'blog',
       useTypeScript: true,
+      workbench: false,
     })
     expect(stdout).toContain('Success! Your Studio has been created')
     expect(stdout).toContain(
@@ -230,7 +230,7 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(skillsOrder).toBeGreaterThan(bootstrapOrder)
   })
 
-  test('passes the extension API opt-in through to bootstrapTemplate', async () => {
+  test('passes the workbench opt-in through to bootstrapTemplate', async () => {
     setupInitSuccessMocks()
 
     mocks.select.mockResolvedValueOnce('blog') // template
@@ -262,7 +262,7 @@ describe('#init: bootstrap-app-initialization', () => {
         '--dataset=test',
         '--package-manager=npm',
         '--typescript',
-        '--unstable-extension-api',
+        '--unstable--workbench',
       ],
       {
         mocks: {
@@ -273,9 +273,7 @@ describe('#init: bootstrap-app-initialization', () => {
     )
     if (error) throw error
 
-    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith(
-      expect.objectContaining({extensionApi: true}),
-    )
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith(expect.objectContaining({workbench: true}))
   })
 
   test('initializes app with env file', async () => {
@@ -338,7 +336,6 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
-      extensionApi: false,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -349,6 +346,7 @@ describe('#init: bootstrap-app-initialization', () => {
       remoteTemplateInfo: undefined,
       templateName: 'app-quickstart',
       useTypeScript: true,
+      workbench: false,
     })
 
     // App-specific success message (not Studio message)
@@ -401,7 +399,6 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
-      extensionApi: false,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -412,6 +409,7 @@ describe('#init: bootstrap-app-initialization', () => {
       remoteTemplateInfo: undefined,
       templateName: 'app-quickstart',
       useTypeScript: true,
+      workbench: false,
     })
 
     // No prompts should have been called
@@ -472,7 +470,6 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
-      extensionApi: false,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -483,6 +480,7 @@ describe('#init: bootstrap-app-initialization', () => {
       remoteTemplateInfo: undefined,
       templateName: 'app-quickstart',
       useTypeScript: true,
+      workbench: false,
     })
 
     // No prompts should have been called — CI detection makes init unattended

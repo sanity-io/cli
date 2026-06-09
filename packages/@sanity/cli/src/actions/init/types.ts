@@ -49,7 +49,7 @@ export interface InitOptions {
   template?: string
   templateToken?: string
   typescript?: boolean
-  unstableExtensionApi?: boolean
+  unstableWorkbench?: boolean
   visibility?: 'private' | 'public'
 }
 
@@ -89,7 +89,7 @@ interface InitCommandFlags {
   template?: string
   'template-token'?: string
   typescript?: boolean
-  'unstable-extension-api'?: boolean
+  'unstable--workbench'?: boolean
   visibility?: string
 }
 
@@ -147,7 +147,7 @@ export function flagsToInitOptions(
     templateToken: flags['template-token'],
     typescript: flags.typescript,
     unattended: isUnattended,
-    unstableExtensionApi: flags['unstable-extension-api'],
+    unstableWorkbench: flags['unstable--workbench'],
     visibility: narrowVisibility(flags.visibility),
   }
 }

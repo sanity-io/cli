@@ -201,12 +201,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Enable TypeScript support',
       exclusive: ['bare'],
     }),
-    'unstable-extension-api': Flags.boolean({
+    'unstable--workbench': Flags.boolean({
       allowNo: true,
       default: undefined,
-      description:
-        'Opt into the unstable extension API: scaffolds the CLI config with unstable_defineApp',
-      // Internal-only while the extension API is unstable — keep it out of help/docs
+      description: 'Opt into workbench: scaffolds the CLI config with unstable_defineApp',
+      // Internal-only while workbench is unstable — keep it out of help/docs
       hidden: true,
     }),
     visibility: Flags.string({
