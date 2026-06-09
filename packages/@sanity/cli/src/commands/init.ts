@@ -201,6 +201,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Enable TypeScript support',
       exclusive: ['bare'],
     }),
+    'unstable-extension-api': Flags.boolean({
+      allowNo: true,
+      default: undefined,
+      description:
+        'Opt into the unstable extension API: scaffolds the CLI config with unstable_defineApp',
+    }),
     visibility: Flags.string({
       description: 'Visibility mode for dataset',
       helpValue: '<mode>',

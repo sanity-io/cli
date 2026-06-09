@@ -98,6 +98,7 @@ export async function scaffoldAndInstall({
   datasetName,
   defaults,
   displayName,
+  extensionApi,
   options,
   organizationId,
   output,
@@ -113,6 +114,7 @@ export async function scaffoldAndInstall({
   datasetName: string
   defaults: {projectName: string}
   displayName: string
+  extensionApi: boolean
   options: InitOptions
   organizationId: string | undefined
   output: Output
@@ -132,6 +134,7 @@ export async function scaffoldAndInstall({
     autoUpdates,
     bearerToken: templateToken,
     dataset: datasetName,
+    extensionApi,
     organizationId,
     output,
     outputPath,

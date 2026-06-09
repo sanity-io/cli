@@ -285,8 +285,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     return
   }
 
+  // The extension API is opt-in (no prompt): the flag swaps the scaffolded
+  // `sanity.cli.*` over to `unstable_defineApp` — the branded app is the sole
+  // workbench opt-in.
+  const extensionApi = flagOrDefault(options.unstableExtensionApi, false)
+
   const sharedParams = {
     defaults,
+    extensionApi,
     mcpConfigured,
     options,
     organizationId,

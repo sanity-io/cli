@@ -39,6 +39,7 @@ describe('flagsToInitOptions', () => {
         'project-plan': 'enterprise',
         template: 'blog',
         'template-token': 'ghp_abc',
+        'unstable-extension-api': true,
         visibility: 'private',
       }),
       false,
@@ -53,6 +54,7 @@ describe('flagsToInitOptions', () => {
     expect(result.projectPlan).toBe('enterprise')
     expect(result.template).toBe('blog')
     expect(result.templateToken).toBe('ghp_abc')
+    expect(result.unstableExtensionApi).toBe(true)
     expect(result.visibility).toBe('private')
   })
 

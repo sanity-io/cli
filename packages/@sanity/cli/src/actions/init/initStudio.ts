@@ -27,6 +27,7 @@ export async function initStudio({
   datasetName,
   defaults,
   displayName,
+  extensionApi,
   isFirstProject,
   mcpConfigured,
   options,
@@ -42,6 +43,7 @@ export async function initStudio({
   datasetName: string
   defaults: {projectName: string}
   displayName: string
+  extensionApi: boolean
   isFirstProject: boolean
   mcpConfigured: EditorName[]
   options: InitOptions
@@ -91,6 +93,7 @@ export async function initStudio({
     datasetName,
     defaults,
     displayName,
+    extensionApi,
     options,
     organizationId,
     output,

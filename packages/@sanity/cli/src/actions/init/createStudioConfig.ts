@@ -31,6 +31,7 @@ export interface GenerateConfigOptions {
   variables: {
     autoUpdates: boolean
     dataset: string
+    extensionApi: boolean
     organizationId?: string
     projectId: string
     projectName?: string

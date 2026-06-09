@@ -195,6 +195,7 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: 'test',
+      extensionApi: false,
       organizationId: undefined,
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -227,6 +228,54 @@ describe('#init: bootstrap-app-initialization', () => {
     const bootstrapOrder = mocks.bootstrapTemplate.mock.invocationCallOrder[0]
     const skillsOrder = mocks.setupSkills.mock.invocationCallOrder[0]
     expect(skillsOrder).toBeGreaterThan(bootstrapOrder)
+  })
+
+  test('passes the extension API opt-in through to bootstrapTemplate', async () => {
+    setupInitSuccessMocks()
+
+    mocks.select.mockResolvedValueOnce('blog') // template
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {
+      message: 'Setup your Cursor IDE',
+    })
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+        '--typescript',
+        '--unstable-extension-api',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+    if (error) throw error
+
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({extensionApi: true}),
+    )
   })
 
   test('initializes app with env file', async () => {
@@ -289,6 +338,7 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
+      extensionApi: false,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -351,6 +401,7 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
+      extensionApi: false,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -421,6 +472,7 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
+      extensionApi: false,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
