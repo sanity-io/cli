@@ -34,7 +34,7 @@ interface InternalBuildOptions {
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   entry: string | undefined
-  isWorkbench: boolean
+  isWorkbenchApp: boolean
   minify: boolean
   outDir: string | undefined
   output: Output
@@ -62,7 +62,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     calledFromDeploy: options.calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
-    isWorkbench: isWorkbenchApp(cliConfig && 'app' in cliConfig ? cliConfig.app : undefined),
+    isWorkbenchApp: isWorkbenchApp(cliConfig && 'app' in cliConfig ? cliConfig.app : undefined),
     minify: flags.minify,
     outDir,
     output,
@@ -205,7 +205,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
 
   let importMap: {imports?: Record<string, string>} | undefined
 
-  if (autoUpdatesEnabled && !options.isWorkbench) {
+  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
@@ -225,7 +225,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
       entry: options.entry,
       importMap,
       isApp: true,
-      isWorkbench: options.isWorkbench,
+      isWorkbenchApp: options.isWorkbenchApp,
       minify: options.minify,
       outputDir,
       reactCompiler: options.reactCompiler,

@@ -76,7 +76,7 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
    * Whether this is a workbench app (opted in via `unstable_defineApp`). Drives
    * the module-federation build — replaces the old `federation.enabled` flag.
    */
-  isWorkbench?: boolean
+  isWorkbenchApp?: boolean
 
   /**
    * Whether or not to minify the output (only used in `mode: 'production'`)
@@ -111,7 +111,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     entries,
     importMap,
     isApp,
-    isWorkbench,
+    isWorkbenchApp,
     minify,
     mode,
     outputDir,
@@ -191,7 +191,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     plugins: [
       // Federation builds only need the federation plugin — skip client-specific
       // plugins (react, favicons, runtime rewrite, build entries, schema)
-      ...(isWorkbench
+      ...(isWorkbenchApp
         ? [
             ...sharedPlugins,
             viteFederation({
@@ -245,7 +245,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
 
   // Federation builds don't produce a client bundle — the federation
   // plugin configures its own environment and build entry point.
-  if (mode === 'production' && !isWorkbench) {
+  if (mode === 'production' && !isWorkbenchApp) {
     viteConfig.build = {
       ...viteConfig.build,
       assetsDir: 'static',

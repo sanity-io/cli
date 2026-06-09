@@ -42,7 +42,7 @@ interface InternalBuildOptions {
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   isApp: boolean
-  isWorkbench: boolean
+  isWorkbenchApp: boolean
   minify: boolean
   outDir: string | undefined
   output: Output
@@ -83,7 +83,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
-    isWorkbench: isWorkbenchApp(cliConfig?.app),
+    isWorkbenchApp: isWorkbenchApp(cliConfig?.app),
     minify: Boolean(flags.minify),
     outDir,
     output,
@@ -280,7 +280,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
 
   let importMap
 
-  if (autoUpdatesEnabled && !options.isWorkbench) {
+  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
@@ -297,7 +297,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       basePath,
       cwd: workDir,
       importMap,
-      isWorkbench: options.isWorkbench,
+      isWorkbenchApp: options.isWorkbenchApp,
       minify,
       outputDir,
       reactCompiler,

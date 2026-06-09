@@ -41,7 +41,7 @@ interface StaticBuildOptions {
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
   /** Workbench app (opted in via `unstable_defineApp`) — drives the federation build. */
-  isWorkbench?: boolean
+  isWorkbenchApp?: boolean
   minify?: boolean
   profile?: boolean
   reactCompiler?: ReactCompilerConfig
@@ -66,7 +66,7 @@ export async function buildStaticFiles(
     entry,
     importMap,
     isApp,
-    isWorkbench,
+    isWorkbenchApp,
     minify = true,
     outputDir,
     reactCompiler,
@@ -81,7 +81,7 @@ export async function buildStaticFiles(
    * (remote-entry, mf-manifest) — skip client-specific steps like
    * runtime generation, static file copies, and favicons.
    */
-  if (isWorkbench) {
+  if (isWorkbenchApp) {
     buildDebug('Resolving entries for federation build')
     const entries = await resolveEntries({cwd, entry, isApp})
 
@@ -92,7 +92,7 @@ export async function buildStaticFiles(
       entries,
       getEnvironmentVariables,
       isApp,
-      isWorkbench,
+      isWorkbenchApp,
       minify,
       mode,
       outputDir,
@@ -146,7 +146,7 @@ export async function buildStaticFiles(
     getEnvironmentVariables,
     importMap,
     isApp,
-    isWorkbench,
+    isWorkbenchApp,
     minify,
     mode,
     outputDir,

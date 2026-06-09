@@ -31,7 +31,7 @@ export interface DevServerOptions {
   entry?: string
   httpHost?: string
   isApp?: boolean
-  isWorkbench?: boolean
+  isWorkbenchApp?: boolean
   projectName?: string
   schemaExtraction?: CliConfig['schemaExtraction']
   typegen?: CliConfig['typegen']
@@ -54,7 +54,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     httpHost,
     httpPort,
     isApp,
-    isWorkbench,
+    isWorkbenchApp,
     reactCompiler,
     reactStrictMode,
     schemaExtraction,
@@ -100,7 +100,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     entries,
     getEnvironmentVariables,
     isApp,
-    isWorkbench,
+    isWorkbenchApp,
     mode: 'development',
     reactCompiler,
     schemaExtraction,

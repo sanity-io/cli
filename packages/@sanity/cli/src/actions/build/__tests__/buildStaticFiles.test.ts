@@ -66,7 +66,7 @@ describe('buildStaticFiles', () => {
       await buildStaticFiles({
         basePath: '/',
         cwd,
-        isWorkbench: true,
+        isWorkbenchApp: true,
         outputDir,
         vite: userVite,
       })
@@ -93,7 +93,7 @@ describe('buildStaticFiles', () => {
       await buildStaticFiles({
         basePath: '/',
         cwd,
-        isWorkbench: true,
+        isWorkbenchApp: true,
         outputDir,
       })
 
@@ -105,7 +105,7 @@ describe('buildStaticFiles', () => {
       await buildStaticFiles({
         basePath: '/',
         cwd,
-        isWorkbench: true,
+        isWorkbenchApp: true,
         outputDir,
       })
 

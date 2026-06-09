@@ -450,7 +450,7 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
       getEnvironmentVariables,
-      isWorkbench: true,
+      isWorkbenchApp: true,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -475,7 +475,7 @@ describe('#getViteConfig', () => {
       cwd: mockTestCwd,
       entries: mockEntries,
       getEnvironmentVariables,
-      isWorkbench: false,
+      isWorkbenchApp: false,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
