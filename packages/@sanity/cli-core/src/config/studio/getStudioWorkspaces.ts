@@ -57,9 +57,11 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
     ? config
     : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
 
+  const emptyAuth = {state: of(getEmptyAuth())}
+
   const unauthedWorkspaces = rawWorkspaces.map((workspace) => ({
     ...workspace,
-    auth: {state: of(getEmptyAuth())},
+    auth: emptyAuth,
   }))
 
   debug('Unauthed workspaces %o', unauthedWorkspaces)
