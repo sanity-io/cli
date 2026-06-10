@@ -1,100 +1,51 @@
-import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {getLocalPackageDir, getLocalPackageVersion} from '@sanity/cli-core'
+import {getLocalPackageDir, getLocalPackageVersion, readPackageJson} from '@sanity/cli-core'
 import {gt, minVersion, rcompare, satisfies} from 'semver'
 import {build, esmExternalRequirePlugin} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {getCjsNamedExports} from './getCjsNamedExports.js'
+import {resolveCjsNamedExportsSource} from './resolveCjsNamedExportsSource.js'
+import {
+  resolveEntryPointPath,
+  resolveVendorEntryPoints,
+  type VendorEntryPoints,
+  type VendorEntryPointStrategy,
+} from './resolveVendorEntryPoints.js'
 import {createVendorNamedExportsPlugin} from './vite/plugin-sanity-vendor-named-exports.js'
 
 // Directory where vendor packages will be stored
 const VENDOR_DIR = 'vendor'
 
 /**
- * A type representing the imports of vendor packages, defining specific entry
- * points for various versions and subpaths of the packages.
- *
- * The `VendorImports` object is used to build ESM browser-compatible versions
- * of the specified packages. This approach ensures that the appropriate version
- * and entry points are used for each package, enabling compatibility and proper
- * functionality in the browser environment.
- *
- * ## Rationale
- *
- * The rationale for this structure is to handle different versions of the
- * packages carefully, especially major versions. Major version bumps often
- * introduce breaking changes, so the module scheme for the package needs to be
- * checked when there is a major version update. However, minor and patch
- * versions are generally backward compatible, so they are handled more
- * leniently. By assuming that new minor versions are compatible, we avoid
- * unnecessary warnings and streamline the update process.
- *
- * If a new minor version introduces an additional subpath export within the
- * package of this version range, the corresponding package can add a more
- * specific version range that includes the new subpath. This design allows for
- * flexibility and ease of maintenance, ensuring that the latest features and
- * fixes are incorporated without extensive manual intervention.
- *
- * An additional subpath export within the package of this version range that
- * could cause the build to break if that new export is used, can be treated as
- * a bug fix. It might make more sense to our users that this new subpath isn't
- * supported yet until we address it as a bug fix. This approach helps maintain
- * stability and prevents unexpected issues during the build process.
- *
- * ## Structure
- * The `VendorImports` type is a nested object where:
- * - The keys at the first level represent the package names.
- * - The keys at the second level represent the version ranges (e.g., `^19.0.0`).
- * - The keys at the third level represent the subpaths within the package (e.g., `.` for the main entry point).
- * - The values at the third level are the relative paths to the corresponding entry points within the package.
- *
- * This structure allows for precise specification of the entry points for
- * different versions and subpaths, ensuring that the correct files are used
- * during the build process.
+ * Supported version ranges for vendor packages whose entry points are resolved
+ * from each package's `package.json` at build time.
  */
-type VendorImports = {
+type VendorPackageRanges = {
   [packageName: string]: {
-    [versionRange: string]: {
-      [subpath: string]: string
-    }
+    [versionRange: string]: VendorEntryPointStrategy
   }
 }
 
-// Define the vendor packages and their corresponding versions and entry points
-const VENDOR_IMPORTS: VendorImports = {
+const VENDOR_PACKAGES: VendorPackageRanges = {
   react: {
-    '^19.2.0': {
-      '.': './cjs/react.production.js',
-      './compiler-runtime': './cjs/react-compiler-runtime.production.js',
-      './jsx-dev-runtime': './cjs/react-jsx-dev-runtime.production.js',
-      './jsx-runtime': './cjs/react-jsx-runtime.production.js',
-      './package.json': './package.json',
-    },
+    '^19.2.0': 'exports',
   },
   'react-dom': {
-    '^19.2.0': {
-      '.': './cjs/react-dom.production.js',
-      './client': './cjs/react-dom-client.production.js',
-      './package.json': './package.json',
-      './server': './cjs/react-dom-server-legacy.browser.production.js',
-      './server.browser': './cjs/react-dom-server-legacy.browser.production.js',
-      './static': './cjs/react-dom-server.browser.production.js',
-      './static.browser': './cjs/react-dom-server.browser.production.js',
-    },
+    '^19.2.0': 'exports',
   },
 }
 
-const STYLED_COMPONENTS_IMPORTS = {
+const STYLED_COMPONENTS_PACKAGES: VendorPackageRanges = {
   'styled-components': {
-    '^6.1.0': {
-      '.': './dist/styled-components.browser.esm.js',
-      './package.json': './package.json',
-    },
+    '^6.1.0': 'browser-field',
   },
 }
+
+/** Packages whose entries are CommonJS and need the named-exports plugin. */
+const CJS_VENDOR_PACKAGES = new Set(Object.keys(VENDOR_PACKAGES))
 
 interface VendorBuildOptions {
   basePath: string
@@ -103,9 +54,56 @@ interface VendorBuildOptions {
   outputDir: string
 }
 
+async function resolveSupportedEntryPoints(
+  packageName: string,
+  ranges: VendorPackageRanges[string],
+  cwd: string,
+): Promise<VendorEntryPoints> {
+  const version = await getLocalPackageVersion(packageName, cwd)
+  if (!version) {
+    throw new Error(`Could not get version for '${packageName}'`)
+  }
+
+  const sortedRanges = Object.keys(ranges).toSorted((range1, range2) => {
+    const min1 = minVersion(range1)
+    const min2 = minVersion(range2)
+
+    if (!min1) throw new Error(`Could not parse range '${range1}'`)
+    if (!min2) throw new Error(`Could not parse range '${range2}'`)
+
+    return rcompare(min1.version, min2.version)
+  })
+
+  const matchedRange = sortedRanges.find((range) => satisfies(version, range))
+
+  if (!matchedRange) {
+    const min = minVersion(sortedRanges.at(-1)!)
+    if (!min) {
+      throw new Error(`Could not find a minimum version for package '${packageName}'`)
+    }
+
+    if (gt(min.version, version)) {
+      throw new Error(`Package '${packageName}' requires at least ${min.version}.`)
+    }
+
+    throw new Error(`Version '${version}' of package '${packageName}' is not supported yet.`)
+  }
+
+  const packageDir = getLocalPackageDir(packageName, cwd)
+  const manifest = await readPackageJson(path.join(packageDir, 'package.json'), {
+    skipSchemaValidation: true,
+  })
+
+  return resolveVendorEntryPoints({
+    fallback: ranges[matchedRange],
+    manifest,
+    packageDir,
+  })
+}
+
 /**
  * Builds the ESM browser compatible versions of the vendor packages
- * specified in VENDOR_IMPORTS. Returns the `imports` object of an import map.
+ * specified in VENDOR_PACKAGES. Returns the `imports` object of an import map.
  */
 export async function buildVendorDependencies({
   basePath,
@@ -119,51 +117,14 @@ export async function buildVendorDependencies({
   // Named exports each CommonJS entry must re-expose as ESM, keyed by chunk name.
   const namesByChunkName: Record<string, readonly string[]> = {}
 
-  // If we're building an app, we don't need to build the styled-components package
-  const vendorImports = isApp ? VENDOR_IMPORTS : {...VENDOR_IMPORTS, ...STYLED_COMPONENTS_IMPORTS}
+  const vendorPackages = isApp
+    ? VENDOR_PACKAGES
+    : {...VENDOR_PACKAGES, ...STYLED_COMPONENTS_PACKAGES}
 
-  // Iterate over each package and its version ranges in VENDOR_IMPORTS
-  for (const [packageName, ranges] of Object.entries(vendorImports)) {
-    const version = await getLocalPackageVersion(packageName, cwd)
-    if (!version) {
-      throw new Error(`Could not get version for '${packageName}'`)
-    }
-
-    // Sort version ranges in descending order
-    const sortedRanges = Object.keys(ranges).toSorted((range1, range2) => {
-      const min1 = minVersion(range1)
-      const min2 = minVersion(range2)
-
-      if (!min1) throw new Error(`Could not parse range '${range1}'`)
-      if (!min2) throw new Error(`Could not parse range '${range2}'`)
-
-      // sort them in reverse so we can rely on array `.find` below
-      return rcompare(min1.version, min2.version)
-    })
-
-    // Find the first version range that satisfies the package version
-    const matchedRange = sortedRanges.find((range) => satisfies(version, range))
-
-    if (!matchedRange) {
-      const min = minVersion(sortedRanges.at(-1)!)
-      if (!min) {
-        throw new Error(`Could not find a minimum version for package '${packageName}'`)
-      }
-
-      if (gt(min.version, version)) {
-        throw new Error(`Package '${packageName}' requires at least ${min.version}.`)
-      }
-
-      throw new Error(`Version '${version}' of package '${packageName}' is not supported yet.`)
-    }
-
-    const subpaths = ranges[matchedRange]
-
-    // Resolve the actual package directory using Node module resolution,
-    // so that hoisted packages in monorepos/workspaces are found correctly
+  for (const [packageName, ranges] of Object.entries(vendorPackages)) {
+    const subpaths = await resolveSupportedEntryPoints(packageName, ranges, cwd)
     const packageDir = getLocalPackageDir(packageName, cwd)
 
-    // Iterate over each subpath and its corresponding entry point
     for (const [subpath, relativeEntryPoint] of Object.entries(subpaths)) {
       const specifier = path.posix.join(packageName, subpath)
       const chunkName = path.posix.join(
@@ -171,7 +132,7 @@ export async function buildVendorDependencies({
         path.relative(packageName, specifier) || 'index',
       )
 
-      const entryPath = path.join(packageDir, relativeEntryPoint)
+      const entryPath = resolveEntryPointPath(packageDir, relativeEntryPoint)
       entry[chunkName] = entryPath
       imports[specifier] = path.posix.join('/', basePath, VENDOR_DIR, `${chunkName}.mjs`)
 
@@ -180,8 +141,8 @@ export async function buildVendorDependencies({
       // must additionally re-expose (see `createVendorNamedExportsPlugin`).
       // `styled-components` is native ESM and `package.json` is JSON, so both are
       // skipped here.
-      if (packageName in VENDOR_IMPORTS && subpath !== './package.json') {
-        const source = await readFile(entryPath, 'utf8')
+      if (CJS_VENDOR_PACKAGES.has(packageName) && subpath !== './package.json') {
+        const source = await resolveCjsNamedExportsSource(packageDir, entryPath)
         namesByChunkName[chunkName] = await getCjsNamedExports(source, chunkName)
       }
     }
