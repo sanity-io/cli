@@ -865,7 +865,7 @@ describe('#deploy studio (external)', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain(
-        'Deploying an `unstable_defineApp` application to an external host is not supported',
+        'Deploying a federated application to an external host is not yet supported',
       )
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })

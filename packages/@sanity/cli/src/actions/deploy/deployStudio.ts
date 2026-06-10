@@ -36,13 +36,13 @@ export async function deployStudio(options: DeployAppOptions) {
   const isExternal = !!flags.external
   const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
 
-  // `unstable_defineApp` applications integrate through Sanity's build and
-  // hosting pipeline, which `--external` skips. Fail before any prompts or
-  // API calls.
+  // Federated (`unstable_defineApp`) applications integrate through Sanity's
+  // build and hosting pipeline, which `--external` skips. Fail before any
+  // prompts or API calls.
   if (isExternal && isWorkbenchApp(cliConfig.app)) {
     output.error(
-      'Deploying an `unstable_defineApp` application to an external host is not supported. ' +
-        'Deploy without `--external`.',
+      'Deploying a federated application to an external host is not yet supported. ' +
+        'Remove the `--external` flag to deploy to Sanity hosting.',
       {exit: exitCodes.USAGE_ERROR},
     )
     return
