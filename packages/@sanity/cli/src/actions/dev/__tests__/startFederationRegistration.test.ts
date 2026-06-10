@@ -9,7 +9,13 @@ const mockExtractCoreAppManifest = vi.hoisted(() => vi.fn())
 const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
 const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
+const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
 
+// The core-app watcher re-reads the config to re-derive interfaces on each edit.
+vi.mock('@sanity/cli-core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+  getCliConfigUncached: mockGetCliConfigUncached,
+}))
 vi.mock('../devServerRegistry.js', () => ({
   registerDevServer: mockRegisterDevServer,
 }))
@@ -39,6 +45,7 @@ describe('startFederationRegistration', () => {
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
+    mockGetCliConfigUncached.mockResolvedValue({app: workbenchApp()})
     mockGetAppId.mockReturnValue(undefined)
   })
 
@@ -199,9 +206,13 @@ describe('startFederationRegistration', () => {
     )
   })
 
-  test('wires extractCoreAppManifest into the core-app watcher', async () => {
+  test('wires extractCoreAppManifest into the core-app watcher and re-derives interfaces', async () => {
     const appManifest = {icon: '<svg><path d="M0 0"/></svg>', title: 'My App', version: '1'}
     mockExtractCoreAppManifest.mockResolvedValue(appManifest)
+    // A fresh config read with a panel → the watcher re-derives + forwards it.
+    mockGetCliConfigUncached.mockResolvedValue({
+      app: workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]}),
+    })
 
     await startFederationRegistration({
       cliConfig: workbenchCliConfig(),
@@ -212,13 +223,20 @@ describe('startFederationRegistration', () => {
     })
 
     const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
+    // The manifest stays pure; interfaces ride alongside as a separate field.
     await expect(
       extract({configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}),
-    ).resolves.toEqual(appManifest)
+    ).resolves.toEqual({
+      interfaces: [{entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'}],
+      manifest: appManifest,
+    })
     expect(mockExtractCoreAppManifest).toHaveBeenCalledWith({workDir: '/tmp/sanity-project'})
   })
 
-  test('wires extractStudioManifest into the studio watcher', async () => {
+  test('wires extractStudioManifest into the studio watcher (no interfaces)', async () => {
+    const studioManifest = {version: 3, workspaces: []}
+    mockExtractStudioManifest.mockResolvedValue(studioManifest)
+
     await startFederationRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
@@ -228,7 +246,10 @@ describe('startFederationRegistration', () => {
     })
 
     const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
-    expect(extract).toBe(mockExtractStudioManifest)
+    await expect(
+      extract({configPath: '/tmp/sanity-project/sanity.config.ts', workDir: '/tmp/sanity-project'}),
+    ).resolves.toEqual({interfaces: undefined, manifest: studioManifest})
+    expect(mockExtractStudioManifest).toHaveBeenCalled()
   })
 
   test('calls manifest cleanup on close', async () => {
@@ -301,5 +322,106 @@ describe('startFederationRegistration', () => {
       expect.stringContaining('Found both app.id (deprecated) and deployment.appId'),
       expect.objectContaining({exit: 1}),
     )
+  })
+
+  // US5 — `entry` declares an SDK app's navigable `app` view.
+  test('forwards an `app` interface derived from `entry` for an SDK app', async () => {
+    await startFederationRegistration({
+      cliConfig: {app: workbenchApp({entry: './src/App.tsx'})},
+      isApp: true,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interfaces: expect.arrayContaining([
+          {entry_point: './src/App.tsx', interface_type: 'app', name: 'test-app'},
+        ]),
+      }),
+    )
+  })
+
+  test('forwards no `app` interface when an SDK app declares no `entry`', async () => {
+    await startFederationRegistration({
+      cliConfig: {app: workbenchApp()},
+      isApp: true,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+
+    const {interfaces} = mockRegisterDevServer.mock.calls[0][0]
+    expect(
+      (interfaces ?? []).some((i: {interface_type: string}) => i.interface_type === 'app'),
+    ).toBe(false)
+  })
+
+  test('rejects a studio that declares `entry` — app views for studios are not implemented yet', async () => {
+    await expect(
+      startFederationRegistration({
+        cliConfig: {app: workbenchApp({entry: './src/App.tsx'})},
+        isApp: false,
+        output: createMockOutput(),
+        server: mockServer({port: 3334}) as any,
+        workDir: '/tmp/sanity-project',
+      }),
+    ).rejects.toThrow('App views for studios are not implemented yet')
+  })
+
+  // FR-024 — adding/removing a view or service must rebuild the federation
+  // remote so the new interface gets an expose + artifact. The watcher drives it.
+  const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
+
+  test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {
+    const onInterfacesChange = vi.fn().mockResolvedValue(undefined)
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+
+    await startFederationRegistration({
+      cliConfig: {app: workbenchApp()}, // no interfaces yet
+      isApp: true,
+      onInterfacesChange,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    // A panel appears → rebuild, then patch the registry.
+    await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'a'})
+    expect(onInterfacesChange).toHaveBeenCalledTimes(1)
+    expect(update).toHaveBeenCalledTimes(1)
+
+    // Same set on the next pass → no rebuild, registry still patched.
+    await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'b'})
+    expect(onInterfacesChange).toHaveBeenCalledTimes(1)
+    expect(update).toHaveBeenCalledTimes(2)
+  })
+
+  test('does not rebuild when only the manifest changes (same interface set)', async () => {
+    const onInterfacesChange = vi.fn().mockResolvedValue(undefined)
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
+
+    await startFederationRegistration({
+      cliConfig: {
+        app: workbenchApp({views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}]}),
+      },
+      isApp: true,
+      onInterfacesChange,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    // Same interfaces as the initial registration; only title/icon moved.
+    await watcherUpdate({
+      interfaces: [feed],
+      manifest: {title: 'Renamed', version: '1'},
+      manifestUpdatedAt: 'a',
+    })
+    expect(onInterfacesChange).not.toHaveBeenCalled()
   })
 })
