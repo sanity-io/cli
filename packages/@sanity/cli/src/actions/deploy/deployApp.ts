@@ -20,6 +20,7 @@ import {createUserApplicationForApp} from './createUserApplicationForApp.js'
 import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
 import {type DeployAppOptions} from './types.js'
+import {logUploadSummary} from './uploadSummary.js'
 import {buildViewDeploymentPayload} from './viewDeployment.js'
 
 /**
@@ -87,12 +88,12 @@ export async function deployApp(options: DeployAppOptions) {
     // Ensure that the directory exists, is a directory and seems to have valid content
     spin = spin.start()
     try {
-      await checkDir(sourceDir)
+      await checkDir(sourceDir, {isWorkbenchApp: isWorkbenchApp(cliConfig.app)})
       spin.succeed()
     } catch (err) {
       spin.fail()
       deployDebug('Error checking directory', err)
-      output.error('Error checking directory', {exit: 1})
+      output.error(getErrorMessage(err), {exit: 1})
       return
     }
 
@@ -161,6 +162,16 @@ export async function deployApp(options: DeployAppOptions) {
         return
       }
     }
+
+    await logUploadSummary({
+      applicationId: userApplication.id,
+      hasManifest: Boolean(manifest),
+      isApp: true,
+      isAutoUpdating,
+      output,
+      sourceDir,
+      version: installedSdkVersion,
+    })
 
     spin = spinner('Deploying...').start()
     await createDeployment({

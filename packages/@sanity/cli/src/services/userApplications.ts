@@ -246,6 +246,32 @@ interface CreateDeploymentOptions {
   tarball?: Gzip
 }
 
+/**
+ * The user-applications endpoint a deployment posts to. Exported so deploy
+ * actions can tell the user exactly where the upload goes.
+ *
+ * @internal
+ */
+export function getDeploymentEndpoint({
+  applicationId,
+  isApp,
+  projectId,
+}: Pick<CreateDeploymentOptions, 'applicationId' | 'isApp' | 'projectId'>): {
+  query: {appType: 'coreApp' | 'studio'}
+  uri: string
+} {
+  if (isApp) {
+    return {
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${applicationId}/deployments`,
+    }
+  }
+  return {
+    query: {appType: 'studio'},
+    uri: `/projects/${projectId}/user-applications/${applicationId}/deployments`,
+  }
+}
+
 export async function createDeployment({
   applicationId,
   isApp,
@@ -271,16 +297,7 @@ export async function createDeployment({
     formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
   }
 
-  let uri
-  let query
-
-  if (isApp) {
-    uri = `/user-applications/${applicationId}/deployments`
-    query = {appType: 'coreApp'}
-  } else {
-    uri = `/projects/${projectId}/user-applications/${applicationId}/deployments`
-    query = {appType: 'studio'}
-  }
+  const {query, uri} = getDeploymentEndpoint({applicationId, isApp, projectId})
 
   return client.request({
     body: formData.pipe(new PassThrough()),

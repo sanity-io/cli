@@ -1,5 +1,6 @@
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {unstable_defineApp} from '@sanity/federation'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -205,6 +206,59 @@ describe('#deploy app', () => {
     expect(stderr).toContain('Verifying local content')
     expect(stderr).toContain('Deploying...')
 
+    expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('should validate the federation build shape for an unstable_defineApp app', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${appId}/deployments`,
+    }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
+
+    const app = unstable_defineApp({
+      name: 'workbench-app',
+      organizationId,
+      title: 'Workbench App',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          app,
+          deployment: {appId},
+        },
+      },
+    })
+    if (error) throw error
+
+    expect(mockCheckDir).toHaveBeenCalledWith(expect.any(String), {isWorkbenchApp: true})
+    expect(stdout).toContain(`Upload target: POST /user-applications/${appId}/deployments`)
     expect(stdout).toContain('Success! Application deployed')
   })
 
@@ -496,7 +550,8 @@ describe('#deploy app', () => {
       },
     })
 
-    expect(error?.message).toContain('Error checking directory')
+    // The underlying checkDir failure surfaces verbatim
+    expect(error?.message).toContain('Directory check failed')
     expect(error?.oclif?.exit).toBe(1)
   })
 
