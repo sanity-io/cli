@@ -449,8 +449,8 @@ describe('#getViteConfig', () => {
     const options = {
       cwd: mockTestCwd,
       entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
-      federation: {enabled: true},
       getEnvironmentVariables,
+      isWorkbenchApp: true,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -474,8 +474,8 @@ describe('#getViteConfig', () => {
     const options = {
       cwd: mockTestCwd,
       entries: mockEntries,
-      federation: {enabled: false},
       getEnvironmentVariables,
+      isWorkbenchApp: false,
       mode: 'development' as const,
       reactCompiler: undefined,
     }

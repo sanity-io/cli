@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {devAction} from '../devAction.js'
-import {createBaseDevOptions, createMockOutput} from './testHelpers.js'
+import {createBaseDevOptions, createMockOutput, workbenchCliConfig} from './testHelpers.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
@@ -136,7 +136,7 @@ describe('devAction', () => {
     test('starts federation registration when federation is enabled', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
-      await devAction(createBaseDevOptions({cliConfig: {federation: {enabled: true}}}))
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
 
       expect(mockStartFederationRegistration).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -157,7 +157,7 @@ describe('devAction', () => {
     test('passes isApp: true for app mode', async () => {
       mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
-      await devAction(createBaseDevOptions({cliConfig: {federation: {enabled: true}}, isApp: true}))
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
 
       expect(mockStartFederationRegistration).toHaveBeenCalledWith(
         expect.objectContaining({isApp: true}),
@@ -168,7 +168,7 @@ describe('devAction', () => {
       const server = mockServer({port: 3334})
       mockStartStudioDevServer.mockResolvedValue(server)
 
-      await devAction(createBaseDevOptions({cliConfig: {federation: {enabled: true}}}))
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
 
       expect(mockStartFederationRegistration).toHaveBeenCalledWith(
         expect.objectContaining({server: server.server}),
@@ -180,9 +180,7 @@ describe('devAction', () => {
       mockStartFederationRegistration.mockResolvedValue({close: mockFederationClose})
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
-      const result = await devAction(
-        createBaseDevOptions({cliConfig: {federation: {enabled: true}}}),
-      )
+      const result = await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
 
       await result.close()
       expect(mockFederationClose).toHaveBeenCalled()

@@ -29,7 +29,7 @@ import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
 import {getDefaultFaviconsPath} from './writeFavicons.js'
 
-interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction'> {
+interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
   /**
    * Root path of the studio/sanity app
    */
@@ -73,6 +73,12 @@ interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction'>
   isApp?: boolean
 
   /**
+   * Whether this is a workbench app (opted in via `unstable_defineApp`). Drives
+   * the module-federation build — replaces the old `federation.enabled` flag.
+   */
+  isWorkbenchApp?: boolean
+
+  /**
    * Whether or not to minify the output (only used in `mode: 'production'`)
    */
   minify?: boolean
@@ -103,9 +109,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     basePath: rawBasePath = '/',
     cwd,
     entries,
-    federation,
     importMap,
     isApp,
+    isWorkbenchApp,
     minify,
     mode,
     outputDir,
@@ -185,7 +191,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     plugins: [
       // Federation builds only need the federation plugin — skip client-specific
       // plugins (react, favicons, runtime rewrite, build entries, schema)
-      ...(federation?.enabled
+      ...(isWorkbenchApp
         ? [
             ...sharedPlugins,
             viteFederation({
@@ -239,7 +245,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
 
   // Federation builds don't produce a client bundle — the federation
   // plugin configures its own environment and build entry point.
-  if (mode === 'production' && !federation?.enabled) {
+  if (mode === 'production' && !isWorkbenchApp) {
     viteConfig.build = {
       ...viteConfig.build,
       assetsDir: 'static',

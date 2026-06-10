@@ -1,20 +1,38 @@
 import {readFile} from 'node:fs/promises'
 import {relative, resolve} from 'node:path'
 
-import {getCliConfigUncached} from '@sanity/cli-core'
+import {doImport, getCliConfigUncached} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {getErrorMessage} from '../../util/getErrorMessage.js'
+import {type sanitizeIcon as sanitizeIconFn} from './sanitizeIcon.js'
 import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
 
 interface ExtractCoreAppManifestOptions {
   workDir: string
 }
 
+const sanitizeIconPath = new URL('sanitizeIcon.js', import.meta.url).href
+
+/**
+ * Lazy-load {@link sanitizeIconFn} so `isomorphic-dompurify` (and its jsdom
+ * dependency) stays out of the CLI's eager import graph. The studio manifest
+ * resolver lazy-loads its icon machinery for the same reason; this path runs in
+ * the main process (not the manifest worker), so only an app deploy that
+ * actually has an icon pays the cost.
+ */
+async function lazySanitizeIcon(): Promise<typeof sanitizeIconFn> {
+  const mod = await doImport(sanitizeIconPath)
+  return mod.sanitizeIcon
+}
+
 /**
  * Resolves app.icon from config (a file path) to an SVG string for the manifest.
  * The manifest expects the SVG string inline, not a path.
- * Brett sanitizes SVGs so it's skipped here.
+ *
+ * The file is sanitized through the same allowlist as the studio manifest's
+ * icon resolver (see {@link lazySanitizeIcon}) so both manifest paths inline the
+ * same trusted subset of SVG markup.
  */
 async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
   const resolvedPath = resolve(workDir, iconPath)
@@ -43,7 +61,8 @@ async function readIconFromPath(workDir: string, iconPath: string): Promise<stri
     )
   }
 
-  return trimmed
+  const sanitizeIcon = await lazySanitizeIcon()
+  return sanitizeIcon(trimmed)
 }
 
 /**
