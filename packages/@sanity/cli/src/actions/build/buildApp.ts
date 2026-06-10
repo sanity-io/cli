@@ -14,6 +14,7 @@ import {
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {type DefineAppInput} from '@sanity/federation'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -43,6 +44,7 @@ interface InternalBuildOptions {
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
+  views: DefineAppInput['views']
   vite: UserViteConfig | undefined
   workDir: string
 }
@@ -55,14 +57,19 @@ interface InternalBuildOptions {
 export async function buildApp(options: BuildOptions): Promise<void> {
   const {cliConfig, flags, outDir, output, workDir} = options
 
+  const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined
+  // `views` lives on `unstable_defineApp`'s result, not the legacy `app` config
+  // object — read it off the branded app.
+  const workbenchApp = isWorkbenchApp(app) ? app : undefined
+
   await internalBuildApp({
     appId: getAppId(cliConfig),
-    appTitle: cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined,
+    appTitle: app?.title,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy: options.calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
-    entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
-    isWorkbenchApp: isWorkbenchApp(cliConfig && 'app' in cliConfig ? cliConfig.app : undefined),
+    entry: app?.entry,
+    isWorkbenchApp: Boolean(workbenchApp),
     minify: flags.minify,
     outDir,
     output,
@@ -71,6 +78,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: flags.yes,
+    views: workbenchApp?.views,
     vite: cliConfig.vite,
     workDir,
   })
@@ -231,6 +239,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
       reactCompiler: options.reactCompiler,
       schemaExtraction: options.schemaExtraction,
       sourceMap: options.sourceMap,
+      views: options.views,
       vite: options.vite,
     })
 
