@@ -69,8 +69,6 @@ const baseConfig = {
         'src/**/*.worker.ts',
         'package.config.ts',
       ],
-      // debug is used for type checking
-      ignoreDependencies: ['@types/debug'],
       project,
     },
     'packages/@sanity/cli-core': {

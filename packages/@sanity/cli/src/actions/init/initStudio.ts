@@ -27,7 +27,6 @@ export async function initStudio({
   datasetName,
   defaults,
   displayName,
-  federation,
   isFirstProject,
   mcpConfigured,
   options,
@@ -43,7 +42,6 @@ export async function initStudio({
   datasetName: string
   defaults: {projectName: string}
   displayName: string
-  federation: boolean
   isFirstProject: boolean
   mcpConfigured: EditorName[]
   options: InitOptions
@@ -93,7 +91,6 @@ export async function initStudio({
     datasetName,
     defaults,
     displayName,
-    federation,
     options,
     organizationId,
     output,
