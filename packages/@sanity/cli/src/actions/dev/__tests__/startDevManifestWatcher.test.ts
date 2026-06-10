@@ -44,12 +44,17 @@ const STUDIO_CONFIG_PATH = '/tmp/studio/sanity.config.ts'
 
 describe('startDevManifestWatcher', () => {
   let fakeWatcher: FakeFsWatcher
-  let mockExtract: Mock<(params: {configPath: string; workDir: string}) => Promise<unknown>>
+  let mockExtract: Mock<
+    (params: {configPath: string; workDir: string}) => Promise<{
+      interfaces?: {entry_point: string; interface_type: string; name: string}[] | undefined
+      manifest: unknown
+    }>
+  >
   const studioManifest = {createdAt: '2026-01-01', version: 3, workspaces: []}
 
   beforeEach(() => {
     fakeWatcher = new FakeFsWatcher()
-    mockExtract = vi.fn(async () => studioManifest)
+    mockExtract = vi.fn(async () => ({interfaces: undefined, manifest: studioManifest}))
     mockFindProjectRoot.mockResolvedValue({
       directory: WORK_DIR,
       path: STUDIO_CONFIG_PATH,
@@ -87,6 +92,7 @@ describe('startDevManifestWatcher', () => {
       workDir: WORK_DIR,
     })
     expect(update).toHaveBeenCalledWith({
+      interfaces: undefined,
       manifest: studioManifest,
       manifestUpdatedAt: expect.any(String),
     })
@@ -98,14 +104,16 @@ describe('startDevManifestWatcher', () => {
     // Block the first extraction until we say otherwise. This simulates the
     // user editing sanity.config.ts while the worker is still producing the
     // initial manifest — the watcher must not run a parallel extraction.
-    let resolveFirst: ((value: typeof studioManifest) => void) | undefined
+    let resolveFirst:
+      | ((value: {interfaces: undefined; manifest: typeof studioManifest}) => void)
+      | undefined
     mockExtract
       .mockReturnValueOnce(
         new Promise((resolve) => {
           resolveFirst = resolve
         }),
       )
-      .mockResolvedValueOnce(studioManifest)
+      .mockResolvedValueOnce({interfaces: undefined, manifest: studioManifest})
 
     const update = vi.fn()
     const watcher = await startDevManifestWatcher({
@@ -124,7 +132,7 @@ describe('startDevManifestWatcher', () => {
 
     // Release the initial extraction; the pending change-triggered run now
     // starts, serialized behind it.
-    resolveFirst!(studioManifest)
+    resolveFirst!({interfaces: undefined, manifest: studioManifest})
     await vi.advanceTimersByTimeAsync(0)
 
     expect(mockExtract).toHaveBeenCalledTimes(2)
@@ -186,7 +194,9 @@ describe('startDevManifestWatcher', () => {
   test('logs a warning and keeps running when extraction fails', async () => {
     const output = createMockOutput()
     const update = vi.fn()
-    mockExtract.mockRejectedValueOnce(new Error('bad schema')).mockResolvedValueOnce(studioManifest)
+    mockExtract
+      .mockRejectedValueOnce(new Error('bad schema'))
+      .mockResolvedValueOnce({interfaces: undefined, manifest: studioManifest})
 
     const watcher = await startDevManifestWatcher({
       extract: mockExtract,
@@ -233,12 +243,17 @@ describe('startDevManifestWatcher', () => {
     const APP_WORK_DIR = '/tmp/sdk-app'
     const APP_CONFIG_PATH = '/tmp/sdk-app/sanity.cli.ts'
     const appManifest = {icon: '<svg/>', title: 'My App', version: '1'}
+    // Interfaces ride alongside the manifest (not inside it) and re-sync on
+    // every config edit — FR-024.
+    const appInterfaces = [
+      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
+    ]
     mockFindProjectRoot.mockResolvedValue({
       directory: APP_WORK_DIR,
       path: APP_CONFIG_PATH,
       type: 'app',
     })
-    mockExtract.mockResolvedValue(appManifest)
+    mockExtract.mockResolvedValue({interfaces: appInterfaces, manifest: appManifest})
     const update = vi.fn()
 
     const watcher = await startDevManifestWatcher({
@@ -254,6 +269,7 @@ describe('startDevManifestWatcher', () => {
       workDir: APP_WORK_DIR,
     })
     expect(update).toHaveBeenCalledWith({
+      interfaces: appInterfaces,
       manifest: appManifest,
       manifestUpdatedAt: expect.any(String),
     })

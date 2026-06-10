@@ -8,7 +8,7 @@ import {
   readPackageJson,
   type UserViteConfig,
 } from '@sanity/cli-core'
-import {federation as viteFederation} from '@sanity/federation/vite'
+import {type InterfaceArtifact, federation as viteFederation} from '@sanity/federation/vite'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -39,7 +39,8 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
 
   entries: {
     relativeConfigLocation: string | null
-    relativeEntry: string
+    // `null` when a branded app declares no `entry` (sanity-io/workbench spec 002-workbench-extension-api, US5) — no app view.
+    relativeEntry: string | null
   }
 
   /**
@@ -97,6 +98,12 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
+
+  /**
+   * Views the workbench app declares. Built into render-contract artifacts and
+   * exposed through module federation as `./views/<name>`.
+   */
+  views?: readonly InterfaceArtifact[]
 }
 
 /**
@@ -122,6 +129,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
+    views,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -191,7 +199,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             viteFederation({
               ...(isApp
                 ? {
-                    appEntry: entries.relativeEntry,
+                    // `null` relativeEntry (a branded app with no `entry`, sanity-io/workbench spec 002-workbench-extension-api, US5)
+                    // → omit `appEntry` so the plugin exposes no `./App`.
+                    ...(entries.relativeEntry ? {appEntry: entries.relativeEntry} : {}),
                     isApp: true as const,
                   }
                 : {
@@ -200,6 +210,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
                     studioConfigPath: entries.relativeConfigLocation!,
                   }),
               pkgJson: await readPackageJson(path.join(cwd, 'package.json')),
+              views,
               workDir: cwd,
             }),
           ]

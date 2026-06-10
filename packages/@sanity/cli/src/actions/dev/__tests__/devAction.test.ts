@@ -8,7 +8,14 @@ const mockStartAppDevServer = vi.hoisted(() => vi.fn())
 const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockStartFederationRegistration = vi.hoisted(() => vi.fn())
 const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
+const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
 
+// The rebuild hook re-reads the config so the recreated app server picks up the
+// new view/service set.
+vi.mock('@sanity/cli-core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+  getCliConfigUncached: mockGetCliConfigUncached,
+}))
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
 }))
@@ -184,6 +191,39 @@ describe('devAction', () => {
 
       await result.close()
       expect(mockFederationClose).toHaveBeenCalled()
+    })
+
+    test('rebuilds the app server with a freshly-loaded config when interfaces change', async () => {
+      const firstClose = vi.fn().mockResolvedValue(undefined)
+      const secondClose = vi.fn().mockResolvedValue(undefined)
+      mockStartAppDevServer
+        .mockResolvedValueOnce({...mockServer({port: 3334}), close: firstClose})
+        .mockResolvedValueOnce({...mockServer({port: 3334}), close: secondClose})
+      const freshConfig = workbenchCliConfig()
+      mockGetCliConfigUncached.mockResolvedValue(freshConfig)
+
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
+
+      const {onInterfacesChange} = mockStartFederationRegistration.mock.calls[0][0]
+      expect(onInterfacesChange).toBeInstanceOf(Function)
+
+      await onInterfacesChange()
+
+      // Old app server torn down, a new one started with the re-read config.
+      expect(firstClose).toHaveBeenCalledTimes(1)
+      expect(mockStartAppDevServer).toHaveBeenCalledTimes(2)
+      expect(mockStartAppDevServer).toHaveBeenLastCalledWith(
+        expect.objectContaining({cliConfig: freshConfig}),
+      )
+    })
+
+    test('wires no rebuild hook for studios (they declare no interfaces)', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: false}))
+
+      const {onInterfacesChange} = mockStartFederationRegistration.mock.calls[0][0]
+      expect(onInterfacesChange).toBeUndefined()
     })
   })
 
