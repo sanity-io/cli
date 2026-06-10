@@ -1,5 +1,29 @@
 # Change Log
 
+## [7.2.0](https://github.com/sanity-io/cli/compare/cli-v7.1.0...cli-v7.2.0)
+
+_2026-06-10_
+
+### Features
+
+- install sanity-migration skill alongside sanity-best-practices ([#1242](https://github.com/sanity-io/cli/pull/1242)) ([f8bf902](https://github.com/sanity-io/cli/commit/f8bf9021f0e26aaf634bcf5ad18543c86290126e))
+
+### Bug Fixes
+
+- Allow MCP and skills auto-install in all interactive environments, not just production ([#1211](https://github.com/sanity-io/cli/pull/1211)) ([d29f441](https://github.com/sanity-io/cli/commit/d29f4411159692d8e29912272800c62fd26c0c2d))
+- **init:** use `next-sanity@13` when adding Sanity to a Next.js project ([#1234](https://github.com/sanity-io/cli/pull/1234)) ([73eb7a2](https://github.com/sanity-io/cli/commit/73eb7a2a290a97c0c047cf5d84e6ce8c5ececf35))
+
+  Next.js projects scaffolded with `sanity init` now install `next-sanity@13` instead of `next-sanity@12`, keeping new projects on the latest major (with Next.js 16 and React 19 support).
+
+- move next js config after the mcp config ([#1235](https://github.com/sanity-io/cli/pull/1235)) ([58db902](https://github.com/sanity-io/cli/commit/58db90225765524609efed4158e67db7b153d341))
+- don't treat ignored build scripts as failure during dep install ([#1237](https://github.com/sanity-io/cli/pull/1237)) ([eaaa4c3](https://github.com/sanity-io/cli/commit/eaaa4c3c1f5a86651623643ad9858a518d1b7c91))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 1.0.2
+
 ## [7.1.0](https://github.com/sanity-io/cli/compare/cli-v7.0.2...cli-v7.1.0)
 
 _2026-06-08_

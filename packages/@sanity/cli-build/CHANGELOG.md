@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/sanity-io/cli/compare/cli-build-v1.0.1...cli-build-v1.0.2)
+
+_2026-06-10_
+
+### Bug Fixes
+
+- remove spread operator from viteReact plugin ([#1230](https://github.com/sanity-io/cli/pull/1230)) ([23e6568](https://github.com/sanity-io/cli/commit/23e6568dbdd319e2e2f77a8275853800233150cc))
+
 ## [1.0.1](https://github.com/sanity-io/cli/compare/cli-build-v1.0.0...cli-build-v1.0.1)
 
 _2026-06-04_
