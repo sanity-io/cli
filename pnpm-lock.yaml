@@ -4633,7 +4633,7 @@ packages:
     hasBin: true
 
   '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634':
-    resolution: {tarball: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634}
+    resolution: {integrity: sha512-+X83XpGjRHdlWPDdSJ+6EbrOheGQ7FC0l0vJlWSQd6LpvJmY2FfEcRbeIu/MhVNESUveppI43YfgXX84Q6biGQ==, tarball: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634}
     version: 0.1.0-alpha.9
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
