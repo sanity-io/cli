@@ -285,6 +285,11 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     return
   }
 
+  // Workbench is opt-in (no prompt): the flag swaps the scaffolded
+  // `sanity.cli.*` over to `unstable_defineApp` — the branded app is the sole
+  // workbench opt-in.
+  const workbench = flagOrDefault(options.unstableWorkbench, false)
+
   const sharedParams = {
     defaults,
     mcpConfigured,
@@ -295,6 +300,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     remoteTemplateInfo,
     sluggedName,
     trace,
+    workbench,
     workDir,
   }
 

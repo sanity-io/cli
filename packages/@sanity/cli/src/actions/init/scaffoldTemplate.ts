@@ -108,6 +108,7 @@ export async function scaffoldAndInstall({
   templateName,
   trace,
   useTypeScript,
+  workbench,
   workDir,
 }: {
   datasetName: string
@@ -123,6 +124,7 @@ export async function scaffoldAndInstall({
   templateName: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
   useTypeScript: boolean
+  workbench: boolean
   workDir: string
 }): Promise<{pkgManager: PackageManager}> {
   const {autoUpdates, git, overwriteFiles, packageManager, templateToken, unattended} = options
@@ -142,6 +144,7 @@ export async function scaffoldAndInstall({
     remoteTemplateInfo,
     templateName,
     useTypeScript,
+    workbench,
   })
 
   const pkgManager = await resolvePackageManager({
