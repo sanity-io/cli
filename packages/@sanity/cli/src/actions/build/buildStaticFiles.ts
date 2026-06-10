@@ -108,9 +108,8 @@ export async function buildStaticFiles(
       viteConfig,
       extendViteConfig,
     )
+    viteConfig = await finalizeViteConfig(viteConfig)
   }
-
-  viteConfig = await finalizeViteConfig(viteConfig, autoUpdates)
 
   const fromPath = path.join(cwd, 'static')
   // Copy files placed in /static to the built /static
