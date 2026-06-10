@@ -17,6 +17,15 @@ describe('deriveInterfaces', () => {
     ])
   })
 
+  test('maps services to worker interfaces', () => {
+    const app = workbenchApp({
+      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {entry_point: './src/service.ts', interface_type: 'worker', name: 'unread'},
+    ])
+  })
+
   test('derives an app interface from entry for an SDK app', () => {
     const app = workbenchApp({entry: './src/App.tsx', name: 'my-app'})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
@@ -30,14 +39,16 @@ describe('deriveInterfaces', () => {
     expect(result?.some((iface) => iface.interface_type === 'app')).toBe(false)
   })
 
-  test('combines views and the app view (in that order)', () => {
+  test('combines views, services, and the app view (in that order)', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
       name: 'my-app',
+      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
       views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
+      {entry_point: './src/service.ts', interface_type: 'worker', name: 'unread'},
       {entry_point: './src/App.tsx', interface_type: 'app', name: 'my-app'},
     ])
   })
@@ -49,7 +60,7 @@ describe('deriveInterfaces', () => {
     )
   })
 
-  test('a studio without entry still derives its panels', () => {
+  test('a studio without entry still derives its panels/workers', () => {
     const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
     expect(deriveInterfaces(app, {isApp: false})).toEqual([
       {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
