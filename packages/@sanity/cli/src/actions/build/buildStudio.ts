@@ -19,6 +19,7 @@ import {
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {type DefineAppInput} from '@sanity/federation'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -53,6 +54,7 @@ interface InternalBuildOptions {
   stats: boolean
   unattendedMode: boolean
   upgradePackages(options: {packages: [name: string, version: string][]}): Promise<void>
+  views: DefineAppInput['views']
   vite: UserViteConfig | undefined
   workDir: string
 }
@@ -64,6 +66,11 @@ interface InternalBuildOptions {
  */
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
+
+  // `views` lives on the branded `unstable_defineApp` result — read it off the
+  // branded app so it's gated on the brand, like the app build.
+  const app = cliConfig?.app
+  const workbenchApp = isWorkbenchApp(app) ? app : undefined
 
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
@@ -83,7 +90,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
-    isWorkbenchApp: isWorkbenchApp(cliConfig?.app),
+    isWorkbenchApp: Boolean(workbenchApp),
     minify: Boolean(flags.minify),
     outDir,
     output,
@@ -94,6 +101,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     stats: flags.stats,
     unattendedMode: Boolean(flags.yes),
     upgradePackages: upgradePkgs,
+    views: workbenchApp?.views,
     vite: cliConfig.vite,
     workDir,
   })
@@ -121,6 +129,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     stats,
     unattendedMode,
     upgradePackages,
+    views,
     vite,
     workDir,
   } = options
@@ -303,6 +312,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       reactCompiler,
       schemaExtraction,
       sourceMap,
+      views,
       vite,
     })
 

@@ -35,6 +35,9 @@ export function getDevServerConfig({
 
   const isApp = cliConfig ? determineIsApp(cliConfig) : false
   const reactStrictMode = resolveReactStrictMode(cliConfig)
+  // `views` is declared via `unstable_defineApp`, so read it off the branded
+  // app result rather than the legacy `app` config type.
+  const app = cliConfig?.app
 
   const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
   if (envBasePath && cliConfig?.project?.basePath) {
@@ -45,10 +48,14 @@ export function getDevServerConfig({
 
   return {
     ...baseConfig,
-    isWorkbenchApp: isWorkbenchApp(cliConfig?.app),
+    // The app's navigable entry. A branded app that omits `entry` has no app
+    // view (sanity-io/workbench spec 002-workbench-extension-api, US5): the runtime/federation skip the `./App` render path entirely.
+    entry: app?.entry,
+    isWorkbenchApp: isWorkbenchApp(app),
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
+    views: isWorkbenchApp(app) ? app.views : undefined,
   }
 }

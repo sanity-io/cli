@@ -37,9 +37,21 @@ const element = createElement(App)
 root.render(element)
 `
 
+// A branded app with no \`entry\` (sanity-io/workbench spec 002-workbench-extension-api, US5) has no navigable app view, so there's no
+// \`App\` to import or render standalone — it contributes panels/services to the
+// workbench instead. The page stays valid (no broken import) for the dev server.
+const noAppViewEntryModule = `
+// This file is auto-generated on 'sanity dev'
+// Modifications to this file is automatically discarded
+const root = document.getElementById('root')
+if (root) {
+  root.textContent = 'This application has no app view.'
+}
+`
+
 export function getEntryModule(options: {
   basePath?: string
-  entry?: string
+  entry?: string | null
   isApp?: boolean
   reactStrictMode: boolean | undefined
   relativeConfigLocation: string | null
@@ -47,7 +59,7 @@ export function getEntryModule(options: {
   const {basePath, entry, isApp, reactStrictMode, relativeConfigLocation} = options
 
   if (isApp) {
-    return appEntryModule.replace(/%ENTRY%/, JSON.stringify(entry || './src/App'))
+    return entry ? appEntryModule.replace(/%ENTRY%/, JSON.stringify(entry)) : noAppViewEntryModule
   }
 
   const sourceModule = relativeConfigLocation ? entryModule : noConfigEntryModule

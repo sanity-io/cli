@@ -1,10 +1,12 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
+import {deriveInterfaces} from './deriveInterfaces.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {extractStudioManifest} from './extractDevServerManifest.js'
+import {interfaceSetId} from './interfaceSetId.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface FederationRegistrationOptions {
@@ -13,6 +15,16 @@ interface FederationRegistrationOptions {
   output: Output
   server: ViteDevServer
   workDir: string
+
+  /**
+   * Called when the declared interface *set* changes (a view/service added,
+   * removed, renamed, or repointed in `sanity.cli.ts`) — before the registry is
+   * patched. The remote's `exposes` map + codegen artifacts are computed once at
+   * server start, so a newly-declared interface has no expose until the app dev
+   * server is recreated with the fresh config; this hook does that recreation.
+   * Awaited so the rebuilt remote is live before the workbench page reloads.
+   */
+  onInterfacesChange?: () => Promise<void>
 }
 
 interface FederationRegistration {
@@ -27,7 +39,7 @@ interface FederationRegistration {
 export async function startFederationRegistration(
   options: FederationRegistrationOptions,
 ): Promise<FederationRegistration> {
-  const {cliConfig, isApp, output, server, workDir} = options
+  const {cliConfig, isApp, onInterfacesChange, output, server, workDir} = options
 
   checkForDeprecatedAppId({cliConfig, output})
 
@@ -37,21 +49,53 @@ export async function startFederationRegistration(
   const addr = server.httpServer?.address()
   const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
 
+  // Interfaces (panels/workers/app view) are derived from the branded
+  // `unstable_defineApp` config and forwarded on the registry entry (alongside,
+  // not inside, the manifest) so the workbench renders local panels, runs local
+  // workers, and resolves the app view without a deploy. The watcher below
+  // re-derives them on every `sanity.cli.ts` edit so adding/removing a view or
+  // service re-syncs live (FR-024) — the way `title`/`icon` already do.
+  const interfaces = deriveInterfaces(cliConfig.app, {isApp})
+
   const registration = registerDevServer({
     host: appHost,
     id: getAppId(cliConfig),
+    interfaces,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     type: isApp ? 'coreApp' : 'studio',
     workDir,
   })
 
+  // Track the registered set so a watcher pass can tell whether the *set* of
+  // interfaces changed (rebuild needed) vs. only the manifest (title/icon) or a
+  // view/service source file (HMR handles it — the set is unchanged).
+  let lastInterfaceSetId = interfaceSetId(interfaces)
+
   const watcher = await startDevManifestWatcher({
     extract: isApp
-      ? ({workDir: wd}) => extractCoreAppManifest({workDir: wd})
-      : extractStudioManifest,
+      ? async ({workDir: wd}) => ({
+          // Interfaces are NOT part of the manifest — they're re-derived from the
+          // same config edit and forwarded as a separate registry field, so a
+          // `views`/`services`/`entry` change re-syncs live (FR-024).
+          interfaces: deriveInterfaces((await getCliConfigUncached(wd)).app, {isApp}),
+          manifest: await extractCoreAppManifest({workDir: wd}),
+        })
+      : (params) =>
+          extractStudioManifest(params).then((manifest) => ({interfaces: undefined, manifest})),
     output,
-    update: registration.update,
+    update: async (patch) => {
+      const nextInterfaceSetId = interfaceSetId(patch.interfaces)
+      if (nextInterfaceSetId !== lastInterfaceSetId) {
+        lastInterfaceSetId = nextInterfaceSetId
+        // Rebuild the app remote first (so the new view/service has an expose +
+        // artifact), THEN patch the registry — the registry patch is what reloads
+        // the workbench page, and it must re-fetch a remote that already exposes
+        // the new interface.
+        await onInterfacesChange?.()
+      }
+      registration.update(patch)
+    },
     workDir,
   })
 

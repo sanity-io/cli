@@ -678,6 +678,55 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
+    test('full-reloads the page when a running app gains or drops an interface', async () => {
+      // Adding/removing a view or service rebuilds the app remote with new
+      // exposes; module federation has the old remote-entry cached, so the page
+      // must reload to re-fetch it. A soft reconcile would render an empty panel.
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+
+      const base = {host: 'localhost', id: 'app-1', pid: 3, port: 3335, type: 'coreApp'}
+      const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
+      const alerts = {entry_point: './src/Alerts.tsx', interface_type: 'panel', name: 'alerts'}
+
+      // First sighting of the app — reconcile softly, don't reload.
+      watchCallback([{...base, interfaces: [feed]}])
+      expect(mockServer.ws.send).toHaveBeenLastCalledWith(
+        'sanity:workbench:local-applications',
+        expect.anything(),
+      )
+
+      // A second panel is declared — the remote was rebuilt, reload the page.
+      watchCallback([{...base, interfaces: [feed, alerts]}])
+      expect(mockServer.ws.send).toHaveBeenLastCalledWith({type: 'full-reload'})
+    })
+
+    test('does not reload on a new app or a manifest-only change', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+
+      const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
+      const base = {host: 'localhost', id: 'app-1', interfaces: [feed], pid: 3, port: 3335}
+
+      watchCallback([{...base, manifest: {title: 'V1', version: '1'}, type: 'coreApp'}])
+      // Same interface set, new title only — stay on the soft reconcile path.
+      watchCallback([{...base, manifest: {title: 'V2', version: '1'}, type: 'coreApp'}])
+
+      expect(mockServer.ws.send).not.toHaveBeenCalledWith({type: 'full-reload'})
+      expect(mockServer.ws.send).toHaveBeenLastCalledWith(
+        'sanity:workbench:local-applications',
+        expect.anything(),
+      )
+    })
+
     test('responds to client request with current applications', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
