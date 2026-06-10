@@ -4,7 +4,7 @@ import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
 import {readSkillState} from '../skills/readSkillState.js'
-import {SANITY_SKILL_NAME} from '../skills/setupSkills.js'
+import {SANITY_SKILL_NAMES} from '../skills/setupSkills.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
 import {
   EDITOR_CONFIGS,
@@ -75,7 +75,7 @@ interface ClassifiedEditor {
 
 /**
  * Classify each editor into one of four actions based on MCP status and
- * whether a Sanity skill is already installed for its skills-CLI agent.
+ * whether the Sanity skills are already installed for its skills-CLI agent.
  */
 function classifyEditors(editors: Editor[]): ClassifiedEditor[] {
   return editors.map((editor) => {
@@ -142,13 +142,13 @@ function applyMasking(
 function getPromptMessage(mcpMode: Mode, skillsMode: Mode): string {
   if (mcpMode === 'skip') return 'Install Sanity agent skills for these editors?'
   if (skillsMode === 'skip') return 'Configure Sanity MCP server?'
-  return 'Configure Sanity MCP and install agent skills for these editors?'
+  return 'Configure Sanity MCP and agent skills for these editors?'
 }
 
 /**
  * Main MCP setup orchestration.
  *
- * When `skillsMode !== 'skip'`, the prompt combines MCP and skill offers,
+ * When `skillsMode !== 'skip'`, the prompt combines MCP and skills offers,
  * and the result includes `skillsToInstall` — agent IDs the caller should
  * install via `setupSkills`. `setupMCP` itself never installs skills.
  */
@@ -191,7 +191,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
 
   // 4. Read skill state when skills are in scope so classification can dedup
   if (skillsMode !== 'skip') {
-    const {installedAgentDisplayNames} = await readSkillState({skillName: SANITY_SKILL_NAME})
+    const {installedAgentDisplayNames} = await readSkillState({skillNames: SANITY_SKILL_NAMES})
     for (const editor of editors) {
       const displayName = getSkillsCliAgentDisplayName(editor.name)
       editor.skillInstalled = displayName ? installedAgentDisplayNames.has(displayName) : false

@@ -26,20 +26,20 @@ describe('getPeerDependencies', () => {
     mockGetPartialEnvWithNpmPath.mockReturnValue({PATH: '/mock/path'})
     mockExeca.mockResolvedValueOnce({
       stdout: JSON.stringify({
-        next: '^15.0.0',
+        next: '^16.0.0',
         react: '^19.0.0',
         'react-dom': '^19.0.0',
       }),
     } as unknown as Result)
 
-    const result = await getPeerDependencies('next-sanity@12', cwd)
+    const result = await getPeerDependencies('next-sanity@13', cwd)
 
     expect(mockExeca).toHaveBeenCalledWith(
       'npm',
-      ['view', 'next-sanity@12', 'peerDependencies', '--json'],
+      ['view', 'next-sanity@13', 'peerDependencies', '--json'],
       {cwd, encoding: 'utf8', env: {PATH: '/mock/path'}},
     )
-    expect(result).toEqual(['next@^15.0.0', 'react@^19.0.0', 'react-dom@^19.0.0'])
+    expect(result).toEqual(['next@^16.0.0', 'react@^19.0.0', 'react-dom@^19.0.0'])
   })
 
   test('returns empty array when package has no peer dependencies', async () => {

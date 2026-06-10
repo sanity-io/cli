@@ -161,34 +161,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     return
   }
 
-  let initNext = flagOrDefault(options.nextjsAddConfigFiles, false)
-  if (isNextJs && shouldPrompt(options.unattended, options.nextjsAddConfigFiles)) {
-    initNext = await promptForConfigFiles()
-  }
-
-  trace.log({
-    detectedFramework: detectedFramework?.name,
-    selectedOption: initNext ? 'yes' : 'no',
-    step: 'useDetectedFramework',
-  })
-
-  const sluggedName = deburr(displayName.toLowerCase())
-    .replaceAll(/\s+/g, '-')
-    .replaceAll(/[^a-z0-9-]/g, '')
-
-  const initFramework = initNext
-
-  const defaults = await getProjectDefaults({isPlugin: false, workDir})
-
-  const outputPath = await getProjectOutputPath({
-    initFramework,
-    outputPath: options.outputPath,
-    sluggedName,
-    unattended: options.unattended,
-    useEnv: Boolean(options.env),
-    workDir,
-  })
-
   // Detect editors once, then share the result with MCP and skills setup so
   // we don't pay the detection cost (filesystem probes + CLI execa calls) twice.
   const detectedEditors =
@@ -241,6 +213,34 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
         : `${alreadyConfiguredEditors.length} editors already configured for Sanity MCP`
     spinner(label).start().succeed()
   }
+
+  let initNext = flagOrDefault(options.nextjsAddConfigFiles, false)
+  if (isNextJs && shouldPrompt(options.unattended, options.nextjsAddConfigFiles)) {
+    initNext = await promptForConfigFiles()
+  }
+
+  trace.log({
+    detectedFramework: detectedFramework?.name,
+    selectedOption: initNext ? 'yes' : 'no',
+    step: 'useDetectedFramework',
+  })
+
+  const sluggedName = deburr(displayName.toLowerCase())
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/[^a-z0-9-]/g, '')
+
+  const initFramework = initNext
+
+  const defaults = await getProjectDefaults({isPlugin: false, workDir})
+
+  const outputPath = await getProjectOutputPath({
+    initFramework,
+    outputPath: options.outputPath,
+    sluggedName,
+    unattended: options.unattended,
+    useEnv: Boolean(options.env),
+    workDir,
+  })
 
   if (isNextJs) {
     await checkNextJsReactCompatibility({

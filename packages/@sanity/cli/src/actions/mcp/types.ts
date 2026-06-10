@@ -17,7 +17,7 @@ export interface Editor {
   /** The existing auth token found in the editor config, if any */
   existingToken?: string
   /**
-   * Whether the Sanity agent skill is already installed globally for this
+   * Whether the Sanity agent skills are already installed globally for this
    * editor's skills-CLI agent. Populated during setup classification when
    * skill state has been probed; absent when skill installation isn't being
    * considered (e.g. `mcp configure`).

@@ -314,17 +314,17 @@ export async function initNextJs({
 
   switch (chosen) {
     case 'npm': {
-      await execa('npm', ['install', 'next-sanity@12'], execOptions)
+      await execa('npm', ['install', 'next-sanity@13'], execOptions)
       break
     }
     case 'pnpm': {
-      await execa('pnpm', ['install', 'next-sanity@12'], execOptions)
+      await execa('pnpm', ['install', 'next-sanity@13'], execOptions)
       break
     }
     case 'yarn': {
-      const peerDeps = await getPeerDependencies('next-sanity@12', workDir)
+      const peerDeps = await getPeerDependencies('next-sanity@13', workDir)
       await installNewPackages(
-        {packageManager: 'yarn', packages: ['next-sanity@12', ...peerDeps]},
+        {packageManager: 'yarn', packages: ['next-sanity@13', ...peerDeps]},
         {output, workDir},
       )
       break

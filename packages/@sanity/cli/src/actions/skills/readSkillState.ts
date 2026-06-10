@@ -6,12 +6,12 @@ import {SKILLS_BIN_PATH} from './setupSkills.js'
 const debug = subdebug('skills:state')
 
 interface ReadSkillStateOptions {
-  /** Name of the skill to look up (matches the `name` field in `skills list --json`). */
-  skillName: string
+  /** Names of the skills to look up (match the `name` field in `skills list --json`). */
+  skillNames: string[]
 }
 
 interface SkillState {
-  /** Display names of agents that have this skill installed globally. */
+  /** Display names of agents that have all of these skills installed globally. */
   installedAgentDisplayNames: Set<string>
 }
 
@@ -22,7 +22,9 @@ interface SkillListEntry {
 
 /**
  * Runs the bundled `skills list -g --json` and returns the set of agent
- * display names that have `skillName` installed globally.
+ * display names that have every skill in `skillNames` installed globally.
+ * Agents missing any of the skills are excluded, so they get a (idempotent)
+ * re-install that fills the gap.
  *
  * Any failure (spawn, parse, timeout, non-zero exit) is debug-logged and
  * resolved with an empty set. Callers should treat that as "treat all agents
@@ -57,11 +59,16 @@ export async function readSkillState(opts: ReadSkillStateOptions): Promise<Skill
     return empty
   }
 
-  const match = (parsed as SkillListEntry[]).find((entry) => entry?.name === opts.skillName)
-  if (!match || !Array.isArray(match.agents)) {
-    return empty
-  }
+  const agentSets = opts.skillNames.map((skillName) => {
+    const match = (parsed as SkillListEntry[]).find((entry) => entry?.name === skillName)
+    if (!match || !Array.isArray(match.agents)) {
+      return new Set<string>()
+    }
+    return new Set(match.agents.filter((a): a is string => typeof a === 'string'))
+  })
 
-  const displayNames = match.agents.filter((a): a is string => typeof a === 'string')
-  return {installedAgentDisplayNames: new Set(displayNames)}
+  const installedEverywhere = [...(agentSets[0] ?? [])].filter((agent) =>
+    agentSets.every((set) => set.has(agent)),
+  )
+  return {installedAgentDisplayNames: new Set(installedEverywhere)}
 }

@@ -13,7 +13,7 @@ export interface EditorChoice {
 function getEditorLabel(choice: EditorChoice): string {
   const {action, editor} = choice
   if (action === 'skill-only') {
-    return `${editor.name} (skill only — MCP already configured)`
+    return `${editor.name} (skills only — MCP already configured)`
   }
   if (editor.configured && editor.authStatus === 'unauthorized') {
     return `${editor.name} (auth expired)`
