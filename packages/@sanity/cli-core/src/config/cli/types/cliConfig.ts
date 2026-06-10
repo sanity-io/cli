@@ -24,6 +24,8 @@ export interface CliConfig {
   app?: {
     /** The entrypoint for your custom app. By default, `src/App.tsx` */
     entry?: string
+    /** Dock group the app renders in. Defaults to `dock.applications`. */
+    group?: 'dock.applications' | 'dock.system' | 'dock.user'
     /**
      * Path to an icon file relative to project root.
      * The file must be an SVG.
@@ -33,6 +35,8 @@ export interface CliConfig {
     id?: string
     /** The ID for the Sanity organization that manages this application */
     organizationId?: string
+    /** Sort position within the dock group, ascending. Defaults to `100`. */
+    priority?: number
     /** The title of the custom app, as it is seen in Dashboard UI */
     title?: string
   }
