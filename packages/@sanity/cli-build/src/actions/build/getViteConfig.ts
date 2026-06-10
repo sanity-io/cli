@@ -270,7 +270,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
               // for entries that have them, while the export-less `sanity` app entry
               // still bundles as before.
               preserveEntrySignatures: 'exports-only',
-              treeshake: true,
             }
           : {}),
       },
