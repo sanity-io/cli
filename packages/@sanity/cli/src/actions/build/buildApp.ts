@@ -204,12 +204,13 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
   const trace = getCliTelemetry().trace(AppBuildTrace)
   trace.start()
 
-  let importMap: {imports?: Record<string, string>} | undefined
-  let vendorBuild
-
+  let autoUpdates
   if (autoUpdatesEnabled) {
-    vendorBuild = await resolveVendorBuildConfig({cwd: workDir, isApp: true})
-    importMap = {imports: autoUpdatesImports}
+    autoUpdates = {
+      cssUrls: autoUpdatesCssUrls,
+      imports: autoUpdatesImports,
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: true}),
+    }
   }
 
   try {
@@ -217,18 +218,16 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
 
     const bundle = await buildStaticFiles({
       appTitle: options.appTitle,
-      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
+      autoUpdates,
       basePath,
       cwd: workDir,
       entry: options.entry,
-      importMap,
       isApp: true,
       minify: options.minify,
       outputDir,
       reactCompiler: options.reactCompiler,
       schemaExtraction: options.schemaExtraction,
       sourceMap: options.sourceMap,
-      vendorBuild,
       vite: options.vite,
     })
 

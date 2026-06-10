@@ -1,12 +1,12 @@
 import path from 'node:path'
 
 import {
+  type AutoUpdatesBuildConfig,
   buildDebug,
   copyDir,
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
   getViteConfig,
-  type VendorBuildConfig,
   writeFavicons,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
@@ -35,16 +35,14 @@ interface StaticBuildOptions {
   outputDir: string
 
   appTitle?: string
-  autoUpdatesCssUrls?: string[]
+  autoUpdates?: AutoUpdatesBuildConfig
   entry?: string
-  importMap?: {imports?: Record<string, string>}
   isApp?: boolean
   minify?: boolean
   profile?: boolean
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
-  vendorBuild?: VendorBuildConfig
   vite?: UserViteConfig
 }
 
@@ -58,18 +56,16 @@ export async function buildStaticFiles(
 ): Promise<{chunks: ChunkStats[]}> {
   const {
     appTitle,
-    autoUpdatesCssUrls,
+    autoUpdates,
     basePath,
     cwd,
     entry,
-    importMap,
     isApp,
     minify = true,
     outputDir,
     reactCompiler,
     schemaExtraction,
     sourceMap = false,
-    vendorBuild,
     vite: extendViteConfig,
   } = options
 
@@ -93,11 +89,10 @@ export async function buildStaticFiles(
   buildDebug('Resolving vite config')
   const mode = 'production'
   let viteConfig = await getViteConfig({
-    autoUpdatesCssUrls,
+    autoUpdates,
     basePath,
     cwd,
     getEnvironmentVariables,
-    importMap,
     isApp,
     minify,
     mode,
@@ -105,7 +100,6 @@ export async function buildStaticFiles(
     reactCompiler,
     schemaExtraction,
     sourceMap,
-    vendorBuild,
   })
 
   if (extendViteConfig) {
@@ -114,8 +108,9 @@ export async function buildStaticFiles(
       viteConfig,
       extendViteConfig,
     )
-    viteConfig = await finalizeViteConfig(viteConfig)
   }
+
+  viteConfig = await finalizeViteConfig(viteConfig, autoUpdates)
 
   const fromPath = path.join(cwd, 'static')
   // Copy files placed in /static to the built /static

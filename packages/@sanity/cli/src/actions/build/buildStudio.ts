@@ -275,28 +275,27 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
   const trace = getCliTelemetry().trace(StudioBuildTrace)
   trace.start()
 
-  let importMap
-  let vendorBuild
-
+  let autoUpdates
   if (autoUpdatesEnabled) {
-    vendorBuild = await resolveVendorBuildConfig({cwd: workDir, isApp: false})
-    importMap = {imports: autoUpdatesImports}
+    autoUpdates = {
+      cssUrls: autoUpdatesCssUrls,
+      imports: autoUpdatesImports,
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: false}),
+    }
   }
 
   try {
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
-      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
+      autoUpdates,
       basePath,
       cwd: workDir,
-      importMap,
       minify,
       outputDir,
       reactCompiler,
       schemaExtraction,
       sourceMap,
-      vendorBuild,
       vite,
     })
 

@@ -21,10 +21,10 @@ import {
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
+import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
 import {VENDOR_DIR} from './constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
-import {type VendorBuildConfig} from './resolveVendorBuildConfig.js'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
@@ -55,17 +55,17 @@ interface ViteOptions {
   additionalPlugins?: Plugin[]
 
   /**
-   * CSS URLs for auto-updated packages (loaded via module server)
+   * Auto-updates configuration (production builds only). When set, vendor
+   * packages are emitted as hashed ESM chunks by this build and the import map
+   * in `index.html` is derived from the build output.
    */
-  autoUpdatesCssUrls?: string[]
+  autoUpdates?: AutoUpdatesBuildConfig
 
   /**
    * Base path (eg under where to serve the app - `/studio` or similar)
    * Will be normalized to ensure it starts and ends with a `/`
    */
   basePath?: string
-
-  importMap?: {imports?: Record<string, string>}
 
   isApp?: boolean
 
@@ -91,12 +91,6 @@ interface ViteOptions {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
-  /**
-   * Vendor package entries to emit as separate ESM chunks in a single build
-   * (auto-updating studios/apps). The import map for vendor chunks is derived
-   * from the build output rather than precomputed.
-   */
-  vendorBuild?: VendorBuildConfig
 }
 
 /**
@@ -107,10 +101,9 @@ interface ViteOptions {
 export async function getViteConfig(options: ViteOptions): Promise<InlineConfig> {
   const {
     additionalPlugins,
-    autoUpdatesCssUrls,
+    autoUpdates,
     basePath: rawBasePath = '/',
     cwd,
-    importMap,
     isApp,
     minify,
     mode,
@@ -120,7 +113,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
-    vendorBuild,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -168,7 +160,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp, vendorBuild}),
+      sanityBuildEntries({autoUpdates, basePath, cwd, isApp}),
       // Add schema extraction when enabled
       ...(schemaExtraction?.enabled
         ? [
@@ -212,34 +204,16 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   if (mode === 'production') {
-    const vendorChunkNames = vendorBuild
-      ? new Set(Object.keys(vendorBuild.specifiersByChunkName))
+    if (autoUpdates) {
+      // Re-expose CommonJS named exports (react, react-dom) as real ESM exports
+      // on the emitted vendor chunks; Rolldown only emits `export default` for a
+      // CommonJS entry.
+      viteConfig.plugins!.push(createVendorNamedExportsPlugin(autoUpdates.vendor.namesByChunkName))
+    }
+
+    const vendorChunkNames = autoUpdates
+      ? new Set(Object.keys(autoUpdates.vendor.specifiersByChunkName))
       : null
-
-    // For auto-updating studios the import map externalizes react/react-dom/etc.
-    // Hand those externals to `esmExternalRequirePlugin` rather than
-    // `rolldownOptions.external`, so any bundled CommonJS `require()` of an external
-    // is rewritten to an ESM import instead of a runtime `require` shim that throws
-    // in the browser. The plugin both marks them external AND converts the requires;
-    // also setting `rolldownOptions.external` would short-circuit that conversion.
-    // With no import map (auto-updates off) the external list is empty and this is a
-    // no-op (everything is bundled, so requires resolve internally).
-    const externalImports = {
-      ...importMap?.imports,
-      ...(vendorBuild
-        ? Object.fromEntries(
-            Object.values(vendorBuild.specifiersByChunkName).map((specifier) => [specifier, '']),
-          )
-        : {}),
-    }
-
-    viteConfig.plugins!.push(
-      esmExternalRequirePlugin({external: createExternalFromImportMap({imports: externalImports})}),
-    )
-
-    if (vendorBuild) {
-      viteConfig.plugins!.push(createVendorNamedExportsPlugin(vendorBuild.namesByChunkName))
-    }
 
     viteConfig.build = {
       ...viteConfig.build,
@@ -249,14 +223,17 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       minify: minify ? 'oxc' : false,
 
       rolldownOptions: {
-        experimental: vendorBuild ? {nativeMagicString: true} : undefined,
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
-          ...vendorBuild?.entries,
+          ...autoUpdates?.vendor.entries,
         },
         onwarn: onRolldownWarn,
-        ...(vendorBuild
+        ...(autoUpdates
           ? {
+              // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
+              // the vendor named-exports plugin can edit chunks without a JS
+              // dependency.
+              experimental: {nativeMagicString: true},
               output: {
                 entryFileNames: (chunk) =>
                   vendorChunkNames!.has(chunk.name)
@@ -309,13 +286,28 @@ function suppressUnusedImport(warning: Rolldown.RolldownLog & {ids?: string[]}):
 }
 
 /**
- * Ensure Sanity entry chunk is always loaded
+ * Finalizes the (possibly user-extended) production build config:
+ *
+ * - Ensures the Sanity entry chunk is always part of the build.
+ * - For auto-updating studios/apps, installs `esmExternalRequirePlugin` with
+ *   the import map specifiers, vendor specifiers, and any userland `external`
+ *   config merged into a single list. The plugin both marks these external AND
+ *   rewrites bundled CommonJS `require()` calls of an external (e.g. react-dom
+ *   requiring react) into ESM imports; leaving them on `rolldownOptions.external`
+ *   would short-circuit that rewrite and leave a runtime `require` shim that
+ *   throws in the browser, so the userland `external` is consumed here rather
+ *   than passed along. With auto-updates disabled the userland `external` is
+ *   left untouched for Rolldown to handle.
  *
  * @param config - User-modified configuration
+ * @param autoUpdates - Auto-updates configuration, when building an auto-updating studio/app
  * @returns Merged configuration
  * @internal
  */
-export async function finalizeViteConfig(config: InlineConfig): Promise<InlineConfig> {
+export async function finalizeViteConfig(
+  config: InlineConfig,
+  autoUpdates?: AutoUpdatesBuildConfig,
+): Promise<InlineConfig> {
   if (typeof config.build?.rolldownOptions?.input !== 'object') {
     throw new TypeError(
       'Vite config must contain `build.rolldownOptions.input`, and it must be an object',
@@ -328,24 +320,42 @@ export async function finalizeViteConfig(config: InlineConfig): Promise<InlineCo
     )
   }
 
-  const existingInput = config.build?.rolldownOptions?.input
-  const mergedInput =
-    typeof existingInput === 'object' && existingInput !== null && !Array.isArray(existingInput)
-      ? {
-          ...existingInput,
-          sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
-        }
-      : {
-          sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
-        }
+  const userlandExternal = config.build.rolldownOptions.external
 
-  return mergeConfig(config, {
+  const finalized = mergeConfig(config, {
     build: {
       rolldownOptions: {
-        input: mergedInput,
+        input: {
+          sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
+        },
       },
     },
   })
+
+  if (!autoUpdates) {
+    return finalized
+  }
+
+  const external = createExternalFromImportMap({
+    imports: {
+      ...autoUpdates.imports,
+      ...Object.fromEntries(
+        Object.values(autoUpdates.vendor.specifiersByChunkName).map((specifier) => [specifier, '']),
+      ),
+    },
+  })
+
+  // Function form externals cannot be merged into the plugin's list and are
+  // left for Rolldown to handle.
+  if (userlandExternal != null && typeof userlandExternal !== 'function') {
+    external.push(...(Array.isArray(userlandExternal) ? userlandExternal : [userlandExternal]))
+    delete finalized.build?.rolldownOptions?.external
+  }
+
+  finalized.plugins ??= []
+  finalized.plugins.push(esmExternalRequirePlugin({external}))
+
+  return finalized
 }
 
 /**
