@@ -11,6 +11,7 @@ import {
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type InterfaceArtifact} from '@sanity/federation/vite'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
 
@@ -46,6 +47,7 @@ interface StaticBuildOptions {
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
+  views?: readonly InterfaceArtifact[]
   vite?: UserViteConfig
 }
 
@@ -71,6 +73,7 @@ export async function buildStaticFiles(
     reactCompiler,
     schemaExtraction,
     sourceMap = false,
+    views,
     vite: extendViteConfig,
   } = options
 
@@ -97,6 +100,7 @@ export async function buildStaticFiles(
       outputDir,
       reactCompiler,
       sourceMap,
+      views,
     })
 
     // Apply the user's Vite config so plugins like `@vanilla-extract/vite-plugin`

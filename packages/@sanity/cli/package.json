@@ -45,6 +45,10 @@
       "source": "./src/exports/_internal.ts",
       "default": "./dist/exports/_internal.js"
     },
+    "./runtime": {
+      "source": "./src/exports/runtime.ts",
+      "default": "./dist/exports/runtime.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
