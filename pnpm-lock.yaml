@@ -148,7 +148,6 @@ catalogs:
 overrides:
   '@sanity/client': ^7.22.1
   '@sanity/cli': workspace:*
-  '@sanity/federation': https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634
 
 importers:
 
@@ -272,8 +271,8 @@ importers:
   fixtures/federated-studio:
     dependencies:
       '@sanity/federation':
-        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634
-        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634(typescript@5.9.3)(vite@8.0.16(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        specifier: 0.1.0-alpha.10
+        version: 0.1.0-alpha.10(typescript@5.9.3)(vite@8.0.16(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
       react:
         specifier: ^19.2.5
         version: 19.2.6
@@ -544,8 +543,8 @@ importers:
         specifier: ^6.2.0
         version: 6.2.0
       '@sanity/federation':
-        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634
-        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634(typescript@5.9.3)(vite@8.0.16(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        specifier: 0.1.0-alpha.10
+        version: 0.1.0-alpha.10(typescript@5.9.3)(vite@8.0.16(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -836,8 +835,8 @@ importers:
         specifier: workspace:^
         version: link:../cli-core
       '@sanity/federation':
-        specifier: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634
-        version: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634(typescript@5.9.3)(vite@8.0.16(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        specifier: 0.1.0-alpha.10
+        version: 0.1.0-alpha.10(typescript@5.9.3)(vite@8.0.16(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -4580,9 +4579,8 @@ packages:
     engines: {node: '>=20.19 <22 || >=22.12'}
     hasBin: true
 
-  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634':
-    resolution: {integrity: sha512-+X83XpGjRHdlWPDdSJ+6EbrOheGQ7FC0l0vJlWSQd6LpvJmY2FfEcRbeIu/MhVNESUveppI43YfgXX84Q6biGQ==, tarball: https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634}
-    version: 0.1.0-alpha.9
+  '@sanity/federation@0.1.0-alpha.10':
+    resolution: {integrity: sha512-4bs2OKoIAitDM0kyDsCJL+prdUrhTFYaZIvQ+CgoVGCsHTOEVTNymC9EdpYdL5jjvsui91A8pptGTNaNhQZtYw==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       vite: ^7.0.0 || ^8.0.0
@@ -13575,7 +13573,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634(typescript@5.9.3)(vite@8.0.16(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))':
+  '@sanity/federation@0.1.0-alpha.10(typescript@5.9.3)(vite@8.0.16(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))':
     dependencies:
       '@module-federation/runtime': 2.5.1
       '@module-federation/vite': 1.16.0(typescript@5.9.3)(vite@8.0.16(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
@@ -13588,7 +13586,7 @@ snapshots:
       - utf-8-validate
       - vue-tsc
 
-  '@sanity/federation@https://pkg.pr.new/sanity-io/workbench/@sanity/federation@50fd634(typescript@5.9.3)(vite@8.0.16(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))':
+  '@sanity/federation@0.1.0-alpha.10(typescript@5.9.3)(vite@8.0.16(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))':
     dependencies:
       '@module-federation/runtime': 2.5.1
       '@module-federation/vite': 1.16.0(typescript@5.9.3)(vite@8.0.16(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
