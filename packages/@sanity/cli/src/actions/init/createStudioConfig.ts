@@ -36,6 +36,7 @@ export interface GenerateConfigOptions {
     projectName?: string
     sourceName?: string
     sourceTitle?: string
+    workbench: boolean
   }
 
   template?: ((variables: GenerateConfigOptions['variables']) => string) | string
