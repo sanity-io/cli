@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startFederationRegistration} from '../startFederationRegistration.js'
-import {createMockOutput} from './testHelpers.js'
+import {createMockOutput, workbenchApp, workbenchCliConfig} from './testHelpers.js'
 
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
@@ -48,7 +48,7 @@ describe('startFederationRegistration', () => {
 
   test('registers studio in registry', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -68,7 +68,7 @@ describe('startFederationRegistration', () => {
     mockGetAppId.mockReturnValue('app-abc')
 
     await startFederationRegistration({
-      cliConfig: {deployment: {appId: 'app-abc'}, federation: {enabled: true}},
+      cliConfig: {app: workbenchApp(), deployment: {appId: 'app-abc'}},
       isApp: false,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -80,7 +80,7 @@ describe('startFederationRegistration', () => {
 
   test('forwards api.projectId to registerDevServer', async () => {
     await startFederationRegistration({
-      cliConfig: {api: {projectId: 'x1g7jygt'}, federation: {enabled: true}},
+      cliConfig: {api: {projectId: 'x1g7jygt'}, app: workbenchApp()},
       isApp: false,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -94,7 +94,7 @@ describe('startFederationRegistration', () => {
 
   test('omits projectId when api.projectId is not configured', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -109,7 +109,7 @@ describe('startFederationRegistration', () => {
     const output = createMockOutput()
 
     await startFederationRegistration({
-      cliConfig: {app: {id: 'legacy-app'}, federation: {enabled: true}},
+      cliConfig: {app: workbenchApp({id: 'legacy-app'})},
       isApp: false,
       output,
       server: mockServer({port: 3334}) as any,
@@ -121,7 +121,7 @@ describe('startFederationRegistration', () => {
 
   test('registers without icon/title — they are derived from the inlined manifest', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -135,7 +135,7 @@ describe('startFederationRegistration', () => {
 
   test('registers app under the host applied by the vite dev server', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
       server: mockServer({host: 'mydev.local', port: 3334}) as any,
@@ -149,7 +149,7 @@ describe('startFederationRegistration', () => {
 
   test('falls back to localhost when the vite server host is not a string', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
       server: mockServer({host: true, port: 3334}) as any,
@@ -161,7 +161,7 @@ describe('startFederationRegistration', () => {
 
   test('registers app type when isApp is true', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: true,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -173,7 +173,7 @@ describe('startFederationRegistration', () => {
 
   test('starts the manifest watcher for studios', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -187,7 +187,7 @@ describe('startFederationRegistration', () => {
 
   test('starts the manifest watcher for core apps', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: true,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -204,7 +204,7 @@ describe('startFederationRegistration', () => {
     mockExtractCoreAppManifest.mockResolvedValue(appManifest)
 
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: true,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -220,7 +220,7 @@ describe('startFederationRegistration', () => {
 
   test('wires extractStudioManifest into the studio watcher', async () => {
     await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -236,7 +236,7 @@ describe('startFederationRegistration', () => {
     mockRegisterDevServer.mockReturnValue({release: mockCleanup, update: vi.fn()})
 
     const result = await startFederationRegistration({
-      cliConfig: {federation: {enabled: true}},
+      cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
@@ -255,7 +255,7 @@ describe('startFederationRegistration', () => {
 
     await expect(
       startFederationRegistration({
-        cliConfig: {federation: {enabled: true}},
+        cliConfig: workbenchCliConfig(),
         isApp: false,
         output: createMockOutput(),
         server: mockServer({port: 3334}) as any,
@@ -270,7 +270,7 @@ describe('startFederationRegistration', () => {
 
     await expect(
       startFederationRegistration({
-        cliConfig: {federation: {enabled: true}},
+        cliConfig: workbenchCliConfig(),
         isApp: false,
         output: createMockOutput(),
         server: mockServer({port: 3334}) as any,
@@ -288,9 +288,8 @@ describe('startFederationRegistration', () => {
 
     await startFederationRegistration({
       cliConfig: {
-        app: {id: 'legacy-app'},
+        app: workbenchApp({id: 'legacy-app'}),
         deployment: {appId: 'new-app'},
-        federation: {enabled: true},
       },
       isApp: false,
       output,

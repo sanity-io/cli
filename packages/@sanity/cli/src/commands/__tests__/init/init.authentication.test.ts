@@ -182,7 +182,6 @@ describe('#init: authentication', () => {
         '--output-path=/test/output',
         '--no-overwrite-files',
         '--template=clean',
-        '--federation',
       ],
       {
         mocks: {
@@ -227,7 +226,6 @@ describe('#init: authentication', () => {
         '--output-path=/test/output',
         '--no-overwrite-files',
         '--template=clean',
-        '--federation',
       ],
       {
         mocks: {
