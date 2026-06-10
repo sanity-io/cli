@@ -372,6 +372,9 @@ DESCRIPTION
 
   Set SANITY_ASSET_TIMEOUT (seconds) to override the 60-second timeout for processing resource assets.
 
+  Exit codes: 0 deployed, 2 deployment failed, 75 deployment accepted but completion could not be confirmed (rerun
+  'blueprints info' to check).
+
 EXAMPLES
   $ sanity blueprints deploy
 
@@ -414,6 +417,9 @@ DESCRIPTION
   This is a destructive operation. You will be prompted to confirm unless --force is specified.
 
   Use this to clean up test environments or decommission a Stack you no longer need.
+
+  Exit codes: 0 destroyed, 2 destruction failed, 75 destruction accepted but completion could not be confirmed (rerun
+  'blueprints info' to check).
 
 EXAMPLES
   $ sanity blueprints destroy
