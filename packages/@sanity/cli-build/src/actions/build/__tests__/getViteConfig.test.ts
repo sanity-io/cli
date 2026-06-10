@@ -503,92 +503,40 @@ describe('#finalizeViteConfig', () => {
     expect(mergeConfig).toHaveBeenCalledWith(inputConfig, expectedMerge)
   })
 
-  test('leaves userland external untouched when auto-updates are disabled', async () => {
-    const {esmExternalRequirePlugin, mergeConfig} = await import('vite')
+  test('does not install esmExternalRequirePlugin when auto-updates are disabled', async () => {
+    const {esmExternalRequirePlugin} = await import('vite')
 
-    const inputConfig: InlineConfig = {
-      build: {
-        rolldownOptions: {
-          external: ['userland-external'],
-          input: {},
-        },
-      },
-      root: mockTestRoot,
-    }
-
-    vi.mocked(mergeConfig).mockImplementationOnce((base) => base as InlineConfig)
-
-    const result = await finalizeViteConfig(inputConfig)
-
-    expect(esmExternalRequirePlugin).not.toHaveBeenCalled()
-    expect(result.build?.rolldownOptions?.external).toEqual(['userland-external'])
-  })
-
-  function makeConfig(external?: (RegExp | string)[] | RegExp | string): InlineConfig {
-    return {
-      build: {rolldownOptions: {external, input: {}}},
+    await finalizeViteConfig({
+      build: {rolldownOptions: {input: {}}},
       plugins: [],
       root: mockTestRoot,
-    }
-  }
+    })
 
-  describe('with auto-updates enabled', () => {
-    const autoUpdates = {
-      imports: {sanity: 'https://sanity-cdn.example/sanity'},
-      vendor: {
-        entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
-        namesByChunkName: {},
-        specifiersByChunkName: {'react/index': 'react'},
+    expect(esmExternalRequirePlugin).not.toHaveBeenCalled()
+  })
+
+  test('installs esmExternalRequirePlugin with import map and vendor externals when auto-updates are enabled', async () => {
+    const {esmExternalRequirePlugin} = await import('vite')
+    const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
+
+    const result = await finalizeViteConfig(
+      {build: {rolldownOptions: {input: {}}}, plugins: [], root: mockTestRoot},
+      {
+        imports: {sanity: 'https://sanity-cdn.example/sanity'},
+        vendor: {
+          entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
+          namesByChunkName: {},
+          specifiersByChunkName: {'react/index': 'react'},
+        },
       },
-    }
+    )
 
-    beforeEach(async () => {
-      const {mergeConfig} = await import('vite')
-      // Pass the config through unchanged so the external handling is observable.
-      vi.mocked(mergeConfig).mockImplementationOnce((base) => base as InlineConfig)
+    // Both the CDN import map specifiers and the vendor specifiers are externalized.
+    expect(createExternalFromImportMap).toHaveBeenCalledWith({
+      imports: {react: '', sanity: 'https://sanity-cdn.example/sanity'},
     })
-
-    test('installs esmExternalRequirePlugin with import map and vendor externals', async () => {
-      const {esmExternalRequirePlugin} = await import('vite')
-      const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
-
-      await finalizeViteConfig(makeConfig(), autoUpdates)
-
-      // Both the CDN import map specifiers and the vendor specifiers are externalized.
-      expect(createExternalFromImportMap).toHaveBeenCalledWith({
-        imports: {react: '', sanity: 'https://sanity-cdn.example/sanity'},
-      })
-      expect(esmExternalRequirePlugin).toHaveBeenCalledWith({
-        external: ['external1', 'external2'],
-      })
-    })
-
-    test('merges userland external into the plugin and removes it from the config', async () => {
-      const {esmExternalRequirePlugin} = await import('vite')
-
-      const result = await finalizeViteConfig(
-        makeConfig(['userland-external', /userland-regexp/]),
-        autoUpdates,
-      )
-
-      expect(esmExternalRequirePlugin).toHaveBeenCalledWith({
-        external: ['external1', 'external2', 'userland-external', /userland-regexp/],
-      })
-      // `rolldownOptions.external` would short-circuit the require() rewrite,
-      // so it must be consumed by the plugin instead of passed along.
-      expect(result.build?.rolldownOptions?.external).toBeUndefined()
-    })
-
-    test('normalizes a non-array userland external', async () => {
-      const {esmExternalRequirePlugin} = await import('vite')
-
-      const result = await finalizeViteConfig(makeConfig('userland-external'), autoUpdates)
-
-      expect(esmExternalRequirePlugin).toHaveBeenCalledWith({
-        external: ['external1', 'external2', 'userland-external'],
-      })
-      expect(result.build?.rolldownOptions?.external).toBeUndefined()
-    })
+    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
+    expect(result.plugins).toContainEqual({name: 'esm-external-require'})
   })
 
   test('should throw error when build.rolldownOptions.input is not an object', async () => {

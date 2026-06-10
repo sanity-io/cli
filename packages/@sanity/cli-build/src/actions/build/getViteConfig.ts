@@ -290,14 +290,11 @@ function suppressUnusedImport(warning: Rolldown.RolldownLog & {ids?: string[]}):
  *
  * - Ensures the Sanity entry chunk is always part of the build.
  * - For auto-updating studios/apps, installs `esmExternalRequirePlugin` with
- *   the import map specifiers, vendor specifiers, and any userland `external`
- *   config merged into a single list. The plugin both marks these external AND
- *   rewrites bundled CommonJS `require()` calls of an external (e.g. react-dom
- *   requiring react) into ESM imports; leaving them on `rolldownOptions.external`
- *   would short-circuit that rewrite and leave a runtime `require` shim that
- *   throws in the browser, so the userland `external` is consumed here rather
- *   than passed along. With auto-updates disabled the userland `external` is
- *   left untouched for Rolldown to handle.
+ *   the import map and vendor specifiers as externals. The plugin both marks
+ *   them external AND rewrites bundled CommonJS `require()` calls of an
+ *   external (e.g. react-dom requiring react) into ESM imports; putting them
+ *   on `rolldownOptions.external` instead would short-circuit that rewrite and
+ *   leave a runtime `require` shim that throws in the browser.
  *
  * @param config - User-modified configuration
  * @param autoUpdates - Auto-updates configuration, when building an auto-updating studio/app
@@ -320,8 +317,6 @@ export async function finalizeViteConfig(
     )
   }
 
-  const userlandExternal = config.build.rolldownOptions.external
-
   const finalized = mergeConfig(config, {
     build: {
       rolldownOptions: {
@@ -332,28 +327,24 @@ export async function finalizeViteConfig(
     },
   })
 
-  if (!autoUpdates) {
-    return finalized
+  if (autoUpdates) {
+    finalized.plugins ??= []
+    finalized.plugins.push(
+      esmExternalRequirePlugin({
+        external: createExternalFromImportMap({
+          imports: {
+            ...autoUpdates.imports,
+            ...Object.fromEntries(
+              Object.values(autoUpdates.vendor.specifiersByChunkName).map((specifier) => [
+                specifier,
+                '',
+              ]),
+            ),
+          },
+        }),
+      }),
+    )
   }
-
-  const external = createExternalFromImportMap({
-    imports: {
-      ...autoUpdates.imports,
-      ...Object.fromEntries(
-        Object.values(autoUpdates.vendor.specifiersByChunkName).map((specifier) => [specifier, '']),
-      ),
-    },
-  })
-
-  // Function form externals cannot be merged into the plugin's list and are
-  // left for Rolldown to handle.
-  if (userlandExternal != null && typeof userlandExternal !== 'function') {
-    external.push(...(Array.isArray(userlandExternal) ? userlandExternal : [userlandExternal]))
-    delete finalized.build?.rolldownOptions?.external
-  }
-
-  finalized.plugins ??= []
-  finalized.plugins.push(esmExternalRequirePlugin({external}))
 
   return finalized
 }
