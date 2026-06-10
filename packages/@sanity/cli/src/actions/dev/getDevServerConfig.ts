@@ -54,6 +54,7 @@ export function getDevServerConfig({
     isWorkbenchApp: isWorkbenchApp(app),
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
+    services: isWorkbenchApp(app) ? app.services : undefined,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
     views: isWorkbenchApp(app) ? app.views : undefined,
