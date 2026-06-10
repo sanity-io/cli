@@ -8,4 +8,4 @@
 //
 // `unstable_defineApp` is config-time (Node) and stays on the main `@sanity/cli`
 // entry; only the runtime helpers live here.
-export {unstable_defineView} from '@sanity/federation'
+export {unstable_defineService, unstable_defineView} from '@sanity/federation'
