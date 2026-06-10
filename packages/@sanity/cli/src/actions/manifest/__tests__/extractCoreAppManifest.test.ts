@@ -65,6 +65,20 @@ describe('extractCoreAppManifest', () => {
     expect(result?.title).toBe('My App')
   })
 
+  test('sanitizes the icon SVG before inlining it', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: {icon: 'public/icon.svg', organizationId: 'org-1', title: 'My App'},
+    } as never)
+    mockReadFile.mockResolvedValue(
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert("xss")</script><path d="M0 0"/></svg>',
+    )
+
+    const result = await extractCoreAppManifest({workDir: '/project'})
+
+    expect(result?.icon).not.toContain('<script>')
+    expect(result?.icon).toContain('<path')
+  })
+
   test('rejects icon path that resolves outside project directory', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: {icon: '../../../etc/passwd', organizationId: 'org-1'},

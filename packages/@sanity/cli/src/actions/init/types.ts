@@ -32,7 +32,6 @@ export interface InitOptions {
   coupon?: string
   dataset?: string
   env?: string
-  federation?: boolean
   git?: boolean | string
   importDataset?: boolean
   nextjsAddConfigFiles?: boolean
@@ -72,7 +71,6 @@ interface InitCommandFlags {
   'create-project'?: string
   dataset?: string
   env?: string
-  federation?: boolean
   git?: string
   'import-dataset'?: boolean
   'nextjs-add-config-files'?: boolean
@@ -126,7 +124,6 @@ export function flagsToInitOptions(
     dataset: flags.dataset,
     datasetDefault: flags['dataset-default'],
     env: flags.env,
-    federation: flags.federation,
     fromCreate: flags['from-create'],
     git: flags['no-git'] ? false : flags.git,
     importDataset: flags['import-dataset'],

@@ -1,7 +1,13 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
-import {createDevOptions, createMockOutput} from './testHelpers.js'
+import {
+  createDevOptions,
+  createMockOutput,
+  studioWorkbenchApp,
+  workbenchApp,
+  workbenchCliConfig,
+} from './testHelpers.js'
 
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
@@ -69,9 +75,7 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('skips workbench when federation is explicitly disabled', async () => {
-      const result = await startWorkbenchDevServer(
-        createDevOptions({cliConfig: {federation: {enabled: false}}}),
-      )
+      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: {}}))
 
       expect(result.workbenchAvailable).toBe(false)
       expect(result.close).toBeTypeOf('function')
@@ -93,7 +97,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockRejectedValue(new Error('Cannot find package'))
 
       const result = await startWorkbenchDevServer(
-        createDevOptions({cliConfig: {federation: {enabled: true}}}),
+        createDevOptions({cliConfig: workbenchCliConfig()}),
       )
 
       expect(result.workbenchAvailable).toBe(false)
@@ -106,7 +110,7 @@ describe('startWorkbenchDevServer', () => {
 
       const result = await startWorkbenchDevServer(
         createDevOptions({
-          cliConfig: {federation: {enabled: true}},
+          cliConfig: workbenchCliConfig(),
           httpHost: '0.0.0.0',
           httpPort: 4000,
         }),
@@ -119,8 +123,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('successful startup', () => {
     const federationConfig = {
-      app: {organizationId: 'org-test'},
-      federation: {enabled: true},
+      app: workbenchApp({organizationId: 'org-test'}),
     } as const
 
     test('returns workbenchAvailable: true and close when server starts', async () => {
@@ -179,7 +182,7 @@ describe('startWorkbenchDevServer', () => {
 
       await startWorkbenchDevServer(
         createDevOptions({
-          cliConfig: {app: {organizationId: 'org-123'}, federation: {enabled: true}},
+          cliConfig: {app: workbenchApp({organizationId: 'org-123'})},
         }),
       )
 
@@ -195,7 +198,10 @@ describe('startWorkbenchDevServer', () => {
 
       await startWorkbenchDevServer(
         createDevOptions({
-          cliConfig: {api: {projectId: 'proj-123'}, federation: {enabled: true}},
+          cliConfig: {
+            api: {projectId: 'proj-123'},
+            app: studioWorkbenchApp({organizationId: undefined}),
+          },
         }),
       )
 
@@ -213,8 +219,7 @@ describe('startWorkbenchDevServer', () => {
         createDevOptions({
           cliConfig: {
             api: {projectId: 'proj-123'},
-            app: {organizationId: 'org-explicit'},
-            federation: {enabled: true},
+            app: workbenchApp({organizationId: 'org-explicit'}),
           },
         }),
       )
@@ -230,7 +235,9 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await expect(
-        startWorkbenchDevServer(createDevOptions({cliConfig: {federation: {enabled: true}}})),
+        startWorkbenchDevServer(
+          createDevOptions({cliConfig: {app: workbenchApp({organizationId: undefined})}}),
+        ),
       ).rejects.toThrow(/Unable to determine organization ID/)
     })
 
@@ -242,7 +249,10 @@ describe('startWorkbenchDevServer', () => {
       await expect(
         startWorkbenchDevServer(
           createDevOptions({
-            cliConfig: {api: {projectId: 'proj-123'}, federation: {enabled: true}},
+            cliConfig: {
+              api: {projectId: 'proj-123'},
+              app: studioWorkbenchApp({organizationId: undefined}),
+            },
           }),
         ),
       ).rejects.toThrow(/Unable to determine organization ID/)
@@ -268,8 +278,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('remote-preload Link header', () => {
     const federationConfig = {
-      app: {organizationId: 'org-test'},
-      federation: {enabled: true},
+      app: workbenchApp({organizationId: 'org-test'}),
     } as const
 
     function getMiddleware(): (req: {url?: string}, res: ResLike, next: () => void) => void {
@@ -422,8 +431,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(
         createDevOptions({
           cliConfig: {
-            app: {organizationId: 'org-test'},
-            federation: {enabled: true},
+            app: workbenchApp({organizationId: 'org-test'}),
             reactStrictMode: false,
           },
         }),
@@ -442,8 +450,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(
         createDevOptions({
           cliConfig: {
-            app: {organizationId: 'org-test'},
-            federation: {enabled: true},
+            app: workbenchApp({organizationId: 'org-test'}),
             reactStrictMode: true,
           },
         }),
@@ -461,8 +468,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(
         createDevOptions({
           cliConfig: {
-            app: {organizationId: 'org-test'},
-            federation: {enabled: true},
+            app: workbenchApp({organizationId: 'org-test'}),
             reactStrictMode: true,
           },
         }),
@@ -476,8 +482,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('server startup failure', () => {
     const federationConfig = {
-      app: {organizationId: 'org-test'},
-      federation: {enabled: true},
+      app: workbenchApp({organizationId: 'org-test'}),
     } as const
 
     test('warns and returns without close when listen() throws', async () => {
@@ -510,8 +515,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('singleton detection', () => {
     const federationConfig = {
-      app: {organizationId: 'org-test'},
-      federation: {enabled: true},
+      app: workbenchApp({organizationId: 'org-test'}),
     } as const
 
     test('skips starting server when lock is held by another process', async () => {
@@ -544,8 +548,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('registry integration', () => {
     const federationConfig = {
-      app: {organizationId: 'org-test'},
-      federation: {enabled: true},
+      app: workbenchApp({organizationId: 'org-test'}),
     } as const
 
     test('updates lock with actual port after successful startup', async () => {

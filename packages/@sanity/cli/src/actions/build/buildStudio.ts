@@ -18,6 +18,7 @@ import {
   getLocalPackageVersion,
   getTimer,
   isInteractive,
+  isWorkbenchApp,
   type Output,
   UserViteConfig,
 } from '@sanity/cli-core'
@@ -42,8 +43,8 @@ interface InternalBuildOptions {
   autoUpdatesEnabled: boolean
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
-  federation: CliConfig['federation']
   isApp: boolean
+  isWorkbenchApp: boolean
   minify: boolean
   outDir: string | undefined
   output: Output
@@ -83,8 +84,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
-    federation: cliConfig.federation,
     isApp: determineIsApp(cliConfig),
+    isWorkbenchApp: isWorkbenchApp(cliConfig?.app),
     minify: Boolean(flags.minify),
     outDir,
     output,
@@ -281,7 +282,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
 
   let importMap
 
-  if (autoUpdatesEnabled && !options.federation?.enabled) {
+  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
@@ -297,8 +298,8 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
       cwd: workDir,
-      federation: options.federation,
       importMap,
+      isWorkbenchApp: options.isWorkbenchApp,
       minify,
       outputDir,
       reactCompiler,

@@ -59,14 +59,6 @@ export interface CliConfig {
     autoUpdates?: boolean
   }
 
-  /**
-   * Enable federated builds & dev environments for your studio or application.
-   * @experimental
-   */
-  federation?: {
-    enabled: boolean
-  }
-
   /** Define the GraphQL APIs that the CLI can deploy and interact with */
   graphql?: Array<{
     filterSuffix?: string

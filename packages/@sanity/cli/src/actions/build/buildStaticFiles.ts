@@ -29,7 +29,7 @@ export interface ChunkStats {
   name: string
 }
 
-interface StaticBuildOptions extends Pick<CliConfig, 'federation'> {
+interface StaticBuildOptions {
   basePath: string
   cwd: string
   outputDir: string
@@ -39,6 +39,8 @@ interface StaticBuildOptions extends Pick<CliConfig, 'federation'> {
   entry?: string
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
+  /** Workbench app (opted in via `unstable_defineApp`) — drives the federation build. */
+  isWorkbenchApp?: boolean
   minify?: boolean
   profile?: boolean
   reactCompiler?: ReactCompilerConfig
@@ -61,9 +63,9 @@ export async function buildStaticFiles(
     basePath,
     cwd,
     entry,
-    federation,
     importMap,
     isApp,
+    isWorkbenchApp,
     minify = true,
     outputDir,
     reactCompiler,
@@ -78,7 +80,7 @@ export async function buildStaticFiles(
    * (remote-entry, mf-manifest) — skip client-specific steps like
    * runtime generation, static file copies, and favicons.
    */
-  if (federation?.enabled) {
+  if (isWorkbenchApp) {
     buildDebug('Resolving entries for federation build')
     const entries = await resolveEntries({cwd, entry, isApp})
 
@@ -87,9 +89,9 @@ export async function buildStaticFiles(
       basePath,
       cwd,
       entries,
-      federation,
       getEnvironmentVariables,
       isApp,
+      isWorkbenchApp,
       minify,
       mode,
       outputDir,
@@ -140,10 +142,10 @@ export async function buildStaticFiles(
     basePath,
     cwd,
     entries,
-    federation,
     getEnvironmentVariables,
     importMap,
     isApp,
+    isWorkbenchApp,
     minify,
     mode,
     outputDir,
