@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/sanity-io/cli/compare/cli-build-v1.0.2...cli-build-v1.0.3)
+
+_2026-06-10_
+
+### Bug Fixes
+
+- **deps:** Update react monorepo to ^19.2.7 ([#1245](https://github.com/sanity-io/cli/pull/1245)) ([73677fa](https://github.com/sanity-io/cli/commit/73677fafeabc2633bfb8e683fd36f8ade89022a6))
+
 ## [1.0.2](https://github.com/sanity-io/cli/compare/cli-build-v1.0.1...cli-build-v1.0.2)
 
 _2026-06-10_
