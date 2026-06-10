@@ -5,3 +5,8 @@ export type {CliApiConfig} from '../types.js'
 export {type CliClientOptions, getCliClient} from '../util/cliClient.js'
 export {loadEnv} from '../util/loadEnv.js'
 export type {CliConfig, UserViteConfig} from '@sanity/cli-core'
+
+// Workbench application extension API. Canonical implementation in
+// `@sanity/federation`; re-exported here so `sanity/cli` can surface it to
+// app authors via `import {unstable_defineApp} from 'sanity/cli'`.
+export {type DefineAppInput, unstable_defineApp} from '@sanity/federation'

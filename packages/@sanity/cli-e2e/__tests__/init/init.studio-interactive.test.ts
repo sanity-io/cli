@@ -60,7 +60,6 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
         'pnpm',
         '--no-mcp',
         '--no-git',
-        '--no-federation',
       ],
       interactive: true,
     })
@@ -91,7 +90,6 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
         tmp.path,
         '--no-mcp',
         '--no-git',
-        '--no-federation',
       ],
       interactive: true,
     })
@@ -131,7 +129,6 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
         '--typescript',
         '--no-mcp',
         '--no-git',
-        '--no-federation',
       ],
       interactive: true,
     })
@@ -162,7 +159,6 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
         '--package-manager',
         'pnpm',
         '--no-git',
-        '--no-federation',
       ],
       interactive: true,
     })
@@ -195,7 +191,6 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
         '--package-manager',
         'pnpm',
         '--no-git',
-        '--no-federation',
       ],
       interactive: true,
     })

@@ -8,15 +8,11 @@ export default defineCliConfig({
     organizationId: '%organizationId%',
     entry: '%entry%',
   },
-  federation: {
-    enabled: __BOOL__federation__,
-  },
 })
 `
 
 interface GenerateCliConfigOptions {
   entry: string
-  federation: boolean
 
   organizationId?: string
 }
