@@ -18,6 +18,7 @@ function createMockWorker() {
       for (const key of Object.keys(listeners)) delete listeners[key]
     }),
     terminate: vi.fn(),
+    unref: vi.fn(),
   }
 }
 
@@ -103,15 +104,13 @@ describe('promisifyWorker', () => {
     await expect(promise).rejects.toThrow('Worker exited without sending a message')
   })
 
-  test('terminates the worker after receiving a message', async () => {
+  test('unrefs the worker after receiving a message', async () => {
     const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test'})
 
     lastCreatedWorker.emit('message', 'data')
     await promise
 
-    // terminate is called via setImmediate, so flush it
-    await new Promise((resolve) => setImmediate(resolve))
-    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
   })
 
   test('removes all listeners after receiving a message', async () => {
@@ -123,25 +122,23 @@ describe('promisifyWorker', () => {
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
   })
 
-  test('terminates the worker after an error', async () => {
+  test('unrefs the worker after an error', async () => {
     const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test'})
 
     lastCreatedWorker.emit('error', new Error('fail'))
     await promise.catch(() => {})
 
-    await new Promise((resolve) => setImmediate(resolve))
-    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
   })
 
-  test('terminates the worker after a messageerror', async () => {
+  test('unrefs the worker after a messageerror', async () => {
     const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test'})
 
     lastCreatedWorker.emit('messageerror', new Error('bad message'))
     await promise.catch(() => {})
 
-    await new Promise((resolve) => setImmediate(resolve))
-    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
   })
 
@@ -170,7 +167,7 @@ describe('promisifyWorker', () => {
     await promise.catch(() => {})
 
     expect(lastCreatedWorker.removeAllListeners).not.toHaveBeenCalled()
-    expect(lastCreatedWorker.terminate).not.toHaveBeenCalled()
+    expect(lastCreatedWorker.unref).not.toHaveBeenCalled()
   })
 
   test('rejects with error when error is followed by non-zero exit', async () => {
@@ -213,10 +210,15 @@ describe('promisifyWorker', () => {
     lastCreatedWorker.emit('error', new Error('fail'))
     await promise.catch(() => {})
 
-    vi.advanceTimersByTime(1000)
+    // Advance past both the user timeout (1s) and deferred terminate (5s)
+    vi.advanceTimersByTime(6000)
 
-    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    // Only one unref + removeAllListeners from the error handler cleanup,
+    // the timeout handler should NOT fire again
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+    // Deferred terminate fires after 5s
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
   })
 
   test('cleans up timer after a messageerror', async () => {
@@ -227,10 +229,11 @@ describe('promisifyWorker', () => {
     lastCreatedWorker.emit('messageerror', new Error('bad message'))
     await promise.catch(() => {})
 
-    vi.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(6000)
 
-    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
   })
 
   test('cleans up timer after receiving a message', async () => {
@@ -241,9 +244,10 @@ describe('promisifyWorker', () => {
     lastCreatedWorker.emit('message', 'result')
     await promise
 
-    vi.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(6000)
 
-    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
   })
 })
