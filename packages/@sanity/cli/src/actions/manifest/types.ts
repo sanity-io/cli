@@ -25,7 +25,9 @@ export interface CreateManifest {
  * since the CLI produces the payload in full.
  */
 export const coreAppManifestSchema = z.object({
+  group: z.optional(z.string()),
   icon: z.optional(z.string()),
+  priority: z.optional(z.number()),
   title: z.optional(z.string()),
   version: z.string(),
 })
