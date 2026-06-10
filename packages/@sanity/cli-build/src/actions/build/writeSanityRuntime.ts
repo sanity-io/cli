@@ -120,7 +120,7 @@ export async function resolveEntries(options: {
       : null
   }
 
-  // A branded app that declares no `entry` has no navigable app view (US5):
+  // A branded app that declares no `entry` has no navigable app view (sanity-io/workbench spec 002-workbench-extension-api, US5):
   // `null` entry tells the runtime/federation to skip the `./App` render path.
   // Studios ignore `relativeEntry`, so the legacy `./src/App` default is fine.
   const relativeEntry =

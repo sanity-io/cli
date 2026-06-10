@@ -37,7 +37,7 @@ const element = createElement(App)
 root.render(element)
 `
 
-// A branded app with no \`entry\` (US5) has no navigable app view, so there's no
+// A branded app with no \`entry\` (sanity-io/workbench spec 002-workbench-extension-api, US5) has no navigable app view, so there's no
 // \`App\` to import or render standalone — it contributes panels/services to the
 // workbench instead. The page stays valid (no broken import) for the dev server.
 const noAppViewEntryModule = `

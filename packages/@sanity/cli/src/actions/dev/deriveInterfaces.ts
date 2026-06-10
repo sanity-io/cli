@@ -10,7 +10,7 @@ export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[nu
  * registry from its `unstable_defineApp` config: `views` → `panel`s and (SDK
  * apps) `entry` → the navigable `app` view. `entry_point` is the declared `src`
  * — the raw value, not a resolved URL. (Background `services` → `worker`s are
- * layered on in US4.)
+ * layered on in sanity-io/workbench spec 002-workbench-extension-api, US4.)
  *
  * Returns `undefined` for a non-branded app (no `unstable_defineApp`). A studio
  * that declares `entry` reaches the not-yet-implemented studio app-view path and
@@ -26,7 +26,7 @@ export function deriveInterfaces(
 ): DevServerInterface[] | undefined {
   if (!isWorkbenchApp(app)) return undefined
 
-  // US5 — studio app views are not implemented yet. A studio (not an SDK app)
+  // sanity-io/workbench spec 002-workbench-extension-api, US5 — studio app views are not implemented yet. A studio (not an SDK app)
   // that declares `entry` reaches the app-view path; reject with a clear error
   // rather than deriving an `app` interface for it.
   if (!options.isApp && app.entry !== undefined) {
@@ -39,7 +39,7 @@ export function deriveInterfaces(
       interface_type: view.type,
       name: view.name,
     })) ?? []),
-    // US5 — with no `entry` the app has no `app` view and isn't reachable as a
+    // sanity-io/workbench spec 002-workbench-extension-api, US5 — with no `entry` the app has no `app` view and isn't reachable as a
     // full-page app; with one, forward it so the workbench gates navigability.
     ...(app.entry === undefined
       ? []

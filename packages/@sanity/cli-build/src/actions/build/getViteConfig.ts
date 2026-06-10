@@ -37,7 +37,7 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
 
   entries: {
     relativeConfigLocation: string | null
-    // `null` when a branded app declares no `entry` (US5) — no app view.
+    // `null` when a branded app declares no `entry` (sanity-io/workbench spec 002-workbench-extension-api, US5) — no app view.
     relativeEntry: string | null
   }
 
@@ -205,7 +205,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             viteFederation({
               ...(isApp
                 ? {
-                    // `null` relativeEntry (a branded app with no `entry`, US5)
+                    // `null` relativeEntry (a branded app with no `entry`, sanity-io/workbench spec 002-workbench-extension-api, US5)
                     // → omit `appEntry` so the plugin exposes no `./App`.
                     ...(entries.relativeEntry ? {appEntry: entries.relativeEntry} : {}),
                     isApp: true as const,
