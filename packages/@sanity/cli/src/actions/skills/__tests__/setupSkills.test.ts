@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
-  SANITY_SKILL_NAME,
+  SANITY_SKILL_NAMES,
   SANITY_SKILLS_REPO,
   setupSkills,
   SKILLS_BIN_PATH,
@@ -37,7 +37,7 @@ describe('setupSkills', () => {
         'add',
         SANITY_SKILLS_REPO,
         '--skill',
-        SANITY_SKILL_NAME,
+        ...SANITY_SKILL_NAMES,
         '-g',
         '-a',
         'cursor',
@@ -61,7 +61,7 @@ describe('setupSkills', () => {
         'add',
         SANITY_SKILLS_REPO,
         '--skill',
-        SANITY_SKILL_NAME,
+        ...SANITY_SKILL_NAMES,
         '-g',
         '-a',
         'cline',
@@ -85,7 +85,7 @@ describe('setupSkills', () => {
         'add',
         SANITY_SKILLS_REPO,
         '--skill',
-        SANITY_SKILL_NAME,
+        ...SANITY_SKILL_NAMES,
         '-g',
         '-a',
         'cursor',
@@ -109,6 +109,10 @@ describe('setupSkills', () => {
     expect(result.installedAgents).toEqual([])
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error?.message).toBe('skills exited 1')
+  })
+
+  test('installs both the best-practices and migration skills', () => {
+    expect(SANITY_SKILL_NAMES).toEqual(['sanity-best-practices', 'sanity-migration'])
   })
 
   test('resolves SKILLS_BIN_PATH to a path that points at the bundled cli', () => {

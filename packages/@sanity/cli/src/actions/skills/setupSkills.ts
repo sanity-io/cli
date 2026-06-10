@@ -12,8 +12,8 @@ const skillsDebug = subdebug('skills:setup')
 /** Source repo for the bundled `skills` CLI. See https://www.sanity.io/docs/ai/skills. */
 export const SANITY_SKILLS_REPO = 'sanity-io/agent-toolkit'
 
-/** Name of the skill we install — must match the entry in the source repo. */
-export const SANITY_SKILL_NAME = 'sanity-best-practices'
+/** Names of the skills we install — must match the entries in the source repo. */
+export const SANITY_SKILL_NAMES = ['sanity-best-practices', 'sanity-migration']
 
 /**
  * Absolute path to the bundled `skills` CLI bin. Resolved once at module load
@@ -55,7 +55,7 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
     'add',
     SANITY_SKILLS_REPO,
     '--skill',
-    SANITY_SKILL_NAME,
+    ...SANITY_SKILL_NAMES,
     '-g',
     ...uniqueAgents.flatMap((agent) => ['-a', agent]),
     '-y',

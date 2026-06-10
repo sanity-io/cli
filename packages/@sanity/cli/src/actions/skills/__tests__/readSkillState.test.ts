@@ -10,6 +10,7 @@ vi.mock('execa', () => ({
 }))
 
 const SKILL = 'sanity-best-practices'
+const MIGRATION_SKILL = 'sanity-migration'
 
 describe('readSkillState', () => {
   afterEach(() => {
@@ -28,7 +29,7 @@ describe('readSkillState', () => {
       ]),
     })
 
-    const result = await readSkillState({skillName: SKILL})
+    const result = await readSkillState({skillNames: [SKILL]})
 
     expect(mockExeca).toHaveBeenCalledWith(
       process.execPath,
@@ -38,12 +39,35 @@ describe('readSkillState', () => {
     expect([...result.installedAgentDisplayNames]).toEqual(['Cursor', 'Claude Code'])
   })
 
+  test('only returns agents that have every requested skill installed', async () => {
+    mockExeca.mockResolvedValue({
+      stdout: JSON.stringify([
+        {agents: ['Cursor', 'Claude Code'], name: SKILL},
+        {agents: ['Claude Code'], name: MIGRATION_SKILL},
+      ]),
+    })
+
+    const result = await readSkillState({skillNames: [SKILL, MIGRATION_SKILL]})
+
+    expect([...result.installedAgentDisplayNames]).toEqual(['Claude Code'])
+  })
+
+  test('returns an empty Set when one of the requested skills is missing entirely', async () => {
+    mockExeca.mockResolvedValue({
+      stdout: JSON.stringify([{agents: ['Cursor', 'Claude Code'], name: SKILL}]),
+    })
+
+    const result = await readSkillState({skillNames: [SKILL, MIGRATION_SKILL]})
+
+    expect(result.installedAgentDisplayNames.size).toBe(0)
+  })
+
   test('returns an empty Set when the named skill is not present', async () => {
     mockExeca.mockResolvedValue({
       stdout: JSON.stringify([{agents: ['Cursor'], name: 'something-else'}]),
     })
 
-    const result = await readSkillState({skillName: SKILL})
+    const result = await readSkillState({skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
@@ -51,7 +75,7 @@ describe('readSkillState', () => {
   test('returns an empty Set when the skill entry has no agents array', async () => {
     mockExeca.mockResolvedValue({stdout: JSON.stringify([{name: SKILL}])})
 
-    const result = await readSkillState({skillName: SKILL})
+    const result = await readSkillState({skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
@@ -59,7 +83,7 @@ describe('readSkillState', () => {
   test('returns an empty Set when the list is empty', async () => {
     mockExeca.mockResolvedValue({stdout: '[]'})
 
-    const result = await readSkillState({skillName: SKILL})
+    const result = await readSkillState({skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
@@ -67,7 +91,7 @@ describe('readSkillState', () => {
   test('returns an empty Set when JSON is malformed', async () => {
     mockExeca.mockResolvedValue({stdout: '{not json'})
 
-    const result = await readSkillState({skillName: SKILL})
+    const result = await readSkillState({skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
@@ -75,7 +99,7 @@ describe('readSkillState', () => {
   test('returns an empty Set when the JSON root is not an array', async () => {
     mockExeca.mockResolvedValue({stdout: JSON.stringify({wrong: 'shape'})})
 
-    const result = await readSkillState({skillName: SKILL})
+    const result = await readSkillState({skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
@@ -83,7 +107,7 @@ describe('readSkillState', () => {
   test('returns an empty Set when the subprocess fails', async () => {
     mockExeca.mockRejectedValue(new Error('boom'))
 
-    const result = await readSkillState({skillName: SKILL})
+    const result = await readSkillState({skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
