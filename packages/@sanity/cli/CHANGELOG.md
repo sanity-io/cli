@@ -1,5 +1,21 @@
 # Change Log
 
+## [7.2.1](https://github.com/sanity-io/cli/compare/cli-v7.2.0...cli-v7.2.1)
+
+_2026-06-10_
+
+### Bug Fixes
+
+- **deps:** Update react monorepo to ^19.2.7 ([#1245](https://github.com/sanity-io/cli/pull/1245)) ([73677fa](https://github.com/sanity-io/cli/commit/73677fafeabc2633bfb8e683fd36f8ade89022a6))
+- **deps:** update sanity-tooling ([#1246](https://github.com/sanity-io/cli/pull/1246)) ([d695cf6](https://github.com/sanity-io/cli/commit/d695cf65d50ba948c63742ed7dd7c87b10a5b12f))
+- **deps:** update @sanity/runtime-cli to v16 ([#1249](https://github.com/sanity-io/cli/pull/1249)) ([a730795](https://github.com/sanity-io/cli/commit/a7307954cd997f3b43c74b517052ee2fe34c1bfe))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 1.0.3
+
 ## [7.2.0](https://github.com/sanity-io/cli/compare/cli-v7.1.0...cli-v7.2.0)
 
 _2026-06-10_
