@@ -132,7 +132,9 @@ describe('setupMCP', () => {
 
     const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
 
-    expect(mockReadSkillState).toHaveBeenCalledWith({skillName: 'sanity-best-practices'})
+    expect(mockReadSkillState).toHaveBeenCalledWith({
+      skillNames: ['sanity-best-practices', 'sanity-migration'],
+    })
     expect(result.configuredEditors).toEqual(['Cursor'])
     expect(result.skillsToInstall).toEqual(['cursor'])
   })
@@ -259,7 +261,7 @@ describe('setupMCP', () => {
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Configure Sanity MCP and agent skill for these editors?',
+        message: 'Configure Sanity MCP and agent skills for these editors?',
       }),
     )
   })
