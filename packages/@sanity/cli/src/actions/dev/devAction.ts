@@ -1,5 +1,7 @@
 import {styleText} from 'node:util'
 
+import {isWorkbenchApp} from '@sanity/cli-core'
+
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {startAppDevServer} from './startAppDevServer.js'
 import {startFederationRegistration} from './startFederationRegistration.js'
@@ -58,7 +60,9 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     return {close: closeWorkbenchServer}
   }
 
-  const closeFederation = cliConfig?.federation?.enabled
+  // Workbench is opted into solely by calling `unstable_defineApp` — its
+  // branded identity is the only signal.
+  const closeFederation = isWorkbenchApp(cliConfig?.app)
     ? await startFederationRegistration({
         cliConfig,
         isApp: options.isApp,

@@ -1,9 +1,10 @@
 import path from 'node:path'
 
-import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
+import {type CliConfig, getSanityEnvVar, isWorkbenchApp, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {type DevServerOptions} from '../../server/devServer.js'
+import {determineIsApp} from '../../util/determineIsApp.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
 import {type DevFlags} from './types.js'
@@ -32,7 +33,7 @@ export function getDevServerConfig({
 
   configSpinner.succeed()
 
-  const isApp = cliConfig && 'app' in cliConfig
+  const isApp = cliConfig ? determineIsApp(cliConfig) : false
   const reactStrictMode = resolveReactStrictMode(cliConfig)
 
   const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
@@ -44,7 +45,7 @@ export function getDevServerConfig({
 
   return {
     ...baseConfig,
-    federation: cliConfig?.federation,
+    isWorkbenchApp: isWorkbenchApp(cliConfig?.app),
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),

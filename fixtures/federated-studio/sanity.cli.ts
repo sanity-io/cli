@@ -1,3 +1,4 @@
+import {unstable_defineApp} from '@sanity/federation'
 import {defineCliConfig} from 'sanity/cli'
 
 export default defineCliConfig({
@@ -5,10 +6,12 @@ export default defineCliConfig({
     dataset: 'test',
     projectId: 'ppsg7ml5',
   },
+  // Calling `unstable_defineApp` opts this studio into workbench (a
+  // `sanity.config.ts` is present, so it resolves to `applicationType: 'studio'`).
+  app: unstable_defineApp({
+    name: 'federated-studio',
+  }),
   deployment: {
     autoUpdates: true,
-  },
-  federation: {
-    enabled: true,
   },
 })
