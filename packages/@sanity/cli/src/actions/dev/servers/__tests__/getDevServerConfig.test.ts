@@ -1,6 +1,7 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {createMockOutput, DEV_FLAGS as FLAGS} from '../../__tests__/testHelpers.js'
 import {getDevServerConfig} from '../getDevServerConfig.js'
 
 vi.mock('@sanity/cli-core/ux', () => ({
@@ -9,22 +10,6 @@ vi.mock('@sanity/cli-core/ux', () => ({
     succeed: vi.fn(),
   })),
 }))
-
-function createMockOutput(): Output {
-  return {
-    error: vi.fn(),
-    log: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
-}
-
-/** These are not relevant for what we are testing, but still needed to pass type checker */
-const FLAGS = {
-  'auto-updates': false,
-  host: 'localhost',
-  json: false,
-  port: '3333',
-} as const
 
 describe('getDevServerConfig', () => {
   afterEach(() => {
