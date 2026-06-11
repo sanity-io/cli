@@ -16,6 +16,14 @@ import {DevCommand} from '../dev.js'
 
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
+const mockGetDashboardAppURL = vi.hoisted(() =>
+  vi.fn().mockResolvedValue('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340'),
+)
+
+vi.mock('../../actions/dev/servers/getDashboardAppUrl.js', () => ({
+  getDashboardAppURL: mockGetDashboardAppURL,
+}))
+
 vi.mock('../../actions/build/checkRequiredDependencies.js', () => ({
   checkRequiredDependencies: vi.fn().mockResolvedValue({
     installedSanityVersion: '3.0.0',
@@ -100,7 +108,8 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('App dev server started on port 5333')
+      expect(stdout).toContain('Dev server started on port 5333')
+      expect(stdout).toContain('View your app in the Sanity dashboard here:')
       expect(stderr).toContain('Checking configuration files')
       await tryCloseServer(result)
 
@@ -131,7 +140,8 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('App dev server started on port 5333')
+      expect(stdout).toContain('Dev server started on port 5333')
+      expect(stdout).toContain('View your app in the Sanity dashboard here:')
       expect(stderr).toContain('Checking configuration files')
       await tryCloseServer(result)
 
@@ -163,8 +173,9 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         })
 
         if (error) throw error
-        expect(stdout).toMatch(/App dev server started on port \d{4}/)
-        expect(stdout).not.toContain('App dev server started on port 5338')
+        expect(stdout).toMatch(/Dev server started on port \d{4}/)
+        expect(stdout).not.toContain('Dev server started on port 5338')
+        expect(stdout).toContain('View your app in the Sanity dashboard here:')
         await tryCloseServer(result)
       } finally {
         await closeServer(server)
@@ -204,7 +215,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('App dev server started on port 5350')
+      expect(stdout).toContain('Dev server started on port 5350')
       await tryCloseServer(result)
     })
 
