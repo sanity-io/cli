@@ -2,7 +2,7 @@
  * Windows-only integration tests for {@link getProcessStartTime} and the
  * registry/lock plumbing that depends on it.
  *
- * Unlike `devServerRegistry.test.ts`, this file does **not** mock
+ * Unlike `processLiveness.test.ts`, this file does **not** mock
  * `node:child_process` — it shells out to a real PowerShell so we catch
  * regressions where the command doesn't run, the output format drifts, or
  * `Get-Process` behaves differently on a real Windows host.
