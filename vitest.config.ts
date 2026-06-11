@@ -60,6 +60,9 @@ export default defineConfig({
           environment: 'node',
           include: ['**/*.unit.test.{ts,tsx}'],
           name: 'unit',
+          onUnhandledError() {
+            return true
+          },
         },
       },
     ],
