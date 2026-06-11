@@ -249,7 +249,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server: {
       host: server?.host,
       port: server?.port || 3333,
-      strictPort: false,
+      // Apps drift to a free port (the reported URL embeds whichever port was
+      // claimed), and workbench runs stack servers on adjacent ports — both
+      // need the fallback. Studios fail fast on a busy port.
+      strictPort: !isApp && !isWorkbenchApp,
 
       /**
        * Significantly speed up startup time,

@@ -135,7 +135,7 @@ describe('#getViteConfig', () => {
       server: {
         host: undefined,
         port: 3333,
-        strictPort: false,
+        strictPort: true,
       },
     })
 
@@ -173,6 +173,7 @@ describe('#getViteConfig', () => {
     const config = await getViteConfig(options)
 
     expect(config.envPrefix).toBe('SANITY_APP_')
+    expect(config.server?.strictPort).toBe(false)
     expect(config.define).toMatchObject({
       'process.env.APP_VAR': '"app-value"',
     })
@@ -268,7 +269,7 @@ describe('#getViteConfig', () => {
     expect(config.server).toMatchObject({
       host: '0.0.0.0',
       port: 8080,
-      strictPort: false,
+      strictPort: true,
     })
   })
 
@@ -506,6 +507,9 @@ describe('#getViteConfig', () => {
       workDir: mockTestCwd,
     })
     expect(federationPlugin).toBeDefined()
+    // Workbench stacks the app server next to the workbench port, so it must
+    // be able to drift even when the project is a studio.
+    expect(config.server?.strictPort).toBe(false)
   })
 
   test('should not include federation plugin when disabled', async () => {
