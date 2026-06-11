@@ -1,13 +1,12 @@
 import {styleText} from 'node:util'
 
 import {getCliConfigUncached, isWorkbenchApp} from '@sanity/cli-core'
-import {type ViteDevServer} from 'vite'
 
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
-import {startFederationRegistration} from './registration/startFederationRegistration.js'
+import {startDevServerRegistration} from './registration/startDevServerRegistration.js'
 import {startAppDevServer} from './servers/startAppDevServer.js'
 import {startStudioDevServer} from './servers/startStudioDevServer.js'
-import {type DevActionOptions} from './types.js'
+import {type DevActionOptions, type StartDevServerResult} from './types.js'
 import {startWorkbenchDevServer} from './workbench/startWorkbenchDevServer.js'
 
 const noop = async () => {}
@@ -45,29 +44,30 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   }
 
   let closeAppDevServer: () => Promise<void> = noop
-  let server: ViteDevServer | undefined
 
-  // (Re)start the app/studio dev server, tracking its close handle + server ref.
+  // (Re)start the app/studio dev server, tracking its close handle.
   // Takes the config so a rebuild can feed a freshly-loaded one.
-  const startApp = async (config: DevActionOptions['cliConfig']) => {
+  const startApp = async (config: DevActionOptions['cliConfig']): Promise<StartDevServerResult> => {
     const result = options.isApp
       ? await startAppDevServer({...appOptions, cliConfig: config})
       : await startStudioDevServer({...appOptions, cliConfig: config})
-    closeAppDevServer = result.close ?? noop
-    server = result.server
-    return result.server
+    closeAppDevServer = result.started ? result.close : noop
+    return result
   }
 
+  let initial: StartDevServerResult
   try {
-    await startApp(cliConfig)
+    initial = await startApp(cliConfig)
   } catch (err) {
     await closeWorkbenchServer()
     throw err
   }
 
-  if (!server) {
+  if (!initial.started) {
+    // The server has already reported why (e.g. missing organization ID).
     return {close: closeWorkbenchServer}
   }
+  const {server} = initial
 
   // Adding/removing a view or service in `sanity.cli.ts` during dev requires
   // rebuilding the federation remote: its module-federation `exposes` map +
@@ -78,7 +78,8 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // workbench page then reloads (driven by the registry watch in the workbench
   // server) to re-fetch the rebuilt remote. A view/service *source* edit doesn't
   // change the interface set, so it stays on the HMR path untouched.
-  const onInterfacesChange = options.isApp
+  // Studios declare no interfaces, so they get no rebuild hook.
+  const onInterfaceSetChange = options.isApp
     ? async () => {
         const freshConfig = await getCliConfigUncached(workDir)
         await closeAppDevServer()
@@ -88,11 +89,11 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
 
   // Workbench is opted into solely by calling `unstable_defineApp` — its
   // branded identity is the only signal.
-  const closeFederation = isWorkbenchApp(cliConfig?.app)
-    ? await startFederationRegistration({
+  const registration = isWorkbenchApp(cliConfig?.app)
+    ? await startDevServerRegistration({
         cliConfig,
         isApp: options.isApp,
-        onInterfacesChange,
+        onInterfaceSetChange,
         output,
         server,
         workDir,
@@ -111,11 +112,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   const close = async () => {
     process.off('SIGINT', onSignal)
     process.off('SIGTERM', onSignal)
-    await Promise.allSettled([
-      closeFederation?.close(),
-      closeWorkbenchServer(),
-      closeAppDevServer(),
-    ])
+    await Promise.allSettled([registration?.close(), closeWorkbenchServer(), closeAppDevServer()])
   }
 
   // Ensure the workbench lock file and registry entries are cleaned up on

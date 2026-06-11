@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockOutput, workbenchApp, workbenchCliConfig} from '../../__tests__/testHelpers.js'
-import {startFederationRegistration} from '../startFederationRegistration.js'
+import {startDevServerRegistration} from '../startDevServerRegistration.js'
 
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
@@ -40,7 +40,7 @@ function mockServer({host, port = 3334}: {host?: boolean | string; port?: number
   }
 }
 
-describe('startFederationRegistration', () => {
+describe('startDevServerRegistration', () => {
   beforeEach(() => {
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
@@ -54,7 +54,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('registers studio in registry', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
@@ -74,7 +74,7 @@ describe('startFederationRegistration', () => {
   test('passes deployment.appId to registerDevServer', async () => {
     mockGetAppId.mockReturnValue('app-abc')
 
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: {app: workbenchApp(), deployment: {appId: 'app-abc'}},
       isApp: false,
       output: createMockOutput(),
@@ -86,7 +86,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('forwards api.projectId to registerDevServer', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: {api: {projectId: 'x1g7jygt'}, app: workbenchApp()},
       isApp: false,
       output: createMockOutput(),
@@ -100,7 +100,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('omits projectId when api.projectId is not configured', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
@@ -115,7 +115,7 @@ describe('startFederationRegistration', () => {
   test('checks for deprecated app.id', async () => {
     const output = createMockOutput()
 
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: {app: workbenchApp({id: 'legacy-app'})},
       isApp: false,
       output,
@@ -127,7 +127,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('registers without icon/title — they are derived from the inlined manifest', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
@@ -141,7 +141,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('registers app under the host applied by the vite dev server', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
@@ -155,7 +155,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('falls back to localhost when the vite server host is not a string', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
@@ -167,7 +167,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('registers app type when isApp is true', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: true,
       output: createMockOutput(),
@@ -179,7 +179,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('starts the manifest watcher for studios', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
@@ -193,7 +193,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('starts the manifest watcher for core apps', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: true,
       output: createMockOutput(),
@@ -214,7 +214,7 @@ describe('startFederationRegistration', () => {
       app: workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]}),
     })
 
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: true,
       output: createMockOutput(),
@@ -237,7 +237,7 @@ describe('startFederationRegistration', () => {
     const studioManifest = {version: 3, workspaces: []}
     mockExtractStudioManifest.mockResolvedValue(studioManifest)
 
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
@@ -256,7 +256,7 @@ describe('startFederationRegistration', () => {
     const mockCleanup = vi.fn()
     mockRegisterDevServer.mockReturnValue({release: mockCleanup, update: vi.fn()})
 
-    const result = await startFederationRegistration({
+    const result = await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
       isApp: false,
       output: createMockOutput(),
@@ -275,7 +275,7 @@ describe('startFederationRegistration', () => {
     })
 
     await expect(
-      startFederationRegistration({
+      startDevServerRegistration({
         cliConfig: workbenchCliConfig(),
         isApp: false,
         output: createMockOutput(),
@@ -290,7 +290,7 @@ describe('startFederationRegistration', () => {
     mockStartDevManifestWatcher.mockRejectedValue(error)
 
     await expect(
-      startFederationRegistration({
+      startDevServerRegistration({
         cliConfig: workbenchCliConfig(),
         isApp: false,
         output: createMockOutput(),
@@ -307,7 +307,7 @@ describe('startFederationRegistration', () => {
 
     const output = createMockOutput()
 
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: {
         app: workbenchApp({id: 'legacy-app'}),
         deployment: {appId: 'new-app'},
@@ -326,7 +326,7 @@ describe('startFederationRegistration', () => {
 
   // US5 — `entry` declares an SDK app's navigable `app` view.
   test('forwards an `app` interface derived from `entry` for an SDK app', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: {app: workbenchApp({entry: './src/App.tsx'})},
       isApp: true,
       output: createMockOutput(),
@@ -344,7 +344,7 @@ describe('startFederationRegistration', () => {
   })
 
   test('forwards no `app` interface when an SDK app declares no `entry`', async () => {
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: {app: workbenchApp()},
       isApp: true,
       output: createMockOutput(),
@@ -360,7 +360,7 @@ describe('startFederationRegistration', () => {
 
   test('rejects a studio that declares `entry` — app views for studios are not implemented yet', async () => {
     await expect(
-      startFederationRegistration({
+      startDevServerRegistration({
         cliConfig: {app: workbenchApp({entry: './src/App.tsx'})},
         isApp: false,
         output: createMockOutput(),
@@ -375,14 +375,14 @@ describe('startFederationRegistration', () => {
   const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
 
   test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {
-    const onInterfacesChange = vi.fn().mockResolvedValue(undefined)
+    const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)
     const update = vi.fn()
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
 
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: {app: workbenchApp()}, // no interfaces yet
       isApp: true,
-      onInterfacesChange,
+      onInterfaceSetChange,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
       workDir: '/tmp/sanity-project',
@@ -391,25 +391,25 @@ describe('startFederationRegistration', () => {
 
     // A panel appears → rebuild, then patch the registry.
     await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'a'})
-    expect(onInterfacesChange).toHaveBeenCalledTimes(1)
+    expect(onInterfaceSetChange).toHaveBeenCalledTimes(1)
     expect(update).toHaveBeenCalledTimes(1)
 
     // Same set on the next pass → no rebuild, registry still patched.
     await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'b'})
-    expect(onInterfacesChange).toHaveBeenCalledTimes(1)
+    expect(onInterfaceSetChange).toHaveBeenCalledTimes(1)
     expect(update).toHaveBeenCalledTimes(2)
   })
 
   test('does not rebuild when only the manifest changes (same interface set)', async () => {
-    const onInterfacesChange = vi.fn().mockResolvedValue(undefined)
+    const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
 
-    await startFederationRegistration({
+    await startDevServerRegistration({
       cliConfig: {
         app: workbenchApp({views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}]}),
       },
       isApp: true,
-      onInterfacesChange,
+      onInterfaceSetChange,
       output: createMockOutput(),
       server: mockServer({port: 3334}) as any,
       workDir: '/tmp/sanity-project',
@@ -422,6 +422,25 @@ describe('startFederationRegistration', () => {
       manifest: {title: 'Renamed', version: '1'},
       manifestUpdatedAt: 'a',
     })
-    expect(onInterfacesChange).not.toHaveBeenCalled()
+    expect(onInterfaceSetChange).not.toHaveBeenCalled()
+  })
+
+  test('still patches the registry when no rebuild handler is passed', async () => {
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+
+    await startDevServerRegistration({
+      cliConfig: {app: workbenchApp()}, // no interfaces yet
+      isApp: true,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    // The set changed but no handler was passed (e.g. studios) — no crash, and
+    // the registry patch still goes through.
+    await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'a'})
+    expect(update).toHaveBeenCalledTimes(1)
   })
 })

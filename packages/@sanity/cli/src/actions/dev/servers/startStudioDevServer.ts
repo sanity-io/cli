@@ -7,7 +7,6 @@ import {
 import {getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'
-import {type ViteDevServer} from 'vite'
 
 import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
@@ -17,12 +16,12 @@ import {getPackageManagerChoice} from '../../../util/packageManager/packageManag
 import {upgradePackages} from '../../../util/packageManager/upgradePackages.js'
 import {shouldAutoUpdate} from '../../build/shouldAutoUpdate.js'
 import {devDebug} from '../devDebug.js'
-import {type DevActionOptions} from '../types.js'
+import {type DevActionOptions, type StartDevServerResult} from '../types.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 
 export async function startStudioDevServer(
   options: DevActionOptions,
-): Promise<{close: () => Promise<void>; server: ViteDevServer}> {
+): Promise<StartDevServerResult> {
   const {cliConfig, flags, output, workbenchAvailable, workDir} = options
 
   // Check studio dependency versions
@@ -123,7 +122,7 @@ export async function startStudioDevServer(
         (workbenchAvailable ? '' : ` and running at ${styleText('cyan', url)}`),
     )
 
-    return {close, server}
+    return {close, server, started: true}
   } catch (err) {
     devDebug('Error starting studio dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
