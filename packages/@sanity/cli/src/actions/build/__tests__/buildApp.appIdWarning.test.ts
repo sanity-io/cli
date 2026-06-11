@@ -27,11 +27,6 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
-vi.mock('../getAutoUpdatesImportMap.js', () => ({
-  getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
-  getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
-}))
-
 vi.mock('../getEnvironmentVariables.js', () => ({
   getAppEnvironmentVariables: vi.fn().mockReturnValue({}),
 }))
@@ -45,6 +40,8 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   return {
     ...actual,
     AppBuildTrace: {},
+    getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
+    getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
     resolveVendorBuildConfig: vi.fn().mockResolvedValue({
       entries: {},
       namesByChunkName: {},

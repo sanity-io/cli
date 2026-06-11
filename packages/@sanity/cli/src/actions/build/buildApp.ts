@@ -5,6 +5,8 @@ import {styleText} from 'node:util'
 import {
   AppBuildTrace,
   buildDebug,
+  getAutoUpdatesCssUrls,
+  getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
 } from '@sanity/cli-build/_internal/build'
 import {
@@ -25,7 +27,6 @@ import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
