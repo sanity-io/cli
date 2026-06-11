@@ -15,7 +15,7 @@
     "start": "sanity start"
   },
   "dependencies": {
-    "@sanity/code-input": "^7.1.0",
+    "@sanity/code-input": "^7.1.2",
     "@sanity/vision": "catalog:",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
