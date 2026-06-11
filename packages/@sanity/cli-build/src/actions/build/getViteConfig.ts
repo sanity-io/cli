@@ -21,11 +21,14 @@ import {
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
+import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
+import {VENDOR_DIR} from './constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
+import {createVendorNamedExportsPlugin} from './vite/plugin-sanity-vendor-named-exports.js'
 import {getDefaultFaviconsPath} from './writeFavicons.js'
 
 interface ViteOptions {
@@ -52,17 +55,17 @@ interface ViteOptions {
   additionalPlugins?: Plugin[]
 
   /**
-   * CSS URLs for auto-updated packages (loaded via module server)
+   * Auto-updates configuration (production builds only). When set, vendor
+   * packages are emitted as hashed ESM chunks by this build and the import map
+   * in `index.html` is derived from the build output.
    */
-  autoUpdatesCssUrls?: string[]
+  autoUpdates?: AutoUpdatesBuildConfig
 
   /**
    * Base path (eg under where to serve the app - `/studio` or similar)
    * Will be normalized to ensure it starts and ends with a `/`
    */
   basePath?: string
-
-  importMap?: {imports?: Record<string, string>}
 
   isApp?: boolean
 
@@ -75,6 +78,7 @@ interface ViteOptions {
    * Output directory (eg where to place the built files, if any)
    */
   outputDir?: string
+
   /**
    * Schema extraction configuration
    */
@@ -97,10 +101,9 @@ interface ViteOptions {
 export async function getViteConfig(options: ViteOptions): Promise<InlineConfig> {
   const {
     additionalPlugins,
-    autoUpdatesCssUrls,
+    autoUpdates,
     basePath: rawBasePath = '/',
     cwd,
-    importMap,
     isApp,
     minify,
     mode,
@@ -157,7 +160,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),
+      sanityBuildEntries({autoUpdates, basePath, cwd, isApp}),
       // Add schema extraction when enabled
       ...(schemaExtraction?.enabled
         ? [
@@ -201,17 +204,38 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   if (mode === 'production') {
-    // For auto-updating studios the import map externalizes react/react-dom/etc.
-    // Hand those externals to `esmExternalRequirePlugin` rather than
-    // `rolldownOptions.external`, so any bundled CommonJS `require()` of an external
-    // is rewritten to an ESM import instead of a runtime `require` shim that throws
-    // in the browser. The plugin both marks them external AND converts the requires;
-    // also setting `rolldownOptions.external` would short-circuit that conversion.
-    // With no import map (auto-updates off) the external list is empty and this is a
-    // no-op (everything is bundled, so requires resolve internally).
-    viteConfig.plugins!.push(
-      esmExternalRequirePlugin({external: createExternalFromImportMap(importMap)}),
-    )
+    if (autoUpdates) {
+      viteConfig.plugins!.push(
+        // Re-expose CommonJS named exports (react, react-dom) as real ESM exports
+        // on the emitted vendor chunks; Rolldown only emits `export default` for a
+        // CommonJS entry.
+        createVendorNamedExportsPlugin(autoUpdates.vendor.namesByChunkName),
+        // The import map and vendor specifiers are externals of the studio/app
+        // bundle, resolved by the browser at runtime. They are handed to
+        // `esmExternalRequirePlugin` rather than `rolldownOptions.external`: the
+        // plugin both marks them external AND rewrites bundled CommonJS
+        // `require()` calls of an external (e.g. react-dom requiring react) into
+        // ESM imports, while `rolldownOptions.external` would short-circuit that
+        // rewrite and leave a runtime `require` shim that throws in the browser.
+        esmExternalRequirePlugin({
+          external: createExternalFromImportMap({
+            imports: {
+              ...autoUpdates.imports,
+              ...Object.fromEntries(
+                Object.values(autoUpdates.vendor.specifiersByChunkName).map((specifier) => [
+                  specifier,
+                  '',
+                ]),
+              ),
+            },
+          }),
+        }),
+      )
+    }
+
+    const vendorChunkNames = autoUpdates
+      ? new Set(Object.keys(autoUpdates.vendor.specifiersByChunkName))
+      : null
 
     viteConfig.build = {
       ...viteConfig.build,
@@ -223,8 +247,31 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       rolldownOptions: {
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
+          ...autoUpdates?.vendor.entries,
         },
         onwarn: onRolldownWarn,
+        ...(autoUpdates
+          ? {
+              // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
+              // the vendor named-exports plugin can edit chunks without a JS
+              // dependency.
+              experimental: {nativeMagicString: true},
+              output: {
+                entryFileNames: (chunk) =>
+                  vendorChunkNames!.has(chunk.name)
+                    ? `${VENDOR_DIR}/[name]-[hash].mjs`
+                    : 'static/[name]-[hash].js',
+                exports: 'named',
+              },
+              // App-style builds default to `preserveEntrySignatures: false`, which
+              // treeshakes the exports off entry chunks. Vendor chunks are loaded by
+              // the browser via the import map, so their exports must survive (e.g.
+              // styled-components' native ESM exports). `exports-only` keeps exports
+              // for entries that have them, while the export-less `sanity` app entry
+              // still bundles as before.
+              preserveEntrySignatures: 'exports-only',
+            }
+          : {}),
       },
     }
   }
@@ -260,13 +307,28 @@ function suppressUnusedImport(warning: Rolldown.RolldownLog & {ids?: string[]}):
 }
 
 /**
- * Ensure Sanity entry chunk is always loaded
+ * Re-asserts the critical parts of the default config after a userland vite
+ * config (`vite` in `sanity.cli.ts`) has been applied.
+ *
+ * Everything `getViteConfig` sets under `build.rolldownOptions` is load-bearing:
+ * the `input` entries (the studio entry plus, for auto-updating studios/apps,
+ * the vendor entries), `preserveEntrySignatures`, the `experimental` flags the
+ * vendor plugins rely on, and the `output` chunk naming. A userland config that
+ * returns a brand-new object for any of these would silently break the build
+ * (e.g. vendor chunks never emitted while the bundle still treats them as
+ * external), so the default `rolldownOptions` are deep-merged back over the
+ * userland config: userland additions survive, replacements of critical
+ * options are healed.
  *
  * @param config - User-modified configuration
+ * @param defaultConfig - The configuration produced by `getViteConfig`, before the userland config was applied
  * @returns Merged configuration
  * @internal
  */
-export async function finalizeViteConfig(config: InlineConfig): Promise<InlineConfig> {
+export async function finalizeViteConfig(
+  config: InlineConfig,
+  defaultConfig: InlineConfig,
+): Promise<InlineConfig> {
   if (typeof config.build?.rolldownOptions?.input !== 'object') {
     throw new TypeError(
       'Vite config must contain `build.rolldownOptions.input`, and it must be an object',
@@ -281,11 +343,7 @@ export async function finalizeViteConfig(config: InlineConfig): Promise<InlineCo
 
   return mergeConfig(config, {
     build: {
-      rolldownOptions: {
-        input: {
-          sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
-        },
-      },
+      rolldownOptions: defaultConfig.build?.rolldownOptions ?? {},
     },
   })
 }

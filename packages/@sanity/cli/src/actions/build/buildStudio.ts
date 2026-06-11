@@ -4,8 +4,8 @@ import {styleText} from 'node:util'
 
 import {
   buildDebug,
-  buildVendorDependencies,
   checkStudioDependencyVersions,
+  resolveVendorBuildConfig,
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
 import {
@@ -275,14 +275,12 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
   const trace = getCliTelemetry().trace(StudioBuildTrace)
   trace.start()
 
-  let importMap
-
+  let autoUpdates
   if (autoUpdatesEnabled) {
-    importMap = {
-      imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
-        ...autoUpdatesImports,
-      },
+    autoUpdates = {
+      cssUrls: autoUpdatesCssUrls,
+      imports: autoUpdatesImports,
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: false}),
     }
   }
 
@@ -290,10 +288,9 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
-      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
+      autoUpdates,
       basePath,
       cwd: workDir,
-      importMap,
       minify,
       outputDir,
       reactCompiler,

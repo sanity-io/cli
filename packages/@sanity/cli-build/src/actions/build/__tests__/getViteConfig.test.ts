@@ -200,12 +200,7 @@ describe('#getViteConfig', () => {
       },
     })
 
-    // Externals are handled by esmExternalRequirePlugin (so external require() is
-    // rewritten to ESM imports), not by rolldownOptions.external.
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
-    const {esmExternalRequirePlugin} = await import('vite')
-    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
-    expect(config.plugins).toContainEqual({name: 'esm-external-require'})
   })
 
   test('should create production config without minification', async () => {
@@ -299,36 +294,69 @@ describe('#getViteConfig', () => {
     expect(config.define?.__SANITY_STAGING__).toBe(true)
   })
 
-  test('should handle import map for external dependencies', async () => {
-    const importMap = {
-      imports: {
-        react: 'https://esm.sh/react@18',
-        'react-dom': 'https://esm.sh/react-dom@18',
+  test('should configure auto-updates builds with vendor chunks and import map', async () => {
+    const autoUpdates = {
+      imports: {sanity: 'https://sanity-cdn.example/sanity'},
+      vendor: {
+        entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
+        namesByChunkName: {'react/index': ['useState']},
+        specifiersByChunkName: {'react/index': 'react'},
       },
     }
 
     const options = {
+      autoUpdates,
       cwd: mockTestCwd,
       getEnvironmentVariables,
-      importMap,
       mode: 'production' as const,
       reactCompiler: undefined,
     }
 
-    const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
     const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
+    const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
     const {esmExternalRequirePlugin} = await import('vite')
 
-    await getViteConfig(options)
+    const config = await getViteConfig(options)
 
-    expect(createExternalFromImportMap).toHaveBeenCalledWith(importMap)
-    // The import-map externals are handed to esmExternalRequirePlugin.
-    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
     expect(sanityBuildEntries).toHaveBeenCalledWith({
+      autoUpdates,
       basePath: '/',
       cwd: mockTestCwd,
-      importMap,
       isApp: undefined,
+    })
+
+    // Vendor entries become additional Rolldown inputs of the single build.
+    expect(config.build?.rolldownOptions?.input).toMatchObject({
+      'react/index': convertToSystemPath('/pkg/react/index.js'),
+      sanity: join(mockTestCwd, '.sanity/runtime/app.js'),
+    })
+    // Vendor entry exports must survive the app-style build.
+    expect(config.build?.rolldownOptions?.preserveEntrySignatures).toBe('exports-only')
+
+    // Both the CDN import map specifiers and the vendor specifiers are handed to
+    // esmExternalRequirePlugin (so external require() is rewritten to ESM imports),
+    // not to rolldownOptions.external.
+    expect(createExternalFromImportMap).toHaveBeenCalledWith({
+      imports: {react: '', sanity: 'https://sanity-cdn.example/sanity'},
+    })
+    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
+    expect(config.plugins).toContainEqual({name: 'esm-external-require'})
+    expect(config.build?.rolldownOptions).not.toHaveProperty('external')
+  })
+
+  test('should not install esmExternalRequirePlugin when auto-updates are disabled', async () => {
+    const {esmExternalRequirePlugin} = await import('vite')
+
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      getEnvironmentVariables,
+      mode: 'production' as const,
+      reactCompiler: undefined,
+    })
+
+    expect(esmExternalRequirePlugin).not.toHaveBeenCalled()
+    expect(config.build?.rolldownOptions?.input).toEqual({
+      sanity: join(mockTestCwd, '.sanity/runtime/app.js'),
     })
   })
 
@@ -442,45 +470,38 @@ describe('#finalizeViteConfig', () => {
     vi.unstubAllEnvs()
   })
 
-  test('should merge sanity entry into existing config', async () => {
+  test('should re-assert the default rolldown options over a userland config', async () => {
     const {mergeConfig} = await import('vite')
 
-    const inputConfig: InlineConfig = {
-      build: {
-        rolldownOptions: {
-          input: {
-            main: mockTestMain,
-          },
-        },
+    // The pristine config produced by getViteConfig, with the studio entry,
+    // vendor entries, and other critical rolldown options.
+    const defaultRolldownOptions = {
+      input: {
+        'react/index': convertToSystemPath('/pkg/react/index.js'),
+        sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
       },
+      preserveEntrySignatures: 'exports-only' as const,
+    }
+    const defaultConfig: InlineConfig = {
+      build: {rolldownOptions: defaultRolldownOptions},
       root: mockTestRoot,
     }
 
-    const expectedMerge = {
-      build: {
-        rolldownOptions: {
-          input: {
-            sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
-          },
-        },
-      },
+    // A userland vite hook returned a brand-new `rolldownOptions`, dropping
+    // the vendor entries and `preserveEntrySignatures`.
+    const userExtendedConfig: InlineConfig = {
+      build: {rolldownOptions: {input: {main: mockTestMain}}},
+      root: mockTestRoot,
     }
 
-    vi.mocked(mergeConfig).mockReturnValue({
-      ...inputConfig,
-      build: {
-        rolldownOptions: {
-          input: {
-            main: mockTestMain,
-            sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
-          },
-        },
-      },
+    await finalizeViteConfig(userExtendedConfig, defaultConfig)
+
+    // The defaults are deep-merged back over the userland config: userland
+    // additions (like the `main` input) survive the real mergeConfig, while
+    // replaced critical options are healed.
+    expect(mergeConfig).toHaveBeenCalledWith(userExtendedConfig, {
+      build: {rolldownOptions: defaultRolldownOptions},
     })
-
-    await finalizeViteConfig(inputConfig)
-
-    expect(mergeConfig).toHaveBeenCalledWith(inputConfig, expectedMerge)
   })
 
   test('should throw error when build.rolldownOptions.input is not an object', async () => {
@@ -493,7 +514,7 @@ describe('#finalizeViteConfig', () => {
       root: mockTestRoot,
     }
 
-    await expect(finalizeViteConfig(inputConfig)).rejects.toThrow(
+    await expect(finalizeViteConfig(inputConfig, {})).rejects.toThrow(
       'Vite config must contain `build.rolldownOptions.input`, and it must be an object',
     )
   })
@@ -509,7 +530,7 @@ describe('#finalizeViteConfig', () => {
       },
     }
 
-    await expect(finalizeViteConfig(inputConfig)).rejects.toThrow(
+    await expect(finalizeViteConfig(inputConfig, {})).rejects.toThrow(
       'Vite config must contain `root` property, and must point to the Sanity root directory',
     )
   })

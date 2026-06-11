@@ -1,5 +1,7 @@
 import {type ChunkMetadata, type Plugin} from 'vite'
 
+import {type AutoUpdatesBuildConfig} from '../autoUpdates.js'
+import {createVendorImportMapFromBundle} from '../createVendorImportMapFromBundle.js'
 import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
 import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript.js'
 import {renderDocument} from '../renderDocument.js'
@@ -26,13 +28,12 @@ interface ViteRenderedChunk {
 const entryChunkId = '.sanity/runtime/app.js'
 
 export function sanityBuildEntries(options: {
-  autoUpdatesCssUrls?: string[]
+  autoUpdates?: AutoUpdatesBuildConfig
   basePath: string
   cwd: string
-  importMap?: {imports?: Record<string, string>}
   isApp?: boolean
 }): Plugin {
-  const {autoUpdatesCssUrls, basePath, cwd, importMap, isApp} = options
+  const {autoUpdates, basePath, cwd, isApp} = options
 
   return {
     apply: 'build',
@@ -84,12 +85,28 @@ export function sanityBuildEntries(options: {
         }
       }
 
+      // For auto-updating studios/apps the import map combines the vendor
+      // chunks emitted by this very build (hashed filenames, resolved from the
+      // bundle) with the module-CDN imports for auto-updated packages.
+      const importMap = autoUpdates
+        ? {
+            imports: {
+              ...createVendorImportMapFromBundle(
+                bundle,
+                autoUpdates.vendor.specifiersByChunkName,
+                basePath,
+              ),
+              ...autoUpdates.imports,
+            },
+          }
+        : undefined
+
       this.emitFile({
         fileName: 'index.html',
         source: decorateIndexWithStagingScript(
           decorateIndexWithBridgeScript(
             await renderDocument({
-              autoUpdatesCssUrls,
+              autoUpdatesCssUrls: autoUpdates?.cssUrls,
               importMap,
               isApp,
               props: {

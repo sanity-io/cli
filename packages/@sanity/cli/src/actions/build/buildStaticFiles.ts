@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import {
+  type AutoUpdatesBuildConfig,
   buildDebug,
   copyDir,
   extendViteConfigWithUserConfig,
@@ -34,9 +35,8 @@ interface StaticBuildOptions {
   outputDir: string
 
   appTitle?: string
-  autoUpdatesCssUrls?: string[]
+  autoUpdates?: AutoUpdatesBuildConfig
   entry?: string
-  importMap?: {imports?: Record<string, string>}
   isApp?: boolean
   minify?: boolean
   profile?: boolean
@@ -56,11 +56,10 @@ export async function buildStaticFiles(
 ): Promise<{chunks: ChunkStats[]}> {
   const {
     appTitle,
-    autoUpdatesCssUrls,
+    autoUpdates,
     basePath,
     cwd,
     entry,
-    importMap,
     isApp,
     minify = true,
     outputDir,
@@ -90,11 +89,10 @@ export async function buildStaticFiles(
   buildDebug('Resolving vite config')
   const mode = 'production'
   let viteConfig = await getViteConfig({
-    autoUpdatesCssUrls,
+    autoUpdates,
     basePath,
     cwd,
     getEnvironmentVariables,
-    importMap,
     isApp,
     minify,
     mode,
@@ -105,12 +103,13 @@ export async function buildStaticFiles(
   })
 
   if (extendViteConfig) {
+    const defaultViteConfig = viteConfig
     viteConfig = await extendViteConfigWithUserConfig(
       {command: 'build', mode},
       viteConfig,
       extendViteConfig,
     )
-    viteConfig = await finalizeViteConfig(viteConfig)
+    viteConfig = await finalizeViteConfig(viteConfig, defaultViteConfig)
   }
 
   const fromPath = path.join(cwd, 'static')
