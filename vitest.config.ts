@@ -1,11 +1,11 @@
-import { createHash } from 'node:crypto'
+import {createHash} from 'node:crypto'
 
-import { determineAgent } from '@vercel/detect-agent'
-import { defineConfig } from 'vitest/config'
+import {determineAgent} from '@vercel/detect-agent'
+import {defineConfig} from 'vitest/config'
 
-const { isAgent: IS_AGENT } = await determineAgent()
+const {isAgent: IS_AGENT} = await determineAgent()
 const cwdHash = createHash('sha1').update(process.cwd()).digest('hex').slice(0, 8)
-const OUTPUT_FILE = IS_AGENT ? { json: `/tmp/test-results-${cwdHash}.json` } : undefined
+const OUTPUT_FILE = IS_AGENT ? {json: `/tmp/test-results-${cwdHash}.json`} : undefined
 
 export default defineConfig({
   // This is needed to avoid listening to changes in the tmp directory
