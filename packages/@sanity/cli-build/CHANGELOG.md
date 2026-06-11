@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.4](https://github.com/sanity-io/cli/compare/cli-build-v1.0.3...cli-build-v1.0.4)
+
+_2026-06-11_
+
+### Bug Fixes
+
+- **cli-build:** emit vendor chunks in single vite build for auto-updates ([#1223](https://github.com/sanity-io/cli/pull/1223)) ([a59950f](https://github.com/sanity-io/cli/commit/a59950f8213a5f523270b990a0606ad073316d7a))
+
+  Auto-updating studios and apps no longer run `vite.build` twice, roughly halving `sanity build` times. The vendor packages (`react`, `react-dom`, `styled-components`) are emitted as hashed browser-loadable ESM chunks by the same build that bundles the studio/app, and the import map in `index.html` is derived from the build output. The internal `buildVendorDependencies` helper is removed in favor of `resolveVendorBuildConfig` and a consolidated `autoUpdates` build option.
+
 ## [1.0.3](https://github.com/sanity-io/cli/compare/cli-build-v1.0.2...cli-build-v1.0.3)
 
 _2026-06-10_
