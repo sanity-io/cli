@@ -88,6 +88,7 @@ minimumReleaseAgeExclude:
   - 'lodash-es'
   - 'react-rx'
   - 'sanity'
+  - 'sanity-plugin-media'
   - 'use-effect-event'
   - 'dotenv'
   - 'oxfmt'
