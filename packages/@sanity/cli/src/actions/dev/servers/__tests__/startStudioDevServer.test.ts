@@ -115,6 +115,8 @@ describe('startStudioDevServer', () => {
     )
     expect(mockCheckRequiredDependencies).toHaveBeenCalled()
     expect(mockStartDevServer).toHaveBeenCalled()
+    expect(result.started).toBe(true)
+    if (!result.started) throw new Error('expected the server to start')
     expect(result.close).toBeDefined()
     expect(result.server).toBeDefined()
   })
