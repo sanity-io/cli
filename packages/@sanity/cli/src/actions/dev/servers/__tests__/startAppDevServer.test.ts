@@ -62,7 +62,7 @@ describe('startAppDevServer', () => {
       expect.stringContaining('organization ID'),
       expect.objectContaining({exit: 1}),
     )
-    expect(result).toEqual({})
+    expect(result).toEqual({reason: 'missing-organization-id', started: false})
     expect(mockStartDevServer).not.toHaveBeenCalled()
   })
 
@@ -74,7 +74,7 @@ describe('startAppDevServer', () => {
       expect.stringContaining('organization ID'),
       expect.objectContaining({exit: 1}),
     )
-    expect(result).toEqual({})
+    expect(result).toEqual({reason: 'missing-organization-id', started: false})
   })
 
   test('starts dev server with isApp and appTitle from cliConfig', async () => {
@@ -94,6 +94,8 @@ describe('startAppDevServer', () => {
         isApp: true,
       }),
     )
+    expect(result.started).toBe(true)
+    if (!result.started) throw new Error('expected the server to start')
     expect(result.server).toBeDefined()
     expect(result.close).toBeDefined()
   })

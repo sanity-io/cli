@@ -6,7 +6,7 @@ import {createBaseDevOptions, createMockOutput, workbenchCliConfig} from './test
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
 const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
-const mockStartFederationRegistration = vi.hoisted(() => vi.fn())
+const mockStartDevServerRegistration = vi.hoisted(() => vi.fn())
 const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
 
@@ -25,8 +25,8 @@ vi.mock('../servers/startAppDevServer.js', () => ({
 vi.mock('../servers/startStudioDevServer.js', () => ({
   startStudioDevServer: mockStartStudioDevServer,
 }))
-vi.mock('../registration/startFederationRegistration.js', () => ({
-  startFederationRegistration: mockStartFederationRegistration,
+vi.mock('../registration/startDevServerRegistration.js', () => ({
+  startDevServerRegistration: mockStartDevServerRegistration,
 }))
 vi.mock('../../../util/getSharedServerConfig.js', () => ({
   getSharedServerConfig: mockGetSharedServerConfig,
@@ -38,7 +38,19 @@ function mockServer({host, port = 3334}: {host?: boolean | string; port?: number
   return {
     close: vi.fn().mockResolvedValue(undefined),
     server: {config: {server: {host, port}}},
+    started: true,
   }
+}
+
+function mockRegistrationHandle() {
+  return {
+    close: vi.fn().mockResolvedValue(undefined),
+  }
+}
+
+/** Pull the rebuild handler devAction passed into startDevServerRegistration. */
+function passedInterfaceSetChange(): (() => Promise<void>) | undefined {
+  return mockStartDevServerRegistration.mock.calls[0][0].onInterfaceSetChange
 }
 
 describe('devAction', () => {
@@ -51,9 +63,7 @@ describe('devAction', () => {
       workbenchAvailable: false,
       workbenchPort: 3333,
     })
-    mockStartFederationRegistration.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
-    })
+    mockStartDevServerRegistration.mockResolvedValue(mockRegistrationHandle())
   })
 
   afterEach(() => {
@@ -139,13 +149,13 @@ describe('devAction', () => {
     expect(mockAppClose).toHaveBeenCalled()
   })
 
-  describe('federation registration', () => {
-    test('starts federation registration when federation is enabled', async () => {
+  describe('dev server registration', () => {
+    test('starts registration when workbench is enabled', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
 
-      expect(mockStartFederationRegistration).toHaveBeenCalledWith(
+      expect(mockStartDevServerRegistration).toHaveBeenCalledWith(
         expect.objectContaining({
           isApp: false,
           workDir: '/tmp/sanity-project',
@@ -153,12 +163,12 @@ describe('devAction', () => {
       )
     })
 
-    test('does not start federation registration when federation is disabled', async () => {
+    test('does not start registration when workbench is disabled', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
 
       await devAction(createBaseDevOptions())
 
-      expect(mockStartFederationRegistration).not.toHaveBeenCalled()
+      expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
     })
 
     test('passes isApp: true for app mode', async () => {
@@ -166,34 +176,34 @@ describe('devAction', () => {
 
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
 
-      expect(mockStartFederationRegistration).toHaveBeenCalledWith(
+      expect(mockStartDevServerRegistration).toHaveBeenCalledWith(
         expect.objectContaining({isApp: true}),
       )
     })
 
-    test('passes the vite dev server to federation registration', async () => {
+    test('passes the vite dev server to the registration', async () => {
       const server = mockServer({port: 3334})
       mockStartStudioDevServer.mockResolvedValue(server)
 
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
 
-      expect(mockStartFederationRegistration).toHaveBeenCalledWith(
+      expect(mockStartDevServerRegistration).toHaveBeenCalledWith(
         expect.objectContaining({server: server.server}),
       )
     })
 
-    test('calls federation close on close', async () => {
-      const mockFederationClose = vi.fn().mockResolvedValue(undefined)
-      mockStartFederationRegistration.mockResolvedValue({close: mockFederationClose})
+    test('calls registration close on close', async () => {
+      const handle = mockRegistrationHandle()
+      mockStartDevServerRegistration.mockResolvedValue(handle)
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       const result = await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
 
       await result.close()
-      expect(mockFederationClose).toHaveBeenCalled()
+      expect(handle.close).toHaveBeenCalled()
     })
 
-    test('rebuilds the app server with a freshly-loaded config when interfaces change', async () => {
+    test('rebuilds the app server with a freshly-loaded config when the interface set changes', async () => {
       const firstClose = vi.fn().mockResolvedValue(undefined)
       const secondClose = vi.fn().mockResolvedValue(undefined)
       mockStartAppDevServer
@@ -204,10 +214,10 @@ describe('devAction', () => {
 
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
 
-      const {onInterfacesChange} = mockStartFederationRegistration.mock.calls[0][0]
-      expect(onInterfacesChange).toBeInstanceOf(Function)
+      const onSetChange = passedInterfaceSetChange()
+      expect(onSetChange).toBeInstanceOf(Function)
 
-      await onInterfacesChange()
+      await onSetChange!()
 
       // Old app server torn down, a new one started with the re-read config.
       expect(firstClose).toHaveBeenCalledTimes(1)
@@ -217,13 +227,32 @@ describe('devAction', () => {
       )
     })
 
-    test('wires no rebuild hook for studios (they declare no interfaces)', async () => {
+    test('close stays safe when the rebuilt app server reports an expected early exit', async () => {
+      const firstClose = vi.fn().mockResolvedValue(undefined)
+      mockStartAppDevServer
+        .mockResolvedValueOnce({...mockServer({port: 3334}), close: firstClose})
+        // e.g. the user removed organizationId from sanity.cli.ts before saving
+        .mockResolvedValueOnce({reason: 'missing-organization-id', started: false})
+      mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
+
+      const result = await devAction(
+        createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}),
+      )
+
+      await passedInterfaceSetChange()!()
+
+      // The old server was closed during the rebuild; close() must not call it
+      // again or trip over the missing replacement.
+      await expect(result.close()).resolves.toBeUndefined()
+      expect(firstClose).toHaveBeenCalledTimes(1)
+    })
+
+    test('passes no rebuild hook for studios (they declare no interfaces)', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: false}))
 
-      const {onInterfacesChange} = mockStartFederationRegistration.mock.calls[0][0]
-      expect(onInterfacesChange).toBeUndefined()
+      expect(passedInterfaceSetChange()).toBeUndefined()
     })
   })
 
@@ -285,8 +314,8 @@ describe('devAction', () => {
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('mydev.local:3333'))
   })
 
-  test('returns early with workbench-only close when app server exits without a server', async () => {
-    // startAppDevServer resolves with {} when orgId is missing — no `server`.
+  test('returns early with workbench-only close when the app server does not start', async () => {
+    // startAppDevServer reports an expected early exit when orgId is missing.
     const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
     mockStartWorkbenchDevServer.mockResolvedValue({
       close: mockWorkbenchClose,
@@ -294,7 +323,7 @@ describe('devAction', () => {
       workbenchAvailable: false,
       workbenchPort: 3333,
     })
-    mockStartAppDevServer.mockResolvedValue({})
+    mockStartAppDevServer.mockResolvedValue({reason: 'missing-organization-id', started: false})
 
     const result = await devAction(createBaseDevOptions({isApp: true}))
 
@@ -302,7 +331,7 @@ describe('devAction', () => {
     // The close must still tear down the workbench server
     await result.close()
     expect(mockWorkbenchClose).toHaveBeenCalled()
-    // No registration should have happened because federation wasn't evaluated
-    expect(mockStartFederationRegistration).not.toHaveBeenCalled()
+    // No registration should have happened because the app never started
+    expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
   })
 })
