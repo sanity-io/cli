@@ -7,7 +7,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
-import {checkWorkbenchAppDir} from '../../actions/deploy/checkWorkbenchAppDir.js'
+import {checkWorkbenchAppDir} from '../../actions/deploy/workbenchChecks.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {DeployCommand} from '../deploy.js'
 
@@ -21,9 +21,14 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-vi.mock('../../actions/deploy/checkWorkbenchAppDir.js', () => ({
-  checkWorkbenchAppDir: vi.fn(),
-}))
+// Only the fs-touching dir check is stubbed; `checkWorkbenchApp` stays real.
+vi.mock('../../actions/deploy/workbenchChecks.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../actions/deploy/workbenchChecks.js')>()
+  return {
+    ...actual,
+    checkWorkbenchAppDir: vi.fn(),
+  }
+})
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()

@@ -16,13 +16,13 @@ import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
-import {checkWorkbenchAppDir} from './checkWorkbenchAppDir.js'
 import {createStudioUserApplication} from './createStudioUserApplication.js'
 import {deployDebug} from './deployDebug.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
+import {checkWorkbenchAppDir} from './workbenchChecks.js'
 
 export async function deployStudio(options: DeployAppOptions) {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options

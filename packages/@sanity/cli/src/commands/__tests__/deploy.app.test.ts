@@ -6,7 +6,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../actions/build/buildApp.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
-import {checkWorkbenchAppDir} from '../../actions/deploy/checkWorkbenchAppDir.js'
+import {checkWorkbenchAppDir} from '../../actions/deploy/workbenchChecks.js'
 import {extractCoreAppManifest} from '../../actions/manifest/extractCoreAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
@@ -30,9 +30,15 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-vi.mock('../../actions/deploy/checkWorkbenchAppDir.js', () => ({
-  checkWorkbenchAppDir: vi.fn(),
-}))
+// `checkWorkbenchApp` stays real — it's pure config validation the
+// no-interfaces test exercises; only the fs-touching dir check is stubbed.
+vi.mock('../../actions/deploy/workbenchChecks.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../actions/deploy/workbenchChecks.js')>()
+  return {
+    ...actual,
+    checkWorkbenchAppDir: vi.fn(),
+  }
+})
 
 vi.mock('../../actions/manifest/extractCoreAppManifest.js', () => ({
   extractCoreAppManifest: vi.fn(),

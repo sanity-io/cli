@@ -16,12 +16,12 @@ import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
 import {checkDir} from './checkDir.js'
-import {checkWorkbenchAppDir} from './checkWorkbenchAppDir.js'
 import {createUserApplicationForApp} from './createUserApplicationForApp.js'
 import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
 import {type DeployAppOptions} from './types.js'
 import {buildViewDeploymentPayload} from './viewDeployment.js'
+import {checkWorkbenchApp, checkWorkbenchAppDir} from './workbenchChecks.js'
 
 /**
  * Deploy a Sanity application.
@@ -52,17 +52,13 @@ export async function deployApp(options: DeployAppOptions) {
     output.error('Deploying an app to an external host is not supported.', {exit: 1})
   }
 
-  // A federated app with no interfaces builds a remote that contains nothing
-  // to load. The declared interfaces are what the build exposes, so the config
-  // settles this before any prompts or API calls.
+  // Fail before any prompts or API calls when the app declares nothing to
+  // expose.
   if (isWorkbenchApp(cliConfig.app)) {
-    const {entry, services, views} = cliConfig.app
-    if (!entry && !views?.length && !services?.length) {
-      output.error(
-        'Nothing to deploy: `unstable_defineApp` declares no views or services. ' +
-          'Declare at least one view or service in the app config.',
-        {exit: exitCodes.USAGE_ERROR},
-      )
+    try {
+      checkWorkbenchApp(cliConfig.app)
+    } catch (err) {
+      output.error(getErrorMessage(err), {exit: exitCodes.USAGE_ERROR})
       return
     }
   }

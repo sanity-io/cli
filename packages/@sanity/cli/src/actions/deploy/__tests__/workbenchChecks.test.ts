@@ -3,7 +3,7 @@ import {join} from 'node:path'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {checkWorkbenchAppDir} from '../checkWorkbenchAppDir.js'
+import {checkWorkbenchApp, checkWorkbenchAppDir} from '../workbenchChecks.js'
 
 vi.mock('node:fs/promises', () => ({
   stat: vi.fn(),
@@ -22,6 +22,36 @@ const mockSourceDirExists = () => {
     isDirectory: () => true,
   } as never)
 }
+
+describe('#checkWorkbenchApp', () => {
+  test('should throw when the app declares no interfaces', () => {
+    expect(() => checkWorkbenchApp({})).toThrow('declares no views or services')
+  })
+
+  test('should throw when views and services are empty arrays', () => {
+    expect(() => checkWorkbenchApp({services: [], views: []})).toThrow(
+      'declares no views or services',
+    )
+  })
+
+  test('should pass when the app declares an entry', () => {
+    expect(() => checkWorkbenchApp({entry: './src/App.tsx'})).not.toThrow()
+  })
+
+  test('should pass when the app declares a view', () => {
+    expect(() =>
+      checkWorkbenchApp({views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}]}),
+    ).not.toThrow()
+  })
+
+  test('should pass when the app declares a service', () => {
+    expect(() =>
+      checkWorkbenchApp({
+        services: [{name: 'services/sync', src: './src/sync.ts', type: 'worker'}],
+      }),
+    ).not.toThrow()
+  })
+})
 
 describe('#checkWorkbenchAppDir', () => {
   const testDir = '/test/directory'
