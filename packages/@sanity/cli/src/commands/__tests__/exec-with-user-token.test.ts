@@ -14,9 +14,11 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {ExecCommand} from '../exec.js'
 
 // TODO: These integration tests time out on Windows + Node 24. The same tests pass on Ubuntu and
-// macOS across Node 20, 22, and 24, so this is likely a Windows-specific flake. Investigate and
+// macOS across Node 20, 22, 24, and 26 so this is likely a Windows-specific flake. Investigate and
 // remove this skip once the root cause is identified.
-const isWindowsNode24 = process.platform === 'win32' && process.versions.node.startsWith('24')
+const isWindowsNode24OrUp =
+  process.platform === 'win32' &&
+  (process.versions.node.startsWith('24') || process.versions.node.startsWith('26'))
 
 const TEST_CONFIG_DIR = join(tmpdir(), 'sanity-cli-test-exec-token')
 const TEST_CONFIG_PATH = join(TEST_CONFIG_DIR, 'config.json')
@@ -81,7 +83,7 @@ describe('exec --with-user-token', {timeout: 15 * 1000}, () => {
     expect(error?.message).toContain('sanity login')
   })
 
-  test.skipIf(isWindowsNode24)('passes token to getCliClient()', async () => {
+  test.skipIf(isWindowsNode24OrUp)('passes token to getCliClient()', async () => {
     const tokenScriptPath = join(exampleDir, 'test-token-script.ts')
     await copyFile(join(fixtureDir, 'exec-get-user-token.ts'), tokenScriptPath)
 

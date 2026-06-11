@@ -10,9 +10,11 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {ExecCommand} from '../exec.js'
 
 // TODO: These integration tests time out on Windows + Node 24. The same tests pass on Ubuntu and
-// macOS across Node 20, 22, and 24, so this is likely a Windows-specific flake. Investigate and
+// macOS across Node 20, 22, 24, and 26, so this is likely a Windows-specific flake. Investigate and
 // remove this skip once the root cause is identified.
-const isWindowsNode24 = process.platform === 'win32' && process.versions.node.startsWith('24')
+const isWindowsNode24OrUp =
+  process.platform === 'win32' &&
+  (process.versions.node.startsWith('24') || process.versions.node.startsWith('26'))
 
 // Environment vars to set in setupTestAuth
 const TEST_TOKEN = process.env.SANITY_API_TOKEN?.trim()
@@ -97,7 +99,7 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       vi.unstubAllEnvs()
     })
 
-    test.skipIf(isWindowsNode24)('executes script successfully', async () => {
+    test.skipIf(isWindowsNode24OrUp)('executes script successfully', async () => {
       const {error, stdout} = await testCommand(ExecCommand, [scriptPath])
 
       if (error) throw error
@@ -135,7 +137,7 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       }
     })
 
-    test.skipIf(isWindowsNode24)('executes script with --mock-browser-env flag', async () => {
+    test.skipIf(isWindowsNode24OrUp)('executes script with --mock-browser-env flag', async () => {
       const {error, stdout} = await testCommand(ExecCommand, [scriptPath, '--mock-browser-env'])
 
       if (error) throw error

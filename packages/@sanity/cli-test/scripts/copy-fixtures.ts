@@ -4,7 +4,6 @@
  * This script runs during the build process to bundle fixtures with the package.
  */
 
-// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import {cp, mkdir, readFile, writeFile} from 'node:fs/promises'
 import {dirname, join, resolve} from 'node:path'
 
