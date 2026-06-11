@@ -95,13 +95,22 @@ export async function startWorkbenchDevServer(
     }
   }
 
-  const result = await createWorkbenchViteServer({
-    cliConfig,
-    httpHost,
-    output,
-    workbenchPort,
-    workDir,
-  })
+  // The lock is already held; an exception here (runtime-file write failure,
+  // invalid remote URL) would otherwise leak it until the next acquire prunes
+  // the stale PID.
+  let result: Awaited<ReturnType<typeof createWorkbenchViteServer>>
+  try {
+    result = await createWorkbenchViteServer({
+      cliConfig,
+      httpHost,
+      output,
+      workbenchPort,
+      workDir,
+    })
+  } catch (err) {
+    workbenchLock.release()
+    throw err
+  }
 
   if (!result) {
     workbenchLock.release()
