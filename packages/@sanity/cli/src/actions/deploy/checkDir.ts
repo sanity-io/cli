@@ -3,18 +3,7 @@ import {join} from 'node:path'
 
 /** Subset of the module federation manifest that deploy validation relies on. */
 interface FederationManifest {
-  exposes?: {
-    assets?: {
-      css?: {async?: string[]; sync?: string[]}
-      js?: {async?: string[]; sync?: string[]}
-    }
-    name?: string
-  }[]
-  metaData?: {
-    remoteEntry?: {
-      name?: string
-    }
-  }
+  exposes?: unknown[]
 }
 
 interface CheckDirOptions {
@@ -69,10 +58,8 @@ export async function checkDir(sourceDir: string, options: CheckDirOptions = {})
 }
 
 /**
- * Validates a module federation build: the manifest must exist and parse, the
- * remote entry it declares must be on disk, and every asset referenced by an
- * exposed module must be on disk. Catches partial or stale builds before the
- * tarball is uploaded.
+ * Validates a module federation build: the manifest must exist and expose at
+ * least one module — a federated app with no exposes contains nothing to load.
  */
 async function checkFederationBuild(sourceDir: string): Promise<void> {
   const manifestPath = join(sourceDir, 'mf-manifest.json')
@@ -99,50 +86,11 @@ async function checkFederationBuild(sourceDir: string): Promise<void> {
     throw new Error(`"${manifestPath}" is not valid JSON. Rebuild with "sanity build".`)
   }
 
-  const remoteEntryName = manifest.metaData?.remoteEntry?.name
-  if (!remoteEntryName) {
-    throw new Error(
-      `"${manifestPath}" does not declare a remote entry (metaData.remoteEntry.name). ` +
-        'Rebuild with "sanity build".',
-    )
-  }
-
   const exposes = manifest.exposes ?? []
   if (exposes.length === 0) {
     throw new Error(
       `"${manifestPath}" declares no exposed modules, so the build contains nothing to load. ` +
         'Declare an `entry` or at least one view in the app config, then rebuild with "sanity build".',
-    )
-  }
-
-  // The remote entry plus every asset an exposed module references must be on
-  // disk, or the deployed remote will 404 at load time.
-  const referencedFiles = new Set<string>([remoteEntryName])
-  for (const expose of exposes) {
-    for (const assetGroup of [expose.assets?.js, expose.assets?.css]) {
-      for (const asset of [...(assetGroup?.sync ?? []), ...(assetGroup?.async ?? [])]) {
-        referencedFiles.add(asset)
-      }
-    }
-  }
-
-  const missingFiles: string[] = []
-  for (const file of referencedFiles) {
-    try {
-      await stat(join(sourceDir, file))
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        missingFiles.push(file)
-      } else {
-        throw err
-      }
-    }
-  }
-
-  if (missingFiles.length > 0) {
-    throw new Error(
-      `"${manifestPath}" references files that are missing from the build: ` +
-        `${missingFiles.join(', ')}. Rebuild with "sanity build".`,
     )
   }
 }

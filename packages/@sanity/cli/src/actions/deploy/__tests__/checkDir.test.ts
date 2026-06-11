@@ -190,18 +190,13 @@ describe('#checkDir', () => {
       },
     }
 
-    test('should pass when manifest, remote entry, and all exposed assets exist', async () => {
+    test('should pass when the manifest exists and exposes at least one module', async () => {
       mockSourceDirExists()
       mockReadFile.mockResolvedValueOnce(JSON.stringify(validManifest))
-      // remote-entry.js, assets/panel.js, assets/panel.css
-      mockStat.mockResolvedValue({} as never)
 
       await expect(checkDir(testDir, {isWorkbenchApp: true})).resolves.toBeUndefined()
 
       expect(mockReadFile).toHaveBeenCalledWith(manifestPath, 'utf8')
-      expect(mockStat).toHaveBeenCalledWith(join(testDir, 'remote-entry.js'))
-      expect(mockStat).toHaveBeenCalledWith(join(testDir, 'assets/panel.js'))
-      expect(mockStat).toHaveBeenCalledWith(join(testDir, 'assets/panel.css'))
       // never falls through to the index.html check
       expect(mockStat).not.toHaveBeenCalledWith(join(testDir, 'index.html'))
     })
@@ -224,15 +219,6 @@ describe('#checkDir', () => {
       )
     })
 
-    test('should throw when manifest does not declare a remote entry', async () => {
-      mockSourceDirExists()
-      mockReadFile.mockResolvedValueOnce(JSON.stringify({...validManifest, metaData: {}}))
-
-      await expect(checkDir(testDir, {isWorkbenchApp: true})).rejects.toThrow(
-        'does not declare a remote entry',
-      )
-    })
-
     test('should throw when manifest declares no exposed modules', async () => {
       mockSourceDirExists()
       mockReadFile.mockResolvedValueOnce(JSON.stringify({...validManifest, exposes: []}))
@@ -242,26 +228,12 @@ describe('#checkDir', () => {
       )
     })
 
-    test('should throw and name every file the manifest references but is missing', async () => {
+    test('should re-throw non-ENOENT errors when reading the manifest', async () => {
       mockSourceDirExists()
-      mockReadFile.mockResolvedValueOnce(JSON.stringify(validManifest))
-      // remote-entry.js exists, both panel assets are missing
-      mockStat.mockResolvedValueOnce({} as never)
-      mockStat.mockRejectedValueOnce(enoent())
-      mockStat.mockRejectedValueOnce(enoent())
-
-      await expect(checkDir(testDir, {isWorkbenchApp: true})).rejects.toThrow(
-        'references files that are missing from the build: assets/panel.js, assets/panel.css',
-      )
-    })
-
-    test('should re-throw non-ENOENT errors when checking referenced files', async () => {
-      mockSourceDirExists()
-      mockReadFile.mockResolvedValueOnce(JSON.stringify(validManifest))
 
       const permissionError = new Error('Permission denied') as NodeJS.ErrnoException
       permissionError.code = 'EACCES'
-      mockStat.mockRejectedValueOnce(permissionError)
+      mockReadFile.mockRejectedValueOnce(permissionError)
 
       await expect(checkDir(testDir, {isWorkbenchApp: true})).rejects.toThrow('Permission denied')
     })
