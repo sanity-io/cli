@@ -118,9 +118,13 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // Ensure the workbench lock file and registry entries are cleaned up on
   // abrupt shutdown. The registry is self-healing (stale PIDs are pruned on
   // next read), but eager cleanup avoids the detect-prune-retry cycle.
+  // Plain projects have no lock or registry entry, so they keep the default
+  // signal handling (and exit codes) they had before workbench existed.
   const onSignal = () => void close()
-  process.once('SIGINT', onSignal)
-  process.once('SIGTERM', onSignal)
+  if (workbenchAvailable || registration) {
+    process.once('SIGINT', onSignal)
+    process.once('SIGTERM', onSignal)
+  }
 
   return {close}
 }
