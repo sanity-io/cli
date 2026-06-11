@@ -4,18 +4,27 @@ import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {checkRequiredDependencies} from '@sanity/cli-build/_internal/build'
-import {getProjectCliClient} from '@sanity/cli-core'
+import {type CliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
+import {workbenchApp} from '../../actions/dev/__tests__/testHelpers.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {DevCommand} from '../dev.js'
 
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
+
+const mockGetDashboardAppURL = vi.hoisted(() =>
+  vi.fn().mockResolvedValue('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340'),
+)
+
+vi.mock('../../actions/dev/servers/getDashboardAppUrl.js', () => ({
+  getDashboardAppURL: mockGetDashboardAppURL,
+}))
 
 vi.mock('../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
@@ -72,6 +81,7 @@ vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     ...actual,
+    getProjectCliClient: vi.fn(),
     isInteractive: vi.fn(() => true),
   }
 })
@@ -81,6 +91,7 @@ const mockCompareDependencyVersions = vi.mocked(compareDependencyVersions)
 const mockConfirm = vi.mocked(confirm)
 const mockUpgradePackages = vi.mocked(upgradePackages)
 const mockGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
+const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
   afterEach(() => {
@@ -107,7 +118,8 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('App dev server started on port 5333')
+      expect(stdout).toContain('Dev server started on port 5333')
+      expect(stdout).toContain('View your app in the Sanity dashboard here:')
       expect(stderr).toContain('Checking configuration files')
       await tryCloseServer(result)
 
@@ -138,7 +150,8 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('App dev server started on port 5333')
+      expect(stdout).toContain('Dev server started on port 5333')
+      expect(stdout).toContain('View your app in the Sanity dashboard here:')
       expect(stderr).toContain('Checking configuration files')
       await tryCloseServer(result)
 
@@ -151,6 +164,26 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         telemetryLogger: expect.anything(),
         workDir: cwd,
       })
+    })
+
+    test('should warn when --no-load-in-dashboard is used with app', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      const {error, result, stderr, stdout} = await testCommand(
+        DevCommand,
+        ['--no-load-in-dashboard', '--port', '5334'],
+        {
+          config: {root: cwd},
+          mocks: {isInteractive: true},
+        },
+      )
+
+      if (error) throw error
+      expect(stderr).toContain('Apps cannot run without the Sanity dashboard')
+      expect(stderr).toContain('Starting dev server with the --load-in-dashboard flag set to true')
+      expect(stdout).toContain('Dev server started on port 5334')
+      await tryCloseServer(result)
     })
 
     test('should start on next available port when requested port is in use', async () => {
@@ -170,8 +203,9 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         })
 
         if (error) throw error
-        expect(stdout).toMatch(/App dev server started on port \d{4}/)
-        expect(stdout).not.toContain('App dev server started on port 5338')
+        expect(stdout).toMatch(/Dev server started on port \d{4}/)
+        expect(stdout).not.toContain('Dev server started on port 5338')
+        expect(stdout).toContain('View your app in the Sanity dashboard here:')
         await tryCloseServer(result)
       } finally {
         await closeServer(server)
@@ -211,7 +245,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('App dev server started on port 5350')
+      expect(stdout).toContain('Dev server started on port 5350')
       await tryCloseServer(result)
     })
 
@@ -235,6 +269,50 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       if (error) throw error
       expect(stdout).toContain('http://127.0.0.1:5351')
       await tryCloseServer(result)
+    })
+  })
+
+  describe('workbench-app', () => {
+    test('warns that --load-in-dashboard is ignored for workbench apps', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      // No organizationId: the command exits before booting a server, after
+      // the flag warning has been emitted.
+      const {error, stderr} = await testCommand(
+        DevCommand,
+        ['--load-in-dashboard', '--port', '5346'],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {app: workbenchApp({organizationId: undefined})} as CliConfig,
+            isInteractive: true,
+          },
+        },
+      )
+
+      // oclif line-wraps long warnings, so assert the unwrapped prefix only
+      expect(stderr).toContain('Ignoring --load-in-dashboard')
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Apps require an organization ID (orgId)')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('does not warn when the flag is not passed', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      const {error, stderr} = await testCommand(DevCommand, ['--port', '5347'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {app: workbenchApp({organizationId: undefined})} as CliConfig,
+          isInteractive: true,
+        },
+      })
+
+      expect(stderr).not.toContain('Ignoring --load-in-dashboard')
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.oclif?.exit).toBe(1)
     })
   })
 
@@ -275,6 +353,91 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       if (error) throw error
       expect(stdout).toContain('http://127.0.0.1:5359')
       await tryCloseServer(result)
+    })
+
+    test('should start with load-in-dashboard', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project'
+
+      // Need to modify the sanity config to include projectId for this test
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+
+      // Add projectId to the config
+      const modifiedConfig = existingConfig.replace(/projectId:.*,/, `projectId: '${projectId}',`)
+
+      await writeFile(configPath, modifiedConfig)
+
+      mockGetProjectCliClient.mockResolvedValue({
+        projects: {
+          getById: vi.fn().mockResolvedValue({organizationId: 'test-org'}),
+        },
+      } as never)
+
+      const {error, result, stderr, stdout} = await testCommand(
+        DevCommand,
+        ['--load-in-dashboard', '--port', '5340'],
+        {
+          config: {root: cwd},
+          mocks: {isInteractive: true},
+        },
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('Dev server started on port 5340')
+      expect(stdout).toContain('View your studio in the Sanity dashboard here:')
+      expect(stdout).toContain('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340')
+      expect(stderr).toContain('Checking configuration files')
+
+      await tryCloseServer(result)
+    })
+
+    test('should error when projectId is missing with --load-in-dashboard', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      // Modify config to remove projectId
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+      const modifiedConfig = existingConfig.replace(/projectId:.*,/, '')
+      await writeFile(configPath, modifiedConfig)
+
+      const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5343'], {
+        config: {root: cwd},
+        mocks: {isInteractive: true},
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Project Id is required to load in dashboard')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should error when API fails to fetch organizationId', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project'
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+      const modifiedConfig = existingConfig.replace(/projectId:.*,/, `projectId: '${projectId}',`)
+      await writeFile(configPath, modifiedConfig)
+
+      mockGetProjectCliClient.mockResolvedValue({
+        projects: {
+          getById: vi.fn().mockRejectedValue(new Error('Project not found')),
+        },
+      } as never)
+
+      const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5344'], {
+        config: {root: cwd},
+        mocks: {isInteractive: true},
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Failed to get organization id from project id')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should start dev server successfully when user declines auto-updates', async () => {
