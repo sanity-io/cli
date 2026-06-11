@@ -602,24 +602,25 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
   })
 
-  test('should start on next available port when requested port is in use', async () => {
+  test('should throw an error if port is already in use', async () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd
 
-    // Studios use strictPort: false, so Vite auto-selects the next available port
+    // Studios use strictPort: true, so a busy port is an error — same as main
     const server1 = createServer()
     await new Promise<void>((resolve) => server1.listen(5337, 'localhost', resolve))
 
     try {
-      const {error, result, stdout} = await testCommand(DevCommand, ['--port', '5337'], {
+      const {error, result} = await testCommand(DevCommand, ['--port', '5337'], {
         config: {root: cwd},
         mocks: {isInteractive: true},
       })
 
-      if (error) throw error
-      expect(stdout).toMatch(/running at http:\/\/localhost:\d{4}/)
-      expect(stdout).not.toContain('running at http://localhost:5337')
       await tryCloseServer(result)
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Port 5337 is already in use')
+      expect(error?.oclif?.exit).toBe(1)
     } finally {
       await closeServer(server1)
     }

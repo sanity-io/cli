@@ -1,7 +1,12 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {devAction} from '../devAction.js'
-import {createBaseDevOptions, createMockOutput, workbenchCliConfig} from './testHelpers.js'
+import {
+  createBaseDevOptions,
+  createMockOutput,
+  DEV_FLAGS,
+  workbenchCliConfig,
+} from './testHelpers.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
@@ -70,14 +75,15 @@ describe('devAction', () => {
     vi.clearAllMocks()
   })
 
-  test('studio mode without workbench uses original port', async () => {
+  test('studio mode without workbench passes flags through untouched', async () => {
     mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
+    // No port flag: resolution must stay downstream in getDevServerConfig
+    // (flags → env → cli config → default), as it does on main.
+    const flags = {...DEV_FLAGS, port: undefined}
 
-    await devAction(createBaseDevOptions())
+    await devAction(createBaseDevOptions({flags}))
 
-    expect(mockStartStudioDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({flags: expect.objectContaining({port: '3333'})}),
-    )
+    expect(mockStartStudioDevServer).toHaveBeenCalledWith(expect.objectContaining({flags}))
   })
 
   test('studio mode with workbench bumps port and logs workbench URL', async () => {
@@ -256,28 +262,14 @@ describe('devAction', () => {
     })
   })
 
-  test('registers signal handlers that trigger close on SIGINT', async () => {
-    const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
-    const mockAppClose = vi.fn().mockResolvedValue(undefined)
+  test('registers signal handlers when the workbench is running', async () => {
     mockStartWorkbenchDevServer.mockResolvedValue({
-      close: mockWorkbenchClose,
+      close: vi.fn().mockResolvedValue(undefined),
       httpHost: 'localhost',
-      workbenchAvailable: false,
+      workbenchAvailable: true,
       workbenchPort: 3333,
     })
-    mockStartStudioDevServer.mockResolvedValue({
-      ...mockServer({port: 3333}),
-      close: mockAppClose,
-    })
-
-    await devAction(createBaseDevOptions())
-
-    expect(process.listenerCount('SIGINT')).toBeGreaterThanOrEqual(1)
-    expect(process.listenerCount('SIGTERM')).toBeGreaterThanOrEqual(1)
-  })
-
-  test('close removes signal handlers', async () => {
-    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
     const sigintBefore = process.listenerCount('SIGINT')
     const sigtermBefore = process.listenerCount('SIGTERM')
@@ -288,6 +280,53 @@ describe('devAction', () => {
     expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore + 1)
 
     await result.close()
+  })
+
+  test('registers signal handlers for workbench apps even when the workbench is unavailable', async () => {
+    // The registry entry still needs cleanup on abrupt shutdown.
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
+
+    const sigintBefore = process.listenerCount('SIGINT')
+
+    const result = await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
+
+    expect(process.listenerCount('SIGINT')).toBe(sigintBefore + 1)
+
+    await result.close()
+  })
+
+  test('close removes signal handlers', async () => {
+    mockStartWorkbenchDevServer.mockResolvedValue({
+      close: vi.fn().mockResolvedValue(undefined),
+      httpHost: 'localhost',
+      workbenchAvailable: true,
+      workbenchPort: 3333,
+    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+    const sigintBefore = process.listenerCount('SIGINT')
+    const sigtermBefore = process.listenerCount('SIGTERM')
+
+    const result = await devAction(createBaseDevOptions())
+
+    expect(process.listenerCount('SIGINT')).toBe(sigintBefore + 1)
+    expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore + 1)
+
+    await result.close()
+
+    expect(process.listenerCount('SIGINT')).toBe(sigintBefore)
+    expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
+  })
+
+  test('registers no signal handlers for plain projects', async () => {
+    // Plain runs have no workbench lock or registry entry to clean up, so they
+    // keep the default Ctrl-C behavior (and exit code) from main.
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
+
+    const sigintBefore = process.listenerCount('SIGINT')
+    const sigtermBefore = process.listenerCount('SIGTERM')
+
+    await devAction(createBaseDevOptions())
 
     expect(process.listenerCount('SIGINT')).toBe(sigintBefore)
     expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
