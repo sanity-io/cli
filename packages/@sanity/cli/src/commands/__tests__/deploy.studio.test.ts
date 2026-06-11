@@ -1,11 +1,13 @@
-import {exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {unstable_defineApp} from '@sanity/federation'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
+import {checkWorkbenchAppDir} from '../../actions/deploy/workbenchChecks.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {DeployCommand} from '../deploy.js'
 
@@ -18,6 +20,15 @@ vi.mock('../../actions/build/buildStudio.js', () => ({
 vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
+
+// Only the fs-touching dir check is stubbed; `checkWorkbenchApp` stays real.
+vi.mock('../../actions/deploy/workbenchChecks.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../actions/deploy/workbenchChecks.js')>()
+  return {
+    ...actual,
+    checkWorkbenchAppDir: vi.fn(),
+  }
+})
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -61,6 +72,7 @@ const mockGetCliTelemetry = vi.mocked(getCliTelemetry)
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
+const mockCheckWorkbenchAppDir = vi.mocked(checkWorkbenchAppDir)
 const mockBuildStudio = vi.mocked(buildStudio)
 
 describe('#deploy studio', () => {
@@ -71,6 +83,7 @@ describe('#deploy studio', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
+    mockCheckWorkbenchAppDir.mockResolvedValue()
     mockStudioWorkerTask.mockResolvedValue({
       studioManifest: {
         buildId: '"test-build-id"',
@@ -157,7 +170,8 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error checking directory')
+    // The underlying checkDir failure surfaces verbatim
+    expect(error?.message).toContain('Directory check failed')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -217,6 +231,72 @@ describe('#deploy studio', () => {
     expect(stderr).toContain('Checking project info')
     expect(stderr).toContain('Verifying local content')
     expect(stderr).toContain('Deploying to sanity.studio')
+    expect(stdout).toContain('Success! Studio deployed')
+  })
+
+  test('should validate the federation build shape for an unstable_defineApp studio', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+    const studioAppId = 'studio-app-id'
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appHost: studioHost,
+        appType: 'studio',
+      },
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: studioAppId,
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'studio',
+      },
+      uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+    }).reply(
+      201,
+      {id: 'deployment-id', location: `https://${studioHost}.sanity.studio`},
+      {location: `https://${studioHost}.sanity.studio`},
+    )
+
+    // Brand the config as a studio so the deploy command routes it through
+    // deployStudio.
+    const app = unstable_defineApp({
+      name: 'test-studio',
+      title: 'Test Studio',
+    }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
+    app.applicationType = 'studio'
+
+    const {error, stdout} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          api: {
+            projectId,
+          },
+          app,
+          studioHost,
+        } as CliConfig,
+      },
+    })
+
+    if (error) throw error
+    expect(mockCheckWorkbenchAppDir).toHaveBeenCalledWith(expect.any(String))
+    expect(mockCheckDir).not.toHaveBeenCalled()
     expect(stdout).toContain('Success! Studio deployed')
   })
 

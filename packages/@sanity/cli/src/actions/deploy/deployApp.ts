@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {getLocalPackageVersion, isWorkbenchApp} from '@sanity/cli-core'
+import {exitCodes, getLocalPackageVersion, isWorkbenchApp} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -21,6 +21,7 @@ import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
 import {type DeployAppOptions} from './types.js'
 import {buildViewDeploymentPayload} from './viewDeployment.js'
+import {checkWorkbenchApp, checkWorkbenchAppDir} from './workbenchChecks.js'
 
 /**
  * Deploy a Sanity application.
@@ -49,6 +50,17 @@ export async function deployApp(options: DeployAppOptions) {
 
   if (flags.external) {
     output.error('Deploying an app to an external host is not supported.', {exit: 1})
+  }
+
+  // Fail before any prompts or API calls when the app declares nothing to
+  // expose.
+  if (isWorkbenchApp(cliConfig.app)) {
+    try {
+      checkWorkbenchApp(cliConfig.app)
+    } catch (err) {
+      output.error(getErrorMessage(err), {exit: exitCodes.USAGE_ERROR})
+      return
+    }
   }
 
   let spin = spinner('Verifying local content...')
@@ -87,12 +99,12 @@ export async function deployApp(options: DeployAppOptions) {
     // Ensure that the directory exists, is a directory and seems to have valid content
     spin = spin.start()
     try {
-      await checkDir(sourceDir)
+      await (isWorkbenchApp(cliConfig.app) ? checkWorkbenchAppDir(sourceDir) : checkDir(sourceDir))
       spin.succeed()
     } catch (err) {
       spin.fail()
       deployDebug('Error checking directory', err)
-      output.error('Error checking directory', {exit: 1})
+      output.error(getErrorMessage(err), {exit: 1})
       return
     }
 
