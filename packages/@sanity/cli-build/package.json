@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-build",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Internal Sanity package for building studios and apps",
   "keywords": [
     "cli",
