@@ -1,6 +1,5 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {isWorkbenchApp, resolveLocalPackage} from '@sanity/cli-core'
-import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
 import {z} from 'zod/mini'
 
@@ -171,7 +170,7 @@ async function createWorkbenchViteServer(
       // discovery to silently not fire.
       exclude: ['sanity', '@sanity/workbench'],
     },
-    plugins: [viteReact(), ...(remoteUrl ? [remoteManifestPreloadHeaderPlugin(remoteUrl)] : [])],
+    plugins: remoteUrl ? [remoteManifestPreloadHeaderPlugin(remoteUrl)] : [],
     resolve: {dedupe: ['react', 'react-dom']},
     root,
     server: {
