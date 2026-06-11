@@ -16,6 +16,7 @@ import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
 import {checkDir} from './checkDir.js'
+import {checkWorkbenchAppDir} from './checkWorkbenchAppDir.js'
 import {createUserApplicationForApp} from './createUserApplicationForApp.js'
 import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
@@ -87,7 +88,7 @@ export async function deployApp(options: DeployAppOptions) {
     // Ensure that the directory exists, is a directory and seems to have valid content
     spin = spin.start()
     try {
-      await checkDir(sourceDir, {isWorkbenchApp: isWorkbenchApp(cliConfig.app)})
+      await (isWorkbenchApp(cliConfig.app) ? checkWorkbenchAppDir(sourceDir) : checkDir(sourceDir))
       spin.succeed()
     } catch (err) {
       spin.fail()

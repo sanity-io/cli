@@ -6,6 +6,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../actions/build/buildApp.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
+import {checkWorkbenchAppDir} from '../../actions/deploy/checkWorkbenchAppDir.js'
 import {extractCoreAppManifest} from '../../actions/manifest/extractCoreAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
@@ -27,6 +28,10 @@ vi.mock('../../actions/build/buildApp.js', () => ({
 
 vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
+}))
+
+vi.mock('../../actions/deploy/checkWorkbenchAppDir.js', () => ({
+  checkWorkbenchAppDir: vi.fn(),
 }))
 
 vi.mock('../../actions/manifest/extractCoreAppManifest.js', () => ({
@@ -59,6 +64,7 @@ const mockSelect = vi.mocked(select)
 const mockConfirm = vi.mocked(confirm)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
+const mockCheckWorkbenchAppDir = vi.mocked(checkWorkbenchAppDir)
 const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
 const mockBuildApp = vi.mocked(buildApp)
 const mockExtractCoreAppManifest = vi.mocked(extractCoreAppManifest)
@@ -86,6 +92,7 @@ describe('#deploy app', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
+    mockCheckWorkbenchAppDir.mockResolvedValue()
     // Default to empty manifest for app deployments
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
   })
@@ -257,7 +264,8 @@ describe('#deploy app', () => {
     })
     if (error) throw error
 
-    expect(mockCheckDir).toHaveBeenCalledWith(expect.any(String), {isWorkbenchApp: true})
+    expect(mockCheckWorkbenchAppDir).toHaveBeenCalledWith(expect.any(String))
+    expect(mockCheckDir).not.toHaveBeenCalled()
     expect(stdout).toContain('Success! Application deployed')
   })
 

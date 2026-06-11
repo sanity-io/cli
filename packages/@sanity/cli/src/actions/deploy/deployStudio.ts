@@ -16,6 +16,7 @@ import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
+import {checkWorkbenchAppDir} from './checkWorkbenchAppDir.js'
 import {createStudioUserApplication} from './createStudioUserApplication.js'
 import {deployDebug} from './deployDebug.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
@@ -148,7 +149,9 @@ export async function deployStudio(options: DeployAppOptions) {
       // Ensure that the directory exists, is a directory and seems to have valid content
       spin = spin.start()
       try {
-        await checkDir(sourceDir, {isWorkbenchApp: isWorkbenchApp(cliConfig.app)})
+        await (isWorkbenchApp(cliConfig.app)
+          ? checkWorkbenchAppDir(sourceDir)
+          : checkDir(sourceDir))
         spin.succeed()
       } catch (err) {
         spin.fail()

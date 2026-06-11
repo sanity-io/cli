@@ -7,6 +7,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
+import {checkWorkbenchAppDir} from '../../actions/deploy/checkWorkbenchAppDir.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {DeployCommand} from '../deploy.js'
 
@@ -18,6 +19,10 @@ vi.mock('../../actions/build/buildStudio.js', () => ({
 
 vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
+}))
+
+vi.mock('../../actions/deploy/checkWorkbenchAppDir.js', () => ({
+  checkWorkbenchAppDir: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -62,6 +67,7 @@ const mockGetCliTelemetry = vi.mocked(getCliTelemetry)
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
+const mockCheckWorkbenchAppDir = vi.mocked(checkWorkbenchAppDir)
 const mockBuildStudio = vi.mocked(buildStudio)
 
 describe('#deploy studio', () => {
@@ -72,6 +78,7 @@ describe('#deploy studio', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
+    mockCheckWorkbenchAppDir.mockResolvedValue()
     mockStudioWorkerTask.mockResolvedValue({
       studioManifest: {
         buildId: '"test-build-id"',
@@ -283,7 +290,8 @@ describe('#deploy studio', () => {
     })
 
     if (error) throw error
-    expect(mockCheckDir).toHaveBeenCalledWith(expect.any(String), {isWorkbenchApp: true})
+    expect(mockCheckWorkbenchAppDir).toHaveBeenCalledWith(expect.any(String))
+    expect(mockCheckDir).not.toHaveBeenCalled()
     expect(stdout).toContain('Success! Studio deployed')
   })
 
