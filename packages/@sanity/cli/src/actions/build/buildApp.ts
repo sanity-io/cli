@@ -5,7 +5,6 @@ import {styleText} from 'node:util'
 import {
   AppBuildTrace,
   buildDebug,
-  buildVendorDependencies,
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
@@ -219,14 +218,12 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
   const trace = getCliTelemetry().trace(AppBuildTrace)
   trace.start()
 
-  let importMap: {imports?: Record<string, string>} | undefined
-
+  let autoUpdates
   if (autoUpdatesEnabled && !options.isWorkbenchApp) {
-    importMap = {
-      imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
-        ...autoUpdatesImports,
-      },
+    autoUpdates = {
+      cssUrls: autoUpdatesCssUrls,
+      imports: autoUpdatesImports,
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: true}),
     }
   }
 
@@ -235,11 +232,10 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
 
     const bundle = await buildStaticFiles({
       appTitle: options.appTitle,
-      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
+      autoUpdates,
       basePath,
       cwd: workDir,
       entry: options.entry,
-      importMap,
       isApp: true,
       isWorkbenchApp: options.isWorkbenchApp,
       minify: options.minify,

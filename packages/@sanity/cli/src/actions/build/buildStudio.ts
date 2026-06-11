@@ -4,7 +4,6 @@ import {styleText} from 'node:util'
 
 import {
   buildDebug,
-  buildVendorDependencies,
   checkRequiredDependencies,
   checkStudioDependencyVersions,
   getAutoUpdatesCssUrls,
@@ -292,14 +291,12 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
   const trace = getCliTelemetry().trace(StudioBuildTrace)
   trace.start()
 
-  let importMap
-
+  let autoUpdates
   if (autoUpdatesEnabled && !options.isWorkbenchApp) {
-    importMap = {
-      imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
-        ...autoUpdatesImports,
-      },
+    autoUpdates = {
+      cssUrls: autoUpdatesCssUrls,
+      imports: autoUpdatesImports,
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: false}),
     }
   }
 
@@ -307,10 +304,9 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
-      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
+      autoUpdates,
       basePath,
       cwd: workDir,
-      importMap,
       isWorkbenchApp: options.isWorkbenchApp,
       minify,
       outputDir,
