@@ -24,8 +24,8 @@ export function checkWorkbenchApp(app: WorkbenchAppInterfaces): void {
   const {entry, services, views} = app
   if (!entry && !views?.length && !services?.length) {
     throw new Error(
-      'Nothing to deploy: `unstable_defineApp` declares no views or services. ' +
-        'Declare at least one view or service in the app config.',
+      'Nothing to deploy: `unstable_defineApp` declares no entry, views or services. ' +
+        'Declare an entry or at least one view or service in the app config.',
     )
   }
 }

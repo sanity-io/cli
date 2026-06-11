@@ -25,12 +25,12 @@ const mockSourceDirExists = () => {
 
 describe('#checkWorkbenchApp', () => {
   test('should throw when the app declares no interfaces', () => {
-    expect(() => checkWorkbenchApp({})).toThrow('declares no views or services')
+    expect(() => checkWorkbenchApp({})).toThrow('declares no entry, views or services')
   })
 
   test('should throw when views and services are empty arrays', () => {
     expect(() => checkWorkbenchApp({services: [], views: []})).toThrow(
-      'declares no views or services',
+      'declares no entry, views or services',
     )
   })
 
