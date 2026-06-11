@@ -307,13 +307,28 @@ function suppressUnusedImport(warning: Rolldown.RolldownLog & {ids?: string[]}):
 }
 
 /**
- * Ensure Sanity entry chunk is always loaded
+ * Re-asserts the critical parts of the default config after a userland vite
+ * config (`vite` in `sanity.cli.ts`) has been applied.
+ *
+ * Everything `getViteConfig` sets under `build.rolldownOptions` is load-bearing:
+ * the `input` entries (the studio entry plus, for auto-updating studios/apps,
+ * the vendor entries), `preserveEntrySignatures`, the `experimental` flags the
+ * vendor plugins rely on, and the `output` chunk naming. A userland config that
+ * returns a brand-new object for any of these would silently break the build
+ * (e.g. vendor chunks never emitted while the bundle still treats them as
+ * external), so the default `rolldownOptions` are deep-merged back over the
+ * userland config: userland additions survive, replacements of critical
+ * options are healed.
  *
  * @param config - User-modified configuration
+ * @param defaultConfig - The configuration produced by `getViteConfig`, before the userland config was applied
  * @returns Merged configuration
  * @internal
  */
-export async function finalizeViteConfig(config: InlineConfig): Promise<InlineConfig> {
+export async function finalizeViteConfig(
+  config: InlineConfig,
+  defaultConfig: InlineConfig,
+): Promise<InlineConfig> {
   if (typeof config.build?.rolldownOptions?.input !== 'object') {
     throw new TypeError(
       'Vite config must contain `build.rolldownOptions.input`, and it must be an object',
@@ -328,11 +343,7 @@ export async function finalizeViteConfig(config: InlineConfig): Promise<InlineCo
 
   return mergeConfig(config, {
     build: {
-      rolldownOptions: {
-        input: {
-          sanity: path.join(config.root, '.sanity', 'runtime', 'app.js'),
-        },
-      },
+      rolldownOptions: defaultConfig.build?.rolldownOptions ?? {},
     },
   })
 }

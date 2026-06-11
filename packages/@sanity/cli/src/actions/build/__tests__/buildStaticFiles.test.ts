@@ -148,6 +148,64 @@ describe('buildStaticFiles', () => {
     })
   })
 
+  // A userland `vite` hook may return a config with a brand-new
+  // `rolldownOptions`, dropping critical options the config relies on: the
+  // vendor/studio input entries, `preserveEntrySignatures`, the vendor chunk
+  // naming, and the experimental flags the vendor plugins need.
+  // `finalizeViteConfig` must restore all of them, or the import map would
+  // reference chunks that never get emitted while the bundle still treats
+  // them as external.
+  describe('auto-updating studio with a userland vite config that replaces rolldown options', () => {
+    let outputDir: string
+    let specifiers: string[]
+    let importMap: {css?: string[]; imports: Record<string, string>}
+
+    beforeAll(async () => {
+      outputDir = await mkdtemp(path.join(tmpdir(), 'sanity-build-userland-vite-'))
+
+      const vendor = await resolveVendorBuildConfig({cwd: studioPath, isApp: false})
+      specifiers = Object.values(vendor.specifiersByChunkName)
+
+      await buildStaticFiles({
+        autoUpdates: {imports: cdnImports, vendor},
+        basePath: '/',
+        cwd: studioPath,
+        outputDir,
+        vite: (config) => ({
+          ...config,
+          build: {
+            ...config.build,
+            rolldownOptions: {input: {}},
+          },
+        }),
+      })
+
+      importMap = parseImportMap(await readFile(path.join(outputDir, 'index.html'), 'utf8'))
+    }, 120_000)
+
+    afterAll(async () => {
+      await rm(outputDir, {force: true, recursive: true})
+    })
+
+    test('still emits mapped vendor chunks and the studio entry', async () => {
+      for (const specifier of specifiers) {
+        const importPath = importMap.imports[specifier]
+        expect(importPath, `import map should contain '${specifier}'`).toMatch(
+          /^\/vendor\/.+-.+\.mjs$/,
+        )
+        expect(
+          existsSync(path.join(outputDir, importPath.replace(/^\/+/, ''))),
+          `${importPath} should exist`,
+        ).toBe(true)
+      }
+
+      const html = await readFile(path.join(outputDir, 'index.html'), 'utf8')
+      const entryPath = html.match(/src="\/(static\/sanity-[^"]+\.js)"/)?.[1]
+      expect(entryPath, 'index.html should reference the studio entry chunk').toBeTruthy()
+      expect(existsSync(path.join(outputDir, entryPath!))).toBe(true)
+    })
+  })
+
   describe('non-auto-updating studio', () => {
     let outputDir: string
 

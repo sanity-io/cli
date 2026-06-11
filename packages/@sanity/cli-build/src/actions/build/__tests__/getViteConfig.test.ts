@@ -470,45 +470,38 @@ describe('#finalizeViteConfig', () => {
     vi.unstubAllEnvs()
   })
 
-  test('should merge sanity entry into existing config', async () => {
+  test('should re-assert the default rolldown options over a userland config', async () => {
     const {mergeConfig} = await import('vite')
 
-    const inputConfig: InlineConfig = {
-      build: {
-        rolldownOptions: {
-          input: {
-            main: mockTestMain,
-          },
-        },
+    // The pristine config produced by getViteConfig, with the studio entry,
+    // vendor entries, and other critical rolldown options.
+    const defaultRolldownOptions = {
+      input: {
+        'react/index': convertToSystemPath('/pkg/react/index.js'),
+        sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
       },
+      preserveEntrySignatures: 'exports-only' as const,
+    }
+    const defaultConfig: InlineConfig = {
+      build: {rolldownOptions: defaultRolldownOptions},
       root: mockTestRoot,
     }
 
-    const expectedMerge = {
-      build: {
-        rolldownOptions: {
-          input: {
-            sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
-          },
-        },
-      },
+    // A userland vite hook returned a brand-new `rolldownOptions`, dropping
+    // the vendor entries and `preserveEntrySignatures`.
+    const userExtendedConfig: InlineConfig = {
+      build: {rolldownOptions: {input: {main: mockTestMain}}},
+      root: mockTestRoot,
     }
 
-    vi.mocked(mergeConfig).mockReturnValue({
-      ...inputConfig,
-      build: {
-        rolldownOptions: {
-          input: {
-            main: mockTestMain,
-            sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
-          },
-        },
-      },
+    await finalizeViteConfig(userExtendedConfig, defaultConfig)
+
+    // The defaults are deep-merged back over the userland config: userland
+    // additions (like the `main` input) survive the real mergeConfig, while
+    // replaced critical options are healed.
+    expect(mergeConfig).toHaveBeenCalledWith(userExtendedConfig, {
+      build: {rolldownOptions: defaultRolldownOptions},
     })
-
-    await finalizeViteConfig(inputConfig)
-
-    expect(mergeConfig).toHaveBeenCalledWith(inputConfig, expectedMerge)
   })
 
   test('should throw error when build.rolldownOptions.input is not an object', async () => {
@@ -521,7 +514,7 @@ describe('#finalizeViteConfig', () => {
       root: mockTestRoot,
     }
 
-    await expect(finalizeViteConfig(inputConfig)).rejects.toThrow(
+    await expect(finalizeViteConfig(inputConfig, {})).rejects.toThrow(
       'Vite config must contain `build.rolldownOptions.input`, and it must be an object',
     )
   })
@@ -537,7 +530,7 @@ describe('#finalizeViteConfig', () => {
       },
     }
 
-    await expect(finalizeViteConfig(inputConfig)).rejects.toThrow(
+    await expect(finalizeViteConfig(inputConfig, {})).rejects.toThrow(
       'Vite config must contain `root` property, and must point to the Sanity root directory',
     )
   })

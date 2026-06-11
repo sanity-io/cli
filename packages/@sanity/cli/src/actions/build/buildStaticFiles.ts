@@ -103,12 +103,13 @@ export async function buildStaticFiles(
   })
 
   if (extendViteConfig) {
+    const defaultViteConfig = viteConfig
     viteConfig = await extendViteConfigWithUserConfig(
       {command: 'build', mode},
       viteConfig,
       extendViteConfig,
     )
-    viteConfig = await finalizeViteConfig(viteConfig)
+    viteConfig = await finalizeViteConfig(viteConfig, defaultViteConfig)
   }
 
   const fromPath = path.join(cwd, 'static')
