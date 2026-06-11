@@ -1,10 +1,12 @@
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {unstable_defineApp} from '@sanity/federation'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../actions/build/buildApp.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
+import {checkWorkbenchAppDir} from '../../actions/deploy/workbenchChecks.js'
 import {extractCoreAppManifest} from '../../actions/manifest/extractCoreAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
@@ -27,6 +29,16 @@ vi.mock('../../actions/build/buildApp.js', () => ({
 vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
+
+// `checkWorkbenchApp` stays real — it's pure config validation the
+// no-interfaces test exercises; only the fs-touching dir check is stubbed.
+vi.mock('../../actions/deploy/workbenchChecks.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../actions/deploy/workbenchChecks.js')>()
+  return {
+    ...actual,
+    checkWorkbenchAppDir: vi.fn(),
+  }
+})
 
 vi.mock('../../actions/manifest/extractCoreAppManifest.js', () => ({
   extractCoreAppManifest: vi.fn(),
@@ -58,6 +70,7 @@ const mockSelect = vi.mocked(select)
 const mockConfirm = vi.mocked(confirm)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
+const mockCheckWorkbenchAppDir = vi.mocked(checkWorkbenchAppDir)
 const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
 const mockBuildApp = vi.mocked(buildApp)
 const mockExtractCoreAppManifest = vi.mocked(extractCoreAppManifest)
@@ -85,6 +98,7 @@ describe('#deploy app', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
+    mockCheckWorkbenchAppDir.mockResolvedValue()
     // Default to empty manifest for app deployments
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
   })
@@ -206,6 +220,88 @@ describe('#deploy app', () => {
     expect(stderr).toContain('Deploying...')
 
     expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('should check the federation build dir for an unstable_defineApp app', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${appId}/deployments`,
+    }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      title: 'Workbench App',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          app,
+          deployment: {appId},
+        },
+      },
+    })
+    if (error) throw error
+
+    expect(mockCheckWorkbenchAppDir).toHaveBeenCalledWith(expect.any(String))
+    expect(mockCheckDir).not.toHaveBeenCalled()
+    expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('should reject an unstable_defineApp app that declares no interfaces', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = unstable_defineApp({
+      name: 'workbench-app',
+      organizationId,
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          app,
+          deployment: {appId},
+        },
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('declares no entry, views or services')
+    expect(error?.oclif?.exit).toBe(2)
+    // fails before any directory check or API call
+    expect(mockCheckWorkbenchAppDir).not.toHaveBeenCalled()
+    expect(mockCheckDir).not.toHaveBeenCalled()
   })
 
   test('should PATCH user-application when manifest title differs from existing app title', async () => {
@@ -496,7 +592,8 @@ describe('#deploy app', () => {
       },
     })
 
-    expect(error?.message).toContain('Error checking directory')
+    // The underlying checkDir failure surfaces verbatim
+    expect(error?.message).toContain('Directory check failed')
     expect(error?.oclif?.exit).toBe(1)
   })
 
