@@ -1,10 +1,10 @@
 import {type ViteDevServer} from 'vite'
 
-import {startDevServer} from '../../server/devServer.js'
-import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
-import {devDebug} from './devDebug.js'
+import {startDevServer} from '../../../server/devServer.js'
+import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
+import {devDebug} from '../devDebug.js'
+import {type DevActionOptions} from '../types.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
-import {type DevActionOptions} from './types.js'
 
 export async function startAppDevServer(
   options: DevActionOptions,

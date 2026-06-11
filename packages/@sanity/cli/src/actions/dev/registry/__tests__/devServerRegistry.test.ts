@@ -12,7 +12,7 @@ import {
   readWorkbenchLock,
   registerDevServer,
   watchRegistry,
-} from '../devServerRegistry.js'
+} from '../index.js'
 
 const mockExecSync = vi.hoisted(() => vi.fn())
 

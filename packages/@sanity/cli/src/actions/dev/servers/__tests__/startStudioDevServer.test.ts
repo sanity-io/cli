@@ -1,8 +1,8 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {createDevOptions, createMockOutput} from '../../__tests__/testHelpers.js'
 import {startStudioDevServer} from '../startStudioDevServer.js'
-import {createDevOptions, createMockOutput} from './testHelpers.js'
 
 const mockStartDevServer = vi.hoisted(() => vi.fn())
 const mockGracefulServerDeath = vi.hoisted(() => vi.fn())
@@ -18,10 +18,10 @@ const mockUpgradePackages = vi.hoisted(() => vi.fn())
 const mockIsInteractive = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../server/devServer.js', () => ({
+vi.mock('../../../../server/devServer.js', () => ({
   startDevServer: mockStartDevServer,
 }))
-vi.mock('../../../server/gracefulServerDeath.js', () => ({
+vi.mock('../../../../server/gracefulServerDeath.js', () => ({
   gracefulServerDeath: mockGracefulServerDeath,
 }))
 vi.mock('../getDevServerConfig.js', () => ({
@@ -30,22 +30,22 @@ vi.mock('../getDevServerConfig.js', () => ({
 vi.mock('@sanity/cli-build/_internal/build', () => ({
   checkStudioDependencyVersions: mockCheckStudioDependencyVersions,
 }))
-vi.mock('../../build/checkRequiredDependencies.js', () => ({
+vi.mock('../../../build/checkRequiredDependencies.js', () => ({
   checkRequiredDependencies: mockCheckRequiredDependencies,
 }))
-vi.mock('../../build/shouldAutoUpdate.js', () => ({
+vi.mock('../../../build/shouldAutoUpdate.js', () => ({
   shouldAutoUpdate: mockShouldAutoUpdate,
 }))
-vi.mock('../../../util/compareDependencyVersions.js', () => ({
+vi.mock('../../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: mockCompareDependencyVersions,
 }))
-vi.mock('../../../util/appId.js', () => ({
+vi.mock('../../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
 }))
-vi.mock('../../../util/packageManager/packageManagerChoice.js', () => ({
+vi.mock('../../../../util/packageManager/packageManagerChoice.js', () => ({
   getPackageManagerChoice: mockGetPackageManagerChoice,
 }))
-vi.mock('../../../util/packageManager/upgradePackages.js', () => ({
+vi.mock('../../../../util/packageManager/upgradePackages.js', () => ({
   upgradePackages: mockUpgradePackages,
 }))
 vi.mock('@sanity/cli-core', async (importOriginal) => {

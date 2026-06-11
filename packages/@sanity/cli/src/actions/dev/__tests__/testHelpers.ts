@@ -3,8 +3,8 @@ import {unstable_defineApp} from '@sanity/federation'
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import {vi} from 'vitest'
 
-import {type StartWorkbenchOptions} from '../startWorkbenchDevServer.js'
 import {type DevActionOptions} from '../types.js'
+import {type StartWorkbenchOptions} from '../workbench/startWorkbenchDevServer.js'
 
 /** Shared test helpers for dev-action test suites. */
 

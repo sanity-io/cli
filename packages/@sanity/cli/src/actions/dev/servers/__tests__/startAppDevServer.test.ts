@@ -1,18 +1,18 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {createDevOptions, createMockOutput} from '../../__tests__/testHelpers.js'
+import {type DevActionOptions} from '../../types.js'
 import {startAppDevServer} from '../startAppDevServer.js'
-import {type DevActionOptions} from '../types.js'
-import {createDevOptions, createMockOutput} from './testHelpers.js'
 
 const mockStartDevServer = vi.hoisted(() => vi.fn())
 const mockGracefulServerDeath = vi.hoisted(() => vi.fn())
 const mockGetDevServerConfig = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../server/devServer.js', () => ({
+vi.mock('../../../../server/devServer.js', () => ({
   startDevServer: mockStartDevServer,
 }))
-vi.mock('../../../server/gracefulServerDeath.js', () => ({
+vi.mock('../../../../server/gracefulServerDeath.js', () => ({
   gracefulServerDeath: mockGracefulServerDeath,
 }))
 vi.mock('../getDevServerConfig.js', () => ({

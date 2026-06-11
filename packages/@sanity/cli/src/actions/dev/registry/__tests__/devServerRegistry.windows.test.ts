@@ -22,7 +22,7 @@ import {
   getRegisteredServers,
   readWorkbenchLock,
   registerDevServer,
-} from '../devServerRegistry.js'
+} from '../index.js'
 
 let testDataDir: string
 

@@ -1,13 +1,13 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
 import {
   createDevOptions,
   createMockOutput,
   studioWorkbenchApp,
   workbenchApp,
   workbenchCliConfig,
-} from './testHelpers.js'
+} from '../../__tests__/testHelpers.js'
+import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
 
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
@@ -30,13 +30,13 @@ vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
-vi.mock('../devServerRegistry.js', () => ({
+vi.mock('../../registry/index.js', () => ({
   acquireWorkbenchLock: mockAcquireWorkbenchLock,
   getRegisteredServers: mockGetRegisteredServers,
   readWorkbenchLock: mockReadWorkbenchLock,
   watchRegistry: mockWatchRegistry,
 }))
-vi.mock('../../../services/projects.js', () => ({
+vi.mock('../../../../services/projects.js', () => ({
   getProjectById: mockGetProjectById,
 }))
 
