@@ -27,7 +27,7 @@
   "type": "module",
   "sideEffects": false,
   "main": "./dist/_exports/index.js",
-  "types": "dist/_exports/index.d.ts",
+  "types": "./dist/_exports/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/_exports/index.ts",
