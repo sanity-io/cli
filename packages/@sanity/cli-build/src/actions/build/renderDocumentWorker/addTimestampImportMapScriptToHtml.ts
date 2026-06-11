@@ -49,6 +49,36 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
     linkEl.href = replaceTimestamp(cssUrl);
     document.head.appendChild(linkEl);
   }
+
+  // Warm the CDN module connection during head parse so the cross-origin
+  // \`sanity\` fetch can start before the entry script discovers the import.
+  const firstCdnImport = Object.values(imports).find((urlStr) => {
+    try {
+      return /^sanity-cdn\\.[a-zA-Z]+$/.test(new URL(urlStr).hostname);
+    } catch {
+      return false;
+    }
+  });
+
+  if (firstCdnImport) {
+    const preconnectEl = document.createElement('link');
+    preconnectEl.rel = 'preconnect';
+    preconnectEl.href = new URL(firstCdnImport).origin;
+    // Module fetches are CORS; without crossorigin the warmed socket is not reused.
+    preconnectEl.crossOrigin = 'anonymous';
+    document.head.appendChild(preconnectEl);
+  }
+
+  // Start downloading the timestamped \`sanity\` module during head parse. The
+  // href reuses replaceTimestamp so it matches the importmap entry exactly —
+  // a stale timestamp here would double-fetch the largest chunk.
+  const sanityModuleUrl = imports['sanity'];
+  if (typeof sanityModuleUrl === 'string') {
+    const preloadEl = document.createElement('link');
+    preloadEl.rel = 'modulepreload';
+    preloadEl.href = replaceTimestamp(sanityModuleUrl);
+    document.head.appendChild(preloadEl);
+  }
 </script>`
 
 /**
