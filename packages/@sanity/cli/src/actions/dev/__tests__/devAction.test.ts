@@ -1,7 +1,12 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {devAction} from '../devAction.js'
-import {createBaseDevOptions, createMockOutput, workbenchCliConfig} from './testHelpers.js'
+import {
+  createBaseDevOptions,
+  createMockOutput,
+  DEV_FLAGS,
+  workbenchCliConfig,
+} from './testHelpers.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
@@ -70,14 +75,15 @@ describe('devAction', () => {
     vi.clearAllMocks()
   })
 
-  test('studio mode without workbench uses original port', async () => {
+  test('studio mode without workbench passes flags through untouched', async () => {
     mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
+    // No port flag: resolution must stay downstream in getDevServerConfig
+    // (flags → env → cli config → default), as it does on main.
+    const flags = {...DEV_FLAGS, port: undefined}
 
-    await devAction(createBaseDevOptions())
+    await devAction(createBaseDevOptions({flags}))
 
-    expect(mockStartStudioDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({flags: expect.objectContaining({port: '3333'})}),
-    )
+    expect(mockStartStudioDevServer).toHaveBeenCalledWith(expect.objectContaining({flags}))
   })
 
   test('studio mode with workbench bumps port and logs workbench URL', async () => {
