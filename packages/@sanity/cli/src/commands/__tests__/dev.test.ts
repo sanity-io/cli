@@ -52,7 +52,7 @@ vi.mock('../../util/packageManager/packageManagerChoice.js')
 
 // Prevent the workbench dev server from starting — it would shift ports (+1)
 // and suppress output messages that tests assert on.
-vi.mock('../../actions/dev/startWorkbenchDevServer.js', () => ({
+vi.mock('../../actions/dev/workbench/startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: vi.fn().mockImplementation(async (options) => {
     const {getSharedServerConfig} = await vi.importActual<
       typeof import('../../util/getSharedServerConfig.js')
