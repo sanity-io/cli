@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.5](https://github.com/sanity-io/cli/compare/cli-build-v1.0.4...cli-build-v1.0.5)
+
+_2026-06-11_
+
+### Bug Fixes
+
+- **deps:** bump sanity monorepo packages to v6 ([#1258](https://github.com/sanity-io/cli/pull/1258)) ([72bde8f](https://github.com/sanity-io/cli/commit/72bde8f016ee958b8745e5f01d12b4c6149d6df1))
+
+  Updates `@sanity/schema`, `@sanity/types`, `@sanity/codegen`, `@sanity/import`, and `@sanity/migrate` in `@sanity/cli`, and `@sanity/schema` and `@sanity/types` in `@sanity/cli-build`, to versions compatible with Sanity v6.
+
 ## [1.0.4](https://github.com/sanity-io/cli/compare/cli-build-v1.0.3...cli-build-v1.0.4)
 
 _2026-06-11_
