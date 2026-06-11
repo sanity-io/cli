@@ -20,7 +20,6 @@ import {createUserApplicationForApp} from './createUserApplicationForApp.js'
 import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
 import {type DeployAppOptions} from './types.js'
-import {logUploadSummary} from './uploadSummary.js'
 import {buildViewDeploymentPayload} from './viewDeployment.js'
 
 /**
@@ -162,16 +161,6 @@ export async function deployApp(options: DeployAppOptions) {
         return
       }
     }
-
-    await logUploadSummary({
-      applicationId: userApplication.id,
-      hasManifest: Boolean(manifest),
-      isApp: true,
-      isAutoUpdating,
-      output,
-      sourceDir,
-      version: installedSdkVersion,
-    })
 
     spin = spinner('Deploying...').start()
     await createDeployment({

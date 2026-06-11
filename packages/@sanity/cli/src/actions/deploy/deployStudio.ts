@@ -21,7 +21,6 @@ import {deployDebug} from './deployDebug.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
-import {logUploadSummary} from './uploadSummary.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 export async function deployStudio(options: DeployAppOptions) {
@@ -162,17 +161,6 @@ export async function deployStudio(options: DeployAppOptions) {
       const base = basename(sourceDir)
       tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
     }
-
-    await logUploadSummary({
-      applicationId: userApplication.id,
-      hasManifest: Boolean(studioManifest),
-      isApp: false,
-      isAutoUpdating,
-      output,
-      projectId,
-      sourceDir: isExternal ? undefined : sourceDir,
-      version: installedSanityVersion,
-    })
 
     spin = spinner(isExternal ? 'Registering studio' : 'Deploying to sanity.studio').start()
 

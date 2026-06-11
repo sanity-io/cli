@@ -258,7 +258,6 @@ describe('#deploy app', () => {
     if (error) throw error
 
     expect(mockCheckDir).toHaveBeenCalledWith(expect.any(String), {isWorkbenchApp: true})
-    expect(stdout).toContain(`Upload target: POST /user-applications/${appId}/deployments`)
     expect(stdout).toContain('Success! Application deployed')
   })
 
