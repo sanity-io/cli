@@ -15,3 +15,5 @@ export {resolveEntries, writeSanityRuntime} from '../../actions/build/writeSanit
 export {SANITY_CACHE_DIR} from '../../constants.js'
 export {AppBuildTrace, StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 export {copyDir} from '../../util/copyDir.js'
+export {type ServiceArtifact} from '../../workbench/services/artifact.js'
+export {type InterfaceArtifact} from '../../workbench/views/artifact.js'

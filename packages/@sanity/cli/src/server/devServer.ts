@@ -1,10 +1,11 @@
 import {
   extendViteConfigWithUserConfig,
   getViteConfig,
+  type InterfaceArtifact,
+  type ServiceArtifact,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
-import {type InterfaceArtifact, type ServiceArtifact} from '@sanity/federation/vite'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'

@@ -1,6 +1,6 @@
+import {unstable_defineApp} from '@sanity/cli-build/_internal/federation'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import {unstable_defineApp} from '@sanity/federation'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
