@@ -1,10 +1,10 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
-import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
-import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
+import {checkForDeprecatedAppId, getAppId} from '../../../util/appId.js'
+import {extractCoreAppManifest} from '../../manifest/extractCoreAppManifest.js'
+import {registerDevServer} from '../registry/index.js'
 import {deriveInterfaces} from './deriveInterfaces.js'
-import {registerDevServer} from './devServerRegistry.js'
 import {extractStudioManifest} from './extractDevServerManifest.js'
 import {interfaceSetId} from './interfaceSetId.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'

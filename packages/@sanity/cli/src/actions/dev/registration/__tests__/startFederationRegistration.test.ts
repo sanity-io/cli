@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {createMockOutput, workbenchApp, workbenchCliConfig} from '../../__tests__/testHelpers.js'
 import {startFederationRegistration} from '../startFederationRegistration.js'
-import {createMockOutput, workbenchApp, workbenchCliConfig} from './testHelpers.js'
 
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
@@ -16,19 +16,19 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
-vi.mock('../devServerRegistry.js', () => ({
+vi.mock('../../registry/index.js', () => ({
   registerDevServer: mockRegisterDevServer,
 }))
 vi.mock('../startDevManifestWatcher.js', () => ({
   startDevManifestWatcher: mockStartDevManifestWatcher,
 }))
-vi.mock('../../manifest/extractCoreAppManifest.js', () => ({
+vi.mock('../../../manifest/extractCoreAppManifest.js', () => ({
   extractCoreAppManifest: mockExtractCoreAppManifest,
 }))
 vi.mock('../extractDevServerManifest.js', () => ({
   extractStudioManifest: mockExtractStudioManifest,
 }))
-vi.mock('../../../util/appId.js', () => ({
+vi.mock('../../../../util/appId.js', () => ({
   checkForDeprecatedAppId: mockCheckForDeprecatedAppId,
   getAppId: mockGetAppId,
 }))
