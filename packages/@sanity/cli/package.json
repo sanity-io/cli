@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli",
-  "version": "7.2.2",
+  "version": "7.2.3",
   "description": "Sanity CLI tool for managing Sanity projects and organizations",
   "keywords": [
     "cli",
