@@ -484,6 +484,30 @@ describe('#getViteConfig', () => {
     expect(typegenPlugin).toBeDefined()
   })
 
+  test('should include additional plugins for workbench apps', async () => {
+    const options = {
+      additionalPlugins: [
+        {
+          name: 'sanity/typegen',
+        },
+      ],
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
+      getEnvironmentVariables,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const typegenPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
+    )
+
+    expect(typegenPlugin).toBeDefined()
+  })
+
   test('should include federation plugin when enabled', async () => {
     const options = {
       cwd: mockTestCwd,
