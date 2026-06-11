@@ -216,7 +216,7 @@ describe('#deploy app', () => {
     expect(stdout).toContain('Success! Application deployed')
   })
 
-  test('should validate the federation build shape for an unstable_defineApp app', async () => {
+  test('should check the federation build dir for an unstable_defineApp app', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
@@ -248,6 +248,7 @@ describe('#deploy app', () => {
     }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
 
     const app = unstable_defineApp({
+      entry: './src/App.tsx',
       name: 'workbench-app',
       organizationId,
       title: 'Workbench App',
@@ -267,6 +268,34 @@ describe('#deploy app', () => {
     expect(mockCheckWorkbenchAppDir).toHaveBeenCalledWith(expect.any(String))
     expect(mockCheckDir).not.toHaveBeenCalled()
     expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('should reject an unstable_defineApp app that declares no interfaces', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = unstable_defineApp({
+      name: 'workbench-app',
+      organizationId,
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          app,
+          deployment: {appId},
+        },
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('declares no interfaces')
+    expect(error?.oclif?.exit).toBe(2)
+    // fails before any directory check or API call
+    expect(mockCheckWorkbenchAppDir).not.toHaveBeenCalled()
+    expect(mockCheckDir).not.toHaveBeenCalled()
   })
 
   test('should PATCH user-application when manifest title differs from existing app title', async () => {

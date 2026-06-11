@@ -1,4 +1,4 @@
-import {readFile, stat} from 'node:fs/promises'
+import {stat} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -6,12 +6,10 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {checkWorkbenchAppDir} from '../checkWorkbenchAppDir.js'
 
 vi.mock('node:fs/promises', () => ({
-  readFile: vi.fn(),
   stat: vi.fn(),
 }))
 
 const mockStat = vi.mocked(stat)
-const mockReadFile = vi.mocked(readFile)
 
 const enoent = () => {
   const error = new Error('ENOENT') as NodeJS.ErrnoException
@@ -29,32 +27,19 @@ describe('#checkWorkbenchAppDir', () => {
   const testDir = '/test/directory'
   const manifestPath = join(testDir, 'mf-manifest.json')
 
-  const validManifest = {
-    exposes: [
-      {
-        assets: {
-          css: {async: [], sync: ['assets/panel.css']},
-          js: {async: [], sync: ['assets/panel.js']},
-        },
-        name: 'views/favorites/panel',
-      },
-    ],
-    metaData: {
-      remoteEntry: {name: 'remote-entry.js'},
-    },
-  }
-
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('should pass when the manifest exists and exposes at least one module', async () => {
+  test('should pass when the directory contains mf-manifest.json', async () => {
     mockSourceDirExists()
-    mockReadFile.mockResolvedValueOnce(JSON.stringify(validManifest))
+    mockStat.mockResolvedValueOnce({} as never)
 
     await expect(checkWorkbenchAppDir(testDir)).resolves.toBeUndefined()
 
-    expect(mockReadFile).toHaveBeenCalledWith(manifestPath, 'utf8')
+    expect(mockStat).toHaveBeenCalledTimes(2)
+    expect(mockStat).toHaveBeenNthCalledWith(1, testDir)
+    expect(mockStat).toHaveBeenNthCalledWith(2, manifestPath)
     // never checks for index.html — that contract belongs to checkDir
     expect(mockStat).not.toHaveBeenCalledWith(join(testDir, 'index.html'))
   })
@@ -66,7 +51,7 @@ describe('#checkWorkbenchAppDir', () => {
       `Directory "${testDir}" does not exist`,
     )
 
-    expect(mockReadFile).not.toHaveBeenCalled()
+    expect(mockStat).toHaveBeenCalledTimes(1)
   })
 
   test('should throw error when path exists but is not a directory', async () => {
@@ -78,7 +63,7 @@ describe('#checkWorkbenchAppDir', () => {
       `Directory ${testDir} is not a directory`,
     )
 
-    expect(mockReadFile).not.toHaveBeenCalled()
+    expect(mockStat).toHaveBeenCalledTimes(1)
   })
 
   test('should re-throw non-ENOENT errors when checking directory', async () => {
@@ -91,33 +76,19 @@ describe('#checkWorkbenchAppDir', () => {
 
   test('should throw when mf-manifest.json does not exist', async () => {
     mockSourceDirExists()
-    mockReadFile.mockRejectedValueOnce(enoent())
+    mockStat.mockRejectedValueOnce(enoent())
 
     await expect(checkWorkbenchAppDir(testDir)).rejects.toThrow(`"${manifestPath}" does not exist`)
+
+    expect(mockStat).toHaveBeenNthCalledWith(2, manifestPath)
   })
 
-  test('should throw when mf-manifest.json is not valid JSON', async () => {
-    mockSourceDirExists()
-    mockReadFile.mockResolvedValueOnce('not json{')
-
-    await expect(checkWorkbenchAppDir(testDir)).rejects.toThrow(
-      `"${manifestPath}" is not valid JSON`,
-    )
-  })
-
-  test('should throw when manifest declares no exposed modules', async () => {
-    mockSourceDirExists()
-    mockReadFile.mockResolvedValueOnce(JSON.stringify({...validManifest, exposes: []}))
-
-    await expect(checkWorkbenchAppDir(testDir)).rejects.toThrow('declares no exposed modules')
-  })
-
-  test('should re-throw non-ENOENT errors when reading the manifest', async () => {
+  test('should re-throw non-ENOENT errors when checking the manifest', async () => {
     mockSourceDirExists()
 
     const permissionError = new Error('Permission denied') as NodeJS.ErrnoException
     permissionError.code = 'EACCES'
-    mockReadFile.mockRejectedValueOnce(permissionError)
+    mockStat.mockRejectedValueOnce(permissionError)
 
     await expect(checkWorkbenchAppDir(testDir)).rejects.toThrow('Permission denied')
   })

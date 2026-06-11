@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {getLocalPackageVersion, isWorkbenchApp} from '@sanity/cli-core'
+import {exitCodes, getLocalPackageVersion, isWorkbenchApp} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -50,6 +50,21 @@ export async function deployApp(options: DeployAppOptions) {
 
   if (flags.external) {
     output.error('Deploying an app to an external host is not supported.', {exit: 1})
+  }
+
+  // A federated app with no interfaces builds a remote that contains nothing
+  // to load. The declared interfaces are what the build exposes, so the config
+  // settles this before any prompts or API calls.
+  if (isWorkbenchApp(cliConfig.app)) {
+    const {entry, services, views} = cliConfig.app
+    if (!entry && !views?.length && !services?.length) {
+      output.error(
+        'Nothing to deploy: `unstable_defineApp` declares no interfaces. ' +
+          'Declare an `entry`, a view, or a service in the app config.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+      return
+    }
   }
 
   let spin = spinner('Verifying local content...')
