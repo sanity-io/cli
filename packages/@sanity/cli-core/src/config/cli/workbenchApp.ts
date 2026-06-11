@@ -6,24 +6,24 @@ import {type CliConfig} from './types/cliConfig.js'
 
 /**
  * The brand `unstable_defineApp` stamps on its result, registered in the global
- * symbol registry. Inlined here rather than imported from `@sanity/federation`
- * so cli-core — the hot path for every CLI command, most of which never touch
- * workbench — doesn't pull that package (and its transitive deps) into startup
- * just for this identity check. `Symbol.for` keys the same global symbol that
- * federation stamps, so the check is identical; the only shared contract is the
- * symbol string, which cli-core already mirrors (see `APPLICATION_TYPES` below).
+ * symbol registry. `unstable_defineApp` lives in `@sanity/cli-build`, which
+ * depends on cli-core — so cli-core can't import the brand without a cycle, and
+ * wouldn't pull the build package into startup just for this identity check
+ * anyway (cli-core is the hot path for every CLI command, most of which never
+ * touch workbench). `Symbol.for` keys the same global symbol `unstable_defineApp`
+ * stamps, so the check is identical; the only shared contract is the symbol
+ * string, which cli-core mirrors (see `APPLICATION_TYPES` below).
  */
 const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
 
 /**
  * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
- * workbench opt-in. Mirrors `@sanity/federation`'s `isWorkbenchApp` without the
- * runtime dependency, narrowing to the shared `app` config plus the
- * workbench-only fields a branded result carries: its `name`, dock panel
- * `views`, and background worker `services`. The shape is inlined rather than
- * a named export since callers reach it only through this predicate; `type`
- * uses the same literals federation does so `views`/`services` stay assignable
- * to `DefineAppInput['views' | 'services']` downstream.
+ * workbench opt-in. Narrows to the shared `app` config plus the workbench-only
+ * fields a branded result carries: its `name`, dock panel `views`, and
+ * background worker `services`. The shape is inlined rather than a named export
+ * since callers reach it only through this predicate; `type` uses the same
+ * literals the `DefineAppInput` schema does so `views`/`services` stay
+ * assignable to `DefineAppInput['views' | 'services']` downstream.
  */
 export function isWorkbenchApp(app: CliConfig['app']): app is NonNullable<CliConfig['app']> & {
   name: string
@@ -42,9 +42,9 @@ const STUDIO_CONFIG_FILES = [
   'sanity.config.cjs',
 ]
 
-// Mirrors `@sanity/federation`'s `ApplicationType` enum. `unstable_defineApp`
-// is a pure identity wrapper that doesn't validate its input, so the loader is
-// the first place an explicit `applicationType` can be checked.
+// Mirrors the `ApplicationType` enum in `@sanity/cli-build`'s `defineApp` schema.
+// `unstable_defineApp` is a pure identity wrapper that doesn't validate its
+// input, so the loader is the first place an explicit `applicationType` can be checked.
 const APPLICATION_TYPES = [
   'coreApp',
   'studio',
@@ -75,7 +75,7 @@ function detectApplicationType(projectDir: string): ApplicationType {
  * The branded `app` bypasses the legacy `app` object schema (which would strip
  * its identity fields and the brand symbol); every other field is still
  * validated. The brand is preserved so downstream code relies on the
- * `isWorkbenchApp` identity (from `@sanity/federation`) instead of a flag.
+ * `isWorkbenchApp` identity (above) instead of a flag.
  *
  * Resolves `applicationType` here — as early as possible — so studio-vs-app
  * classification is settled once and read off the app everywhere else. The
