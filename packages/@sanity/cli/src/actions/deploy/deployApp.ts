@@ -59,8 +59,8 @@ export async function deployApp(options: DeployAppOptions) {
     const {entry, services, views} = cliConfig.app
     if (!entry && !views?.length && !services?.length) {
       output.error(
-        'Nothing to deploy: `unstable_defineApp` declares no interfaces. ' +
-          'Declare an `entry`, a view, or a service in the app config.',
+        'Nothing to deploy: `unstable_defineApp` declares no views or services. ' +
+          'Declare at least one view or service in the app config.',
         {exit: exitCodes.USAGE_ERROR},
       )
       return
