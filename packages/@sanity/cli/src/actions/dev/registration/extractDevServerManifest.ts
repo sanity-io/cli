@@ -3,9 +3,9 @@ import {join, resolve} from 'node:path'
 
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 
-import {extractManifest} from '../manifest/extractManifest.js'
-import {type StudioManifest} from '../manifest/types.js'
-import {MANIFEST_FILENAME} from '../manifest/writeManifestFile.js'
+import {extractManifest} from '../../manifest/extractManifest.js'
+import {type StudioManifest} from '../../manifest/types.js'
+import {MANIFEST_FILENAME} from '../../manifest/writeManifestFile.js'
 
 /**
  * Dev-time manifest output directory, relative to the studio working

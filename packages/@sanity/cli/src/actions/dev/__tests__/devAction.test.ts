@@ -16,16 +16,16 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
-vi.mock('../startWorkbenchDevServer.js', () => ({
+vi.mock('../workbench/startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
 }))
-vi.mock('../startAppDevServer.js', () => ({
+vi.mock('../servers/startAppDevServer.js', () => ({
   startAppDevServer: mockStartAppDevServer,
 }))
-vi.mock('../startStudioDevServer.js', () => ({
+vi.mock('../servers/startStudioDevServer.js', () => ({
   startStudioDevServer: mockStartStudioDevServer,
 }))
-vi.mock('../startFederationRegistration.js', () => ({
+vi.mock('../registration/startFederationRegistration.js', () => ({
   startFederationRegistration: mockStartFederationRegistration,
 }))
 vi.mock('../../../util/getSharedServerConfig.js', () => ({

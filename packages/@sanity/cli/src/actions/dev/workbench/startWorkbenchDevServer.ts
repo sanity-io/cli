@@ -4,18 +4,18 @@ import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
 import {z} from 'zod/mini'
 
-import {getProjectById} from '../../services/projects.js'
-import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
-import {devDebug} from './devDebug.js'
+import {getProjectById} from '../../../services/projects.js'
+import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
+import {devDebug} from '../devDebug.js'
+import {interfaceSetId} from '../registration/interfaceSetId.js'
 import {
   acquireWorkbenchLock,
   type DevServerManifest,
   getRegisteredServers,
   readWorkbenchLock,
   watchRegistry,
-} from './devServerRegistry.js'
-import {interfaceSetId} from './interfaceSetId.js'
-import {type DevActionOptions} from './types.js'
+} from '../registry/index.js'
+import {type DevActionOptions} from '../types.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
 const noop = async () => {}
