@@ -1,13 +1,21 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createDevOptions, createMockOutput} from '../../__tests__/testHelpers.js'
+import {
+  createDevOptions,
+  createMockDevServer,
+  createMockOutput,
+  DEV_FLAGS,
+  DEV_SERVER_CONFIG,
+  workbenchCliConfig,
+} from '../../__tests__/testHelpers.js'
 import {type DevActionOptions} from '../../types.js'
 import {startAppDevServer} from '../startAppDevServer.js'
 
 const mockStartDevServer = vi.hoisted(() => vi.fn())
 const mockGracefulServerDeath = vi.hoisted(() => vi.fn())
 const mockGetDevServerConfig = vi.hoisted(() => vi.fn())
+const mockGetDashboardAppURL = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../../server/devServer.js', () => ({
   startDevServer: mockStartDevServer,
@@ -18,13 +26,9 @@ vi.mock('../../../../server/gracefulServerDeath.js', () => ({
 vi.mock('../getDevServerConfig.js', () => ({
   getDevServerConfig: mockGetDevServerConfig,
 }))
-
-function mockServer({port = 3333}: {port?: number} = {}) {
-  return {
-    close: vi.fn().mockResolvedValue(undefined),
-    server: {config: {server: {port}}},
-  }
-}
+vi.mock('../getDashboardAppUrl.js', () => ({
+  getDashboardAppURL: mockGetDashboardAppURL,
+}))
 
 function createOptions(overrides: Partial<DevActionOptions> = {}): DevActionOptions {
   return createDevOptions({
@@ -36,16 +40,10 @@ function createOptions(overrides: Partial<DevActionOptions> = {}): DevActionOpti
 
 describe('startAppDevServer', () => {
   beforeEach(() => {
-    mockGetDevServerConfig.mockReturnValue({
-      basePath: '/',
-      cwd: '/tmp/sanity-project',
-      httpHost: 'localhost',
-      httpPort: 3333,
-      reactStrictMode: false,
-      staticPath: '/tmp/sanity-project/static',
-    })
-    mockStartDevServer.mockResolvedValue(mockServer())
+    mockGetDevServerConfig.mockReturnValue(DEV_SERVER_CONFIG)
+    mockStartDevServer.mockResolvedValue(createMockDevServer())
     mockGracefulServerDeath.mockImplementation((_cmd, _host, _port, err) => err)
+    mockGetDashboardAppURL.mockResolvedValue('https://sanity.io/@org-1?dev=http://localhost:3334')
   })
 
   afterEach(() => {
@@ -78,7 +76,7 @@ describe('startAppDevServer', () => {
   })
 
   test('starts dev server with isApp and appTitle from cliConfig', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
+    mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
 
     const result = await startAppDevServer(
       createOptions({
@@ -100,24 +98,78 @@ describe('startAppDevServer', () => {
     expect(result.close).toBeDefined()
   })
 
-  test('logs "App dev server started" when workbench is not available', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
+  test('warns when load-in-dashboard is disabled for non-workbench apps', async () => {
     const output = createMockOutput()
 
-    await startAppDevServer(createOptions({output, workbenchAvailable: false}))
+    await startAppDevServer(
+      createOptions({flags: {...DEV_FLAGS, 'load-in-dashboard': false}, output}),
+    )
 
-    expect(output.log).toHaveBeenCalledWith(expect.stringContaining('3334'))
+    expect(output.warn).toHaveBeenCalledWith('Apps cannot run without the Sanity dashboard')
+    expect(output.warn).toHaveBeenCalledWith(
+      'Starting dev server with the --load-in-dashboard flag set to true',
+    )
   })
 
-  test('skips the port log line when workbench is available', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
+  test('does not warn about the dashboard for workbench apps', async () => {
     const output = createMockOutput()
 
-    await startAppDevServer(createOptions({output, workbenchAvailable: true}))
+    await startAppDevServer(
+      createOptions({
+        cliConfig: workbenchCliConfig(),
+        flags: {...DEV_FLAGS, 'load-in-dashboard': false},
+        output,
+        workbenchAvailable: true,
+      }),
+    )
+
+    expect(output.warn).not.toHaveBeenCalled()
+  })
+
+  test('logs port and dashboard URL for non-workbench apps', async () => {
+    mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
+    const output = createMockOutput()
+
+    await startAppDevServer(
+      createOptions({flags: {...DEV_FLAGS, 'load-in-dashboard': true}, output}),
+    )
+
+    expect(mockGetDashboardAppURL).toHaveBeenCalledWith({
+      httpHost: 'localhost',
+      httpPort: 3334,
+      organizationId: 'org-1',
+    })
+    expect(output.log).toHaveBeenCalledWith('Dev server started on port 3334')
+    expect(output.log).toHaveBeenCalledWith('View your app in the Sanity dashboard here:')
+    expect(output.log).toHaveBeenCalledWith(
+      expect.stringContaining('https://sanity.io/@org-1?dev=http://localhost:3334'),
+    )
+  })
+
+  test('logs "App dev server started" for workbench apps when workbench is not available', async () => {
+    mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
+    const output = createMockOutput()
+
+    await startAppDevServer(
+      createOptions({cliConfig: workbenchCliConfig(), output, workbenchAvailable: false}),
+    )
+
+    expect(output.log).toHaveBeenCalledWith('App dev server started on port 3334')
+    expect(mockGetDashboardAppURL).not.toHaveBeenCalled()
+  })
+
+  test('skips the port log line for workbench apps when workbench is available', async () => {
+    mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
+    const output = createMockOutput()
+
+    await startAppDevServer(
+      createOptions({cliConfig: workbenchCliConfig(), output, workbenchAvailable: true}),
+    )
 
     // 'Starting dev server' is still logged, but the port announcement is not
     const logCalls = (output.log as ReturnType<typeof vi.fn>).mock.calls.flat()
     expect(logCalls.some((c) => String(c).includes('App dev server started'))).toBe(false)
+    expect(mockGetDashboardAppURL).not.toHaveBeenCalled()
   })
 
   test('wraps startup failures via gracefulServerDeath', async () => {
