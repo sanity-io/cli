@@ -4,7 +4,7 @@ import {createGzip, type Gzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
+import {exitCodes, getLocalPackageVersion, isWorkbenchApp, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
@@ -35,6 +35,18 @@ export async function deployStudio(options: DeployAppOptions) {
 
   const isExternal = !!flags.external
   const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
+
+  // Federated (`unstable_defineApp`) applications integrate through Sanity's
+  // build and hosting pipeline, which `--external` skips. Fail before any
+  // prompts or API calls.
+  if (isExternal && isWorkbenchApp(cliConfig.app)) {
+    output.error(
+      'Deploying a federated application to an external host is not yet supported. ' +
+        'Remove the `--external` flag to deploy to Sanity hosting.',
+      {exit: exitCodes.USAGE_ERROR},
+    )
+    return
+  }
 
   // Resolve the app host from --url flag (takes precedence) or studioHost config
   const appHost = resolveAppHost({flags, isExternal, output, studioHost: cliConfig.studioHost})
