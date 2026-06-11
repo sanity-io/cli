@@ -89,7 +89,7 @@ export const DEV_SERVER_CONFIG = {
 /** Minimal `startDevServer` result — a closeable vite server on the given port. */
 export function createMockDevServer({port = 3333}: {port?: number} = {}) {
   return {
-    close: vi.fn().mockResolvedValue(),
+    close: vi.fn(() => Promise.resolve()),
     server: {
       config: {
         logger: {info: vi.fn()},
