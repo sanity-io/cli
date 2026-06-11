@@ -9,7 +9,7 @@ import {extractStudioManifest} from './extractDevServerManifest.js'
 import {interfaceSetId} from './interfaceSetId.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
-interface FederationRegistrationOptions {
+interface DevServerRegistrationOptions {
   cliConfig: CliConfig
   isApp: boolean
   output: Output
@@ -18,16 +18,17 @@ interface FederationRegistrationOptions {
 
   /**
    * Called when the declared interface *set* changes (a view/service added,
-   * removed, renamed, or repointed in `sanity.cli.ts`) — before the registry is
-   * patched. The remote's `exposes` map + codegen artifacts are computed once at
-   * server start, so a newly-declared interface has no expose until the app dev
-   * server is recreated with the fresh config; this hook does that recreation.
-   * Awaited so the rebuilt remote is live before the workbench page reloads.
+   * removed, renamed, or repointed in `sanity.cli.ts`), awaited *before* the
+   * registry is patched — the registry patch is what reloads the workbench
+   * page, and it must re-fetch a remote that already exposes the new
+   * interface, so the caller's rebuild has to complete first. A view/service
+   * *source* edit doesn't change the set and never fires this. Studios declare
+   * no interfaces, so they pass nothing.
    */
-  onInterfacesChange?: () => Promise<void>
+  onInterfaceSetChange?: () => Promise<void>
 }
 
-interface FederationRegistration {
+interface DevServerRegistrationHandle {
   close: () => Promise<void>
 }
 
@@ -36,10 +37,10 @@ interface FederationRegistration {
  * is used by the workbench to know where the dev server is running and to display it in the UI. The manifest watcher
  * is used to update the registration with the latest manifest, which the workbench uses to display project metadata.
  */
-export async function startFederationRegistration(
-  options: FederationRegistrationOptions,
-): Promise<FederationRegistration> {
-  const {cliConfig, isApp, onInterfacesChange, output, server, workDir} = options
+export async function startDevServerRegistration(
+  options: DevServerRegistrationOptions,
+): Promise<DevServerRegistrationHandle> {
+  const {cliConfig, isApp, onInterfaceSetChange, output, server, workDir} = options
 
   checkForDeprecatedAppId({cliConfig, output})
 
@@ -92,7 +93,7 @@ export async function startFederationRegistration(
         // artifact), THEN patch the registry — the registry patch is what reloads
         // the workbench page, and it must re-fetch a remote that already exposes
         // the new interface.
-        await onInterfacesChange?.()
+        await onInterfaceSetChange?.()
       }
       registration.update(patch)
     },

@@ -1,14 +1,10 @@
-import {type ViteDevServer} from 'vite'
-
 import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
 import {devDebug} from '../devDebug.js'
-import {type DevActionOptions} from '../types.js'
+import {type DevActionOptions, type StartDevServerResult} from '../types.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 
-export async function startAppDevServer(
-  options: DevActionOptions,
-): Promise<{close?: () => Promise<void>; server?: ViteDevServer}> {
+export async function startAppDevServer(options: DevActionOptions): Promise<StartDevServerResult> {
   const {cliConfig, flags, output, workbenchAvailable, workDir} = options
 
   let organizationId: string | undefined
@@ -20,7 +16,7 @@ export async function startAppDevServer(
     output.error(`Apps require an organization ID (orgId) specified in your sanity.cli.ts file`, {
       exit: 1,
     })
-    return {}
+    return {reason: 'missing-organization-id', started: false}
   }
 
   const config = getDevServerConfig({cliConfig, flags, output, workDir})
@@ -41,7 +37,7 @@ export async function startAppDevServer(
       output.log(`App dev server started on port ${port}`)
     }
 
-    return {close, server}
+    return {close, server, started: true}
   } catch (err) {
     devDebug('Error starting app dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
