@@ -1,8 +1,8 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
+import {workbenchApp} from '../../__tests__/testHelpers.js'
 import {deriveInterfaces} from '../deriveInterfaces.js'
-import {workbenchApp} from './testHelpers.js'
 
 describe('deriveInterfaces', () => {
   test('returns undefined for a non-branded app (no unstable_defineApp)', () => {

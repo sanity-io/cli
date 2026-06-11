@@ -3,9 +3,9 @@ import {basename, dirname} from 'node:path'
 
 import {findProjectRoot, type Output} from '@sanity/cli-core'
 
-import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
+import {devDebug} from '../devDebug.js'
+import {canonicalizeWatchDir} from '../shared/canonicalizeWatchDir.js'
 import {type DevServerInterface} from './deriveInterfaces.js'
-import {devDebug} from './devDebug.js'
 
 /**
  * Debounce window between config file events and the next manifest

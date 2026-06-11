@@ -13,9 +13,9 @@ import {join} from 'node:path'
 import {getSanityDataDir} from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
-import {coreAppManifestSchema, studioManifestSchema} from '../manifest/types.js'
-import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
-import {devDebug} from './devDebug.js'
+import {coreAppManifestSchema, studioManifestSchema} from '../../manifest/types.js'
+import {devDebug} from '../devDebug.js'
+import {canonicalizeWatchDir} from '../shared/canonicalizeWatchDir.js'
 
 /** Bump when the manifest/lock shape changes in a breaking way. */
 const REGISTRY_VERSION = 1

@@ -4,11 +4,11 @@ import {getCliConfigUncached, isWorkbenchApp} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
-import {startAppDevServer} from './startAppDevServer.js'
-import {startFederationRegistration} from './startFederationRegistration.js'
-import {startStudioDevServer} from './startStudioDevServer.js'
-import {startWorkbenchDevServer} from './startWorkbenchDevServer.js'
+import {startFederationRegistration} from './registration/startFederationRegistration.js'
+import {startAppDevServer} from './servers/startAppDevServer.js'
+import {startStudioDevServer} from './servers/startStudioDevServer.js'
 import {type DevActionOptions} from './types.js'
+import {startWorkbenchDevServer} from './workbench/startWorkbenchDevServer.js'
 
 const noop = async () => {}
 
