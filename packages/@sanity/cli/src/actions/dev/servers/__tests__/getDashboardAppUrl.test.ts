@@ -1,20 +1,10 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {describe, expect, test, vi} from 'vitest'
 
+import {setupFetchStub} from '../../__tests__/testHelpers.js'
 import {getDashboardAppURL} from '../getDashboardAppUrl.js'
 
-const mockFetch = vi.fn()
-
 describe('#getDashboardAppUrl', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', mockFetch)
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-    vi.unstubAllGlobals()
-    vi.useRealTimers()
-  })
+  const mockFetch = setupFetchStub()
 
   test('should send default dashboard app url if fetch timesout', async () => {
     mockFetch.mockImplementation(

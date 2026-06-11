@@ -12,6 +12,13 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startAppDevServer(options: DevActionOptions): Promise<StartDevServerResult> {
   const {cliConfig, flags, output, workbenchAvailable, workDir} = options
 
+  // Workbench apps don't load through the dashboard, so the flag has no
+  // meaning for them and is ignored.
+  if (!isWorkbenchApp(cliConfig?.app) && !flags['load-in-dashboard']) {
+    output.warn(`Apps cannot run without the Sanity dashboard`)
+    output.warn(`Starting dev server with the --load-in-dashboard flag set to true`)
+  }
+
   let organizationId: string | undefined
   if (cliConfig && 'app' in cliConfig && cliConfig.app?.organizationId) {
     organizationId = cliConfig.app.organizationId

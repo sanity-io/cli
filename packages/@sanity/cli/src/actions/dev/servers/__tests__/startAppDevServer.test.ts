@@ -3,7 +3,10 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   createDevOptions,
+  createMockDevServer,
   createMockOutput,
+  DEV_FLAGS,
+  DEV_SERVER_CONFIG,
   workbenchCliConfig,
 } from '../../__tests__/testHelpers.js'
 import {type DevActionOptions} from '../../types.js'
@@ -27,13 +30,6 @@ vi.mock('../getDashboardAppUrl.js', () => ({
   getDashboardAppURL: mockGetDashboardAppURL,
 }))
 
-function mockServer({port = 3333}: {port?: number} = {}) {
-  return {
-    close: vi.fn().mockResolvedValue(undefined),
-    server: {config: {server: {port}}},
-  }
-}
-
 function createOptions(overrides: Partial<DevActionOptions> = {}): DevActionOptions {
   return createDevOptions({
     cliConfig: {app: {organizationId: 'org-1'}} as unknown as CliConfig,
@@ -44,15 +40,8 @@ function createOptions(overrides: Partial<DevActionOptions> = {}): DevActionOpti
 
 describe('startAppDevServer', () => {
   beforeEach(() => {
-    mockGetDevServerConfig.mockReturnValue({
-      basePath: '/',
-      cwd: '/tmp/sanity-project',
-      httpHost: 'localhost',
-      httpPort: 3333,
-      reactStrictMode: false,
-      staticPath: '/tmp/sanity-project/static',
-    })
-    mockStartDevServer.mockResolvedValue(mockServer())
+    mockGetDevServerConfig.mockReturnValue(DEV_SERVER_CONFIG)
+    mockStartDevServer.mockResolvedValue(createMockDevServer())
     mockGracefulServerDeath.mockImplementation((_cmd, _host, _port, err) => err)
     mockGetDashboardAppURL.mockResolvedValue('https://sanity.io/@org-1?dev=http://localhost:3334')
   })
@@ -87,7 +76,7 @@ describe('startAppDevServer', () => {
   })
 
   test('starts dev server with isApp and appTitle from cliConfig', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
+    mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
 
     const result = await startAppDevServer(
       createOptions({
@@ -109,11 +98,41 @@ describe('startAppDevServer', () => {
     expect(result.close).toBeDefined()
   })
 
-  test('logs port and dashboard URL for non-workbench apps', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
+  test('warns when load-in-dashboard is disabled for non-workbench apps', async () => {
     const output = createMockOutput()
 
-    await startAppDevServer(createOptions({output}))
+    await startAppDevServer(
+      createOptions({flags: {...DEV_FLAGS, 'load-in-dashboard': false}, output}),
+    )
+
+    expect(output.warn).toHaveBeenCalledWith('Apps cannot run without the Sanity dashboard')
+    expect(output.warn).toHaveBeenCalledWith(
+      'Starting dev server with the --load-in-dashboard flag set to true',
+    )
+  })
+
+  test('does not warn about the dashboard for workbench apps', async () => {
+    const output = createMockOutput()
+
+    await startAppDevServer(
+      createOptions({
+        cliConfig: workbenchCliConfig(),
+        flags: {...DEV_FLAGS, 'load-in-dashboard': false},
+        output,
+        workbenchAvailable: true,
+      }),
+    )
+
+    expect(output.warn).not.toHaveBeenCalled()
+  })
+
+  test('logs port and dashboard URL for non-workbench apps', async () => {
+    mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
+    const output = createMockOutput()
+
+    await startAppDevServer(
+      createOptions({flags: {...DEV_FLAGS, 'load-in-dashboard': true}, output}),
+    )
 
     expect(mockGetDashboardAppURL).toHaveBeenCalledWith({
       httpHost: 'localhost',
@@ -128,7 +147,7 @@ describe('startAppDevServer', () => {
   })
 
   test('logs "App dev server started" for workbench apps when workbench is not available', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
+    mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
     const output = createMockOutput()
 
     await startAppDevServer(
@@ -140,7 +159,7 @@ describe('startAppDevServer', () => {
   })
 
   test('skips the port log line for workbench apps when workbench is available', async () => {
-    mockStartDevServer.mockResolvedValue(mockServer({port: 3334}))
+    mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
     const output = createMockOutput()
 
     await startAppDevServer(
