@@ -12,6 +12,7 @@ import {pack} from 'tar-fs'
 import {createDeployment} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
@@ -21,6 +22,7 @@ import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests
 import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
+import {checkWorkbenchAppDir} from './workbenchChecks.js'
 
 export async function deployStudio(options: DeployAppOptions) {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
@@ -147,12 +149,14 @@ export async function deployStudio(options: DeployAppOptions) {
       // Ensure that the directory exists, is a directory and seems to have valid content
       spin = spin.start()
       try {
-        await checkDir(sourceDir)
+        await (isWorkbenchApp(cliConfig.app)
+          ? checkWorkbenchAppDir(sourceDir)
+          : checkDir(sourceDir))
         spin.succeed()
       } catch (err) {
         spin.fail()
         deployDebug('Error checking directory', err)
-        output.error('Error checking directory', {exit: 1})
+        output.error(getErrorMessage(err), {exit: 1})
       }
 
       // Create a tarball of the given directory
