@@ -112,7 +112,15 @@ jobs:
           restore-keys: |
             vitest-cache-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-
 
-      - name: Test on ${{ matrix.os }}
+      - name: Unit Test on ${{ matrix.os }} (shard 1 only)
+        shell: bash
+        run: |
+          # Only run the unit tests on the first shard
+          if [ "${{ matrix.shardIndex }}" == "1" ]; then
+            pnpm test:unit
+          fi
+
+      - name: Integration Test on ${{ matrix.os }}
         shell: bash
         env:
           SANITY_AUTH_TOKEN: 'test-token'

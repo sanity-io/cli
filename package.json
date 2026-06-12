@@ -43,6 +43,8 @@
     "test": "vitest run",
     "pretest:e2e": "pnpm run build:cli",
     "test:e2e": "pnpm --filter @sanity/cli-e2e test",
+    "pretest:unit": "pnpm run build:cli",
+    "test:unit": "vitest run --project unit",
     "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
     "version-packages": "changeset version && node .changeset/postversion.mjs",

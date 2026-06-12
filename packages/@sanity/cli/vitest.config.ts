@@ -11,7 +11,7 @@ export default defineConfig({
       OCLIF_TEST_ROOT: 'packages/@sanity/cli',
     },
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/*.unit.test.{ts,tsx}'],
     globals: false,
     globalSetup: ['test/workerBuild.ts', '@sanity/cli-test/vitest'],
     setupFiles: ['test/setup.ts'],

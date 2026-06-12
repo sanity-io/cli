@@ -55,6 +55,16 @@ export default defineConfig({
       'packages/@sanity/cli-build',
       'packages/@sanity/cli-core',
       'packages/create-sanity',
+      {
+        test: {
+          environment: 'node',
+          include: ['**/*.unit.test.{ts,tsx}'],
+          name: 'unit',
+          onUnhandledError() {
+            return true
+          },
+        },
+      },
     ],
     reporters: ['default', ...(IS_AGENT ? ['json'] : [])],
   },
