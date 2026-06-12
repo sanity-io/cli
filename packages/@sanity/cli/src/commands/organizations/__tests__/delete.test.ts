@@ -59,6 +59,24 @@ describe('organizations delete', () => {
     expect(stdout).toContain('Organization deleted')
   })
 
+  test('confirmation matches despite surrounding whitespace in stored org name', async () => {
+    mockRequest
+      .mockResolvedValueOnce({...org, name: '  Acme Corp  '})
+      .mockResolvedValueOnce({deleted: true})
+    mockInput.mockResolvedValue('Acme Corp')
+
+    const {error, stdout} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
+
+    if (error) throw error
+    const [inputOptions] = mockInput.mock.calls[0]
+    expect(inputOptions.validate?.('Acme Corp')).toBe(true)
+    expect(inputOptions.validate?.(' acme corp ')).toBe(true)
+    expect(inputOptions.validate?.('Wrong Name')).toBe(
+      'Incorrect organization name. Ctrl + C to cancel delete.',
+    )
+    expect(stdout).toContain('Organization deleted')
+  })
+
   test('skips confirmation with --force flag', async () => {
     mockRequest.mockResolvedValue({deleted: true})
 

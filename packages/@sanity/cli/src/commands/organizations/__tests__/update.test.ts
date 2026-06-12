@@ -50,6 +50,11 @@ describe('organizations update', () => {
 
     if (error) throw error
     expect(stdout).toContain('Organization updated')
+    expect(mockRequest).toHaveBeenCalledWith({
+      body: {name: 'New Name'},
+      method: 'patch',
+      uri: '/organizations/org-aaa',
+    })
   })
 
   test('updates organization slug', async () => {
@@ -63,6 +68,11 @@ describe('organizations update', () => {
 
     if (error) throw error
     expect(stdout).toContain('Organization updated')
+    expect(mockRequest).toHaveBeenCalledWith({
+      body: {slug: 'new-slug'},
+      method: 'patch',
+      uri: '/organizations/org-aaa',
+    })
   })
 
   test('updates multiple fields at once', async () => {
@@ -80,6 +90,43 @@ describe('organizations update', () => {
 
     if (error) throw error
     expect(stdout).toContain('Organization updated')
+    expect(mockRequest).toHaveBeenCalledWith({
+      body: {defaultRoleName: 'viewer', name: 'New Name', slug: 'new-slug'},
+      method: 'patch',
+      uri: '/organizations/org-aaa',
+    })
+  })
+
+  test('trims name and slug before sending', async () => {
+    mockRequest.mockResolvedValue(updatedOrg)
+
+    const {error} = await testCommand(UpdateOrganizationCommand, [
+      'org-aaa',
+      '--name',
+      '  New Name  ',
+      '--slug',
+      '  new-slug  ',
+    ])
+
+    if (error) throw error
+    expect(mockRequest).toHaveBeenCalledWith({
+      body: {name: 'New Name', slug: 'new-slug'},
+      method: 'patch',
+      uri: '/organizations/org-aaa',
+    })
+  })
+
+  test('errors when --default-role flag is empty', async () => {
+    const {error} = await testCommand(UpdateOrganizationCommand, [
+      'org-aaa',
+      '--default-role',
+      '  ',
+    ])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Default role cannot be empty')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockRequest).not.toHaveBeenCalled()
   })
 
   test('errors when no flags are provided', async () => {

@@ -65,20 +65,28 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
 
     const params: OrganizationUpdateParams = {}
     if (name !== undefined) {
-      const validation = validateOrganizationName(name)
+      const trimmedName = name.trim()
+      const validation = validateOrganizationName(trimmedName)
       if (validation !== true) {
         this.error(validation, {exit: 1})
       }
-      params.name = name
+      params.name = trimmedName
     }
     if (slug !== undefined) {
-      const slugValidation = validateOrganizationSlug(slug)
+      const trimmedSlug = slug.trim()
+      const slugValidation = validateOrganizationSlug(trimmedSlug)
       if (slugValidation !== true) {
         this.error(slugValidation, {exit: 1})
       }
-      params.slug = slug
+      params.slug = trimmedSlug
     }
-    if (defaultRole !== undefined) params.defaultRoleName = defaultRole
+    if (defaultRole !== undefined) {
+      const trimmedRole = defaultRole.trim()
+      if (trimmedRole === '') {
+        this.error('Default role cannot be empty', {exit: 1})
+      }
+      params.defaultRoleName = trimmedRole
+    }
 
     const spin = spinner('Updating organization').start()
     try {
