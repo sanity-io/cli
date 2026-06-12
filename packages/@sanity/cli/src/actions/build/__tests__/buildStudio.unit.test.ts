@@ -1,5 +1,4 @@
 import {Output} from '@sanity/cli-core'
-import {spinner} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 const FLAGS = {
