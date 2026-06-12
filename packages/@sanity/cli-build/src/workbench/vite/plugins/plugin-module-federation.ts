@@ -21,10 +21,6 @@ export function pluginModuleFederation({exposes, name}: FederationOptions): Plug
       disableDynamicRemoteTypeHints: true,
       remoteHmr: true,
     },
-    // TODO: this should be conditional based on whether the project uses typescript or not...
-    dts: {
-      generateTypes: false,
-    },
     exposes,
     filename: `${FEDERATION_FILE_NAME}.js`,
     manifest: true,
@@ -41,13 +37,22 @@ export function pluginModuleFederation({exposes, name}: FederationOptions): Plug
     shared: {},
   })
 
-  return mfPlugins.map((plugin): Plugin => {
+  // module-federation delivers its dts plugin as a Promise resolving to an
+  // array of plugins; spreading a promise (or an array) yields a junk object,
+  // which silently drops the plugin. Recurse through the PluginOption shape so
+  // every actual plugin gets scoped.
+  const scopeToEnvironment = (option: PluginOption): PluginOption => {
+    if (!option) return option
+    if (option instanceof Promise) return option.then((resolved) => scopeToEnvironment(resolved))
+    if (Array.isArray(option)) return option.map((entry) => scopeToEnvironment(entry))
     return {
-      ...plugin,
+      ...option,
       // In dev, MF must run on client — the dev server serves through it.
       // In build, scope to the federation environment to keep the library build clean.
       applyToEnvironment: (env) =>
         env.config.command === 'serve' || env.name === FEDERATION_DIR_NAME,
-    }
-  })
+    } satisfies Plugin
+  }
+
+  return mfPlugins.map((plugin: PluginOption) => scopeToEnvironment(plugin))
 }
