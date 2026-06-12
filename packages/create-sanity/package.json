@@ -1,6 +1,6 @@
 {
   "name": "create-sanity",
-  "version": "6.0.6",
+  "version": "6.0.7",
   "description": "Initialize a new Sanity project",
   "keywords": [
     "cms",
@@ -38,6 +38,6 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

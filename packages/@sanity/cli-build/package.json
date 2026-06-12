@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-build",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Internal Sanity package for building studios and apps",
   "keywords": [
     "cli",
@@ -117,6 +117,6 @@
     }
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

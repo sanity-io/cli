@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli",
-  "version": "7.2.2",
+  "version": "7.2.3",
   "description": "Sanity CLI tool for managing Sanity projects and organizations",
   "keywords": [
     "cli",
@@ -86,8 +86,8 @@
     "@sanity/export": "^6.2.0",
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/id-utils": "^1.0.0",
-    "@sanity/import": "^6.0.2",
-    "@sanity/migrate": "^7.0.1",
+    "@sanity/import": "^6.0.3",
+    "@sanity/migrate": "^7.0.2",
     "@sanity/runtime-cli": "^16.0.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
@@ -187,6 +187,6 @@
     }
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

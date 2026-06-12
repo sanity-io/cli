@@ -17,14 +17,32 @@ export async function setupBrowserStubs(): Promise<() => void> {
     }
   }
 
-  // Inject browser stubs into global scope
+  // Inject browser stubs into global scope. `getBrowserStubs()` has already
+  // decided what to inject — including a small set of keys (e.g.
+  // `localStorage`/`sessionStorage`/`Storage`) that we want to take from JSDOM
+  // even if Node provides them, so realm identity stays consistent.
   const stubs = getBrowserStubs()
   const mockedGlobalThis: Record<string, unknown> = globalThis
   const stubbedKeys: string[] = []
+  const originalDescriptors = new Map<string, PropertyDescriptor>()
 
   for (const key of Object.keys(stubs)) {
-    if (key in mockedGlobalThis) continue
-    mockedGlobalThis[key] = stubs[key]
+    // Snapshot via descriptor to avoid triggering getters (e.g. Node 26's
+    // `localStorage` getter logs an ExperimentalWarning on read).
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, key)
+    if (descriptor) {
+      originalDescriptors.set(key, descriptor)
+      // Assignment would throw for getter-only accessors (e.g. Node 26's
+      // `localStorage`/`sessionStorage`), so replace the property outright.
+      Object.defineProperty(globalThis, key, {
+        configurable: true,
+        enumerable: descriptor.enumerable,
+        value: stubs[key],
+        writable: true,
+      })
+    } else {
+      mockedGlobalThis[key] = stubs[key]
+    }
     stubbedKeys.push(key)
   }
 
@@ -41,7 +59,12 @@ export async function setupBrowserStubs(): Promise<() => void> {
     }
 
     for (const key of stubbedKeys) {
-      delete mockedGlobalThis[key]
+      const descriptor = originalDescriptors.get(key)
+      if (descriptor) {
+        Object.defineProperty(globalThis, key, descriptor)
+      } else {
+        delete mockedGlobalThis[key]
+      }
     }
   }
 }
