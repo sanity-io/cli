@@ -9,6 +9,7 @@ import {
   getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
 } from '@sanity/cli-build/_internal/build'
+import {type DefineAppInput} from '@sanity/cli-build/_internal/federation'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -20,7 +21,6 @@ import {
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
-import {type DefineAppInput} from '@sanity/federation'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
