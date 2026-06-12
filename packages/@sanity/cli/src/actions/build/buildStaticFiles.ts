@@ -40,6 +40,7 @@ interface StaticBuildOptions {
   isApp?: boolean
   minify?: boolean
   profile?: boolean
+  projectId?: string
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
@@ -63,6 +64,7 @@ export async function buildStaticFiles(
     isApp,
     minify = true,
     outputDir,
+    projectId,
     reactCompiler,
     schemaExtraction,
     sourceMap = false,
@@ -97,6 +99,7 @@ export async function buildStaticFiles(
     minify,
     mode,
     outputDir,
+    projectId,
     reactCompiler,
     schemaExtraction,
     sourceMap,

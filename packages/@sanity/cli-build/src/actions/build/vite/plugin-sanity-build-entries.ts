@@ -32,6 +32,7 @@ export function sanityBuildEntries(options: {
   basePath: string
   cwd: string
   isApp?: boolean
+  projectId?: string
 }): Plugin {
   const {autoUpdates, basePath, cwd, isApp} = options
 

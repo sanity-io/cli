@@ -293,6 +293,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       cwd: workDir,
       minify,
       outputDir,
+      projectId,
       reactCompiler,
       schemaExtraction,
       sourceMap,

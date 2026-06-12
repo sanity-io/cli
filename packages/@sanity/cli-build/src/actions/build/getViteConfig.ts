@@ -80,6 +80,12 @@ interface ViteOptions {
   outputDir?: string
 
   /**
+   * Sanity project ID, threaded through to the build-entries plugin so the
+   * early-auth probe script can be injected into production HTML.
+   */
+  projectId?: string
+
+  /**
    * Schema extraction configuration
    */
   schemaExtraction?: CliConfig['schemaExtraction']
@@ -108,6 +114,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     minify,
     mode,
     outputDir,
+    projectId,
     reactCompiler,
     schemaExtraction,
     server,
@@ -160,7 +167,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({autoUpdates, basePath, cwd, isApp}),
+      sanityBuildEntries({autoUpdates, basePath, cwd, isApp, projectId}),
       // Add schema extraction when enabled
       ...(schemaExtraction?.enabled
         ? [

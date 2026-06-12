@@ -323,6 +323,7 @@ describe('#getViteConfig', () => {
       basePath: '/',
       cwd: mockTestCwd,
       isApp: undefined,
+      projectId: undefined,
     })
 
     // Vendor entries become additional Rolldown inputs of the single build.
