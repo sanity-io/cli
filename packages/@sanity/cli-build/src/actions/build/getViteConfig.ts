@@ -8,11 +8,6 @@ import {
   readPackageJson,
   type UserViteConfig,
 } from '@sanity/cli-core'
-import {
-  type InterfaceArtifact,
-  type ServiceArtifact,
-  federation as viteFederation,
-} from '@sanity/federation/vite'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -27,6 +22,9 @@ import {
 } from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
+import {type ServiceArtifact} from '../../workbench/services/artifact.js'
+import {type InterfaceArtifact} from '../../workbench/views/artifact.js'
+import {federation as viteFederation} from '../../workbench/vite/plugin.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
 import {VENDOR_DIR} from './constants.js'

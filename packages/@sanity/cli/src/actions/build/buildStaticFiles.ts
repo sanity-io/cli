@@ -7,12 +7,13 @@ import {
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
   getViteConfig,
+  type InterfaceArtifact,
   resolveEntries,
+  type ServiceArtifact,
   writeFavicons,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
-import {type InterfaceArtifact, type ServiceArtifact} from '@sanity/federation/vite'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
 
