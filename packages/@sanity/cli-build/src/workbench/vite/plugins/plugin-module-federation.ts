@@ -21,6 +21,15 @@ export function pluginModuleFederation({exposes, name}: FederationOptions): Plug
       disableDynamicRemoteTypeHints: true,
       remoteHmr: true,
     },
+    // Remote type generation stays off: it compiles the exposes with the
+    // project's tsconfig, and that breaks twice over on real projects.
+    // The exposes are generated .js/.jsx shims, which tsc refuses without
+    // allowJs (TYPE-001/TS6504) — no app template sets it. And with allowJs
+    // worked around, declaration emit pulls in the user's own modules, which
+    // are noEmit projects never written to be declaration-emittable: TS2742
+    // (non-portable inferred types, endemic under pnpm) and TS4082 (private
+    // names in default exports) then fail the compile just the same.
+    dts: {generateTypes: false},
     exposes,
     filename: `${FEDERATION_FILE_NAME}.js`,
     manifest: true,
