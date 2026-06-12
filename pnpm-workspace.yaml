@@ -70,7 +70,7 @@ catalog:
   '@swc/core': ^1.15.40
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.5.3
+  '@sanity/pkg-utils': ^10.5.4
   oxfmt: ^0.53.0
 
   # Type Definitions
