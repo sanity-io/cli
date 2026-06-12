@@ -6,6 +6,7 @@ import {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {startServerForTokenCallback} from '../../actions/auth/authServer.js'
 import {AUTH_API_VERSION} from '../../services/auth.js'
 import {USERS_API_VERSION} from '../../services/user.js'
 import {canLaunchBrowser} from '../../util/canLaunchBrowser.js'
@@ -35,6 +36,16 @@ vi.mock('open')
 vi.mock('../../util/canLaunchBrowser.js', () => ({
   canLaunchBrowser: vi.fn().mockReturnValue(true),
 }))
+
+// Wrap the real callback server so tests can await its startup and read the
+// port it actually bound.
+vi.mock('../../actions/auth/authServer.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../actions/auth/authServer.js')>()
+  return {
+    ...actual,
+    startServerForTokenCallback: vi.fn(actual.startServerForTokenCallback),
+  }
+})
 
 const mockConfigStoreDelete = vi.hoisted(() => vi.fn())
 
@@ -67,6 +78,7 @@ vi.mock('@sanity/cli-core', async () => {
 
 const mockedOpen = vi.mocked(open)
 const mockedCanLaunchBrowser = vi.mocked(canLaunchBrowser)
+const mockedStartServerForTokenCallback = vi.mocked(startServerForTokenCallback)
 const originalStdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin')
 type MockStdin = Readable & {isTTY?: boolean}
 
@@ -81,20 +93,34 @@ function mockStdin(input: string, options: {isTTY?: boolean} = {}) {
 }
 
 /**
- * Simulates OAuth provider redirecting back to local callback server.
- * Makes actual HTTP request to the running local server in test.
+ * Waits until the login command's local callback server is listening, and
+ * returns the callback URL it actually bound. The port can differ from 4321
+ * when the server falls back to another port.
  */
-async function simulateOAuthCallback(
-  port: number,
-  sessionId: string,
-  delay = 100,
-): Promise<number> {
-  await new Promise((resolve) => setTimeout(resolve, delay))
+async function waitForCallbackUrl(): Promise<URL> {
+  const {loginUrl} = await vi.waitFor(() => {
+    const [startup] = mockedStartServerForTokenCallback.mock.settledResults
+    if (startup?.type !== 'fulfilled') throw new Error('Callback server is not listening yet')
+    return startup.value
+  }, 9000)
 
-  const url = `http://localhost:${port}/callback?url=${encodeURIComponent(
+  return new URL(loginUrl.searchParams.get('origin')!)
+}
+
+/**
+ * Simulates the OAuth provider redirecting back to the local callback server.
+ * Waits for the server to be listening, then makes an actual HTTP request to it.
+ */
+async function simulateOAuthCallback(sessionId: string): Promise<number> {
+  const callbackUrl = await waitForCallbackUrl()
+  const url = `${callbackUrl.href}?url=${encodeURIComponent(
     `https://api.sanity.io/auth/fetch?sid=${sessionId}`,
   )}`
 
+  return httpGetStatus(url)
+}
+
+function httpGetStatus(url: string | URL): Promise<number> {
   return new Promise((resolve, reject) => {
     http
       .get(url, (res) => {
@@ -134,6 +160,11 @@ describe('#login', {timeout: 10_000}, () => {
   afterEach(() => {
     if (originalStdinDescriptor) {
       Object.defineProperty(process, 'stdin', originalStdinDescriptor)
+    }
+    // Close any callback server still listening so it can't swallow the next
+    // test's callbacks or API mocks.
+    for (const startup of mockedStartServerForTokenCallback.mock.settledResults) {
+      if (startup.type === 'fulfilled') startup.value.server.close()
     }
     vi.clearAllMocks()
     mockedIsInteractive.mockReturnValue(true)
@@ -472,7 +503,7 @@ describe('#login', {timeout: 10_000}, () => {
       mockSingleProviderLogin()
 
       const commandPromise = testCommand(LoginCommand, [])
-      const statusCode = await simulateOAuthCallback(4321, 'test-session-id')
+      const statusCode = await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -520,7 +551,7 @@ describe('#login', {timeout: 10_000}, () => {
       })
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -558,7 +589,7 @@ describe('#login', {timeout: 10_000}, () => {
       }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
       const commandPromise = testCommand(LoginCommand, ['--provider', 'github'])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -606,7 +637,7 @@ describe('#login', {timeout: 10_000}, () => {
       mockInput.mockResolvedValue('test-org')
 
       const commandPromise = testCommand(LoginCommand, ['--experimental'])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -713,7 +744,7 @@ describe('#login', {timeout: 10_000}, () => {
       }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
       const commandPromise = testCommand(LoginCommand, ['--sso', 'my-org'])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -768,7 +799,7 @@ describe('#login', {timeout: 10_000}, () => {
       })
 
       const commandPromise = testCommand(LoginCommand, ['--sso', 'my-org'])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -819,7 +850,7 @@ describe('#login', {timeout: 10_000}, () => {
       }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
       const commandPromise = testCommand(LoginCommand, ['--sso', 'my-org'])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -837,7 +868,7 @@ describe('#login', {timeout: 10_000}, () => {
       mockSingleProviderLogin()
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -859,7 +890,7 @@ describe('#login', {timeout: 10_000}, () => {
       mockSingleProviderLogin()
 
       const commandPromise = testCommand(LoginCommand, ['--no-open'])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -873,7 +904,7 @@ describe('#login', {timeout: 10_000}, () => {
       mockSingleProviderLogin()
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -898,7 +929,7 @@ describe('#login', {timeout: 10_000}, () => {
       try {
         const commandPromise = testCommand(LoginCommand, [])
         // Should fall back to port 4000
-        await simulateOAuthCallback(4000, 'test-session-id')
+        await simulateOAuthCallback('test-session-id')
         const {error} = await commandPromise
 
         expect(error).toBeUndefined()
@@ -976,18 +1007,10 @@ describe('#login', {timeout: 10_000}, () => {
 
       const commandPromise = testCommand(LoginCommand, [])
 
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      const callbackUrl = await waitForCallbackUrl()
 
       // Missing url parameter
-      const missingUrlStatus = await new Promise<number>((resolve, reject) => {
-        http
-          .get('http://localhost:4321/callback', (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const missingUrlStatus = await httpGetStatus(callbackUrl)
 
       // Should get 303 redirect to error page
       expect(missingUrlStatus).toBe(303)
@@ -1011,21 +1034,12 @@ describe('#login', {timeout: 10_000}, () => {
 
       const commandPromise = testCommand(LoginCommand, [])
 
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      const callbackUrl = await waitForCallbackUrl()
 
       // URL present but no sid parameter
-      const missingSidStatus = await new Promise<number>((resolve, reject) => {
-        const url = `http://localhost:4321/callback?url=${encodeURIComponent(
-          'https://api.sanity.io/auth/fetch',
-        )}`
-        http
-          .get(url, (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const missingSidStatus = await httpGetStatus(
+        `${callbackUrl.href}?url=${encodeURIComponent('https://api.sanity.io/auth/fetch')}`,
+      )
 
       expect(missingSidStatus).toBe(303)
 
@@ -1054,7 +1068,7 @@ describe('#login', {timeout: 10_000}, () => {
       }).reply(400, {message: 'Invalid session ID'})
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'bad-session')
+      await simulateOAuthCallback('bad-session')
       const {error} = await commandPromise
 
       expect(error).toBeDefined()
@@ -1068,23 +1082,15 @@ describe('#login', {timeout: 10_000}, () => {
 
       const commandPromise = testCommand(LoginCommand, [])
 
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      const callbackUrl = await waitForCallbackUrl()
 
       // Make request to non-callback endpoint
-      const statusCode = await new Promise<number>((resolve, reject) => {
-        http
-          .get('http://localhost:4321/other', (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const statusCode = await httpGetStatus(new URL('/other', callbackUrl))
 
       expect(statusCode).toBe(404)
 
       // Complete the login
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error} = await commandPromise
       expect(error).toBeUndefined()
     })
@@ -1117,7 +1123,7 @@ describe('#login', {timeout: 10_000}, () => {
         .reply(200)
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -1135,7 +1141,7 @@ describe('#login', {timeout: 10_000}, () => {
       }).reply(401, {message: 'Unauthorized'})
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'session-401')
+      await simulateOAuthCallback('session-401')
       const {error, stderr} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -1170,7 +1176,7 @@ describe('#login', {timeout: 10_000}, () => {
         .reply(500, {message: 'Internal Server Error'})
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stderr} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -1195,7 +1201,7 @@ describe('#login', {timeout: 10_000}, () => {
         })
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stderr} = await commandPromise
 
       expect(error).toBeUndefined()
@@ -1224,7 +1230,7 @@ describe('#login', {timeout: 10_000}, () => {
         .reply(200)
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stderr} = await commandPromise
 
       if (error) throw error
@@ -1325,7 +1331,7 @@ describe('#login', {timeout: 10_000}, () => {
       mockSingleProviderLogin()
 
       const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       if (error) throw error
@@ -1375,7 +1381,7 @@ describe('#login', {timeout: 10_000}, () => {
         '--sso-provider',
         'Okta SSO',
       ])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       if (error) throw error
@@ -1425,7 +1431,7 @@ describe('#login', {timeout: 10_000}, () => {
         '--sso-provider',
         'okta sso',
       ])
-      await simulateOAuthCallback(4321, 'test-session-id')
+      await simulateOAuthCallback('test-session-id')
       const {error, stdout} = await commandPromise
 
       if (error) throw error
