@@ -173,7 +173,7 @@ describe('#buildStudio', () => {
     await buildStudio({
       autoUpdatesEnabled: true,
       cliConfig: {},
-      flags: {...FLAGS, yes: true},
+      flags: FLAGS,
       outDir: '/tmp/dist',
       output,
       workDir: '/tmp',
