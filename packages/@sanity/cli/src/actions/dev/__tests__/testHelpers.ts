@@ -60,6 +60,7 @@ export function createDevOptions(
     httpPort: 3333,
     isApp: false,
     output: createMockOutput(),
+    strictPort: false,
     workDir: '/tmp/sanity-project',
     ...overrides,
   }

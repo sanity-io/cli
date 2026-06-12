@@ -212,6 +212,56 @@ describe('startWorkbenchDevServer', () => {
         }),
       )
     })
+
+    test('binds the pinned port strictly when the user configured one', async () => {
+      // A pinned port (flag, env var, or `server.port`) is a contract with
+      // external tooling — drifting would also shift the app server, which
+      // stacks on workbenchPort + 1.
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer(5555))
+
+      await startWorkbenchDevServer(
+        createDevOptions({cliConfig: federationConfig, httpPort: 5555, strictPort: true}),
+      )
+
+      expect(mockCreateServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          server: expect.objectContaining({port: 5555, strictPort: true}),
+        }),
+      )
+    })
+
+    test('keeps the port drift for the unconfigured default', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      expect(mockCreateServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          server: expect.objectContaining({strictPort: false}),
+        }),
+      )
+    })
+
+    test('falls back to running without a workbench when the pinned port is busy', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const release = vi.fn()
+      mockAcquireWorkbenchLock.mockReturnValue({release, updatePort: vi.fn()})
+      const server = createMockServer(5555)
+      server.listen.mockRejectedValue(new Error('Port 5555 is already in use'))
+      mockCreateServer.mockResolvedValue(server)
+      const output = createMockOutput()
+
+      const result = await startWorkbenchDevServer(
+        createDevOptions({cliConfig: federationConfig, httpPort: 5555, output, strictPort: true}),
+      )
+
+      expect(result.workbenchAvailable).toBe(false)
+      expect(server.close).toHaveBeenCalled()
+      expect(release).toHaveBeenCalled()
+      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('already in use'))
+    })
   })
 
   describe('remote-preload Link header', () => {

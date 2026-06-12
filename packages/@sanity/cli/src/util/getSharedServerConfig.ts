@@ -16,6 +16,14 @@ export interface GetSharedServerConfigResult {
   cwd: string
   httpHost: string
   httpPort: number
+  /**
+   * True when the port was pinned by the user (flag, env var, or
+   * `server.port` in the CLI config) rather than falling back to the 3333
+   * default. A pinned port is a contract with external tooling (port
+   * allocators, proxies), so servers honoring it should fail fast on a busy
+   * port instead of drifting to a free one.
+   */
+  httpPortConfigured: boolean
   schemaExtraction: CliConfig['schemaExtraction']
   vite: CliConfig['vite']
 
@@ -47,10 +55,10 @@ export function getSharedServerConfig({
     cliConfig?.server?.hostname ||
     'localhost'
 
-  const httpPort = toInt(
-    flags.port || getSanityEnvVar('SERVER_PORT', isApp ?? false) || cliConfig?.server?.port,
-    3333,
-  )
+  const configuredPort =
+    flags.port || getSanityEnvVar('SERVER_PORT', isApp ?? false) || cliConfig?.server?.port
+
+  const httpPort = toInt(configuredPort, 3333)
 
   const basePath = ensureTrailingSlash(
     getSanityEnvVar('BASEPATH', isApp ?? false) ?? (cliConfig?.project?.basePath || '/'),
@@ -64,6 +72,7 @@ export function getSharedServerConfig({
     entry,
     httpHost,
     httpPort,
+    httpPortConfigured: Boolean(configuredPort),
     isApp,
     schemaExtraction: cliConfig?.schemaExtraction,
     vite: cliConfig?.vite,

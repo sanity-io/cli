@@ -108,6 +108,39 @@ describe('devAction', () => {
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('3334'))
   })
 
+  test('passes the port-pinned strictness through to the workbench server', async () => {
+    // `server.port` in sanity.cli.ts (or a flag/env var) pins the port — the
+    // workbench server must fail fast on it instead of drifting (which would
+    // also shift the app server stacked on workbenchPort + 1).
+    mockGetSharedServerConfig.mockReturnValue({
+      httpHost: 'localhost',
+      httpPort: 5555,
+      httpPortConfigured: true,
+    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 5555}))
+
+    await devAction(createBaseDevOptions())
+
+    expect(mockStartWorkbenchDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({httpPort: 5555, strictPort: true}),
+    )
+  })
+
+  test('keeps the workbench port non-strict when the port is the unconfigured default', async () => {
+    mockGetSharedServerConfig.mockReturnValue({
+      httpHost: 'localhost',
+      httpPort: 3333,
+      httpPortConfigured: false,
+    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
+
+    await devAction(createBaseDevOptions())
+
+    expect(mockStartWorkbenchDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({strictPort: false}),
+    )
+  })
+
   test('app mode routes to startAppDevServer', async () => {
     mockStartAppDevServer.mockResolvedValue(mockServer({port: 3333}))
 

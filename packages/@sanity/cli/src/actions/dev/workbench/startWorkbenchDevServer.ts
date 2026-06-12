@@ -43,6 +43,15 @@ interface WorkbenchDevServerResult {
 export interface StartWorkbenchOptions extends DevActionOptions {
   httpHost: string | undefined
   httpPort: number
+  /**
+   * Fail fast when the port is busy instead of drifting to the next free one.
+   * Set when the user pinned the port (flag, env var, or `server.port` in the
+   * CLI config) — the pinned value is a contract with external tooling, and a
+   * silent drift also shifts the app server (it stacks on `workbenchPort + 1`).
+   * The busy-port fallback then runs without a workbench rather than on the
+   * wrong port. An unconfigured port (3333 default) keeps the drift.
+   */
+  strictPort: boolean
 }
 
 /**
@@ -54,7 +63,7 @@ export interface StartWorkbenchOptions extends DevActionOptions {
 export async function startWorkbenchDevServer(
   options: StartWorkbenchOptions,
 ): Promise<WorkbenchDevServerResult> {
-  const {cliConfig, httpHost, httpPort: workbenchPort, output, workDir} = options
+  const {cliConfig, httpHost, httpPort: workbenchPort, output, strictPort, workDir} = options
 
   // Workbench is opted into solely by calling `unstable_defineApp`.
   if (!isWorkbenchApp(cliConfig?.app)) {
@@ -103,6 +112,7 @@ export async function startWorkbenchDevServer(
       cliConfig,
       httpHost,
       output,
+      strictPort,
       workbenchPort,
       workDir,
     })
@@ -134,6 +144,8 @@ interface CreateWorkbenchViteServerOptions {
   cliConfig: DevActionOptions['cliConfig']
   httpHost: string | undefined
   output: DevActionOptions['output']
+  /** See {@link StartWorkbenchOptions.strictPort}. */
+  strictPort: boolean
   workbenchPort: number
   workDir: string
 }
@@ -146,7 +158,7 @@ interface CreateWorkbenchViteServerResult {
 async function createWorkbenchViteServer(
   options: CreateWorkbenchViteServerOptions,
 ): Promise<CreateWorkbenchViteServerResult | undefined> {
-  const {cliConfig, httpHost, output, workbenchPort, workDir} = options
+  const {cliConfig, httpHost, output, strictPort, workbenchPort, workDir} = options
 
   const remoteUrl = parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
   const reactStrictMode = resolveReactStrictMode(cliConfig)
@@ -185,7 +197,7 @@ async function createWorkbenchViteServer(
     server: {
       host: httpHost,
       port: workbenchPort,
-      strictPort: false,
+      strictPort,
       warmup: {
         clientFiles: ['./workbench.js'],
       },
@@ -204,7 +216,8 @@ async function createWorkbenchViteServer(
     return undefined
   }
 
-  // Vite may have picked a different port if the desired one was occupied
+  // With a non-strict port, Vite may have picked a different one if the
+  // desired port was occupied
   const addr = server.httpServer?.address()
   const actualPort = typeof addr === 'object' && addr ? addr.port : workbenchPort
 

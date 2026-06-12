@@ -32,7 +32,7 @@ function toDisplayHost(host: string | undefined): string {
 export async function devAction(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
   const {cliConfig, flags, output, workDir} = options
 
-  const {httpHost, httpPort} = getSharedServerConfig({
+  const {httpHost, httpPort, httpPortConfigured} = getSharedServerConfig({
     cliConfig,
     flags: {host: flags.host, port: flags.port},
     workDir,
@@ -43,7 +43,12 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     httpHost: workbenchHost,
     workbenchAvailable,
     workbenchPort,
-  } = await startWorkbenchDevServer({...options, httpHost, httpPort})
+  } = await startWorkbenchDevServer({
+    ...options,
+    httpHost,
+    httpPort,
+    strictPort: httpPortConfigured,
+  })
 
   // A running workbench claims the configured port, so the app server is
   // pushed to the next one. Without a workbench the flags pass through
