@@ -253,12 +253,29 @@ describe('devAction', () => {
       expect(firstClose).toHaveBeenCalledTimes(1)
     })
 
-    test('passes no rebuild hook for studios (they declare no interfaces)', async () => {
-      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+    test('rebuilds the studio server with a freshly-loaded config when the interface set changes', async () => {
+      // Studios declare views/services in `sanity.cli.ts` like apps do (only
+      // `entry` is rejected, FR-026) — they need the same rebuild hook.
+      const firstClose = vi.fn().mockResolvedValue(undefined)
+      const secondClose = vi.fn().mockResolvedValue(undefined)
+      mockStartStudioDevServer
+        .mockResolvedValueOnce({...mockServer({port: 3334}), close: firstClose})
+        .mockResolvedValueOnce({...mockServer({port: 3334}), close: secondClose})
+      const freshConfig = workbenchCliConfig()
+      mockGetCliConfigUncached.mockResolvedValue(freshConfig)
 
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: false}))
 
-      expect(passedInterfaceSetChange()).toBeUndefined()
+      const onSetChange = passedInterfaceSetChange()
+      expect(onSetChange).toBeInstanceOf(Function)
+
+      await onSetChange!()
+
+      expect(firstClose).toHaveBeenCalledTimes(1)
+      expect(mockStartStudioDevServer).toHaveBeenCalledTimes(2)
+      expect(mockStartStudioDevServer).toHaveBeenLastCalledWith(
+        expect.objectContaining({cliConfig: freshConfig}),
+      )
     })
   })
 
