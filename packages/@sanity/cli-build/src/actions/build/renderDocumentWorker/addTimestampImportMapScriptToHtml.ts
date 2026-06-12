@@ -34,6 +34,14 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
     }
   }
 
+  function isSanityCdnUrl(urlStr) {
+    try {
+      return /^sanity-cdn\\.[a-zA-Z]+$/.test(new URL(urlStr).hostname);
+    } catch {
+      return false;
+    }
+  }
+
   importMapEl.textContent = JSON.stringify({
     imports: Object.fromEntries(
       Object.entries(imports).map(([specifier, path]) => [specifier, replaceTimestamp(path)])
@@ -52,13 +60,7 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
 
   // Warm the CDN module connection during head parse so the cross-origin
   // \`sanity\` fetch can start before the entry script discovers the import.
-  const firstCdnImport = Object.values(imports).find((urlStr) => {
-    try {
-      return /^sanity-cdn\\.[a-zA-Z]+$/.test(new URL(urlStr).hostname);
-    } catch {
-      return false;
-    }
-  });
+  const firstCdnImport = Object.values(imports).find(isSanityCdnUrl);
 
   if (firstCdnImport) {
     const preconnectEl = document.createElement('link');
@@ -73,10 +75,14 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   // href reuses replaceTimestamp so it matches the importmap entry exactly —
   // a stale timestamp here would double-fetch the largest chunk.
   const sanityModuleUrl = imports['sanity'];
-  if (typeof sanityModuleUrl === 'string') {
+  if (typeof sanityModuleUrl === 'string' && isSanityCdnUrl(sanityModuleUrl)) {
     const preloadEl = document.createElement('link');
     preloadEl.rel = 'modulepreload';
     preloadEl.href = replaceTimestamp(sanityModuleUrl);
+    // Must match the preconnect's credentials mode, otherwise the browser
+    // treats them as separate connections and the warmed cross-origin socket
+    // is not reused for this fetch.
+    preloadEl.crossOrigin = 'anonymous';
     document.head.appendChild(preloadEl);
   }
 </script>`

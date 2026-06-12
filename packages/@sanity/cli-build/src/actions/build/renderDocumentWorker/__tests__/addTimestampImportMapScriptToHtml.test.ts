@@ -215,6 +215,7 @@ describe('tests the runtime TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT', () => {
     expect(preloadHref).toBe(
       'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1700000000',
     )
+    expect(preloadLinks[0].getAttribute('crossorigin')).toBe('anonymous')
 
     const importMapEl = dom.window.document.querySelector('script[type="importmap"]')
     const runtimeImportMap = JSON.parse(importMapEl?.textContent || '{}') as {
@@ -223,6 +224,14 @@ describe('tests the runtime TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT', () => {
     // The preload href must equal what the importmap resolves `sanity` to,
     // otherwise the browser fetches the largest chunk twice.
     expect(preloadHref).toBe(runtimeImportMap.imports?.sanity)
+  })
+
+  test('emits no hints when sanity resolves to a non-CDN host', () => {
+    const importMap = {imports: {sanity: 'https://example.com/modules/sanity/index.js'}}
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+    const dom = createRuntimeDom(result)
+    expect(dom.window.document.querySelectorAll('link[rel="preconnect"]')).toHaveLength(0)
+    expect(dom.window.document.querySelectorAll('link[rel="modulepreload"]')).toHaveLength(0)
   })
 
   test('emits no hints when no import resolves to a sanity-cdn host', () => {
