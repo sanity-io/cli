@@ -257,6 +257,63 @@ describe('feature description', () => {
 - Never leave mocks active between tests
 - Never mock without verifying the mock was called - add assertions for mock calls
 
+### Avoiding Flaky Tests: Timing and Ports
+
+Tests that interact with real servers (or any asynchronous work) need extra care to stay reliable on slow CI runners - Windows runners in particular - and when running in parallel with other test files. Three rules:
+
+#### 1. Never sleep for a fixed duration
+
+A fixed `setTimeout` encodes an assumption about how fast the machine is. That assumption will eventually be wrong somewhere, and the resulting failures are intermittent, platform-specific, and expensive to debug. We have had Windows-only CI failures because a login command took longer than a hardcoded 100ms to start its callback server.
+
+```typescript
+// BAD: assumes the server is up after 100ms - flaky on slow CI runners
+const commandPromise = testCommand(LoginCommand, [])
+await new Promise((resolve) => setTimeout(resolve, 100))
+await fetch(`http://localhost:4321/callback?...`)
+
+// GOOD: wait for an observable readiness signal, bounded by a deadline that fails the test
+const {command, waitForCallbackUrl} = startLogin()
+const callbackUrl = await waitForCallbackUrl() // polls the command's output
+await completeOAuthCallback(callbackUrl, 'session-id')
+```
+
+Find a signal that proves the thing you are waiting for has actually happened:
+
+- A line printed to stdout/stderr: observe it live with the `onOutput` capture option of `testCommand()` (the login command prints its login URL only after the callback server is listening, so the printed URL doubles as a readiness signal)
+- A mock having been called: poll with `vi.waitFor(() => expect(mockedOpen).toHaveBeenCalled())`
+- A file existing, a port accepting connections, etc.
+
+Polling must have an upper bound, and hitting it should fail the test with a message that explains what never happened. Be generous (10-15 seconds is fine): healthy runs never get near the bound, and a generous bound never causes a flake.
+
+#### 2. Never hardcode port numbers
+
+A hardcoded port is shared global state. Another test file running in a parallel vitest worker can bind the same port, and so can unrelated software on the CI machine. Use port `0` so the OS assigns a unique free port, then discover the actual port through an observable signal (printed output, a mock call) rather than assuming it.
+
+```typescript
+beforeEach(() => {
+  // OS-assigned ephemeral port: every test gets its own free port
+  vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', '0')
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
+```
+
+`SANITY_CLI_CALLBACK_PORTS` overrides the ports the auth callback server binds to (comma-separated). For testing port fallback behavior, occupy an OS-assigned port first and pass that port explicitly, instead of hardcoding two "known" ports:
+
+```typescript
+const blocker = await startBlockingServer() // binds port 0, returns the assigned port
+vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', `${blocker.port},0`)
+// the command now fails to bind blocker.port and falls back to an OS-assigned port
+```
+
+#### 3. Never leave a command running when a test fails
+
+`testCommand()` resolves with an `{error}` property instead of rejecting, so an abandoned command promise never crashes a test - it just keeps running. If a test starts a long-running command and an assertion fails before the command is awaited, the leaked command keeps its server bound and consumes nock mocks registered by later tests. The result is cascading, misleading failures in tests far away from the root cause.
+
+Register cleanup that settles the command even when the test fails, e.g. from an `afterEach` hook. See the `activeLogins` registry in `packages/@sanity/cli/src/commands/__tests__/login.test.ts` for a complete example of all three rules.
+
 ### Mocking Strategy: What to Mock and When
 
 Follow this hierarchy when writing tests (prefer higher levels):
