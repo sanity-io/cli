@@ -233,9 +233,16 @@ describe('startDevServerRegistration', () => {
     expect(mockExtractCoreAppManifest).toHaveBeenCalledWith({workDir: '/tmp/sanity-project'})
   })
 
-  test('wires extractStudioManifest into the studio watcher (no interfaces)', async () => {
+  test('wires extractStudioManifest into the studio watcher and re-derives interfaces', async () => {
     const studioManifest = {version: 3, workspaces: []}
     mockExtractStudioManifest.mockResolvedValue(studioManifest)
+    // Studios declare panels/workers in `sanity.cli.ts` too — the watcher must
+    // re-derive them. A hardcoded `interfaces: undefined` would wipe the
+    // registered set on the first regeneration (the registry patch is a
+    // shallow merge).
+    mockGetCliConfigUncached.mockResolvedValue({
+      app: workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]}),
+    })
 
     await startDevServerRegistration({
       cliConfig: workbenchCliConfig(),
@@ -248,7 +255,10 @@ describe('startDevServerRegistration', () => {
     const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
     await expect(
       extract({configPath: '/tmp/sanity-project/sanity.config.ts', workDir: '/tmp/sanity-project'}),
-    ).resolves.toEqual({interfaces: undefined, manifest: studioManifest})
+    ).resolves.toEqual({
+      interfaces: [{entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'}],
+      manifest: studioManifest,
+    })
     expect(mockExtractStudioManifest).toHaveBeenCalled()
   })
 

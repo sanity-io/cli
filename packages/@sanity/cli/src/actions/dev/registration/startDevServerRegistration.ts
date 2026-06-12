@@ -82,8 +82,15 @@ export async function startDevServerRegistration(
           interfaces: deriveInterfaces((await getCliConfigUncached(wd)).app, {isApp}),
           manifest: await extractCoreAppManifest({workDir: wd}),
         })
-      : (params) =>
-          extractStudioManifest(params).then((manifest) => ({interfaces: undefined, manifest})),
+      : async (params) => ({
+          // Studios declare views/services in `sanity.cli.ts` too — re-derive
+          // them like the app extract does. The registry patch is a shallow
+          // merge, so a hardcoded `interfaces: undefined` here would wipe the
+          // panels/workers forwarded by the initial registration on the very
+          // first regeneration.
+          interfaces: deriveInterfaces((await getCliConfigUncached(params.workDir)).app, {isApp}),
+          manifest: await extractStudioManifest(params),
+        }),
     output,
     update: async (patch) => {
       const nextInterfaceSetId = interfaceSetId(patch.interfaces)
