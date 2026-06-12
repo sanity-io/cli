@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs'
 import {fileURLToPath} from 'node:url'
 
 import {isStaging} from '@sanity/cli-core'
-import {transformWithEsbuild} from 'vite'
+import {transformWithOxc} from 'vite'
 
 /**
  * Decorates the given HTML template with an inline script that fires a
@@ -82,9 +82,7 @@ async function readAndTransformProbeSource(): Promise<string> {
     )
   }
 
-  const transformed = await transformWithEsbuild(resolved.source, resolved.filename, {
-    minify: false,
-    sourcemap: false,
+  const transformed = await transformWithOxc(resolved.source, resolved.filename, {
     target: 'es2017',
   })
 
