@@ -3,6 +3,14 @@ import ansis from 'ansis'
 
 export interface CaptureOptions {
   /**
+   * Callback invoked with each chunk written to stdout/stderr while the command
+   * is still running. Useful for observing the output of long-running commands
+   * before they settle, e.g. waiting for a server to print its address instead
+   * of sleeping for a fixed duration. Chunks have ANSI escape codes stripped
+   * when `stripAnsi` is enabled.
+   */
+  onOutput?: (chunk: string, std: 'stderr' | 'stdout') => void
+  /**
    * Whether to print the output to the console
    */
   print?: boolean
@@ -68,6 +76,7 @@ export async function captureOutput<T>(
       cb?: (err?: Error | null) => void,
     ) => {
       output[std].push(chunk.toString())
+      opts?.onOutput?.(toString(chunk), std)
 
       if (print) {
         let callback: ((err?: Error | null) => void) | undefined = cb

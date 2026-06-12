@@ -4,7 +4,7 @@ import {Readable} from 'node:stream'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {AUTH_API_VERSION} from '../../services/auth.js'
 import {USERS_API_VERSION} from '../../services/user.js'
@@ -81,28 +81,157 @@ function mockStdin(input: string, options: {isTTY?: boolean} = {}) {
 }
 
 /**
- * Simulates OAuth provider redirecting back to local callback server.
- * Makes actual HTTP request to the running local server in test.
+ * Upper bound on how long to wait for the login command to start its auth callback
+ * server. Generous on purpose - loaded CI runners (especially Windows) can take
+ * surprisingly long to get there. Hitting it fails the test instead of masking a hang.
  */
-async function simulateOAuthCallback(
-  port: number,
-  sessionId: string,
-  delay = 100,
-): Promise<number> {
-  await new Promise((resolve) => setTimeout(resolve, delay))
+const CALLBACK_SERVER_TIMEOUT = 15_000
+const POLL_INTERVAL = 25
 
-  const url = `http://localhost:${port}/callback?url=${encodeURIComponent(
-    `https://api.sanity.io/auth/fetch?sid=${sessionId}`,
-  )}`
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+/**
+ * Cleanup callbacks for login commands started via `startLogin`, drained in
+ * `afterEach` so a failed test never leaves a login command running. A leaked
+ * command keeps its callback server bound and consumes nock mocks registered
+ * by *later* tests, causing misleading cascading failures.
+ */
+const activeLogins: Array<() => Promise<void>> = []
+
+function httpGet(url: URL): Promise<number> {
   return new Promise((resolve, reject) => {
     http
-      .get(url, (res) => {
+      .get(url.href, (res) => {
         res.resume() // Consume response
         resolve(res.statusCode || 0)
       })
       .on('error', reject)
   })
+}
+
+/**
+ * Extract the auth callback URL from the login command's output so far.
+ *
+ * The command prints `(Opening|Please open a) browser at <login url>` - with the
+ * callback server's URL (including its actual bound port) in the `origin` query
+ * parameter - only after the callback server is listening. The printed URL is
+ * therefore both a readiness signal and the only reliable source for the port,
+ * which is OS-assigned in tests (see the `SANITY_CLI_CALLBACK_PORTS` stub).
+ */
+function parseCallbackUrl(output: string): URL | undefined {
+  const loginUrl = output.match(/browser at (https?:\/\/\S+)/)?.[1]
+  if (!loginUrl) return undefined
+  const origin = new URL(loginUrl).searchParams.get('origin')
+  return origin ? new URL(origin) : undefined
+}
+
+/**
+ * Start the login command while observing its output. Returns the command result
+ * promise and a `waitForCallbackUrl()` that resolves with the callback server's
+ * URL once the server is actually listening (bounded by CALLBACK_SERVER_TIMEOUT,
+ * which fails the test).
+ *
+ * Cleanup is automatic: if the test ends while the command is still waiting for
+ * its OAuth callback, the `afterEach` hook aborts the login.
+ */
+function startLogin(args: string[] = []) {
+  let output = ''
+  let result: Awaited<ReturnType<typeof testCommand>> | undefined
+
+  const command = testCommand(LoginCommand, args, {
+    capture: {
+      onOutput: (chunk) => {
+        output += chunk
+      },
+    },
+  }).then((commandResult) => {
+    result = commandResult
+    return commandResult
+  })
+
+  async function waitForCallbackUrl(): Promise<URL> {
+    const deadline = Date.now() + CALLBACK_SERVER_TIMEOUT
+    do {
+      const callbackUrl = parseCallbackUrl(output)
+      if (callbackUrl) return callbackUrl
+
+      if (result) {
+        throw new Error(
+          `Login command exited before the callback server started: ${
+            result.error?.message || result.stdout || '<no output>'
+          }`,
+        )
+      }
+
+      await sleep(POLL_INTERVAL)
+    } while (Date.now() < deadline)
+
+    throw new Error(
+      `Timed out after ${CALLBACK_SERVER_TIMEOUT}ms waiting for the auth callback server to start. Output so far: ${output || '<none>'}`,
+    )
+  }
+
+  activeLogins.push(async function abortLingeringLogin() {
+    if (result) return
+    const callbackUrl = parseCallbackUrl(output)
+    if (!callbackUrl) return
+    // A callback request without a `url` parameter makes the auth server fail the
+    // login and shut down, which settles the command
+    await httpGet(callbackUrl).catch(() => undefined)
+    await command
+  })
+
+  return {command, waitForCallbackUrl}
+}
+
+/**
+ * Simulates the OAuth provider redirecting back to the local callback server.
+ * `callbackUrl` must come from `waitForCallbackUrl()`, which guarantees the
+ * server is listening - so a connection failure here is a real bug.
+ */
+function completeOAuthCallback(callbackUrl: URL, sessionId: string): Promise<number> {
+  const url = new URL(callbackUrl.href)
+  url.searchParams.set('url', `https://api.sanity.io/auth/fetch?sid=${sessionId}`)
+  return httpGet(url)
+}
+
+/**
+ * Run the login command through the full OAuth flow: wait for the callback
+ * server, deliver the OAuth callback, and await the command result. Returns the
+ * result along with the HTTP status of the callback response and the callback URL.
+ */
+async function loginWithCallback(args: string[] = [], sessionId = 'test-session-id') {
+  const {command, waitForCallbackUrl} = startLogin(args)
+  const callbackUrl = await waitForCallbackUrl()
+  const callbackStatus = await completeOAuthCallback(callbackUrl, sessionId)
+  const result = await command
+  return {...result, callbackStatus, callbackUrl}
+}
+
+/**
+ * Bind an HTTP server to an OS-assigned port, to deliberately occupy it.
+ * Used with the `SANITY_CLI_CALLBACK_PORTS` override to exercise the login
+ * command's port fallback behavior without hardcoding port numbers.
+ */
+async function startBlockingServer(): Promise<{close: () => Promise<void>; port: number}> {
+  const server = http.createServer()
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, () => resolve())
+  })
+
+  const address = server.address()
+  if (!address || typeof address === 'string') {
+    throw new Error('Failed to bind blocking server')
+  }
+
+  return {
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.close(() => resolve())
+      }),
+    port: address.port,
+  }
 }
 
 /**
@@ -130,11 +259,25 @@ function testTokenLogin(token: string) {
   return testCommand(LoginCommand, ['--with-token'])
 }
 
-describe('#login', {timeout: 10_000}, () => {
-  afterEach(() => {
+describe('#login', {timeout: 30_000}, () => {
+  beforeEach(() => {
+    // Port 0 = OS-assigned ephemeral port: every test gets its own free port, so
+    // tests cannot collide on the hardcoded production ports - not with each other,
+    // not with other test files running in parallel workers
+    vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', '0')
+  })
+
+  afterEach(async () => {
+    // Settle any login command a failed test left running, before nock cleanup -
+    // otherwise it lingers into the next test, stealing its mocks and ports
+    for (const abortLogin of activeLogins.splice(0)) {
+      await abortLogin()
+    }
+
     if (originalStdinDescriptor) {
       Object.defineProperty(process, 'stdin', originalStdinDescriptor)
     }
+    vi.unstubAllEnvs()
     vi.clearAllMocks()
     mockedIsInteractive.mockReturnValue(true)
     const pending = pendingMocks()
@@ -471,15 +614,13 @@ describe('#login', {timeout: 10_000}, () => {
       mockedGetCliToken.mockResolvedValue('')
       mockSingleProviderLogin()
 
-      const commandPromise = testCommand(LoginCommand, [])
-      const statusCode = await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {callbackStatus, error, stdout} = await loginWithCallback()
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Login successful')
 
       // Callback returns 303 redirect
-      expect(statusCode).toBe(303)
+      expect(callbackStatus).toBe(303)
 
       // Browser opened with provider URL
       expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('auth/google'))
@@ -519,11 +660,9 @@ describe('#login', {timeout: 10_000}, () => {
         url: 'https://api.sanity.io/auth/github',
       })
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback()
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Login successful')
       expect(mockSelect).toHaveBeenCalledWith({
         choices: [
@@ -557,11 +696,9 @@ describe('#login', {timeout: 10_000}, () => {
         uri: '/auth/fetch',
       }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
-      const commandPromise = testCommand(LoginCommand, ['--provider', 'github'])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback(['--provider', 'github'])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Login successful')
       expect(mockSelect).not.toHaveBeenCalled()
       expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('auth/github'))
@@ -605,11 +742,9 @@ describe('#login', {timeout: 10_000}, () => {
       mockSelect.mockResolvedValue({name: 'sso', title: 'SSO', url: '_not_used_'})
       mockInput.mockResolvedValue('test-org')
 
-      const commandPromise = testCommand(LoginCommand, ['--experimental'])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback(['--experimental'])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Login successful')
       expect(mockSelect).toHaveBeenCalledWith({
         choices: [
@@ -712,11 +847,9 @@ describe('#login', {timeout: 10_000}, () => {
         uri: '/auth/fetch',
       }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
-      const commandPromise = testCommand(LoginCommand, ['--sso', 'my-org'])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback(['--sso', 'my-org'])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Login successful')
       expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('saml/login/sso-provider-1'))
     })
@@ -767,11 +900,9 @@ describe('#login', {timeout: 10_000}, () => {
         type: 'saml' as const,
       })
 
-      const commandPromise = testCommand(LoginCommand, ['--sso', 'my-org'])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback(['--sso', 'my-org'])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Login successful')
       expect(mockSelect).toHaveBeenCalledWith({
         choices: [
@@ -818,11 +949,9 @@ describe('#login', {timeout: 10_000}, () => {
         uri: '/auth/fetch',
       }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
-      const commandPromise = testCommand(LoginCommand, ['--sso', 'my-org'])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback(['--sso', 'my-org'])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Login successful')
       // Should not prompt since only one enabled provider
       expect(mockSelect).not.toHaveBeenCalled()
@@ -836,11 +965,9 @@ describe('#login', {timeout: 10_000}, () => {
       mockedCanLaunchBrowser.mockReturnValue(true)
       mockSingleProviderLogin()
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback()
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Opening browser at')
       expect(mockedOpen).toHaveBeenCalledOnce()
 
@@ -858,11 +985,9 @@ describe('#login', {timeout: 10_000}, () => {
       mockedCanLaunchBrowser.mockReturnValue(true)
       mockSingleProviderLogin()
 
-      const commandPromise = testCommand(LoginCommand, ['--no-open'])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback(['--no-open'])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Please open a browser at')
       expect(mockedOpen).not.toHaveBeenCalled()
     })
@@ -872,11 +997,9 @@ describe('#login', {timeout: 10_000}, () => {
       mockedCanLaunchBrowser.mockReturnValue(false)
       mockSingleProviderLogin()
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback()
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Please open a browser at')
       expect(mockedOpen).not.toHaveBeenCalled()
     })
@@ -889,29 +1012,30 @@ describe('#login', {timeout: 10_000}, () => {
 
       mockSingleProviderLogin()
 
-      // Block port 4321
-      const blockingServer = http.createServer()
-      await new Promise<void>((resolve) => {
-        blockingServer.listen(4321, () => resolve())
-      })
+      // Occupy a port, and configure the login command to try it first
+      const blocker = await startBlockingServer()
+      vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', `${blocker.port},0`)
 
       try {
-        const commandPromise = testCommand(LoginCommand, [])
-        // Should fall back to port 4000
-        await simulateOAuthCallback(4000, 'test-session-id')
-        const {error} = await commandPromise
+        const {command, waitForCallbackUrl} = startLogin()
+        const callbackUrl = await waitForCallbackUrl()
 
-        expect(error).toBeUndefined()
+        // Should have fallen back to an OS-assigned port
+        expect(Number(callbackUrl.port)).not.toBe(blocker.port)
 
-        // Verify login URL uses fallback port
-        const loginUrl = mockedOpen.mock.calls[0][0] as string
-        expect(loginUrl).toContain('4000')
+        await completeOAuthCallback(callbackUrl, 'test-session-id')
+        const {error} = await command
+
+        if (error) throw error
+
+        // Verify login URL uses the fallback port
+        expect(mockedOpen).toHaveBeenCalledWith(
+          expect.stringContaining(encodeURIComponent(callbackUrl.href)),
+        )
       } finally {
-        await new Promise<void>((resolve) => {
-          blockingServer.close(() => resolve())
-        })
+        await blocker.close()
       }
-    }, 10_000)
+    })
 
     test('throws error when all ports are busy', async () => {
       mockedGetCliToken.mockResolvedValue('')
@@ -924,44 +1048,19 @@ describe('#login', {timeout: 10_000}, () => {
         providers: [{name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'}],
       })
 
-      // Block all callback ports
-      const ports = [4321, 4000, 3003, 1234, 8080, 13_333]
-      const blockingServers: http.Server[] = []
-
-      for (const port of ports) {
-        const server = http.createServer()
-        server.on('error', () => {
-          // Port may already be in use, which is fine for our purposes
-        })
-        await new Promise<void>((resolve) => {
-          server.once('listening', () => {
-            blockingServers.push(server)
-            resolve()
-          })
-          server.once('error', () => {
-            // Port already blocked, that works too
-            resolve()
-          })
-          server.listen(port)
-        })
-      }
+      // Occupy every port the login command is configured to try
+      const blockers = [await startBlockingServer(), await startBlockingServer()]
+      vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', blockers.map((server) => server.port).join(','))
 
       try {
         const {error} = await testCommand(LoginCommand, [])
 
-        expect(error).toBeDefined()
+        expect(error).toBeInstanceOf(Error)
         expect(error?.message).toContain('Failed to find port number to bind auth callback server')
       } finally {
-        await Promise.all(
-          blockingServers.map(
-            (server) =>
-              new Promise<void>((resolve) => {
-                server.close(() => resolve())
-              }),
-          ),
-        )
+        await Promise.all(blockers.map((server) => server.close()))
       }
-    }, 10_000)
+    })
 
     test('handles malformed callback parameters', async () => {
       mockedGetCliToken.mockResolvedValue('')
@@ -974,26 +1073,17 @@ describe('#login', {timeout: 10_000}, () => {
         providers: [{name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'}],
       })
 
-      const commandPromise = testCommand(LoginCommand, [])
-
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      const {command, waitForCallbackUrl} = startLogin()
+      const callbackUrl = await waitForCallbackUrl()
 
       // Missing url parameter
-      const missingUrlStatus = await new Promise<number>((resolve, reject) => {
-        http
-          .get('http://localhost:4321/callback', (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const missingUrlStatus = await httpGet(callbackUrl)
 
       // Should get 303 redirect to error page
       expect(missingUrlStatus).toBe(303)
 
-      const {error} = await commandPromise
-      expect(error).toBeDefined()
+      const {error} = await command
+      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Login failed')
       expect(error?.oclif?.exit).toBe(1)
     })
@@ -1009,28 +1099,18 @@ describe('#login', {timeout: 10_000}, () => {
         providers: [{name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'}],
       })
 
-      const commandPromise = testCommand(LoginCommand, [])
-
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      const {command, waitForCallbackUrl} = startLogin()
+      const callbackUrl = await waitForCallbackUrl()
 
       // URL present but no sid parameter
-      const missingSidStatus = await new Promise<number>((resolve, reject) => {
-        const url = `http://localhost:4321/callback?url=${encodeURIComponent(
-          'https://api.sanity.io/auth/fetch',
-        )}`
-        http
-          .get(url, (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const missingSidUrl = new URL(callbackUrl.href)
+      missingSidUrl.searchParams.set('url', 'https://api.sanity.io/auth/fetch')
+      const missingSidStatus = await httpGet(missingSidUrl)
 
       expect(missingSidStatus).toBe(303)
 
-      const {error} = await commandPromise
-      expect(error).toBeDefined()
+      const {error} = await command
+      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Login failed')
       expect(error?.oclif?.exit).toBe(1)
     })
@@ -1053,11 +1133,9 @@ describe('#login', {timeout: 10_000}, () => {
         uri: '/auth/fetch',
       }).reply(400, {message: 'Invalid session ID'})
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'bad-session')
-      const {error} = await commandPromise
+      const {error} = await loginWithCallback([], 'bad-session')
 
-      expect(error).toBeDefined()
+      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Login failed')
       expect(error?.oclif?.exit).toBe(1)
     })
@@ -1066,27 +1144,18 @@ describe('#login', {timeout: 10_000}, () => {
       mockedGetCliToken.mockResolvedValue('')
       mockSingleProviderLogin()
 
-      const commandPromise = testCommand(LoginCommand, [])
-
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      const {command, waitForCallbackUrl} = startLogin()
+      const callbackUrl = await waitForCallbackUrl()
 
       // Make request to non-callback endpoint
-      const statusCode = await new Promise<number>((resolve, reject) => {
-        http
-          .get('http://localhost:4321/other', (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const statusCode = await httpGet(new URL('/other', callbackUrl))
 
       expect(statusCode).toBe(404)
 
       // Complete the login
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error} = await commandPromise
-      expect(error).toBeUndefined()
+      await completeOAuthCallback(callbackUrl, 'test-session-id')
+      const {error} = await command
+      if (error) throw error
     })
   })
 
@@ -1116,11 +1185,9 @@ describe('#login', {timeout: 10_000}, () => {
         .matchHeader('authorization', 'Bearer old-auth-token')
         .reply(200)
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error} = await commandPromise
+      const {error} = await loginWithCallback()
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
 
@@ -1134,11 +1201,9 @@ describe('#login', {timeout: 10_000}, () => {
         uri: '/users/me',
       }).reply(401, {message: 'Unauthorized'})
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'session-401')
-      const {error, stderr} = await commandPromise
+      const {error, stderr} = await loginWithCallback([], 'session-401')
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).not.toContain('Failed to invalidate previous session')
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
@@ -1169,11 +1234,9 @@ describe('#login', {timeout: 10_000}, () => {
         .matchHeader('authorization', 'Bearer old-token')
         .reply(500, {message: 'Internal Server Error'})
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stderr} = await commandPromise
+      const {error, stderr} = await loginWithCallback()
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).toContain('Failed to invalidate previous session')
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
@@ -1194,11 +1257,9 @@ describe('#login', {timeout: 10_000}, () => {
           provider: 'sanity-token',
         })
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stderr} = await commandPromise
+      const {error, stderr} = await loginWithCallback()
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).not.toContain('Failed to invalidate previous session')
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
@@ -1223,9 +1284,7 @@ describe('#login', {timeout: 10_000}, () => {
         .matchHeader('authorization', 'Bearer old-token')
         .reply(200)
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stderr} = await commandPromise
+      const {error, stderr} = await loginWithCallback()
 
       if (error) throw error
       expect(stderr).not.toContain('Failed to invalidate previous session')
@@ -1324,9 +1383,7 @@ describe('#login', {timeout: 10_000}, () => {
       mockedIsInteractive.mockReturnValue(false)
       mockSingleProviderLogin()
 
-      const commandPromise = testCommand(LoginCommand, [])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stdout} = await loginWithCallback()
 
       if (error) throw error
       expect(stdout).toContain('Login successful')
@@ -1369,14 +1426,12 @@ describe('#login', {timeout: 10_000}, () => {
         uri: '/auth/fetch',
       }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
-      const commandPromise = testCommand(LoginCommand, [
+      const {error, stdout} = await loginWithCallback([
         '--sso',
         'my-org',
         '--sso-provider',
         'Okta SSO',
       ])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
 
       if (error) throw error
       expect(stdout).toContain('Login successful')
@@ -1419,14 +1474,12 @@ describe('#login', {timeout: 10_000}, () => {
         uri: '/auth/fetch',
       }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
-      const commandPromise = testCommand(LoginCommand, [
+      const {error, stdout} = await loginWithCallback([
         '--sso',
         'my-org',
         '--sso-provider',
         'okta sso',
       ])
-      await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
 
       if (error) throw error
       expect(stdout).toContain('Login successful')

@@ -7,8 +7,36 @@ import {getTokenDetails} from '../../services/auth.js'
 import {type TokenDetails} from './types.js'
 
 const debug = subdebug('auth')
-const callbackPorts = [4321, 4000, 3003, 1234, 8080, 13_333]
+const defaultCallbackPorts = [4321, 4000, 3003, 1234, 8080, 13_333]
 const callbackEndpoint = '/callback'
+
+/**
+ * Get the list of ports to attempt binding the auth callback server to.
+ *
+ * The default list matches the `http://localhost:<port>` origins the Sanity auth
+ * backend accepts for token callbacks. The `SANITY_CLI_CALLBACK_PORTS` environment
+ * variable overrides the list (comma-separated, `0` for an OS-assigned ephemeral
+ * port). The override exists primarily for tests, where OS-assigned ports prevent
+ * collisions between tests running in parallel.
+ *
+ * @returns Port numbers to attempt, in order
+ * @internal
+ */
+function getCallbackPorts(): number[] {
+  const override = process.env.SANITY_CLI_CALLBACK_PORTS
+  if (!override) {
+    return [...defaultCallbackPorts]
+  }
+
+  debug('Using callback ports from SANITY_CLI_CALLBACK_PORTS: %s', override)
+
+  const ports = override.split(',').map((port) => Number.parseInt(port.trim(), 10))
+  if (ports.some((port) => Number.isNaN(port) || port < 0 || port > 65_535)) {
+    throw new Error(`Invalid SANITY_CLI_CALLBACK_PORTS value: "${override}"`)
+  }
+
+  return ports
+}
 
 const platformNames: Record<string, string | undefined> = {
   aix: 'AIX',
@@ -39,9 +67,6 @@ export function startServerForTokenCallback(
 ): Promise<{loginUrl: URL; server: Server; token: Promise<TokenDetails>}> {
   const sanityUrl = getSanityUrl()
 
-  const attemptPorts = [...callbackPorts]
-  let callbackPort = attemptPorts.shift()
-
   // note: replace with `Promise.withResolvers()` when minimum Node.js is 22+
   let resolveToken: (resolvedToken: PromiseLike<TokenDetails> | TokenDetails) => void
   let rejectToken: (reason: Error) => void
@@ -51,6 +76,9 @@ export function startServerForTokenCallback(
   })
 
   return new Promise((resolve, reject) => {
+    const attemptPorts = getCallbackPorts()
+    let callbackPort = attemptPorts.shift()
+
     const server = createServer(async function onCallbackServerRequest(req, res) {
       function failLoginRequest(code = '') {
         res.writeHead(303, 'See Other', {
@@ -112,7 +140,8 @@ export function startServerForTokenCallback(
     server.on('error', function onCallbackServerError(err) {
       if ('code' in err && err.code === 'EADDRINUSE') {
         callbackPort = attemptPorts.shift()
-        if (!callbackPort) {
+        // Note: explicit `undefined` check since `0` (OS-assigned port) is a valid value
+        if (callbackPort === undefined) {
           reject(new Error('Failed to find port number to bind auth callback server to'))
           return
         }
