@@ -345,6 +345,22 @@ describe('#getViteConfig', () => {
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
   })
 
+  test('should pass projectId through to sanityBuildEntries', async () => {
+    const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      getEnvironmentVariables,
+      mode: 'production' as const,
+      projectId: 'testproject',
+      reactCompiler: undefined,
+    })
+
+    expect(sanityBuildEntries).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'testproject'}),
+    )
+  })
+
   test('should not install esmExternalRequirePlugin when auto-updates are disabled', async () => {
     const {esmExternalRequirePlugin} = await import('vite')
 
