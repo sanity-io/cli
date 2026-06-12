@@ -55,8 +55,10 @@ export const DefineAppInputSchema = z
     icon: z.optional(z.string()),
     /** Unique app identifier — matches `/^[a-zA-Z0-9_-]+$/`. */
     name: z.string().check(z.regex(APP_NAME_PATTERN, 'App `name` must match /^[a-zA-Z0-9_-]+$/')),
-    /** Organization that owns the app — required to run and deploy an SDK app. */
-    organizationId: z.optional(z.string()),
+    /** Organization that owns the app — the workbench runs and deploys against it. */
+    organizationId: z.string(
+      "App `organizationId` is required — pass the owning organization's ID to `unstable_defineApp`",
+    ),
     /** Sort position within the group, ascending. Defaults to `100` when omitted. */
     priority: z.optional(z.number()),
     /**

@@ -10,6 +10,7 @@ export default defineCliConfig({
   // `sanity.config.ts` is present, so it resolves to `applicationType: 'studio'`).
   app: unstable_defineApp({
     name: 'federated-studio',
+    organizationId: 'oSyH1iET5',
   }),
   deployment: {
     autoUpdates: true,
