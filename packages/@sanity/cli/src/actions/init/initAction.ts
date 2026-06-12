@@ -189,7 +189,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   async function installSkills(): Promise<void> {
     if (mcpResult.skillsToInstall.length === 0) return
     try {
-      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall})
+      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall, output})
       trace.log({
         installedAgents: skillsResult.installedAgents,
         skipped: skillsResult.skipped,
