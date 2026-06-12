@@ -11,6 +11,17 @@ import {startWorkbenchDevServer} from './workbench/startWorkbenchDevServer.js'
 
 const noop = async () => {}
 
+// Bind-only addresses ('0.0.0.0', '::') aren't routable URLs in every
+// browser (notably on Windows), so the displayed URL falls back to
+// localhost. The bind address itself is untouched — listening and the
+// lock file keep whatever the user configured.
+function toDisplayHost(host: string | undefined): string {
+  if (!host || host === '0.0.0.0' || host === '::' || host === '[::]') {
+    return 'localhost'
+  }
+  return host
+}
+
 /**
  * Orchestrates the dev servers required by the process. It will attempt to run a workbench
  * dev-server and, if successful, will run the app/studio dev server on the next available port.
@@ -100,7 +111,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     : undefined
 
   if (workbenchAvailable) {
-    const workbenchUrl = `http://${workbenchHost || 'localhost'}:${workbenchPort}`
+    const workbenchUrl = `http://${toDisplayHost(workbenchHost)}:${workbenchPort}`
     const addr = server.httpServer?.address()
     const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
     output.log(
