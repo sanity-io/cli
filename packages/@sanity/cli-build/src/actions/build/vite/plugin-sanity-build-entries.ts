@@ -3,6 +3,7 @@ import {type ChunkMetadata, type Plugin} from 'vite'
 import {type AutoUpdatesBuildConfig} from '../autoUpdates.js'
 import {createVendorImportMapFromBundle} from '../createVendorImportMapFromBundle.js'
 import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
+import {decorateIndexWithEarlyAuthScript} from '../decorateIndexWithEarlyAuthScript.js'
 import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript.js'
 import {renderDocument} from '../renderDocument.js'
 
@@ -34,7 +35,7 @@ export function sanityBuildEntries(options: {
   isApp?: boolean
   projectId?: string
 }): Plugin {
-  const {autoUpdates, basePath, cwd, isApp} = options
+  const {autoUpdates, basePath, cwd, isApp, projectId} = options
 
   return {
     apply: 'build',
@@ -104,20 +105,23 @@ export function sanityBuildEntries(options: {
 
       this.emitFile({
         fileName: 'index.html',
-        source: decorateIndexWithStagingScript(
-          decorateIndexWithBridgeScript(
-            await renderDocument({
-              autoUpdatesCssUrls: autoUpdates?.cssUrls,
-              importMap,
-              isApp,
-              props: {
-                basePath,
-                css,
-                entryPath,
-              },
-              studioRootPath: cwd,
-            }),
+        source: decorateIndexWithEarlyAuthScript(
+          decorateIndexWithStagingScript(
+            decorateIndexWithBridgeScript(
+              await renderDocument({
+                autoUpdatesCssUrls: autoUpdates?.cssUrls,
+                importMap,
+                isApp,
+                props: {
+                  basePath,
+                  css,
+                  entryPath,
+                },
+                studioRootPath: cwd,
+              }),
+            ),
           ),
+          projectId,
         ),
         type: 'asset',
       })
