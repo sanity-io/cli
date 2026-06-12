@@ -58,7 +58,7 @@ vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
-vi.mock('@sanity/federation/vite', () => ({
+vi.mock('../../../workbench/vite/plugin.js', () => ({
   federation: mockFederationPlugin.mockReturnValue({
     name: 'sanity/federation',
   }),

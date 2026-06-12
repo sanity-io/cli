@@ -40,12 +40,20 @@ export interface ViewComponentBaseProps<TView> {
 }
 
 /**
+ * Component slots each interface type exposes, in render order — the source of
+ * truth for {@link InterfaceType} and for the build (the vite plugin expands a
+ * view into one render artifact per component). Add a type by registering it here.
+ * @internal
+ */
+export const VIEW_COMPONENTS = {
+  panel: ['title', 'panel'],
+} as const satisfies Record<string, readonly string[]>
+
+/**
  * Every supported interface type — the first argument to `unstable_defineView`.
- * The build's component registry (`VIEW_COMPONENTS`, which expands a view into
- * one render artifact per component) ships with the vite plugin.
  * @public
  */
-export type InterfaceType = 'panel'
+export type InterfaceType = keyof typeof VIEW_COMPONENTS
 
 /**
  * Every supported service type — the first argument to `unstable_defineService`.
