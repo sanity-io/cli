@@ -223,7 +223,7 @@ describe('#init: bootstrap-app-initialization', () => {
 
     // Skills install runs after scaffolding has completed, with the agents
     // setupMCP told us to install.
-    expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor']})
+    expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor'], output: expect.any(Object)})
     const bootstrapOrder = mocks.bootstrapTemplate.mock.invocationCallOrder[0]
     const skillsOrder = mocks.setupSkills.mock.invocationCallOrder[0]
     expect(skillsOrder).toBeGreaterThan(bootstrapOrder)
