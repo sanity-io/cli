@@ -171,6 +171,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   const mcpResult = await setupMCP({
     editors: detectedEditors,
     mode: options.mcpMode,
+    output,
     skillsMode: options.skillsMode,
   })
 
