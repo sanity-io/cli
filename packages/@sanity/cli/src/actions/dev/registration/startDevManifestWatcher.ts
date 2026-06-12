@@ -52,6 +52,14 @@ interface StartDevManifestWatcherOptions<T> {
    */
   update: (patch: ManifestPatch<T>) => Promise<void> | void
   workDir: string
+
+  /**
+   * Extra config filenames (basenames in the project root directory) that also
+   * trigger a regeneration. Studios resolve their project root via
+   * `sanity.config.*` but declare workbench interfaces in `sanity.cli.*`, so
+   * their watcher needs to react to both files.
+   */
+  extraWatchFilenames?: readonly string[]
 }
 
 /**
@@ -71,6 +79,7 @@ interface StartDevManifestWatcherOptions<T> {
  */
 export async function startDevManifestWatcher<T>({
   extract,
+  extraWatchFilenames,
   output,
   update,
   workDir,
@@ -122,14 +131,14 @@ export async function startDevManifestWatcher<T>({
   // Canonicalize to the real long path so `fs.watch` doesn't abort on Windows
   // short-path dirs. See `canonicalizeWatchDir`.
   const configDir = canonicalizeWatchDir(dirname(configPath))
-  const configFilename = basename(configPath)
+  const watchFilenames = new Set([basename(configPath), ...(extraWatchFilenames ?? [])])
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
   const onEvent = (_event: string, filename: Buffer | string | null) => {
     if (!filename) return
     const name = typeof filename === 'string' ? filename : filename.toString('utf8')
-    if (name !== configFilename) return
+    if (!watchFilenames.has(name)) return
     clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
       void regenerate()

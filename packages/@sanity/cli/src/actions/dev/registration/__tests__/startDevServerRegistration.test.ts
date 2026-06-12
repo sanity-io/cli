@@ -188,7 +188,12 @@ describe('startDevServerRegistration', () => {
     })
 
     expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
-      expect.objectContaining({workDir: '/tmp/sanity-project'}),
+      expect.objectContaining({
+        // The studio project root resolves to sanity.config.*, but views/
+        // services live in sanity.cli.* — the watcher must react to both.
+        extraWatchFilenames: ['sanity.cli.js', 'sanity.cli.ts'],
+        workDir: '/tmp/sanity-project',
+      }),
     )
   })
 
@@ -204,6 +209,8 @@ describe('startDevServerRegistration', () => {
     expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
       expect.objectContaining({extract: expect.any(Function), workDir: '/tmp/sanity-project'}),
     )
+    // App roots already resolve to sanity.cli.* — no extra filenames needed.
+    expect(mockStartDevManifestWatcher.mock.calls[0][0].extraWatchFilenames).toBeUndefined()
   })
 
   test('wires extractCoreAppManifest into the core-app watcher and re-derives interfaces', async () => {

@@ -22,8 +22,8 @@ interface DevServerRegistrationOptions {
    * registry is patched — the registry patch is what reloads the workbench
    * page, and it must re-fetch a remote that already exposes the new
    * interface, so the caller's rebuild has to complete first. A view/service
-   * *source* edit doesn't change the set and never fires this. Studios declare
-   * no interfaces, so they pass nothing.
+   * *source* edit doesn't change the set and never fires this. Studios
+   * declare views/services the same way apps do, so both pass a rebuild.
    */
   onInterfaceSetChange?: () => Promise<void>
 }
@@ -91,6 +91,11 @@ export async function startDevServerRegistration(
           interfaces: deriveInterfaces((await getCliConfigUncached(params.workDir)).app, {isApp}),
           manifest: await extractStudioManifest(params),
         }),
+    // A studio's project root resolves to `sanity.config.*`, but its workbench
+    // interfaces live in `sanity.cli.*` — watch that too so adding/removing a
+    // view or service regenerates without a manual restart. Apps already
+    // resolve their root to `sanity.cli.*`.
+    extraWatchFilenames: isApp ? undefined : ['sanity.cli.js', 'sanity.cli.ts'],
     output,
     update: async (patch) => {
       const nextInterfaceSetId = interfaceSetId(patch.interfaces)

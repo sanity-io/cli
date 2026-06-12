@@ -191,6 +191,38 @@ describe('startDevManifestWatcher', () => {
     await watcher.close()
   })
 
+  test('regenerates on extraWatchFilenames events too', async () => {
+    const update = vi.fn()
+    const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
+      // A studio's project root resolves to sanity.config.ts, but its
+      // workbench interfaces live in sanity.cli.ts — both must regenerate.
+      extraWatchFilenames: ['sanity.cli.js', 'sanity.cli.ts'],
+      output: createMockOutput(),
+      update,
+      workDir: WORK_DIR,
+    })
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockExtract).toHaveBeenCalledTimes(1)
+
+    fakeWatcher.emitChange('sanity.cli.ts')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(mockExtract).toHaveBeenCalledTimes(2)
+
+    // The resolved config file keeps working alongside the extras.
+    fakeWatcher.emitChange('sanity.config.ts')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(mockExtract).toHaveBeenCalledTimes(3)
+
+    // Unrelated files are still ignored.
+    fakeWatcher.emitChange('package.json')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(mockExtract).toHaveBeenCalledTimes(3)
+
+    await watcher.close()
+  })
+
   test('logs a warning and keeps running when extraction fails', async () => {
     const output = createMockOutput()
     const update = vi.fn()
