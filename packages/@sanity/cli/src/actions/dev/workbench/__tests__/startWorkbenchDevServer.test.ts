@@ -3,7 +3,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {
   createDevOptions,
   createMockOutput,
-  studioWorkbenchApp,
   workbenchApp,
   workbenchCliConfig,
 } from '../../__tests__/testHelpers.js'
@@ -16,7 +15,6 @@ const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
 const mockReadWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockWatchRegistry = vi.hoisted(() => vi.fn())
-const mockGetProjectById = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -34,9 +32,6 @@ vi.mock('../../registry/index.js', () => ({
   getRegisteredServers: mockGetRegisteredServers,
   readWorkbenchLock: mockReadWorkbenchLock,
   watchRegistry: mockWatchRegistry,
-}))
-vi.mock('../../../../services/projects.js', () => ({
-  getProjectById: mockGetProjectById,
 }))
 
 function createMockServer(port = 3333) {
@@ -190,46 +185,7 @@ describe('startWorkbenchDevServer', () => {
       )
     })
 
-    test('resolves organizationId from project when only api.projectId is set', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
-      mockCreateServer.mockResolvedValue(createMockServer())
-      mockGetProjectById.mockResolvedValue({organizationId: 'org-from-project'})
-
-      await startWorkbenchDevServer(
-        createDevOptions({
-          cliConfig: {
-            api: {projectId: 'proj-123'},
-            app: studioWorkbenchApp({organizationId: undefined}),
-          },
-        }),
-      )
-
-      expect(mockGetProjectById).toHaveBeenCalledWith('proj-123')
-      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
-        expect.objectContaining({organizationId: 'org-from-project'}),
-      )
-    })
-
-    test('prefers cliConfig.app.organizationId over project lookup', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
-      mockCreateServer.mockResolvedValue(createMockServer())
-
-      await startWorkbenchDevServer(
-        createDevOptions({
-          cliConfig: {
-            api: {projectId: 'proj-123'},
-            app: workbenchApp({organizationId: 'org-explicit'}),
-          },
-        }),
-      )
-
-      expect(mockGetProjectById).not.toHaveBeenCalled()
-      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
-        expect.objectContaining({organizationId: 'org-explicit'}),
-      )
-    })
-
-    test('throws when neither app.organizationId nor api.projectId is configured', async () => {
+    test('throws a readable error when neither app.organizationId nor api.projectId is configured', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
@@ -237,24 +193,7 @@ describe('startWorkbenchDevServer', () => {
         startWorkbenchDevServer(
           createDevOptions({cliConfig: {app: workbenchApp({organizationId: undefined})}}),
         ),
-      ).rejects.toThrow(/Unable to determine organization ID/)
-    })
-
-    test('throws when project lookup returns no organizationId', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
-      mockCreateServer.mockResolvedValue(createMockServer())
-      mockGetProjectById.mockResolvedValue({organizationId: undefined})
-
-      await expect(
-        startWorkbenchDevServer(
-          createDevOptions({
-            cliConfig: {
-              api: {projectId: 'proj-123'},
-              app: studioWorkbenchApp({organizationId: undefined}),
-            },
-          }),
-        ),
-      ).rejects.toThrow(/Unable to determine organization ID/)
+      ).rejects.toThrow(/Pass "organizationId" to unstable_defineApp/)
     })
 
     test('configures warmup for the workbench entry file', async () => {
