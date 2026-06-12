@@ -88,3 +88,9 @@ p {
   border-left: 3px solid #e0e0e0;
   line-height: 1.5;
 }
+
+.example-links {
+  margin-top: 1.5rem;
+  padding-inline-start: 1.25rem;
+  line-height: 1.8;
+}

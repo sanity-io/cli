@@ -17,21 +17,29 @@ export function ExampleComponent() {
         Welcome to your Sanity App{user?.name ? `, ${user.name}` : ''}!
       </h1>
       <p className="example-text">
-        This is an example component. You can replace this with your own content by creating a new
-        component and importing it in App.tsx.
+        This is an example component, rendered with the <code>useCurrentUser</code> hook from the
+        App SDK. Replace it with your own components by importing them in App.tsx.
       </p>
       <div className="code-hint">
         <p>
-          Quick tip: Create new components in separate files and import them like this in App.tsx /
-          App.jsx:
+          A good next step is fetching content. The <code>useDocuments</code> hook returns document
+          handles you can pass to other hooks for display and editing:
         </p>
-        <pre>{`import {YourComponent} from './YourComponent'
+        <pre>{`import {useDocuments} from '@sanity/sdk-react'
 
-// Then use it in your JSX
-<SanityApp config={sanityConfigs}>
-  <YourComponent />
-</SanityApp>`}</pre>
+const {data} = useDocuments({documentType: 'yourType'})`}</pre>
       </div>
+      <ul className="example-links">
+        <li>
+          <a href="https://www.sanity.io/docs/app-sdk">App SDK documentation</a>
+        </li>
+        <li>
+          <a href="https://reference.sanity.io/_sanity/sdk-react/">API reference</a>
+        </li>
+        <li>
+          <a href="https://sdk-explorer.sanity.io">SDK Explorer with example apps</a>
+        </li>
+      </ul>
     </div>
   )
 }

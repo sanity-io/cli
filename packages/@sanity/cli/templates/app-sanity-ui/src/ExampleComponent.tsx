@@ -18,13 +18,15 @@ export function ExampleComponent() {
             </Text>
             <Text muted>
               You can also replace this component with components of your own. Render them in your
-              app by importing and using them in your application’s <code>src/App.tsx|jsx</code>{' '}
-              file.
+              app by importing and using them in your application’s <code>src/App.tsx</code> file. A
+              good next step is fetching content with the <code>useDocuments</code> hook.
             </Text>
             <Text muted>
-              Looking for more guidance? See the <a href="https://sanity.io/ui">Sanity UI docs</a>{' '}
-              and the{' '}
-              <a href="https://reference.sanity.io/_sanity/sdk-react/">Sanity App SDK docs</a>!
+              Looking for more guidance? See the{' '}
+              <a href="https://www.sanity.io/docs/app-sdk">App SDK documentation</a>, the{' '}
+              <a href="https://reference.sanity.io/_sanity/sdk-react/">API reference</a>, the{' '}
+              <a href="https://sanity.io/ui">Sanity UI docs</a>, and example apps in the{' '}
+              <a href="https://sdk-explorer.sanity.io">SDK Explorer</a>.
             </Text>
           </Stack>
         </Flex>
