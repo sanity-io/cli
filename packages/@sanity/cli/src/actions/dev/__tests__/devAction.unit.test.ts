@@ -58,6 +58,11 @@ function passedInterfaceSetChange(): (() => Promise<unknown>) | undefined {
   return mockStartDevServerRegistration.mock.calls[0][0].onInterfaceSetChange
 }
 
+/** The handler devAction installed last on SIGINT. */
+function installedSignalHandler(): (signal: NodeJS.Signals) => void {
+  return process.listeners('SIGINT').at(-1) as (signal: NodeJS.Signals) => void
+}
+
 describe('devAction', () => {
   beforeEach(() => {
     mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
@@ -317,6 +322,117 @@ describe('devAction', () => {
       expect(mockStartStudioDevServer).toHaveBeenLastCalledWith(
         expect.objectContaining({cliConfig: freshConfig}),
       )
+    })
+  })
+
+  test('close() waits for an in-flight rebuild and closes the replacement server', async () => {
+    // A close() racing the rebuild would only see the already-torn-down
+    // first server — the replacement would keep running (and hold its port)
+    // with nothing left to close it.
+    const firstClose = vi.fn().mockResolvedValue(undefined)
+    const secondClose = vi.fn().mockResolvedValue(undefined)
+    let releaseStart!: () => void
+    const startGate = new Promise<void>((resolve) => {
+      releaseStart = resolve
+    })
+    mockStartAppDevServer
+      .mockResolvedValueOnce({...mockServer({port: 3334}), close: firstClose})
+      .mockImplementationOnce(async () => {
+        await startGate
+        return {...mockServer({port: 3334}), close: secondClose}
+      })
+    mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
+
+    const result = await devAction(
+      createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}),
+    )
+
+    // Rebuild is mid-flight (replacement server still starting) when close() runs.
+    const rebuild = passedInterfaceSetChange()!()
+    const closing = result.close()
+    releaseStart()
+
+    await rebuild
+    await closing
+    expect(secondClose).toHaveBeenCalledTimes(1)
+  })
+
+  test('close() is single-flight — a second call shares the same teardown', async () => {
+    // SIGINT followed by SIGTERM (each signal keeps its own `once` handler)
+    // or a signal racing the caller's own close() must not double-close.
+    const appClose = vi.fn().mockResolvedValue(undefined)
+    mockStartStudioDevServer.mockResolvedValue({...mockServer({port: 3334}), close: appClose})
+
+    const result = await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
+
+    await Promise.all([result.close(), result.close()])
+    expect(appClose).toHaveBeenCalledTimes(1)
+  })
+
+  test('refuses a rebuild once shutdown has started', async () => {
+    // The watcher only learns about shutdown late in the teardown sequence —
+    // a config save in that window must not boot a server nobody owns.
+    mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
+    mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
+
+    const result = await devAction(
+      createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}),
+    )
+    await result.close()
+
+    await expect(passedInterfaceSetChange()!()).rejects.toThrow('Dev server is shutting down')
+    // Only the initial startup reached startAppDevServer.
+    expect(mockStartAppDevServer).toHaveBeenCalledTimes(1)
+  })
+
+  describe('signal-triggered shutdown', () => {
+    test('re-raises the signal once teardown settles so the default exit runs', async () => {
+      // Trapping SIGINT disables Node's default exit; without the re-raise the
+      // process would linger on any surviving handle, holding the dev ports.
+      const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true)
+      vi.useFakeTimers()
+      try {
+        const appClose = vi.fn().mockResolvedValue(undefined)
+        mockStartStudioDevServer.mockResolvedValue({...mockServer({port: 3334}), close: appClose})
+
+        await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
+
+        installedSignalHandler()('SIGINT')
+        await vi.runAllTimersAsync()
+
+        expect(killSpy).toHaveBeenCalledWith(process.pid, 'SIGINT')
+        // Teardown completes before the re-raise.
+        expect(appClose.mock.invocationCallOrder[0]).toBeLessThan(
+          killSpy.mock.invocationCallOrder[0],
+        )
+      } finally {
+        vi.useRealTimers()
+        killSpy.mockRestore()
+      }
+    })
+
+    test('force-exits after the grace period when teardown hangs', async () => {
+      const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true)
+      vi.useFakeTimers()
+      try {
+        // e.g. a wedged watcher or socket — close() never settles.
+        const hangingClose = vi.fn(() => new Promise<void>(() => {}))
+        mockStartStudioDevServer.mockResolvedValue({
+          ...mockServer({port: 3334}),
+          close: hangingClose,
+        })
+
+        await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
+
+        installedSignalHandler()('SIGTERM')
+        await vi.advanceTimersByTimeAsync(5000)
+
+        expect(hangingClose).toHaveBeenCalled()
+        expect(killSpy).toHaveBeenCalledWith(process.pid, 'SIGTERM')
+      } finally {
+        vi.useRealTimers()
+        killSpy.mockRestore()
+      }
     })
   })
 
