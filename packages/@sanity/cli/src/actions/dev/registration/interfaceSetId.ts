@@ -23,20 +23,24 @@ export function interfaceSetId(interfaces: readonly DevServerInterface[] | undef
 }
 
 /**
- * Track the declared interface *set* across config reloads. The returned
- * predicate reports `true` the first time it sees a set whose id differs from
- * the previous one — an added, removed, renamed, or repointed view/service —
- * and `false` for a reorder or a manifest-only/source-file edit (the set is
- * unchanged, so HMR handles it). Seed it with the initially registered set.
+ * Track the declared interface *set* across config reloads — an added, removed,
+ * renamed, or repointed view/service. `changed` reports whether a set differs
+ * from the last *committed* one (a reorder or manifest-only/source-file edit
+ * leaves it unchanged, so HMR handles it) without advancing the committed set;
+ * `commit` advances it. Splitting the two lets the caller commit only after the
+ * rebuild that depends on the new set has succeeded — a thrown rebuild leaves
+ * the set uncommitted, so the next config save retries it instead of skipping.
+ * Seed it with the initially registered set.
  */
-export function trackInterfaceSet(
-  initial: readonly DevServerInterface[] | undefined,
-): (interfaces: readonly DevServerInterface[] | undefined) => boolean {
+export function trackInterfaceSet(initial: readonly DevServerInterface[] | undefined): {
+  changed: (interfaces: readonly DevServerInterface[] | undefined) => boolean
+  commit: (interfaces: readonly DevServerInterface[] | undefined) => void
+} {
   let lastId = interfaceSetId(initial)
-  return (interfaces) => {
-    const id = interfaceSetId(interfaces)
-    if (id === lastId) return false
-    lastId = id
-    return true
+  return {
+    changed: (interfaces) => interfaceSetId(interfaces) !== lastId,
+    commit: (interfaces) => {
+      lastId = interfaceSetId(interfaces)
+    },
   }
 }

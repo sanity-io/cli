@@ -54,7 +54,7 @@ function mockRegistrationHandle() {
 }
 
 /** Pull the rebuild handler devAction passed into startDevServerRegistration. */
-function passedInterfaceSetChange(): (() => Promise<void>) | undefined {
+function passedInterfaceSetChange(): (() => Promise<unknown>) | undefined {
   return mockStartDevServerRegistration.mock.calls[0][0].onInterfaceSetChange
 }
 
@@ -256,7 +256,21 @@ describe('devAction', () => {
       )
     })
 
-    test('close stays safe when the rebuilt app server reports an expected early exit', async () => {
+    test('rebuild hook resolves with the recreated server so the registration can re-read its address', async () => {
+      // Workbench projects run with non-strict ports — the replacement server
+      // can bind a different port than the one registered at startup.
+      const secondServer = mockServer({port: 3335})
+      mockStartAppDevServer
+        .mockResolvedValueOnce(mockServer({port: 3334}))
+        .mockResolvedValueOnce(secondServer)
+      mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
+
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
+
+      await expect(passedInterfaceSetChange()!()).resolves.toBe(secondServer.server)
+    })
+
+    test('rebuild hook rejects when the restart reports an expected early exit, and close stays safe', async () => {
       const firstClose = vi.fn().mockResolvedValue(undefined)
       mockStartAppDevServer
         .mockResolvedValueOnce({...mockServer({port: 3334}), close: firstClose})
@@ -268,7 +282,11 @@ describe('devAction', () => {
         createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}),
       )
 
-      await passedInterfaceSetChange()!()
+      // The registration must see the failure — a resolved hook would commit
+      // the new interface set against a server that never came back.
+      await expect(passedInterfaceSetChange()!()).rejects.toThrow(
+        'Dev server did not restart after the view/service change',
+      )
 
       // The old server was closed during the rebuild; close() must not call it
       // again or trip over the missing replacement.

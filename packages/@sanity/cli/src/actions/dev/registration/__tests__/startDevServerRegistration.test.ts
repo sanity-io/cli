@@ -442,6 +442,68 @@ describe('startDevServerRegistration', () => {
     expect(onInterfaceSetChange).not.toHaveBeenCalled()
   })
 
+  test('retries the rebuild on the next pass when it fails — the registry stays unpatched in between', async () => {
+    const onInterfaceSetChange = vi
+      .fn()
+      // e.g. the recreated server never came up (organizationId removed)
+      .mockRejectedValueOnce(new Error('Dev server did not restart after the view/service change'))
+      .mockResolvedValueOnce(mockServer({port: 3334}))
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+
+    await startDevServerRegistration({
+      cliConfig: {app: workbenchApp()}, // no interfaces yet
+      isApp: true,
+      onInterfaceSetChange,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    // The failure must reach the watcher (it owns the warning), and the
+    // registry must not advertise the new set on a server that never came back.
+    await expect(
+      watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'a'}),
+    ).rejects.toThrow('Dev server did not restart')
+    expect(update).not.toHaveBeenCalled()
+
+    // Same declarations on the next save: the set id was not committed by the
+    // failed pass, so the rebuild runs again instead of being skipped.
+    await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'b'})
+    expect(onInterfaceSetChange).toHaveBeenCalledTimes(2)
+    expect(update).toHaveBeenCalledTimes(1)
+  })
+
+  test('patches the registry with the rebuilt server address after an interface-set change', async () => {
+    // Non-strict ports: the recreated server can land on a different port than
+    // the one captured at initial registration.
+    const onInterfaceSetChange = vi
+      .fn()
+      .mockResolvedValue(mockServer({host: 'mydev.local', port: 4444}))
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+
+    await startDevServerRegistration({
+      cliConfig: {app: workbenchApp()}, // no interfaces yet
+      isApp: true,
+      onInterfaceSetChange,
+      output: createMockOutput(),
+      server: mockServer({port: 3334}) as any,
+      workDir: '/tmp/sanity-project',
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'a'})
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({host: 'mydev.local', interfaces: [feed], port: 4444}),
+    )
+
+    // A manifest-only pass (same set) must not rewrite the address.
+    await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'b'})
+    expect(update).toHaveBeenLastCalledWith(expect.not.objectContaining({host: expect.anything()}))
+  })
+
   test('still patches the registry when no rebuild handler is passed', async () => {
     const update = vi.fn()
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
