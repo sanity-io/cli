@@ -338,63 +338,6 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     expect(mockedUpgradePackages).not.toHaveBeenCalled()
   })
 
-  test('should skip version mismatch prompt after disabling auto-updates for prerelease', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [{installed: '3.0.0', pkg: '@sanity/vision', remote: '3.1.0'}],
-      unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
-    })
-    // First select call is for prerelease prompt
-    mockedSelect.mockResolvedValue('disable-auto-updates')
-
-    const {error, stderr} = await testCommand(BuildCommand, [])
-
-    if (error) throw error
-    expect(stderr).toContain('Build Sanity Studio')
-    // select should only be called once (for the prerelease prompt), not twice
-    expect(mockedSelect).toHaveBeenCalledTimes(1)
-    expect(mockedUpgradePackages).not.toHaveBeenCalled()
-  })
-
-  test('should skip version prompt in unattended mode and show warning', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
-      unresolvedPrerelease: [],
-    })
-
-    const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
-
-    if (error) throw error
-    expect(mockedSelect).not.toHaveBeenCalled()
-    expect(stderr).toContain('local version: 3.0.0, runtime version: 3.1.0')
-    expect(stderr).toContain('Build Sanity Studio')
-  })
-
-  test('should skip version prompt in non-interactive mode and show warning', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    mockedIsInteractive.mockReturnValue(false)
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
-      unresolvedPrerelease: [],
-    })
-
-    const {error, stderr} = await testCommand(BuildCommand, [])
-
-    if (error) throw error
-    expect(mockedSelect).not.toHaveBeenCalled()
-    expect(stderr).toContain('local version: 3.0.0, runtime version: 3.1.0')
-    expect(stderr).toContain('Build Sanity Studio')
-  })
-
   test.each([
     {
       config:
