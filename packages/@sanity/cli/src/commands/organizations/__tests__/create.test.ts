@@ -55,6 +55,11 @@ describe('organizations create', () => {
     if (error) throw error
     expect(stdout).toContain('org-new')
     expect(stdout).toContain('My Org')
+    expect(mockRequest).toHaveBeenCalledWith({
+      body: {name: 'My Org'},
+      method: 'post',
+      uri: '/organizations',
+    })
   })
 
   test('creates organization with --name flag and --default-role flag', async () => {
@@ -69,6 +74,38 @@ describe('organizations create', () => {
 
     if (error) throw error
     expect(stdout).toContain('org-new')
+    expect(mockRequest).toHaveBeenCalledWith({
+      body: {defaultRoleName: 'viewer', name: 'My Org'},
+      method: 'post',
+      uri: '/organizations',
+    })
+  })
+
+  test('trims name before sending', async () => {
+    mockRequest.mockResolvedValue(createdOrg)
+
+    const {error} = await testCommand(CreateOrganizationCommand, ['--name', '  My Org  '])
+
+    if (error) throw error
+    expect(mockRequest).toHaveBeenCalledWith({
+      body: {name: 'My Org'},
+      method: 'post',
+      uri: '/organizations',
+    })
+  })
+
+  test('errors when --default-role flag is empty', async () => {
+    const {error} = await testCommand(CreateOrganizationCommand, [
+      '--name',
+      'My Org',
+      '--default-role',
+      '  ',
+    ])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Default role cannot be empty')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockRequest).not.toHaveBeenCalled()
   })
 
   test('prompts for name when arg is not provided', async () => {

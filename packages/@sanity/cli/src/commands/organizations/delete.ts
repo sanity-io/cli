@@ -95,7 +95,7 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
         validate: (value) => {
           const trimmed = value.trim().toLowerCase()
           return (
-            trimmed === orgName.toLowerCase() ||
+            trimmed === orgName.trim().toLowerCase() ||
             'Incorrect organization name. Ctrl + C to cancel delete.'
           )
         },

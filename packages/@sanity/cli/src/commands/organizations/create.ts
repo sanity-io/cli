@@ -43,17 +43,23 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
   static override hiddenAliases = organizationAliases('create')
 
   public async run(): Promise<void> {
-    const {'default-role': defaultRole, name: nameFlag} = this.flags
+    const {'default-role': defaultRoleFlag, name: nameFlag} = this.flags
+
+    const defaultRole = defaultRoleFlag?.trim()
+    if (defaultRole === '') {
+      this.error('Default role cannot be empty', {exit: 1})
+    }
 
     let name: string
     if (nameFlag === undefined) {
       name = await promptForOrganizationName()
     } else {
-      const validation = validateOrganizationName(nameFlag)
+      const trimmedName = nameFlag.trim()
+      const validation = validateOrganizationName(trimmedName)
       if (validation !== true) {
         this.error(validation, {exit: 1})
       }
-      name = nameFlag
+      name = trimmedName
     }
 
     const spin = spinner('Creating organization').start()

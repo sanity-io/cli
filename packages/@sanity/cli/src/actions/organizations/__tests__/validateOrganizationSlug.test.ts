@@ -30,4 +30,19 @@ describe('validateOrganizationSlug', () => {
   ])('returns error for spaces: "%s"', (slug, expected) => {
     expect(validateOrganizationSlug(slug)).toBe(expected)
   })
+
+  test.each([
+    ['my_org', 'Organization slug may only contain lowercase letters, numbers, and dashes'],
+    ['acme!', 'Organization slug may only contain lowercase letters, numbers, and dashes'],
+    ['acmé', 'Organization slug may only contain lowercase letters, numbers, and dashes'],
+  ])('returns error for invalid characters: "%s"', (slug, expected) => {
+    expect(validateOrganizationSlug(slug)).toBe(expected)
+  })
+
+  test.each([
+    ['-acme', 'Organization slug cannot start or end with a dash'],
+    ['acme-', 'Organization slug cannot start or end with a dash'],
+  ])('returns error for leading or trailing dash: "%s"', (slug, expected) => {
+    expect(validateOrganizationSlug(slug)).toBe(expected)
+  })
 })

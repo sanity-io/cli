@@ -1,3 +1,5 @@
+import {stripVTControlCharacters} from 'node:util'
+
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -38,9 +40,9 @@ describe('organizations list', () => {
     expect(stdout).toContain('Globex')
     // The null slug should render as '-'
     const lines = stdout.split('\n')
-    const globexLine = lines.find((l) => l.includes('Globex'))
-    expect(globexLine).toBeDefined()
-    expect(globexLine).toContain('-')
+    const globexLine = lines.find((l) => l.includes('Globex')) ?? ''
+    const cells = globexLine.split('│').map((cell) => stripVTControlCharacters(cell).trim())
+    expect(cells).toContain('-')
   })
 
   test('shows empty message when no organizations', async () => {
