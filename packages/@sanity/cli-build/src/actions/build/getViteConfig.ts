@@ -235,8 +235,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             }),
             sanityRuntimeRewritePlugin(),
             sanityBuildEntries({autoUpdates, basePath, cwd, isApp}),
-            ...(additionalPlugins || []),
           ]),
+      // Caller-provided plugins (e.g. typegen in dev) aren't client-specific,
+      // so they apply to federation builds too.
+      ...(additionalPlugins || []),
     ],
     resolve: {
       dedupe: ['react', 'react-dom', 'sanity', 'styled-components'],
