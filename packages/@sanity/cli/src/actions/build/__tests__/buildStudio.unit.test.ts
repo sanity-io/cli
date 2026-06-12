@@ -38,16 +38,20 @@ vi.mock('../getEnvironmentVariables.js', () => ({
   getStudioEnvironmentVariables: mockGetStudioEnvironmentVariables,
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', () => ({
-  buildDebug: vi.fn(),
-  checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
-  resolveVendorBuildConfig: vi.fn().mockResolvedValue({
-    entries: {},
-    namesByChunkName: {},
-    specifiersByChunkName: {},
-  }),
-  StudioBuildTrace: {},
-}))
+vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
+  return {
+    ...original,
+    buildDebug: vi.fn(),
+    checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
+    resolveVendorBuildConfig: vi.fn().mockResolvedValue({
+      entries: {},
+      namesByChunkName: {},
+      specifiersByChunkName: {},
+    }),
+    StudioBuildTrace: {},
+  }
+})
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core')>()
