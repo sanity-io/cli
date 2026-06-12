@@ -88,14 +88,14 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // workbench page then reloads (driven by the registry watch in the workbench
   // server) to re-fetch the rebuilt remote. A view/service *source* edit doesn't
   // change the interface set, so it stays on the HMR path untouched.
-  // Studios declare no interfaces, so they get no rebuild hook.
-  const onInterfaceSetChange = options.isApp
-    ? async () => {
-        const freshConfig = await getCliConfigUncached(workDir)
-        await closeAppDevServer()
-        await startApp(freshConfig)
-      }
-    : undefined
+  // Studios declare views/services the same way (only `entry` is rejected,
+  // FR-026), so they get the same rebuild — `startApp` routes to the right
+  // server for both.
+  const onInterfaceSetChange = async () => {
+    const freshConfig = await getCliConfigUncached(workDir)
+    await closeAppDevServer()
+    await startApp(freshConfig)
+  }
 
   // Workbench is opted into solely by calling `unstable_defineApp` — its
   // branded identity is the only signal.
