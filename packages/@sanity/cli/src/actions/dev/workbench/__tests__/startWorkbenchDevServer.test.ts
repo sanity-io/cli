@@ -26,7 +26,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 vi.mock('vite', () => ({createServer: mockCreateServer}))
-vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
