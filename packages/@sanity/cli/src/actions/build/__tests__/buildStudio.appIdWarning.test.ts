@@ -25,10 +25,6 @@ vi.mock('../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
 }))
 
-vi.mock('../checkRequiredDependencies.js', () => ({
-  checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
-}))
-
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
@@ -43,6 +39,7 @@ vi.mock('../buildStaticFiles.js', () => ({
 
 vi.mock('@sanity/cli-build/_internal/build', () => ({
   buildDebug: vi.fn(),
+  checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
   getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
   getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
