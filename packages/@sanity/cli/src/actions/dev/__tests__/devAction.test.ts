@@ -353,6 +353,21 @@ describe('devAction', () => {
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('mydev.local:3333'))
   })
 
+  test('displays localhost when the workbench binds a non-routable address', async () => {
+    mockStartWorkbenchDevServer.mockResolvedValue({
+      close: vi.fn().mockResolvedValue(undefined),
+      httpHost: '0.0.0.0',
+      workbenchAvailable: true,
+      workbenchPort: 3333,
+    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+    const output = createMockOutput()
+
+    await devAction(createBaseDevOptions({output}))
+
+    expect(output.log).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3333'))
+  })
+
   test('returns early with workbench-only close when the app server does not start', async () => {
     // startAppDevServer reports an expected early exit when orgId is missing.
     const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
