@@ -3,7 +3,6 @@ import {isWorkbenchApp, resolveLocalPackage} from '@sanity/cli-core'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
 import {z} from 'zod/mini'
 
-import {getProjectById} from '../../../services/projects.js'
 import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
 import {devDebug} from '../devDebug.js'
 import {interfaceSetId} from '../registration/interfaceSetId.js'
@@ -151,7 +150,8 @@ async function createWorkbenchViteServer(
 
   const remoteUrl = parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
   const reactStrictMode = resolveReactStrictMode(cliConfig)
-  const organizationId = await resolveOrganizationId(cliConfig)
+
+  const organizationId = resolveOrganizationId(cliConfig)
 
   devDebug('Writing workbench runtime files')
   const root = await writeWorkbenchRuntime({
@@ -255,21 +255,17 @@ async function createWorkbenchViteServer(
   }
 }
 
-const resolveOrganizationId = async (cliConfig: DevActionOptions['cliConfig']): Promise<string> => {
+// Workbench is opted into via `unstable_defineApp`, which carries the
+// organization ID. Deliberately no fallback (e.g. resolving it from the
+// configured project): the lookup would need an authenticated user and an
+// API round-trip on every startup for something the opt-in already declares.
+const resolveOrganizationId = (cliConfig: DevActionOptions['cliConfig']): string => {
   if (cliConfig.app?.organizationId) {
     return cliConfig.app.organizationId
   }
 
-  if (cliConfig.api?.projectId) {
-    const project = await getProjectById(cliConfig.api.projectId)
-
-    if (project.organizationId) {
-      return project.organizationId
-    }
-  }
-
   throw new Error(
-    'Unable to determine organization ID for workbench runtime. Please ensure that your sanity.json has either "app.organizationId" or "api.projectId" configured.',
+    'Workbench requires an organization ID. Pass "organizationId" to unstable_defineApp() in sanity.cli.ts.',
   )
 }
 
