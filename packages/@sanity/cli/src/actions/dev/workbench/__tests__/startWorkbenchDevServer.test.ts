@@ -400,6 +400,32 @@ describe('startWorkbenchDevServer', () => {
       ).rejects.toThrow(/Invalid SANITY_INTERNAL_WORKBENCH_REMOTE_URL/)
     })
 
+    test('releases the lock when server creation throws', async () => {
+      vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'javascript:alert(1)')
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+      const release = vi.fn()
+      mockAcquireWorkbenchLock.mockReturnValue({release, updatePort: vi.fn()})
+
+      await expect(
+        startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig})),
+      ).rejects.toThrow()
+      expect(release).toHaveBeenCalled()
+    })
+
+    test('releases the lock when writing runtime files throws', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+      mockWriteWorkbenchRuntime.mockRejectedValue(new Error('EACCES: permission denied'))
+      const release = vi.fn()
+      mockAcquireWorkbenchLock.mockReturnValue({release, updatePort: vi.fn()})
+
+      await expect(
+        startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig})),
+      ).rejects.toThrow(/EACCES/)
+      expect(release).toHaveBeenCalled()
+    })
+
     test('accepts an http:// remote URL', async () => {
       vi.stubEnv(
         'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
