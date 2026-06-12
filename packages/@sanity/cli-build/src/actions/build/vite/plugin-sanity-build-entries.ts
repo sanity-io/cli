@@ -105,7 +105,7 @@ export function sanityBuildEntries(options: {
 
       this.emitFile({
         fileName: 'index.html',
-        source: decorateIndexWithEarlyAuthScript(
+        source: await decorateIndexWithEarlyAuthScript(
           decorateIndexWithStagingScript(
             decorateIndexWithBridgeScript(
               await renderDocument({
