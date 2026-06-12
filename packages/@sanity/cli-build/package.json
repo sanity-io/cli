@@ -36,6 +36,10 @@
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
     },
+    "./_internal/federation": {
+      "source": "./src/_exports/_internal/federation.ts",
+      "default": "./dist/_exports/_internal/federation.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
