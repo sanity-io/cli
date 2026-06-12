@@ -58,10 +58,10 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
+    "@module-federation/vite": "1.16.0",
     "@oclif/core": "catalog:",
     "@rolldown/plugin-babel": "^0.2.3",
     "@sanity/cli-core": "workspace:^",
-    "@sanity/federation": "0.1.0-alpha.10",
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
