@@ -217,8 +217,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
                   }
                 : {
                     isApp: false as const,
-                    // TODO: fix this non-null assertion
-                    studioConfigPath: entries.relativeConfigLocation!,
+                    studioConfigPath: requireStudioConfigPath(entries.relativeConfigLocation),
                   }),
               pkgJson: await readPackageJson(path.join(cwd, 'package.json')),
               services,
@@ -343,6 +342,26 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   return viteConfig
+}
+
+/**
+ * An explicit `applicationType: 'studio'` in `unstable_defineApp` wins over
+ * auto-detection, so the workbench federation studio path is reachable without
+ * a sanity config on disk. The legacy (non-federation) studio path has a
+ * designed no-config fallback in `getEntryModule`, but the federation runtime
+ * would bake `null` into the generated remote entry and import its config from
+ * "null" — a broken build with no hint at the cause. Fail here instead.
+ */
+function requireStudioConfigPath(relativeConfigLocation: string | null): string {
+  if (relativeConfigLocation === null) {
+    throw new Error(
+      'Workbench studios need a sanity.config.js or sanity.config.ts file. ' +
+        "Add one, or remove `applicationType: 'studio'` from `unstable_defineApp` " +
+        'to let the CLI infer the application type.',
+    )
+  }
+
+  return relativeConfigLocation
 }
 
 function onRolldownWarn(warning: Rolldown.RolldownLog, warn: Rolldown.LoggingFunction) {

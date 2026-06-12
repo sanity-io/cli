@@ -536,6 +536,65 @@ describe('#getViteConfig', () => {
     expect(config.server?.strictPort).toBe(false)
   })
 
+  test('should reject when a workbench studio has no sanity config', async () => {
+    // Reachable state: an explicit `applicationType: 'studio'` wins over
+    // detection, so the project can be a workbench studio with no config file.
+    const options = {
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: null, relativeEntry: null},
+      getEnvironmentVariables,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    await expect(getViteConfig(options)).rejects.toThrow(
+      'Workbench studios need a sanity.config.js or sanity.config.ts file. ' +
+        "Add one, or remove `applicationType: 'studio'` from `unstable_defineApp` " +
+        'to let the CLI infer the application type.',
+    )
+    expect(mockFederationPlugin).not.toHaveBeenCalled()
+  })
+
+  test('should not require a sanity config for workbench apps', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: null, relativeEntry: '../../src/App'},
+      getEnvironmentVariables,
+      isApp: true,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    expect(mockFederationPlugin).toHaveBeenCalledWith({
+      appEntry: '../../src/App',
+      isApp: true,
+      pkgJson: {name: 'sanity'},
+      workDir: mockTestCwd,
+    })
+    expect(config.plugins).toContainEqual({name: 'sanity/federation'})
+  })
+
+  test('should not require a sanity config for non-workbench studios', async () => {
+    // The legacy build path has a designed no-config fallback
+    // (`noConfigEntryModule`), so it must keep working without one.
+    const options = {
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: null, relativeEntry: null},
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    expect(mockFederationPlugin).not.toHaveBeenCalled()
+    expect(config.root).toBe(mockTestCwd)
+  })
+
   test('should not include federation plugin when disabled', async () => {
     const options = {
       cwd: mockTestCwd,
