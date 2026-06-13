@@ -4,6 +4,21 @@ import {fileURLToPath} from 'node:url'
 import {isStaging} from '@sanity/cli-core'
 import {transformWithOxc} from 'vite'
 
+import {
+  EARLY_AUTH_API_VERSION,
+  EARLY_AUTH_REQUEST_TAG,
+  EARLY_AUTH_TOKEN_STORAGE_PREFIX,
+} from './earlyAuthProbeConstants.js'
+
+// Project ids are lowercase alphanumeric, but historic ids may include
+// uppercase, so both cases are accepted. The probe is skipped (template
+// returned unchanged) for anything else rather than risk emitting an invalid
+// URL or mangling the document — the id is never sanitized, only validated.
+const PROJECT_ID_PATTERN = /^[a-zA-Z0-9]+$/
+
+// Captures any `<head>` attributes so they survive the injection.
+const HEAD_OPEN_TAG_PATTERN = /<head([^>]*)>/
+
 /**
  * Decorates the given HTML template with an inline script that fires a
  * `/users/me` fetch during HTML parse, before the multi-MB module bundle
@@ -12,15 +27,14 @@ import {transformWithOxc} from 'vite'
  *
  * The probe is authored as a real TypeScript module (`earlyAuthProbeScript.ts`)
  * and transformed to inlinable JavaScript at build time via Vite's
- * `transformWithEsbuild`. Transforming (rather than hand-maintaining a string)
+ * `transformWithOxc`. Transforming (rather than hand-maintaining a string)
  * keeps the probe type-checked and unit-testable as a normal module. The
  * transform strips types but does not bundle, so the source must stay fully
  * self-contained — see the breadcrumb in `earlyAuthProbeScript.ts`.
  *
  * Injected as the first child of `<head>` so it runs before any other scripts.
  * Returns the template unchanged when `template` is empty or when `projectId`
- * is absent/empty or fails the strict `[a-zA-Z0-9]+` validity check — the probe
- * is skipped rather than risk mangling the document.
+ * is absent/empty or fails `PROJECT_ID_PATTERN`.
  *
  * @internal
  */
@@ -32,19 +46,44 @@ export async function decorateIndexWithEarlyAuthScript(
     return template
   }
 
-  if (!projectId || !/^[a-zA-Z0-9]+$/.test(projectId)) {
+  if (!projectId || !PROJECT_ID_PATTERN.test(projectId)) {
     return template
   }
 
   const apiHost = isStaging() ? 'api.sanity.work' : 'api.sanity.io'
 
   const probeSource = await loadProbeSource()
+  const script = `${probeSource}\n${buildProbeInvocation(projectId, apiHost)}`
 
-  const script =
-    probeSource +
-    `\ntry {\n  __sanityEarlyAuthInit(${JSON.stringify(projectId)}, ${JSON.stringify(apiHost)})\n} catch (initError) {}`
+  return injectAsFirstHeadChild(template, `<script>${script}</script>`)
+}
 
-  return template.replace(/<head([^>]*)>/, `<head$1>\n<script>${script}</script>`)
+/**
+ * Builds the call to the inlined probe, passing every configuration value as a
+ * `JSON.stringify`'d literal so the decorator stays the single source of truth.
+ * Wrapped in its own `try/catch` so a probe failure can never abort HTML parse.
+ */
+function buildProbeInvocation(projectId: string, apiHost: string): string {
+  const probeArguments = [
+    projectId,
+    apiHost,
+    EARLY_AUTH_API_VERSION,
+    EARLY_AUTH_REQUEST_TAG,
+    EARLY_AUTH_TOKEN_STORAGE_PREFIX,
+  ]
+    .map((value) => JSON.stringify(value))
+    .join(', ')
+
+  return `try {\n  __sanityEarlyAuthInit(${probeArguments})\n} catch (initError) {}`
+}
+
+/**
+ * Inserts `markup` immediately after the opening `<head>` tag so it runs before
+ * any existing head content. The capture group preserves the tag's attributes
+ * (e.g. `<head lang="en">`).
+ */
+function injectAsFirstHeadChild(template: string, markup: string): string {
+  return template.replace(HEAD_OPEN_TAG_PATTERN, `<head$1>\n${markup}`)
 }
 
 let cachedProbeSource: Promise<string> | undefined

@@ -95,7 +95,11 @@ describe('decorateIndexWithEarlyAuthScript', () => {
     mockIsStaging.mockReturnValue(false)
     const result = await decorateIndexWithEarlyAuthScript(sampleHtml, projectId)
     expect(result).toContain(JSON.stringify(projectId))
-    expect(result).toContain('/v2026-05-04/users/me?tag=sanity.studio.auth.early-probe')
+    // The URL is assembled at runtime from the invocation arguments; the path
+    // literal lives in the probe source, the version and tag arrive as args.
+    expect(result).toContain('/users/me?tag=')
+    expect(result).toContain(JSON.stringify('v2026-05-04'))
+    expect(result).toContain(JSON.stringify('sanity.studio.auth.early-probe'))
   })
 
   test('script contains the Authorization-header branch for token auth', async () => {
@@ -346,9 +350,13 @@ function createStorageStub(): Storage {
 // `window` or `localStorage`. The decorator tests above exercise the probe
 // inside a self-constructed JSDOM; these direct tests stub the two browser
 // globals the probe touches so the real module can be called in-process.
+const apiVersion = 'v2026-05-04'
+const requestTag = 'sanity.studio.auth.early-probe'
+const tokenStorageKeyPrefix = '__studio_auth_token_'
+
 describe('__sanityEarlyAuthInit (direct module unit tests)', () => {
   const apiHost = 'api.sanity.io'
-  const storageKey = `__studio_auth_token_${projectId}`
+  const storageKey = `${tokenStorageKeyPrefix}${projectId}`
 
   let windowStub: {__sanityEarlyAuth?: Record<string, unknown>}
 
@@ -368,7 +376,7 @@ describe('__sanityEarlyAuthInit (direct module unit tests)', () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({id: 'user-1'}, {status: 200}))
     vi.stubGlobal('fetch', fetchMock)
 
-    __sanityEarlyAuthInit(projectId, apiHost)
+    __sanityEarlyAuthInit(projectId, apiHost, apiVersion, requestTag, tokenStorageKeyPrefix)
 
     const earlyAuth = windowStub.__sanityEarlyAuth
 
@@ -388,7 +396,7 @@ describe('__sanityEarlyAuthInit (direct module unit tests)', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('{}', {status: 200}))
     vi.stubGlobal('fetch', fetchMock)
 
-    __sanityEarlyAuthInit(projectId, apiHost)
+    __sanityEarlyAuthInit(projectId, apiHost, apiVersion, requestTag, tokenStorageKeyPrefix)
 
     const earlyAuth = windowStub.__sanityEarlyAuth
 
@@ -401,7 +409,7 @@ describe('__sanityEarlyAuthInit (direct module unit tests)', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('{}', {status: 401}))
     vi.stubGlobal('fetch', fetchMock)
 
-    __sanityEarlyAuthInit(projectId, apiHost)
+    __sanityEarlyAuthInit(projectId, apiHost, apiVersion, requestTag, tokenStorageKeyPrefix)
 
     await expect(windowStub.__sanityEarlyAuth?.promise as Promise<unknown>).resolves.toEqual({
       type: 'unauthenticated',
@@ -416,7 +424,7 @@ describe('__sanityEarlyAuthInit (direct module unit tests)', () => {
       }),
     )
 
-    __sanityEarlyAuthInit(projectId, apiHost)
+    __sanityEarlyAuthInit(projectId, apiHost, apiVersion, requestTag, tokenStorageKeyPrefix)
 
     expect(windowStub.__sanityEarlyAuth).toBeUndefined()
   })

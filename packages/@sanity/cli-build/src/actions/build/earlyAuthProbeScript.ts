@@ -9,10 +9,9 @@
 // CRITICAL: keep this file fully self-contained — zero value imports. The
 // transform step inlines the output verbatim (it transforms, it does not
 // bundle), so a value import would ship a broken ESM `import` statement into
-// the HTML.
-//
-// The `v2026-05-04` path segment below must stay in sync with AUTH_API_VERSION
-// in the sanity monorepo (packages/sanity/src/core/store/authStore/constants.ts).
+// the HTML. Configuration values (API version, request tag, storage-key
+// prefix) are therefore passed in as arguments by the decorator, which owns
+// them in earlyAuthProbeConstants.ts.
 
 interface EarlyAuthOk {
   type: 'ok'
@@ -39,27 +38,33 @@ interface EarlyAuthState {
   token: string | null
 }
 
-export function __sanityEarlyAuthInit(projectId: string, apiHost: string): void {
-  try {
-    const storageKey = '__studio_auth_token_' + projectId
+const UNAUTHORIZED_STATUS = 401
 
-    let token: string | null = null
-    try {
-      const raw = localStorage.getItem(storageKey)
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        token = parsed && parsed.token ? parsed.token : null
-      }
-    } catch {
-      token = null
+function readStoredToken(storageKey: string): string | null {
+  try {
+    const raw = localStorage.getItem(storageKey)
+    if (!raw) {
+      return null
     }
+    const parsed = JSON.parse(raw)
+    return parsed && parsed.token ? parsed.token : null
+  } catch {
+    return null
+  }
+}
+
+export function __sanityEarlyAuthInit(
+  projectId: string,
+  apiHost: string,
+  apiVersion: string,
+  requestTag: string,
+  tokenStorageKeyPrefix: string,
+): void {
+  try {
+    const token = readStoredToken(tokenStorageKeyPrefix + projectId)
 
     const requestUrl =
-      'https://' +
-      projectId +
-      '.' +
-      apiHost +
-      '/v2026-05-04/users/me?tag=sanity.studio.auth.early-probe'
+      'https://' + projectId + '.' + apiHost + '/' + apiVersion + '/users/me?tag=' + requestTag
 
     const requestOptions: RequestInit = token
       ? {headers: {Authorization: 'Bearer ' + token}}
@@ -68,7 +73,7 @@ export function __sanityEarlyAuthInit(projectId: string, apiHost: string): void 
     const startedAt = Date.now()
 
     const promise: Promise<EarlyAuthResult> = fetch(requestUrl, requestOptions).then((response) => {
-      if (response.status === 401) {
+      if (response.status === UNAUTHORIZED_STATUS) {
         return {type: 'unauthenticated'}
       }
       if (response.ok) {
