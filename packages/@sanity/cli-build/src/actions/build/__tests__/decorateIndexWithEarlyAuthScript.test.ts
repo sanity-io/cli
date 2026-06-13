@@ -429,3 +429,124 @@ describe('__sanityEarlyAuthInit (direct module unit tests)', () => {
     expect(windowStub.__sanityEarlyAuth).toBeUndefined()
   })
 })
+
+// These exercise the decorator's fail-soft posture: any failure in the
+// load/transform/assemble path returns the template unchanged with a single
+// warning, never throwing. Each test isolates the module so the memoized probe
+// source cannot leak between cases (or from the happy-path suites above).
+async function loadDecoratorWith(mocks: {
+  readFileSync?: () => string
+  transformWithOxc?: (code: string, filename: string) => {code: string}
+}) {
+  vi.resetModules()
+
+  vi.doMock('@sanity/cli-core', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+    return {...actual, isStaging: () => false}
+  })
+
+  if (mocks.readFileSync) {
+    vi.doMock('node:fs', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('node:fs')>()
+      return {...actual, readFileSync: mocks.readFileSync}
+    })
+  }
+
+  if (mocks.transformWithOxc) {
+    vi.doMock('vite', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('vite')>()
+      return {
+        ...actual,
+        transformWithOxc: (code: string, filename: string) =>
+          Promise.resolve(mocks.transformWithOxc!(code, filename)),
+      }
+    })
+  }
+
+  const moduleUnderTest = await import('../decorateIndexWithEarlyAuthScript')
+  return moduleUnderTest.decorateIndexWithEarlyAuthScript
+}
+
+describe('decorateIndexWithEarlyAuthScript - fail-soft', () => {
+  afterEach(() => {
+    vi.resetModules()
+    vi.doUnmock('node:fs')
+    vi.doUnmock('vite')
+    vi.restoreAllMocks()
+  })
+
+  test('probe source unreadable: returns template unchanged and warns', async () => {
+    const decorate = await loadDecoratorWith({
+      readFileSync: () => {
+        throw new Error('ENOENT: probe source missing')
+      },
+    })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const result = await decorate(sampleHtml, projectId)
+
+    expect(result).toBe(sampleHtml)
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy.mock.calls[0][0]).toContain('[sanity early-auth probe]')
+  })
+
+  test('transform output retains an import: returns template unchanged and warns', async () => {
+    const decorate = await loadDecoratorWith({
+      transformWithOxc: () => ({
+        code: "import {x} from 'y'\nexport function __sanityEarlyAuthInit() {}",
+      }),
+    })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const result = await decorate(sampleHtml, projectId)
+
+    expect(result).toBe(sampleHtml)
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy.mock.calls[0][0]).toContain('[sanity early-auth probe]')
+  })
+
+  test('transform output retains an export: returns template unchanged and warns', async () => {
+    const decorate = await loadDecoratorWith({
+      transformWithOxc: () => ({
+        code: 'export const leftover = 1\nfunction __sanityEarlyAuthInit() {}',
+      }),
+    })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const result = await decorate(sampleHtml, projectId)
+
+    expect(result).toBe(sampleHtml)
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+  })
+
+  test('no exception escapes the decorator on any failure path', async () => {
+    const decorate = await loadDecoratorWith({
+      readFileSync: () => {
+        throw new Error('boom')
+      },
+    })
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await expect(decorate(sampleHtml, projectId)).resolves.toBe(sampleHtml)
+  })
+
+  test('a failed load is not memoized: a later call can still succeed', async () => {
+    let shouldFail = true
+    const decorate = await loadDecoratorWith({
+      readFileSync: () => {
+        if (shouldFail) {
+          throw new Error('transient read failure')
+        }
+        return 'export function __sanityEarlyAuthInit() {}'
+      },
+    })
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const firstResult = await decorate(sampleHtml, projectId)
+    expect(firstResult).toBe(sampleHtml)
+
+    shouldFail = false
+    const secondResult = await decorate(sampleHtml, projectId)
+    expect(secondResult).toContain('__sanityEarlyAuthInit')
+  })
+})

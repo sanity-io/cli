@@ -19,6 +19,8 @@ const PROJECT_ID_PATTERN = /^[a-zA-Z0-9]+$/
 // Captures any `<head>` attributes so they survive the injection.
 const HEAD_OPEN_TAG_PATTERN = /<head([^>]*)>/
 
+const WARNING_PREFIX = '[sanity early-auth probe]'
+
 /**
  * Decorates the given HTML template with an inline script that fires a
  * `/users/me` fetch during HTML parse, before the multi-MB module bundle
@@ -33,8 +35,11 @@ const HEAD_OPEN_TAG_PATTERN = /<head([^>]*)>/
  * self-contained — see the breadcrumb in `earlyAuthProbeScript.ts`.
  *
  * Injected as the first child of `<head>` so it runs before any other scripts.
- * Returns the template unchanged when `template` is empty or when `projectId`
- * is absent/empty or fails `PROJECT_ID_PATTERN`.
+ *
+ * The probe is a progressive enhancement and never fails the build: the
+ * template is returned unchanged (with a single warning) when it is empty, when
+ * `projectId` is absent/empty or fails `PROJECT_ID_PATTERN`, or when anything in
+ * the load/transform/assemble/inject path throws.
  *
  * @internal
  */
@@ -50,12 +55,19 @@ export async function decorateIndexWithEarlyAuthScript(
     return template
   }
 
-  const apiHost = isStaging() ? 'api.sanity.work' : 'api.sanity.io'
+  try {
+    const apiHost = isStaging() ? 'api.sanity.work' : 'api.sanity.io'
 
-  const probeSource = await loadProbeSource()
-  const script = `${probeSource}\n${buildProbeInvocation(projectId, apiHost)}`
+    const probeSource = await loadProbeSource()
+    const script = `${probeSource}\n${buildProbeInvocation(projectId, apiHost)}`
 
-  return injectAsFirstHeadChild(template, `<script>${script}</script>`)
+    return injectAsFirstHeadChild(template, `<script>${script}</script>`)
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    // eslint-disable-next-line no-console -- no logger in scope here; a single warning is enough
+    console.warn(`${WARNING_PREFIX} skipped early-auth injection: ${reason}`)
+    return template
+  }
 }
 
 /**
@@ -91,10 +103,17 @@ let cachedProbeSource: Promise<string> | undefined
 /**
  * Reads the sibling probe module, transforms it to module-free inlinable JS,
  * and memoizes the result. The transform runs once regardless of how many
- * times the decorator is called.
+ * times the decorator is called. A failed load is never cached: the memo is
+ * cleared on rejection so a transient failure cannot poison later builds in the
+ * same process.
  */
 function loadProbeSource(): Promise<string> {
-  cachedProbeSource = cachedProbeSource ?? readAndTransformProbeSource()
+  cachedProbeSource =
+    cachedProbeSource ??
+    readAndTransformProbeSource().catch((error) => {
+      cachedProbeSource = undefined
+      throw error
+    })
   return cachedProbeSource
 }
 
@@ -130,7 +149,9 @@ async function readAndTransformProbeSource(): Promise<string> {
   const stripped = transformed.code.replace(/^export function /m, 'function ')
 
   // A self-containment regression (a stray module import, or an export the
-  // strip missed) must fail the build loudly rather than ship broken HTML.
+  // strip missed) must not ship broken HTML. Throwing here is caught by the
+  // decorator, which skips injection; CI's happy-path tests catch the
+  // regression rather than a customer build.
   if (/^import\s/m.test(stripped)) {
     throw new Error(
       'Early-auth probe transform produced an `import` statement; it must be inlinable',
