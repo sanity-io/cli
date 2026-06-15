@@ -21,10 +21,11 @@ import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 const REGISTRY_VERSION = 1
 
 /**
- * The current process's start time as reported by the OS, for the `startedAt`
- * that `isOurProcess` checks on re-read. Falls back to now when the OS time is
+ * The OS-reported start time of the current process, for the `startedAt` that
+ * `isOurProcess` checks on re-read. Falls back to now when the OS time is
  * unavailable — `new Date()` alone records the write time, which drifts from
- * process start by enough to look stale and get pruned right after writing.
+ * process start far enough to look stale, so the registry would prune the entry
+ * right after writing it.
  */
 function ownStartedAt(): string {
   return (getProcessStartTime(process.pid) ?? new Date()).toISOString()

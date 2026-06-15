@@ -45,8 +45,8 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     workbenchPort,
   } = await startWorkbenchDevServer({...options, httpHost, httpPort})
 
-  // A running workbench claims the configured port, so the app server binds the
-  // next one — passed explicitly rather than by rewriting the shared flags.
+  // A running workbench claims the configured port, so devAction hands the app
+  // server the next one explicitly rather than rewriting the shared flags.
   // Without a workbench the app server resolves its port from flags/env/config
   // downstream, exactly as it did before workbench existed.
   const appOptions: DevActionOptions = workbenchAvailable

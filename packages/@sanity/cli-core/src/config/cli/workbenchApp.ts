@@ -20,7 +20,7 @@ const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
  * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
  * workbench opt-in. Narrows to the shared `app` config plus the workbench-only
  * fields a branded result carries: its `name`, the resolved `applicationType`
- * (settled by `parseWorkbenchCliConfig` on load, so callers read it instead of
+ * (`parseWorkbenchCliConfig` sets it on load, so callers read it instead of
  * re-deriving studio-vs-app), dock panel `views`, and background worker
  * `services`. The `type` literals match the `DefineAppInput` schema so
  * `views`/`services` stay assignable to `DefineAppInput['views' | 'services']`
