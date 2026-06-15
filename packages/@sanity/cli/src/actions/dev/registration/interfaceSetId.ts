@@ -21,3 +21,22 @@ export function interfaceSetId(interfaces: readonly DevServerInterface[] | undef
     .toSorted()
     .join('|')
 }
+
+/**
+ * Track the declared interface *set* across config reloads. The returned
+ * predicate reports `true` the first time it sees a set whose id differs from
+ * the previous one — an added, removed, renamed, or repointed view/service —
+ * and `false` for a reorder or a manifest-only/source-file edit (the set is
+ * unchanged, so HMR handles it). Seed it with the initially registered set.
+ */
+export function trackInterfaceSet(
+  initial: readonly DevServerInterface[] | undefined,
+): (interfaces: readonly DevServerInterface[] | undefined) => boolean {
+  let lastId = interfaceSetId(initial)
+  return (interfaces) => {
+    const id = interfaceSetId(interfaces)
+    if (id === lastId) return false
+    lastId = id
+    return true
+  }
+}

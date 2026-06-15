@@ -6,7 +6,7 @@ import {extractCoreAppManifest} from '../../manifest/extractCoreAppManifest.js'
 import {registerDevServer} from '../registry/registry.js'
 import {deriveInterfaces} from './deriveInterfaces.js'
 import {extractStudioManifest} from './extractDevServerManifest.js'
-import {interfaceSetId} from './interfaceSetId.js'
+import {trackInterfaceSet} from './interfaceSetId.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
@@ -69,10 +69,10 @@ export async function startDevServerRegistration(
     workDir,
   })
 
-  // Track the registered set so a watcher pass can tell whether the *set* of
-  // interfaces changed (rebuild needed) vs. only the manifest (title/icon) or a
-  // view/service source file (HMR handles it — the set is unchanged).
-  let lastInterfaceSetId = interfaceSetId(interfaces)
+  // Reports whether a watcher pass changed the *set* of interfaces (rebuild
+  // needed) vs. only the manifest (title/icon) or a view/service source file
+  // (HMR handles it — the set is unchanged).
+  const interfaceSetChanged = trackInterfaceSet(interfaces)
 
   const watcher = await startDevManifestWatcher({
     extract: isApp
@@ -99,9 +99,7 @@ export async function startDevServerRegistration(
     extraWatchFilenames: isApp ? undefined : ['sanity.cli.js', 'sanity.cli.ts'],
     output,
     update: async (patch) => {
-      const nextInterfaceSetId = interfaceSetId(patch.interfaces)
-      if (nextInterfaceSetId !== lastInterfaceSetId) {
-        lastInterfaceSetId = nextInterfaceSetId
+      if (interfaceSetChanged(patch.interfaces)) {
         // Rebuild the app remote (so the new view/service has an expose +
         // artifact) before patching the registry — see `onInterfaceSetChange`
         // for why the ordering matters.
