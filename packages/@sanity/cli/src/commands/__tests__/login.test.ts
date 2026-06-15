@@ -147,6 +147,32 @@ function httpGetStatus(url: string | URL): Promise<number> {
 }
 
 /**
+ * Bind an HTTP server to an OS-assigned port, to deliberately occupy it.
+ * Used with the `SANITY_CLI_CALLBACK_PORT` override to exercise the login
+ * command's port fallback behavior without hardcoding port numbers.
+ */
+async function startBlockingServer(): Promise<{close: () => Promise<void>; port: number}> {
+  const server = http.createServer()
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, () => resolve())
+  })
+
+  const address = server.address()
+  if (!address || typeof address === 'string') {
+    throw new Error('Failed to bind blocking server')
+  }
+
+  return {
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.close(() => resolve())
+      }),
+    port: address.port,
+  }
+}
+
+/**
  * Helper to set up the standard provider + token exchange mocks for a single-provider happy path.
  */
 function mockSingleProviderLogin(sessionId = 'test-session-id') {
@@ -181,6 +207,7 @@ describe('#login', {timeout: 10_000}, () => {
     for (const startup of mockedStartServerForTokenCallback.mock.settledResults) {
       if (startup.type === 'fulfilled') startup.value.server.close()
     }
+    vi.unstubAllEnvs()
     vi.clearAllMocks()
     mockedIsInteractive.mockReturnValue(true)
     const pending = pendingMocks()
@@ -929,22 +956,20 @@ describe('#login', {timeout: 10_000}, () => {
   })
 
   describe('Auth Server and Token Exchange', () => {
-    test('falls back to next port when first port is busy', async () => {
+    test('falls back to an OS-assigned port when the preferred port is busy', async () => {
       mockedGetCliToken.mockResolvedValue('')
       mockedCanLaunchBrowser.mockReturnValue(true)
 
       mockSingleProviderLogin()
 
-      // Block port 4321
-      const blockingServer = http.createServer()
-      await new Promise<void>((resolve) => {
-        blockingServer.listen(4321, () => resolve())
-      })
+      // Occupy a port, and configure the login command to prefer it
+      const blocker = await startBlockingServer()
+      vi.stubEnv('SANITY_CLI_CALLBACK_PORT', `${blocker.port}`)
 
       try {
         const commandPromise = testCommand(LoginCommand, [])
         const callbackUrl = await waitForCallbackUrl(commandPromise)
-        expect(callbackUrl.port).not.toBe('4321')
+        expect(Number(callbackUrl.port)).not.toBe(blocker.port)
 
         await simulateOAuthCallback(commandPromise, 'test-session-id')
         const {error} = await commandPromise
@@ -955,59 +980,7 @@ describe('#login', {timeout: 10_000}, () => {
         const loginUrl = new URL(mockedOpen.mock.calls[0][0] as string)
         expect(loginUrl.searchParams.get('origin')).toBe(callbackUrl.href)
       } finally {
-        await new Promise<void>((resolve) => {
-          blockingServer.close(() => resolve())
-        })
-      }
-    }, 10_000)
-
-    test('throws error when all ports are busy', async () => {
-      mockedGetCliToken.mockResolvedValue('')
-
-      mockApi({
-        apiVersion: AUTH_API_VERSION,
-        method: 'get',
-        uri: '/auth/providers',
-      }).reply(200, {
-        providers: [{name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'}],
-      })
-
-      // Block all callback ports
-      const ports = [4321, 4000, 3003, 1234, 8080, 13_333]
-      const blockingServers: http.Server[] = []
-
-      for (const port of ports) {
-        const server = http.createServer()
-        server.on('error', () => {
-          // Port may already be in use, which is fine for our purposes
-        })
-        await new Promise<void>((resolve) => {
-          server.once('listening', () => {
-            blockingServers.push(server)
-            resolve()
-          })
-          server.once('error', () => {
-            // Port already blocked, that works too
-            resolve()
-          })
-          server.listen(port)
-        })
-      }
-
-      try {
-        const {error} = await testCommand(LoginCommand, [])
-
-        expect(error).toBeDefined()
-        expect(error?.message).toContain('Failed to find port number to bind auth callback server')
-      } finally {
-        await Promise.all(
-          blockingServers.map(
-            (server) =>
-              new Promise<void>((resolve) => {
-                server.close(() => resolve())
-              }),
-          ),
-        )
+        await blocker.close()
       }
     }, 10_000)
 
