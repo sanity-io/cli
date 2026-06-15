@@ -224,12 +224,15 @@ const workbenchLockSchema = z.object({
   startedAt: z.string(),
   version: z.literal(REGISTRY_VERSION),
 })
+type WorkbenchLockData = z.infer<typeof workbenchLockSchema>
 
 /**
- * Read the workbench lock file and return its contents if the holding
- * process is still alive. Prunes stale locks from crashed processes.
+ * Read the workbench lock file and return its contents if the holding process
+ * is still alive. Prunes stale locks from crashed processes. Internal: callers
+ * claim through `acquireWorkbenchLock`, which reports the holder on a failed
+ * claim, so nothing reads the lock on its own.
  */
-export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undefined {
+function readWorkbenchLock(): WorkbenchLockData | undefined {
   const lockPath = join(getRegistryDir(), 'workbench.lock')
 
   let contents: string
@@ -282,21 +285,27 @@ interface WorkbenchLock {
 }
 
 /**
- * Attempt to acquire an exclusive lock for the workbench process.
- * Uses `O_EXCL` (the `wx` flag) which is atomic at the OS level — only one
- * process can create the file.
+ * Result of trying to claim the workbench singleton: either the held lock, or —
+ * when a live process already holds it — who that is (`heldBy`), so the caller
+ * can point at the running workbench instead of starting its own.
+ */
+export type WorkbenchLockClaim =
+  | {acquired: false; heldBy: WorkbenchLockData | undefined}
+  | {acquired: true; lock: WorkbenchLock}
+
+/**
+ * Claim the exclusive "one workbench per machine" lock. Uses `O_EXCL` (the `wx`
+ * flag), atomic at the OS level, so only one process wins the create. The lock
+ * stores `{host, pid, port}` so other processes can find the running workbench;
+ * call `updatePort` once the Vite server picks its actual port.
  *
- * The lock stores `{pid, host, port}` so other processes can find the
- * running workbench. Call `updatePort` after the Vite server starts to
- * write the actual port (Vite may pick a different one).
- *
- * @returns A {@link WorkbenchLock} if acquired, or `undefined` if another
- *          live process already holds it.
+ * A failed claim reports the live holder in `heldBy`; a stale lock left by a
+ * crashed process is pruned and the claim retried.
  */
 export function acquireWorkbenchLock(
   info: {host: string; port: number},
   retries = 1,
-): WorkbenchLock | undefined {
+): WorkbenchLockClaim {
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
 
@@ -316,15 +325,18 @@ export function acquireWorkbenchLock(
     writeFileSync(lockPath, JSON.stringify(lockData), {flag: 'wx'})
     devDebug('Workbench lock acquired')
     return {
-      release() {
-        try {
-          unlinkSync(lockPath)
-        } catch {
-          // Already cleaned up
-        }
-      },
-      updatePort(port: number) {
-        writeFileSync(lockPath, JSON.stringify({...lockData, port}))
+      acquired: true,
+      lock: {
+        release() {
+          try {
+            unlinkSync(lockPath)
+          } catch {
+            // Already cleaned up
+          }
+        },
+        updatePort(port: number) {
+          writeFileSync(lockPath, JSON.stringify({...lockData, port}))
+        },
       },
     }
   } catch (err: unknown) {
@@ -332,14 +344,14 @@ export function acquireWorkbenchLock(
       'Failed to acquire workbench lock: %s',
       err instanceof Error ? err.message : String(err),
     )
-    if (!isNodeError(err) || err.code !== 'EEXIST') return undefined
+    if (!isNodeError(err) || err.code !== 'EEXIST') return {acquired: false, heldBy: undefined}
 
-    // Lock exists — check if the holder is still alive
+    // A live holder blocks the claim, so report it. Reading the lock prunes a
+    // stale one from a crashed process, so retry once to take the freed slot.
     const existing = readWorkbenchLock()
-    if (existing) return undefined
+    if (existing) return {acquired: false, heldBy: existing}
 
-    // Stale lock was pruned by readWorkbenchLock — retry (with guard against infinite recursion)
-    if (retries <= 0) return undefined
+    if (retries <= 0) return {acquired: false, heldBy: undefined}
     return acquireWorkbenchLock(info, retries - 1)
   }
 }

@@ -10,7 +10,6 @@ import {
   acquireWorkbenchLock,
   type DevServerManifest,
   getRegisteredServers,
-  readWorkbenchLock,
   watchRegistry,
 } from '../registry/registry.js'
 import {type DevActionOptions} from '../types.js'
@@ -78,9 +77,9 @@ export async function startWorkbenchDevServer(
   // Acquire an exclusive lock — only one workbench per machine.
   // Uses O_EXCL which is atomic at the OS level, preventing races when
   // multiple `sanity dev` processes start simultaneously (e.g. via turbo).
-  const workbenchLock = acquireWorkbenchLock({host: httpHost || 'localhost', port: workbenchPort})
-  if (!workbenchLock) {
-    const existing = readWorkbenchLock()
+  const claim = acquireWorkbenchLock({host: httpHost || 'localhost', port: workbenchPort})
+  if (!claim.acquired) {
+    const existing = claim.heldBy
     devDebug(
       'Workbench already running at pid %d on port %d, skipping',
       existing?.pid,
@@ -93,6 +92,7 @@ export async function startWorkbenchDevServer(
       workbenchPort: existing?.port ?? workbenchPort,
     }
   }
+  const workbenchLock = claim.lock
 
   // The lock is already held; an exception here (runtime-file write failure,
   // invalid remote URL) would otherwise leak it until the next acquire prunes

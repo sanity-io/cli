@@ -2,7 +2,7 @@
  * Windows-only integration tests for {@link getProcessStartTime} and the
  * registry/lock plumbing that depends on it.
  *
- * Unlike `processLiveness.test.ts`, this file does **not** mock
+ * Unlike `registry.test.ts`, this file does **not** mock
  * `node:child_process` — it shells out to a real PowerShell so we catch
  * regressions where the command doesn't run, the output format drifts, or
  * `Get-Process` behaves differently on a real Windows host.
@@ -17,12 +17,7 @@ import {join} from 'node:path'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {__resetStartTimeCacheForTesting} from '../processLiveness.js'
-import {
-  acquireWorkbenchLock,
-  getRegisteredServers,
-  readWorkbenchLock,
-  registerDevServer,
-} from '../registry.js'
+import {acquireWorkbenchLock, getRegisteredServers, registerDevServer} from '../registry.js'
 
 let testDataDir: string
 
@@ -91,28 +86,31 @@ describe.skipIf(process.platform !== 'win32')('Windows integration', () => {
     release()
   })
 
-  test('acquireWorkbenchLock + readWorkbenchLock round-trip on Windows', () => {
-    const lock = acquireWorkbenchLock({host: 'localhost', port: 3336})
-    expect(lock).toBeDefined()
+  test('acquireWorkbenchLock round-trip on Windows', () => {
+    const claim = acquireWorkbenchLock({host: 'localhost', port: 3336})
+    expect(claim.acquired).toBe(true)
+    if (!claim.acquired) throw new Error('expected to acquire the workbench lock')
 
-    const read = readWorkbenchLock()
-    expect(read).toBeDefined()
-    expect(read!.pid).toBe(process.pid)
-    expect(read!.port).toBe(3336)
+    // A second claim reads the lock back through real PowerShell and finds our
+    // live process holding it.
+    const second = acquireWorkbenchLock({host: 'localhost', port: 9999})
+    expect(second.acquired).toBe(false)
+    if (second.acquired) throw new Error('expected the second claim to fail')
+    expect(second.heldBy?.pid).toBe(process.pid)
+    expect(second.heldBy?.port).toBe(3336)
 
-    lock!.release()
+    claim.lock.release()
   })
 
-  test('detects PID reuse on Windows (manually-written stale lock is pruned)', () => {
+  test('reclaims a stale lock on Windows (PID reuse, manually written)', () => {
     const dir = registryDir()
     mkdirSync(dir, {recursive: true})
 
-    // Write a workbench lock claiming our PID started in the distant past.
-    // PowerShell will report the real (recent) start time of this test
-    // process, so isOurProcess sees the mismatch and prunes.
-    const lockPath = join(dir, 'workbench.lock')
+    // Write a workbench lock claiming our PID started in the distant past. Real
+    // PowerShell reports the recent start time of this test process, so
+    // isOurProcess sees the mismatch, prunes the stale lock, and the claim wins.
     writeFileSync(
-      lockPath,
+      join(dir, 'workbench.lock'),
       JSON.stringify({
         host: 'localhost',
         pid: process.pid,
@@ -122,7 +120,9 @@ describe.skipIf(process.platform !== 'win32')('Windows integration', () => {
       }),
     )
 
-    expect(readWorkbenchLock()).toBeUndefined()
-    expect(existsSync(lockPath)).toBe(false)
+    const claim = acquireWorkbenchLock({host: 'localhost', port: 4001})
+    expect(claim.acquired).toBe(true)
+    if (!claim.acquired) throw new Error('expected to reclaim the stale lock')
+    claim.lock.release()
   })
 })

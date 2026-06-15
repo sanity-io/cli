@@ -13,7 +13,6 @@ const mockCreateServer = vi.hoisted(() => vi.fn())
 const mockWriteWorkbenchRuntime = vi.hoisted(() => vi.fn())
 const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
-const mockReadWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockWatchRegistry = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -30,7 +29,6 @@ vi.mock('../writeWorkbenchRuntime.js', () => ({
 vi.mock('../../registry/registry.js', () => ({
   acquireWorkbenchLock: mockAcquireWorkbenchLock,
   getRegisteredServers: mockGetRegisteredServers,
-  readWorkbenchLock: mockReadWorkbenchLock,
   watchRegistry: mockWatchRegistry,
 }))
 
@@ -47,9 +45,11 @@ function createMockServer(port = 3333) {
 describe('startWorkbenchDevServer', () => {
   beforeEach(() => {
     mockWriteWorkbenchRuntime.mockResolvedValue('/tmp/sanity-project/.sanity/workbench')
-    mockAcquireWorkbenchLock.mockReturnValue({release: vi.fn(), updatePort: vi.fn()})
+    mockAcquireWorkbenchLock.mockReturnValue({
+      acquired: true,
+      lock: {release: vi.fn(), updatePort: vi.fn()},
+    })
     mockGetRegisteredServers.mockReturnValue([])
-    mockReadWorkbenchLock.mockReturnValue(undefined)
     mockWatchRegistry.mockReturnValue({close: vi.fn()})
   })
 
@@ -327,7 +327,10 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
       const release = vi.fn()
-      mockAcquireWorkbenchLock.mockReturnValue({release, updatePort: vi.fn()})
+      mockAcquireWorkbenchLock.mockReturnValue({
+        acquired: true,
+        lock: {release, updatePort: vi.fn()},
+      })
 
       await expect(
         startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig})),
@@ -340,7 +343,10 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
       mockWriteWorkbenchRuntime.mockRejectedValue(new Error('EACCES: permission denied'))
       const release = vi.fn()
-      mockAcquireWorkbenchLock.mockReturnValue({release, updatePort: vi.fn()})
+      mockAcquireWorkbenchLock.mockReturnValue({
+        acquired: true,
+        lock: {release, updatePort: vi.fn()},
+      })
 
       await expect(
         startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig})),
@@ -467,8 +473,10 @@ describe('startWorkbenchDevServer', () => {
 
     test('skips starting server when lock is held by another process', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
-      mockAcquireWorkbenchLock.mockReturnValue(undefined)
-      mockReadWorkbenchLock.mockReturnValue({host: '0.0.0.0', pid: 12_345, port: 4000})
+      mockAcquireWorkbenchLock.mockReturnValue({
+        acquired: false,
+        heldBy: {host: '0.0.0.0', pid: 12_345, port: 4000},
+      })
 
       const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
@@ -481,8 +489,7 @@ describe('startWorkbenchDevServer', () => {
 
     test('falls back to configured host/port when lock is held but lock file unreadable', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
-      mockAcquireWorkbenchLock.mockReturnValue(undefined)
-      mockReadWorkbenchLock.mockReturnValue(undefined)
+      mockAcquireWorkbenchLock.mockReturnValue({acquired: false, heldBy: undefined})
 
       const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
@@ -500,7 +507,10 @@ describe('startWorkbenchDevServer', () => {
 
     test('updates lock with actual port after successful startup', async () => {
       const mockUpdatePort = vi.fn()
-      mockAcquireWorkbenchLock.mockReturnValue({release: vi.fn(), updatePort: mockUpdatePort})
+      mockAcquireWorkbenchLock.mockReturnValue({
+        acquired: true,
+        lock: {release: vi.fn(), updatePort: mockUpdatePort},
+      })
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer(3334))
 
@@ -717,7 +727,10 @@ describe('startWorkbenchDevServer', () => {
     test('close stops watcher and releases lock', async () => {
       const mockReleaseLock = vi.fn()
       const mockWatcherClose = vi.fn()
-      mockAcquireWorkbenchLock.mockReturnValue({release: mockReleaseLock, updatePort: vi.fn()})
+      mockAcquireWorkbenchLock.mockReturnValue({
+        acquired: true,
+        lock: {release: mockReleaseLock, updatePort: vi.fn()},
+      })
       mockWatchRegistry.mockReturnValue({close: mockWatcherClose})
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
@@ -731,7 +744,10 @@ describe('startWorkbenchDevServer', () => {
 
     test('releases lock when server startup fails', async () => {
       const mockReleaseLock = vi.fn()
-      mockAcquireWorkbenchLock.mockReturnValue({release: mockReleaseLock, updatePort: vi.fn()})
+      mockAcquireWorkbenchLock.mockReturnValue({
+        acquired: true,
+        lock: {release: mockReleaseLock, updatePort: vi.fn()},
+      })
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
