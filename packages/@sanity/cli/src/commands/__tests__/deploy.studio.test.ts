@@ -21,7 +21,7 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// Only the fs-touching dir check is stubbed; `checkWorkbenchApp` stays real.
+// Only the fs-touching dir check is stubbed; `checkCanDeployWorkbenchApp` stays real.
 vi.mock('../../actions/deploy/workbenchChecks.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../actions/deploy/workbenchChecks.js')>()
   return {

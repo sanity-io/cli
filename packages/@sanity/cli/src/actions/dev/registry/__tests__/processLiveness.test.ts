@@ -11,14 +11,9 @@ import {join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {
-  __resetStartTimeCacheForTesting,
-  acquireWorkbenchLock,
-  type DevServerManifest,
-  getRegisteredServers,
-  readWorkbenchLock,
-  registerDevServer,
-} from '../index.js'
+import {__resetStartTimeCacheForTesting} from '../processLiveness.js'
+import {type DevServerManifest, getRegisteredServers, registerDevServer} from '../registry.js'
+import {acquireWorkbenchLock, readWorkbenchLock} from '../workbenchLock.js'
 
 const mockExecSync = vi.hoisted(() => vi.fn())
 
@@ -26,7 +21,7 @@ vi.mock('node:child_process', () => ({
   execSync: mockExecSync,
 }))
 
-// Mock getSanityConfigDir to use a temp directory per test
+// Mock getSanityDataDir to use a temp directory per test
 let testDataDir: string
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {

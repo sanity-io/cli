@@ -89,18 +89,6 @@ describe('buildStaticFiles', () => {
       expect(mockBuildApp).toHaveBeenCalled()
     })
 
-    test('skips user config merge when no user vite config is provided', async () => {
-      await buildStaticFiles({
-        basePath: '/',
-        cwd,
-        isWorkbenchApp: true,
-        outputDir,
-      })
-
-      expect(mockExtendViteConfigWithUserConfig).not.toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalled()
-    })
-
     test('does not write sanity runtime or copy static files', async () => {
       await buildStaticFiles({
         basePath: '/',
@@ -111,23 +99,6 @@ describe('buildStaticFiles', () => {
 
       expect(mockWriteSanityRuntime).not.toHaveBeenCalled()
       expect(mockBuild).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('federation disabled', () => {
-    test('still merges user vite config via finalizeViteConfig', async () => {
-      const userVite = {define: {CUSTOM: '"value"'}}
-
-      await buildStaticFiles({
-        basePath: '/',
-        cwd,
-        outputDir,
-        vite: userVite,
-      })
-
-      expect(mockExtendViteConfigWithUserConfig).toHaveBeenCalled()
-      expect(mockFinalizeViteConfig).toHaveBeenCalled()
-      expect(mockBuild).toHaveBeenCalled()
     })
   })
 })

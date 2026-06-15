@@ -1,16 +1,14 @@
-import {z} from 'zod'
+import {z} from 'zod/mini'
 
 /**
  * A view record as persisted to the application service: `type`, `name`, `src`,
  * plus any view-type-specific attributes (passed through for storage).
  */
-const viewRecordSchema = z
-  .object({
-    name: z.string().regex(/^[a-zA-Z0-9_-]+$/, 'View `name` must match /^[a-zA-Z0-9_-]+$/'),
-    src: z.string(),
-    type: z.enum(['panel']),
-  })
-  .passthrough()
+const viewRecordSchema = z.looseObject({
+  name: z.string().check(z.regex(/^[a-zA-Z0-9_-]+$/, 'View `name` must match /^[a-zA-Z0-9_-]+$/')),
+  src: z.string(),
+  type: z.enum(['panel']),
+})
 
 /**
  * Payload registering an app's views with the application service on deploy.

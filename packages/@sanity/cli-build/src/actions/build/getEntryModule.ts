@@ -51,7 +51,7 @@ if (root) {
 
 export function getEntryModule(options: {
   basePath?: string
-  entry?: string | null
+  entry?: string
   isApp?: boolean
   reactStrictMode: boolean | undefined
   relativeConfigLocation: string | null

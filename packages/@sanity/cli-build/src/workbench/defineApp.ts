@@ -9,14 +9,7 @@ const APP_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
  * Internal application discriminator. Sanity-owned singleton apps only;
  * validated by the schema but excluded from the public `DefineAppInput` type.
  */
-const ApplicationType = z.enum([
-  'coreApp',
-  'studio',
-  'canvas',
-  'dashboard',
-  'media-library',
-  'system',
-])
+const ApplicationType = z.enum(['coreApp', 'studio', 'canvas', 'dashboard', 'media-library'])
 
 /** Dock groups an app can place itself into. */
 const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user'])
@@ -53,7 +46,7 @@ export const DefineAppInputSchema = z
     group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
-    /** Unique app identifier — matches `/^[a-zA-Z0-9_-]+$/`. */
+    /** Unique app identifier — must match `APP_NAME_PATTERN`. */
     name: z.string().check(z.regex(APP_NAME_PATTERN, 'App `name` must match /^[a-zA-Z0-9_-]+$/')),
     /** Organization that owns the app — the workbench runs and deploys against it. */
     organizationId: z.string(

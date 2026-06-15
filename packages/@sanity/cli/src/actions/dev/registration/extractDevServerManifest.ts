@@ -15,13 +15,13 @@ import {MANIFEST_FILENAME} from '../../manifest/writeManifestFile.js'
 const MANIFEST_DIR = `${SANITY_CACHE_DIR}/manifest`
 
 /**
- * Run the heavy worker-based studio schema extraction, write the
- * resulting `create-manifest.json` to `node_modules/.sanity/manifest/`,
- * then read it back so the caller can inline it into the registry.
+ * Run the worker-based studio schema extraction, write the resulting manifest
+ * to `MANIFEST_DIR`, then read it back so the caller can inline it into the
+ * registry.
  *
- * `configPath` must be the resolved `sanity.config.(ts|js)` path — the
- * caller is expected to have produced it (e.g. via `findProjectRoot`) so
- * this function doesn't re-traverse the filesystem on every call.
+ * `configPath` must be the resolved `sanity.config.(ts|js)` path — passing it
+ * in (e.g. from `findProjectRoot`) avoids re-traversing the filesystem on
+ * every call.
  */
 export async function extractStudioManifest(options: {
   configPath: string

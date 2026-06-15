@@ -3,7 +3,7 @@ import {type ViteDevServer} from 'vite'
 
 import {checkForDeprecatedAppId, getAppId} from '../../../util/appId.js'
 import {extractCoreAppManifest} from '../../manifest/extractCoreAppManifest.js'
-import {registerDevServer} from '../registry/index.js'
+import {registerDevServer} from '../registry/registry.js'
 import {deriveInterfaces} from './deriveInterfaces.js'
 import {extractStudioManifest} from './extractDevServerManifest.js'
 import {interfaceSetId} from './interfaceSetId.js'
@@ -33,9 +33,10 @@ interface DevServerRegistrationHandle {
 }
 
 /**
- * Registers the dev server in the dev server registry and starts a watcher for the manifest file. The registration
- * is used by the workbench to know where the dev server is running and to display it in the UI. The manifest watcher
- * is used to update the registration with the latest manifest, which the workbench uses to display project metadata.
+ * Register the dev server in the dev server registry and start a watcher for
+ * the manifest file. The workbench reads the registration to locate the dev
+ * server and display it in the UI; the manifest watcher keeps that registration
+ * pointed at the latest manifest, which the workbench renders as project metadata.
  */
 export async function startDevServerRegistration(
   options: DevServerRegistrationOptions,
@@ -101,10 +102,9 @@ export async function startDevServerRegistration(
       const nextInterfaceSetId = interfaceSetId(patch.interfaces)
       if (nextInterfaceSetId !== lastInterfaceSetId) {
         lastInterfaceSetId = nextInterfaceSetId
-        // Rebuild the app remote first (so the new view/service has an expose +
-        // artifact), THEN patch the registry — the registry patch is what reloads
-        // the workbench page, and it must re-fetch a remote that already exposes
-        // the new interface.
+        // Rebuild the app remote (so the new view/service has an expose +
+        // artifact) before patching the registry — see `onInterfaceSetChange`
+        // for why the ordering matters.
         await onInterfaceSetChange?.()
       }
       registration.update(patch)

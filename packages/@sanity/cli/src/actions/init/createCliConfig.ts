@@ -32,6 +32,7 @@ export default defineCliConfig({
   app: unstable_defineApp({
     name: '%name%',
     title: '%title%',
+    organizationId: '%organizationId%',
   }),
   deployment: {
     /**
@@ -50,6 +51,8 @@ interface GenerateCliConfigOptions {
   projectId: string
   title: string
   workbench: boolean
+
+  organizationId?: string
 }
 
 export function createCliConfig(options: GenerateCliConfigOptions): string {

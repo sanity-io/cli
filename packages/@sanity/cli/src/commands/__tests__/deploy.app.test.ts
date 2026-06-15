@@ -30,7 +30,7 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// `checkWorkbenchApp` stays real — it's pure config validation the
+// `checkCanDeployWorkbenchApp` stays real — it's pure config validation the
 // no-interfaces test exercises; only the fs-touching dir check is stubbed.
 vi.mock('../../actions/deploy/workbenchChecks.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../actions/deploy/workbenchChecks.js')>()
