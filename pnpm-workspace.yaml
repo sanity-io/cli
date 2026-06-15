@@ -101,3 +101,5 @@ minimumReleaseAgeExclude:
   - 'jiti@2.7.0'
   # Renovate security update: turbo@2.9.14
   - turbo@2.9.14
+  # Renovate security update: tar@7.5.16
+  - tar@7.5.16
