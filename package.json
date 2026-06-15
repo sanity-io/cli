@@ -84,7 +84,8 @@
       "node-pty"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*"
+      "@sanity/cli": "workspace:*",
+      "rolldown": "1.0.0"
     }
   }
 }
