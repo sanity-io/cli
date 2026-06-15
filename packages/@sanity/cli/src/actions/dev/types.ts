@@ -12,6 +12,13 @@ export interface DevActionOptions {
   output: Output
   workDir: string
 
+  /**
+   * Port the app/studio dev server should bind. `devAction` sets it when a
+   * running workbench has claimed the configured port; otherwise it stays
+   * absent and the server resolves its port from flags/env/config.
+   */
+  httpPort?: number
+
   workbenchAvailable?: boolean
 }
 

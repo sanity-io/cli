@@ -22,7 +22,7 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<StartDevServerResult> {
-  const {cliConfig, flags, output, workbenchAvailable, workDir} = options
+  const {cliConfig, flags, httpPort, output, workbenchAvailable, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
 
@@ -103,7 +103,7 @@ export async function startStudioDevServer(
     output.log(`${logSymbols.info} Running dev server with schema extraction enabled`)
   }
 
-  const config = getDevServerConfig({cliConfig, flags, output, workDir})
+  const config = getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
 
   if (loadInDashboard) {
     if (!projectId) {

@@ -10,7 +10,7 @@ import {getDashboardAppURL} from './getDashboardAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 
 export async function startAppDevServer(options: DevActionOptions): Promise<StartDevServerResult> {
-  const {cliConfig, flags, output, workbenchAvailable, workDir} = options
+  const {cliConfig, flags, httpPort, output, workbenchAvailable, workDir} = options
 
   // Workbench apps don't load through the dashboard, so the flag has no
   // meaning for them and is ignored.
@@ -31,7 +31,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
     return {reason: 'missing-organization-id', started: false}
   }
 
-  const config = getDevServerConfig({cliConfig, flags, output, workDir})
+  const config = getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
 
   try {
     output.log('Starting dev server')
