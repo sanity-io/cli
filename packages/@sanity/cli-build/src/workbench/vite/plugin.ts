@@ -4,9 +4,9 @@ import {type ModuleFederationOptions} from '@module-federation/vite'
 import {type PackageJson} from '@sanity/cli-core'
 import {type PluginOption} from 'vite'
 
-import {artifactExposes} from '../artifact.js'
-import {type ServiceArtifact, serviceArtifacts} from '../services/artifact.js'
-import {type InterfaceArtifact, viewArtifacts} from '../views/artifact.js'
+import {artifactExposes, workbenchArtifacts} from '../artifact.js'
+import {type ServiceArtifact} from '../services/artifact.js'
+import {type InterfaceArtifact} from '../views/artifact.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './constants.js'
 import {type FederationOptions, pluginModuleFederation} from './plugins/plugin-module-federation.js'
 import {sanityEnvironmentPlugin} from './plugins/plugin-sanity-environment.js'
@@ -117,9 +117,9 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
   // (`./services/<name>`) is exposed straight to the host, pointing at the file
   // the extension-artifacts plugin generates under RUNTIME_DIR. A service's
   // worker bundle carries no expose — the host reaches it through its loader.
-  const interfaceExposes = artifactExposes(
-    [...viewArtifacts(views), ...serviceArtifacts(services)],
-    (artifactPath) => resolveEntryPath(`./${RUNTIME_DIR}/${artifactPath}`),
+  const artifacts = workbenchArtifacts({services, views})
+  const interfaceExposes = artifactExposes(artifacts, (artifactPath) =>
+    resolveEntryPath(`./${RUNTIME_DIR}/${artifactPath}`),
   )
 
   // A dock-only app (`isApp` with no `appEntry`) has no navigable full-page
@@ -140,7 +140,7 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
   return [
     sanityEnvironmentPlugin({input: entryPath}),
     sanityFederationRuntime(runtimeOptions),
-    sanityExtensionArtifacts({services, views}),
+    sanityExtensionArtifacts({artifacts}),
     pluginModuleFederation({exposes, name}),
   ]
 }

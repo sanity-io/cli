@@ -4,8 +4,6 @@ import path from 'node:path'
 import {type Plugin} from 'vite'
 
 import {type GeneratedArtifact} from '../../artifact.js'
-import {type ServiceArtifact, serviceArtifacts} from '../../services/artifact.js'
-import {type InterfaceArtifact, viewArtifacts} from '../../views/artifact.js'
 import {RUNTIME_DIR} from '../constants.js'
 
 function relativeImport(fromFile: string, toFile: string): string {
@@ -27,26 +25,17 @@ function writeArtifacts(root: string, artifacts: readonly GeneratedArtifact[]): 
 }
 
 /**
- * Emits one render-contract artifact per view component into
- * `RUNTIME_DIR/views/<view>/<component>.js`. The artifacts are exposed through
- * module federation (`./views/<view>/<component>`) by the `federation` plugin,
- * so the workbench host can load and render each component as its own island.
- * Each service likewise emits a self-contained worker bundle plus a loader
- * module under `RUNTIME_DIR/services/<name>/`, exposed as `./services/<name>`.
- *
- * The per-type knowledge lives in `views/artifact` and `services/artifact`;
- * this plugin only writes what those modules resolve.
+ * Writes the federation runtime artifacts (view render-contract modules, service
+ * worker bundles + loaders) into `RUNTIME_DIR`, resolving each artifact's import
+ * paths relative to where it lands on disk. The set is expanded once by
+ * `workbenchArtifacts` and handed in — this plugin only writes it.
  */
 export function sanityExtensionArtifacts(options: {
-  services?: readonly ServiceArtifact[]
-  views: readonly InterfaceArtifact[]
+  artifacts: readonly GeneratedArtifact[]
 }): Plugin {
   return {
     configResolved(config) {
-      writeArtifacts(config.root, [
-        ...viewArtifacts(options.views),
-        ...serviceArtifacts(options.services ?? []),
-      ])
+      writeArtifacts(config.root, options.artifacts)
     },
     name: 'sanity/extension-artifacts',
   }

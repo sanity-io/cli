@@ -1,3 +1,6 @@
+import {type ServiceArtifact, serviceArtifacts} from './services/artifact.js'
+import {type InterfaceArtifact, viewArtifacts} from './views/artifact.js'
+
 /**
  * What a {@link GeneratedArtifact.source} builder receives from the build — the
  * one thing it can't compute on its own, since only the build knows where the
@@ -49,4 +52,17 @@ export function artifactExposes(
     }
   }
   return exposes
+}
+
+/**
+ * Expand a workbench app's declared views and services into the flat artifact
+ * set the federation build writes and exposes — the single place that composes
+ * the per-type expanders, so the expose mapping and the file writing read from
+ * one expansion rather than re-deriving it.
+ */
+export function workbenchArtifacts(options: {
+  services?: readonly ServiceArtifact[]
+  views: readonly InterfaceArtifact[]
+}): GeneratedArtifact[] {
+  return [...viewArtifacts(options.views), ...serviceArtifacts(options.services ?? [])]
 }

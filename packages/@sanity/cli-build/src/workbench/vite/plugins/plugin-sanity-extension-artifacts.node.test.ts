@@ -5,6 +5,7 @@ import path from 'node:path'
 import {type ResolvedConfig} from 'vite'
 import {afterEach, describe, expect, it} from 'vitest'
 
+import {workbenchArtifacts} from '../../artifact.js'
 import {sanityExtensionArtifacts} from './plugin-sanity-extension-artifacts.js'
 
 const tmpRoots: string[] = []
@@ -39,7 +40,9 @@ describe('sanityExtensionArtifacts', () => {
     const root = makeRoot()
     runConfigResolved(
       sanityExtensionArtifacts({
-        views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}],
+        artifacts: workbenchArtifacts({
+          views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}],
+        }),
       }),
       root,
     )
@@ -53,7 +56,9 @@ describe('sanityExtensionArtifacts', () => {
     const root = makeRoot()
     runConfigResolved(
       sanityExtensionArtifacts({
-        views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}],
+        artifacts: workbenchArtifacts({
+          views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}],
+        }),
       }),
       root,
     )
@@ -73,7 +78,7 @@ describe('sanityExtensionArtifacts', () => {
 
   it('writes nothing when no views are declared', () => {
     const root = makeRoot()
-    runConfigResolved(sanityExtensionArtifacts({views: []}), root)
+    runConfigResolved(sanityExtensionArtifacts({artifacts: workbenchArtifacts({views: []})}), root)
     expect(fs.existsSync(path.join(root, '.sanity/federation/views'))).toBe(false)
   })
 
@@ -81,8 +86,10 @@ describe('sanityExtensionArtifacts', () => {
     const root = makeRoot()
     runConfigResolved(
       sanityExtensionArtifacts({
-        services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
-        views: [],
+        artifacts: workbenchArtifacts({
+          services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+          views: [],
+        }),
       }),
       root,
     )
