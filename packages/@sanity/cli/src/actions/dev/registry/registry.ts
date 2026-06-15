@@ -13,11 +13,22 @@ import {getSanityDataDir} from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
 import {coreAppManifestSchema, studioManifestSchema} from '../../manifest/types.js'
+import {devDebug} from '../devDebug.js'
 import {canonicalizeWatchDir} from '../shared/canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
 /** Bump when the manifest/lock shape changes in a breaking way. */
-export const REGISTRY_VERSION = 1
+const REGISTRY_VERSION = 1
+
+/**
+ * The current process's start time as reported by the OS, for the `startedAt`
+ * that `isOurProcess` checks on re-read. Falls back to now when the OS time is
+ * unavailable — `new Date()` alone records the write time, which drifts from
+ * process start by enough to look stale and get pruned right after writing.
+ */
+function ownStartedAt(): string {
+  return (getProcessStartTime(process.pid) ?? new Date()).toISOString()
+}
 
 const devServerManifestSchema = z.object({
   host: z.string(),
@@ -55,8 +66,8 @@ const devServerManifestSchema = z.object({
  * A manifest describing a running dev server process (studio or app).
  * Stored as `~/.sanity/dev-servers/<pid>.json`.
  *
- * Workbench state is tracked separately via the lock file — see
- * `acquireWorkbenchLock` and `readWorkbenchLock` in `workbenchLock.ts`.
+ * The workbench singleton is tracked separately via the lock file — see
+ * `acquireWorkbenchLock` and `readWorkbenchLock` below.
  */
 export type DevServerManifest = z.infer<typeof devServerManifestSchema>
 
@@ -64,7 +75,7 @@ export type DevServerManifest = z.infer<typeof devServerManifestSchema>
  * Path to the dev server registry directory. Lives under the shared Sanity
  * config directory to stay consistent with other CLI paths.
  */
-export function getRegistryDir(): string {
+function getRegistryDir(): string {
   return join(getSanityDataDir(), 'dev-servers')
 }
 
@@ -91,17 +102,10 @@ export function registerDevServer(
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
 
-  // Use the OS-reported process start time (falling back to now) so that
-  // `isOurProcess` can verify the manifest against the same reference on
-  // re-read. Using `new Date()` would record the manifest-write time, which
-  // drifts from the OS-reported process start by however long it took the
-  // process to reach this point — frequently exceeding START_TIME_TOLERANCE_MS
-  // and causing the manifest to be pruned as "stale" immediately after it's
-  // written.
   let current: DevServerManifest = {
     ...manifest,
     pid: process.pid,
-    startedAt: (getProcessStartTime(process.pid) ?? new Date()).toISOString(),
+    startedAt: ownStartedAt(),
     version: REGISTRY_VERSION,
   }
 
@@ -206,4 +210,139 @@ export function watchRegistry(callback: (servers: DevServerManifest[]) => void):
       watcher.close()
     },
   }
+}
+
+// The workbench singleton lock — "one workbench per machine". Lives in the same
+// registry dir and shares the liveness/prune model: a stale lock left by a
+// crashed process is pruned on read so the next acquire isn't blocked forever.
+
+const workbenchLockSchema = z.object({
+  host: z.string(),
+  pid: z.number(),
+  port: z.number(),
+  startedAt: z.string(),
+  version: z.literal(REGISTRY_VERSION),
+})
+
+/**
+ * Read the workbench lock file and return its contents if the holding
+ * process is still alive. Prunes stale locks from crashed processes.
+ */
+export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undefined {
+  const lockPath = join(getRegistryDir(), 'workbench.lock')
+
+  let contents: string
+  try {
+    contents = readFileSync(lockPath, 'utf8')
+  } catch {
+    // File doesn't exist — nothing to prune, nothing to return
+    return undefined
+  }
+
+  // Past this point the file exists. Anything that isn't a live, valid lock
+  // (unparsable JSON, schema mismatch, dead/reused PID) is stale and must be
+  // pruned — otherwise the next `acquireWorkbenchLock` call is blocked by
+  // EEXIST forever and `sanity dev` silently no-ops the workbench server.
+  const data = parseLockContents(contents)
+  devDebug('Read workbench lock: %o', data)
+  if (data && isOurProcess(data.pid, data.startedAt)) {
+    devDebug('Workbench process is alive at pid %d on port %d', data.pid, data.port)
+    return data
+  }
+
+  pruneWorkbenchLock(lockPath)
+  return undefined
+}
+
+function parseLockContents(contents: string): z.infer<typeof workbenchLockSchema> | undefined {
+  try {
+    const {data, success} = workbenchLockSchema.safeParse(JSON.parse(contents))
+    return success ? data : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function pruneWorkbenchLock(lockPath: string): void {
+  try {
+    devDebug('Removing stale workbench lock')
+    unlinkSync(lockPath)
+    devDebug('Stale workbench lock removed')
+  } catch {
+    // Another process may have already cleaned it up
+  }
+}
+
+interface WorkbenchLock {
+  /** Release the lock file. */
+  release: () => void
+  /** Update the lock with the actual port after the server starts listening. */
+  updatePort: (port: number) => void
+}
+
+/**
+ * Attempt to acquire an exclusive lock for the workbench process.
+ * Uses `O_EXCL` (the `wx` flag) which is atomic at the OS level — only one
+ * process can create the file.
+ *
+ * The lock stores `{pid, host, port}` so other processes can find the
+ * running workbench. Call `updatePort` after the Vite server starts to
+ * write the actual port (Vite may pick a different one).
+ *
+ * @returns A {@link WorkbenchLock} if acquired, or `undefined` if another
+ *          live process already holds it.
+ */
+export function acquireWorkbenchLock(
+  info: {host: string; port: number},
+  retries = 1,
+): WorkbenchLock | undefined {
+  const registryDir = getRegistryDir()
+  mkdirSync(registryDir, {recursive: true})
+
+  const lockPath = join(registryDir, 'workbench.lock')
+  const startedAt = ownStartedAt()
+  const lockData = {
+    host: info.host,
+    pid: process.pid,
+    port: info.port,
+    startedAt,
+    version: REGISTRY_VERSION,
+  }
+
+  devDebug('Acquiring workbench lock at %s', lockPath)
+
+  try {
+    writeFileSync(lockPath, JSON.stringify(lockData), {flag: 'wx'})
+    devDebug('Workbench lock acquired')
+    return {
+      release() {
+        try {
+          unlinkSync(lockPath)
+        } catch {
+          // Already cleaned up
+        }
+      },
+      updatePort(port: number) {
+        writeFileSync(lockPath, JSON.stringify({...lockData, port}))
+      },
+    }
+  } catch (err: unknown) {
+    devDebug(
+      'Failed to acquire workbench lock: %s',
+      err instanceof Error ? err.message : String(err),
+    )
+    if (!isNodeError(err) || err.code !== 'EEXIST') return undefined
+
+    // Lock exists — check if the holder is still alive
+    const existing = readWorkbenchLock()
+    if (existing) return undefined
+
+    // Stale lock was pruned by readWorkbenchLock — retry (with guard against infinite recursion)
+    if (retries <= 0) return undefined
+    return acquireWorkbenchLock(info, retries - 1)
+  }
+}
+
+function isNodeError(err: unknown): err is NodeJS.ErrnoException {
+  return err instanceof Error && 'code' in err
 }

@@ -6,8 +6,13 @@ import {z} from 'zod/mini'
 import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
 import {devDebug} from '../devDebug.js'
 import {interfaceSetId} from '../registration/interfaceSetId.js'
-import {type DevServerManifest, getRegisteredServers, watchRegistry} from '../registry/registry.js'
-import {acquireWorkbenchLock, readWorkbenchLock} from '../registry/workbenchLock.js'
+import {
+  acquireWorkbenchLock,
+  type DevServerManifest,
+  getRegisteredServers,
+  readWorkbenchLock,
+  watchRegistry,
+} from '../registry/registry.js'
 import {type DevActionOptions} from '../types.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
