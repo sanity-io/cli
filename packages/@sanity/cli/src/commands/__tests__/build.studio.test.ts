@@ -1,15 +1,11 @@
-import {exec} from 'node:child_process'
-import {readdir, readFile, rm, writeFile} from 'node:fs/promises'
-import {platform, tmpdir} from 'node:os'
+import {readdir, writeFile} from 'node:fs/promises'
+import {platform} from 'node:os'
 import {join} from 'node:path'
-import {promisify} from 'node:util'
 
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {BuildCommand} from '../build.js'
-
-const execAsync = promisify(exec)
 
 const mockedSelect = vi.hoisted(() => vi.fn())
 const mockedConfirm = vi.hoisted(() => vi.fn())
