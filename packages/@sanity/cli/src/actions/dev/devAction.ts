@@ -38,12 +38,22 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     workDir,
   })
 
+  /**
+   * The workbench remote is the app that renders "workbench ready" apps, thereby it can't render itself.
+   * But it still wants to be deployed as a singleton in the sanity ecosystem. Therefore, this internal flag
+   * allows us to develop the workbench remote correctly – as a standalone app.
+   */
+  const isWorkbenchRemote =
+    isWorkbenchApp(cliConfig?.app) && process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true'
+
   const {
     close: closeWorkbenchServer,
     httpHost: workbenchHost,
     workbenchAvailable,
     workbenchPort,
-  } = await startWorkbenchDevServer({...options, httpHost, httpPort})
+  } = isWorkbenchRemote
+    ? {close: noop, httpHost, workbenchAvailable: false, workbenchPort: httpPort}
+    : await startWorkbenchDevServer({...options, httpHost, httpPort})
 
   // A running workbench claims the configured port, so the app server is
   // pushed to the next one. Without a workbench the flags pass through
@@ -97,17 +107,20 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   }
 
   // Workbench is opted into solely by calling `unstable_defineApp` — its
-  // branded identity is the only signal.
-  const registration = isWorkbenchApp(cliConfig?.app)
-    ? await startDevServerRegistration({
-        cliConfig,
-        isApp: options.isApp,
-        onInterfaceSetChange,
-        output,
-        server,
-        workDir,
-      })
-    : undefined
+  // branded identity is the only signal. The workbench remote is the exception:
+  // it's the shell itself, not a dock app, so it never registers into the
+  // shared workbench registry.
+  const registration =
+    isWorkbenchApp(cliConfig?.app) && !isWorkbenchRemote
+      ? await startDevServerRegistration({
+          cliConfig,
+          isApp: options.isApp,
+          onInterfaceSetChange,
+          output,
+          server,
+          workDir,
+        })
+      : undefined
 
   if (workbenchAvailable) {
     const workbenchUrl = `http://${toDisplayHost(workbenchHost)}:${workbenchPort}`
