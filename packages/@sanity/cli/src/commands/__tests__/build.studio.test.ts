@@ -1,4 +1,4 @@
-import {readdir, writeFile} from 'node:fs/promises'
+import {readdir, readFile, writeFile} from 'node:fs/promises'
 import {platform} from 'node:os'
 import {join} from 'node:path'
 
