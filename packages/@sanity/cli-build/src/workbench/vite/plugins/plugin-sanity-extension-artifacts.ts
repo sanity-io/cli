@@ -27,8 +27,8 @@ function writeArtifacts(root: string, artifacts: readonly GeneratedArtifact[]): 
 /**
  * Writes the federation runtime artifacts (view render-contract modules, service
  * worker bundles + loaders) into `RUNTIME_DIR`, resolving each artifact's import
- * paths relative to where it lands on disk. The set is expanded once by
- * `workbenchArtifacts` and handed in — this plugin only writes it.
+ * paths relative to where it lands on disk. `workbenchArtifacts` expands the
+ * set once and hands it in; this plugin only writes it.
  */
 export function sanityExtensionArtifacts(options: {
   artifacts: readonly GeneratedArtifact[]

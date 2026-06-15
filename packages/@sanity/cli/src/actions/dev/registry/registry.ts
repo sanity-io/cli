@@ -66,7 +66,7 @@ const devServerManifestSchema = z.object({
  * A manifest describing a running dev server process (studio or app).
  * Stored as `~/.sanity/dev-servers/<pid>.json`.
  *
- * The workbench singleton is tracked separately via the lock file — see
+ * The lock file tracks the workbench singleton separately — see
  * `acquireWorkbenchLock` and `readWorkbenchLock` below.
  */
 export type DevServerManifest = z.infer<typeof devServerManifestSchema>
@@ -213,8 +213,8 @@ export function watchRegistry(callback: (servers: DevServerManifest[]) => void):
 }
 
 // The workbench singleton lock — "one workbench per machine". Lives in the same
-// registry dir and shares the liveness/prune model: a stale lock left by a
-// crashed process is pruned on read so the next acquire isn't blocked forever.
+// registry dir and shares the liveness/prune model: reading it prunes a stale
+// lock from a crashed process, so it can't block the next acquire forever.
 
 const workbenchLockSchema = z.object({
   host: z.string(),
