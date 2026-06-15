@@ -13,7 +13,6 @@ function relativeImport(fromFile: string, toFile: string): string {
   return rel.startsWith('.') ? rel : `./${rel}`
 }
 
-/** Write each generated artifact into the runtime dir under the app root. */
 function writeArtifacts(root: string, artifacts: readonly GeneratedArtifact[]): void {
   for (const artifact of artifacts) {
     const artifactPath = path.resolve(root, RUNTIME_DIR, artifact.path)

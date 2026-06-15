@@ -102,27 +102,24 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
         config: {root: cwd},
       })
 
-      // 1. Build succeeds
       if (error) throw error
       expect(stderr).toContain('✔ Build Sanity Studio')
 
       const distFiles = await readdir(join(cwd, 'dist'))
 
-      // 2. No client artifacts
       expect(distFiles).not.toContain('index.html')
       expect(distFiles).not.toContain('static')
       expect(distFiles).not.toContain('vendor')
 
-      // 3. Stable remote entry (unhashed)
+      // Remote entry stays unhashed so the manifest can reference a stable name
       expect(distFiles).toContain('remote-entry.js')
 
-      // 4. Federation manifest (valid JSON)
       expect(distFiles).toContain('mf-manifest.json')
       const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))
       expect(manifest).toHaveProperty('id')
       expect(manifest).toHaveProperty('name')
 
-      // 5. Hashed federation chunks
+      // Chunks themselves are hashed
       expect(distFiles).toContain('assets')
       const assetFiles = await readdir(join(cwd, 'dist', 'assets'))
       expect(assetFiles.some((f) => /^remote-entry-.+\.js$/.test(f))).toBe(true)

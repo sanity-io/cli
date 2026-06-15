@@ -67,9 +67,8 @@ interface StartDevManifestWatcherOptions<T> {
  * project's config file (`sanity.config.(ts|js)` for studios,
  * `sanity.cli.(ts|js)` for core-apps) on disk. The initial generation runs
  * fire-and-forget so it doesn't block dev-server startup; subsequent
- * file-system events are coalesced behind it via `running`/`pending`, so
- * the single-serializer guarantees there are no overlapping writes to any
- * shared output directory used by the extractor. Each successful
+ * file-system events are coalesced behind it, so the extractor never has
+ * overlapping writes to its shared output directory. Each successful
  * regeneration inlines the new manifest into the registry via the `update`
  * callback, so any running workbench rebroadcasts to its clients.
  *
@@ -118,10 +117,9 @@ export async function startDevManifestWatcher<T>({
     }
   }
 
-  // Kick off the initial extraction in the background. Routing it through
-  // `regenerate` means any file-system events arriving before the first
-  // extraction finishes will be coalesced by `running`/`pending` rather
-  // than racing against it for the shared output directory.
+  // Route the initial extraction through `regenerate` too, so file-system
+  // events arriving before it finishes get coalesced rather than racing it
+  // for the shared output directory.
   void regenerate()
 
   // Watch the config file's parent directory and filter by filename.

@@ -61,8 +61,8 @@ const devServerManifestSchema = z.object({
 export type DevServerManifest = z.infer<typeof devServerManifestSchema>
 
 /**
- * Returns the path to the dev server registry directory.
- * Uses the shared Sanity config directory to stay consistent with other CLI paths.
+ * Path to the dev server registry directory. Lives under the shared Sanity
+ * config directory to stay consistent with other CLI paths.
  */
 export function getRegistryDir(): string {
   return join(getSanityDataDir(), 'dev-servers')
@@ -159,7 +159,6 @@ export function getRegisteredServers(): DevServerManifest[] {
     if (isOurProcess(data.pid, data.startedAt)) {
       servers.push(data)
     } else {
-      // Prune stale manifest
       try {
         unlinkSync(filePath)
       } catch {

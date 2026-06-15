@@ -6,13 +6,8 @@ import {z} from 'zod/mini'
 import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
 import {devDebug} from '../devDebug.js'
 import {interfaceSetId} from '../registration/interfaceSetId.js'
-import {
-  acquireWorkbenchLock,
-  type DevServerManifest,
-  getRegisteredServers,
-  readWorkbenchLock,
-  watchRegistry,
-} from '../registry/index.js'
+import {type DevServerManifest, getRegisteredServers, watchRegistry} from '../registry/registry.js'
+import {acquireWorkbenchLock, readWorkbenchLock} from '../registry/workbenchLock.js'
 import {type DevActionOptions} from '../types.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
@@ -46,10 +41,10 @@ export interface StartWorkbenchOptions extends DevActionOptions {
 }
 
 /**
- * Attempts to start the workbench dev server if federation is enabled and the workbench package is available.
- * It also handles the case where the desired port is already occupied, either by another workbench instance or
- * an unrelated process, by falling back to running without a workbench and letting the app/studio dev server
- * claim the configured port.
+ * Start the workbench dev server when federation is enabled and the workbench
+ * package is available. If the desired port is already taken — by another
+ * workbench instance or an unrelated process — fall back to running without a
+ * workbench and let the app/studio dev server claim the configured port.
  */
 export async function startWorkbenchDevServer(
   options: StartWorkbenchOptions,

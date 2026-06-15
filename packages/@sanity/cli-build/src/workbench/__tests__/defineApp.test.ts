@@ -83,12 +83,12 @@ describe('DefineAppInputSchema (build-time validation)', () => {
 
   test('validates the internal applicationType when present', () => {
     const parsed = DefineAppInputSchema.parse({
-      applicationType: 'system',
+      applicationType: 'canvas',
       name: 'media',
       organizationId: 'org-1',
       title: 'Media',
     })
-    expect(parsed.applicationType).toBe('system')
+    expect(parsed.applicationType).toBe('canvas')
     expect(
       DefineAppInputSchema.safeParse({
         applicationType: 'not-a-type',

@@ -16,7 +16,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
-vi.mock('../../registry/index.js', () => ({
+vi.mock('../../registry/registry.js', () => ({
   registerDevServer: mockRegisterDevServer,
 }))
 vi.mock('../startDevManifestWatcher.js', () => ({

@@ -73,9 +73,7 @@ function readUnixStartTime(pid: number): Date | undefined {
 function readWindowsStartTime(pid: number): Date | undefined {
   try {
     // `-NoProfile -NonInteractive` keeps PowerShell start-up minimal.
-    // `Get-CimInstance Win32_Process` exposes `CreationDate` for any process
-    // the user can enumerate — unlike `Get-Process.StartTime`, which opens
-    // a process handle and can fail with "Access is denied".
+    // (CIM-vs-Get-Process rationale documented on `getProcessStartTime`.)
     const output = execSync(
       `powershell.exe -NoProfile -NonInteractive -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=${pid}').CreationDate.ToString('o')"`,
       {encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 5000},
