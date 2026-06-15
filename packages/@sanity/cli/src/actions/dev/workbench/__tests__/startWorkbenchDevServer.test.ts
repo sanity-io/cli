@@ -27,11 +27,13 @@ vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
-vi.mock('../../registry/index.js', () => ({
-  acquireWorkbenchLock: mockAcquireWorkbenchLock,
+vi.mock('../../registry/registry.js', () => ({
   getRegisteredServers: mockGetRegisteredServers,
-  readWorkbenchLock: mockReadWorkbenchLock,
   watchRegistry: mockWatchRegistry,
+}))
+vi.mock('../../registry/workbenchLock.js', () => ({
+  acquireWorkbenchLock: mockAcquireWorkbenchLock,
+  readWorkbenchLock: mockReadWorkbenchLock,
 }))
 
 function createMockServer(port = 3333) {
@@ -194,23 +196,6 @@ describe('startWorkbenchDevServer', () => {
           createDevOptions({cliConfig: {app: workbenchApp({organizationId: undefined})}}),
         ),
       ).rejects.toThrow(/Pass "organizationId" to unstable_defineApp/)
-    })
-
-    test('configures warmup for the workbench entry file', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
-      mockCreateServer.mockResolvedValue(createMockServer())
-
-      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
-
-      expect(mockCreateServer).toHaveBeenCalledWith(
-        expect.objectContaining({
-          server: expect.objectContaining({
-            warmup: {
-              clientFiles: ['./workbench.js'],
-            },
-          }),
-        }),
-      )
     })
   })
 

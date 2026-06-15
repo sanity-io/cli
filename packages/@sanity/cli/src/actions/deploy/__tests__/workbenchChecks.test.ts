@@ -3,7 +3,7 @@ import {join} from 'node:path'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {checkWorkbenchApp, checkWorkbenchAppDir} from '../workbenchChecks.js'
+import {checkCanDeployWorkbenchApp, checkWorkbenchAppDir} from '../workbenchChecks.js'
 
 vi.mock('node:fs/promises', () => ({
   stat: vi.fn(),
@@ -23,30 +23,32 @@ const mockSourceDirExists = () => {
   } as never)
 }
 
-describe('#checkWorkbenchApp', () => {
+describe('#checkCanDeployWorkbenchApp', () => {
   test('should throw when the app declares no interfaces', () => {
-    expect(() => checkWorkbenchApp({})).toThrow('declares no entry, views or services')
+    expect(() => checkCanDeployWorkbenchApp({})).toThrow('declares no entry, views or services')
   })
 
   test('should throw when views and services are empty arrays', () => {
-    expect(() => checkWorkbenchApp({services: [], views: []})).toThrow(
+    expect(() => checkCanDeployWorkbenchApp({services: [], views: []})).toThrow(
       'declares no entry, views or services',
     )
   })
 
   test('should pass when the app declares an entry', () => {
-    expect(() => checkWorkbenchApp({entry: './src/App.tsx'})).not.toThrow()
+    expect(() => checkCanDeployWorkbenchApp({entry: './src/App.tsx'})).not.toThrow()
   })
 
   test('should pass when the app declares a view', () => {
     expect(() =>
-      checkWorkbenchApp({views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}]}),
+      checkCanDeployWorkbenchApp({
+        views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}],
+      }),
     ).not.toThrow()
   })
 
   test('should pass when the app declares a service', () => {
     expect(() =>
-      checkWorkbenchApp({
+      checkCanDeployWorkbenchApp({
         services: [{name: 'services/sync', src: './src/sync.ts', type: 'worker'}],
       }),
     ).not.toThrow()

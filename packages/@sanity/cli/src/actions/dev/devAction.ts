@@ -55,8 +55,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
 
   let closeAppDevServer: () => Promise<void> = noop
 
-  // (Re)start the app/studio dev server, tracking its close handle.
-  // Takes the config so a rebuild can feed a freshly-loaded one.
+  // Takes the config as a param so a rebuild can feed a freshly-loaded one.
   const startApp = async (config: DevActionOptions['cliConfig']): Promise<StartDevServerResult> => {
     const result = options.isApp
       ? await startAppDevServer({...appOptions, cliConfig: config})

@@ -34,8 +34,8 @@ export function pluginModuleFederation({exposes, name}: FederationOptions): Plug
     filename: `${FEDERATION_FILE_NAME}.js`,
     manifest: true,
     name,
-    // This is needed for module-federation to resolve the path of the remote entry
-    // relative to the manifest, rather than the host origin
+    // Resolves the remote entry path relative to the manifest rather than the
+    // host origin.
     publicPath: 'auto',
     // @module-federation/vite auto-shares every package.json dependency
     // that exposes an `exports` field. That breaks for workspace packages with

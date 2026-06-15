@@ -16,13 +16,9 @@ import {join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {
-  __resetStartTimeCacheForTesting,
-  acquireWorkbenchLock,
-  getRegisteredServers,
-  readWorkbenchLock,
-  registerDevServer,
-} from '../index.js'
+import {__resetStartTimeCacheForTesting} from '../processLiveness.js'
+import {getRegisteredServers, registerDevServer} from '../registry.js'
+import {acquireWorkbenchLock, readWorkbenchLock} from '../workbenchLock.js'
 
 let testDataDir: string
 

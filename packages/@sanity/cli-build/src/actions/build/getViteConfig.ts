@@ -36,7 +36,7 @@ import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.j
 import {createVendorNamedExportsPlugin} from './vite/plugin-sanity-vendor-named-exports.js'
 import {getDefaultFaviconsPath} from './writeFavicons.js'
 
-interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
+interface ViteOptions {
   /**
    * Root path of the studio/sanity app
    */
@@ -82,7 +82,7 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
 
   /**
    * Whether this is a workbench app (opted in via `unstable_defineApp`). Drives
-   * the module-federation build — replaces the old `federation.enabled` flag.
+   * the module-federation build.
    */
   isWorkbenchApp?: boolean
 
@@ -95,6 +95,12 @@ interface ViteOptions extends Pick<CliConfig, 'schemaExtraction'> {
    * Output directory (eg where to place the built files, if any)
    */
   outputDir?: string
+
+  /**
+   * Schema extraction configuration
+   */
+  schemaExtraction?: CliConfig['schemaExtraction']
+
   /**
    * HTTP development server configuration
    */

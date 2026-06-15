@@ -20,10 +20,9 @@ const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
  * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
  * workbench opt-in. Narrows to the shared `app` config plus the workbench-only
  * fields a branded result carries: its `name`, dock panel `views`, and
- * background worker `services`. The shape is inlined rather than a named export
- * since callers reach it only through this predicate; `type` uses the same
- * literals the `DefineAppInput` schema does so `views`/`services` stay
- * assignable to `DefineAppInput['views' | 'services']` downstream.
+ * background worker `services`. The `type` literals match the `DefineAppInput`
+ * schema so `views`/`services` stay assignable to
+ * `DefineAppInput['views' | 'services']` downstream.
  */
 export function isWorkbenchApp(app: CliConfig['app']): app is NonNullable<CliConfig['app']> & {
   name: string
@@ -45,14 +44,7 @@ const STUDIO_CONFIG_FILES = [
 // Mirrors the `ApplicationType` enum in `@sanity/cli-build`'s `defineApp` schema.
 // `unstable_defineApp` is a pure identity wrapper that doesn't validate its
 // input, so the loader is the first place an explicit `applicationType` can be checked.
-const APPLICATION_TYPES = [
-  'coreApp',
-  'studio',
-  'canvas',
-  'dashboard',
-  'media-library',
-  'system',
-] as const
+const APPLICATION_TYPES = ['coreApp', 'studio', 'canvas', 'dashboard', 'media-library'] as const
 type ApplicationType = (typeof APPLICATION_TYPES)[number]
 
 function isApplicationType(value: unknown): value is ApplicationType {

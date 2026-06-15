@@ -225,7 +225,6 @@ describe('devAction', () => {
 
       await onSetChange!()
 
-      // Old app server torn down, a new one started with the re-read config.
       expect(firstClose).toHaveBeenCalledTimes(1)
       expect(mockStartAppDevServer).toHaveBeenCalledTimes(2)
       expect(mockStartAppDevServer).toHaveBeenLastCalledWith(
