@@ -27,13 +27,11 @@ vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
-vi.mock('../../registry/registry.js', () => ({
-  getRegisteredServers: mockGetRegisteredServers,
-  watchRegistry: mockWatchRegistry,
-}))
-vi.mock('../../registry/workbenchLock.js', () => ({
+vi.mock('@sanity/workbench-cli/dev', () => ({
   acquireWorkbenchLock: mockAcquireWorkbenchLock,
+  getRegisteredServers: mockGetRegisteredServers,
   readWorkbenchLock: mockReadWorkbenchLock,
+  watchRegistry: mockWatchRegistry,
 }))
 
 function createMockServer(port = 3333) {

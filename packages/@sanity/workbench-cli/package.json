@@ -1,0 +1,89 @@
+{
+  "name": "@sanity/workbench-cli",
+  "version": "1.0.0",
+  "description": "Workbench extension for the Sanity CLI: federated app/studio authoring API and Vite federation build. Opt-in via unstable_defineApp.",
+  "keywords": [
+    "cli",
+    "federation",
+    "module-federation",
+    "sanity",
+    "workbench"
+  ],
+  "homepage": "https://github.com/sanity-io/cli",
+  "bugs": "https://github.com/sanity-io/cli/issues",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/cli.git",
+    "directory": "packages/@sanity/workbench-cli"
+  },
+  "files": [
+    "./dist",
+    "!./dist/**/__tests__"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "source": "./src/_exports/index.ts",
+      "default": "./dist/_exports/index.js"
+    },
+    "./build": {
+      "source": "./src/_exports/build.ts",
+      "default": "./dist/_exports/build.js"
+    },
+    "./deploy": {
+      "source": "./src/_exports/deploy.ts",
+      "default": "./dist/_exports/deploy.js"
+    },
+    "./dev": {
+      "source": "./src/_exports/dev.ts",
+      "default": "./dist/_exports/dev.js"
+    },
+    "./init": {
+      "source": "./src/_exports/init.ts",
+      "default": "./dist/_exports/init.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
+    "build:types": "pkg-utils build --emitDeclarationOnly",
+    "check:types": "tsc --noEmit",
+    "lint": "eslint .",
+    "publint": "publint",
+    "test": "vitest run",
+    "posttest": "pnpm run lint",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+  },
+  "dependencies": {
+    "@module-federation/vite": "1.16.0",
+    "@sanity/cli-core": "workspace:^",
+    "vite": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@eslint/compat": "catalog:",
+    "@repo/package.config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:^",
+    "@sanity/pkg-utils": "catalog:",
+    "@swc/cli": "catalog:",
+    "@swc/core": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "publint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

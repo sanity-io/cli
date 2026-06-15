@@ -12,11 +12,13 @@ import {type DevFlags} from '../types.js'
 export function getDevServerConfig({
   cliConfig,
   flags,
+  httpPort,
   output,
   workDir,
 }: {
   cliConfig?: CliConfig
   flags: DevFlags
+  httpPort?: number
   output: Output
   workDir: string
 }): Omit<DevServerOptions, 'spinner'> {
@@ -51,6 +53,9 @@ export function getDevServerConfig({
     // The app's navigable entry. A branded app that omits `entry` has no app
     // view (sanity-io/workbench spec 002-workbench-extension-api, US5): the runtime/federation skip the `./App` render path entirely.
     entry: app?.entry,
+    // `devAction` passes an explicit port when a running workbench claimed the
+    // configured one; otherwise the shared resolution stands.
+    httpPort: httpPort ?? baseConfig.httpPort,
     isWorkbenchApp: isWorkbenchApp(app),
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,

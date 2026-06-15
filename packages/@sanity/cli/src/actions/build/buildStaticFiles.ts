@@ -7,13 +7,12 @@ import {
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
   getViteConfig,
-  type InterfaceArtifact,
   resolveEntries,
-  type ServiceArtifact,
   writeFavicons,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type DefineAppInput} from '@sanity/workbench-cli'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
 
@@ -47,9 +46,9 @@ interface StaticBuildOptions {
   profile?: boolean
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
-  services?: readonly ServiceArtifact[]
+  services?: DefineAppInput['services']
   sourceMap?: boolean
-  views?: readonly InterfaceArtifact[]
+  views?: DefineAppInput['views']
   vite?: UserViteConfig
 }
 

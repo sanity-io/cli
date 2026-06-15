@@ -570,6 +570,9 @@ importers:
       '@sanity/types':
         specifier: 'catalog:'
         version: 6.0.0(@types/react@19.2.16)
+      '@sanity/workbench-cli':
+        specifier: workspace:^
+        version: link:../workbench-cli
       '@sanity/worker-channels':
         specifier: ^2.0.0
         version: 2.0.0
@@ -820,9 +823,6 @@ importers:
 
   packages/@sanity/cli-build:
     dependencies:
-      '@module-federation/vite':
-        specifier: 1.16.0
-        version: 1.16.0(typescript@5.9.3)(vite@8.0.16(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.11.4
@@ -844,6 +844,9 @@ importers:
       '@sanity/types':
         specifier: 'catalog:'
         version: 6.0.0(@types/react@19.2.16)
+      '@sanity/workbench-cli':
+        specifier: workspace:^
+        version: link:../workbench-cli
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 6.0.2(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/runtime@7.29.7)(rolldown@1.0.0)(vite@8.0.16(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.0.16(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
@@ -1238,6 +1241,61 @@ importers:
       publint:
         specifier: 'catalog:'
         version: 0.3.21
+
+  packages/@sanity/workbench-cli:
+    dependencies:
+      '@module-federation/vite':
+        specifier: 1.16.0
+        version: 1.16.0(typescript@5.9.3)(vite@8.0.16(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+      '@sanity/cli-core':
+        specifier: workspace:^
+        version: link:../cli-core
+      vite:
+        specifier: 'catalog:'
+        version: 8.0.16(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@eslint/compat':
+        specifier: 'catalog:'
+        version: 2.1.0(eslint@10.4.1(jiti@2.7.0))
+      '@repo/package.config':
+        specifier: workspace:*
+        version: link:../../@repo/package.config
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../../@repo/tsconfig
+      '@sanity/eslint-config-cli':
+        specifier: workspace:^
+        version: link:../eslint-config-cli
+      '@sanity/pkg-utils':
+        specifier: 'catalog:'
+        version: 10.5.3(@types/node@22.19.19)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(oxc-resolver@11.20.0)(typescript@5.9.3)
+      '@swc/cli':
+        specifier: 'catalog:'
+        version: 0.8.1(@swc/core@1.15.40)(chokidar@5.0.0)
+      '@swc/core':
+        specifier: 'catalog:'
+        version: 1.15.40
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.19
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 4.1.8(vitest@4.1.8)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.4.1(jiti@2.7.0)
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.21
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.8(@types/node@22.19.19)(@vitest/coverage-istanbul@4.1.8)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.0.16(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/create-sanity:
     dependencies:

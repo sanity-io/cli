@@ -5,9 +5,10 @@ import {
   type CliConfig,
   findProjectRoot,
   getCliTelemetry,
-  readPackageJson,
   type UserViteConfig,
 } from '@sanity/cli-core'
+import {type DefineAppInput} from '@sanity/workbench-cli'
+import {workbenchVitePlugins} from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -22,9 +23,6 @@ import {
 } from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
-import {type ServiceArtifact} from '../../workbench/services/artifact.js'
-import {type InterfaceArtifact} from '../../workbench/views/artifact.js'
-import {federation as viteFederation} from '../../workbench/vite/plugin.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
 import {VENDOR_DIR} from './constants.js'
@@ -109,7 +107,7 @@ interface ViteOptions {
    * Background services the workbench app declares. Built into self-contained
    * worker bundles and exposed through module federation as `./services/<name>`.
    */
-  services?: readonly ServiceArtifact[]
+  services?: DefineAppInput['services']
 
   /**
    * Whether or not to enable source maps
@@ -120,7 +118,7 @@ interface ViteOptions {
    * Views the workbench app declares. Built into render-contract artifacts and
    * exposed through module federation as `./views/<name>`.
    */
-  views?: readonly InterfaceArtifact[]
+  views?: DefineAppInput['views']
 }
 
 /**
@@ -211,26 +209,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       // Federation builds only need the federation plugin — skip client-specific
       // plugins (favicons, runtime rewrite, build entries)
       ...(isWorkbenchApp
-        ? [
-            ...sharedPlugins,
-            viteFederation({
-              ...(isApp
-                ? {
-                    // `null` relativeEntry (a branded app with no `entry`, sanity-io/workbench spec 002-workbench-extension-api, US5)
-                    // → omit `appEntry` so the plugin exposes no `./App`.
-                    ...(entries.relativeEntry ? {appEntry: entries.relativeEntry} : {}),
-                    isApp: true as const,
-                  }
-                : {
-                    isApp: false as const,
-                    studioConfigPath: requireStudioConfigPath(entries.relativeConfigLocation),
-                  }),
-              pkgJson: await readPackageJson(path.join(cwd, 'package.json')),
-              services,
-              views,
-              workDir: cwd,
-            }),
-          ]
+        ? [...sharedPlugins, await workbenchVitePlugins({cwd, entries, isApp, services, views})]
         : [
             ...sharedPlugins,
             sanityFaviconsPlugin({
@@ -348,26 +327,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   return viteConfig
-}
-
-/**
- * An explicit `applicationType: 'studio'` in `unstable_defineApp` wins over
- * auto-detection, so the workbench federation studio path is reachable without
- * a sanity config on disk. The legacy (non-federation) studio path has a
- * designed no-config fallback in `getEntryModule`, but the federation runtime
- * would bake `null` into the generated remote entry and import its config from
- * "null" — a broken build with no hint at the cause. Fail here instead.
- */
-function requireStudioConfigPath(relativeConfigLocation: string | null): string {
-  if (relativeConfigLocation === null) {
-    throw new Error(
-      'Workbench studios need a sanity.config.js or sanity.config.ts file. ' +
-        "Add one, or remove `applicationType: 'studio'` from `unstable_defineApp` " +
-        'to let the CLI infer the application type.',
-    )
-  }
-
-  return relativeConfigLocation
 }
 
 function onRolldownWarn(warning: Rolldown.RolldownLog, warn: Rolldown.LoggingFunction) {

@@ -1,17 +1,17 @@
-import {unstable_defineApp} from '@sanity/cli-build/_internal/federation'
 import {type CliConfig, exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {unstable_defineApp} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
-import {checkWorkbenchAppDir} from '../../actions/deploy/workbenchChecks.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {DeployCommand} from '../deploy.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
 
 vi.mock('../../actions/build/buildStudio.js', () => ({
   buildStudio: vi.fn(),
@@ -21,12 +21,14 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// Only the fs-touching dir check is stubbed; `checkCanDeployWorkbenchApp` stays real.
-vi.mock('../../actions/deploy/workbenchChecks.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../actions/deploy/workbenchChecks.js')>()
+// Only the fs-touching `checkBuiltOutput` is stubbed; `assertDeployable` stays real.
+vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()
   return {
-    ...actual,
-    checkWorkbenchAppDir: vi.fn(),
+    getWorkbench: (config: Parameters<typeof actual.getWorkbench>[0]) => {
+      const workbench = actual.getWorkbench(config)
+      return workbench && {...workbench, checkBuiltOutput: mockCheckBuiltOutput}
+    },
   }
 })
 
@@ -72,7 +74,6 @@ const mockGetCliTelemetry = vi.mocked(getCliTelemetry)
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
-const mockCheckWorkbenchAppDir = vi.mocked(checkWorkbenchAppDir)
 const mockBuildStudio = vi.mocked(buildStudio)
 
 describe('#deploy studio', () => {
@@ -83,7 +84,7 @@ describe('#deploy studio', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
-    mockCheckWorkbenchAppDir.mockResolvedValue()
+    mockCheckBuiltOutput.mockResolvedValue(undefined)
     mockStudioWorkerTask.mockResolvedValue({
       studioManifest: {
         buildId: '"test-build-id"',
@@ -296,7 +297,7 @@ describe('#deploy studio', () => {
     })
 
     if (error) throw error
-    expect(mockCheckWorkbenchAppDir).toHaveBeenCalledWith(expect.any(String))
+    expect(mockCheckBuiltOutput).toHaveBeenCalledWith(expect.any(String))
     expect(mockCheckDir).not.toHaveBeenCalled()
     expect(stdout).toContain('Success! Studio deployed')
   })

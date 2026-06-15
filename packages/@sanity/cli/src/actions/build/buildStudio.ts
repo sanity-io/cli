@@ -11,18 +11,18 @@ import {
   resolveVendorBuildConfig,
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
-import {type DefineAppInput} from '@sanity/cli-build/_internal/federation'
 import {
   type CliConfig,
   getCliTelemetry,
   getLocalPackageVersion,
   getTimer,
   isInteractive,
-  isWorkbenchApp,
   type Output,
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {type DefineAppInput} from '@sanity/workbench-cli'
+import {getWorkbench} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -69,10 +69,9 @@ interface InternalBuildOptions {
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  // `views` lives on the branded `unstable_defineApp` result — read it off the
-  // branded app so it's gated on the brand, like the app build.
-  const app = cliConfig?.app
-  const workbenchApp = isWorkbenchApp(app) ? app : undefined
+  // `views`/`services` live on the branded `unstable_defineApp` result — resolve
+  // the workbench capability so it's gated on the brand, like the app build.
+  const workbench = getWorkbench(cliConfig)
 
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
@@ -92,19 +91,19 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
-    isWorkbenchApp: Boolean(workbenchApp),
+    isWorkbenchApp: !!workbench,
     minify: Boolean(flags.minify),
     outDir,
     output,
     projectId: cliConfig?.api?.projectId,
     reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
-    services: workbenchApp?.services,
+    services: workbench?.services,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: Boolean(flags.yes),
     upgradePackages: upgradePkgs,
-    views: workbenchApp?.views,
+    views: workbench?.views,
     vite: cliConfig.vite,
     workDir,
   })

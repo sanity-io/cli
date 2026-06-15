@@ -20,5 +20,5 @@ export type {
   ServiceInfo,
   ServiceType,
   ViewComponentsByType,
-} from '@sanity/cli-build/_internal/federation'
-export {unstable_defineService, unstable_defineView} from '@sanity/cli-build/_internal/federation'
+} from '@sanity/workbench-cli'
+export {unstable_defineService, unstable_defineView} from '@sanity/workbench-cli'

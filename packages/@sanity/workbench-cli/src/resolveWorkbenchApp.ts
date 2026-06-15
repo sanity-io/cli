@@ -1,0 +1,35 @@
+// Package-internal shared resolver: turn a CLI config's branded
+// `unstable_defineApp` app into its declared interfaces, or `null` for a plain
+// project. The build and deploy accessors (actions/build, actions/deploy) each
+// build their command-specific view on top of this one brand-check +
+// extraction, so the discrimination lives in exactly one place.
+
+import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
+
+import {type DefineAppInput} from './defineApp.js'
+
+export interface ResolvedWorkbenchApp {
+  /** Background worker services the app declares. */
+  readonly services: NonNullable<DefineAppInput['services']>
+  /** Dock panel views the app declares. */
+  readonly views: NonNullable<DefineAppInput['views']>
+
+  /** Resolved app kind — `studio` or one of the SDK app types. */
+  readonly applicationType?: string
+  /** SDK app-view entrypoint, when declared. */
+  readonly entry?: string
+}
+
+/** Resolve the workbench app for a CLI config, or `null` for a plain project. */
+export function resolveWorkbenchApp(
+  cliConfig: CliConfig | null | undefined,
+): ResolvedWorkbenchApp | null {
+  const app = cliConfig?.app
+  if (!isWorkbenchApp(app)) return null
+  return {
+    applicationType: app.applicationType,
+    entry: app.entry,
+    services: app.services ?? [],
+    views: app.views ?? [],
+  }
+}
