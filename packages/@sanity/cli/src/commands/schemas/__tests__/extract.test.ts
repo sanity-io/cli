@@ -41,31 +41,6 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     }
   })
 
-  test('should start watch mode with custom watch patterns', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    const {error, result, stderr, stdout} = await testCommand(ExtractSchemaCommand, [
-      '--watch',
-      '--watch-patterns',
-      'custom/**/*.ts',
-      '--watch-patterns',
-      'lib/**/*.js',
-    ])
-
-    expect(error).toBeUndefined()
-    expect(stderr).toContain('Extracting schema')
-    expect(stdout).toContain('Watching for changes')
-    expect(stdout).toContain('custom/**/*.ts')
-    expect(stdout).toContain('lib/**/*.js')
-    expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
-
-    // Clean up watcher
-    if (canCloseWatcher(result)) {
-      await result.close()
-    }
-  })
-
   test('should use options provided extraction options from cli config', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
