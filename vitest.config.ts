@@ -41,19 +41,19 @@ export default defineConfig({
     },
     // Add explicit exclude for test execution
     exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
-    onUnhandledError(error) {
-      /**
-       * Ignore worker unexpected exit errors due to SIGSEGV from rolldown v1.0.1+: https://github.com/rolldown/rolldown/issues/9722
-       * Node 22 still exhibits SIGABRT issues
-       */
-      if (
-        process.env.CI === 'true' &&
-        !process.version.startsWith('v24.') &&
-        error.message.includes('Worker forks emitted error')
-      ) {
-        return false
-      }
-    },
+    // onUnhandledError(error) {
+    //   /**
+    //    * Ignore worker unexpected exit errors due to SIGSEGV from rolldown v1.0.1+: https://github.com/rolldown/rolldown/issues/9722
+    //    * Node 22 still exhibits SIGABRT issues
+    //    */
+    //   if (
+    //     process.env.CI === 'true' &&
+    //     !process.version.startsWith('v24.') &&
+    //     error.message.includes('Worker forks emitted error')
+    //   ) {
+    //     return false
+    //   }
+    // },
     outputFile: OUTPUT_FILE,
     projects: [
       'packages/@sanity/cli',
