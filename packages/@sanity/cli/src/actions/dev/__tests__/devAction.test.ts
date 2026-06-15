@@ -404,4 +404,43 @@ describe('devAction', () => {
     // No registration should have happened because the app never started
     expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
   })
+
+  describe('workbench remote', () => {
+    // The remote is the shell content host apps load, not a host. It opts into
+    // this path via an internal env var set by its own dev script.
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    test('serves on the configured port with no shell and no registration', async () => {
+      vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
+      mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 5173})
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 5173}))
+
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
+
+      // No second shell, so no single-workbench lock contention.
+      expect(mockStartWorkbenchDevServer).not.toHaveBeenCalled()
+      // Keeps the configured port — flags pass through untouched, never bumped to
+      // `workbenchPort + 1` the way a host app's server is.
+      expect(mockStartAppDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          flags: expect.objectContaining({port: DEV_FLAGS.port}),
+          workbenchAvailable: false,
+        }),
+      )
+      // Not a dock app — never registers into the shared workbench registry.
+      expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
+    })
+
+    test('ignores the env var for a non-workbench (plain) project', async () => {
+      vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
+
+      await devAction(createBaseDevOptions())
+
+      // The brand is the gate — without it the normal workbench path still runs.
+      expect(mockStartWorkbenchDevServer).toHaveBeenCalled()
+    })
+  })
 })
