@@ -44,11 +44,11 @@ export default defineConfig({
     onUnhandledError(error) {
       /**
        * Ignore worker unexpected exit errors due to SIGSEGV from rolldown v1.0.1+: https://github.com/rolldown/rolldown/issues/9722
-       * Node 22 still exhibits SIGABRT issues
+       * Node 22 still exhibits SIGABRT issues, and Windows exhibits lots of .. issues.
        */
       if (
         process.env.CI === 'true' &&
-        !process.version.startsWith('v26.') &&
+        (process.version.startsWith('v22.') || process.platform === 'win32') &&
         error.message.includes('Worker forks emitted error')
       ) {
         return false
