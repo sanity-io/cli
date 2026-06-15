@@ -48,7 +48,7 @@ export default defineConfig({
        */
       if (
         process.env.CI === 'true' &&
-        process.version.startsWith('v22.') &&
+        !process.version.startsWith('v26.') &&
         error.message.includes('Worker forks emitted error')
       ) {
         return false
