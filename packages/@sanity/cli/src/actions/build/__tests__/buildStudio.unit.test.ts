@@ -30,10 +30,6 @@ vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
 
-vi.mock('../checkRequiredDependencies.js', () => ({
-  checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
-}))
-
 vi.mock('../getEnvironmentVariables.js', () => ({
   getStudioEnvironmentVariables: mockGetStudioEnvironmentVariables,
 }))
@@ -43,6 +39,7 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   return {
     ...original,
     buildDebug: vi.fn(),
+    checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
     checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
     resolveVendorBuildConfig: vi.fn().mockResolvedValue({
       entries: {},
