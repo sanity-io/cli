@@ -153,6 +153,7 @@ export async function bootstrapLocalTemplate(
         autoUpdates: variables.autoUpdates,
         dataset: variables.dataset,
         name: packageJsonName,
+        organizationId: variables.organizationId,
         projectId: variables.projectId,
         title: variables.projectName || packageJsonName,
         workbench: variables.workbench,

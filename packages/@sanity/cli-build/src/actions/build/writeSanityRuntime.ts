@@ -82,7 +82,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
   })
   const appJsContent = getEntryModule({
     basePath,
-    entry: relativeEntry,
+    entry: relativeEntry ?? undefined,
     isApp,
     reactStrictMode,
     relativeConfigLocation,

@@ -66,10 +66,8 @@ async function readIconFromPath(workDir: string, iconPath: string): Promise<stri
 }
 
 /**
- *
- * This functions slightly differently from the studio manifest extraction function.
- * We don't need to parse very complicated information like schemas and tools.
- * The app icon in config is a file path (e.g. relative to project root); its content is read and inlined in the manifest.
+ * Unlike studio manifest extraction, skips schema/tool parsing. The config's
+ * `app.icon` is a file path; its content is read and inlined in the manifest.
  */
 export async function extractCoreAppManifest(
   options: ExtractCoreAppManifestOptions,

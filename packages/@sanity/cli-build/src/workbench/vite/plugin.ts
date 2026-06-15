@@ -15,7 +15,6 @@ import {
   type FederationRuntimeOptions,
   sanityFederationRuntime,
 } from './plugins/plugin-sanity-federation-runtime.js'
-import {invariant} from './utils/invariant.js'
 
 interface FederationPluginOptionsBase extends Omit<Partial<FederationOptions>, 'exposes'> {
   exposes?: Record<string, string>
@@ -89,17 +88,20 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     name = pkgJson?.name
   }
 
-  invariant(name, '"name" option is required but could not be inferred from package.json')
+  if (!name) {
+    throw new Error('"name" option is required but could not be inferred from package.json')
+  }
 
   const generatedEntry = `./${RUNTIME_DIR}/${FEDERATION_FILE_NAME}.jsx`
 
   function resolveEntryPath(entry: string) {
     const resolvedPath = path.resolve(workDir, entry)
 
-    invariant(
-      resolvedPath,
-      `Could not resolve path for entry "${entry}". Resolved to "${resolvedPath}". Please check that the file exists and the path is correct.`,
-    )
+    if (!resolvedPath) {
+      throw new Error(
+        `Could not resolve path for entry "${entry}". Resolved to "${resolvedPath}". Please check that the file exists and the path is correct.`,
+      )
+    }
 
     return resolvedPath
   }

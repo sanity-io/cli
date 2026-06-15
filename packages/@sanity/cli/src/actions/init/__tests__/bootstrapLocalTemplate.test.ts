@@ -192,6 +192,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
     expect(cliConfig).toContain(`name: 'my-studio'`)
     expect(cliConfig).toContain(`title: 'My Studio'`)
+    expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`projectId: 'abc123'`)
     // Studios brand without an entry — studio app views aren't implemented yet
     expect(cliConfig).not.toContain('entry:')

@@ -18,9 +18,8 @@ interface WorkbenchAppInterfaces {
  *
  * @internal
  * @param app - The branded `unstable_defineApp` result from the CLI config
- * @returns void
  */
-export function checkWorkbenchApp(app: WorkbenchAppInterfaces): void {
+export function checkCanDeployWorkbenchApp(app: WorkbenchAppInterfaces): void {
   const {entry, services, views} = app
   if (!entry && !views?.length && !services?.length) {
     throw new Error(
@@ -36,11 +35,10 @@ export function checkWorkbenchApp(app: WorkbenchAppInterfaces): void {
  * remote instead of a static SPA, so `checkDir`'s `index.html` contract does
  * not apply to them. `mf-manifest.json` presence is the marker that "sanity
  * build" produced a federation build — whether the app declares anything to
- * expose is settled by {@link checkWorkbenchApp} before the build runs.
+ * expose is settled by {@link checkCanDeployWorkbenchApp} before the build runs.
  *
  * @internal
  * @param sourceDir - The directory to check
- * @returns void
  */
 export async function checkWorkbenchAppDir(sourceDir: string): Promise<void> {
   try {

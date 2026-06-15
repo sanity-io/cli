@@ -21,7 +21,7 @@ import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
 import {type DeployAppOptions} from './types.js'
 import {buildViewDeploymentPayload} from './viewDeployment.js'
-import {checkWorkbenchApp, checkWorkbenchAppDir} from './workbenchChecks.js'
+import {checkCanDeployWorkbenchApp, checkWorkbenchAppDir} from './workbenchChecks.js'
 
 /**
  * Deploy a Sanity application.
@@ -56,7 +56,7 @@ export async function deployApp(options: DeployAppOptions) {
   // expose.
   if (isWorkbenchApp(cliConfig.app)) {
     try {
-      checkWorkbenchApp(cliConfig.app)
+      checkCanDeployWorkbenchApp(cliConfig.app)
     } catch (err) {
       output.error(getErrorMessage(err), {exit: exitCodes.USAGE_ERROR})
       return
