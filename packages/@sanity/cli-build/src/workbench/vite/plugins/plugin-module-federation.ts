@@ -15,7 +15,7 @@ export interface FederationOptions extends Pick<ModuleFederationOptions, 'expose
   name: string
 }
 
-export function pluginModuleFederation({exposes, name}: FederationOptions): PluginOption {
+export function sanityModuleFederation({exposes, name}: FederationOptions): PluginOption {
   const mfPlugins = moduleFederation({
     dev: {
       disableDynamicRemoteTypeHints: true,

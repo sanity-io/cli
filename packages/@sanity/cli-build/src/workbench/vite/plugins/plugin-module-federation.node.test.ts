@@ -2,7 +2,7 @@ import {type Environment, type Plugin} from 'vite'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {FEDERATION_DIR_NAME} from '../constants.js'
-import {pluginModuleFederation} from './plugin-module-federation.js'
+import {sanityModuleFederation} from './plugin-module-federation.js'
 
 const mockFederation = vi.hoisted(() => vi.fn())
 
@@ -16,7 +16,7 @@ afterEach(() => {
 })
 
 function runPlugin(): (Plugin | Promise<Plugin>)[] {
-  return pluginModuleFederation({exposes: {}, name: 'test-app'}) as (Plugin | Promise<Plugin>)[]
+  return sanityModuleFederation({exposes: {}, name: 'test-app'}) as (Plugin | Promise<Plugin>)[]
 }
 
 function appliesTo(plugin: Plugin, name: string, command: 'build' | 'serve'): boolean {
@@ -26,7 +26,7 @@ function appliesTo(plugin: Plugin, name: string, command: 'build' | 'serve'): bo
   return apply({config: {command}, name} as unknown as Environment) === true
 }
 
-describe('pluginModuleFederation', () => {
+describe('sanityModuleFederation', () => {
   // Regression test for TYPE-001: upstream defaults dts generation on for any
   // project with a tsconfig.json, but it compiles the generated .js/.jsx
   // expose shims with the user's compiler options — tsc rejects them without

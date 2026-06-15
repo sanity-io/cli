@@ -8,7 +8,7 @@ import {artifactExposes, workbenchArtifacts} from '../artifact.js'
 import {type ServiceArtifact} from '../services/artifact.js'
 import {type InterfaceArtifact} from '../views/artifact.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './constants.js'
-import {type FederationOptions, pluginModuleFederation} from './plugins/plugin-module-federation.js'
+import {type FederationOptions, sanityModuleFederation} from './plugins/plugin-module-federation.js'
 import {sanityEnvironmentPlugin} from './plugins/plugin-sanity-environment.js'
 import {sanityExtensionArtifacts} from './plugins/plugin-sanity-extension-artifacts.js'
 import {
@@ -141,6 +141,6 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     sanityEnvironmentPlugin({input: entryPath}),
     sanityFederationRuntime(runtimeOptions),
     sanityExtensionArtifacts({artifacts}),
-    pluginModuleFederation({exposes, name}),
+    sanityModuleFederation({exposes, name}),
   ]
 }
