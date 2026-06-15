@@ -20,7 +20,7 @@ import {
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {type DefineAppInput} from '@sanity/workbench-cli'
-import {getWorkbench} from '@sanity/workbench-cli/build'
+import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -66,7 +66,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined
   // `views`/`services` live on the branded `unstable_defineApp` result, not the
   // legacy `app` config object — resolve the workbench capability to read them.
-  const workbench = getWorkbench(cliConfig)
+  const workbench = resolveWorkbenchApp(cliConfig)
 
   await internalBuildApp({
     appId: getAppId(cliConfig),

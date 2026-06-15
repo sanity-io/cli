@@ -9,7 +9,7 @@ const VIEWS_DIR_NAME = 'views'
  * An interface to generate render artifacts for. The `src` file default-exports
  * an `unstable_defineView(...)` result; the build emits one render-contract
  * artifact per component the interface type exposes.
- * @public
+ * @internal
  */
 export interface InterfaceArtifact {
   /** Interface name, unique within the app. */

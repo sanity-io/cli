@@ -22,7 +22,7 @@ import {
 } from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {type DefineAppInput} from '@sanity/workbench-cli'
-import {getWorkbench} from '@sanity/workbench-cli/build'
+import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -71,7 +71,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   // `views`/`services` live on the branded `unstable_defineApp` result — resolve
   // the workbench capability so it's gated on the brand, like the app build.
-  const workbench = getWorkbench(cliConfig)
+  const workbench = resolveWorkbenchApp(cliConfig)
 
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]

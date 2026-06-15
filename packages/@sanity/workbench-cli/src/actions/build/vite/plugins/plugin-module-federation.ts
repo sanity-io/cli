@@ -4,7 +4,7 @@ import {type Plugin, type PluginOption} from 'vite'
 import {FEDERATION_DIR_NAME, FEDERATION_FILE_NAME} from '../constants.js'
 
 /**
- * @public
+ * @internal
  */
 export interface FederationOptions extends Pick<ModuleFederationOptions, 'exposes'> {
   /**

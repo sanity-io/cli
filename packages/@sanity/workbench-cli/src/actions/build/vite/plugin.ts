@@ -69,7 +69,7 @@ interface StudioFederationPluginOptions extends FederationPluginOptionsBase {
 type FederationPluginOptions = AppFederationPluginOptions | StudioFederationPluginOptions
 
 /**
- * @public
+ * @internal
  */
 export const federation = (options: FederationPluginOptions): PluginOption => {
   const {

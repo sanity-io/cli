@@ -10,7 +10,7 @@ const SERVICE_TYPES: readonly ServiceType[] = ['worker']
  * A service to generate a worker artifact for. The `src` file default-exports
  * an `unstable_defineService(...)` result; the build emits a self-contained Web
  * Worker bundle plus a loader module that hands the host its URL.
- * @public
+ * @internal
  */
 export interface ServiceArtifact {
   /** Service name, unique within the app. */

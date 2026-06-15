@@ -8,6 +8,7 @@ import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
 
 import {type DefineAppInput} from './defineApp.js'
 
+/** @public */
 export interface ResolvedWorkbenchApp {
   /** Background worker services the app declares. */
   readonly services: NonNullable<DefineAppInput['services']>
@@ -20,7 +21,10 @@ export interface ResolvedWorkbenchApp {
   readonly entry?: string
 }
 
-/** Resolve the workbench app for a CLI config, or `null` for a plain project. */
+/**
+ * Resolve the workbench app for a CLI config, or `null` for a plain project.
+ * @public
+ */
 export function resolveWorkbenchApp(
   cliConfig: CliConfig | null | undefined,
 ): ResolvedWorkbenchApp | null {
