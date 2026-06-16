@@ -7,25 +7,19 @@ import {runCli} from '../../helpers/runCli.js'
 // transport: wait for the ready line, prove the server actually serves the shell
 // over HTTP, then Ctrl+C. No auth/API is involved — the dev server only serves the
 // local studio/app, so a placeholder token is enough.
+//
+// These double as the inverse workbench guard: a plain (non-`unstable_defineApp`)
+// project must serve on the *configured* port. If a gating regression started the
+// workbench host, the studio/app would be pushed to port+1 — and the studio's
+// "running at" line suppressed in favour of "Workbench dev server started…" — so
+// the port-pinned `ready` assertion would time out instead of matching.
 describe('sanity dev', {timeout: 120_000}, () => {
   test.each([
-    {
-      fixture: 'basic-studio',
-      port: 9330,
-      // Studios log the full URL once Vite is ready.
-      ready: /running at http:\/\/localhost:\d+/i,
-      // The studio mounts into this root element.
-      rootMarker: /id="sanity"/,
-    },
-    {
-      fixture: 'basic-app',
-      port: 9331,
-      ready: /dev server started on port \d+/i,
-      rootMarker: /id="root"|id="sanity"/,
-    },
+    {fixture: 'basic-studio', kind: 'studio', port: 9330, rootMarker: /id="sanity"/},
+    {fixture: 'basic-app', kind: 'app', port: 9331, rootMarker: /id="root"|id="sanity"/},
   ])(
-    'serves the $fixture dev server over HTTP and shuts down on Ctrl+C',
-    async ({fixture, port, ready, rootMarker}) => {
+    'serves the $fixture dev server on the configured port and shuts down on Ctrl+C',
+    async ({fixture, kind, port, rootMarker}) => {
       const cwd = await testFixture(fixture)
       const session = await runCli({
         args: ['dev', '--port', String(port)],
@@ -33,21 +27,18 @@ describe('sanity dev', {timeout: 120_000}, () => {
         interactive: true,
       })
 
+      // Studios log the full URL; apps log the port. Pinning the configured port
+      // (rather than `\d+`) is what makes this fail if the workbench host took over
+      // and pushed the server to port+1 — see the file header.
+      const ready =
+        kind === 'studio'
+          ? new RegExp(String.raw`running at http://localhost:${port}/`, 'i')
+          : new RegExp(String.raw`dev server started on port ${port}`, 'i')
       await session.waitForText(ready, {timeout: 90_000})
 
-      // Read the actual port from the output — apps fall back to the next free
-      // port when the requested one is taken, so we don't assume it stayed `port`.
-      const url =
-        session.getOutput().match(/http:\/\/localhost:\d+/)?.[0] ?? `http://localhost:${port}`
-
-      const res = await fetch(`${url}/`)
+      const res = await fetch(`http://localhost:${port}/`)
       expect(res.status).toBe(200)
       expect(await res.text()).toMatch(rootMarker)
-
-      // Inverse guard: a plain (non-`unstable_defineApp`) project must not spin up
-      // the workbench host — that path is gated on the brand, and dev.workbench
-      // asserts the positive. Without this, a gating regression would slip by here.
-      expect(session.getOutput()).not.toContain('Workbench dev server started')
 
       session.sendControl('c')
       // Ctrl+C should tear the server down; kill as a fallback if it's swallowed.
