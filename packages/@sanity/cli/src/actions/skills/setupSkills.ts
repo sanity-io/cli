@@ -2,7 +2,7 @@ import {fileURLToPath} from 'node:url'
 
 import {ux} from '@oclif/core'
 import {subdebug} from '@sanity/cli-core'
-import {logSymbols} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 
 import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
@@ -63,16 +63,18 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
 
   skillsDebug('Running: %s %s', process.execPath, args.join(' '))
 
+  const spin = spinner('Installing Sanity agent skills').start()
+
   try {
     const result = await execa(process.execPath, args, {stdio: 'pipe', timeout: 90_000})
     skillsDebug('skills stdout: %s', result.stdout)
     skillsDebug('skills stderr: %s', result.stderr)
-    ux.stdout(`${logSymbols.success} Installed Sanity agent skills for ${uniqueAgents.join(', ')}`)
+    spin.succeed('Sanity agent skills installed')
     return {installedAgents: uniqueAgents, skipped: false}
   } catch (error) {
     skillsDebug('Error installing skills %O', error)
     const err = toError(error)
-    ux.warn(`Could not install Sanity agent skills: ${getErrorMessage(error)}`)
+    spin.fail(`Could not install Sanity agent skills: ${getErrorMessage(error)}`)
     if (error && typeof error === 'object') {
       const {stderr, stdout} = error as {stderr?: string; stdout?: string}
       if (stdout) ux.warn(stdout)

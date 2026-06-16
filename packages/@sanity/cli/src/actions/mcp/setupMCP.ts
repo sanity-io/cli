@@ -3,7 +3,7 @@ import {subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
-import {getInstalledSkillAgentDisplayNames, getSkillCandidates} from '../skills/skillCandidates.js'
+import {getSkillCandidates} from '../skills/skillCandidates.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
 import {EDITOR_CONFIGS, type EditorName, getSkillsCliAgent} from './editorConfigs.js'
 import {type EditorAction, type EditorChoice, promptForMCPSetup} from './promptForMCPSetup.js'
@@ -191,8 +191,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   // 4. Read skill state when skills are in scope so classification can dedup
   const skillCandidateNames = new Set<EditorName>()
   if (skillsMode !== 'skip') {
-    const installed = await getInstalledSkillAgentDisplayNames()
-    const candidates = getSkillCandidates(editors, installed)
+    const candidates = await getSkillCandidates(editors)
     for (const candidate of candidates) {
       const {editor} = candidate
       skillCandidateNames.add(editor.name)

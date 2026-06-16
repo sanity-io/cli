@@ -1,53 +1,33 @@
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {ConfigureSkillsCommand} from '../configure.js'
+import {InstallSkillsCommand} from '../install.js'
 
 const mockConfigureSkills = vi.hoisted(() => vi.fn())
-const mockIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
 
 vi.mock('../../../actions/skills/configureSkills.js', () => ({
   configureSkills: mockConfigureSkills,
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    isInteractive: mockIsInteractive,
-  }
-})
-
-describe('#skills:configure', () => {
+describe('#skills:install', () => {
   beforeEach(() => {
     mockConfigureSkills.mockResolvedValue({
       detectedEditors: ['Cursor'],
       installedAgents: ['cursor'],
       skipped: false,
     })
-    mockIsInteractive.mockReturnValue(true)
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('runs skills configuration in prompt mode when interactive', async () => {
-    const {error} = await testCommand(ConfigureSkillsCommand, [])
+  test('installs Sanity agent skills for all detected editors', async () => {
+    const {error} = await testCommand(InstallSkillsCommand, [])
 
     if (error) throw error
 
-    expect(mockConfigureSkills).toHaveBeenCalledWith({mode: 'prompt'})
-  })
-
-  test('runs in auto mode when non-interactive', async () => {
-    mockIsInteractive.mockReturnValue(false)
-
-    const {error} = await testCommand(ConfigureSkillsCommand, [])
-
-    if (error) throw error
-
-    expect(mockConfigureSkills).toHaveBeenCalledWith({mode: 'auto'})
+    expect(mockConfigureSkills).toHaveBeenCalledWith()
   })
 
   test('does not fail the command when configureSkills reports an install error', async () => {
@@ -58,7 +38,7 @@ describe('#skills:configure', () => {
       skipped: false,
     })
 
-    const {error} = await testCommand(ConfigureSkillsCommand, [])
+    const {error} = await testCommand(InstallSkillsCommand, [])
 
     expect(error).toBeUndefined()
   })
@@ -66,7 +46,7 @@ describe('#skills:configure', () => {
   test('exits with code 1 when configureSkills throws', async () => {
     mockConfigureSkills.mockRejectedValue(new Error('unexpected failure'))
 
-    const {error} = await testCommand(ConfigureSkillsCommand, [])
+    const {error} = await testCommand(InstallSkillsCommand, [])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('unexpected failure')

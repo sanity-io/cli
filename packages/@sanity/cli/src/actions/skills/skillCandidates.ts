@@ -16,8 +16,11 @@ export interface SkillCandidate {
  * Best-effort: `readSkillState` swallows failures and returns an empty set, so
  * callers treat agents as "not installed" rather than skipping on a flaky probe.
  */
-export async function getInstalledSkillAgentDisplayNames(): Promise<Set<string>> {
-  const {installedAgentDisplayNames} = await readSkillState({skillNames: SANITY_SKILL_NAMES})
+export async function getInstalledSkillAgentDisplayNames(editors: Editor[]): Promise<Set<string>> {
+  const {installedAgentDisplayNames} = await readSkillState({
+    editors,
+    skillNames: SANITY_SKILL_NAMES,
+  })
   return installedAgentDisplayNames
 }
 
@@ -26,13 +29,11 @@ export async function getInstalledSkillAgentDisplayNames(): Promise<Set<string>>
  * install". An editor is a candidate when it has a skills-CLI mapping AND the
  * Sanity skills are not already installed for its agent.
  *
- * Used by both the standalone `skills configure` flow (`configureSkills`) and
+ * Used by both the standalone `skills install` flow (`configureSkills`) and
  * the combined `init` flow (`setupMCP`).
  */
-export function getSkillCandidates(
-  editors: Editor[],
-  installedAgentDisplayNames: Set<string>,
-): SkillCandidate[] {
+export async function getSkillCandidates(editors: Editor[]): Promise<SkillCandidate[]> {
+  const installedAgentDisplayNames = await getInstalledSkillAgentDisplayNames(editors)
   const candidates: SkillCandidate[] = []
 
   for (const editor of editors) {

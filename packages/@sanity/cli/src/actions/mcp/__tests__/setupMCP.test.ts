@@ -133,6 +133,7 @@ describe('setupMCP', () => {
     const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
 
     expect(mockReadSkillState).toHaveBeenCalledWith({
+      editors: [editor({name: 'Cursor'})],
       skillNames: ['sanity-best-practices', 'sanity-migration'],
     })
     expect(result.configuredEditors).toEqual(['Cursor'])

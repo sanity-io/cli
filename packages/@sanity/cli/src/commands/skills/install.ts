@@ -1,12 +1,12 @@
-import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {configureSkills} from '../../actions/skills/configureSkills.js'
-import {SkillsConfigureTrace} from '../../telemetry/skills.telemetry.js'
+import {SkillsInstallTrace} from '../../telemetry/skills.telemetry.js'
 import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
 
-const debug = subdebug('skills:configure')
+const debug = subdebug('skills:install')
 
-export class ConfigureSkillsCommand extends SanityCommand<typeof ConfigureSkillsCommand> {
+export class InstallSkillsCommand extends SanityCommand<typeof InstallSkillsCommand> {
   static override description =
     'Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)'
 
@@ -18,13 +18,11 @@ export class ConfigureSkillsCommand extends SanityCommand<typeof ConfigureSkills
   ]
 
   public async run(): Promise<void> {
-    const trace = this.telemetry.trace(SkillsConfigureTrace)
+    const trace = this.telemetry.trace(SkillsInstallTrace)
     trace.start()
 
     try {
-      const result = await configureSkills({
-        mode: isInteractive() ? 'prompt' : 'auto',
-      })
+      const result = await configureSkills()
 
       trace.log({
         detectedEditors: result.detectedEditors,
@@ -37,7 +35,7 @@ export class ConfigureSkillsCommand extends SanityCommand<typeof ConfigureSkills
         trace.complete()
       }
     } catch (error) {
-      debug('Skills configuration failed: %O', error)
+      debug('Skills installation failed: %O', error)
       trace.error(toError(error))
       this.error(getErrorMessage(error), {exit: 1})
     }

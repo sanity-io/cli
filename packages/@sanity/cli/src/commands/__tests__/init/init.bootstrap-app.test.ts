@@ -221,12 +221,12 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(stdout).toContain('npx sanity manage')
     expect(stdout).toContain('npx sanity help')
 
-    // Skills install runs after scaffolding has completed, with the agents
-    // setupMCP told us to install.
+    // Skills install runs before scaffolding (and thus before the "Success!"
+    // message), so its progress + result surface above the success output.
     expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor']})
     const bootstrapOrder = mocks.bootstrapTemplate.mock.invocationCallOrder[0]
     const skillsOrder = mocks.setupSkills.mock.invocationCallOrder[0]
-    expect(skillsOrder).toBeGreaterThan(bootstrapOrder)
+    expect(skillsOrder).toBeLessThan(bootstrapOrder)
   })
 
   test('initializes app with env file', async () => {

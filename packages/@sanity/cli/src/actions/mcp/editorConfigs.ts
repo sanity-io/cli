@@ -49,6 +49,10 @@ interface EditorConfig {
    * Omit when the editor has no skills CLI equivalent.
    */
   skillsCliAgent?: string
+  /**
+   * The directory to install skills to.
+   */
+  skillsDir?: string
 }
 
 /**
@@ -227,7 +231,7 @@ function readTokenFromHttpHeaders(serverConfig: Record<string, unknown>): string
 }
 
 // -- Defaults & build server config functions --
-
+export const UNIVERSAL_SKILLS_DIR = path.join('.agents', 'skills')
 /** Most editors share these values — entries only need to declare `detect` + any overrides. */
 const EDITOR_DEFAULTS = {
   buildServerConfig: defaultHttpConfig,
@@ -235,6 +239,7 @@ const EDITOR_DEFAULTS = {
   format: 'jsonc' as const,
   oauthOnly: false,
   readToken: readTokenFromHeaders,
+  skillsDir: UNIVERSAL_SKILLS_DIR,
 }
 
 function buildAntigravityServerConfig(token: string): Record<string, unknown> {
@@ -309,6 +314,7 @@ export const EDITOR_CONFIGS = {
     detect: detectClaudeCode,
     oauthOnly: true,
     skillsCliAgent: 'claude-code',
+    skillsDir: path.join('.claude', 'skills'),
   },
   // Doc: https://github.com/cline/cline — VS Code extension (saoudrizwan.claude-dev)
   // Path: <VS Code User>/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
@@ -422,6 +428,10 @@ const SKILLS_CLI_AGENT_DISPLAY_NAMES: Record<string, string> = {
   'gemini-cli': 'Gemini CLI',
   'github-copilot': 'GitHub Copilot',
   opencode: 'OpenCode',
+}
+
+export function isUniversalSkillsCliAgentByEditorName(editorName: EditorName): boolean {
+  return EDITOR_CONFIGS[editorName]?.skillsDir === UNIVERSAL_SKILLS_DIR
 }
 
 /** Display name used by the skills CLI for the given editor, if it has a mapping. */
