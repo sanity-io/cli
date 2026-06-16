@@ -231,7 +231,8 @@ function readTokenFromHttpHeaders(serverConfig: Record<string, unknown>): string
 }
 
 // -- Defaults & build server config functions --
-export const UNIVERSAL_SKILLS_DIR = path.join('.agents', 'skills')
+
+export const UNIVERSAL_SKILLS_DIR = '.agents/skills'
 /** Most editors share these values — entries only need to declare `detect` + any overrides. */
 const EDITOR_DEFAULTS = {
   buildServerConfig: defaultHttpConfig,
@@ -314,7 +315,7 @@ export const EDITOR_CONFIGS = {
     detect: detectClaudeCode,
     oauthOnly: true,
     skillsCliAgent: 'claude-code',
-    skillsDir: path.join('.claude', 'skills'),
+    skillsDir: '.claude/skills',
   },
   // Doc: https://github.com/cline/cline — VS Code extension (saoudrizwan.claude-dev)
   // Path: <VS Code User>/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
