@@ -1,6 +1,5 @@
 import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
-
-import {type DevServerManifest} from '../registry/registry.js'
+import {type DevServerManifest} from '@sanity/workbench-cli/dev'
 
 /** One forwarded interface record on the dev-server registry entry. */
 export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[number]

@@ -1,18 +1,18 @@
-import {unstable_defineApp} from '@sanity/cli-build/_internal/federation'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {unstable_defineApp} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../actions/build/buildApp.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
-import {checkWorkbenchAppDir} from '../../actions/deploy/workbenchChecks.js'
 import {extractCoreAppManifest} from '../../actions/manifest/extractCoreAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
 import {DeployCommand} from '../deploy.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -30,13 +30,15 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// `checkCanDeployWorkbenchApp` stays real — it's pure config validation the
-// no-interfaces test exercises; only the fs-touching dir check is stubbed.
-vi.mock('../../actions/deploy/workbenchChecks.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../actions/deploy/workbenchChecks.js')>()
+// `assertDeployable` stays real — it's pure config validation the no-interfaces
+// test exercises; only the fs-touching `checkBuiltOutput` is stubbed.
+vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()
   return {
-    ...actual,
-    checkWorkbenchAppDir: vi.fn(),
+    getWorkbench: (config: Parameters<typeof actual.getWorkbench>[0]) => {
+      const workbench = actual.getWorkbench(config)
+      return workbench && {...workbench, checkBuiltOutput: mockCheckBuiltOutput}
+    },
   }
 })
 
@@ -70,7 +72,6 @@ const mockSelect = vi.mocked(select)
 const mockConfirm = vi.mocked(confirm)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
-const mockCheckWorkbenchAppDir = vi.mocked(checkWorkbenchAppDir)
 const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
 const mockBuildApp = vi.mocked(buildApp)
 const mockExtractCoreAppManifest = vi.mocked(extractCoreAppManifest)
@@ -98,7 +99,7 @@ describe('#deploy app', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
-    mockCheckWorkbenchAppDir.mockResolvedValue()
+    mockCheckBuiltOutput.mockResolvedValue(undefined)
     // Default to empty manifest for app deployments
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
   })
@@ -271,7 +272,7 @@ describe('#deploy app', () => {
     })
     if (error) throw error
 
-    expect(mockCheckWorkbenchAppDir).toHaveBeenCalledWith(expect.any(String))
+    expect(mockCheckBuiltOutput).toHaveBeenCalledWith(expect.any(String))
     expect(mockCheckDir).not.toHaveBeenCalled()
     expect(stdout).toContain('Success! Application deployed')
   })
@@ -300,7 +301,7 @@ describe('#deploy app', () => {
     expect(error?.message).toContain('declares no entry, views or services')
     expect(error?.oclif?.exit).toBe(2)
     // fails before any directory check or API call
-    expect(mockCheckWorkbenchAppDir).not.toHaveBeenCalled()
+    expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
     expect(mockCheckDir).not.toHaveBeenCalled()
   })
 

@@ -144,19 +144,19 @@ export async function bootstrapLocalTemplate(
   const cliConfig = isAppTemplate
     ? createAppCliConfig({
         entry: template.entry!,
+        isWorkbenchApp: variables.workbench,
         name: packageJsonName,
         organizationId: variables.organizationId,
         title: variables.projectName || packageJsonName,
-        workbench: variables.workbench,
       })
     : createCliConfig({
         autoUpdates: variables.autoUpdates,
         dataset: variables.dataset,
+        isWorkbenchApp: variables.workbench,
         name: packageJsonName,
         organizationId: variables.organizationId,
         projectId: variables.projectId,
         title: variables.projectName || packageJsonName,
-        workbench: variables.workbench,
       })
 
   // Write non-template files to disc

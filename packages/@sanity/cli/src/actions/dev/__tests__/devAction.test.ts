@@ -100,7 +100,7 @@ describe('devAction', () => {
 
     expect(mockStartStudioDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
-        flags: expect.objectContaining({port: '3334'}),
+        httpPort: 3334,
         workbenchAvailable: true,
       }),
     )

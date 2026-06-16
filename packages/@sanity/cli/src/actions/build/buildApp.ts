@@ -9,18 +9,18 @@ import {
   getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
 } from '@sanity/cli-build/_internal/build'
-import {type DefineAppInput} from '@sanity/cli-build/_internal/federation'
 import {
   type CliConfig,
   getCliTelemetry,
   getLocalPackageVersion,
   getTimer,
   isInteractive,
-  isWorkbenchApp,
   type Output,
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {type DefineAppInput} from '@sanity/workbench-cli'
+import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -64,9 +64,9 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   const {cliConfig, flags, outDir, output, workDir} = options
 
   const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined
-  // `views` lives on `unstable_defineApp`'s result, not the legacy `app` config
-  // object — read it off the branded app.
-  const workbenchApp = isWorkbenchApp(app) ? app : undefined
+  // `views`/`services` live on the branded `unstable_defineApp` result, not the
+  // legacy `app` config object — resolve the workbench capability to read them.
+  const workbench = resolveWorkbenchApp(cliConfig)
 
   await internalBuildApp({
     appId: getAppId(cliConfig),
@@ -75,17 +75,17 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     calledFromDeploy: options.calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: app?.entry,
-    isWorkbenchApp: Boolean(workbenchApp),
+    isWorkbenchApp: !!workbench,
     minify: flags.minify,
     outDir,
     output,
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     schemaExtraction: cliConfig?.schemaExtraction,
-    services: workbenchApp?.services,
+    services: workbench?.services,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: flags.yes,
-    views: workbenchApp?.views,
+    views: workbench?.views,
     vite: cliConfig.vite,
     workDir,
   })

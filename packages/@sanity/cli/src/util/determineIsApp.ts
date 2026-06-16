@@ -14,7 +14,7 @@ import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
 export function determineIsApp(cliConfig: CliConfig): boolean {
   const app = cliConfig?.app
   if (isWorkbenchApp(app)) {
-    return (app as {applicationType?: string}).applicationType !== 'studio'
+    return app.applicationType !== 'studio'
   }
   return Boolean(cliConfig && 'app' in cliConfig)
 }

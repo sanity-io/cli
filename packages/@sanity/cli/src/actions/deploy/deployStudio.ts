@@ -4,8 +4,9 @@ import {createGzip, type Gzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {exitCodes, getLocalPackageVersion, isWorkbenchApp, type Output} from '@sanity/cli-core'
+import {exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {getWorkbench} from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
 
@@ -22,10 +23,10 @@ import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests
 import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
-import {checkWorkbenchAppDir} from './workbenchChecks.js'
 
 export async function deployStudio(options: DeployAppOptions) {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
+  const workbench = getWorkbench(cliConfig)
 
   const workDir = projectRoot.directory
   const configPath = projectRoot.path
@@ -41,7 +42,7 @@ export async function deployStudio(options: DeployAppOptions) {
   // Federated (`unstable_defineApp`) applications integrate through Sanity's
   // build and hosting pipeline, which `--external` skips. Fail before any
   // prompts or API calls.
-  if (isExternal && isWorkbenchApp(cliConfig.app)) {
+  if (isExternal && workbench) {
     output.error(
       'Deploying a federated application to an external host is not yet supported. ' +
         'Remove the `--external` flag to deploy to Sanity hosting.',
@@ -149,9 +150,7 @@ export async function deployStudio(options: DeployAppOptions) {
       // Ensure that the directory exists, is a directory and seems to have valid content
       spin = spin.start()
       try {
-        await (isWorkbenchApp(cliConfig.app)
-          ? checkWorkbenchAppDir(sourceDir)
-          : checkDir(sourceDir))
+        await (workbench ? workbench.checkBuiltOutput(sourceDir) : checkDir(sourceDir))
         spin.succeed()
       } catch (err) {
         spin.fail()

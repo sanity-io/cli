@@ -31,22 +31,30 @@ export async function setup(project: TestProject): Promise<void> {
     console.log('Packing @sanity/cli-build...')
     const cliBuildTarball = packPackage('@sanity/cli-build')
 
+    // `@sanity/cli` and `@sanity/cli-build` depend on `@sanity/workbench-cli`,
+    // which isn't published to npm — pack it too so the installed binary can
+    // resolve it from the co-installed tarball instead of hitting the registry.
+    console.log('Packing @sanity/workbench-cli...')
+    const workbenchCliTarball = packPackage('@sanity/workbench-cli')
+
     console.log('Packing @sanity/cli...')
     const cliTarball = packCli()
 
     console.log('Packing create-sanity...')
     const createSanityTarball = packPackage('create-sanity')
-    tarballPaths = [cliCoreTarball, cliBuildTarball, cliTarball, createSanityTarball]
+    tarballPaths = [
+      cliCoreTarball,
+      cliBuildTarball,
+      workbenchCliTarball,
+      cliTarball,
+      createSanityTarball,
+    ]
 
     const tmpDir = mkdtempSync(join(tmpdir(), 'cli-e2e-'))
     cleanupDir = tmpDir
 
     console.log(`Installing tarballs into ${tmpDir}...`)
-    const binaryPath = installFromTarball(
-      [cliCoreTarball, cliBuildTarball, cliTarball, createSanityTarball],
-      tmpDir,
-      'sanity',
-    )
+    const binaryPath = installFromTarball(tarballPaths, tmpDir, 'sanity')
 
     process.env.E2E_BINARY_PATH = binaryPath
     console.log(`E2E_BINARY_PATH set to ${binaryPath}`)

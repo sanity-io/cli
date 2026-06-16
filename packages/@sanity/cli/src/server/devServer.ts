@@ -1,11 +1,10 @@
 import {
   extendViteConfigWithUserConfig,
   getViteConfig,
-  type InterfaceArtifact,
-  type ServiceArtifact,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
+import {type DefineAppInput} from '@sanity/workbench-cli'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
@@ -36,9 +35,9 @@ export interface DevServerOptions {
   isWorkbenchApp?: boolean
   projectName?: string
   schemaExtraction?: CliConfig['schemaExtraction']
-  services?: readonly ServiceArtifact[]
+  services?: DefineAppInput['services']
   typegen?: CliConfig['typegen']
-  views?: readonly InterfaceArtifact[]
+  views?: DefineAppInput['views']
   vite?: UserViteConfig
 }
 

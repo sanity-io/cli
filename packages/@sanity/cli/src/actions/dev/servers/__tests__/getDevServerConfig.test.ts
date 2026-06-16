@@ -160,4 +160,23 @@ describe('getDevServerConfig', () => {
 
     expect(config.reactStrictMode).toBe(false)
   })
+
+  test('binds the explicit httpPort over the flag-resolved one (workbench claimed the configured port)', () => {
+    const withOverride = getDevServerConfig({
+      cliConfig: {},
+      flags: FLAGS,
+      httpPort: 4001,
+      output: createMockOutput(),
+      workDir: '/tmp',
+    })
+    expect(withOverride.httpPort).toBe(4001)
+
+    const withoutOverride = getDevServerConfig({
+      cliConfig: {},
+      flags: FLAGS,
+      output: createMockOutput(),
+      workDir: '/tmp',
+    })
+    expect(withoutOverride.httpPort).toBe(3333)
+  })
 })

@@ -3,8 +3,9 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {exitCodes, getLocalPackageVersion, isWorkbenchApp} from '@sanity/cli-core'
+import {exitCodes, getLocalPackageVersion} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {getWorkbench} from '@sanity/workbench-cli/deploy'
 import {pack} from 'tar-fs'
 
 import {createDeployment, updateUserApplication} from '../../services/userApplications.js'
@@ -21,7 +22,6 @@ import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
 import {type DeployAppOptions} from './types.js'
 import {buildViewDeploymentPayload} from './viewDeployment.js'
-import {checkCanDeployWorkbenchApp, checkWorkbenchAppDir} from './workbenchChecks.js'
 
 /**
  * Deploy a Sanity application.
@@ -30,6 +30,7 @@ import {checkCanDeployWorkbenchApp, checkWorkbenchAppDir} from './workbenchCheck
  */
 export async function deployApp(options: DeployAppOptions) {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
+  const workbench = getWorkbench(cliConfig)
 
   const workDir = projectRoot.directory
 
@@ -54,9 +55,9 @@ export async function deployApp(options: DeployAppOptions) {
 
   // Fail before any prompts or API calls when the app declares nothing to
   // expose.
-  if (isWorkbenchApp(cliConfig.app)) {
+  if (workbench) {
     try {
-      checkCanDeployWorkbenchApp(cliConfig.app)
+      workbench.assertDeployable()
     } catch (err) {
       output.error(getErrorMessage(err), {exit: exitCodes.USAGE_ERROR})
       return
@@ -99,7 +100,7 @@ export async function deployApp(options: DeployAppOptions) {
     // Ensure that the directory exists, is a directory and seems to have valid content
     spin = spin.start()
     try {
-      await (isWorkbenchApp(cliConfig.app) ? checkWorkbenchAppDir(sourceDir) : checkDir(sourceDir))
+      await (workbench ? workbench.checkBuiltOutput(sourceDir) : checkDir(sourceDir))
       spin.succeed()
     } catch (err) {
       spin.fail()
@@ -155,7 +156,7 @@ export async function deployApp(options: DeployAppOptions) {
     // a malformed view declaration fails the deploy before we ship the bundle.
     // `views` lives on the branded `unstable_defineApp` result, not the legacy
     // `app` config object.
-    const declaredViews = isWorkbenchApp(cliConfig.app) ? (cliConfig.app.views ?? []) : []
+    const declaredViews = workbench?.views ?? []
     if (declaredViews.length > 0) {
       try {
         const payload = buildViewDeploymentPayload({

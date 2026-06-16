@@ -93,6 +93,7 @@
     "@sanity/telemetry": "catalog:",
     "@sanity/template-validator": "^3.1.0",
     "@sanity/types": "catalog:",
+    "@sanity/workbench-cli": "workspace:^",
     "@sanity/worker-channels": "^2.0.0",
     "@vercel/frameworks": "3.21.1",
     "chokidar": "^5.0.0",

@@ -36,10 +36,6 @@
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
     },
-    "./_internal/federation": {
-      "source": "./src/_exports/_internal/federation.ts",
-      "default": "./dist/_exports/_internal/federation.js"
-    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -58,7 +54,6 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@module-federation/vite": "1.16.0",
     "@oclif/core": "catalog:",
     "@rolldown/plugin-babel": "^0.2.3",
     "@sanity/cli-core": "workspace:^",
@@ -66,6 +61,7 @@
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@sanity/types": "catalog:",
+    "@sanity/workbench-cli": "workspace:^",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "cjs-module-lexer": "^2.2.0",
