@@ -91,6 +91,10 @@ const baseConfig = {
       entry: ['package.config.ts'],
       project,
     },
+    'packages/@sanity/workbench-cli': {
+      entry: ['package.config.ts'],
+      project,
+    },
     'packages/create-sanity': {},
   },
 } satisfies KnipConfig

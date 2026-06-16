@@ -1,3 +1,5 @@
+import {workbenchAppConfigTemplate} from '@sanity/workbench-cli/init'
+
 import {processTemplate} from './processTemplate.js'
 
 const defaultAppTemplate = `
@@ -11,35 +13,20 @@ export default defineCliConfig({
 })
 `
 
-// The branded `unstable_defineApp` result is the sole workbench (module
-// federation) opt-in — `entry` auto-declares the navigable app view.
-const workbenchAppTemplate = `
-import {defineCliConfig, unstable_defineApp} from 'sanity/cli'
-
-export default defineCliConfig({
-  app: unstable_defineApp({
-    name: '%name%',
-    title: '%title%',
-    organizationId: '%organizationId%',
-    entry: '%entry%',
-  }),
-})
-`
-
 interface GenerateCliConfigOptions {
   entry: string
+  isWorkbenchApp: boolean
   name: string
   title: string
-  workbench: boolean
 
   organizationId?: string
 }
 
 export function createAppCliConfig(options: GenerateCliConfigOptions): string {
-  const {workbench, ...variables} = options
+  const {isWorkbenchApp, ...variables} = options
   return processTemplate({
     includeBooleanTransform: true,
-    template: workbench ? workbenchAppTemplate : defaultAppTemplate,
+    template: isWorkbenchApp ? workbenchAppConfigTemplate : defaultAppTemplate,
     variables,
   })
 }

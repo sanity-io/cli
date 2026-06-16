@@ -1,5 +1,5 @@
-import {unstable_defineApp} from '@sanity/cli-build/_internal/federation'
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {unstable_defineApp} from '@sanity/workbench-cli'
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import {afterEach, beforeEach, type Mock, vi} from 'vitest'
 

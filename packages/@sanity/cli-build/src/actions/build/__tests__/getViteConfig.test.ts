@@ -13,7 +13,7 @@ import {
 } from '../getViteConfig.js'
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
-const mockFederationPlugin = vi.hoisted(() => vi.fn())
+const mockWorkbenchVitePlugins = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
 vi.mock('read-package-up', () => ({
@@ -58,8 +58,8 @@ vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
-vi.mock('../../../workbench/vite/plugin.js', () => ({
-  federation: mockFederationPlugin.mockReturnValue({
+vi.mock('@sanity/workbench-cli/build', () => ({
+  workbenchVitePlugins: mockWorkbenchVitePlugins.mockResolvedValue({
     name: 'sanity/federation',
   }),
 }))
@@ -524,36 +524,16 @@ describe('#getViteConfig', () => {
       (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
     )
 
-    expect(mockFederationPlugin).toHaveBeenCalledWith({
-      isApp: false,
-      pkgJson: {name: 'sanity'},
-      studioConfigPath: '../../sanity.config.ts',
-      workDir: mockTestCwd,
-    })
+    expect(mockWorkbenchVitePlugins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: mockTestCwd,
+        entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
+      }),
+    )
     expect(federationPlugin).toBeDefined()
     // Workbench stacks the app server next to the workbench port, so it must
     // be able to drift even when the project is a studio.
     expect(config.server?.strictPort).toBe(false)
-  })
-
-  test('should reject when a workbench studio has no sanity config', async () => {
-    // Reachable state: an explicit `applicationType: 'studio'` wins over
-    // detection, so the project can be a workbench studio with no config file.
-    const options = {
-      cwd: mockTestCwd,
-      entries: {relativeConfigLocation: null, relativeEntry: null},
-      getEnvironmentVariables,
-      isWorkbenchApp: true,
-      mode: 'development' as const,
-      reactCompiler: undefined,
-    }
-
-    await expect(getViteConfig(options)).rejects.toThrow(
-      'Workbench studios need a sanity.config.js or sanity.config.ts file. ' +
-        "Add one, or remove `applicationType: 'studio'` from `unstable_defineApp` " +
-        'to let the CLI infer the application type.',
-    )
-    expect(mockFederationPlugin).not.toHaveBeenCalled()
   })
 
   test('should not require a sanity config for workbench apps', async () => {
@@ -569,12 +549,12 @@ describe('#getViteConfig', () => {
 
     const config = await getViteConfig(options)
 
-    expect(mockFederationPlugin).toHaveBeenCalledWith({
-      appEntry: '../../src/App',
-      isApp: true,
-      pkgJson: {name: 'sanity'},
-      workDir: mockTestCwd,
-    })
+    expect(mockWorkbenchVitePlugins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entries: {relativeConfigLocation: null, relativeEntry: '../../src/App'},
+        isApp: true,
+      }),
+    )
     expect(config.plugins).toContainEqual({name: 'sanity/federation'})
   })
 
@@ -591,7 +571,7 @@ describe('#getViteConfig', () => {
 
     const config = await getViteConfig(options)
 
-    expect(mockFederationPlugin).not.toHaveBeenCalled()
+    expect(mockWorkbenchVitePlugins).not.toHaveBeenCalled()
     expect(config.root).toBe(mockTestCwd)
   })
 
@@ -611,7 +591,7 @@ describe('#getViteConfig', () => {
       (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
     )
 
-    expect(mockFederationPlugin).not.toHaveBeenCalled()
+    expect(mockWorkbenchVitePlugins).not.toHaveBeenCalled()
     expect(federationPlugin).toBeUndefined()
   })
 
@@ -630,7 +610,7 @@ describe('#getViteConfig', () => {
       (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
     )
 
-    expect(mockFederationPlugin).not.toHaveBeenCalled()
+    expect(mockWorkbenchVitePlugins).not.toHaveBeenCalled()
     expect(federationPlugin).toBeUndefined()
   })
 })
