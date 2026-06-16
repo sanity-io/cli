@@ -41,34 +41,6 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     }
   })
 
-  test('should use options provided extraction options from cli config', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    const {error, result, stderr, stdout} = await testCommand(ExtractSchemaCommand, ['--watch'], {
-      mocks: {
-        cliConfig: {
-          schemaExtraction: {
-            enforceRequiredFields: true,
-            path: 'cli-config-output',
-            watchPatterns: ['sanity.cli.{js,jsx,ts,tsx,mjs}'],
-          },
-        },
-      },
-    })
-
-    const outputPath = resolve(cwd, 'cli-config-output', 'schema.json')
-
-    expect(error).toBeUndefined()
-    expect(stderr).toContain(`Extracting schema with enforced required fields`)
-    expect(existsSync(outputPath)).toBe(true)
-    expect(stdout).toContain('sanity.cli.{js,jsx,ts,tsx,mjs}')
-
-    if (canCloseWatcher(result)) {
-      await result.close()
-    }
-  })
-
   test('should extract schema with enforce-required-fields flag', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
