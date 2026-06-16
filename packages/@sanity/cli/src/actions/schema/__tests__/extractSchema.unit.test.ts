@@ -56,11 +56,15 @@ describe('extractSchema', () => {
     const output = createMockOutput()
     const watchPattern = '**/globs/ahoy/*.coffeescript'
     await extractSchema({
-      extractOptions: createMockExtractionOptions({watchPatterns: [watchPattern]}),
+      extractOptions: createMockExtractionOptions({
+        enforceRequiredFields: true,
+        watchPatterns: [watchPattern],
+      }),
       output,
     })
     expect(mockedSchemaExtraction).toHaveBeenCalledWith(
       expect.objectContaining({
+        enforceRequiredFields: true,
         watchPatterns: expect.arrayContaining([watchPattern]),
       }),
     )

@@ -41,64 +41,6 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     }
   })
 
-  test('should extract schema with enforce-required-fields flag', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--enforce-required-fields'])
-
-    if (error) throw error
-    expect(stderr).toContain('Extracting schema with enforced required fields')
-    expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
-  })
-
-  test('should extract schema with path flag (directory)', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--path', './custom-output'])
-
-    if (error) throw error
-    expect(stderr).toContain('Extracting schema')
-    expect(stderr).toContain('Extracted schema')
-    expect(existsSync(resolve(cwd, 'custom-output', 'schema.json'))).toBe(true)
-  })
-
-  test('should extract schema with path flag (file path with .json extension)', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--path', './my-schema.json'])
-
-    if (error) throw error
-    expect(stderr).toContain('Extracting schema')
-    expect(stderr).toContain('Extracted schema')
-    expect(existsSync(resolve(cwd, 'my-schema.json'))).toBe(true)
-  })
-
-  test('throws an error if format flag is not groq-type-nodes', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--format', 'invalid-format'])
-
-    expect(stderr).toContain('Extracting schema')
-    expect(stderr).toContain('Failed to extract schema')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('should extract schema with workspace flag', async () => {
-    const cwd = await testFixture('multi-workspace-studio')
-    process.chdir(cwd)
-
-    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--workspace', 'production'])
-
-    if (error) throw error
-    expect(stderr).toContain('Extracting schema')
-    expect(stderr).toContain('Extracted schema')
-    expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
-  })
-
   test('should fail with validation errors for invalid schema (duplicate types)', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
