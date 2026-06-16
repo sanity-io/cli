@@ -3,12 +3,13 @@ import {describe, expect, test} from 'vitest'
 
 import {runCli} from '../../helpers/runCli.js'
 
-// The federated-studio fixture opts into workbench via `unstable_defineApp`, so
-// `sanity dev` runs the studio through the module-federation dev pipeline. This is
-// the only place the real federation dev path runs unmocked, end-to-end, through
-// the actual binary — the in-process command test stubs `startWorkbenchDevServer`.
+// The federated-studio fixture opts into workbench via `unstable_defineApp` and
+// pins the `sanity` workbench dist-tag, so `sanity/workbench` resolves and
+// `sanity dev` starts the real workbench host dev server. This is the only place
+// that orchestration runs unmocked, end-to-end, through the actual binary — the
+// in-process command test stubs `startWorkbenchDevServer`.
 describe('sanity dev (workbench/federation)', {timeout: 120_000}, () => {
-  test('runs the federation dev pipeline and starts the studio', async () => {
+  test('starts the workbench host and pushes the studio to the next port', async () => {
     const cwd = await testFixture('federated-studio')
     const port = 9332
     const session = await runCli({
@@ -17,27 +18,23 @@ describe('sanity dev (workbench/federation)', {timeout: 120_000}, () => {
       interactive: true,
     })
 
-    // The Sanity Studio dev server reports it's ready on the *configured* port. A
-    // federated studio runs itself through federation (no separate workbench host
-    // server), so it stays on `port` rather than being shifted to the next one —
-    // pin both the studio identity and the exact URL so a regression in either
-    // (wrong server, shifted port) fails instead of matching any localhost line.
+    // The workbench host binds the configured port and the studio app is pushed
+    // to the next one. This line only prints when the workbench runtime resolves
+    // and the host vite server actually starts (lock acquired, runtime written),
+    // so it proves the real workbench dev orchestration ran — not just a build.
     await session.waitForText(
-      new RegExp(String.raw`Sanity Studio.+running at http://localhost:${port}/`, 'i'),
+      new RegExp(
+        String.raw`Workbench dev server started at http://localhost:${port} \(app on port ${port + 1}\)`,
+        'i',
+      ),
       {timeout: 90_000},
     )
-    // ...and the federation dev pipeline extracts the app manifest on startup.
-    // A plain studio never extracts a manifest, so this line proves the workbench
-    // path ran unmocked end-to-end — if the federation plugin threw or its deps
-    // were missing, the manifest step would never complete and this would time out.
-    await session.waitForText(/Extracted manifest/i, {timeout: 90_000})
 
-    // `getOutput()` keeps ANSI codes (unlike `waitForText`, which strips them).
-    // The URL itself isn't split by color escapes, so the exact origin is safe to
-    // assert on the raw buffer.
+    // `getOutput()` keeps ANSI codes; neither the host URL nor the app-port label
+    // is split by color escapes, so assert them on the raw buffer too.
     const output = session.getOutput()
-    expect(output).toContain(`http://localhost:${port}/`)
-    expect(output).toContain('Extracted manifest')
+    expect(output).toContain(`http://localhost:${port}`)
+    expect(output).toContain(`app on port ${port + 1}`)
 
     session.sendControl('c')
     await session.waitForExit(15_000).catch(() => session.kill())
