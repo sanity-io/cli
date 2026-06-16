@@ -44,6 +44,11 @@ describe('sanity dev', {timeout: 120_000}, () => {
       expect(res.status).toBe(200)
       expect(await res.text()).toMatch(rootMarker)
 
+      // Inverse guard: a plain (non-`unstable_defineApp`) project must not spin up
+      // the workbench host — that path is gated on the brand, and dev.workbench
+      // asserts the positive. Without this, a gating regression would slip by here.
+      expect(session.getOutput()).not.toContain('Workbench dev server started')
+
       session.sendControl('c')
       // Ctrl+C should tear the server down; kill as a fallback if it's swallowed.
       await session.waitForExit(15_000).catch(() => session.kill())
