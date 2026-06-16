@@ -4,9 +4,9 @@ import {describe, expect, test} from 'vitest'
 import {runCli} from '../../helpers/runCli.js'
 
 // `sanity dev` starts a long-running server, so these drive it through the PTY
-// transport: wait for the ready line, prove the server actually serves the shell
-// over HTTP, then Ctrl+C. No auth/API is involved — the dev server only serves the
-// local studio/app, so a placeholder token is enough.
+// transport: wait for the ready line, prove the server actually serves the
+// studio/app over HTTP, then Ctrl+C. No auth/API is involved — the dev server
+// only serves the local studio/app, so a placeholder token is enough.
 //
 // These double as the inverse workbench guard: a plain (non-`unstable_defineApp`)
 // project must serve on the *configured* port. If a gating regression started the
