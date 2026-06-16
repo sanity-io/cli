@@ -115,6 +115,10 @@ export function registerStudioInitTests(yFlag: string[]): void {
     const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
     expect(cliConfig).toContain(projectId)
     expect(cliConfig).toContain('production')
+    // Inverse guard: a default studio init must not opt into workbench. The
+    // projectId/dataset above also appear in the `unstable_defineApp` variant, so
+    // assert the brand is absent to catch workbench leaking in without the flag.
+    expect(cliConfig).not.toContain('unstable_defineApp')
 
     const config = readFileSync(`${tmp.path}/sanity.config.ts`, 'utf8')
     expect(config).toContain(projectId)
