@@ -22,12 +22,12 @@ catalog:
   groq-js: ^1.30.2
 
   # Sanity
-  sanity: ^6.0.0
-  '@sanity/vision': ^6.0.0
-  '@sanity/types': ^6.0.0
-  '@sanity/schema': ^6.0.0
+  sanity: ^6.1.0
+  '@sanity/vision': ^6.1.0
+  '@sanity/types': ^6.1.0
+  '@sanity/schema': ^6.1.0
   '@sanity/client': ^7.22.1
-  '@sanity/codegen': ^7.0.2
+  '@sanity/codegen': ^7.0.3
   '@sanity/telemetry': ^1.1.0
 
   # Build & Development Tools
@@ -70,7 +70,7 @@ catalog:
   '@swc/core': ^1.15.40
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.5.4
+  '@sanity/pkg-utils': ^10.5.6
   oxfmt: ^0.53.0
 
   # Type Definitions
