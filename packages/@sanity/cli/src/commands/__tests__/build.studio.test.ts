@@ -141,7 +141,8 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       } as CliConfig)
       expect(workbench).not.toBeNull()
       await expect(workbench!.checkBuiltOutput(join(cwd, 'dist'))).resolves.toBeUndefined()
-      // A directory without the federation manifest is rejected.
+      // And the gate actually gates — a directory without the federation manifest
+      // is rejected, so the pass above isn't `checkBuiltOutput` silently no-opping.
       await expect(workbench!.checkBuiltOutput(cwd)).rejects.toThrow(/mf-manifest|federation/i)
     },
   )

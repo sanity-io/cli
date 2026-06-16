@@ -1,4 +1,4 @@
-import {type Plugin, type PluginOption} from 'vite'
+import {type Environment, type Plugin, type PluginOption} from 'vite'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {FEDERATION_DIR_NAME} from '../constants.js'
@@ -38,15 +38,16 @@ describe('sanityModuleFederation (real @module-federation/vite)', () => {
     for (const plugin of plugins) {
       expect(typeof plugin.name).toBe('string')
       // Every plugin is scoped to the dev server or the federation build env.
+      // applyToEnvironment only reads `config.command` and `name`, so a partial
+      // Environment is enough — cast rather than build the whole object.
       const apply = plugin.applyToEnvironment
       expect(typeof apply).toBe('function')
       if (typeof apply === 'function') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect(apply({config: {command: 'serve'}, name: 'client'} as any)).toBe(true)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect(apply({config: {command: 'build'}, name: FEDERATION_DIR_NAME} as any)).toBe(true)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect(apply({config: {command: 'build'}, name: 'client'} as any)).toBe(false)
+        const env = (command: 'build' | 'serve', name: string) =>
+          ({config: {command}, name}) as unknown as Environment
+        expect(apply(env('serve', 'client'))).toBe(true)
+        expect(apply(env('build', FEDERATION_DIR_NAME))).toBe(true)
+        expect(apply(env('build', 'client'))).toBe(false)
       }
     }
   })
