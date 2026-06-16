@@ -84,6 +84,30 @@ describe('readSkillState', () => {
     expect([...result.installedAgentDisplayNames].toSorted()).toEqual(['Claude Code', 'Cursor'])
   })
 
+  test('credits universal editors for Windows-style (backslash) universal paths', async () => {
+    mockExeca.mockResolvedValue({
+      stdout: JSON.stringify([
+        {
+          agents: ['Claude Code'],
+          name: SKILL,
+          path: 'C:\\Users\\u\\.agents\\skills\\sanity-best-practices',
+        },
+        {
+          agents: ['Claude Code'],
+          name: MIGRATION_SKILL,
+          path: 'C:\\Users\\u\\.agents\\skills\\sanity-migration',
+        },
+      ]),
+    })
+
+    const result = await readSkillState({
+      editors: [editor('Cursor'), editor('Claude Code')],
+      skillNames: [SKILL, MIGRATION_SKILL],
+    })
+
+    expect([...result.installedAgentDisplayNames].toSorted()).toEqual(['Claude Code', 'Cursor'])
+  })
+
   test('does not credit universal editors when skills are not in the universal directory', async () => {
     mockExeca.mockResolvedValue({
       stdout: JSON.stringify([
