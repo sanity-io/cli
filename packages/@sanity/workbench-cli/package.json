@@ -1,14 +1,7 @@
 {
   "name": "@sanity/workbench-cli",
   "version": "1.0.0",
-  "description": "Workbench extension for the Sanity CLI: federated app/studio authoring API and Vite federation build. Opt-in via unstable_defineApp.",
-  "keywords": [
-    "cli",
-    "federation",
-    "module-federation",
-    "sanity",
-    "workbench"
-  ],
+  "description": "Internal implementation detail of the Sanity CLI's unstable workbench support. Not intended for direct use.",
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
   "license": "MIT",
