@@ -22,12 +22,12 @@ catalog:
   groq-js: ^1.30.2
 
   # Sanity
-  sanity: ^6.0.0
-  '@sanity/vision': ^6.0.0
-  '@sanity/types': ^6.0.0
-  '@sanity/schema': ^6.0.0
+  sanity: ^6.1.0
+  '@sanity/vision': ^6.1.0
+  '@sanity/types': ^6.1.0
+  '@sanity/schema': ^6.1.0
   '@sanity/client': ^7.22.1
-  '@sanity/codegen': ^7.0.2
+  '@sanity/codegen': ^7.0.3
   '@sanity/telemetry': ^1.1.0
 
   # Build & Development Tools
@@ -70,7 +70,7 @@ catalog:
   '@swc/core': ^1.15.40
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.5.3
+  '@sanity/pkg-utils': ^10.5.6
   oxfmt: ^0.53.0
 
   # Type Definitions
@@ -101,3 +101,9 @@ minimumReleaseAgeExclude:
   - 'jiti@2.7.0'
   # Renovate security update: turbo@2.9.14
   - turbo@2.9.14
+  # Renovate security update: tar@7.5.16
+  - tar@7.5.16
+  # Renovate security update: esbuild@0.28.1
+  - esbuild@0.28.1
+  # Renovate security update: form-data@4.0.6
+  - form-data@4.0.6

@@ -314,6 +314,31 @@ vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', `${blocker.port},0`)
 
 Register cleanup that settles the command even when the test fails, e.g. from an `afterEach` hook. See the `activeLogins` registry in `packages/@sanity/cli/src/commands/__tests__/login.test.ts` for a complete example of all three rules.
 
+### No Interleaved CLI Output in Tests
+
+Test runs must not print CLI messages to the terminal. When a test interleaves lines like `✔ MCP configured for Cursor` with the vitest reporter output, it means the code under test writes directly to the process streams instead of going through an injected output.
+
+The rule: all user-facing output flows through the `Output` abstraction (`{log, warn, error}` from `@sanity/cli-core`). Commands use `this.output` and pass it down; actions accept it as an `output` option and never write to the streams themselves. Do not use `ux` from `@oclif/core` in actions - `ux.stdout`/`ux.stderr` are bare `console.log`/`console.error` calls, which bypass output capture in action-level tests (vitest's own console interception is disabled in this repo).
+
+This also makes messages assertable. Tests inject a mock and assert against it instead of scraping stdout:
+
+```typescript
+const mockOutput = {
+  error: vi.fn() as never,
+  log: vi.fn(),
+  warn: vi.fn(),
+}
+
+test('reports configured editors', async () => {
+  const result = await setupMCP({mode: 'auto', output: mockOutput})
+
+  if (result.error) throw result.error
+  expect(mockOutput.log).toHaveBeenCalledWith(expect.stringContaining('MCP configured for Cursor'))
+})
+```
+
+If an action needs to terminate with a user-facing error, call `output.error(message, {exit: 1})` (it throws like `this.error` does) rather than `ux.error`. Code that runs outside a command, such as an oclif hook, owns its own stream writes and should pass a sink into any action it calls (see `telemetryDisclosure` for an example).
+
 ### Mocking Strategy: What to Mock and When
 
 Follow this hierarchy when writing tests (prefer higher levels):

@@ -21,7 +21,7 @@ import {createTelemetryStore} from '../../util/telemetry/createTelemetryStore.js
 
 export const setupTelemetry: Hook.Prerun = async function ({config}) {
   // Show telemetry disclosure
-  telemetryDisclosure()
+  telemetryDisclosure({logToStderr: (message) => process.stderr.write(`${message}\n`)})
 
   const sessionId = createSessionId()
 

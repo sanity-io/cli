@@ -53,7 +53,7 @@ export class DatasetEmbeddingsDisableCommand extends SanityCommand<
     })
 
     try {
-      ;({dataset} = await resolveDataset({dataset, projectId}))
+      ;({dataset} = await resolveDataset({dataset, output: this.output, projectId}))
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to resolve dataset: ${message}`, error)

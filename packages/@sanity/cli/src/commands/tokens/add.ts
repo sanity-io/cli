@@ -78,7 +78,9 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
 
     try {
       const label = givenLabel || (await this.promptForLabel())
-      const roleName = await (role ? validateRole(role, projectId) : this.promptForRole(projectId))
+      const roleName = await (role
+        ? validateRole(role, projectId, this.output)
+        : this.promptForRole(projectId))
 
       tokensAddDebug(`Creating token for project ${projectId}`, {label, roleName})
       const token = await createToken({
