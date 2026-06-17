@@ -1,3 +1,4 @@
+import {ux} from '@oclif/core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -97,6 +98,23 @@ describe('setupSkills', () => {
       ],
       expect.any(Object),
     )
+  })
+
+  test('prints a summary grouping universal agents and listing additional ones', async () => {
+    mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
+    const stdoutSpy = vi.spyOn(ux, 'stdout').mockImplementation(() => {})
+
+    await setupSkills({agents: ['cursor', 'github-copilot', 'claude-code']})
+
+    const output = stdoutSpy.mock.calls.map((call) => String(call[0])).join('\n')
+    // Universal agents are grouped under a single shared-directory header.
+    expect(output).toContain('Universal (~/.agents/skills)')
+    expect(output).toContain('Cursor, GitHub Copilot')
+    // Non-universal agents (Claude Code) are listed separately with their dir.
+    expect(output).toContain('Additional agents')
+    expect(output).toContain('Claude Code (~/.claude/skills)')
+
+    stdoutSpy.mockRestore()
   })
 
   test('returns an error result when the skills CLI fails (does not throw)', async () => {

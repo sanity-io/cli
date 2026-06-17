@@ -1,4 +1,5 @@
 import {fileURLToPath} from 'node:url'
+import {styleText} from 'node:util'
 
 import {ux} from '@oclif/core'
 import {subdebug} from '@sanity/cli-core'
@@ -6,6 +7,11 @@ import {spinner} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 
 import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
+import {
+  getSkillsCliAgentDisplayNameById,
+  getSkillsCliAgentSkillsDir,
+  UNIVERSAL_SKILLS_DIR,
+} from '../mcp/editorConfigs.js'
 
 const skillsDebug = subdebug('skills:setup')
 
@@ -35,6 +41,42 @@ interface SetupSkillsResult {
   skipped: boolean
 
   error?: Error
+}
+
+/**
+ * Prints a short summary beneath the success line: the skills that were
+ * installed, grouped by where they live. Universal agents share
+ * `~/.agents/skills`, so they're listed together under one header; any agent
+ * with its own directory (e.g. Claude Code) is listed separately with its
+ * location. Global (`-g`) installs are home-anchored, so locations show `~/`.
+ */
+function printInstallSummary(agents: string[]): void {
+  const universal: string[] = []
+  const additional: {dir: string; name: string}[] = []
+
+  for (const agent of agents) {
+    const name = getSkillsCliAgentDisplayNameById(agent) ?? agent
+    const dir = getSkillsCliAgentSkillsDir(agent)
+    if (dir && dir !== UNIVERSAL_SKILLS_DIR) {
+      additional.push({dir, name})
+    } else {
+      universal.push(name)
+    }
+  }
+
+  if (universal.length > 0) {
+    ux.stdout('')
+    ux.stdout(styleText('dim', `  Universal (~/${UNIVERSAL_SKILLS_DIR})`))
+    ux.stdout(styleText('dim', `    ${universal.join(', ')}`))
+  }
+
+  if (additional.length > 0) {
+    ux.stdout('')
+    ux.stdout(styleText('dim', '  Additional agents'))
+    for (const {dir, name} of additional) {
+      ux.stdout(styleText('dim', `    ${name} (~/${dir})`))
+    }
+  }
 }
 
 /**
@@ -69,7 +111,8 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
     const result = await execa(process.execPath, args, {stdio: 'pipe', timeout: 90_000})
     skillsDebug('skills stdout: %s', result.stdout)
     skillsDebug('skills stderr: %s', result.stderr)
-    spin.succeed('Sanity agent skills installed')
+    spin.succeed(`Sanity agent skills installed: [${SANITY_SKILL_NAMES.join(', ')}]`)
+    printInstallSummary(uniqueAgents)
     return {installedAgents: uniqueAgents, skipped: false}
   } catch (error) {
     skillsDebug('Error installing skills %O', error)

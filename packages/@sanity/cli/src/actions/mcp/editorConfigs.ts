@@ -440,3 +440,25 @@ export function getSkillsCliAgentDisplayName(editorName: EditorName): string | u
   const agent = getSkillsCliAgent(editorName)
   return agent ? SKILLS_CLI_AGENT_DISPLAY_NAMES[agent] : undefined
 }
+
+/** Display name for a skills-CLI agent ID (e.g. `'cursor'` → `'Cursor'`). */
+export function getSkillsCliAgentDisplayNameById(agentId: string): string | undefined {
+  return SKILLS_CLI_AGENT_DISPLAY_NAMES[agentId]
+}
+
+/**
+ * The relative, home-anchored directory the `skills` CLI installs into for a
+ * given agent ID (e.g. `'cursor'` → `'.agents/skills'`, `'claude-code'` →
+ * `'.claude/skills'`). Derived from `EDITOR_CONFIGS` so it stays a single
+ * source of truth.
+ */
+export function getSkillsCliAgentSkillsDir(agentName: string): string | undefined {
+  for (const name of Object.keys(EDITOR_CONFIGS) as EditorName[]) {
+    const config = EDITOR_CONFIGS[name]
+    const agent = getSkillsCliAgent(name)
+    if (agent === agentName) {
+      return config.skillsDir
+    }
+  }
+  return undefined
+}

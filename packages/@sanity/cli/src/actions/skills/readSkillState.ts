@@ -42,10 +42,6 @@ function toPosixPath(value: string): string {
  * A skill lives in the shared universal skills directory when its canonical
  * path is under `.agents/skills`. The `skills` CLI installs universal-agent
  * skills there directly (rather than under an agent-specific directory).
- *
- * `UNIVERSAL_SKILLS_DIR` is already `/`-delimited; the `path` from
- * `skills list --json` is external, so we normalize it to `/` to stay
- * platform-agnostic regardless of which separator the CLI emits.
  */
 function isUniversalSkillPath(skillPath: unknown): boolean {
   if (typeof skillPath !== 'string') return false
