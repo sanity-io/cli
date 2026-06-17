@@ -1,5 +1,5 @@
 ---
-'@sanity/cli': minor
+'@sanity/cli': patch
 ---
 
-The `sanity migrations create|list|run` commands now ship natively with the CLI instead of being provided by the `@sanity/migrate` oclif plugin. Behavior and flags are unchanged; both `sanity migrations …` and `sanity migration …` continue to work.
+The content migration commands (`sanity migrations create`, `list`, and `run`) are now built into the CLI.
