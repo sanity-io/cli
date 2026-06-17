@@ -3,7 +3,7 @@ import {createPresetsRegistry} from '@sanity/presets'
 import hero from './hero'
 
 const {defineCta, defineImage, definePage, defineRichText} = createPresetsRegistry({
-  link: {internalTypes: ['page']},
+  link: {to: ['page']},
 })
 
 export const schemaTypes = [

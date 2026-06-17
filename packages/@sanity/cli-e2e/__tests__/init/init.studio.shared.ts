@@ -67,30 +67,33 @@ export function registerStudioInitTests(yFlag: string[]): void {
     expect(existsSync(`${tmp.path}/sanity.config.js`)).toBe(false)
   })
 
-  test.each(['clean', 'blog'])('creates studio with %s template', async (template) => {
-    const {error} = await runCli({
-      args: [
-        'init',
-        ...yFlag,
-        '--project',
-        projectId,
-        '--dataset',
-        'production',
-        '--output-path',
-        tmp.path,
-        '--template',
-        template,
-        '--typescript',
-      ],
-    })
+  test.each(['clean', 'blog', 'page-builder'])(
+    'creates studio with %s template',
+    async (template) => {
+      const {error} = await runCli({
+        args: [
+          'init',
+          ...yFlag,
+          '--project',
+          projectId,
+          '--dataset',
+          'production',
+          '--output-path',
+          tmp.path,
+          '--template',
+          template,
+          '--typescript',
+        ],
+      })
 
-    if (error) throw error
-    expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
-    expect(existsSync(`${tmp.path}/package.json`)).toBe(true)
-    if (template === 'blog') {
-      expect(existsSync(`${tmp.path}/schemaTypes`)).toBe(true)
-    }
-  })
+      if (error) throw error
+      expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
+      expect(existsSync(`${tmp.path}/package.json`)).toBe(true)
+      if (template === 'blog' || template === 'page-builder') {
+        expect(existsSync(`${tmp.path}/schemaTypes`)).toBe(true)
+      }
+    },
+  )
 
   test('creates TypeScript project with correct config files', async () => {
     const {error} = await runCli({
