@@ -77,6 +77,7 @@ function printInstallSummary(agents: string[]): void {
       ux.stdout(styleText('dim', `    ${name} (~/${dir})`))
     }
   }
+  ux.stdout('')
 }
 
 /**
