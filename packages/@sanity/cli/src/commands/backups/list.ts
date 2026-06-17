@@ -99,7 +99,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     }
 
     if (dataset) {
-      assertDatasetExists(datasets, dataset)
+      assertDatasetExists(datasets, dataset, this.output)
     } else {
       dataset = await this.promptForDataset(datasets)
     }

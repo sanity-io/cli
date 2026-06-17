@@ -122,7 +122,7 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     }
 
     if (dataset) {
-      assertDatasetExists(datasets, dataset)
+      assertDatasetExists(datasets, dataset, this.output)
     } else {
       dataset = await promptForDataset({allowCreation: false, datasets})
     }
