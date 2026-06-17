@@ -219,7 +219,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       token: projectConfig.token!,
     } as const
     if (dry) {
-      this.dryRunHandler(id, migration, apiConfig, fromExport)
+      await this.dryRunHandler(id, migration, apiConfig, fromExport)
       return
     }
 

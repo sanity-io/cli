@@ -414,6 +414,22 @@ describe('#migration:run', () => {
     expect(stdout).toContain(`creator ....................... setIfMissing(undefined)`)
     expect(stdout).toContain(`[patch] [article] RDP0avd8MWK480sF2ok0FJ`)
     expect(stdout).toContain(`author ........................ unset()`)
+
+    // Verify the CLI handed @sanity/migrate the right info: full API config
+    // (incl. token + apiVersion) and the resolved migration as the source.
+    expect(mockDryRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        api: expect.objectContaining({
+          apiHost: 'https://api.sanity.io',
+          apiVersion: 'v2024-01-29',
+          dataset: 'production',
+          projectId: 'test-project',
+          token: 'mock-token',
+        }),
+        exportPath: undefined,
+      }),
+      expect.objectContaining({documentTypes: ['article'], title: 'My Migration'}),
+    )
   })
 
   test('runs dry run migration from export', async () => {
@@ -435,6 +451,15 @@ describe('#migration:run', () => {
 
     expect(stdout).toContain('Running migration "my-migration" in dry mode')
     expect(stdout).toContain('Using export production.tar.gz')
+
+    // The local export path is forwarded to @sanity/migrate as the source.
+    expect(mockDryRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        api: expect.objectContaining({projectId: 'test-project', token: 'mock-token'}),
+        exportPath: 'production.tar.gz',
+      }),
+      expect.objectContaining({title: 'My Migration'}),
+    )
   })
 
   test('errors when users passes no-dry-run flag and says no to confirm prompt', async () => {
@@ -505,6 +530,23 @@ describe('#migration:run', () => {
     expect(stderr).toContain('100 documents processed')
     expect(stderr).toContain('50 mutations generated')
     expect(stderr).toContain('1 transactions committed')
+
+    // Verify the CLI invoked the real run() entrypoint with the full API config,
+    // the validated concurrency, a progress callback, and the resolved migration.
+    expect(mockRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        api: expect.objectContaining({
+          apiHost: 'https://api.sanity.io',
+          apiVersion: 'v2024-01-29',
+          dataset: 'production',
+          projectId: 'test-project',
+          token: 'mock-token',
+        }),
+        concurrency: expect.any(Number),
+        onProgress: expect.any(Function),
+      }),
+      expect.objectContaining({documentTypes: ['article'], title: 'My Migration'}),
+    )
   })
 
   test('shows progress updates while migration is running', async () => {
