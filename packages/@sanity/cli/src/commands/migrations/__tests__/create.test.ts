@@ -169,6 +169,22 @@ describe('#migration:create', () => {
     expect(mockConfirm).not.toHaveBeenCalled()
   })
 
+  test('errors instead of writing into the migrations folder when the title slugifies to empty', async () => {
+    mockInput.mockResolvedValueOnce('')
+    mockSelect.mockResolvedValue('Rename a field')
+    mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'))
+
+    const {error} = await testCommand(CreateMigrationCommand, ['!!!'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('valid migration name')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockMkdir).not.toHaveBeenCalled()
+    expect(mockWriteFile).not.toHaveBeenCalled()
+  })
+
   test('prompts the user to overwrite when directory already exists', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename a field')

@@ -72,6 +72,15 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
       .replaceAll(/\s+/g, '-')
       .replaceAll(/[^a-z0-9-]/g, '')
 
+    if (!sluggedName) {
+      this.error(
+        `Could not derive a valid migration name from title ${JSON.stringify(
+          title,
+        )}. Use a title that contains at least one letter or number.`,
+        {exit: 1},
+      )
+    }
+
     const destDir = path.join(workDir, MIGRATIONS_DIRECTORY, sluggedName)
     const definitionFile = path.join(destDir, 'index.ts')
 

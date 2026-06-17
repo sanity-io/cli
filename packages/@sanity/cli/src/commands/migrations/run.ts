@@ -134,7 +134,25 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     if (!id) {
       this.warn(styleText('red', 'Error: Migration ID must be provided'))
 
-      const migrations = await resolveMigrations(workDir)
+      let migrations: Awaited<ReturnType<typeof resolveMigrations>> = []
+      try {
+        migrations = await resolveMigrations(workDir)
+      } catch (error) {
+        // A missing migrations folder is expected for a fresh project; any other
+        // error is unexpected and should propagate.
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw error
+        }
+      }
+
+      if (migrations.length === 0) {
+        this.log('\nNo migrations found in the project')
+        this.log(
+          `Run ${styleText('green', '`sanity migration create <NAME>`')} to create a new migration`,
+        )
+        this.exit(1)
+      }
+
       const table = new Table({
         columns: [
           {alignment: 'left', name: 'id', title: 'ID'},

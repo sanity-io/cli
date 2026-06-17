@@ -41,16 +41,23 @@ export async function resolveMigrations(workDir: string): Promise<ResolvedMigrat
   const migrationEntries = await readdir(migrationsDir, {withFileTypes: true})
 
   const migrations: ResolvedMigration[] = []
+  const seen = new Set<string>()
   for (const entry of migrationEntries) {
     const entryName = entry.isDirectory() ? entry.name : removeMigrationScriptExtension(entry.name)
-    const candidates = await resolveMigrationScript(workDir, entryName)
-    for (const candidate of candidates) {
-      if (isLoadableMigrationScript(candidate)) {
-        migrations.push({
-          id: entryName,
-          migration: candidate.mod.default,
-        })
-      }
+    // A file (e.g. `foo.ts`) and a directory (e.g. `foo/`) can both map to the
+    // same id; only resolve each id once.
+    if (seen.has(entryName)) {
+      continue
+    }
+
+    // `resolveMigrationScript` may return several loadable candidates for a
+    // single id (e.g. both `foo.ts` and `foo/index.ts`). List it just once.
+    const candidate = (await resolveMigrationScript(workDir, entryName)).find((script) =>
+      isLoadableMigrationScript(script),
+    )
+    if (candidate) {
+      seen.add(entryName)
+      migrations.push({id: entryName, migration: candidate.mod.default})
     }
   }
 
