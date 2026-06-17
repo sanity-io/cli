@@ -205,6 +205,30 @@ describe('#migration:run', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('shows friendly guidance instead of crashing when run without an id and the migrations folder is missing', async () => {
+    const enoent = Object.assign(
+      new Error("ENOENT: no such file or directory, scandir 'migrations'"),
+      {code: 'ENOENT'},
+    )
+    mockReaddir.mockRejectedValueOnce(enoent)
+
+    const {error, stderr, stdout} = await testCommand(RunMigrationCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {
+          api: {
+            dataset: 'production',
+            projectId: 'test-project',
+          },
+        },
+      },
+    })
+
+    expect(`${stdout}${stderr}`).not.toContain('ENOENT')
+    expect(stdout).toContain('sanity migration create')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test('shows error if more than one migration have the same name', async () => {
     mockReaddir.mockResolvedValue([
       {isDirectory: () => false, name: 'rename-tags.js'} as unknown as Awaited<
