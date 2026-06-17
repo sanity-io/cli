@@ -32,6 +32,7 @@ All commands are run from the root of the repo.
 5. Test both success and error scenarios
 6. Use `if (error) throw error` in success tests - NOT `expect(error).toBeUndefined()`
 7. Assert `expect(error).toBeInstanceOf(Error)` in error tests, along with exit code and message
+8. Settle every command started in a test before the test ends, even when the test fails - a leaked running command consumes the next test's nock mocks and ports (see `activeLogins` in `login.test.ts`)
 
 ## NEVER:
 
@@ -39,6 +40,8 @@ All commands are run from the root of the repo.
 2. Never leave mocks active between tests
 3. Never use `any` in mock types
 4. Never mock without verifying the mock was called
+5. Never wait for async work (servers starting, output appearing) with fixed `setTimeout` sleeps - poll for an observable signal (printed output via the `onOutput` capture option, mock calls via `vi.waitFor`) with a generous deadline that fails the test
+6. Never hardcode port numbers in tests - use OS-assigned ports (`server.listen(0)`, `vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', '0')` for the auth callback server) and discover the actual port from output or mock calls
 
 ## Quick Reference
 
