@@ -9,7 +9,7 @@
 // reachable from here ships in the frontend bundle. The Node-only build glue
 // lives behind the separate `./vite` entry and never leaks in.
 export type {InterfaceType, ServiceType} from '../contract.js'
-export {unstable_defineApp} from '../defineApp.js'
+export {unstable_defineApp, validateWorkbenchApp} from '../defineApp.js'
 export type {DefineAppInput, DefineAppResult, DockGroup} from '../defineApp.js'
 export {unstable_defineService} from '../defineService.js'
 export type {

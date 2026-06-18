@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
 import {getCliConfigUncached, isWorkbenchApp} from '@sanity/cli-core'
+import {validateWorkbenchApp} from '@sanity/workbench-cli'
 import {type ViteDevServer} from 'vite'
 
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
@@ -39,6 +40,17 @@ function toDisplayHost(host: string | undefined): string {
  */
 export async function devAction(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
   const {cliConfig, flags, output, workDir} = options
+
+  // `unstable_defineApp` is a pure identity wrapper, so this is the first place
+  // its config is validated. In dev we warn and keep going — the server still
+  // starts so the author can fix it live — whereas `sanity build` fails the same
+  // check.
+  if (isWorkbenchApp(cliConfig?.app)) {
+    const invalid = validateWorkbenchApp(cliConfig.app)
+    if (invalid) {
+      output.warn(invalid)
+    }
+  }
 
   const {httpHost, httpPort} = getSharedServerConfig({
     cliConfig,

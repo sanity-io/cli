@@ -6,6 +6,7 @@ import {
   type DefineAppResult,
   type DockGroup,
   unstable_defineApp,
+  validateWorkbenchApp,
 } from '../defineApp.js'
 
 // The brand is a global-registry symbol; re-derive it the way the CLI loader
@@ -223,5 +224,35 @@ describe('type surface', () => {
 
   test('does not expose the internal applicationType', () => {
     expectTypeOf<DefineAppResult>().not.toHaveProperty('applicationType')
+  })
+})
+
+describe('validateWorkbenchApp', () => {
+  test('returns null for a valid app', () => {
+    expect(
+      validateWorkbenchApp({name: 'drop-desk', organizationId: 'org-1', title: 'Drop'}),
+    ).toBeNull()
+  })
+
+  test('reports an invalid name', () => {
+    expect(
+      validateWorkbenchApp({name: 'drop desk', organizationId: 'org-1', title: 'Drop'}),
+    ).toMatch(/name/)
+  })
+
+  test('reports a missing title', () => {
+    expect(validateWorkbenchApp({name: 'drop-desk', organizationId: 'org-1'})).toMatch(/title/)
+  })
+
+  test('reports a studio that declares an entry', () => {
+    expect(
+      validateWorkbenchApp({
+        applicationType: 'studio',
+        entry: './src/App.tsx',
+        name: 'fernway',
+        organizationId: 'org-1',
+        title: 'Fernway',
+      }),
+    ).toMatch(/not implemented yet/)
   })
 })

@@ -99,6 +99,27 @@ export const DefineAppInputSchema = z
   )
 
 /**
+ * Validate a resolved branded `app` config against {@link DefineAppInputSchema}.
+ * Returns a human-readable, multi-line message describing what's wrong, or
+ * `null` when valid. Returns the message rather than throwing so each caller
+ * picks its own policy — `sanity build` fails on it, `sanity dev` warns — and so
+ * the studio app-view rule (which needs the resolved `applicationType`) is only
+ * enforced once `parseWorkbenchCliConfig` has settled the type.
+ * @internal
+ */
+export function validateWorkbenchApp(app: unknown): string | null {
+  const result = DefineAppInputSchema.safeParse(app)
+  if (result.success) return null
+  const issues = result.error.issues
+    .map((issue) => {
+      const at = issue.path.length > 0 ? `${issue.path.join('.')}: ` : ''
+      return `  - ${at}${issue.message}`
+    })
+    .join('\n')
+  return `Invalid \`unstable_defineApp\` config:\n${issues}`
+}
+
+/**
  * User-facing input for `unstable_defineApp`. Excludes the internal
  * `applicationType` — that field is validated by the schema but is not part of
  * the public surface (Sanity-owned apps set it via `@ts-expect-error`).

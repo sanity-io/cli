@@ -5,6 +5,7 @@ import {
   createBaseDevOptions,
   createMockOutput,
   DEV_FLAGS,
+  workbenchApp,
   workbenchCliConfig,
 } from './testHelpers.js'
 
@@ -120,6 +121,22 @@ describe('devAction', () => {
 
     expect(mockStartAppDevServer).toHaveBeenCalled()
     expect(mockStartStudioDevServer).not.toHaveBeenCalled()
+  })
+
+  test('warns but still starts dev when the workbench config is invalid', async () => {
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+    const output = createMockOutput()
+
+    const result = await devAction(
+      createBaseDevOptions({
+        cliConfig: workbenchCliConfig({app: workbenchApp({name: 'bad name'})}),
+        output,
+      }),
+    )
+
+    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('unstable_defineApp'))
+    expect(result.close).toBeTypeOf('function')
+    expect(mockStartStudioDevServer).toHaveBeenCalled()
   })
 
   test('cleans up workbench and re-throws when app/studio startup fails', async () => {
