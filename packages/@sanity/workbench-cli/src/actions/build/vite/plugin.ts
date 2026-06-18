@@ -98,7 +98,7 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
 
     if (!resolvedPath) {
       throw new Error(
-        `Could not resolve path for entry "${entry}". Resolved to "${resolvedPath}". Please check that the file exists and the path is correct.`,
+        `Could not resolve path for entry "${entry}". Please check that the file exists and the path is correct.`,
       )
     }
 
