@@ -6,13 +6,26 @@ import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vite
 
 import {RunMigrationCommand} from '../run.js'
 
-const mocks = vi.hoisted(() => ({
-  confirm: vi.fn(),
-  dryRun: vi.fn(),
-  readdir: vi.fn(),
-  resolveMigrationScript: vi.fn(),
-  run: vi.fn(),
-}))
+const mocks = vi.hoisted(() => {
+  const spinnerInstance = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    stopAndPersist: vi.fn(),
+    text: '',
+  }
+  spinnerInstance.start.mockReturnValue(spinnerInstance)
+  spinnerInstance.stop.mockReturnValue(spinnerInstance)
+  spinnerInstance.stopAndPersist.mockReturnValue(spinnerInstance)
+  return {
+    confirm: vi.fn(),
+    dryRun: vi.fn(),
+    readdir: vi.fn(),
+    resolveMigrationScript: vi.fn(),
+    run: vi.fn(),
+    spinner: vi.fn(() => spinnerInstance),
+    spinnerInstance,
+  }
+})
 
 vi.mock('node:fs/promises', () => ({
   readdir: mocks.readdir,
@@ -23,6 +36,7 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   return {
     ...actual,
     confirm: mocks.confirm,
+    spinner: mocks.spinner,
   }
 })
 
@@ -76,6 +90,7 @@ const mockDryRun = mocks.dryRun
 const mockReaddir = mocks.readdir
 const mockResolveMigrationScript = mocks.resolveMigrationScript
 const mockRun = mocks.run
+const mockSpinner = mocks.spinnerInstance
 
 describe('#migration:run', () => {
   beforeAll(() => {
@@ -115,6 +130,7 @@ describe('#migration:run', () => {
   })
   afterEach(() => {
     vi.clearAllMocks()
+    mockSpinner.text = ''
   })
 
   test('errors when user only enters projectId flag', async () => {
@@ -181,6 +197,29 @@ describe('#migration:run', () => {
       'sanity.cli.js does not contain a dataset identifier ("api.dataset") and no --dataset option was provided.',
     )
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('uses --project and --dataset flags even when cli config has no projectId', async () => {
+    const {error, stdout} = await testCommand(
+      RunMigrationCommand,
+      ['my-migration', '--project', 'flag-project', '--dataset', 'flag-dataset'],
+      {
+        mocks: {
+          ...defaultMocks,
+          // No projectId/dataset resolvable from config — only the flags provide them.
+          cliConfig: {api: {}},
+        },
+      },
+    )
+
+    if (error) throw error
+    expect(stdout).toContain('Running migration "my-migration" in dry mode')
+    expect(mockDryRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        api: expect.objectContaining({dataset: 'flag-dataset', projectId: 'flag-project'}),
+      }),
+      expect.objectContaining({title: 'My Migration'}),
+    )
   })
 
   test('shows warning when user does not provide migration id', async () => {
@@ -527,33 +566,33 @@ describe('#migration:run', () => {
       }
     })
 
-    const {stderr, stdout} = await testCommand(
-      RunMigrationCommand,
-      ['my-migration', '--no-dry-run'],
-      {
-        mocks: {
-          ...defaultMocks,
-          cliConfig: {
-            api: {
-              dataset: 'production',
-              projectId: 'test-project',
-            },
+    const {stdout} = await testCommand(RunMigrationCommand, ['my-migration', '--no-dry-run'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {
+          api: {
+            dataset: 'production',
+            projectId: 'test-project',
           },
         },
       },
-    )
+    })
 
     expect(stdout).toContain('Note: During migrations, your webhooks stay active.')
     expect(stdout).toContain(
       'To adjust them, launch the management interface with sanity manage, navigate to the API settings, and toggle the webhooks before and after the migration as needed.',
     )
-    expect(stderr).toContain('Running migration "my-migration"')
-    expect(stderr).toContain('Migration "my-migration" completed')
-    expect(stderr).toContain('Project id:  test-project')
-    expect(stderr).toContain('Dataset:     production')
-    expect(stderr).toContain('100 documents processed')
-    expect(stderr).toContain('50 mutations generated')
-    expect(stderr).toContain('1 transactions committed')
+    expect(mocks.spinner).toHaveBeenCalledWith(
+      expect.stringContaining('Running migration "my-migration"'),
+    )
+    // The spinner is finalized exactly once, when the migration reports done.
+    expect(mockSpinner.stopAndPersist).toHaveBeenCalledTimes(1)
+    expect(mockSpinner.text).toContain('Migration "my-migration" completed')
+    expect(mockSpinner.text).toContain('Project id:  test-project')
+    expect(mockSpinner.text).toContain('Dataset:     production')
+    expect(mockSpinner.text).toContain('100 documents processed')
+    expect(mockSpinner.text).toContain('50 mutations generated')
+    expect(mockSpinner.text).toContain('1 transactions committed')
 
     // Verify the CLI invoked the real run() entrypoint with the full API config,
     // the validated concurrency, a progress callback, and the resolved migration.
@@ -589,7 +628,7 @@ describe('#migration:run', () => {
       }
     })
 
-    const {stderr} = await testCommand(RunMigrationCommand, ['my-migration', '--no-dry-run'], {
+    await testCommand(RunMigrationCommand, ['my-migration', '--no-dry-run'], {
       mocks: {
         ...defaultMocks,
         cliConfig: {
@@ -601,17 +640,20 @@ describe('#migration:run', () => {
       },
     })
 
-    expect(stderr).toContain('Running migration "my-migration"')
-    expect(stderr).toContain('Project id:')
-    expect(stderr).toContain('test-project')
-    expect(stderr).toContain('Dataset:')
-    expect(stderr).toContain('production')
-    expect(stderr).toContain('Document type:')
-    expect(stderr).toContain('article')
-    expect(stderr).toContain('50 documents processed…')
-    expect(stderr).toContain('25 mutations generated…')
-    expect(stderr).toContain('5 requests pending…')
-    expect(stderr).toContain('0 transactions committed.')
-    expect(stderr).toContain('» [transaction] tx-1')
+    // While the migration is still running it should update the spinner, not
+    // finalize it (stopAndPersist) on every in-progress callback.
+    expect(mockSpinner.stopAndPersist).not.toHaveBeenCalled()
+    expect(mockSpinner.text).toContain('Running migration "my-migration"')
+    expect(mockSpinner.text).toContain('Project id:')
+    expect(mockSpinner.text).toContain('test-project')
+    expect(mockSpinner.text).toContain('Dataset:')
+    expect(mockSpinner.text).toContain('production')
+    expect(mockSpinner.text).toContain('Document type:')
+    expect(mockSpinner.text).toContain('article')
+    expect(mockSpinner.text).toContain('50 documents processed…')
+    expect(mockSpinner.text).toContain('25 mutations generated…')
+    expect(mockSpinner.text).toContain('5 requests pending…')
+    expect(mockSpinner.text).toContain('0 transactions committed.')
+    expect(mockSpinner.text).toContain('» [transaction] tx-1')
   })
 })

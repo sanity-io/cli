@@ -100,7 +100,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(RunMigrationCommand)
     const cliConfig = await this.getCliConfig()
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({deprecatedFlagName: 'project'})
     const datasetFromConfig = cliConfig.api?.dataset
 
     const {directory: workDir} = await this.getProjectRoot()
@@ -307,7 +307,6 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       ? `» ${prettyFormat({indentSize: 2, migration, subject: transaction})}`
       : ''
   }`
-        progressSpinner.stopAndPersist({symbol: styleText('green', '✔')})
       }
     }
   }
