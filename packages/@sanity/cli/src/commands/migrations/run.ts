@@ -99,38 +99,12 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(RunMigrationCommand)
-    const cliConfig = await this.getCliConfig()
-    const projectId = await this.getProjectId({deprecatedFlagName: 'project'})
-    const datasetFromConfig = cliConfig.api?.dataset
-
     const {directory: workDir} = await this.getProjectRoot()
     const id = args.id
     const migrationsDirectoryPath = path.join(workDir, MIGRATIONS_DIRECTORY)
 
-    const fromExport = flags['from-export']
-    const dry = flags['dry-run']
-    const dataset = flags.dataset
-    const project = flags.project
-    const apiVersion = ensureApiVersionFormat(flags['api-version'] ?? DEFAULT_API_VERSION)
-
-    if ((dataset && !project) || (project && !dataset)) {
-      this.error('If either --dataset or --project is provided, both must be provided', {exit: 1})
-    }
-
-    if (!project && !projectId) {
-      this.error(
-        'sanity.cli.js does not contain a project identifier ("api.projectId") and no --project option was provided.',
-        {exit: 1},
-      )
-    }
-
-    if (!dataset && !datasetFromConfig) {
-      this.error(
-        'sanity.cli.js does not contain a dataset identifier ("api.dataset") and no --dataset option was provided.',
-        {exit: 1},
-      )
-    }
-
+    // Listing migrations (no id given) only needs a project root, mirroring
+    // `sanity migrations list` — it must not require api.projectId/dataset.
     if (!id) {
       this.warn(styleText('red', 'Error: Migration ID must be provided'))
 
@@ -138,10 +112,13 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       try {
         migrations = await resolveMigrations(workDir)
       } catch (error) {
-        // A missing migrations folder is expected for a fresh project; any other
-        // error is unexpected and should propagate.
+        // A missing migrations folder is expected for a fresh project; surface
+        // any other failure (e.g. a syntax error in a migration file).
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-          throw error
+          this.error(
+            `Failed to list migrations: ${error instanceof Error ? error.message : String(error)}`,
+            {exit: 1},
+          )
         }
       }
 
@@ -168,6 +145,34 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       this.log('\nRun `sanity migration run <ID>` to run a migration')
 
       this.exit(1)
+    }
+
+    const cliConfig = await this.getCliConfig()
+    const projectId = await this.getProjectId({deprecatedFlagName: 'project'})
+    const datasetFromConfig = cliConfig.api?.dataset
+
+    const fromExport = flags['from-export']
+    const dry = flags['dry-run']
+    const dataset = flags.dataset
+    const project = flags.project
+    const apiVersion = ensureApiVersionFormat(flags['api-version'] ?? DEFAULT_API_VERSION)
+
+    if ((dataset && !project) || (project && !dataset)) {
+      this.error('If either --dataset or --project is provided, both must be provided', {exit: 1})
+    }
+
+    if (!project && !projectId) {
+      this.error(
+        'sanity.cli.js does not contain a project identifier ("api.projectId") and no --project option was provided.',
+        {exit: 1},
+      )
+    }
+
+    if (!dataset && !datasetFromConfig) {
+      this.error(
+        'sanity.cli.js does not contain a dataset identifier ("api.dataset") and no --dataset option was provided.',
+        {exit: 1},
+      )
     }
 
     const candidates = await resolveMigrationScript(workDir, id)
