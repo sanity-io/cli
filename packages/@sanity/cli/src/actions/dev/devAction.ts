@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
 import {getCliConfigUncached, isWorkbenchApp} from '@sanity/cli-core'
+import {type ViteDevServer} from 'vite'
 
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {startDevServerRegistration} from './registration/startDevServerRegistration.js'
@@ -93,17 +94,28 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // codegen artifacts are computed once at server start, so a newly-declared
   // interface has no expose until the server is recreated. `server.restart()`
   // can't do it — it re-uses the inline config — so we tear the app server down
-  // and bring it back up on the same port with a freshly-loaded config. The
+  // and bring it back up with a freshly-loaded config. The
   // workbench page then reloads (driven by the registry watch in the workbench
   // server) to re-fetch the rebuilt remote. A view/service *source* edit doesn't
   // change the interface set, so it stays on the HMR path untouched.
   // Studios declare views/services the same way (only `entry` is rejected,
   // FR-026), so they get the same rebuild — `startApp` routes to the right
-  // server for both.
-  const onInterfaceSetChange = async () => {
+  // server for both. The recreated server is returned so the registration can
+  // re-read its actual address: workbench projects run with non-strict ports,
+  // so the replacement isn't guaranteed to land on the port registered at
+  // startup. A restart that doesn't produce a listening server throws — the
+  // registration must not advertise the new interface set on a dead port, and
+  // the watcher's failure path leaves the rebuild eligible for a retry on the
+  // next config save.
+  const onInterfaceSetChange = async (): Promise<ViteDevServer> => {
     const freshConfig = await getCliConfigUncached(workDir)
     await closeAppDevServer()
-    await startApp(freshConfig)
+    const result = await startApp(freshConfig)
+    if (!result.started) {
+      // The server already reported why (e.g. organizationId was removed).
+      throw new Error('Dev server did not restart after the view/service change')
+    }
+    return result.server
   }
 
   // Workbench is opted into solely by calling `unstable_defineApp` — its
