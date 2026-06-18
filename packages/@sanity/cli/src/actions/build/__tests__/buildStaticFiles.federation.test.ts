@@ -100,5 +100,23 @@ describe('buildStaticFiles', () => {
       expect(mockWriteSanityRuntime).not.toHaveBeenCalled()
       expect(mockBuild).not.toHaveBeenCalled()
     })
+
+    test('threads schemaExtraction through so a federated studio still extracts its schema', async () => {
+      const schemaExtraction = {enabled: true}
+
+      await buildStaticFiles({
+        basePath: '/',
+        cwd,
+        isWorkbenchApp: true,
+        outputDir,
+        schemaExtraction,
+      })
+
+      // The federation getViteConfig call previously dropped this, so a
+      // federated studio silently lost build-time schema extraction.
+      expect(mockGetViteConfig).toHaveBeenCalledWith(
+        expect.objectContaining({isWorkbenchApp: true, schemaExtraction}),
+      )
+    })
   })
 })

@@ -100,6 +100,9 @@ export async function buildStaticFiles(
       mode,
       outputDir,
       reactCompiler,
+      // Schema extraction is a build-time artifact, not a client-specific step,
+      // so a federated studio extracts its schema like the legacy studio build.
+      schemaExtraction,
       services,
       sourceMap,
       views,
