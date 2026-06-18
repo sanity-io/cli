@@ -1,9 +1,8 @@
 import {fileURLToPath} from 'node:url'
 import {styleText} from 'node:util'
 
-import {ux} from '@oclif/core'
-import {Output, subdebug} from '@sanity/cli-core'
-import {spinner} from '@sanity/cli-core/ux'
+import {type Output, subdebug} from '@sanity/cli-core'
+import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 
 import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
@@ -56,7 +55,7 @@ interface SetupSkillsResult {
  * with its own directory (e.g. Claude Code) is listed separately with its
  * location. Global (`-g`) installs are home-anchored, so locations show `~/`.
  */
-function printInstallSummary(agents: string[]): void {
+function printInstallSummary(agents: string[], output: Output): void {
   const universal: string[] = []
   const additional: {dir: string; name: string}[] = []
 
@@ -71,19 +70,19 @@ function printInstallSummary(agents: string[]): void {
   }
 
   if (universal.length > 0) {
-    ux.stdout('')
-    ux.stdout(styleText('dim', `  Universal (~/${UNIVERSAL_SKILLS_DIR})`))
-    ux.stdout(styleText('dim', `    ${universal.join(', ')}`))
+    output.log('')
+    output.log(styleText('dim', `  Universal (~/${UNIVERSAL_SKILLS_DIR})`))
+    output.log(styleText('dim', `    ${universal.join(', ')}`))
   }
 
   if (additional.length > 0) {
-    ux.stdout('')
-    ux.stdout(styleText('dim', '  Additional agents'))
+    output.log('')
+    output.log(styleText('dim', '  Additional agents'))
     for (const {dir, name} of additional) {
-      ux.stdout(styleText('dim', `    ${name} (~/${dir})`))
+      output.log(styleText('dim', `    ${name} (~/${dir})`))
     }
   }
-  ux.stdout('')
+  output.log('')
 }
 
 /**
@@ -119,13 +118,17 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
     const result = await execa(process.execPath, args, {stdio: 'pipe', timeout: 90_000})
     skillsDebug('skills stdout: %s', result.stdout)
     skillsDebug('skills stderr: %s', result.stderr)
-    spin.succeed(`Sanity agent skills installed: [${SANITY_SKILL_NAMES.join(', ')}]`)
-    printInstallSummary(uniqueAgents)
+    spin.stop()
+    output.log(
+      `${logSymbols.success} Sanity agent skills installed: [${SANITY_SKILL_NAMES.join(', ')}]`,
+    )
+    printInstallSummary(uniqueAgents, output)
     return {installedAgents: uniqueAgents, skipped: false}
   } catch (error) {
     skillsDebug('Error installing skills %O', error)
     const err = toError(error)
-    spin.fail(`Could not install Sanity agent skills: ${getErrorMessage(error)}`)
+    spin.stop()
+    output.warn(`Could not install Sanity agent skills: ${getErrorMessage(error)}`)
     if (error && typeof error === 'object') {
       const {stderr, stdout} = error as {stderr?: string; stdout?: string}
       if (stdout) output.warn(stdout)

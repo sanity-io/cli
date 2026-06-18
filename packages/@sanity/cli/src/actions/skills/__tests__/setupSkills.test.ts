@@ -1,4 +1,3 @@
-import {ux} from '@oclif/core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -54,7 +53,9 @@ describe('setupSkills', () => {
     )
     expect(result).toEqual({installedAgents: ['cursor'], skipped: false})
     expect(mockOutput.log).toHaveBeenCalledWith(
-      expect.stringContaining('Installed Sanity agent skills for cursor'),
+      expect.stringContaining(
+        'Sanity agent skills installed: [sanity-best-practices, sanity-migration]',
+      ),
     )
   })
 
@@ -111,19 +112,16 @@ describe('setupSkills', () => {
 
   test('prints a summary grouping universal agents and listing additional ones', async () => {
     mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
-    const stdoutSpy = vi.spyOn(ux, 'stdout').mockImplementation(() => {})
 
     await setupSkills({agents: ['cursor', 'github-copilot', 'claude-code'], output: mockOutput})
 
-    const output = stdoutSpy.mock.calls.map((call) => String(call[0])).join('\n')
+    const logged = mockOutput.log.mock.calls.map((call) => String(call[0])).join('\n')
     // Universal agents are grouped under a single shared-directory header.
-    expect(output).toContain('Universal (~/.agents/skills)')
-    expect(output).toContain('Cursor, GitHub Copilot')
+    expect(logged).toContain('Universal (~/.agents/skills)')
+    expect(logged).toContain('Cursor, GitHub Copilot')
     // Non-universal agents (Claude Code) are listed separately with their dir.
-    expect(output).toContain('Additional agents')
-    expect(output).toContain('Claude Code (~/.claude/skills)')
-
-    stdoutSpy.mockRestore()
+    expect(logged).toContain('Additional agents')
+    expect(logged).toContain('Claude Code (~/.claude/skills)')
   })
 
   test('returns an error result when the skills CLI fails (does not throw)', async () => {

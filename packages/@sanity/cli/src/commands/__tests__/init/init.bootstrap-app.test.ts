@@ -223,7 +223,7 @@ describe('#init: bootstrap-app-initialization', () => {
 
     // Skills install runs before scaffolding (and thus before the "Success!"
     // message), so its progress + result surface above the success output.
-    expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor']})
+    expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor'], output: expect.any(Object)})
     const bootstrapOrder = mocks.bootstrapTemplate.mock.invocationCallOrder[0]
     const skillsOrder = mocks.setupSkills.mock.invocationCallOrder[0]
     expect(skillsOrder).toBeLessThan(bootstrapOrder)
