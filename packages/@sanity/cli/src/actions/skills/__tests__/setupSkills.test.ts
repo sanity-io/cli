@@ -14,13 +14,19 @@ vi.mock('execa', () => ({
   execa: mockExeca,
 }))
 
+const mockOutput = {
+  error: vi.fn() as never,
+  log: vi.fn(),
+  warn: vi.fn(),
+}
+
 describe('setupSkills', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
 
   test('returns skipped when no agents are passed', async () => {
-    const result = await setupSkills({agents: []})
+    const result = await setupSkills({agents: [], output: mockOutput})
 
     expect(result).toEqual({installedAgents: [], skipped: true})
     expect(mockExeca).not.toHaveBeenCalled()
@@ -29,7 +35,7 @@ describe('setupSkills', () => {
   test('installs globally for a single agent', async () => {
     mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
 
-    const result = await setupSkills({agents: ['cursor']})
+    const result = await setupSkills({agents: ['cursor'], output: mockOutput})
 
     expect(mockExeca).toHaveBeenCalledWith(
       process.execPath,
@@ -47,12 +53,15 @@ describe('setupSkills', () => {
       expect.objectContaining({stdio: 'pipe', timeout: 90_000}),
     )
     expect(result).toEqual({installedAgents: ['cursor'], skipped: false})
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Installed Sanity agent skills for cursor'),
+    )
   })
 
   test('deduplicates repeated agent IDs', async () => {
     mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
 
-    const result = await setupSkills({agents: ['cline', 'cline', 'cursor']})
+    const result = await setupSkills({agents: ['cline', 'cline', 'cursor'], output: mockOutput})
 
     expect(result.installedAgents).toEqual(['cline', 'cursor'])
     expect(mockExeca).toHaveBeenCalledWith(
@@ -77,7 +86,7 @@ describe('setupSkills', () => {
   test('passes every agent as a separate -a flag', async () => {
     mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
 
-    await setupSkills({agents: ['cursor', 'claude-code', 'github-copilot']})
+    await setupSkills({agents: ['cursor', 'claude-code', 'github-copilot'], output: mockOutput})
 
     expect(mockExeca).toHaveBeenCalledWith(
       process.execPath,
@@ -121,12 +130,15 @@ describe('setupSkills', () => {
     const installErr = new Error('skills exited 1')
     mockExeca.mockRejectedValue(installErr)
 
-    const result = await setupSkills({agents: ['cursor']})
+    const result = await setupSkills({agents: ['cursor'], output: mockOutput})
 
     expect(result.skipped).toBe(false)
     expect(result.installedAgents).toEqual([])
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error?.message).toBe('skills exited 1')
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      'Could not install Sanity agent skills: skills exited 1',
+    )
   })
 
   test('installs both the best-practices and migration skills', () => {

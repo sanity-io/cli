@@ -67,6 +67,7 @@
     "debug": "catalog:",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
+    "oneline": "^2.0.0",
     "picomatch": "^4.0.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -110,6 +111,9 @@
     "babel-plugin-react-compiler": {
       "optional": true
     }
+  },
+  "overrides": {
+    "rolldown": "1.0.0"
   },
   "engines": {
     "node": ">=22.12"

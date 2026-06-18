@@ -3,25 +3,19 @@ import {createServer} from 'node:http'
 import {platform} from 'node:os'
 import {join} from 'node:path'
 
+import {checkRequiredDependencies} from '@sanity/cli-build/_internal/build'
 import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
-import {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {DevCommand} from '../dev.js'
 
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
-
-vi.mock('../../actions/build/checkRequiredDependencies.js', () => ({
-  checkRequiredDependencies: vi.fn().mockResolvedValue({
-    installedSanityVersion: '3.0.0',
-  }),
-}))
 
 vi.mock('../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
@@ -40,6 +34,18 @@ vi.mock('../../server/vite/plugin-typegen.js', () => ({
     name: 'sanity/typegen',
   }),
 }))
+
+vi.mock('@sanity/cli-build/_internal/build', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-build/_internal/build')>(
+    '@sanity/cli-build/_internal/build',
+  )
+  return {
+    ...actual,
+    checkRequiredDependencies: vi.fn().mockResolvedValue({
+      installedSanityVersion: '3.0.0',
+    }),
+  }
+})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')

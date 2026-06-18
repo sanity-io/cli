@@ -72,7 +72,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     }
 
     if (dataset) {
-      assertDatasetExists(datasets, dataset)
+      assertDatasetExists(datasets, dataset, this.output)
     } else {
       dataset = await this.promptForDataset(datasets)
     }

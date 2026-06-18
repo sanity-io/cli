@@ -2,7 +2,7 @@ import {fileURLToPath} from 'node:url'
 import {styleText} from 'node:util'
 
 import {ux} from '@oclif/core'
-import {subdebug} from '@sanity/cli-core'
+import {Output, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 
@@ -33,6 +33,12 @@ export const SKILLS_BIN_PATH = fileURLToPath(
 interface SetupSkillsOptions {
   /** Skills-CLI agent IDs (e.g. 'cursor', 'claude-code') to install for. */
   agents: string[]
+
+  /**
+   * Output to use for user-facing messages, so they go through the calling
+   * command rather than directly to stdout/stderr.
+   */
+  output: Output
 }
 
 interface SetupSkillsResult {
@@ -86,6 +92,7 @@ function printInstallSummary(agents: string[]): void {
  * must not abort `sanity init`.
  */
 export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSkillsResult> {
+  const {output} = options
   const uniqueAgents = [...new Set(options.agents)]
 
   if (uniqueAgents.length === 0) {
@@ -121,8 +128,8 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
     spin.fail(`Could not install Sanity agent skills: ${getErrorMessage(error)}`)
     if (error && typeof error === 'object') {
       const {stderr, stdout} = error as {stderr?: string; stdout?: string}
-      if (stdout) ux.warn(stdout)
-      if (stderr) ux.warn(stderr)
+      if (stdout) output.warn(stdout)
+      if (stderr) output.warn(stderr)
     }
     return {error: err, installedAgents: [], skipped: false}
   }

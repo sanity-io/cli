@@ -27,7 +27,7 @@
   "type": "module",
   "sideEffects": false,
   "main": "./dist/_exports/index.js",
-  "types": "dist/_exports/index.d.ts",
+  "types": "./dist/_exports/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/_exports/index.ts",
@@ -68,7 +68,7 @@
     "@sanity/client": "catalog:",
     "boxen": "^8.0.1",
     "debug": "catalog:",
-    "get-it": "^8.7.2",
+    "get-it": "^8.8.0",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
     "jiti": "^2.7.0",
@@ -109,6 +109,9 @@
     "babel-plugin-react-compiler": {
       "optional": true
     }
+  },
+  "overrides": {
+    "rolldown": "1.0.0"
   },
   "engines": {
     "node": ">=22.12"

@@ -4,7 +4,10 @@ import {styleText} from 'node:util'
 
 import {
   buildDebug,
+  checkRequiredDependencies,
   checkStudioDependencyVersions,
+  getAutoUpdatesCssUrls,
+  getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
@@ -28,9 +31,7 @@ import {getPackageManagerChoice} from '../../util/packageManager/packageManagerC
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
-import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'

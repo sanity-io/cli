@@ -39,10 +39,11 @@
     "publint": "turbo run publint",
     "publish-packages": "changeset publish",
     "release": "pnpm build:cli && pnpm publish-packages",
-    "pretest": "pnpm run build:cli",
-    "test": "vitest run",
+    "test": "pnpm test:unit && pnpm test:integration",
     "pretest:e2e": "pnpm run build:cli",
     "test:e2e": "pnpm --filter @sanity/cli-e2e test",
+    "pretest:integration": "pnpm run build:cli",
+    "test:integration": "vitest run --project !unit",
     "pretest:unit": "pnpm run build:cli",
     "test:unit": "vitest run --project unit",
     "pretest:watch": "pnpm run build:cli",
@@ -83,7 +84,8 @@
       "node-pty"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*"
+      "@sanity/cli": "workspace:*",
+      "rolldown": "1.0.0"
     }
   }
 }

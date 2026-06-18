@@ -1,6 +1,12 @@
 export {type AutoUpdatesBuildConfig} from '../../actions/build/autoUpdates.js'
 export {buildDebug} from '../../actions/build/buildDebug.js'
+export {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
 export {checkStudioDependencyVersions} from '../../actions/build/checkStudioDependencyVersions.js'
+export {
+  getAutoUpdatesCssUrls,
+  getAutoUpdatesImportMap,
+  getModuleUrl,
+} from '../../actions/build/getAutoUpdatesImportMap.js'
 export {
   extendViteConfigWithUserConfig,
   finalizeViteConfig,

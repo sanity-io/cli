@@ -131,7 +131,7 @@ jobs:
             # We pass in `--reporter=blob` so that we can combine the results from all shards.
             ARGS="$ARGS --coverage --reporter=default --reporter=blob"
           fi
-          pnpm test $ARGS
+          pnpm test:integration $ARGS
 
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() && matrix.node-version == '22' && matrix.os == 'ubuntu-latest' }}

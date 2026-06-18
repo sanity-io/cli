@@ -43,9 +43,14 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
     onUnhandledError(error) {
       /**
-       * Ignore flaky unhandled errors that only happen on the CI since upgrading to vite 8, which does not happen locally
+       * Ignore worker unexpected exit errors due to SIGSEGV from rolldown v1.0.1+: https://github.com/rolldown/rolldown/issues/9722
+       * Node 22 still exhibits SIGABRT issues, and Windows exhibits lots of .. issues.
        */
-      if (process.env.CI === 'true' && error.message.includes('Worker forks emitted error')) {
+      if (
+        process.env.CI === 'true' &&
+        (process.version.startsWith('v22.') || process.platform === 'win32') &&
+        error.message.includes('Worker forks emitted error')
+      ) {
         return false
       }
     },

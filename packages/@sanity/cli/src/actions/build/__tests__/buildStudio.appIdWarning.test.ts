@@ -1,7 +1,6 @@
+import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '@sanity/cli-build/_internal/build'
 import {type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
-
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
@@ -26,17 +25,8 @@ vi.mock('../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
 }))
 
-vi.mock('../checkRequiredDependencies.js', () => ({
-  checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
-}))
-
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
-}))
-
-vi.mock('../getAutoUpdatesImportMap.js', () => ({
-  getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
-  getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
 }))
 
 vi.mock('../getEnvironmentVariables.js', () => ({
@@ -49,7 +39,10 @@ vi.mock('../buildStaticFiles.js', () => ({
 
 vi.mock('@sanity/cli-build/_internal/build', () => ({
   buildDebug: vi.fn(),
+  checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
+  getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
+  getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
   resolveVendorBuildConfig: vi.fn().mockResolvedValue({
     entries: {},
     namesByChunkName: {},
