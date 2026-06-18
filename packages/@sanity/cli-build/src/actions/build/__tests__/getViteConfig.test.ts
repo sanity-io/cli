@@ -323,6 +323,7 @@ describe('#getViteConfig', () => {
       basePath: '/',
       cwd: mockTestCwd,
       isApp: undefined,
+      projectId: undefined,
     })
 
     // Vendor entries become additional Rolldown inputs of the single build.
@@ -342,6 +343,22 @@ describe('#getViteConfig', () => {
     expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
     expect(config.plugins).toContainEqual({name: 'esm-external-require'})
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
+  })
+
+  test('should pass projectId through to sanityBuildEntries', async () => {
+    const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      getEnvironmentVariables,
+      mode: 'production' as const,
+      projectId: 'testproject',
+      reactCompiler: undefined,
+    })
+
+    expect(sanityBuildEntries).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'testproject'}),
+    )
   })
 
   test('should not install esmExternalRequirePlugin when auto-updates are disabled', async () => {
