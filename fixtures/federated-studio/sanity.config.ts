@@ -4,7 +4,7 @@ import {structureTool} from 'sanity/structure'
 import {schemaTypes} from './schemaTypes'
 
 export default defineConfig({
-  title: 'Basic Studio',
+  title: 'Federated Studio',
 
   dataset: 'test',
   projectId: 'ppsg7ml5',
