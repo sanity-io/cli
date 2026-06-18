@@ -13,7 +13,12 @@ describe('sanity dev (workbench/federation)', {timeout: 120_000}, () => {
     const cwd = await testFixture('federated-studio')
     const port = 9332
     const session = await runCli({
-      args: ['dev', '--port', String(port)],
+      // Use the pinned local workbench build, not the auto-update CDN runtime.
+      // The fixture pins the `sanity@workbench` dist-tag; when it drifts from
+      // the CDN's served runtime version, auto-updates raises an interactive
+      // "upgrade local versions?" prompt that blocks the dev server from ever
+      // starting (and this test never answers it).
+      args: ['dev', '--port', String(port), '--no-auto-updates'],
       cwd,
       interactive: true,
     })
