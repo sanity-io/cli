@@ -86,7 +86,7 @@ export async function buildStaticFiles(
    */
   if (isWorkbenchApp) {
     buildDebug('Resolving entries for federation build')
-    const entries = await resolveEntries({cwd, entry, isApp})
+    const entries = await resolveEntries({cwd, entry, isApp, isWorkbenchApp})
 
     buildDebug('Resolving vite config (federation)')
     let viteConfig = await getViteConfig({
@@ -132,6 +132,7 @@ export async function buildStaticFiles(
     cwd,
     entry,
     isApp,
+    isWorkbenchApp,
     reactStrictMode: false,
     watch: false,
   })

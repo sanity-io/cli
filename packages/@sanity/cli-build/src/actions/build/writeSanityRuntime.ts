@@ -21,6 +21,7 @@ interface RuntimeOptions {
   basePath?: string
   entry?: string
   isApp?: boolean
+  isWorkbenchApp?: boolean
 }
 
 /**
@@ -35,7 +36,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
   entries: {relativeConfigLocation: string | null; relativeEntry: string | null}
   watcher: FSWatcher | undefined
 }> {
-  const {appTitle, basePath, cwd, entry, isApp, reactStrictMode, watch} = options
+  const {appTitle, basePath, cwd, entry, isApp, isWorkbenchApp, reactStrictMode, watch} = options
   const runtimeDir = path.join(cwd, '.sanity', 'runtime')
 
   buildDebug('Making runtime directory')
@@ -78,6 +79,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
     cwd,
     entry,
     isApp,
+    isWorkbenchApp,
     runtimeDir,
   })
   const appJsContent = getEntryModule({
@@ -107,9 +109,10 @@ export async function resolveEntries(options: {
   cwd: string
   entry?: string
   isApp?: boolean
+  isWorkbenchApp?: boolean
   runtimeDir?: string
 }): Promise<{relativeConfigLocation: string | null; relativeEntry: string | null}> {
-  const {cwd, entry, isApp} = options
+  const {cwd, entry, isApp, isWorkbenchApp} = options
   const runtimeDir = options.runtimeDir ?? path.join(cwd, '.sanity', 'runtime')
 
   let relativeConfigLocation: string | null = null
@@ -120,11 +123,14 @@ export async function resolveEntries(options: {
       : null
   }
 
-  // A branded app that declares no `entry` has no navigable app view (sanity-io/workbench spec 002-workbench-extension-api, US5):
-  // `null` entry tells the runtime/federation to skip the `./App` render path.
-  // Studios ignore `relativeEntry`, so the legacy `./src/App` default is fine.
+  // Only a *branded* app (`unstable_defineApp`) that declares no `entry` has no
+  // navigable app view (sanity-io/workbench spec 002-workbench-extension-api,
+  // US5): `null` entry tells the runtime/federation to skip the `./App` render
+  // path. Non-branded (legacy SDK) apps keep the historical `./src/App` default,
+  // and studios ignore `relativeEntry` — so gating on `isApp` here would regress
+  // non-opted-in apps to the dock-only stub.
   const relativeEntry =
-    isApp && !entry
+    isWorkbenchApp && !entry
       ? null
       : toForwardSlashes(path.relative(runtimeDir, path.resolve(cwd, entry || './src/App')))
 

@@ -74,6 +74,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     cwd,
     entry,
     isApp,
+    isWorkbenchApp,
     reactStrictMode,
     watch: true,
   })
