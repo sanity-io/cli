@@ -25,7 +25,7 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   function replaceTimestamp(urlStr) {
     try {
       const url = new URL(urlStr);
-      if (/^sanity-cdn\\.[a-zA-Z]+$/.test(url.hostname)) {
+      if (isSanityCdnUrl(urlStr)) {
         url.pathname = url.pathname.replace(/\\/t\\d+/, newTimestamp);
       }
       return url.toString();
