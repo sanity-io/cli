@@ -149,7 +149,9 @@ async function createWorkbenchViteServer(
   const {cliConfig, httpHost, output, workbenchPort, workDir} = options
 
   const remoteUrl = parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
-  const reactStrictMode = resolveReactStrictMode(cliConfig)
+  // The workbench runtime template needs a concrete boolean (it has no studio
+  // default to defer to), so collapse an unset config to off.
+  const reactStrictMode = resolveReactStrictMode(cliConfig) ?? false
 
   const organizationId = resolveOrganizationId(cliConfig)
 

@@ -148,7 +148,7 @@ describe('getDevServerConfig', () => {
     expect(config.reactStrictMode).toBe(true)
   })
 
-  test('should resolve reactStrictMode to false when env var is absent and cliConfig is unset', () => {
+  test('should leave reactStrictMode undefined when env var is absent and cliConfig is unset', () => {
     const output = createMockOutput()
 
     const config = getDevServerConfig({
@@ -158,7 +158,9 @@ describe('getDevServerConfig', () => {
       workDir: '/tmp',
     })
 
-    expect(config.reactStrictMode).toBe(false)
+    // Unset stays undefined so the studio runtime applies its own default,
+    // matching main — coercing to `false` here would force strict mode off.
+    expect(config.reactStrictMode).toBeUndefined()
   })
 
   test('binds the explicit httpPort over the flag-resolved one (workbench claimed the configured port)', () => {
