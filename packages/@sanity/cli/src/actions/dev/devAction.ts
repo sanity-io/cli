@@ -12,6 +12,13 @@ import {startWorkbenchDevServer} from './workbench/startWorkbenchDevServer.js'
 
 const noop = async () => {}
 
+/**
+ * How long a signal-triggered teardown may run before the process force-exits
+ * by re-raising the signal — generous enough for Vite servers and watchers to
+ * close, short enough not to strand a backgrounded process holding the ports.
+ */
+const SHUTDOWN_GRACE_MS = 5000
+
 // Bind-only addresses ('0.0.0.0', '::') aren't routable URLs in every
 // browser (notably on Windows), so the displayed URL falls back to
 // localhost. The bind address itself is untouched — listening and the
@@ -93,21 +100,27 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // rebuilding the federation remote: its module-federation `exposes` map +
   // codegen artifacts are computed once at server start, so a newly-declared
   // interface has no expose until the server is recreated. `server.restart()`
-  // can't do it — it re-uses the inline config — so we tear the app server down
-  // and bring it back up with a freshly-loaded config. The
-  // workbench page then reloads (driven by the registry watch in the workbench
-  // server) to re-fetch the rebuilt remote. A view/service *source* edit doesn't
-  // change the interface set, so it stays on the HMR path untouched.
-  // Studios declare views/services the same way (only `entry` is rejected,
-  // FR-026), so they get the same rebuild — `startApp` routes to the right
-  // server for both. The recreated server is returned so the registration can
-  // re-read its actual address: workbench projects run with non-strict ports,
-  // so the replacement isn't guaranteed to land on the port registered at
-  // startup. A restart that doesn't produce a listening server throws — the
-  // registration must not advertise the new interface set on a dead port, and
-  // the watcher's failure path leaves the rebuild eligible for a retry on the
-  // next config save.
-  const onInterfaceSetChange = async (): Promise<ViteDevServer> => {
+  // can't do it — it re-uses the inline config — so we tear the app server
+  // down and bring it back up with a freshly-loaded config. The workbench page
+  // then reloads (driven by the registry watch in the workbench server) to
+  // re-fetch the rebuilt remote. A view/service *source* edit doesn't change
+  // the interface set, so it stays on the HMR path untouched. Studios declare
+  // views/services the same way (only `entry` is rejected, FR-026), so they
+  // get the same rebuild. The returned-server / thrown-failed-restart contract
+  // is documented on `onInterfaceSetChange` in startDevServerRegistration.
+
+  // Declared ahead of `runRebuild`, which the watcher's initial background
+  // extraction can invoke before the statements below it have run.
+  let closed = false
+
+  const runRebuild = async (): Promise<ViteDevServer> => {
+    // The watcher only learns about shutdown when its own close runs, late in
+    // the teardown sequence — refuse here so a config save during shutdown
+    // can't boot a replacement server nobody owns. Checked before the first
+    // await so a rebuild can't start after close() has read `rebuildInFlight`.
+    if (closed) {
+      throw new Error('Dev server is shutting down')
+    }
     const freshConfig = await getCliConfigUncached(workDir)
     await closeAppDevServer()
     const result = await startApp(freshConfig)
@@ -116,6 +129,19 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       throw new Error('Dev server did not restart after the view/service change')
     }
     return result.server
+  }
+
+  // `closeAppDevServer` is repointed at the replacement server only after
+  // `startApp` resolves — a close() racing a rebuild would tear down the old
+  // (already-closed) server and leave the replacement running with no owner,
+  // so close() waits on the rebuild in flight. Rejections are owned by the
+  // watcher (warn + retry on next save); the tracked copy swallows them so
+  // close() can't reject.
+  let rebuildInFlight: Promise<unknown> = Promise.resolve()
+  const onInterfaceSetChange = (): Promise<ViteDevServer> => {
+    const rebuild = runRebuild()
+    rebuildInFlight = rebuild.catch(() => {})
+    return rebuild
   }
 
   // Workbench is opted into solely by calling `unstable_defineApp` — its
@@ -152,10 +178,19 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     )
   }
 
-  const close = async () => {
-    process.off('SIGINT', onSignal)
-    process.off('SIGTERM', onSignal)
-    await Promise.allSettled([registration?.close(), closeWorkbenchServer(), closeAppDevServer()])
+  // Single-flight: SIGINT followed by SIGTERM (each signal has its own `once`
+  // handler), or a signal racing the caller's own close(), must share one
+  // teardown instead of double-closing every server.
+  let closing: Promise<void> | undefined
+  const close = () => {
+    closing ??= (async () => {
+      closed = true
+      process.off('SIGINT', onSignal)
+      process.off('SIGTERM', onSignal)
+      await rebuildInFlight
+      await Promise.allSettled([registration?.close(), closeWorkbenchServer(), closeAppDevServer()])
+    })()
+    return closing
   }
 
   // Ensure the workbench lock file and registry entries are cleaned up on
@@ -163,7 +198,25 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // next read), but eager cleanup avoids the detect-prune-retry cycle.
   // Plain projects have no lock or registry entry, so they keep the default
   // signal handling (and exit codes) they had before workbench existed.
-  const onSignal = () => void close()
+  //
+  // Trapping the signal disables Node's default exit, and a finished teardown
+  // doesn't guarantee an empty event loop (keep-alive sockets, an extraction
+  // worker mid-run) — without an explicit exit the process lingers, holding
+  // its ports, while the shell prompt returns. Re-raising after teardown
+  // restores the default termination (the `once` handler is gone by then),
+  // with conventional signal exit semantics.
+  const onSignal = (signal: NodeJS.Signals) => {
+    // Backstop for a teardown that never settles (a wedged socket or watcher):
+    // force the exit once the grace period elapses. Cleared on the normal path
+    // so the re-raise fires exactly once; `unref` keeps the timer from holding
+    // the process open by itself.
+    const graceTimer = setTimeout(() => process.kill(process.pid, signal), SHUTDOWN_GRACE_MS)
+    graceTimer.unref()
+    void close().finally(() => {
+      clearTimeout(graceTimer)
+      process.kill(process.pid, signal)
+    })
+  }
   if (workbenchAvailable || registration) {
     process.once('SIGINT', onSignal)
     process.once('SIGTERM', onSignal)
