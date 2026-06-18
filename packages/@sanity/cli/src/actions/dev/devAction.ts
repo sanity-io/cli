@@ -110,17 +110,26 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // branded identity is the only signal. The workbench remote is the exception:
   // it's the shell itself, not a dock app, so it never registers into the
   // shared workbench registry.
-  const registration =
-    isWorkbenchApp(cliConfig?.app) && !isWorkbenchRemote
-      ? await startDevServerRegistration({
-          cliConfig,
-          isApp: options.isApp,
-          onInterfaceSetChange,
-          output,
-          server,
-          workDir,
-        })
-      : undefined
+  let registration: Awaited<ReturnType<typeof startDevServerRegistration>> | undefined
+  try {
+    registration =
+      isWorkbenchApp(cliConfig?.app) && !isWorkbenchRemote
+        ? await startDevServerRegistration({
+            cliConfig,
+            isApp: options.isApp,
+            onInterfaceSetChange,
+            output,
+            server,
+            workDir,
+          })
+        : undefined
+  } catch (err) {
+    // Registration runs only after both servers are already up. If it throws
+    // (e.g. `deriveInterfaces` rejects), tear them down before rethrowing —
+    // otherwise the workbench lock and dev servers leak until the next run.
+    await Promise.allSettled([closeWorkbenchServer(), closeAppDevServer()])
+    throw err
+  }
 
   if (workbenchAvailable) {
     const workbenchUrl = `http://${toDisplayHost(workbenchHost)}:${workbenchPort}`

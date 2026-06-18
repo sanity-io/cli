@@ -177,6 +177,30 @@ describe('devAction', () => {
       expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
     })
 
+    test('tears down both servers and re-throws when registration fails', async () => {
+      // Registration runs after both servers are up, so a failure here must not
+      // leak the workbench lock or the dev servers.
+      const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
+      const mockAppClose = vi.fn().mockResolvedValue(undefined)
+      mockStartWorkbenchDevServer.mockResolvedValue({
+        close: mockWorkbenchClose,
+        httpHost: 'localhost',
+        workbenchAvailable: true,
+        workbenchPort: 3333,
+      })
+      mockStartStudioDevServer.mockResolvedValue({...mockServer({port: 3334}), close: mockAppClose})
+      const registrationError = new Error('deriveInterfaces failed')
+      mockStartDevServerRegistration.mockRejectedValue(registrationError)
+
+      const thrown = await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()})).catch(
+        (err) => err,
+      )
+
+      expect(thrown).toBe(registrationError)
+      expect(mockWorkbenchClose).toHaveBeenCalled()
+      expect(mockAppClose).toHaveBeenCalled()
+    })
+
     test('passes isApp: true for app mode', async () => {
       mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
