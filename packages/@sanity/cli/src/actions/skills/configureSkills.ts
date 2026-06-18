@@ -1,5 +1,4 @@
-import {ux} from '@oclif/core'
-import {subdebug} from '@sanity/cli-core'
+import {type Output, subdebug} from '@sanity/cli-core'
 
 import {detectAvailableEditors} from '../mcp/detectAvailableEditors.js'
 import {type EditorName, getSkillsCliAgent} from '../mcp/editorConfigs.js'
@@ -12,6 +11,12 @@ const NO_EDITORS_MESSAGE =
   'No supported editors detected for Sanity agent skills. See https://www.sanity.io/docs/ai/skills for manual setup.'
 
 interface ConfigureSkillsOptions {
+  /**
+   * Output to use for user-facing messages, so they go through the calling
+   * command rather than directly to stdout/stderr.
+   */
+  output: Output
+
   /**
    * Pre-detected editors. When omitted, `detectAvailableEditors()` is called.
    * Accepting this avoids re-running detection when the caller already has it.
@@ -39,9 +44,10 @@ interface ConfigureSkillsResult {
  * warnings and never thrown.
  */
 export async function configureSkills(
-  options?: ConfigureSkillsOptions,
+  options: ConfigureSkillsOptions,
 ): Promise<ConfigureSkillsResult> {
-  const editors = options?.editors ?? (await detectAvailableEditors())
+  const {output} = options
+  const editors = options.editors ?? (await detectAvailableEditors())
   const detectedEditors = editors.map((e) => e.name)
   debug('Detected %d editors: %s', detectedEditors.length, detectedEditors)
 
@@ -55,11 +61,11 @@ export async function configureSkills(
   ]
 
   if (agents.length === 0) {
-    ux.warn(NO_EDITORS_MESSAGE)
+    output.warn(NO_EDITORS_MESSAGE)
     return {detectedEditors, installedAgents: [], skipped: true}
   }
 
-  const result = await setupSkills({agents})
+  const result = await setupSkills({agents, output})
 
   return {
     detectedEditors,

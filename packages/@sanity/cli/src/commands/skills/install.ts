@@ -22,7 +22,7 @@ export class InstallSkillsCommand extends SanityCommand<typeof InstallSkillsComm
     trace.start()
 
     try {
-      const result = await configureSkills()
+      const result = await configureSkills({output: this.output})
 
       trace.log({
         detectedEditors: result.detectedEditors,

@@ -113,7 +113,7 @@ describe('setupSkills', () => {
     mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
     const stdoutSpy = vi.spyOn(ux, 'stdout').mockImplementation(() => {})
 
-    await setupSkills({agents: ['cursor', 'github-copilot', 'claude-code']})
+    await setupSkills({agents: ['cursor', 'github-copilot', 'claude-code'], output: mockOutput})
 
     const output = stdoutSpy.mock.calls.map((call) => String(call[0])).join('\n')
     // Universal agents are grouped under a single shared-directory header.

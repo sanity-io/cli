@@ -22,6 +22,12 @@ function editor(name: Editor['name']): Editor {
   return {configPath: `/fake/${name}/config.json`, configured: false, name}
 }
 
+const mockOutput = {
+  error: vi.fn() as never,
+  log: vi.fn(),
+  warn: vi.fn(),
+}
+
 describe('configureSkills', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -31,9 +37,9 @@ describe('configureSkills', () => {
     mockDetectAvailableEditors.mockResolvedValue([editor('Cursor'), editor('Codex CLI')])
     mockSetupSkills.mockResolvedValue({installedAgents: ['cursor', 'codex'], skipped: false})
 
-    const result = await configureSkills()
+    const result = await configureSkills({output: mockOutput})
 
-    expect(mockSetupSkills).toHaveBeenCalledWith({agents: ['cursor', 'codex']})
+    expect(mockSetupSkills).toHaveBeenCalledWith({agents: ['cursor', 'codex'], output: mockOutput})
     expect(result.installedAgents).toEqual(['cursor', 'codex'])
     expect(result.detectedEditors).toEqual(['Cursor', 'Codex CLI'])
     expect(result.skipped).toBe(false)
@@ -43,18 +49,18 @@ describe('configureSkills', () => {
     mockDetectAvailableEditors.mockResolvedValue([editor('VS Code'), editor('GitHub Copilot CLI')])
     mockSetupSkills.mockResolvedValue({installedAgents: ['github-copilot'], skipped: false})
 
-    await configureSkills()
+    await configureSkills({output: mockOutput})
 
-    expect(mockSetupSkills).toHaveBeenCalledWith({agents: ['github-copilot']})
+    expect(mockSetupSkills).toHaveBeenCalledWith({agents: ['github-copilot'], output: mockOutput})
   })
 
   test('re-runs setupSkills even when skills are already installed (updates in place)', async () => {
     mockDetectAvailableEditors.mockResolvedValue([editor('Cursor')])
     mockSetupSkills.mockResolvedValue({installedAgents: ['cursor'], skipped: false})
 
-    const result = await configureSkills()
+    const result = await configureSkills({output: mockOutput})
 
-    expect(mockSetupSkills).toHaveBeenCalledWith({agents: ['cursor']})
+    expect(mockSetupSkills).toHaveBeenCalledWith({agents: ['cursor'], output: mockOutput})
     expect(result.skipped).toBe(false)
     expect(result.installedAgents).toEqual(['cursor'])
   })
@@ -62,9 +68,10 @@ describe('configureSkills', () => {
   test('skips when no detected editor supports skills', async () => {
     mockDetectAvailableEditors.mockResolvedValue([editor('Zed')])
 
-    const result = await configureSkills()
+    const result = await configureSkills({output: mockOutput})
 
     expect(mockSetupSkills).not.toHaveBeenCalled()
+    expect(mockOutput.warn).toHaveBeenCalledTimes(1)
     expect(result.skipped).toBe(true)
     expect(result.detectedEditors).toEqual(['Zed'])
   })
@@ -74,7 +81,7 @@ describe('configureSkills', () => {
     const installErr = new Error('skills exited 1')
     mockSetupSkills.mockResolvedValue({error: installErr, installedAgents: [], skipped: false})
 
-    const result = await configureSkills()
+    const result = await configureSkills({output: mockOutput})
 
     expect(result.error).toBe(installErr)
     expect(result.installedAgents).toEqual([])
@@ -84,7 +91,7 @@ describe('configureSkills', () => {
     mockDetectAvailableEditors.mockResolvedValue([editor('Cursor')])
     mockSetupSkills.mockResolvedValue({installedAgents: ['cursor'], skipped: false})
 
-    await configureSkills()
+    await configureSkills({output: mockOutput})
 
     expect(mockDetectAvailableEditors).toHaveBeenCalledTimes(1)
   })
@@ -92,10 +99,10 @@ describe('configureSkills', () => {
   test('uses provided editors without re-detecting', async () => {
     mockSetupSkills.mockResolvedValue({installedAgents: ['cursor'], skipped: false})
 
-    const result = await configureSkills({editors: [editor('Cursor')]})
+    const result = await configureSkills({editors: [editor('Cursor')], output: mockOutput})
 
     expect(mockDetectAvailableEditors).not.toHaveBeenCalled()
-    expect(mockSetupSkills).toHaveBeenCalledWith({agents: ['cursor']})
+    expect(mockSetupSkills).toHaveBeenCalledWith({agents: ['cursor'], output: mockOutput})
     expect(result.detectedEditors).toEqual(['Cursor'])
   })
 })

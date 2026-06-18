@@ -27,7 +27,7 @@ describe('#skills:install', () => {
 
     if (error) throw error
 
-    expect(mockConfigureSkills).toHaveBeenCalledWith()
+    expect(mockConfigureSkills).toHaveBeenCalledWith({output: expect.anything()})
   })
 
   test('does not fail the command when configureSkills reports an install error', async () => {
