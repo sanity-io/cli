@@ -32,8 +32,9 @@ export async function setup(project: TestProject): Promise<void> {
     const cliBuildTarball = packPackage('@sanity/cli-build')
 
     // `@sanity/cli` and `@sanity/cli-build` depend on `@sanity/workbench-cli`,
-    // which isn't published to npm — pack it too so the installed binary can
-    // resolve it from the co-installed tarball instead of hitting the registry.
+    // so pack it too — otherwise the install resolves the published version
+    // from npm and the e2e wouldn't exercise this PR's workbench-cli build
+    // (same reason the packages above are packed instead of installed from npm).
     console.log('Packing @sanity/workbench-cli...')
     const workbenchCliTarball = packPackage('@sanity/workbench-cli')
 
