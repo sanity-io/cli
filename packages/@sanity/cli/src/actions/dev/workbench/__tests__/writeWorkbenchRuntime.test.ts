@@ -136,7 +136,7 @@ describe('writeWorkbenchRuntime', () => {
       expect(content).toContain('<script type="module" src="./workbench.js">')
     })
 
-    test('is valid HTML with charset meta tag', async () => {
+    test('starts with a DOCTYPE and has a charset meta tag', async () => {
       await writeWorkbenchRuntime({cwd: tmpDir, reactStrictMode: false})
 
       const content = await fs.readFile(join(tmpDir, '.sanity', 'workbench', 'index.html'), 'utf8')
