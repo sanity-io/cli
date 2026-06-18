@@ -268,6 +268,36 @@ describe('#migration:run', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('lists migrations without an id even when project and dataset are not configured', async () => {
+    const {error, stderr, stdout} = await testCommand(RunMigrationCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        // Like `migrations list`, listing should only need a project root.
+        cliConfig: {api: {}},
+      },
+    })
+
+    expect(stderr).toContain('Migration ID must be provided')
+    expect(stdout).toContain('my-migration')
+    expect(stdout).toContain('My Migration')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('surfaces a clear error when listing migrations fails for a non-ENOENT reason', async () => {
+    mockReaddir.mockRejectedValueOnce(new Error('Unexpected token in migration file'))
+
+    const {error} = await testCommand(RunMigrationCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {}},
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Unexpected token in migration file')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test('shows error if more than one migration have the same name', async () => {
     mockReaddir.mockResolvedValue([
       {isDirectory: () => false, name: 'rename-tags.js'} as unknown as Awaited<
