@@ -1,11 +1,23 @@
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {isWorkbenchApp, SanityCommand} from '@sanity/cli-core'
+import {type CliConfig, isWorkbenchApp, SanityCommand} from '@sanity/cli-core'
 
 import {devAction} from '../actions/dev/devAction.js'
 import {devDebug} from '../actions/dev/devDebug.js'
 import {determineIsApp} from '../util/determineIsApp.js'
+
+/**
+ * Workbench apps never load in the Sanity dashboard, so `--load-in-dashboard`
+ * has no effect for them. The flag is defaulted later in `run`, so an
+ * `undefined` value here still means the user never passed it.
+ */
+export function shouldWarnDashboardFlagIgnored(
+  cliConfig: CliConfig | undefined,
+  loadInDashboard: boolean | undefined,
+): boolean {
+  return isWorkbenchApp(cliConfig?.app) && loadInDashboard !== undefined
+}
 
 export class DevCommand extends SanityCommand<typeof DevCommand> {
   static override description = 'Start a local development server with live reloading'
@@ -40,8 +52,7 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     const cliConfig = await this.getCliConfig()
     const isApp = determineIsApp(cliConfig)
 
-    // The flag is defaulted below, so undefined still means "not passed".
-    if (isWorkbenchApp(cliConfig?.app) && flags['load-in-dashboard'] !== undefined) {
+    if (shouldWarnDashboardFlagIgnored(cliConfig, flags['load-in-dashboard'])) {
       this.output.warn(
         'Ignoring --load-in-dashboard: workbench apps do not load in the Sanity dashboard',
       )

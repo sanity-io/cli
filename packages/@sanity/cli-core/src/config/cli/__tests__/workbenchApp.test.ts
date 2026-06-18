@@ -3,7 +3,7 @@ import {join} from 'node:path'
 
 import {describe, expect, test} from 'vitest'
 
-import {parseWorkbenchCliConfig} from '../workbenchApp'
+import {parseWorkbenchCliConfig} from '../workbenchApp.js'
 
 const BRAND = Symbol.for('sanity.workbench.defineApp')
 // A dir with no `sanity.config.*`, so detection resolves to a core app.

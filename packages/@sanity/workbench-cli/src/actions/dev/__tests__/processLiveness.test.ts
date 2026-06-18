@@ -52,7 +52,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
-  vi.unstubAllEnvs()
 })
 
 describe('PID-reuse detection', () => {

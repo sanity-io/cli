@@ -4,13 +4,12 @@ import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {checkRequiredDependencies} from '@sanity/cli-build/_internal/build'
-import {type CliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
-import {workbenchApp} from '../../actions/dev/__tests__/testHelpers.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
@@ -269,50 +268,6 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       if (error) throw error
       expect(stdout).toContain('http://127.0.0.1:5351')
       await tryCloseServer(result)
-    })
-  })
-
-  describe('workbench-app', () => {
-    test('warns that --load-in-dashboard is ignored for workbench apps', async () => {
-      const cwd = await testFixture('basic-app')
-      process.cwd = () => cwd
-
-      // No organizationId: the command exits before booting a server, after
-      // the flag warning has been emitted.
-      const {error, stderr} = await testCommand(
-        DevCommand,
-        ['--load-in-dashboard', '--port', '5346'],
-        {
-          config: {root: cwd},
-          mocks: {
-            cliConfig: {app: workbenchApp({organizationId: undefined})} as CliConfig,
-            isInteractive: true,
-          },
-        },
-      )
-
-      // oclif line-wraps long warnings, so assert the unwrapped prefix only
-      expect(stderr).toContain('Ignoring --load-in-dashboard')
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Apps require an organization ID (orgId)')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
-    test('does not warn when the flag is not passed', async () => {
-      const cwd = await testFixture('basic-app')
-      process.cwd = () => cwd
-
-      const {error, stderr} = await testCommand(DevCommand, ['--port', '5347'], {
-        config: {root: cwd},
-        mocks: {
-          cliConfig: {app: workbenchApp({organizationId: undefined})} as CliConfig,
-          isInteractive: true,
-        },
-      })
-
-      expect(stderr).not.toContain('Ignoring --load-in-dashboard')
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.oclif?.exit).toBe(1)
     })
   })
 

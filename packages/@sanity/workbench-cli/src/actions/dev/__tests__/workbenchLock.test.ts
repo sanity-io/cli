@@ -39,16 +39,16 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
-  vi.unstubAllEnvs()
 })
 
 describe('acquireWorkbenchLock', () => {
-  test('returns lock object when lock is available', () => {
+  test('returns lock object when lock is available', (t) => {
     const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})
+    // Release even if an assertion below throws, so the lock file never leaks.
+    t.onTestFinished(() => lock?.release())
     expect(lock).toBeDefined()
     expect(lock!.release).toBeTypeOf('function')
     expect(lock!.updatePort).toBeTypeOf('function')
-    lock!.release()
   })
 
   test('returns undefined when lock is already held by a live process', () => {

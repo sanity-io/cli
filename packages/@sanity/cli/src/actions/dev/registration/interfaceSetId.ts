@@ -5,8 +5,8 @@ import {type DevServerInterface} from './deriveInterfaces.js'
  * over its forwarded Interface records (interface_type, name, entry_point).
  * Two sets that differ only in declaration order share an id, so reordering
  * `views`/`services` in `sanity.cli.ts` is not a change; adding, removing,
- * renaming, or repointing a view/service is. `undefined` (project types that
- * declare no interfaces, e.g. studios) ids to the empty set.
+ * renaming, or repointing a view/service is. An `undefined` set (project types
+ * that declare no interfaces, e.g. studios) gets the same id as the empty set.
  *
  * Both detection sites compare this id against their own last-seen value across
  * the dev-server registry seam: the app dev server rebuilds the federation

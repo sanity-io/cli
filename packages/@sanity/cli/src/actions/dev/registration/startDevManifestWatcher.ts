@@ -151,7 +151,11 @@ export async function startDevManifestWatcher<T>({
   })
 
   return {
+    // Idempotent — a repeat close (e.g. a signal handler racing an explicit
+    // close) is a no-op, so we never clear an already-cleared timer or
+    // double-close the underlying watcher.
     close: async () => {
+      if (closed) return
       closed = true
       clearTimeout(debounceTimer)
       watcher.close()

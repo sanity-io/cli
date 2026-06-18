@@ -126,7 +126,7 @@ describe('checkBuiltOutput', () => {
     mockStat.mockResolvedValueOnce({isDirectory: () => false} as never)
 
     await expect(workbench({entry: './src/App.tsx'}).checkBuiltOutput(testDir)).rejects.toThrow(
-      `Directory ${testDir} is not a directory`,
+      `"${testDir}" is not a directory`,
     )
 
     expect(mockStat).toHaveBeenCalledTimes(1)

@@ -44,17 +44,18 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
-  vi.unstubAllEnvs()
 })
 
 describe('registerDevServer', () => {
-  test('writes a manifest file and returns a cleanup function', () => {
+  test('writes a manifest file and returns a cleanup function', (t) => {
     const {release: cleanup} = registerDevServer({
       host: 'localhost',
       port: 3334,
       type: 'studio',
       workDir: '/tmp/project',
     })
+    // Guarantee the manifest is removed even if an assertion below throws.
+    t.onTestFinished(() => cleanup())
 
     const filePath = join(registryDir(), `${process.pid}.json`)
     expect(existsSync(filePath)).toBe(true)
@@ -179,9 +180,10 @@ describe('registerDevServer', () => {
 })
 
 describe('watchRegistry', () => {
-  test('invokes callback when a manifest file is added', async () => {
+  test('invokes callback when a manifest file is added', async (t) => {
     const callback = vi.fn()
     const watcher = watchRegistry(callback)
+    t.onTestFinished(() => watcher.close())
 
     const dir = registryDir()
     const manifest: DevServerManifest = {
@@ -200,8 +202,6 @@ describe('watchRegistry', () => {
     expect(callback).toHaveBeenCalled()
     const servers = callback.mock.calls.at(-1)![0]
     expect(servers.some((s: DevServerManifest) => s.port === 5555)).toBe(true)
-
-    watcher.close()
   })
 
   test('close stops notifications', async () => {

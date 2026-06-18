@@ -43,7 +43,7 @@ export function getWorkbench(
       if (!entry && views.length === 0 && services.length === 0) {
         throw new Error(
           'Nothing to deploy: `unstable_defineApp` declares no entry, views or services. ' +
-            'Declare an entry or at least one view or service in the app config.',
+            'Add at least one to the app config.',
         )
       }
     },
@@ -52,7 +52,7 @@ export function getWorkbench(
       try {
         const stats = await stat(sourceDir)
         if (!stats.isDirectory()) {
-          throw new Error(`Directory ${sourceDir} is not a directory`)
+          throw new Error(`"${sourceDir}" is not a directory`)
         }
       } catch (err) {
         throw err.code === 'ENOENT' ? new Error(`Directory "${sourceDir}" does not exist`) : err

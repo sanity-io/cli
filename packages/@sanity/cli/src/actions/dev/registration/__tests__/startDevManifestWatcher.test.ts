@@ -141,7 +141,7 @@ describe('startDevManifestWatcher', () => {
     await watcher.close()
   })
 
-  test('re-extracts and inlines the new manifest after a debounced config file change', async () => {
+  test('re-extracts and inlines the new manifest after a debounced config file change', async (t) => {
     const update = vi.fn()
     const watcher = await startDevManifestWatcher({
       extract: mockExtract,
@@ -149,6 +149,8 @@ describe('startDevManifestWatcher', () => {
       update,
       workDir: WORK_DIR,
     })
+    // Close even if an assertion below throws, so the watcher never leaks.
+    t.onTestFinished(() => watcher.close())
 
     // Wait for the initial extraction to complete before exercising the
     // file-change path.
@@ -165,8 +167,6 @@ describe('startDevManifestWatcher', () => {
 
     expect(mockExtract).toHaveBeenCalledTimes(2)
     expect(update).toHaveBeenCalledTimes(2)
-
-    await watcher.close()
   })
 
   test('ignores changes to other files in the config directory', async () => {

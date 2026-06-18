@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {isWorkbenchApp} from '@sanity/cli-core'
+import {isWorkbenchApp as determineIsWorkbenchApp} from '@sanity/cli-core'
 
 import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
@@ -12,9 +12,11 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startAppDevServer(options: DevActionOptions): Promise<StartDevServerResult> {
   const {cliConfig, flags, httpPort, output, workbenchAvailable, workDir} = options
 
+  const isWorkbenchApp = determineIsWorkbenchApp(cliConfig?.app)
+
   // Workbench apps don't load through the dashboard, so the flag has no
   // meaning for them and is ignored.
-  if (!isWorkbenchApp(cliConfig?.app) && !flags['load-in-dashboard']) {
+  if (!isWorkbenchApp && !flags['load-in-dashboard']) {
     output.warn(`Apps cannot run without the Sanity dashboard`)
     output.warn(`Starting dev server with the --load-in-dashboard flag set to true`)
   }
@@ -45,7 +47,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
 
     const {port} = server.config.server
 
-    if (isWorkbenchApp(cliConfig?.app)) {
+    if (isWorkbenchApp) {
       // Federated apps surface through the workbench, so the dashboard URL is
       // meaningless for them. When the workbench runs, devAction announces its
       // URL instead — only the package-unavailable fallback logs from here.
