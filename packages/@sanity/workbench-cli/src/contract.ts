@@ -4,9 +4,9 @@ import {z} from 'zod/mini'
 // view/service types, the contract versions the helpers stamp, and the
 // declaration schemas an app author writes in `unstable_defineApp({views, services})`.
 //
-// Lives in `@sanity/cli-build` (alongside the vite plugin that consumes the same
-// contract) so there is a single source of truth. `zod/mini` is used throughout
-// cli-build to keep bundles small.
+// Lives in `@sanity/workbench-cli` (alongside the vite plugin that consumes the
+// same contract) so there is a single source of truth. `zod/mini` is used
+// throughout workbench-cli to keep bundles small.
 
 /**
  * Contract version stamped on every defined view — lets the host and the
