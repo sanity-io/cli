@@ -1,4 +1,5 @@
 import {type Output} from '@sanity/cli-core'
+import {testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {startExtractSchemaWatcher} from '../../../../src/actions/schema/extractSchemaWatcher.js'

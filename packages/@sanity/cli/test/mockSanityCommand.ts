@@ -3,14 +3,14 @@ import {type Output} from '@sanity/cli-core'
 import {vi} from 'vitest'
 
 export function createMockSanityCommand() {
-  // Mock SanityCommand methods
   const mocks = {
     // Mock OCLIF Command methods
-    OclifCmdExit: vi.fn(),
+    OclifCmdExit: vi.fn((_code?: number) => undefined as never),
+    // Mock SanityCommand methods
     SanityCmdGetCliConfig: vi.fn(),
     SanityCmdGetProjectId: vi.fn(),
     SanityCmdGetProjectRoot: vi.fn(),
-    SanityCmdOutputError: vi.fn() as never,
+    SanityCmdOutputError: vi.fn(() => undefined as never),
     SanityCmdOutputLog: vi.fn(),
     SanityCmdOutputWarn: vi.fn(),
   }
@@ -23,6 +23,9 @@ export function createMockSanityCommand() {
         error: mocks.SanityCmdOutputError,
         log: mocks.SanityCmdOutputLog,
         warn: mocks.SanityCmdOutputWarn,
+      }
+      public exit(code?: number) {
+        return mocks.OclifCmdExit(code)
       }
       protected async getCliConfig() {
         return mocks.SanityCmdGetCliConfig()
