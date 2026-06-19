@@ -15,7 +15,7 @@ vi.mock('@sanity/cli-core', async () => {
 })
 
 vi.mock('../../../../../src/services/telemetry.js', async () => ({
-  ...(await vi.importActual('../../../services/telemetry.js')),
+  ...(await vi.importActual('../../../../../src/services/telemetry.js')),
   fetchTelemetryConsent: vi.fn(),
 }))
 
