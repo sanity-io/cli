@@ -6,12 +6,14 @@ import {CLIError} from '@oclif/core/errors'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {getWorkbench} from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
 
 import {createDeployment} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
@@ -24,6 +26,7 @@ import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 export async function deployStudio(options: DeployAppOptions) {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
+  const workbench = getWorkbench(cliConfig)
 
   const workDir = projectRoot.directory
   const configPath = projectRoot.path
@@ -35,6 +38,18 @@ export async function deployStudio(options: DeployAppOptions) {
 
   const isExternal = !!flags.external
   const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
+
+  // Federated (`unstable_defineApp`) applications integrate through Sanity's
+  // build and hosting pipeline, which `--external` skips. Fail before any
+  // prompts or API calls.
+  if (isExternal && workbench) {
+    output.error(
+      'Deploying a federated application to an external host is not yet supported. ' +
+        'Remove the `--external` flag to deploy to Sanity hosting.',
+      {exit: exitCodes.USAGE_ERROR},
+    )
+    return
+  }
 
   // Resolve the app host from --url flag (takes precedence) or studioHost config
   const appHost = resolveAppHost({flags, isExternal, output, studioHost: cliConfig.studioHost})
@@ -135,12 +150,12 @@ export async function deployStudio(options: DeployAppOptions) {
       // Ensure that the directory exists, is a directory and seems to have valid content
       spin = spin.start()
       try {
-        await checkDir(sourceDir)
+        await (workbench ? workbench.checkBuiltOutput(sourceDir) : checkDir(sourceDir))
         spin.succeed()
       } catch (err) {
         spin.fail()
         deployDebug('Error checking directory', err)
-        output.error('Error checking directory', {exit: 1})
+        output.error(getErrorMessage(err), {exit: 1})
       }
 
       // Create a tarball of the given directory

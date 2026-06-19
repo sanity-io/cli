@@ -1,6 +1,7 @@
-import {exitCodes, studioWorkerTask} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {unstable_defineApp} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -835,6 +836,39 @@ describe('#deploy studio (external)', () => {
       )
       expect(mockBuildStudio).not.toHaveBeenCalled()
       expect(mockCheckDir).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('unstable_defineApp', () => {
+    test('should reject --external for an unstable_defineApp studio', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      // Brand the config as a studio so the deploy command routes it through
+      // deployStudio (the only path that accepts --external).
+      const app = unstable_defineApp({
+        name: 'test-studio',
+        organizationId: 'org-1',
+        title: 'Test Studio',
+      }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
+      app.applicationType = 'studio'
+
+      const {error} = await testCommand(DeployCommand, ['--external'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId: 'test-project-id'},
+            app,
+            studioHost: 'https://studio.example.com',
+          } as CliConfig,
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain(
+        'Deploying a federated application to an external host is not yet supported',
+      )
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
   })
 })

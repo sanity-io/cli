@@ -144,12 +144,17 @@ async function getSanityPackageTypeExports() {
   return exportedTypes
 }
 
+// Value exports intentionally added in v6 that the v5 CLI didn't have.
+const NEW_EXPORTS = new Set(['unstable_defineApp'])
+
 test('should match exports of the current cli package', async () => {
   const oldCliExports = await getSanityPackageExports()
 
-  expect(Object.keys(newExports).toSorted()).toStrictEqual(
-    Object.keys(oldCliExports.default).toSorted(),
-  )
+  expect(
+    Object.keys(newExports)
+      .filter((name) => !NEW_EXPORTS.has(name))
+      .toSorted(),
+  ).toStrictEqual(Object.keys(oldCliExports.default).toSorted())
 })
 
 test('should include type exports of the old (v5) cli package', async () => {

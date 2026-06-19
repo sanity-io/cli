@@ -1,0 +1,67 @@
+import path from 'node:path'
+
+import {type CliConfig, getSanityEnvVar, isWorkbenchApp, type Output} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
+
+import {type DevServerOptions} from '../../../server/devServer.js'
+import {determineIsApp} from '../../../util/determineIsApp.js'
+import {getSharedServerConfig} from '../../../util/getSharedServerConfig.js'
+import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
+import {type DevFlags} from '../types.js'
+
+export function getDevServerConfig({
+  cliConfig,
+  flags,
+  httpPort,
+  output,
+  workDir,
+}: {
+  cliConfig?: CliConfig
+  flags: DevFlags
+  httpPort?: number
+  output: Output
+  workDir: string
+}): Omit<DevServerOptions, 'spinner'> {
+  const configSpinner = spinner('Checking configuration files...')
+
+  const baseConfig = getSharedServerConfig({
+    cliConfig,
+    flags: {
+      host: flags.host,
+      port: flags.port,
+    },
+    workDir,
+  })
+
+  configSpinner.succeed()
+
+  const isApp = cliConfig ? determineIsApp(cliConfig) : false
+  const reactStrictMode = resolveReactStrictMode(cliConfig)
+  // `views` is declared via `unstable_defineApp`, so read it off the branded
+  // app result rather than the legacy `app` config type.
+  const app = cliConfig?.app
+
+  const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
+  if (envBasePath && cliConfig?.project?.basePath) {
+    output.warn(
+      `Overriding configured base path (${cliConfig.project.basePath}) with value from environment variable (${envBasePath})`,
+    )
+  }
+
+  return {
+    ...baseConfig,
+    // The app's navigable entry. A branded app that omits `entry` has no app
+    // view (sanity-io/workbench spec 002-workbench-extension-api, US5): the runtime/federation skip the `./App` render path entirely.
+    entry: app?.entry,
+    // `devAction` passes an explicit port when a running workbench claimed the
+    // configured one; otherwise the shared resolution stands.
+    httpPort: httpPort ?? baseConfig.httpPort,
+    isWorkbenchApp: isWorkbenchApp(app),
+    reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
+    reactStrictMode,
+    services: isWorkbenchApp(app) ? app.services : undefined,
+    staticPath: path.join(workDir, 'static'),
+    typegen: cliConfig?.typegen,
+    views: isWorkbenchApp(app) ? app.views : undefined,
+  }
+}

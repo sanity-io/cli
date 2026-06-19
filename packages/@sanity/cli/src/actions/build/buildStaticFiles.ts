@@ -7,12 +7,14 @@ import {
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
   getViteConfig,
+  resolveEntries,
   writeFavicons,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type DefineAppInput} from '@sanity/workbench-cli'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
-import {build} from 'vite'
+import {build, createBuilder} from 'vite'
 
 import {
   getAppEnvironmentVariables,
@@ -38,11 +40,15 @@ interface StaticBuildOptions {
   autoUpdates?: AutoUpdatesBuildConfig
   entry?: string
   isApp?: boolean
+  /** Workbench app (opted in via `unstable_defineApp`) — drives the federation build. */
+  isWorkbenchApp?: boolean
   minify?: boolean
   profile?: boolean
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
+  services?: DefineAppInput['services']
   sourceMap?: boolean
+  views?: DefineAppInput['views']
   vite?: UserViteConfig
 }
 
@@ -61,21 +67,75 @@ export async function buildStaticFiles(
     cwd,
     entry,
     isApp,
+    isWorkbenchApp,
     minify = true,
     outputDir,
     reactCompiler,
     schemaExtraction,
+    services,
     sourceMap = false,
+    views,
     vite: extendViteConfig,
   } = options
 
+  const mode = 'production'
+
+  /* Federation builds only produce the federation environment
+   * (remote-entry, mf-manifest) — skip client-specific steps like
+   * runtime generation, static file copies, and favicons.
+   */
+  if (isWorkbenchApp) {
+    buildDebug('Resolving entries for federation build')
+    const entries = await resolveEntries({cwd, entry, isApp, isWorkbenchApp})
+
+    buildDebug('Resolving vite config (federation)')
+    let viteConfig = await getViteConfig({
+      basePath,
+      cwd,
+      entries,
+      getEnvironmentVariables,
+      isApp,
+      isWorkbenchApp,
+      minify,
+      mode,
+      outputDir,
+      reactCompiler,
+      // Schema extraction is a build-time artifact, not a client-specific step,
+      // so a federated studio extracts its schema like the legacy studio build.
+      schemaExtraction,
+      services,
+      sourceMap,
+      views,
+    })
+
+    // Apply the user's Vite config so plugins like `@vanilla-extract/vite-plugin`
+    // transform source files before the federation environment is bundled.
+    // `finalizeViteConfig` is intentionally skipped: the federation environment
+    // has its own entry and does not use `.sanity/runtime/app.js`.
+    if (extendViteConfig) {
+      viteConfig = await extendViteConfigWithUserConfig(
+        {command: 'build', mode},
+        viteConfig,
+        extendViteConfig,
+      )
+    }
+
+    buildDebug('Bundling federation environment')
+    const builder = await createBuilder(viteConfig)
+    await builder.buildApp()
+    buildDebug('Bundling complete')
+    // TODO: add stats here
+    return {chunks: []}
+  }
+
   buildDebug('Writing Sanity runtime files')
-  await writeSanityRuntime({
+  const {entries} = await writeSanityRuntime({
     appTitle,
     basePath,
     cwd,
     entry,
     isApp,
+    isWorkbenchApp,
     reactStrictMode: false,
     watch: false,
   })
@@ -87,13 +147,14 @@ export async function buildStaticFiles(
   }
 
   buildDebug('Resolving vite config')
-  const mode = 'production'
   let viteConfig = await getViteConfig({
     autoUpdates,
     basePath,
     cwd,
+    entries,
     getEnvironmentVariables,
     isApp,
+    isWorkbenchApp,
     minify,
     mode,
     outputDir,

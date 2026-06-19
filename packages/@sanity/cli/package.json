@@ -45,6 +45,10 @@
       "source": "./src/exports/_internal.ts",
       "default": "./dist/exports/_internal.js"
     },
+    "./runtime": {
+      "source": "./src/exports/runtime.ts",
+      "default": "./dist/exports/runtime.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -89,8 +93,10 @@
     "@sanity/telemetry": "catalog:",
     "@sanity/template-validator": "^3.1.0",
     "@sanity/types": "catalog:",
+    "@sanity/workbench-cli": "workspace:^",
     "@sanity/worker-channels": "^2.0.0",
     "@vercel/frameworks": "3.21.1",
+    "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",
     "date-fns": "^4.4.0",

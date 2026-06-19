@@ -1,16 +1,18 @@
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {unstable_defineApp} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../actions/build/buildApp.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
-import {extractAppManifest} from '../../actions/manifest/extractAppManifest.js'
+import {extractCoreAppManifest} from '../../actions/manifest/extractCoreAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
 import {DeployCommand} from '../deploy.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -28,8 +30,20 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-vi.mock('../../actions/manifest/extractAppManifest.js', () => ({
-  extractAppManifest: vi.fn(),
+// `assertDeployable` stays real — it's pure config validation the no-interfaces
+// test exercises; only the fs-touching `checkBuiltOutput` is stubbed.
+vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()
+  return {
+    getWorkbench: (config: Parameters<typeof actual.getWorkbench>[0]) => {
+      const workbench = actual.getWorkbench(config)
+      return workbench && {...workbench, checkBuiltOutput: mockCheckBuiltOutput}
+    },
+  }
+})
+
+vi.mock('../../actions/manifest/extractCoreAppManifest.js', () => ({
+  extractCoreAppManifest: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -60,7 +74,7 @@ const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
 const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
 const mockBuildApp = vi.mocked(buildApp)
-const mockExtractAppManifest = vi.mocked(extractAppManifest)
+const mockExtractCoreAppManifest = vi.mocked(extractCoreAppManifest)
 
 const appId = 'app-id'
 const organizationId = 'org-id'
@@ -85,8 +99,9 @@ describe('#deploy app', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
+    mockCheckBuiltOutput.mockResolvedValue(undefined)
     // Default to empty manifest for app deployments
-    mockExtractAppManifest.mockResolvedValue(undefined)
+    mockExtractCoreAppManifest.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -208,11 +223,93 @@ describe('#deploy app', () => {
     expect(stdout).toContain('Success! Application deployed')
   })
 
+  test('should check the federation build dir for an unstable_defineApp app', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${appId}/deployments`,
+    }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      title: 'Workbench App',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          app,
+          deployment: {appId},
+        },
+      },
+    })
+    if (error) throw error
+
+    expect(mockCheckBuiltOutput).toHaveBeenCalledWith(expect.any(String))
+    expect(mockCheckDir).not.toHaveBeenCalled()
+    expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('should reject an unstable_defineApp app that declares no interfaces', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = unstable_defineApp({
+      name: 'workbench-app',
+      organizationId,
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          app,
+          deployment: {appId},
+        },
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('declares no entry, views or services')
+    expect(error?.oclif?.exit).toBe(2)
+    // fails before any directory check or API call
+    expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
+    expect(mockCheckDir).not.toHaveBeenCalled()
+  })
+
   test('should PATCH user-application when manifest title differs from existing app title', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    mockExtractAppManifest.mockResolvedValue({
+    mockExtractCoreAppManifest.mockResolvedValue({
       title: 'New Title From Manifest',
       version: '1',
     })
@@ -276,7 +373,7 @@ describe('#deploy app', () => {
     process.cwd = () => cwd
 
     const sameTitle = 'Test App'
-    mockExtractAppManifest.mockResolvedValue({
+    mockExtractCoreAppManifest.mockResolvedValue({
       title: sameTitle,
       version: '1',
     })
@@ -496,7 +593,8 @@ describe('#deploy app', () => {
       },
     })
 
-    expect(error?.message).toContain('Error checking directory')
+    // The underlying checkDir failure surfaces verbatim
+    expect(error?.message).toContain('Directory check failed')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1012,7 +1110,7 @@ describe('#deploy app', () => {
       version: '1' as const,
     }
 
-    mockExtractAppManifest.mockResolvedValue(manifest)
+    mockExtractCoreAppManifest.mockResolvedValue(manifest)
 
     mockApi({
       apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1066,7 +1164,7 @@ describe('#deploy app', () => {
 
     if (error) throw error
     expect(stdout).toContain('Success! Application deployed')
-    expect(mockExtractAppManifest).toHaveBeenCalled()
+    expect(mockExtractCoreAppManifest).toHaveBeenCalled()
   })
 
   test('should test input validation for app title', async () => {

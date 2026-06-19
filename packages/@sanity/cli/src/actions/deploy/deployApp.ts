@@ -3,8 +3,9 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {getLocalPackageVersion} from '@sanity/cli-core'
+import {exitCodes, getLocalPackageVersion} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {getWorkbench} from '@sanity/workbench-cli/deploy'
 import {pack} from 'tar-fs'
 
 import {createDeployment, updateUserApplication} from '../../services/userApplications.js'
@@ -13,13 +14,14 @@ import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildApp} from '../build/buildApp.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
-import {extractAppManifest} from '../manifest/extractAppManifest.js'
+import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
 import {checkDir} from './checkDir.js'
 import {createUserApplicationForApp} from './createUserApplicationForApp.js'
 import {deployDebug} from './deployDebug.js'
 import {findUserApplicationForApp} from './findUserApplicationForApp.js'
 import {type DeployAppOptions} from './types.js'
+import {buildViewDeploymentPayload} from './viewDeployment.js'
 
 /**
  * Deploy a Sanity application.
@@ -28,6 +30,7 @@ import {type DeployAppOptions} from './types.js'
  */
 export async function deployApp(options: DeployAppOptions) {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
+  const workbench = getWorkbench(cliConfig)
 
   const workDir = projectRoot.directory
 
@@ -48,6 +51,17 @@ export async function deployApp(options: DeployAppOptions) {
 
   if (flags.external) {
     output.error('Deploying an app to an external host is not supported.', {exit: 1})
+  }
+
+  // Fail before any prompts or API calls when the app declares nothing to
+  // expose.
+  if (workbench) {
+    try {
+      workbench.assertDeployable()
+    } catch (err) {
+      output.error(getErrorMessage(err), {exit: exitCodes.USAGE_ERROR})
+      return
+    }
   }
 
   let spin = spinner('Verifying local content...')
@@ -86,12 +100,12 @@ export async function deployApp(options: DeployAppOptions) {
     // Ensure that the directory exists, is a directory and seems to have valid content
     spin = spin.start()
     try {
-      await checkDir(sourceDir)
+      await (workbench ? workbench.checkBuiltOutput(sourceDir) : checkDir(sourceDir))
       spin.succeed()
     } catch (err) {
       spin.fail()
       deployDebug('Error checking directory', err)
-      output.error('Error checking directory', {exit: 1})
+      output.error(getErrorMessage(err), {exit: 1})
       return
     }
 
@@ -101,7 +115,7 @@ export async function deployApp(options: DeployAppOptions) {
     const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
     let manifest: CoreAppManifest | undefined
     try {
-      manifest = await extractAppManifest({workDir})
+      manifest = await extractCoreAppManifest({workDir})
     } catch (err) {
       deployDebug('Error extracting app manifest', err)
       const message = getErrorMessage(err)
@@ -134,6 +148,30 @@ export async function deployApp(options: DeployAppOptions) {
         const message = getErrorMessage(err)
         deployDebug('Error updating application title', {message})
         output.warn(`Error updating application title: ${message}`)
+      }
+    }
+
+    // Register the app's declared views with the application service. That
+    // service doesn't exist yet, so validate the payload and log it (no store);
+    // a malformed view declaration fails the deploy before we ship the bundle.
+    // `views` lives on the branded `unstable_defineApp` result, not the legacy
+    // `app` config object.
+    const declaredViews = workbench?.views ?? []
+    if (declaredViews.length > 0) {
+      try {
+        const payload = buildViewDeploymentPayload({
+          applicationId: userApplication.id,
+          views: declaredViews,
+        })
+        output.log(
+          `Validated ${payload.views.length} view(s) for the application service (not yet persisted):`,
+        )
+        output.log(JSON.stringify(payload, null, 2))
+        deployDebug('View deployment payload', payload)
+      } catch (err) {
+        const message = getErrorMessage(err)
+        output.error(`Invalid view declaration: ${message}`, {exit: 1})
+        return
       }
     }
 

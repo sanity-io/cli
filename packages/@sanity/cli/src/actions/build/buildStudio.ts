@@ -21,6 +21,8 @@ import {
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {type DefineAppInput} from '@sanity/workbench-cli'
+import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -42,16 +44,19 @@ interface InternalBuildOptions {
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   isApp: boolean
+  isWorkbenchApp: boolean
   minify: boolean
   outDir: string | undefined
   output: Output
   projectId: string | undefined
   reactCompiler: CliConfig['reactCompiler']
   schemaExtraction: CliConfig['schemaExtraction']
+  services: DefineAppInput['services']
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
   upgradePackages(options: {packages: [name: string, version: string][]}): Promise<void>
+  views: DefineAppInput['views']
   vite: UserViteConfig | undefined
   workDir: string
 }
@@ -63,6 +68,10 @@ interface InternalBuildOptions {
  */
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
+
+  // `views`/`services` live on the branded `unstable_defineApp` result — resolve
+  // the workbench capability so it's gated on the brand, like the app build.
+  const workbench = resolveWorkbenchApp(cliConfig)
 
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
@@ -82,16 +91,19 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
+    isWorkbenchApp: !!workbench,
     minify: Boolean(flags.minify),
     outDir,
     output,
     projectId: cliConfig?.api?.projectId,
     reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
+    services: workbench?.services,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: Boolean(flags.yes),
     upgradePackages: upgradePkgs,
+    views: workbench?.views,
     vite: cliConfig.vite,
     workDir,
   })
@@ -115,10 +127,12 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     projectId,
     reactCompiler,
     schemaExtraction,
+    services,
     sourceMap,
     stats,
     unattendedMode,
     upgradePackages,
+    views,
     vite,
     workDir,
   } = options
@@ -277,7 +291,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
   trace.start()
 
   let autoUpdates
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
     autoUpdates = {
       cssUrls: autoUpdatesCssUrls,
       imports: autoUpdatesImports,
@@ -292,11 +306,14 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       autoUpdates,
       basePath,
       cwd: workDir,
+      isWorkbenchApp: options.isWorkbenchApp,
       minify,
       outputDir,
       reactCompiler,
       schemaExtraction,
+      services,
       sourceMap,
+      views,
       vite,
     })
 

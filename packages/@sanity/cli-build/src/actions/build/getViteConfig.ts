@@ -7,6 +7,8 @@ import {
   getCliTelemetry,
   type UserViteConfig,
 } from '@sanity/cli-core'
+import {type DefineAppInput} from '@sanity/workbench-cli'
+import {workbenchVitePlugins} from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -16,6 +18,7 @@ import {
   type InlineConfig,
   mergeConfig,
   type Plugin,
+  type PluginOption,
   type Rolldown,
 } from 'vite'
 
@@ -36,6 +39,12 @@ interface ViteOptions {
    * Root path of the studio/sanity app
    */
   cwd: string
+
+  entries: {
+    relativeConfigLocation: string | null
+    // `null` when a branded app declares no `entry` (sanity-io/workbench spec 002-workbench-extension-api, US5) — no app view.
+    relativeEntry: string | null
+  }
 
   /**
    * Returns the environment variables to be injected into the config.
@@ -70,6 +79,12 @@ interface ViteOptions {
   isApp?: boolean
 
   /**
+   * Whether this is a workbench app (opted in via `unstable_defineApp`). Drives
+   * the module-federation build.
+   */
+  isWorkbenchApp?: boolean
+
+  /**
    * Whether or not to minify the output (only used in `mode: 'production'`)
    */
   minify?: boolean
@@ -83,14 +98,27 @@ interface ViteOptions {
    * Schema extraction configuration
    */
   schemaExtraction?: CliConfig['schemaExtraction']
+
   /**
    * HTTP development server configuration
    */
   server?: {host?: string; port?: number}
   /**
+   * Background services the workbench app declares. Built into self-contained
+   * worker bundles and exposed through module federation as `./services/<name>`.
+   */
+  services?: DefineAppInput['services']
+
+  /**
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
+
+  /**
+   * Views the workbench app declares. Built into render-contract artifacts and
+   * exposed through module federation as `./views/<name>`.
+   */
+  views?: DefineAppInput['views']
 }
 
 /**
@@ -104,15 +132,19 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     autoUpdates,
     basePath: rawBasePath = '/',
     cwd,
+    entries,
     isApp,
+    isWorkbenchApp,
     minify,
     mode,
     outputDir,
     reactCompiler,
     schemaExtraction,
     server,
+    services,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
+    views,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -124,6 +156,24 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const staticPath = `${basePath}static`
 
   const envVars = options.getEnvironmentVariables()
+
+  const sharedPlugins: PluginOption = [
+    viteReact(),
+    ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
+    ...(schemaExtraction?.enabled
+      ? [
+          sanitySchemaExtractionPlugin({
+            additionalPatterns: schemaExtraction.watchPatterns,
+            configPath,
+            enforceRequiredFields: schemaExtraction.enforceRequiredFields,
+            outputPath: schemaExtraction.path,
+            telemetryLogger: getCliTelemetry(),
+            workDir: cwd,
+            workspaceName: schemaExtraction.workspace,
+          }),
+        ]
+      : []),
+  ]
 
   const viteConfig: InlineConfig = {
     base: basePath,
@@ -156,25 +206,22 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     logLevel: mode === 'production' ? 'silent' : 'info',
     mode,
     plugins: [
-      viteReact(),
-      ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
-      sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
-      sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({autoUpdates, basePath, cwd, isApp}),
-      // Add schema extraction when enabled
-      ...(schemaExtraction?.enabled
-        ? [
-            sanitySchemaExtractionPlugin({
-              additionalPatterns: schemaExtraction.watchPatterns,
-              configPath,
-              enforceRequiredFields: schemaExtraction.enforceRequiredFields,
-              outputPath: schemaExtraction.path,
-              telemetryLogger: getCliTelemetry(),
-              workDir: cwd,
-              workspaceName: schemaExtraction.workspace,
+      // Federation builds only need the federation plugin — skip client-specific
+      // plugins (favicons, runtime rewrite, build entries)
+      ...(isWorkbenchApp
+        ? [...sharedPlugins, await workbenchVitePlugins({cwd, entries, isApp, services, views})]
+        : [
+            ...sharedPlugins,
+            sanityFaviconsPlugin({
+              customFaviconsPath,
+              defaultFaviconsPath,
+              staticUrlPath: staticPath,
             }),
-          ]
-        : []),
+            sanityRuntimeRewritePlugin(),
+            sanityBuildEntries({autoUpdates, basePath, cwd, isApp}),
+          ]),
+      // Caller-provided plugins (e.g. typegen in dev) aren't client-specific,
+      // so they apply to federation builds too.
       ...(additionalPlugins || []),
     ],
     resolve: {
@@ -186,9 +233,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server: {
       host: server?.host,
       port: server?.port || 3333,
-      // Only enable strict port for studio,
-      // since apps can run on any port
-      strictPort: isApp ? false : true,
+      // Apps drift to a free port (the reported URL embeds whichever port was
+      // claimed), and workbench runs stack servers on adjacent ports — both
+      // need the fallback. Studios fail fast on a busy port.
+      strictPort: !isApp && !isWorkbenchApp,
 
       /**
        * Significantly speed up startup time,
@@ -203,7 +251,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     },
   }
 
-  if (mode === 'production') {
+  // Federation builds don't produce a client bundle — the federation
+  // plugin configures its own environment and build entry point.
+  if (mode === 'production' && !isWorkbenchApp) {
     if (autoUpdates) {
       viteConfig.plugins!.push(
         // Re-expose CommonJS named exports (react, react-dom) as real ESM exports

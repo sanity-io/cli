@@ -34,6 +34,7 @@ export default defineConfig({
         'packages/@sanity/cli/**/*.{ts,tsx}',
         'packages/@sanity/cli-build/**/*.{ts,tsx}',
         'packages/@sanity/cli-core/**/*.{ts,tsx}',
+        'packages/@sanity/workbench-cli/**/*.{ts,tsx}',
         'packages/create-sanity/**/*.{ts,tsx}',
       ],
       provider: 'istanbul',
@@ -59,6 +60,7 @@ export default defineConfig({
       'packages/@sanity/cli',
       'packages/@sanity/cli-build',
       'packages/@sanity/cli-core',
+      'packages/@sanity/workbench-cli',
       'packages/create-sanity',
       {
         test: {

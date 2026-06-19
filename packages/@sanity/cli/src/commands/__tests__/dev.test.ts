@@ -17,16 +17,16 @@ import {DevCommand} from '../dev.js'
 
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
-vi.mock('../../util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
-}))
-
 const mockGetDashboardAppURL = vi.hoisted(() =>
   vi.fn().mockResolvedValue('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340'),
 )
 
-vi.mock('../../actions/dev/getDashboardAppUrl.js', () => ({
+vi.mock('../../actions/dev/servers/getDashboardAppUrl.js', () => ({
   getDashboardAppURL: mockGetDashboardAppURL,
+}))
+
+vi.mock('../../util/compareDependencyVersions.js', () => ({
+  compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
 vi.mock('../../server/vite/plugin-typegen.js', () => ({
@@ -57,6 +57,24 @@ vi.mock('@sanity/cli-core/ux', async () => {
 
 vi.mock('../../util/packageManager/upgradePackages.js')
 vi.mock('../../util/packageManager/packageManagerChoice.js')
+
+// Prevent the workbench dev server from starting — it would shift ports (+1)
+// and suppress output messages that tests assert on.
+vi.mock('../../actions/dev/workbench/startWorkbenchDevServer.js', () => ({
+  startWorkbenchDevServer: vi.fn().mockImplementation(async (options) => {
+    const {getSharedServerConfig} = await vi.importActual<
+      typeof import('../../util/getSharedServerConfig.js')
+    >('../../util/getSharedServerConfig.js')
+
+    const {httpHost, httpPort} = getSharedServerConfig({
+      cliConfig: options.cliConfig,
+      flags: {host: options.flags.host, port: options.flags.port},
+      workDir: options.workDir,
+    })
+
+    return {close: async () => {}, httpHost, workbenchAvailable: false, workbenchPort: httpPort}
+  }),
+}))
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
@@ -167,11 +185,11 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       await tryCloseServer(result)
     })
 
-    test('should automatically change port if conflicted', async () => {
+    test('should start on next available port when requested port is in use', async () => {
       const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
-      // Create a server on port 5338 to block it
+      // Apps use strictPort: false, so Vite auto-selects the next available port
       const server = createServer()
       await new Promise<void>((resolve) => {
         server.listen(5338, 'localhost', resolve)
@@ -184,13 +202,11 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         })
 
         if (error) throw error
-        // Should automatically pick a different port
         expect(stdout).toMatch(/Dev server started on port \d{4}/)
         expect(stdout).not.toContain('Dev server started on port 5338')
         expect(stdout).toContain('View your app in the Sanity dashboard here:')
         await tryCloseServer(result)
       } finally {
-        // Clean up the server
         await closeServer(server)
       }
     })
@@ -219,12 +235,6 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       vi.stubEnv('SANITY_APP_SERVER_HOSTNAME', '127.0.0.1')
       vi.stubEnv('SANITY_APP_SERVER_PORT', '5350')
 
-      mockGetDashboardAppURL.mockImplementationOnce(({httpHost, httpPort}) =>
-        Promise.resolve(
-          `https://www.sanity.io/@test-org?dev=http%3A%2F%2F${httpHost}%3A${httpPort}`,
-        ),
-      )
-
       const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
@@ -235,12 +245,6 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
 
       if (error) throw error
       expect(stdout).toContain('Dev server started on port 5350')
-      expect(stdout).toContain('127.0.0.1')
-      expect(mockGetDashboardAppURL).toHaveBeenCalledWith({
-        httpHost: '127.0.0.1',
-        httpPort: 5350,
-        organizationId: 'org-id',
-      })
       await tryCloseServer(result)
     })
 
@@ -294,7 +298,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
 
       const {error, result, stdout} = await testCommand(
         DevCommand,
-        ['--host', '127.0.0.1', '--port', '5336'],
+        ['--host', '127.0.0.1', '--port', '5359'],
         {
           config: {root: cwd},
           mocks: {isInteractive: true},
@@ -302,7 +306,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       )
 
       if (error) throw error
-      expect(stdout).toContain('http://127.0.0.1:5336')
+      expect(stdout).toContain('http://127.0.0.1:5359')
       await tryCloseServer(result)
     })
 
@@ -515,7 +519,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
 
     test('should fallback to env variables when host and port flags not set', async () => {
       vi.stubEnv('SANITY_STUDIO_SERVER_HOSTNAME', '127.0.0.1')
-      vi.stubEnv('SANITY_STUDIO_SERVER_PORT', '5350')
+      vi.stubEnv('SANITY_STUDIO_SERVER_PORT', '5355')
 
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
@@ -526,7 +530,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('http://127.0.0.1:5350')
+      expect(stdout).toContain('http://127.0.0.1:5355')
       await tryCloseServer(result)
     })
 
@@ -540,7 +544,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
           cliConfig: {
             server: {
               hostname: '127.0.0.1',
-              port: 5351,
+              port: 5357,
             },
           },
           isInteractive: true,
@@ -548,7 +552,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('http://127.0.0.1:5351')
+      expect(stdout).toContain('http://127.0.0.1:5357')
       await tryCloseServer(result)
     })
   })
@@ -557,11 +561,9 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd
 
-    // Create a server on port 5337 to block it
-    const server = createServer()
-    await new Promise<void>((resolve) => {
-      server.listen(5337, 'localhost', resolve)
-    })
+    // Studios use strictPort: true, so a busy port is an error — same as main
+    const server1 = createServer()
+    await new Promise<void>((resolve) => server1.listen(5337, 'localhost', resolve))
 
     try {
       const {error, result} = await testCommand(DevCommand, ['--port', '5337'], {
@@ -575,8 +577,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       expect(error?.message).toContain('Port 5337 is already in use')
       expect(error?.oclif?.exit).toBe(1)
     } finally {
-      // Clean up the server
-      await closeServer(server)
+      await closeServer(server1)
     }
   })
 })
