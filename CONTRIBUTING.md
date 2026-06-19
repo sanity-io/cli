@@ -8,7 +8,7 @@ Before contributing, please read our [code of conduct](https://github.com/sanity
 
 1. **Install dependencies**: `pnpm install`
 2. **Build the CLI**: `pnpm build:cli`
-3. **Run tests**: `pnpm test`
+3. **Run all tests**: `pnpm test`
 4. **Create a feature branch**: `git checkout -b feature/my-feature`
 
 For detailed setup, see [Development Workflow](#development-workflow).
@@ -99,12 +99,14 @@ DEBUG=sanity:* npx sanity <your-command>
 Before submitting a PR, run:
 
 ```bash
-pnpm check:types     # TypeScript checking
-pnpm check:lint      # ESLint + Prettier
-pnpm check:deps      # Unused dependencies
-pnpm test            # Run all tests
-pnpm test --coverage # Coverage report
-pnpm changeset       # Add a changeset (if your change affects published packages)
+pnpm check:types      # TypeScript checking
+pnpm check:lint       # ESLint + Prettier
+pnpm check:deps       # Unused dependencies
+pnpm test             # Run all tests
+pnpm test:unit        # Run only unit tests
+pnpm test:integration # Run only integration tests
+pnpm test --coverage  # Coverage report
+pnpm changeset        # Add a changeset (if your change affects published packages)
 ```
 
 ---
@@ -166,7 +168,8 @@ catch (error: any) { }
 ### File Location Conventions
 
 - Command files: `src/commands/<topic>/<command-name>.ts`
-- Test files: `__tests__/` folder relative to the file being tested (e.g., `src/commands/__tests__/<command-name>.test.ts`)
+- Unit Test files: `__tests__/` folder relative to the file being tested (e.g., `src/commands/__tests__/<command-name>.test.ts`)
+- Integration Test files: `test/integration` folder relative to the logic being tested (e.g. `test/integrationcommands/__tests__/<command-name>.test.ts`)
 - Commands extend `SanityCommand` from `@sanity/cli-core`
 - When adding or migrating commands, check for existing utilities in `src/utils/` and `@sanity/cli-core`
 
@@ -246,6 +249,8 @@ describe('feature description', () => {
 
 ### Testing Rules
 
+- Prefer lightweight unit tests over integration tests where possible
+- Segregate heavy tests that use the filesystem, fixtures or may take longer to run into `packages/@sanity/cli/test/integration`
 - Use `testCommand()` helper from `@sanity/cli-test` for command execution
 - Use `vi.mocked()` for type-safe mocking
 - Use `vi.hoisted(() => vi.fn())` for client method mocks
