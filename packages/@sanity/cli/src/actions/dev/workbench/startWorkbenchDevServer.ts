@@ -7,6 +7,7 @@ import {
   readWorkbenchLock,
   watchRegistry,
 } from '@sanity/workbench-cli/dev'
+import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
 import {z} from 'zod/mini'
 
@@ -181,7 +182,14 @@ async function createWorkbenchViteServer(
       // discovery to silently not fire.
       exclude: ['sanity', '@sanity/workbench'],
     },
-    plugins: remoteUrl ? [remoteManifestPreloadHeaderPlugin(remoteUrl)] : [],
+    // viteReact looks inert here — it transforms none of the host's own modules —
+    // but it's load-bearing for the remotes. It serves the Fast Refresh runtime at
+    // /@react-refresh and injects the preamble that defines window.$RefreshReg$. The
+    // federated remotes loaded into this page are react-refresh transformed, so
+    // without the preamble they throw "can't detect preamble", and without the
+    // runtime their /@react-refresh import (wired by @module-federation/vite's
+    // remoteHmr) fails. Dropping it as dead code broke every panel; see #1262.
+    plugins: [viteReact(), ...(remoteUrl ? [remoteManifestPreloadHeaderPlugin(remoteUrl)] : [])],
     resolve: {dedupe: ['react', 'react-dom']},
     root,
     server: {
