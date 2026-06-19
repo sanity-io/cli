@@ -9,10 +9,13 @@ const orgId = getE2EOrganizationId()
 const projectId = getE2EProjectId()
 const dataset = getE2EDataset()
 
+// Workbench isn't on the published `latest` CLI yet, so skip against the registry.
+const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
+
 // `--unstable--workbench` swaps the scaffolded `sanity.cli.ts` over to the
 // `unstable_defineApp` variant (the sole federation opt-in). It applies to both
 // the studio and SDK-app templates, which use different workbench config shapes.
-describe('sanity init - workbench', {timeout: 120_000}, () => {
+describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, () => {
   let tmp: Awaited<ReturnType<typeof createTmpDir>>
 
   beforeEach(async () => {
