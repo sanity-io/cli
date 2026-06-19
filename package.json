@@ -39,6 +39,7 @@
     "publint": "turbo run publint",
     "publish-packages": "changeset publish",
     "release": "pnpm build:cli && pnpm publish-packages",
+    "pretest": "pnpm run build:cli",
     "test": "vitest run",
     "pretest:e2e": "pnpm run build:cli",
     "test:e2e": "pnpm --filter @sanity/cli-e2e test",

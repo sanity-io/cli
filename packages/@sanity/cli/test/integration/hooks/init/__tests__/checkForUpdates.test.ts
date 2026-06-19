@@ -2,8 +2,8 @@ import {getUserConfig, isCi} from '@sanity/cli-core'
 import {testFixture, testHook} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
-import {checkForUpdates} from '../checkForUpdates.js'
+import {getCommandAndConfig} from '../../../../helpers/getCommandAndConfig.js'
+import {checkForUpdates} from '../../../../../src/hooks/init/checkForUpdates.js'
 
 const mockDebug = vi.hoisted(() => Object.assign(vi.fn(), {enabled: false}))
 const mockSpawn = vi.hoisted(() => vi.fn())
@@ -41,15 +41,15 @@ vi.mock('@sanity/cli-core', async () => ({
 
 vi.mock('is-installed-globally', () => mockIsInstalledGlobally)
 
-vi.mock('../../../util/update/isInstalledUsingYarn.js', () => ({
+vi.mock('../../../../../src/util/update/isInstalledUsingYarn.js', () => ({
   isInstalledUsingYarn: mockIsInstalledUsingYarn,
 }))
 
-vi.mock('../../../util/update/resolveUpdateTarget.js', () => ({
+vi.mock('../../../../../src/util/update/resolveUpdateTarget.js', () => ({
   resolveUpdateTarget: mockResolveUpdateTarget,
 }))
 
-vi.mock('../../../util/update/resolveRunnerPackage.js', () => ({
+vi.mock('../../../../../src/util/update/resolveRunnerPackage.js', () => ({
   resolveRunnerPackage: mockResolveRunnerPackage,
 }))
 
