@@ -57,7 +57,8 @@ export default defineConfig({
     },
     outputFile: OUTPUT_FILE,
     projects: [
-      'packages/@sanity/cli',
+      'packages/@sanity/cli/vitest.config.ts',
+      'packages/@sanity/cli/vitest.config.integration.ts',
       'packages/@sanity/cli-build',
       'packages/@sanity/cli-core',
       'packages/@sanity/workbench-cli',

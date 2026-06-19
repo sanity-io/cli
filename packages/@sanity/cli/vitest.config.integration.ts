@@ -3,7 +3,7 @@ import {defineConfig} from 'vitest/config'
 export default defineConfig({
   resolve: {tsconfigPaths: true},
   test: {
-    name: '@sanity/cli/unit',
+    name: '@sanity/cli/integration',
     coverage: {
       provider: 'istanbul',
     },
@@ -12,8 +12,9 @@ export default defineConfig({
       OCLIF_TEST_ROOT: 'packages/@sanity/cli',
     },
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**', 'test/integration/**'],
+    include: ['test/integration/**/*.test.ts'],
     globals: false,
+    globalSetup: ['test/workerBuild.ts', '@sanity/cli-test/vitest'],
     setupFiles: ['test/setup.ts'],
     snapshotSerializers: ['test/snapshotSerializer.ts'],
   },
