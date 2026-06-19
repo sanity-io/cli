@@ -2,8 +2,8 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test} from 'vitest'
 
-import {PROJECTS_API_VERSION} from '../../../services/projects.js'
-import {List} from '../list.js'
+import {PROJECTS_API_VERSION} from '../../../../../src/services/projects.js'
+import {List} from '../../../../../src/commands/projects/list.js'
 
 describe('#list', () => {
   afterEach(() => {
