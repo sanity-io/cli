@@ -8,10 +8,10 @@ import {
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {InitCommand} from '../../../../../src/commands/init.js'
 import {CORS_API_VERSION} from '../../../../../src/services/cors.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../../../src/services/getProjectFeatures.js'
 import {MCP_JOURNEY_API_VERSION} from '../../../../../src/services/mcp.js'
-import {InitCommand} from '../../../../../src/commands/init.js'
 
 const mocks = vi.hoisted(() => ({
   checkNextJsReactCompatibility: vi.fn(),

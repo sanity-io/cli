@@ -2,8 +2,8 @@ import {getUserConfig, isCi} from '@sanity/cli-core'
 import {testFixture, testHook} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {getCommandAndConfig} from '../../../../helpers/getCommandAndConfig.js'
 import {checkForUpdates} from '../../../../../src/hooks/init/checkForUpdates.js'
+import {getCommandAndConfig} from '../../../../helpers/getCommandAndConfig.js'
 
 const mockDebug = vi.hoisted(() => Object.assign(vi.fn(), {enabled: false}))
 const mockSpawn = vi.hoisted(() => vi.fn())

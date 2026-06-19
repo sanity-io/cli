@@ -7,9 +7,9 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {buildApp} from '../../../../src/actions/build/buildApp.js'
 import {checkDir} from '../../../../src/actions/deploy/checkDir.js'
 import {extractCoreAppManifest} from '../../../../src/actions/manifest/extractCoreAppManifest.js'
+import {DeployCommand} from '../../../../src/commands/deploy.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../../../src/services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../../../src/util/dirIsEmptyOrNonExistent.js'
-import {DeployCommand} from '../../../../src/commands/deploy.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())

@@ -2,8 +2,8 @@ import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {SCHEMA_API_VERSION} from '../../../../../src/services/schemas.js'
 import {ListSchemaCommand} from '../../../../../src/commands/schemas/list.js'
+import {SCHEMA_API_VERSION} from '../../../../../src/services/schemas.js'
 
 describe('#schema:list', {timeout: 60 * 1000}, () => {
   let projectId: string | undefined

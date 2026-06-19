@@ -3,7 +3,6 @@ import {defineConfig} from 'vitest/config'
 export default defineConfig({
   resolve: {tsconfigPaths: true},
   test: {
-    name: '@sanity/cli/unit',
     coverage: {
       provider: 'istanbul',
     },
@@ -14,6 +13,7 @@ export default defineConfig({
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**', 'test/integration/**'],
     globals: false,
+    name: '@sanity/cli/unit',
     setupFiles: ['test/setup.ts'],
     snapshotSerializers: ['test/snapshotSerializer.ts'],
   },

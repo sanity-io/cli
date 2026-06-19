@@ -5,8 +5,8 @@ import {join, resolve} from 'node:path'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {canCloseWatcher} from '../../../../testUtils.js'
 import {ExtractSchemaCommand} from '../../../../../src/commands/schemas/extract.js'
+import {canCloseWatcher} from '../../../../testUtils.js'
 
 describe('#schema:extract', {timeout: 60 * 1000}, () => {
   afterEach(() => {

@@ -7,8 +7,8 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../../../src/actions/build/buildStudio.js'
 import {checkDir} from '../../../../src/actions/deploy/checkDir.js'
-import {USER_APPLICATIONS_API_VERSION} from '../../../../src/services/userApplications.js'
 import {DeployCommand} from '../../../../src/commands/deploy.js'
+import {USER_APPLICATIONS_API_VERSION} from '../../../../src/services/userApplications.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())

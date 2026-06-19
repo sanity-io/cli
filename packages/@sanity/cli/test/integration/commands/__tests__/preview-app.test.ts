@@ -5,8 +5,8 @@ import {join} from 'node:path'
 import {convertToSystemPath, testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {tryCloseServer} from '../../../testUtils.js'
 import {PreviewCommand} from '../../../../src/commands/preview.js'
+import {tryCloseServer} from '../../../testUtils.js'
 
 describe(
   '#preview (app)',

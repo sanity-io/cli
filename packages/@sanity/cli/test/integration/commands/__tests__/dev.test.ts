@@ -9,11 +9,11 @@ import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {closeServer, tryCloseServer} from '../../../testUtils.js'
+import {DevCommand} from '../../../../src/commands/dev.js'
 import {compareDependencyVersions} from '../../../../src/util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../../../src/util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../../../src/util/packageManager/upgradePackages.js'
-import {DevCommand} from '../../../../src/commands/dev.js'
+import {closeServer, tryCloseServer} from '../../../testUtils.js'
 
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 const mockGetDashboardAppURL = vi.hoisted(() =>

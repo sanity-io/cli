@@ -3,8 +3,8 @@ import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {GRAPHQL_API_VERSION} from '../../../../../src/services/graphql.js'
 import {GraphQLDeployCommand} from '../../../../../src/commands/graphql/deploy.js'
+import {GRAPHQL_API_VERSION} from '../../../../../src/services/graphql.js'
 
 const mockConfirm = vi.hoisted(() => vi.fn())
 const mockIsInteractive = vi.hoisted(() => vi.fn())

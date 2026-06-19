@@ -4,12 +4,12 @@ import {SanityClient} from '@sanity/client'
 import {lastValueFrom, of, toArray} from 'rxjs'
 import {describe, expect, it, vi} from 'vitest'
 
+import {createMockClient} from '../../../../../src/actions/media/__tests__/createMockClient.js'
 import {
   type AssetWithAspects,
   resolveSource,
   setAspects,
 } from '../../../../../src/actions/media/importMedia.js'
-import {createMockClient} from '../../../../../src/actions/media/__tests__/createMockClient.js'
 
 const mocks = vi.hoisted(() => ({
   getProjectCliClient: vi.fn(),

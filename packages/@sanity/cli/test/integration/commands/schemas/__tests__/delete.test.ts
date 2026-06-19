@@ -2,8 +2,8 @@ import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {SCHEMA_API_VERSION} from '../../../../../src/services/schemas.js'
 import {DeleteSchemaCommand} from '../../../../../src/commands/schemas/delete.js'
+import {SCHEMA_API_VERSION} from '../../../../../src/services/schemas.js'
 
 const schemaIds = ['_.schemas.production', '_.schemas.staging']
 

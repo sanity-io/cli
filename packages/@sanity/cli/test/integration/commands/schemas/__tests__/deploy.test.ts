@@ -5,8 +5,8 @@ import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {SCHEMA_API_VERSION} from '../../../../../src/services/schemas.js'
 import {DeploySchemaCommand} from '../../../../../src/commands/schemas/deploy.js'
+import {SCHEMA_API_VERSION} from '../../../../../src/services/schemas.js'
 
 describe('#schema:deploy', {timeout: 60 * 1000}, () => {
   describe('basic-studio', () => {
