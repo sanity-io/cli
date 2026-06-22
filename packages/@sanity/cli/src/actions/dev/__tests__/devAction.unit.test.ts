@@ -14,6 +14,8 @@ const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevServerRegistration = vi.hoisted(() => vi.fn())
 const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
+const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
+const mockGetAppId = vi.hoisted(() => vi.fn())
 
 // The rebuild hook re-reads the config so the recreated app server picks up the
 // new view/service set.
@@ -30,8 +32,14 @@ vi.mock('../servers/startAppDevServer.js', () => ({
 vi.mock('../servers/startStudioDevServer.js', () => ({
   startStudioDevServer: mockStartStudioDevServer,
 }))
-vi.mock('../registration/startDevServerRegistration.js', () => ({
+// Registration moved into workbench-cli; mock only that export and keep the rest real.
+vi.mock('@sanity/workbench-cli/dev', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/workbench-cli/dev')>()),
   startDevServerRegistration: mockStartDevServerRegistration,
+}))
+vi.mock('../../../util/appId.js', () => ({
+  checkForDeprecatedAppId: mockCheckForDeprecatedAppId,
+  getAppId: mockGetAppId,
 }))
 vi.mock('../../../util/getSharedServerConfig.js', () => ({
   getSharedServerConfig: mockGetSharedServerConfig,
@@ -66,6 +74,7 @@ function installedSignalHandler(): (signal: NodeJS.Signals) => void {
 describe('devAction', () => {
   beforeEach(() => {
     mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
+    mockGetAppId.mockReturnValue(undefined)
     // Default: no workbench (federation disabled)
     mockStartWorkbenchDevServer.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
@@ -180,6 +189,32 @@ describe('devAction', () => {
       await devAction(createBaseDevOptions())
 
       expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
+    })
+
+    // The deprecated `app.id`/`deployment.appId` check is CLI-domain, so it runs
+    // here (before registration) rather than inside the workbench package.
+    test('runs the deprecated-id check before registering a workbench app', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+      const output = createMockOutput()
+
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), output}))
+
+      expect(mockCheckForDeprecatedAppId).toHaveBeenCalledWith(expect.objectContaining({output}))
+    })
+
+    test('surfaces the deprecated-id error when app.id and deployment.appId are both set', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+      mockCheckForDeprecatedAppId.mockImplementation(({output}: {output: any}) => {
+        output.error('Found both app.id (deprecated) and deployment.appId', {exit: 1})
+      })
+      const output = createMockOutput()
+
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), output}))
+
+      expect(output.error).toHaveBeenCalledWith(
+        expect.stringContaining('Found both app.id (deprecated) and deployment.appId'),
+        expect.objectContaining({exit: 1}),
+      )
     })
 
     test('tears down both servers and re-throws when registration fails', async () => {

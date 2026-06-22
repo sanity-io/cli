@@ -1,10 +1,12 @@
 import {watch} from 'node:fs'
 import {basename, dirname} from 'node:path'
 
-import {findProjectRoot, type Output} from '@sanity/cli-core'
-import {canonicalizeWatchDir, type DevServerInterface} from '@sanity/workbench-cli/dev'
+import {findProjectRoot, type Output, subdebug} from '@sanity/cli-core'
 
-import {devDebug} from '../devDebug.js'
+import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
+import {type DevServerInterface} from './deriveInterfaces.js'
+
+const devDebug = subdebug('dev')
 
 /**
  * Debounce window between config file events and the next manifest
