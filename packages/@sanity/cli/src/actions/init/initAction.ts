@@ -206,6 +206,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     }
   }
 
+  // Install skills right after the MCP/skills prompt so the progress + result
+  // surface in sequence, rather than trailing the studio "Success!" output.
+  await installSkills()
+
   const {alreadyConfiguredEditors} = mcpResult
   if (alreadyConfiguredEditors.length > 0) {
     const label =
@@ -263,7 +267,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       trace,
       workDir,
     })
-    await installSkills()
     trace.complete()
     return
   }
@@ -281,7 +284,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       outputPath,
     })
     await writeStagingEnvIfNeeded(output, outputPath)
-    await installSkills()
     trace.complete()
     return
   }
@@ -314,8 +316,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
         isFirstProject,
         projectId,
       }))
-
-  await installSkills()
 
   trace.complete()
 }

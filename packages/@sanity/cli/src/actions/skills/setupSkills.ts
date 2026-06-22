@@ -1,10 +1,16 @@
 import {fileURLToPath} from 'node:url'
+import {styleText} from 'node:util'
 
 import {type Output, subdebug} from '@sanity/cli-core'
-import {logSymbols} from '@sanity/cli-core/ux'
+import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 
 import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
+import {
+  getSkillsCliAgentDisplayNameById,
+  getSkillsCliAgentSkillsDir,
+  UNIVERSAL_SKILLS_DIR,
+} from '../mcp/editorConfigs.js'
 
 const skillsDebug = subdebug('skills:setup')
 
@@ -43,6 +49,43 @@ interface SetupSkillsResult {
 }
 
 /**
+ * Prints a short summary beneath the success line: the skills that were
+ * installed, grouped by where they live. Universal agents share
+ * `~/.agents/skills`, so they're listed together under one header; any agent
+ * with its own directory (e.g. Claude Code) is listed separately with its
+ * location. Global (`-g`) installs are home-anchored, so locations show `~/`.
+ */
+function printInstallSummary(agents: string[], output: Output): void {
+  const universal: string[] = []
+  const additional: {dir: string; name: string}[] = []
+
+  for (const agent of agents) {
+    const name = getSkillsCliAgentDisplayNameById(agent) ?? agent
+    const dir = getSkillsCliAgentSkillsDir(agent)
+    if (dir && dir !== UNIVERSAL_SKILLS_DIR) {
+      additional.push({dir, name})
+    } else {
+      universal.push(name)
+    }
+  }
+
+  if (universal.length > 0) {
+    output.log('')
+    output.log(styleText('dim', `  Universal (~/${UNIVERSAL_SKILLS_DIR})`))
+    output.log(styleText('dim', `    ${universal.join(', ')}`))
+  }
+
+  if (additional.length > 0) {
+    output.log('')
+    output.log(styleText('dim', '  Additional agents'))
+    for (const {dir, name} of additional) {
+      output.log(styleText('dim', `    ${name} (~/${dir})`))
+    }
+  }
+  output.log('')
+}
+
+/**
  * Runs the bundled `skills add` globally for the given agents. Failures are
  * surfaced as warnings and never throw — skills install is best-effort and
  * must not abort `sanity init`.
@@ -69,15 +112,22 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
 
   skillsDebug('Running: %s %s', process.execPath, args.join(' '))
 
+  const spin = spinner('Installing Sanity agent skills').start()
+
   try {
     const result = await execa(process.execPath, args, {stdio: 'pipe', timeout: 90_000})
     skillsDebug('skills stdout: %s', result.stdout)
     skillsDebug('skills stderr: %s', result.stderr)
-    output.log(`${logSymbols.success} Installed Sanity agent skills for ${uniqueAgents.join(', ')}`)
+    spin.stop()
+    output.log(
+      `${logSymbols.success} Sanity agent skills installed: [${SANITY_SKILL_NAMES.join(', ')}]`,
+    )
+    printInstallSummary(uniqueAgents, output)
     return {installedAgents: uniqueAgents, skipped: false}
   } catch (error) {
     skillsDebug('Error installing skills %O', error)
     const err = toError(error)
+    spin.stop()
     output.warn(`Could not install Sanity agent skills: ${getErrorMessage(error)}`)
     if (error && typeof error === 'object') {
       const {stderr, stdout} = error as {stderr?: string; stdout?: string}

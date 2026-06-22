@@ -53,7 +53,9 @@ describe('setupSkills', () => {
     )
     expect(result).toEqual({installedAgents: ['cursor'], skipped: false})
     expect(mockOutput.log).toHaveBeenCalledWith(
-      expect.stringContaining('Installed Sanity agent skills for cursor'),
+      expect.stringContaining(
+        'Sanity agent skills installed: [sanity-best-practices, sanity-migration]',
+      ),
     )
   })
 
@@ -106,6 +108,20 @@ describe('setupSkills', () => {
       ],
       expect.any(Object),
     )
+  })
+
+  test('prints a summary grouping universal agents and listing additional ones', async () => {
+    mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
+
+    await setupSkills({agents: ['cursor', 'github-copilot', 'claude-code'], output: mockOutput})
+
+    const logged = mockOutput.log.mock.calls.map((call) => String(call[0])).join('\n')
+    // Universal agents are grouped under a single shared-directory header.
+    expect(logged).toContain('Universal (~/.agents/skills)')
+    expect(logged).toContain('Cursor, GitHub Copilot')
+    // Non-universal agents (Claude Code) are listed separately with their dir.
+    expect(logged).toContain('Additional agents')
+    expect(logged).toContain('Claude Code (~/.claude/skills)')
   })
 
   test('returns an error result when the skills CLI fails (does not throw)', async () => {

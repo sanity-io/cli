@@ -2,15 +2,9 @@ import {type Output, subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
-import {readSkillState} from '../skills/readSkillState.js'
-import {SANITY_SKILL_NAMES} from '../skills/setupSkills.js'
+import {getSkillCandidates} from '../skills/skillCandidates.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
-import {
-  EDITOR_CONFIGS,
-  type EditorName,
-  getSkillsCliAgent,
-  getSkillsCliAgentDisplayName,
-} from './editorConfigs.js'
+import {EDITOR_CONFIGS, type EditorName, getSkillsCliAgent} from './editorConfigs.js'
 import {type EditorAction, type EditorChoice, promptForMCPSetup} from './promptForMCPSetup.js'
 import {type Editor} from './types.js'
 import {validateEditorTokens} from './validateEditorTokens.js'
@@ -81,18 +75,23 @@ interface ClassifiedEditor {
 /**
  * Classify each editor into one of four actions based on MCP status and
  * whether the Sanity skills are already installed for its skills-CLI agent.
+ *
+ * `skillCandidateNames` is the set of editor names that still want a skills
+ * install (have a skills-CLI mapping AND aren't already installed), derived
+ * once via the shared `getSkillCandidates` primitive.
  */
-function classifyEditors(editors: Editor[]): ClassifiedEditor[] {
+function classifyEditors(
+  editors: Editor[],
+  skillCandidateNames: Set<EditorName>,
+): ClassifiedEditor[] {
   return editors.map((editor) => {
     const needsMCP = !editor.configured || editor.authStatus !== 'valid'
-    const skillsCliAgent = getSkillsCliAgent(editor.name)
-    const hasSkillMapping = Boolean(skillsCliAgent)
-    const skillInstalled = editor.skillInstalled === true
+    const hasSkillMapping = Boolean(getSkillsCliAgent(editor.name))
 
     if (needsMCP) {
       return {action: hasSkillMapping ? 'mcp-and-skill' : 'mcp-only', editor}
     }
-    if (hasSkillMapping && !skillInstalled) {
+    if (skillCandidateNames.has(editor.name)) {
       return {action: 'skill-only', editor}
     }
     return {action: 'none', editor}
@@ -195,16 +194,17 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
   await validateEditorTokens(editors)
 
   // 4. Read skill state when skills are in scope so classification can dedup
+  const skillCandidateNames = new Set<EditorName>()
   if (skillsMode !== 'skip') {
-    const {installedAgentDisplayNames} = await readSkillState({skillNames: SANITY_SKILL_NAMES})
-    for (const editor of editors) {
-      const displayName = getSkillsCliAgentDisplayName(editor.name)
-      editor.skillInstalled = displayName ? installedAgentDisplayNames.has(displayName) : false
+    const candidates = await getSkillCandidates(editors)
+    for (const candidate of candidates) {
+      const {editor} = candidate
+      skillCandidateNames.add(editor.name)
     }
   }
 
   // 5. Classify + mask
-  const classified = classifyEditors(editors)
+  const classified = classifyEditors(editors, skillCandidateNames)
   const actionable = applyMasking(classified, mcpMode, skillsMode)
 
   // "Already configured" surfaces editors whose MCP setup is valid (skill
