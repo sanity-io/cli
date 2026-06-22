@@ -24,7 +24,7 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<StartDevServerResult> {
-  const {cliConfig, flags, httpPort, output, workbenchAvailable, workDir} = options
+  const {announceUrl = true, cliConfig, flags, httpPort, output, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
 
@@ -157,7 +157,7 @@ export async function startStudioDevServer(
         `${appType} ` +
           `using ${styleText('cyan', `vite@${viteVersion}`)} ` +
           `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)}` +
-          (workbenchAvailable ? '' : ` and running at ${styleText('cyan', url)}`),
+          (announceUrl ? ` and running at ${styleText('cyan', url)}` : ''),
       )
     }
 

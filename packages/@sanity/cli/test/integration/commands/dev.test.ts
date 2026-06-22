@@ -57,24 +57,6 @@ vi.mock('@sanity/cli-core/ux', async () => {
 vi.mock('../../../src/util/packageManager/upgradePackages.js')
 vi.mock('../../../src/util/packageManager/packageManagerChoice.js')
 
-// Prevent the workbench dev server from starting — it would shift ports (+1)
-// and suppress output messages that tests assert on.
-vi.mock('../../../src/actions/dev/workbench/startWorkbenchDevServer.js', () => ({
-  startWorkbenchDevServer: vi.fn().mockImplementation(async (options) => {
-    const {getSharedServerConfig} = await vi.importActual<
-      typeof import('../../../src/util/getSharedServerConfig.js')
-    >('../../../src/util/getSharedServerConfig.js')
-
-    const {httpHost, httpPort} = getSharedServerConfig({
-      cliConfig: options.cliConfig,
-      flags: {host: options.flags.host, port: options.flags.port},
-      workDir: options.workDir,
-    })
-
-    return {close: async () => {}, httpHost, workbenchAvailable: false, workbenchPort: httpPort}
-  }),
-}))
-
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
