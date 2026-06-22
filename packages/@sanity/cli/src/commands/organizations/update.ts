@@ -2,11 +2,11 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {isHttpError} from '@sanity/client'
 
 import {validateOrganizationName} from '../../actions/organizations/validateOrganizationName.js'
 import {validateOrganizationSlug} from '../../actions/organizations/validateOrganizationSlug.js'
 import {type OrganizationUpdateParams, updateOrganization} from '../../services/organizations.js'
-import {hasStatusCode} from '../../util/apiError.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
 
@@ -96,7 +96,7 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
     } catch (error) {
       spin.fail()
       updateOrgDebug('Error updating organization', error)
-      if (hasStatusCode(error) && error.statusCode === 404) {
+      if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Organization "${organizationId}" not found`, {exit: 1})
       }
       this.error(`Failed to update organization: ${getErrorMessage(error)}`, {exit: 1})

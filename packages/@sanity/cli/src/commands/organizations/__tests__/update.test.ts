@@ -2,6 +2,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {UpdateOrganizationCommand} from '../update.js'
+import {httpError} from './httpError.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
 
@@ -152,8 +153,7 @@ describe('organizations update', () => {
   })
 
   test('shows user-friendly error on 404', async () => {
-    const apiError = Object.assign(new Error('Not found'), {statusCode: 404})
-    mockRequest.mockRejectedValue(apiError)
+    mockRequest.mockRejectedValue(httpError(404, 'Not found'))
 
     const {error} = await testCommand(UpdateOrganizationCommand, ['org-aaa', '--name', 'New Name'])
 
@@ -175,8 +175,7 @@ describe('organizations update', () => {
   })
 
   test('surfaces API error (e.g. slug requires authSAML feature)', async () => {
-    const apiError = Object.assign(new Error('Slug requires SAML'), {statusCode: 403})
-    mockRequest.mockRejectedValue(apiError)
+    mockRequest.mockRejectedValue(httpError(403, 'Slug requires SAML'))
 
     const {error} = await testCommand(UpdateOrganizationCommand, ['org-aaa', '--slug', 'my-slug'])
 

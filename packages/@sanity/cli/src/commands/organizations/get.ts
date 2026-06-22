@@ -1,8 +1,8 @@
 import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {isHttpError} from '@sanity/client'
 
 import {getOrganization} from '../../services/organizations.js'
-import {hasStatusCode} from '../../util/apiError.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
 
@@ -35,7 +35,7 @@ export class GetOrganizationCommand extends SanityCommand<typeof GetOrganization
       org = await getOrganization(organizationId)
     } catch (error) {
       getOrgDebug('Error getting organization', error)
-      if (hasStatusCode(error) && error.statusCode === 404) {
+      if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Organization "${organizationId}" not found`, {exit: 1})
       }
       this.error(`Failed to get organization: ${getErrorMessage(error)}`, {exit: 1})
