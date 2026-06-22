@@ -16,3 +16,4 @@ export {
   registerDevServer,
   watchRegistry,
 } from '../actions/dev/registry.js'
+export {startDevServerRegistration} from '../actions/dev/startDevServerRegistration.js'
