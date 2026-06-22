@@ -1,17 +1,18 @@
 import {styleText} from 'node:util'
 
+import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {getCliConfigUncached, isWorkbenchApp} from '@sanity/cli-core'
-import {startDevServerRegistration} from '@sanity/workbench-cli/dev'
+import {startDevServerRegistration, startWorkbenchDevServer} from '@sanity/workbench-cli/dev'
 import {type ViteDevServer} from 'vite'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
+import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
 import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {extractStudioManifest} from '../manifest/extractStudioManifest.js'
 import {startAppDevServer} from './servers/startAppDevServer.js'
 import {startStudioDevServer} from './servers/startStudioDevServer.js'
 import {type DevActionOptions, type StartDevServerResult} from './types.js'
-import {startWorkbenchDevServer} from './workbench/startWorkbenchDevServer.js'
 
 const noop = async () => {}
 
@@ -64,7 +65,16 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     workbenchPort,
   } = isWorkbenchRemote
     ? {close: noop, httpHost, workbenchAvailable: false, workbenchPort: httpPort}
-    : await startWorkbenchDevServer({...options, httpHost, httpPort})
+    : await startWorkbenchDevServer({
+        cacheDir: `${SANITY_CACHE_DIR}/vite`,
+        cliConfig,
+        httpHost,
+        httpPort,
+        output,
+        // Runtime template needs a concrete boolean; collapse an unset config to off.
+        reactStrictMode: resolveReactStrictMode(cliConfig) ?? false,
+        workDir,
+      })
 
   // A running workbench claims the configured port, so the app server binds the
   // next one — passed explicitly rather than by rewriting the shared flags.

@@ -17,3 +17,7 @@ export {
   watchRegistry,
 } from '../actions/dev/registry.js'
 export {startDevServerRegistration} from '../actions/dev/startDevServerRegistration.js'
+export {
+  startWorkbenchDevServer,
+  type StartWorkbenchOptions,
+} from '../actions/dev/startWorkbenchDevServer.js'

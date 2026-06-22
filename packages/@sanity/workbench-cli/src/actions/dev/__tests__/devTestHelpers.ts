@@ -3,6 +3,7 @@ import {type CliConfig, type Output} from '@sanity/cli-core'
 import {vi} from 'vitest'
 
 import {unstable_defineApp} from '../../../defineApp.js'
+import {type StartWorkbenchOptions} from '../startWorkbenchDevServer.js'
 
 /** A CliConfig `app` from a branded `unstable_defineApp(...)` — the workbench opt-in. */
 export function workbenchApp(overrides: Record<string, unknown> = {}): CliConfig['app'] {
@@ -24,4 +25,19 @@ export function createMockOutput(): Output {
     log: vi.fn(),
     warn: vi.fn(),
   } as unknown as Output
+}
+
+export function createDevOptions(
+  overrides: Partial<StartWorkbenchOptions> = {},
+): StartWorkbenchOptions {
+  return {
+    cacheDir: '/tmp/sanity-project/.sanity/vite',
+    cliConfig: {} as CliConfig,
+    httpHost: 'localhost',
+    httpPort: 3333,
+    output: createMockOutput(),
+    reactStrictMode: false,
+    workDir: '/tmp/sanity-project',
+    ...overrides,
+  }
 }

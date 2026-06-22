@@ -23,19 +23,18 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
-vi.mock('../workbench/startWorkbenchDevServer.js', () => ({
-  startWorkbenchDevServer: mockStartWorkbenchDevServer,
-}))
 vi.mock('../servers/startAppDevServer.js', () => ({
   startAppDevServer: mockStartAppDevServer,
 }))
 vi.mock('../servers/startStudioDevServer.js', () => ({
   startStudioDevServer: mockStartStudioDevServer,
 }))
-// Registration moved into workbench-cli; mock only that export and keep the rest real.
+// The workbench dev server + registration moved into workbench-cli; mock just
+// those two exports and keep the rest of the dev entry real.
 vi.mock('@sanity/workbench-cli/dev', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/workbench-cli/dev')>()),
   startDevServerRegistration: mockStartDevServerRegistration,
+  startWorkbenchDevServer: mockStartWorkbenchDevServer,
 }))
 vi.mock('../../../util/appId.js', () => ({
   checkForDeprecatedAppId: mockCheckForDeprecatedAppId,
