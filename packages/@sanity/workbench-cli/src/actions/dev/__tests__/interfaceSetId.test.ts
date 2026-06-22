@@ -1,7 +1,8 @@
 import {describe, expect, test} from 'vitest'
 
 import {type DevServerInterface} from '../deriveInterfaces.js'
-import {interfaceSetId, trackInterfaceSet} from '../interfaceSetId.js'
+import {createInterfacesTracker, interfaceSetId, trackInterfaceSet} from '../interfaceSetId.js'
+import {type DevServerManifest} from '../registry.js'
 
 const panel = (name: string, src = `./src/${name}.tsx`): DevServerInterface => ({
   entry_point: src,
@@ -12,6 +13,17 @@ const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => (
   entry_point: src,
   interface_type: 'worker',
   name,
+})
+const server = (id: string, port: number, interfaces: DevServerInterface[]): DevServerManifest => ({
+  host: 'localhost',
+  id,
+  interfaces,
+  pid: 1,
+  port,
+  startedAt: '2026-01-01T00:00:00.000Z',
+  type: 'coreApp',
+  version: 1,
+  workDir: '/tmp/app',
 })
 
 describe('interfaceSetId', () => {
@@ -67,5 +79,32 @@ describe('trackInterfaceSet', () => {
 
   test('treats undefined and empty as the same set', () => {
     expect(trackInterfaceSet(undefined).changed([])).toBe(false)
+  })
+})
+
+describe('createInterfacesTracker', () => {
+  test('the first snapshot is never a rebuild — no app is known yet', () => {
+    const tracker = createInterfacesTracker()
+    expect(tracker.hasChanged([server('a', 1, [panel('x')])])).toBe(false)
+  })
+
+  test('a known app whose set changed signals a rebuild', () => {
+    const tracker = createInterfacesTracker()
+    tracker.hasChanged([server('a', 1, [panel('x')])])
+    expect(tracker.hasChanged([server('a', 1, [panel('x'), panel('y')])])).toBe(true)
+  })
+
+  test('a newly appearing app is not a rebuild — it reconciles softly', () => {
+    const tracker = createInterfacesTracker()
+    tracker.hasChanged([server('a', 1, [panel('x')])])
+    expect(tracker.hasChanged([server('a', 1, [panel('x')]), server('b', 2, [panel('z')])])).toBe(
+      false,
+    )
+  })
+
+  test('a reorder of a known app is not a rebuild', () => {
+    const tracker = createInterfacesTracker()
+    tracker.hasChanged([server('a', 1, [panel('x'), worker('y')])])
+    expect(tracker.hasChanged([server('a', 1, [worker('y'), panel('x')])])).toBe(false)
   })
 })

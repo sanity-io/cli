@@ -2,6 +2,7 @@ import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {isWorkbenchApp, resolveLocalPackage} from '@sanity/cli-core'
 import {
   acquireWorkbenchLock,
+  createInterfacesTracker,
   type DevServerManifest,
   getRegisteredServers,
   readWorkbenchLock,
@@ -13,14 +14,10 @@ import {z} from 'zod/mini'
 
 import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
 import {devDebug} from '../devDebug.js'
-import {interfaceSetId} from '../registration/interfaceSetId.js'
 import {type DevActionOptions} from '../types.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
 const noop = async () => {}
-
-/** Stable per-app key for the registry-watch interface diff. */
-const serverKey = (s: DevServerManifest) => `${s.id ?? ''}@${s.host ?? ''}:${s.port}`
 
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
   applications: servers.map(({host, id, interfaces, manifest, port, projectId, type}) => ({
@@ -234,22 +231,12 @@ async function createWorkbenchViteServer(
     )
   })
 
-  // A running app's declared interface set changing (a view/service added or
-  // removed in `sanity.cli.ts`) means its remote was rebuilt with new exposes.
-  // Module federation has the old remote-entry cached, so an in-place reconcile
-  // would load a stale remote (empty panel / no worker) — the page must reload
-  // to re-fetch it. A new/removed app, or a manifest-only edit (title/icon),
-  // reconciles softly as before. Source-file edits don't change the set, so they
-  // stay on the HMR path and never trip a reload here.
-  let knownInterfaces = new Map<string, string>()
+  // A changed interface set means the remote was rebuilt with new exposes —
+  // full-reload so the page drops the stale remote-entry; otherwise rebroadcast
+  // the app list for a soft reconcile.
+  const setTracker = createInterfacesTracker()
   const registryWatcher = watchRegistry((servers) => {
-    const rebuiltApp = servers.some((s) => {
-      const key = serverKey(s)
-      return knownInterfaces.has(key) && knownInterfaces.get(key) !== interfaceSetId(s.interfaces)
-    })
-    knownInterfaces = new Map(servers.map((s) => [serverKey(s), interfaceSetId(s.interfaces)]))
-
-    if (rebuiltApp) {
+    if (setTracker.hasChanged(servers)) {
       server.ws.send({type: 'full-reload'})
       return
     }

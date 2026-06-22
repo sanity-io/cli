@@ -16,7 +16,10 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
-vi.mock('@sanity/workbench-cli/dev', () => ({
+// Only the registry write is mocked; `deriveInterfaces`/`trackInterfaceSet` are
+// pure and exercised for real, as they were before moving into workbench-cli.
+vi.mock('@sanity/workbench-cli/dev', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/workbench-cli/dev')>()),
   registerDevServer: mockRegisterDevServer,
 }))
 vi.mock('../startDevManifestWatcher.js', () => ({

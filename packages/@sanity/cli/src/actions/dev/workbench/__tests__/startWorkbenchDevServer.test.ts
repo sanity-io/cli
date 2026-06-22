@@ -28,7 +28,10 @@ vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
-vi.mock('@sanity/workbench-cli/dev', () => ({
+// Registry/lock I/O is mocked; the pure `createInterfacesTracker` runs for
+// real so the watcher's reload-vs-reconcile decision is exercised, not stubbed.
+vi.mock('@sanity/workbench-cli/dev', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/workbench-cli/dev')>()),
   acquireWorkbenchLock: mockAcquireWorkbenchLock,
   getRegisteredServers: mockGetRegisteredServers,
   readWorkbenchLock: mockReadWorkbenchLock,
