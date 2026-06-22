@@ -1,10 +1,13 @@
 import {styleText} from 'node:util'
 
 import {getCliConfigUncached, isWorkbenchApp} from '@sanity/cli-core'
+import {startDevServerRegistration} from '@sanity/workbench-cli/dev'
 import {type ViteDevServer} from 'vite'
 
+import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
-import {startDevServerRegistration} from './registration/startDevServerRegistration.js'
+import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
+import {extractStudioManifest} from '../manifest/extractStudioManifest.js'
 import {startAppDevServer} from './servers/startAppDevServer.js'
 import {startStudioDevServer} from './servers/startStudioDevServer.js'
 import {type DevActionOptions, type StartDevServerResult} from './types.js'
@@ -150,17 +153,24 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   // shared workbench registry.
   let registration: Awaited<ReturnType<typeof startDevServerRegistration>> | undefined
   try {
-    registration =
-      isWorkbenchApp(cliConfig?.app) && !isWorkbenchRemote
-        ? await startDevServerRegistration({
-            cliConfig,
-            isApp: options.isApp,
-            onInterfaceSetChange,
-            output,
-            server,
-            workDir,
-          })
-        : undefined
+    if (isWorkbenchApp(cliConfig?.app) && !isWorkbenchRemote) {
+      // CLI-domain wiring the registry doesn't own: the deprecated-id check and
+      // the studio-vs-app manifest extractor are injected here, keeping the
+      // workbench package free of CLI config/manifest conventions.
+      checkForDeprecatedAppId({cliConfig, output})
+      registration = await startDevServerRegistration({
+        appId: getAppId(cliConfig),
+        cliConfig,
+        extractManifest: options.isApp
+          ? ({workDir: wd}) => extractCoreAppManifest({workDir: wd})
+          : (params) => extractStudioManifest(params),
+        isApp: options.isApp,
+        onInterfaceSetChange,
+        output,
+        server,
+        workDir,
+      })
+    }
   } catch (err) {
     // Registration runs only after both servers are already up. If it throws
     // (e.g. `deriveInterfaces` rejects), tear them down before rethrowing —
