@@ -95,7 +95,7 @@
     "@sanity/types": "catalog:",
     "@sanity/workbench-cli": "workspace:^",
     "@sanity/worker-channels": "^2.0.0",
-    "@vercel/frameworks": "3.21.1",
+    "@vercel/frameworks": "3.29.0",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",
