@@ -85,7 +85,7 @@
     ],
     "overrides": {
       "@sanity/cli": "workspace:*",
-      "rolldown": "1.0.0"
+      "rolldown": "1.1.2"
     }
   }
 }

@@ -114,7 +114,7 @@
     }
   },
   "overrides": {
-    "rolldown": "1.0.0"
+    "rolldown": "1.1.2"
   },
   "engines": {
     "node": ">=22.12"
