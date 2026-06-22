@@ -30,7 +30,27 @@ type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
 
 const debug = subdebug('sanityCommand')
 
-export abstract class SanityCommand<T extends typeof Command> extends Command {
+/**
+ * Interface for `SanityCommand`, a wrapper around OCLIF's Command class.
+ * Important to keep updated as `SanityCommand` evolves so that its mock implementation (enabling fast unit tests) stays up to date as well.
+ * @see https://oclif.io/docs/base_class/
+ */
+export interface SanityCommandInterface {
+  getCliConfig: () => Promise<CliConfig>
+  getProjectId: (options?: {
+    deprecatedFlagName?: string
+    fallback?: () => Promise<string>
+  }) => Promise<string>
+  getProjectRoot: () => Promise<ProjectRootResult>
+  isUnattended: () => boolean
+  output: Output
+  resolveIsInteractive: () => boolean
+}
+
+export abstract class SanityCommand<T extends typeof Command>
+  extends Command
+  implements SanityCommandInterface
+{
   protected args!: Args<T>
   protected flags!: Flags<T>
 
@@ -64,7 +84,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * this.output.error('Error')
    * ```
    */
-  protected output: Output = {
+  public output: Output = {
     error: this.error.bind(this),
     log: this.log.bind(this),
     warn: this.warn.bind(this),
@@ -100,7 +120,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns The CLI config.
    */
-  protected async getCliConfig(): Promise<CliConfig> {
+  public async getCliConfig(): Promise<CliConfig> {
     const root = await this.getProjectRoot()
 
     debug(`Using project root`, root)
@@ -123,7 +143,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns The project ID.
    */
-  protected async getProjectId(options?: {
+  public async getProjectId(options?: {
     deprecatedFlagName?: string
     fallback?: () => Promise<string>
   }): Promise<string> {
@@ -191,7 +211,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns The project root result.
    */
-  protected getProjectRoot(): Promise<ProjectRootResult> {
+  public getProjectRoot(): Promise<ProjectRootResult> {
     return findProjectRoot(process.cwd())
   }
 
@@ -222,7 +242,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * some commands may also be run in unattended mode if `process.stdin` is not a TTY
    * (eg when running in a CI environment).
    */
-  protected isUnattended(): boolean {
+  public isUnattended(): boolean {
     return this.flags.yes || !this.resolveIsInteractive()
   }
 
@@ -231,7 +251,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns Whether the terminal is interactive.
    */
-  protected resolveIsInteractive(): boolean {
+  public resolveIsInteractive(): boolean {
     return isInteractive()
   }
 

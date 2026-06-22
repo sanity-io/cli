@@ -1,5 +1,5 @@
 import {Command} from '@oclif/core'
-import {type Output} from '@sanity/cli-core'
+import {type Output, SanityCommandInterface} from '@sanity/cli-core'
 import {vi} from 'vitest'
 
 export function createMockSanityCommand() {
@@ -10,13 +10,18 @@ export function createMockSanityCommand() {
     SanityCmdGetCliConfig: vi.fn(),
     SanityCmdGetProjectId: vi.fn(),
     SanityCmdGetProjectRoot: vi.fn(),
+    SanityCmdIsUnattended: vi.fn(),
     SanityCmdOutputError: vi.fn(() => undefined as never),
     SanityCmdOutputLog: vi.fn(),
     SanityCmdOutputWarn: vi.fn(),
+    SanityCmdResolveIsInteractive: vi.fn(),
   }
 
   return {
-    MockedSanityCommand: class MockedSanityCommand extends Command {
+    MockedSanityCommand: class MockedSanityCommand
+      extends Command
+      implements SanityCommandInterface
+    {
       args = {}
       flags = {}
       output: Output = {
@@ -27,13 +32,13 @@ export function createMockSanityCommand() {
       public exit(code?: number) {
         return mocks.OclifCmdExit(code)
       }
-      protected async getCliConfig() {
+      public async getCliConfig() {
         return mocks.SanityCmdGetCliConfig()
       }
-      protected async getProjectId(opts?: Record<string, any>) {
+      public async getProjectId(opts?: Record<string, any>) {
         return mocks.SanityCmdGetProjectId(opts)
       }
-      protected async getProjectRoot() {
+      public async getProjectRoot() {
         return mocks.SanityCmdGetProjectRoot()
       }
       // Same implementation as SanityCommand's, minus telemetry
@@ -50,6 +55,12 @@ export function createMockSanityCommand() {
         this.flags = flags
 
         await super.init()
+      }
+      public isUnattended() {
+        return mocks.SanityCmdIsUnattended()
+      }
+      public resolveIsInteractive() {
+        return mocks.SanityCmdResolveIsInteractive()
       }
       public async run() {}
     },
