@@ -19,7 +19,7 @@ import {
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
-import {type DefineAppInput} from '@sanity/workbench-cli'
+import {type DefineAppInput, validateWorkbenchApp} from '@sanity/workbench-cli'
 import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
@@ -67,6 +67,16 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   // `views`/`services` live on the branded `unstable_defineApp` result, not the
   // legacy `app` config object — resolve the workbench capability to read them.
   const workbench = resolveWorkbenchApp(cliConfig)
+
+  // `unstable_defineApp` doesn't validate its input, so fail the build on an
+  // invalid workbench config (bad name, missing title, duplicate view/service
+  // names) — `sanity dev` warns on the same check instead.
+  if (workbench) {
+    const invalid = validateWorkbenchApp(app)
+    if (invalid) {
+      output.error(invalid, {exit: 1})
+    }
+  }
 
   await internalBuildApp({
     appId: getAppId(cliConfig),
