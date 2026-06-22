@@ -7,7 +7,7 @@ import {cliInstallationCheck} from '../../../../../src/actions/doctor/checks/cli
 
 // Prevent real global CLI installations on the developer's machine from
 // leaking into tests and producing environment-dependent warnings
-vi.mock('../../../util/packageManager/installationInfo/detectGlobals.js', () => ({
+vi.mock('../../../../../src/util/packageManager/installationInfo/detectGlobals.js', () => ({
   detectGlobalInstallations: vi.fn().mockResolvedValue([]),
 }))
 

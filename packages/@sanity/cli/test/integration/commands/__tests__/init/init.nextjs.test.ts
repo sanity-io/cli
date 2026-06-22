@@ -121,7 +121,7 @@ vi.mock('../../../../../src/actions/mcp/detectAvailableEditors.js', () => ({
   detectAvailableEditors: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('../../../actions/skills/setupSkills.js', () => ({
+vi.mock('../../../../../src/actions/skills/setupSkills.js', () => ({
   setupSkills: vi.fn().mockResolvedValue({
     installedAgents: [],
     skipped: true,
