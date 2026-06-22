@@ -2,6 +2,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {GetOrganizationCommand} from '../get.js'
+import {httpError} from './httpError.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
 
@@ -48,8 +49,7 @@ describe('organizations get', () => {
   })
 
   test('errors when organization not found', async () => {
-    const notFound = Object.assign(new Error('Not found'), {statusCode: 404})
-    mockRequest.mockRejectedValue(notFound)
+    mockRequest.mockRejectedValue(httpError(404, 'Not found'))
 
     const {error} = await testCommand(GetOrganizationCommand, ['org-missing'])
 

@@ -3,6 +3,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DeleteOrganizationCommand} from '../delete.js'
+import {httpError} from './httpError.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
 
@@ -105,8 +106,7 @@ describe('organizations delete', () => {
   })
 
   test('shows user-friendly error when org is not found during fetch', async () => {
-    const apiError = Object.assign(new Error('Not found'), {statusCode: 404})
-    mockRequest.mockRejectedValue(apiError)
+    mockRequest.mockRejectedValue(httpError(404, 'Not found'))
 
     const {error} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
 
@@ -128,8 +128,7 @@ describe('organizations delete', () => {
   test('shows user-friendly error on 404 during delete', async () => {
     mockRequest.mockResolvedValueOnce(org)
     mockInput.mockResolvedValue(org.name)
-    const apiError = Object.assign(new Error('Not found'), {statusCode: 404})
-    mockRequest.mockRejectedValueOnce(apiError)
+    mockRequest.mockRejectedValueOnce(httpError(404, 'Not found'))
 
     const {error} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
 
@@ -147,8 +146,7 @@ describe('organizations delete', () => {
   test('errors when delete API call fails', async () => {
     mockRequest.mockResolvedValueOnce(org)
     mockInput.mockResolvedValue(org.name)
-    const apiError = Object.assign(new Error('Organization has projects'), {statusCode: 409})
-    mockRequest.mockRejectedValueOnce(apiError)
+    mockRequest.mockRejectedValueOnce(httpError(409, 'Organization has projects'))
 
     const {error} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
 

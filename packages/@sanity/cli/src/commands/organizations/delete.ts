@@ -4,9 +4,9 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, logSymbols, spinner} from '@sanity/cli-core/ux'
+import {isHttpError} from '@sanity/client'
 
 import {deleteOrganization, getOrganization} from '../../services/organizations.js'
-import {hasStatusCode} from '../../util/apiError.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
 
@@ -60,7 +60,7 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
     } catch (error) {
       spin.fail()
       deleteOrgDebug('Error deleting organization', error)
-      if (hasStatusCode(error) && error.statusCode === 404) {
+      if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Organization "${organizationId}" not found`, {exit: 1})
       }
       this.error(`Failed to delete organization: ${getErrorMessage(error)}`, {exit: 1})
@@ -75,7 +75,7 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
     } catch (error) {
       const err = error instanceof Error ? error : new Error(`${error}`)
       deleteOrgDebug(`Error getting organization ${organizationId}`, err)
-      if (hasStatusCode(error) && error.statusCode === 404) {
+      if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Organization "${organizationId}" not found`, {exit: 1})
       }
       this.error(`Organization retrieval failed: ${err.message}`, {exit: 1})

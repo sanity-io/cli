@@ -112,7 +112,9 @@ describe('organizations create', () => {
     mockInput.mockResolvedValue('Prompted Org')
     mockRequest.mockResolvedValue({...createdOrg, name: 'Prompted Org'})
 
-    const {error, stdout} = await testCommand(CreateOrganizationCommand, [])
+    const {error, stdout} = await testCommand(CreateOrganizationCommand, [], {
+      mocks: {isInteractive: true},
+    })
 
     if (error) throw error
     expect(mockInput).toHaveBeenCalledWith(
@@ -122,6 +124,19 @@ describe('organizations create', () => {
       }),
     )
     expect(stdout).toContain('org-new')
+  })
+
+  test('errors when --name is missing in a non-interactive environment', async () => {
+    const {error} = await testCommand(CreateOrganizationCommand, [], {
+      mocks: {isInteractive: false},
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Organization name is required')
+    expect(error?.message).toContain('--name')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockRequest).not.toHaveBeenCalled()
   })
 
   test('errors when --name flag is empty', async () => {
