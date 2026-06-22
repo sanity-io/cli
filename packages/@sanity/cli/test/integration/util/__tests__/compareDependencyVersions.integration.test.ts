@@ -5,7 +5,7 @@ import path from 'node:path'
 import {gt, valid} from 'semver'
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
 
-import {compareDependencyVersions} from '../compareDependencyVersions.js'
+import {compareDependencyVersions} from '../../../../src/util/compareDependencyVersions.js'
 
 describe('compareDependencyVersions (integration)', {timeout: 30_000}, () => {
   let workDir: string

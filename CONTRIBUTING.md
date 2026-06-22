@@ -99,14 +99,14 @@ DEBUG=sanity:* npx sanity <your-command>
 Before submitting a PR, run:
 
 ```bash
-pnpm check:types      # TypeScript checking
-pnpm check:lint       # ESLint + Prettier
-pnpm check:deps       # Unused dependencies
-pnpm test             # Run all tests
-pnpm test:unit        # Run only unit tests
-pnpm test:integration # Run only integration tests
-pnpm test --coverage  # Coverage report
-pnpm changeset        # Add a changeset (if your change affects published packages)
+pnpm check:types           # TypeScript checking
+pnpm check:lint            # ESLint + Prettier
+pnpm check:deps            # Unused dependencies
+pnpm test                  # Run all tests
+pnpm test:unit             # Run only unit tests
+pnpm test:integration      # Run only integration tests
+pnpm test:unit --coverage  # Coverage report based on unit tests
+pnpm changeset             # Add a changeset (if your change affects published packages)
 ```
 
 ---
