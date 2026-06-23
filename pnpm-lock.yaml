@@ -10,11 +10,11 @@ catalogs:
       specifier: ^2.1.0
       version: 2.1.0
     '@oclif/core':
-      specifier: ^4.11.4
+      specifier: ^4.11.7
       version: 4.11.7
     '@oclif/plugin-help':
-      specifier: ^6.2.50
-      version: 6.2.50
+      specifier: ^6.2.52
+      version: 6.2.52
     '@oclif/plugin-not-found':
       specifier: ^3.2.87
       version: 3.2.87
@@ -521,7 +521,7 @@ importers:
         version: 4.11.7
       '@oclif/plugin-help':
         specifier: 'catalog:'
-        version: 6.2.50
+        version: 6.2.52
       '@oclif/plugin-not-found':
         specifier: 'catalog:'
         version: 3.2.87(@types/node@22.20.0)
@@ -806,7 +806,7 @@ importers:
         specifier: 'catalog:'
         version: 14.0.15
       oclif:
-        specifier: ^4.23.10
+        specifier: ^4.23.16
         version: 4.23.16(@types/node@22.20.0)
       publint:
         specifier: 'catalog:'
@@ -3526,8 +3526,8 @@ packages:
     resolution: {integrity: sha512-LHii7kSaLvv5bpbS09I7BlI1AQa3Kak/QDyyZOik79ET8tQyt1U5O38al+sYkMxi139105w5gS+aWe+5BlJ0yQ==}
     engines: {node: '>=18.0.0'}
 
-  '@oclif/plugin-help@6.2.50':
-    resolution: {integrity: sha512-rNCG4hUm+kPXFbhJfAVk/fZ3OdWJYwBDASlyX8CqOLP0MssjIGl7iEgfZz7TMuZFa+KucupKU5NRSc0KWfPTQA==}
+  '@oclif/plugin-help@6.2.52':
+    resolution: {integrity: sha512-qtrVz41wHDqG2rvx7xToYHVgJVBRcxE8aPSla/d5wNuHPZsDLm56Nl07pI+DNLA42Xbt9a70POl08qZgBH6FgA==}
     engines: {node: '>=18.0.0'}
 
   '@oclif/plugin-not-found@3.2.87':
@@ -12470,7 +12470,7 @@ snapshots:
       wordwrap: 1.0.0
       wrap-ansi: 7.0.0
 
-  '@oclif/plugin-help@6.2.50':
+  '@oclif/plugin-help@6.2.52':
     dependencies:
       '@oclif/core': 4.11.7
 
@@ -13618,7 +13618,7 @@ snapshots:
       '@architect/inventory': 6.0.0
       '@inquirer/prompts': 8.5.2(@types/node@22.20.0)
       '@oclif/core': 4.11.7
-      '@oclif/plugin-help': 6.2.50
+      '@oclif/plugin-help': 6.2.52
       '@sanity-labs/design-tokens': 0.0.2-alpha.4
       '@sanity/blueprints': 0.20.2
       '@sanity/blueprints-parser': 0.4.0
@@ -17170,7 +17170,7 @@ snapshots:
       '@inquirer/input': 2.3.0
       '@inquirer/select': 2.5.0
       '@oclif/core': 4.11.7
-      '@oclif/plugin-help': 6.2.50
+      '@oclif/plugin-help': 6.2.52
       '@oclif/plugin-not-found': 3.2.87(@types/node@22.20.0)
       '@oclif/plugin-warn-if-update-available': 3.1.65
       ansis: 3.17.0
