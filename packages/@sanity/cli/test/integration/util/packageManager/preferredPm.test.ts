@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest'
 
-import {preferredPm} from '../preferredPm'
+import {preferredPm} from '../../../../src/util/packageManager/preferredPm'
 
 describe('preferredPm', () => {
   let tmpDir: string

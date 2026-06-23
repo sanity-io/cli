@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url'
 import {type SanityDocument} from '@sanity/types'
 import {describe, expect, it} from 'vitest'
 
-import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball'
+import {extractDocumentsFromNdjsonOrTarball} from '../../../src/util/extractDocumentsFromNdjsonOrTarball'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -13,7 +13,9 @@ describe('extractDocumentsFromNdjsonOrTarball', () => {
   it('extracts the contents of a tarball, finds the ndjson file, parses it, and yields each document', async () => {
     // note this archive was created on a mac with the command
     // tar -czvf test-archive.tar.gz data.ndjson
-    const readStream = fs.createReadStream(path.resolve(__dirname, './test-archive.tar.gz'))
+    const readStream = fs.createReadStream(
+      path.resolve(__dirname, './__fixtures__/test-archive.tar.gz'),
+    )
 
     const documents: SanityDocument[] = []
     for await (const document of extractDocumentsFromNdjsonOrTarball(readStream)) {
@@ -50,7 +52,7 @@ describe('extractDocumentsFromNdjsonOrTarball', () => {
   })
 
   it('accepts an ndjson file, parses it, and yields each document', async () => {
-    const readStream = fs.createReadStream(path.resolve(__dirname, './data.ndjson'))
+    const readStream = fs.createReadStream(path.resolve(__dirname, './__fixtures__/data.ndjson'))
 
     const documents: SanityDocument[] = []
     for await (const document of extractDocumentsFromNdjsonOrTarball(readStream)) {

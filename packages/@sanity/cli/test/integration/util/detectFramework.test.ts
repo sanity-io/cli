@@ -5,7 +5,7 @@ import {join} from 'node:path'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
-import {detectFrameworkRecord} from '../detectFramework.js'
+import {detectFrameworkRecord} from '../../../src/util/detectFramework.js'
 
 describe('detectFrameworkRecord', () => {
   let tmpDir: string

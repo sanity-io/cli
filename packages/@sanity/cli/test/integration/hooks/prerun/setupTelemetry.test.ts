@@ -19,11 +19,11 @@ import {cleanAll, pendingMocks} from 'nock'
 import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
-import {TELEMETRY_API_VERSION} from '../../../services/telemetry.js'
-import {flushTelemetryFiles} from '../../../util/telemetry/flushTelemetryFiles.js'
-import {readNDJSON} from '../../../util/telemetry/readNDJSON.js'
-import {setupTelemetry} from '../setupTelemetry.js'
+import {getCommandAndConfig} from '../../../helpers/getCommandAndConfig.js'
+import {TELEMETRY_API_VERSION} from '../../../../src/services/telemetry.js'
+import {flushTelemetryFiles} from '../../../../src/util/telemetry/flushTelemetryFiles.js'
+import {readNDJSON} from '../../../../src/util/telemetry/readNDJSON.js'
+import {setupTelemetry} from '../../../../src/hooks/prerun/setupTelemetry.js'
 
 // Mock external dependencies
 vi.mock('node:os', () => ({tmpdir: vi.fn()}))
@@ -40,11 +40,6 @@ vi.mock('@sanity/cli-core', async () => ({
   getCliConfig: vi.fn(),
   getUserConfig: vi.fn(),
   isCi: vi.fn(() => false),
-}))
-
-// Mock telemetry disclosure functions
-vi.mock('../../actions/telemetry/telemetryDisclosure.js', () => ({
-  telemetryDisclosure: vi.fn(),
 }))
 
 const mockTmpdir = vi.mocked(tmpdir)

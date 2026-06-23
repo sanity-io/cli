@@ -5,7 +5,7 @@ import {join} from 'node:path'
 
 import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test} from 'vitest'
 
-import {writeWorkbenchRuntime} from '../writeWorkbenchRuntime.js'
+import {writeWorkbenchRuntime} from '../../../../../src/actions/dev/workbench/writeWorkbenchRuntime.js'
 
 describe('writeWorkbenchRuntime', () => {
   // The default-args output is identical across most assertions, so generate it
