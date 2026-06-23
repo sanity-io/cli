@@ -13,6 +13,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/*.test.ts"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".sanity/**", "lib/**", "fixtures/**"]
     },
     "@sanity/cli-test#build": {
@@ -22,6 +23,7 @@
     },
     "build:types": {
       "dependsOn": ["^build", "^build:types", "build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/*.test.ts"],
       "outputs": ["dist/**/*.d.ts"]
     },
     "lint": {},
