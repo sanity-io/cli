@@ -77,9 +77,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: node_modules/.vite/vitest
-          key: vitest-cache-${{ matrix.os }}-node${{ matrix.node-version }}-${{ github.run_id }}
+          key: vitest-cache-unit-${{ matrix.os }}-node${{ matrix.node-version }}-${{ github.run_id }}
           restore-keys: |
-            vitest-cache-${{ matrix.os }}-node${{ matrix.node-version }}-
+            vitest-cache-unit-${{ matrix.os }}-node${{ matrix.node-version }}-
 
       - name: Unit Test on ${{ matrix.os }}
         shell: bash
@@ -216,9 +216,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: node_modules/.vite/vitest
-          key: vitest-cache-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-${{ github.run_id }}
+          key: vitest-cache-integration-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-${{ github.run_id }}
           restore-keys: |
-            vitest-cache-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-
+            vitest-cache-integration-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-
 
       - name: Integration Test on ${{ matrix.os }}
         shell: bash
