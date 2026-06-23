@@ -1,5 +1,27 @@
 # Change Log
 
+## [7.4.0](https://github.com/sanity-io/cli/compare/cli-v7.3.0...cli-v7.4.0)
+
+_2026-06-23_
+
+### Features
+
+- **init:** promote page-builder template to production ([#1353](https://github.com/sanity-io/cli/pull/1353)) ([1a2cb3e](https://github.com/sanity-io/cli/commit/1a2cb3e569a41eb0d0133a7b9321859fb402decc))
+
+### Bug Fixes
+
+- **cli:** prevent `init` from crashing when an npm version lookup stalls ([#1331](https://github.com/sanity-io/cli/pull/1331)) ([ee2e0e7](https://github.com/sanity-io/cli/commit/ee2e0e777a1767dabc0f398c7fd76633ea9391a8))
+- **deps:** update dependency @vercel/frameworks to v3.29.0 ([#1346](https://github.com/sanity-io/cli/pull/1346)) ([d0c96ec](https://github.com/sanity-io/cli/commit/d0c96ec0b825661962cad1e7e538754d6b26f097))
+- **deps:** update oclif-tooling ([#1352](https://github.com/sanity-io/cli/pull/1352)) ([f5455ed](https://github.com/sanity-io/cli/commit/f5455ed3298b7b260d82939df808e65f9e3a1d28))
+- **deps:** remove rolldown overrides now that vite 8.1.0 ships rolldown 1.1.2 ([#1356](https://github.com/sanity-io/cli/pull/1356)) ([d96cf4f](https://github.com/sanity-io/cli/commit/d96cf4f37648f82416b11753b85d9eba1c3e1742))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 1.1.1
+    - @sanity/cli-core bumped to 2.1.1
+
 ## [7.3.0](https://github.com/sanity-io/cli/compare/cli-v7.2.3...cli-v7.3.0)
 
 _2026-06-22_
