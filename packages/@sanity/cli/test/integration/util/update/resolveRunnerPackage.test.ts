@@ -4,7 +4,7 @@ import {join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
-import {resolveRunnerPackage} from '../resolveRunnerPackage.js'
+import {resolveRunnerPackage} from '../../../../src/util/update/resolveRunnerPackage.js'
 
 describe('resolveRunnerPackage', () => {
   let tempRoot: string

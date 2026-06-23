@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url'
 import {type SanityDocument} from '@sanity/types'
 import {describe, expect, it} from 'vitest'
 
-import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball'
+import {extractDocumentsFromNdjsonOrTarball} from '../../../src/util/extractDocumentsFromNdjsonOrTarball'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

@@ -5,10 +5,10 @@ import path from 'node:path'
 import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {resolveLatestVersions} from '../../../util/resolveLatestVersions.js'
-import {bootstrapLocalTemplate} from '../bootstrapLocalTemplate.js'
+import {resolveLatestVersions} from '../../../../src/util/resolveLatestVersions.js'
+import {bootstrapLocalTemplate} from '../../../../src/actions/init/bootstrapLocalTemplate.js'
 
-vi.mock('../../../util/resolveLatestVersions.js', () => ({
+vi.mock('../../../../src/util/resolveLatestVersions.js', () => ({
   resolveLatestVersions: vi.fn().mockImplementation(async (deps: Record<string, string>) => {
     const resolved: Record<string, string> = {}
     for (const key of Object.keys(deps)) resolved[key] = '1.0.0'
@@ -16,7 +16,7 @@ vi.mock('../../../util/resolveLatestVersions.js', () => ({
   }),
 }))
 
-vi.mock('../updateInitialTemplateMetadata.js', () => ({
+vi.mock('../../../../src/actions/init/updateInitialTemplateMetadata.js', () => ({
   updateInitialTemplateMetadata: vi.fn().mockResolvedValue(undefined),
 }))
 
