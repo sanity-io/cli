@@ -11,6 +11,7 @@ vi.mock('get-latest-version', () => ({
 describe('resolveLatestVersions', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   test('passes through valid semver ranges without looking them up', async () => {
@@ -60,5 +61,16 @@ describe('resolveLatestVersions', () => {
     })
     expect(mockGetLatestVersion).toHaveBeenCalledTimes(1)
     expect(mockGetLatestVersion).toHaveBeenCalledWith('@sanity/vision', {range: 'latest'})
+  })
+
+  test('falls back to the `latest` tag when a lookup never settles', async () => {
+    vi.useFakeTimers()
+    // A lookup that never resolves — without the cap, this hangs the CLI.
+    mockGetLatestVersion.mockReturnValueOnce(new Promise<string>(() => {}))
+
+    const resolved = resolveLatestVersions({sanity: 'latest'})
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    await expect(resolved).resolves.toEqual({sanity: 'latest'})
   })
 })
