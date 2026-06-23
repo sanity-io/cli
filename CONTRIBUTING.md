@@ -78,7 +78,7 @@ pnpm install
 # Build the CLI
 pnpm build:cli
 
-# Run from fixtures folder
+# Manually test from a fixtures folder
 cd fixtures/basic-studio
 npx sanity <command>
 ```
@@ -168,9 +168,10 @@ catch (error: any) { }
 ### File Location Conventions
 
 - Command files: `src/commands/<topic>/<command-name>.ts`
+  - Commands extend `SanityCommand` from `@sanity/cli-core`
 - Unit Test files: `__tests__/` folder relative to the file being tested (e.g., `src/commands/__tests__/<command-name>.test.ts`)
-- Integration Test files: `test/integration` folder relative to the logic being tested (e.g. `test/integrationcommands/__tests__/<command-name>.test.ts`)
-- Commands extend `SanityCommand` from `@sanity/cli-core`
+  - Unit tests for `SanityCommands` should leverage `createMockSanityCommand()` test helper from `@sanity/cli/test/mockSanityCommand.ts`
+- Integration Test files: `test/integration` folder relative to the logic being tested (e.g. `test/integration/commands/__tests__/<command-name>.test.ts`)
 - When adding or migrating commands, check for existing utilities in `src/utils/` and `@sanity/cli-core`
 
 ---
@@ -206,11 +207,34 @@ Commands use a small set of exit codes aligned with oclif defaults and Unix conv
 
 ## Testing Requirements
 
+This project employs three different types of tests: unit, integration and end-to-end (e2e). Ideally the amounts of each test type is distributed in a classic test pyramid, with unit tests making up a majority of the tests while integration and e2e tests are employed sparingly covering critical paths. All three types of tests are necessary to ensure a solid quality assurance process, but the tradeoffs between them should be understood in order to balance test reliability, infrastructure requirements, costs, and run times.
+
+**Unit tests** target a single source file (unit), mocking out a majority, if not all, of its dependencies in order to be able to exercise every logical branch within the unit via manipulation of its mocks. Because these tests mock out dependencies - and thus expensive I/O operations like file and network calls - unit tests are _fast_ - executing in a few milliseconds at most. Due to their single-unit narrow scope, unit tests are heavily coupled to the implementation of the unit they are testing. As a unit evolves and changes, typically so must its unit test. Unit tests in this project are stored next to the unit they are testing, under the `__tests__/` directory where the unit exists and named the same as the unit they are testing together with a `.test.ts` extension.
+
+**Integration tests** have broader scope (target more than a single source file) and may or may not employ mocking. As a result, these tests are more expensive than unit tests in terms of execution time and setup, and may be coupled to specific filesystem fixtures or configurations. As a result of a lack of mocking, they are also more brittle and can be subject to so-called 'flakiness' - transient or intermittent issues due to e.g. network partitions, low level operating system race conditions, resource exhaustion, etc. Integration tests in this project are stored under the `test/integration/` directory of each package.
+
+**End-to-end tests** have even-broader scope, typically being completely detached from any specific implementation and are written in a more black-box manner mimicking end-user interactions. They often integrate with live remot environments (staging or production). For these reasons, e2e tests are even-more expensive than integration tests and generally even-less reliable.
+
+The three test types exist on a continuum: from fastest/cheapest/most-coupled-to-implementation to slowest/most-expensive/least-coupled-to-implementation.
+
+### Testing Rules
+
+- Prefer lightweight unit tests over integration tests where possible
+- Segregate heavy tests that use the filesystem, fixtures or may take longer to run into `packages/@sanity/cli/test/integration`
+- Use `vi.mocked()` for type-safe mocking
+- Use `vi.hoisted(() => vi.fn())` for client method mocks
+- Clear mocks in `afterEach()` with `vi.clearAllMocks()`
+- Test both success and error paths
+- In success tests, use `if (error) throw error` - NOT `expect(error).toBeUndefined()` (better stack traces on failure)
+- In error tests, assert `expect(error).toBeInstanceOf(Error)` along with exit code and message assertions
+- Never use `any` in mock types - use proper typing or `unknown`
+- If a heavy integration test must be used, use the `testCommand()` and `testFixture()` helpers from `@sanity/cli-test` for command execution
+
 ### Coverage Goals
 
 - **New code**: Maximum coverage
 - **Modified code**: Maintain or improve existing coverage
-- Run `pnpm test --coverage` to check
+- Run `pnpm test:coverage` to get a per-file test coverage report printed to your terminal
 
 ### Test Structure
 
@@ -246,21 +270,6 @@ describe('feature description', () => {
   })
 })
 ```
-
-### Testing Rules
-
-- Prefer lightweight unit tests over integration tests where possible
-- Segregate heavy tests that use the filesystem, fixtures or may take longer to run into `packages/@sanity/cli/test/integration`
-- Use `testCommand()` helper from `@sanity/cli-test` for command execution
-- Use `vi.mocked()` for type-safe mocking
-- Use `vi.hoisted(() => vi.fn())` for client method mocks
-- Clear mocks in `afterEach()` with `vi.clearAllMocks()`
-- Test both success and error paths
-- In success tests, use `if (error) throw error` - NOT `expect(error).toBeUndefined()` (better stack traces on failure)
-- In error tests, assert `expect(error).toBeInstanceOf(Error)` along with exit code and message assertions
-- Never use `any` in mock types - use proper typing or `unknown`
-- Never leave mocks active between tests
-- Never mock without verifying the mock was called - add assertions for mock calls
 
 ### Avoiding Flaky Tests: Timing and Ports
 
