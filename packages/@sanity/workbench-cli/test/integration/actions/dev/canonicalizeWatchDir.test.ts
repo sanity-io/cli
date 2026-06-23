@@ -4,7 +4,7 @@ import {join} from 'node:path'
 
 import {afterEach, describe, expect, test} from 'vitest'
 
-import {canonicalizeWatchDir} from '../canonicalizeWatchDir.js'
+import {canonicalizeWatchDir} from '../../../../src/actions/dev/canonicalizeWatchDir.js'
 
 describe('canonicalizeWatchDir', () => {
   const created: string[] = []
