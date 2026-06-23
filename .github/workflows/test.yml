@@ -47,8 +47,116 @@ jobs:
               - '!release-please-config.json'
               - '!.release-please-manifest.json'
 
-  test:
+  unit-test:
     needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    runs-on: ${{ matrix.os }}
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-8core]
+        node-version: [22, 24, 26]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Set Turbo cache bypass on rerun
+        if: github.run_attempt > 1
+        shell: bash
+        run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
+
+      - name: Restore Vitest cache
+        uses: actions/cache@v5
+        with:
+          path: node_modules/.vite/vitest
+          key: vitest-cache-unit-${{ matrix.os }}-node${{ matrix.node-version }}-${{ github.run_id }}
+          restore-keys: |
+            vitest-cache-unit-${{ matrix.os }}-node${{ matrix.node-version }}-
+
+      - name: Unit Test on ${{ matrix.os }}
+        shell: bash
+        run: pnpm test:unit --coverage --reporter=default --reporter=blob
+
+      - name: Upload blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() && matrix.node-version == '22' && matrix.os == 'ubuntu-latest' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: blob-report-${{ github.run_id }}
+          path: '.vitest-reports/*'
+          include-hidden-files: true
+          retention-days: 1
+
+  report-coverage:
+    needs: [changes, unit-test]
+    if: ${{ !cancelled() && needs.changes.outputs.should_run == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # Node 24+ required: runs .ts files directly via built-in type stripping
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: 24
+
+      - name: 'Download coverage artifacts'
+        uses: actions/download-artifact@v8
+        with:
+          path: .vitest-reports
+          pattern: blob-report-${{ github.run_id }}
+          merge-multiple: true
+
+      - name: Merged report
+        run: |
+          pnpm vitest run --merge-reports --coverage
+
+      - name: Prepare coverage baseline
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p coverage/baseline
+          cp coverage/coverage-summary.json coverage/baseline/coverage-summary.json
+          echo "${{ github.sha }}" > coverage/baseline/sha.txt
+
+      - name: Save coverage baseline to cache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v5
+        with:
+          path: coverage/baseline
+          key: coverage-main-${{ github.sha }}
+
+      # The exact key won't match on PRs (PR SHA ≠ main SHA); restore-keys picks up the latest main entry.
+      - name: Restore main branch coverage baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v5
+        with:
+          path: coverage/baseline
+          key: coverage-main-${{ github.sha }}
+          restore-keys: |
+            coverage-main-
+
+      - name: Post coverage delta
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node packages/@repo/coverage-delta/src/coverage-delta.ts
+
+  integration-test:
+    needs: [changes]
     if: needs.changes.outputs.should_run == 'true'
     runs-on: ${{ matrix.os }}
     env:
@@ -108,110 +216,25 @@ jobs:
         uses: actions/cache@v5
         with:
           path: node_modules/.vite/vitest
-          key: vitest-cache-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-${{ github.run_id }}
+          key: vitest-cache-integration-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-${{ github.run_id }}
           restore-keys: |
-            vitest-cache-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-
-
-      - name: Unit Test on ${{ matrix.os }} (shard 1 only)
-        shell: bash
-        run: |
-          # Only run the unit tests on the first shard
-          if [ "${{ matrix.shardIndex }}" == "1" ]; then
-            pnpm test:unit
-          fi
+            vitest-cache-integration-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-
 
       - name: Integration Test on ${{ matrix.os }}
         shell: bash
         env:
           SANITY_AUTH_TOKEN: 'test-token'
-        run: |
-          ARGS="--test-timeout=60000 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
-          # We only gather coverage from Node 22 on Ubuntu
-          if [ "${{ matrix.node-version }}" == "22" ] && [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            # We pass in `--reporter=blob` so that we can combine the results from all shards.
-            ARGS="$ARGS --coverage --reporter=default --reporter=blob"
-          fi
-          pnpm test:integration $ARGS
-
-      - name: Upload blob report to GitHub Actions Artifacts
-        if: ${{ !cancelled() && matrix.node-version == '22' && matrix.os == 'ubuntu-latest' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: blob-report-${{ github.run_id }}-${{ matrix.shardIndex }}
-          path: '.vitest-reports/*'
-          include-hidden-files: true
-          retention-days: 1
-
-  report-coverage:
-    needs: [changes, test]
-    if: ${{ !cancelled() && needs.changes.outputs.should_run == 'true' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      # Node 24 required: runs .ts files directly via built-in type stripping
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          node-version: 24
-
-      - name: 'Download coverage artifacts'
-        uses: actions/download-artifact@v8
-        with:
-          path: .vitest-reports
-          pattern: blob-report-${{ github.run_id }}-*
-          merge-multiple: true
-
-      - name: Merged report
-        run: |
-          pnpm vitest run --merge-reports --coverage
-
-      - name: Prepare coverage baseline
-        if: github.ref == 'refs/heads/main'
-        run: |
-          mkdir -p coverage/baseline
-          cp coverage/coverage-summary.json coverage/baseline/coverage-summary.json
-          echo "${{ github.sha }}" > coverage/baseline/sha.txt
-
-      - name: Save coverage baseline to cache
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v5
-        with:
-          path: coverage/baseline
-          key: coverage-main-${{ github.sha }}
-
-      # The exact key won't match on PRs (PR SHA ≠ main SHA); restore-keys picks up the latest main entry.
-      - name: Restore main branch coverage baseline
-        if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v5
-        with:
-          path: coverage/baseline
-          key: coverage-main-${{ github.sha }}
-          restore-keys: |
-            coverage-main-
-
-      - name: Post coverage delta
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: node packages/@repo/coverage-delta/src/coverage-delta.ts
+        run: pnpm test:integration --test-timeout=60000 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
   test-status:
     if: always()
-    needs: [changes, test, report-coverage]
+    needs: [changes, unit-test, integration-test, report-coverage]
     runs-on: ubuntu-latest
     steps:
       - name: Check status
         run: |
           # Fail if any needed job failed or was cancelled
-          results=("${{ needs.changes.result }}" "${{ needs.test.result }}" "${{ needs.report-coverage.result }}")
+          results=("${{ needs.changes.result }}" "${{ needs.unit-test.result }}" "${{ needs.report-coverage.result }}" "${{ needs.integration-test.result }}")
           for result in "${results[@]}"; do
             if [ "$result" == "failure" ] || [ "$result" == "cancelled" ]; then
               echo "Job failed or was cancelled: $result"
