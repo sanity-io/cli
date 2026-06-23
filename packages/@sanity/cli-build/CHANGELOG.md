@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.0](https://github.com/sanity-io/cli/compare/cli-build-v1.0.5...cli-build-v1.1.0)
+
+_2026-06-22_
+
+### Features
+
+- **cli-build:** preconnect and modulepreload the CDN sanity module for auto-update studios ([#1276](https://github.com/sanity-io/cli/pull/1276)) ([71d4f20](https://github.com/sanity-io/cli/commit/71d4f20e27edc112038a6887284baeeca772cc73))
+- add workbench under unstable flags ([#907](https://github.com/sanity-io/cli/pull/907)) ([a2deacf](https://github.com/sanity-io/cli/commit/a2deacf2ed71783bb34927aca9d2b9b41c2f0f3d))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.0
+    - @sanity/workbench-cli bumped to 1.1.0
+
 ## [1.0.5](https://github.com/sanity-io/cli/compare/cli-build-v1.0.4...cli-build-v1.0.5)
 
 _2026-06-11_

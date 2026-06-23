@@ -80,7 +80,7 @@ describe('detectFrameworkRecord', () => {
     })
 
     expect(result).not.toBeNull()
-    expect(result?.slug).toBe('sanity-v3')
+    expect(result?.slug).toBe('sanity')
   })
 
   test('handles supersedes (more specific framework wins)', async () => {
@@ -326,7 +326,7 @@ describe('@vercel/frameworks integration guard', () => {
   // These tests catch upstream breaking changes in the framework definitions
   // that would silently break our detection logic.
 
-  const knownFrameworks = ['nextjs', 'remix', 'astro', 'svelte', 'nuxtjs', 'gatsby', 'sanity-v3']
+  const knownFrameworks = ['nextjs', 'remix', 'astro', 'svelte', 'nuxtjs', 'gatsby', 'sanity']
 
   test('known frameworks exist in the frameworks list', () => {
     const slugs = (frameworks as readonly Framework[]).map((f) => f.slug)

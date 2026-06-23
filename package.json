@@ -62,7 +62,7 @@
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "husky": "^9.1.7",
-    "knip": "^6.15.0",
+    "knip": "^6.17.1",
     "lint-staged": "^16.4.0",
     "oxfmt": "catalog:",
     "rimraf": "catalog:",
@@ -71,7 +71,7 @@
     "vitest": "catalog:"
   },
   "resolutions": {
-    "@sanity/client": "^7.22.1"
+    "@sanity/client": "^7.23.0"
   },
   "engines": {
     "node": ">=22.12"

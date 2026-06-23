@@ -1,5 +1,26 @@
 # Change Log
 
+## [7.3.0](https://github.com/sanity-io/cli/compare/cli-v7.2.3...cli-v7.3.0)
+
+_2026-06-22_
+
+### Features
+
+- add sanity skills install command to allow manual skills install ([#1292](https://github.com/sanity-io/cli/pull/1292)) ([3a038eb](https://github.com/sanity-io/cli/commit/3a038eb088244499e5378098c6f5c55cb8525065))
+- add workbench under unstable flags ([#907](https://github.com/sanity-io/cli/pull/907)) ([a2deacf](https://github.com/sanity-io/cli/commit/a2deacf2ed71783bb34927aca9d2b9b41c2f0f3d))
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling to v17 ([#1349](https://github.com/sanity-io/cli/pull/1349)) ([0873d56](https://github.com/sanity-io/cli/commit/0873d56d58d2531f3e94cc76e9b1b1eb0f054ebc))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 1.1.0
+    - @sanity/cli-core bumped to 2.1.0
+    - @sanity/workbench-cli bumped to 1.1.0
+
 ## [7.2.3](https://github.com/sanity-io/cli/compare/cli-v7.2.2...cli-v7.2.3)
 
 _2026-06-11_

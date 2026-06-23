@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli",
-  "version": "7.2.3",
+  "version": "7.3.0",
   "description": "Sanity CLI tool for managing Sanity projects and organizations",
   "keywords": [
     "cli",
@@ -95,7 +95,7 @@
     "@sanity/types": "catalog:",
     "@sanity/workbench-cli": "workspace:^",
     "@sanity/worker-channels": "^2.0.0",
-    "@vercel/frameworks": "3.21.1",
+    "@vercel/frameworks": "3.29.0",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",

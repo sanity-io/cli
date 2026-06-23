@@ -37,7 +37,7 @@ jobs:
           private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
           token: ${{ steps.generate_token.outputs.token }}
