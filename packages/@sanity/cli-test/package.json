@@ -62,7 +62,7 @@
     "@sanity/cli-core": "workspace:*",
     "@swc/core": "catalog:",
     "ansis": "^4.2.0",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "nock": "catalog:",
     "ora": "catalog:",
     "tinyglobby": "catalog:"
