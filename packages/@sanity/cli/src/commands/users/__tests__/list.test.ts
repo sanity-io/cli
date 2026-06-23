@@ -115,18 +115,9 @@ describe('#list', () => {
   })
 
   test('displays an error if the API request fails', async () => {
-    // Wait for 50ms to ensure the Promise.all is called
-    setTimeout(
-      () => mockGetProjectCliClient.mockRejectedValue(new Error('Internal server error')),
-      50,
-    )
+    mockGetProjectCliClient.mockRejectedValue(new Error('Internal server error'))
 
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      uri: `/invitations/project/${testProjectId}`,
-    }).reply(200, [])
-
-    const {error} = await testCommand(List, [], {mocks: defaultMocks})
+    const {error} = await testCommand(List, ['--no-invitations'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain(`Error fetching members for ${testProjectId}`)
