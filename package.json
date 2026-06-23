@@ -85,7 +85,8 @@
     ],
     "overrides": {
       "@sanity/cli": "workspace:*",
-      "rolldown": "1.0.0"
+      "vite": "beta",
+      "rolldown": "1.1.2"
     }
   }
 }

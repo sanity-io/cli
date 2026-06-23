@@ -91,9 +91,6 @@
     "@sanity/client": "^7.0.0",
     "vitest": ">=3.0.0 <5.0.0"
   },
-  "overrides": {
-    "rolldown": "1.0.0"
-  },
   "engines": {
     "node": ">=22.12"
   }
