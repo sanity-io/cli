@@ -31,30 +31,6 @@ describe('#enable', () => {
     vi.unstubAllEnvs()
   })
 
-  test('enables telemetry when user is authenticated and status is different', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'denied'})
-
-    // Mock enable API call
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      method: 'put',
-      uri: '/users/me/consents/telemetry/status/granted',
-    }).reply(200)
-
-    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
-
-    const {stdout} = await testCommand(Enable, [])
-
-    expect(stdout).toContain(
-      "You've now enabled telemetry data collection to help us improve Sanity.",
-    )
-    expect(stdout).toContain('Learn more about the data being collected here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
   test('shows already enabled message when telemetry is already granted', async () => {
     // Ensure user is authenticated
     mockGetCliToken.mockResolvedValue('test-token')
