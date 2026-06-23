@@ -42,11 +42,6 @@ vi.mock('@sanity/cli-core', async () => ({
   isCi: vi.fn(() => false),
 }))
 
-// Mock telemetry disclosure functions
-vi.mock('../../../../src/actions/telemetry/telemetryDisclosure.js', () => ({
-  telemetryDisclosure: vi.fn(),
-}))
-
 const mockTmpdir = vi.mocked(tmpdir)
 const mockSpawn = vi.mocked(spawn)
 const mockFindProjectRoot = vi.mocked(findProjectRoot)
