@@ -19,11 +19,11 @@ import {cleanAll, pendingMocks} from 'nock'
 import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {getCommandAndConfig} from '../../../helpers/getCommandAndConfig.js'
+import {setupTelemetry} from '../../../../src/hooks/prerun/setupTelemetry.js'
 import {TELEMETRY_API_VERSION} from '../../../../src/services/telemetry.js'
 import {flushTelemetryFiles} from '../../../../src/util/telemetry/flushTelemetryFiles.js'
 import {readNDJSON} from '../../../../src/util/telemetry/readNDJSON.js'
-import {setupTelemetry} from '../../../../src/hooks/prerun/setupTelemetry.js'
+import {getCommandAndConfig} from '../../../helpers/getCommandAndConfig.js'
 
 // Mock external dependencies
 vi.mock('node:os', () => ({tmpdir: vi.fn()}))

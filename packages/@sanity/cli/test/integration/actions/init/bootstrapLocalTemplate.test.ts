@@ -5,8 +5,8 @@ import path from 'node:path'
 import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {resolveLatestVersions} from '../../../../src/util/resolveLatestVersions.js'
 import {bootstrapLocalTemplate} from '../../../../src/actions/init/bootstrapLocalTemplate.js'
+import {resolveLatestVersions} from '../../../../src/util/resolveLatestVersions.js'
 
 vi.mock('../../../../src/util/resolveLatestVersions.js', () => ({
   resolveLatestVersions: vi.fn().mockImplementation(async (deps: Record<string, string>) => {

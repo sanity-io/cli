@@ -4,8 +4,8 @@ import {join, resolve} from 'node:path'
 
 import {describe, expect, test} from 'vitest'
 
-import {type ExtractSchemaCommand} from '../../../../src/commands/schemas/extract.js'
 import {getExtractOptions} from '../../../../src/actions/schema/getExtractOptions.js'
+import {type ExtractSchemaCommand} from '../../../../src/commands/schemas/extract.js'
 
 describe('getExtractOptions', () => {
   const mockProjectRoot = {
