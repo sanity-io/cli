@@ -13,8 +13,8 @@ export default defineConfig({
       provider: 'istanbul',
     },
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**', 'test/integration/**'],
     globals: false,
-    name: '@sanity/workbench-cli/unit',
+    include: ['test/integration/**/*.test.ts'],
+    name: '@sanity/workbench-cli/integration',
   },
 })

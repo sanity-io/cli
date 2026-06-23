@@ -1,8 +1,8 @@
 import {type Environment, type Plugin, type PluginOption} from 'vite'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {FEDERATION_DIR_NAME} from '../constants.js'
-import {sanityModuleFederation} from './plugin-module-federation.js'
+import {FEDERATION_DIR_NAME} from '../../../../../../src/actions/build/vite/constants.js'
+import {sanityModuleFederation} from '../../../../../../src/actions/build/vite/plugins/plugin-module-federation.js'
 
 // Companion to plugin-module-federation.node.test.ts, which mocks
 // `@module-federation/vite` and checks the scoping wrapper with injected plugins.

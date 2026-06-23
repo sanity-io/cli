@@ -4,13 +4,13 @@ import {join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {__resetStartTimeCacheForTesting} from '../processLiveness.js'
+import {__resetStartTimeCacheForTesting} from '../../../../src/actions/dev/processLiveness.js'
 import {
   type DevServerManifest,
   getRegisteredServers,
   registerDevServer,
   watchRegistry,
-} from '../registry.js'
+} from '../../../../src/actions/dev/registry.js'
 
 const mockExecSync = vi.hoisted(() => vi.fn())
 
