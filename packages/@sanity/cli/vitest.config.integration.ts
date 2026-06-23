@@ -1,15 +1,9 @@
 import {defineConfig} from 'vitest/config'
 
 export default defineConfig({
+  resolve: {tsconfigPaths: true},
   test: {
     coverage: {
-      exclude: [
-        '**/dist/**',
-        '**/tmp/**',
-        '**/test/**',
-        '**/__tests__/**',
-        '**/*.{test,spec}.{js,ts}',
-      ],
       provider: 'istanbul',
     },
     disableConsoleIntercept: true, // helps oclif test helpers
@@ -17,8 +11,11 @@ export default defineConfig({
       OCLIF_TEST_ROOT: 'packages/@sanity/cli',
     },
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**'],
     globals: false,
-    name: '@sanity/cli-core/unit',
+    globalSetup: ['test/workerBuild.ts', '@sanity/cli-test/vitest'],
+    include: ['test/integration/**/*.test.ts'],
+    name: '@sanity/cli/integration',
+    setupFiles: ['test/setup.ts'],
+    snapshotSerializers: ['test/snapshotSerializer.ts'],
   },
 })
