@@ -115,16 +115,22 @@ describe('#list', () => {
   })
 
   test('displays an error if the API request fails', async () => {
-    // Wait for 50ms to ensure the Promise.all is called
-    setTimeout(
-      () => mockGetProjectCliClient.mockRejectedValue(new Error('Internal server error')),
-      50,
-    )
+    // Resolve the project lookup so the only failure originates from the awaited
+    // invitations request below. The previous version rejected getProjectById
+    // while the invitations request was still in flight, which left that request
+    // dangling: on slower runners (Windows CI) it settled after this test, then
+    // consumed the next test's matching mock. Failing an awaited request instead
+    // guarantees it is dispatched and consumed before the command settles.
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({members: []}),
+      },
+    } as never)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       uri: `/invitations/project/${testProjectId}`,
-    }).reply(200, [])
+    }).reply(500, {message: 'Internal server error'})
 
     const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
