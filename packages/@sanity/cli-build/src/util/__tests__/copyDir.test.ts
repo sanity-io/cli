@@ -1,5 +1,6 @@
 import {constants as fsConstants} from 'node:fs'
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -19,6 +20,8 @@ const mkdir = vi.mocked(fs.mkdir)
 const readdir = vi.mocked(fs.readdir)
 const stat = vi.mocked(fs.stat)
 const copyFile = vi.mocked(fs.copyFile)
+
+const tmpdir = os.tmpdir()
 
 function fileStat() {
   return {isDirectory: () => false, isFile: () => true} as Awaited<ReturnType<typeof fs.stat>>
@@ -66,8 +69,8 @@ describe('#skipIfExistsError', () => {
 
 describe('#copyDir', () => {
   test('creates destination directory when it does not exist', async () => {
-    const src = '/src'
-    const dest = '/nested/dest'
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'nested/dest')
 
     readdir.mockResolvedValue(['file.txt'] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
     stat.mockResolvedValue(fileStat())
@@ -82,8 +85,8 @@ describe('#copyDir', () => {
   })
 
   test('copies files from source to destination', async () => {
-    const src = '/src'
-    const dest = '/dest'
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
     readdir.mockResolvedValue(['a.txt', 'b.txt'] as unknown as Awaited<
       ReturnType<typeof fs.readdir>
@@ -98,8 +101,8 @@ describe('#copyDir', () => {
   })
 
   test('recursively copies subdirectories', async () => {
-    const src = '/src'
-    const dest = '/dest'
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
     const subSrc = path.join(src, 'sub')
     const deeperSrc = path.join(subSrc, 'deeper')
 
@@ -136,8 +139,8 @@ describe('#copyDir', () => {
   })
 
   test('returns silently when source directory does not exist', async () => {
-    const src = '/missing'
-    const dest = '/dest'
+    const src = path.join(tmpdir, 'missing')
+    const dest = path.join(tmpdir, 'dest')
 
     readdir.mockRejectedValue(fsError('ENOENT'))
 
@@ -150,8 +153,8 @@ describe('#copyDir', () => {
   })
 
   test('overwrites existing files when skipExisting is not set', async () => {
-    const src = '/src'
-    const dest = '/dest'
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
     readdir.mockResolvedValue(['file.txt'] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
     stat.mockResolvedValue(fileStat())
@@ -169,8 +172,8 @@ describe('#copyDir', () => {
   })
 
   test('does not overwrite existing files when skipExisting is true', async () => {
-    const src = '/src'
-    const dest = '/dest'
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
     readdir.mockResolvedValue(['existing.txt', 'fresh.txt'] as unknown as Awaited<
       ReturnType<typeof fs.readdir>
@@ -199,8 +202,8 @@ describe('#copyDir', () => {
   })
 
   test('rethrows non-EEXIST errors when skipExisting is true', async () => {
-    const src = '/src'
-    const dest = '/dest'
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
     readdir.mockResolvedValue(['file.txt'] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
     stat.mockResolvedValue(fileStat())
@@ -212,7 +215,7 @@ describe('#copyDir', () => {
   test('skips entries where srcFile resolves to destDir', async () => {
     // When the destination directory is nested inside the source directory,
     // copyDir should skip the destination to avoid infinite recursion.
-    const src = '/src'
+    const src = path.join(tmpdir, 'src')
     const dest = path.join(src, 'dest')
 
     readdir.mockResolvedValue(['file.txt', 'dest'] as unknown as Awaited<
@@ -235,8 +238,8 @@ describe('#copyDir', () => {
   })
 
   test('rejects when source is not a directory', async () => {
-    const src = '/src'
-    const dest = '/dest'
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
     // Source is a file, not a directory — readdir throws ENOTDIR, which is not
     // caught by tryReadDir and therefore propagates.
@@ -246,8 +249,8 @@ describe('#copyDir', () => {
   })
 
   test('rejects when destination cannot be created', async () => {
-    const src = '/src'
-    const dest = '/dest'
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
     mkdir.mockRejectedValue(fsError('ENOTDIR'))
 
