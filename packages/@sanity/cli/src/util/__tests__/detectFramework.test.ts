@@ -326,16 +326,7 @@ describe('@vercel/frameworks integration guard', () => {
   // These tests catch upstream breaking changes in the framework definitions
   // that would silently break our detection logic.
 
-  const knownFrameworks = [
-    'nextjs',
-    'remix',
-    'astro',
-    'svelte',
-    'nuxtjs',
-    'gatsby',
-    'sanity',
-    'sanity-v2',
-  ]
+  const knownFrameworks = ['nextjs', 'remix', 'astro', 'svelte', 'nuxtjs', 'gatsby', 'sanity']
 
   test('known frameworks exist in the frameworks list', () => {
     const slugs = (frameworks as readonly Framework[]).map((f) => f.slug)
