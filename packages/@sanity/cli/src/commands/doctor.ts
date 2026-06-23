@@ -69,18 +69,18 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
     try {
       checks = getChecks(argv)
     } catch (err) {
-      this.error(err instanceof Error ? err.message : String(err), {exit: 2})
+      return this.output.error(err instanceof Error ? err.message : String(err), {exit: 2})
     }
     const cwd = process.cwd()
 
     if (!flags.json) {
-      this.log('Running diagnostics...\n')
+      this.output.log('Running diagnostics...\n')
     }
 
     const results = await runDoctorChecks({cwd}, checks)
 
     if (flags.json) {
-      this.log(JSON.stringify(results, null, 2))
+      this.output.log(JSON.stringify(results, null, 2))
     } else {
       for (const check of results.checks) {
         this.printCheck(check)
@@ -91,7 +91,7 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
 
     // Exit with error code if any checks failed
     if (results.summary.errors > 0) {
-      this.exit(1)
+      return this.exit(1)
     }
   }
 
@@ -102,13 +102,13 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
         ? check.title
         : styleText(check.status === 'error' ? 'red' : 'yellow', check.title)
 
-    this.log(`${symbol} ${title}`)
+    this.output.log(`${symbol} ${title}`)
 
     for (const message of check.messages) {
       this.printMessage(message)
     }
 
-    this.log('') // Empty line between checks
+    this.output.log('') // Empty line between checks
   }
 
   private printMessage(message: CheckMessage): void {
@@ -120,11 +120,11 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
           ? styleText('yellow', message.text)
           : message.text
 
-    this.log(`  ${symbol} ${text}`)
+    this.output.log(`  ${symbol} ${text}`)
 
     if (message.suggestions?.length) {
       for (const suggestion of message.suggestions) {
-        this.log(`    ${styleText('dim', '→')} ${suggestion}`)
+        this.output.log(`    ${styleText('dim', '→')} ${suggestion}`)
       }
     }
   }
@@ -144,7 +144,7 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
       parts.push(styleText('red', `${summary.errors} error${summary.errors === 1 ? '' : 's'}`))
     }
 
-    this.log(`Summary: ${parts.join(', ')}`)
+    this.output.log(`Summary: ${parts.join(', ')}`)
   }
 }
 

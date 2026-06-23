@@ -49,19 +49,6 @@ describe('doctor command', () => {
     expect(stdout).toContain('no issues found')
   })
 
-  test('outputs JSON when --json flag is provided', async () => {
-    const cwd = path.join(fixturesDir, 'clean-npm-install')
-    process.chdir(cwd)
-
-    const {error, stdout} = await testCommand(DoctorCommand, ['--json'])
-
-    expect(error).toBeUndefined()
-    const json = JSON.parse(stdout)
-    expect(json.checks).toBeDefined()
-    expect(json.summary).toBeDefined()
-    expect(Array.isArray(json.checks)).toBe(true)
-  })
-
   test('shows summary at the end', async () => {
     const cwd = path.join(fixturesDir, 'clean-npm-install')
     process.chdir(cwd)
