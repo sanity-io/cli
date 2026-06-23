@@ -84,9 +84,7 @@
       "node-pty"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*",
-      "vite": "beta",
-      "rolldown": "1.1.2"
+      "@sanity/cli": "workspace:*"
     }
   }
 }
