@@ -17,5 +17,6 @@ export default defineConfig({
     // they don't also run in this package project (matches @sanity/cli).
     exclude: ['**/node_modules/**', '**/dist/**', '**/*.unit.test.{ts,tsx}'],
     globals: false,
+    name: '@sanity/workbench-cli/unit',
   },
 })

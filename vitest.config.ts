@@ -63,16 +63,6 @@ export default defineConfig({
       'packages/@sanity/cli-core',
       'packages/@sanity/workbench-cli',
       'packages/create-sanity',
-      {
-        test: {
-          environment: 'node',
-          include: ['**/*.unit.test.{ts,tsx}'],
-          name: 'unit',
-          onUnhandledError() {
-            return true
-          },
-        },
-      },
     ],
     reporters: ['default', ...(IS_AGENT ? ['json'] : [])],
   },
