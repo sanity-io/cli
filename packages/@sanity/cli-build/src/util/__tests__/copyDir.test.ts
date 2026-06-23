@@ -8,10 +8,10 @@ import {copyDir, skipIfExistsError} from '../copyDir'
 
 vi.mock('node:fs/promises', () => ({
   default: {
+    copyFile: vi.fn(),
     mkdir: vi.fn(),
     readdir: vi.fn(),
     stat: vi.fn(),
-    copyFile: vi.fn(),
   },
 }))
 
@@ -75,14 +75,19 @@ describe('#copyDir', () => {
     await copyDir(src, dest)
 
     expect(mkdir).toHaveBeenCalledWith(dest, {recursive: true})
-    expect(copyFile).toHaveBeenCalledWith(path.resolve(src, 'file.txt'), path.resolve(dest, 'file.txt'))
+    expect(copyFile).toHaveBeenCalledWith(
+      path.resolve(src, 'file.txt'),
+      path.resolve(dest, 'file.txt'),
+    )
   })
 
   test('copies files from source to destination', async () => {
     const src = '/src'
     const dest = '/dest'
 
-    readdir.mockResolvedValue(['a.txt', 'b.txt'] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+    readdir.mockResolvedValue(['a.txt', 'b.txt'] as unknown as Awaited<
+      ReturnType<typeof fs.readdir>
+    >)
     stat.mockResolvedValue(fileStat())
 
     await copyDir(src, dest)
@@ -154,7 +159,10 @@ describe('#copyDir', () => {
     await copyDir(src, dest)
 
     // copyFile is called without the COPYFILE_EXCL flag, so existing files are overwritten.
-    expect(copyFile).toHaveBeenCalledWith(path.resolve(src, 'file.txt'), path.resolve(dest, 'file.txt'))
+    expect(copyFile).toHaveBeenCalledWith(
+      path.resolve(src, 'file.txt'),
+      path.resolve(dest, 'file.txt'),
+    )
     expect(copyFile).toHaveBeenCalledTimes(1)
     // Sanity check: no flag argument was passed.
     expect(copyFile.mock.calls[0]).toHaveLength(2)
@@ -164,10 +172,9 @@ describe('#copyDir', () => {
     const src = '/src'
     const dest = '/dest'
 
-    readdir.mockResolvedValue([
-      'existing.txt',
-      'fresh.txt',
-    ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+    readdir.mockResolvedValue(['existing.txt', 'fresh.txt'] as unknown as Awaited<
+      ReturnType<typeof fs.readdir>
+    >)
     stat.mockResolvedValue(fileStat())
 
     // Simulate the destination file already existing for the first entry.
@@ -208,14 +215,19 @@ describe('#copyDir', () => {
     const src = '/src'
     const dest = path.join(src, 'dest')
 
-    readdir.mockResolvedValue(['file.txt', 'dest'] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+    readdir.mockResolvedValue(['file.txt', 'dest'] as unknown as Awaited<
+      ReturnType<typeof fs.readdir>
+    >)
     stat.mockResolvedValue(fileStat())
 
     await copyDir(src, dest)
 
     // Only the non-dest entry is copied.
     expect(copyFile).toHaveBeenCalledTimes(1)
-    expect(copyFile).toHaveBeenCalledWith(path.resolve(src, 'file.txt'), path.resolve(dest, 'file.txt'))
+    expect(copyFile).toHaveBeenCalledWith(
+      path.resolve(src, 'file.txt'),
+      path.resolve(dest, 'file.txt'),
+    )
     // stat is never called for the dest entry because the `srcFile === destDir`
     // check short-circuits the loop body first.
     expect(stat).toHaveBeenCalledTimes(1)
