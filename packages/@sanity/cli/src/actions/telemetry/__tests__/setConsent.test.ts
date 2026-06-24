@@ -67,5 +67,36 @@ describe('actions telemetry setConsent', () => {
     const res = await setConsent({status: 'granted'})
     expect(res.changed).toEqual(true)
     expect(res.message).toMatch('enabled telemetry')
+    expect(mockClientRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'PUT',
+        uri: expect.stringContaining('telemetry/status/granted'),
+      }),
+    )
+  })
+  test('should reject if 403 received during telemetry status request', async () => {
+    mockResolveConsent.mockResolvedValue({status: 'denied'})
+    mockClientRequest.mockRejectedValue({message: 'nope', statusCode: 403})
+    try {
+      await setConsent({status: 'granted'})
+      expect.fail('expected exception thrown')
+    } catch (e) {
+      expect(e).toEqual(expect.objectContaining({message: 'Failed to enable telemetry'}))
+    }
+  })
+  test('should reject with generic failure message on non-http errors', async () => {
+    mockResolveConsent.mockResolvedValue({status: 'denied'})
+    mockClientRequest.mockRejectedValue({message: 'boom'})
+    try {
+      await setConsent({status: 'granted'})
+      expect.fail('expected exception thrown')
+    } catch (e) {
+      expect(e).toEqual(
+        expect.objectContaining({
+          cause: expect.objectContaining({message: 'boom'}),
+          message: 'Failed to enable telemetry',
+        }),
+      )
+    }
   })
 })
