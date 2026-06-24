@@ -27,14 +27,11 @@ vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: mockedBuildStaticFiles,
 }))
 
-vi.mock('../getEnvironmentVariables.js', () => ({
-  getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
-}))
-
 vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
   return {
     ...original,
+    getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
     resolveVendorBuildConfig: vi.fn(),
   }
 })

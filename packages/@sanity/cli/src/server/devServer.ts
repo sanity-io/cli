@@ -1,5 +1,7 @@
 import {
   extendViteConfigWithUserConfig,
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
   getViteConfig,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
@@ -9,10 +11,6 @@ import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-comp
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
 
-import {
-  getAppEnvironmentVariables,
-  getStudioEnvironmentVariables,
-} from '../actions/build/getEnvironmentVariables.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityTypegenPlugin} from './vite/plugin-typegen.js'
 

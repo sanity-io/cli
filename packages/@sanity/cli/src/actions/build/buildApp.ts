@@ -5,6 +5,7 @@ import {styleText} from 'node:util'
 import {
   AppBuildTrace,
   buildDebug,
+  getAppEnvironmentVariables,
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
@@ -29,7 +30,6 @@ import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 

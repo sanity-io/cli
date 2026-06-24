@@ -1,3 +1,5 @@
-export {getStudioEnvironmentVariables} from '../actions/build/getEnvironmentVariables.js'
-export type {StudioEnvVariablesOptions} from '../actions/build/getEnvironmentVariables.js'
+export {
+  getStudioEnvironmentVariables,
+  type StudioEnvVariablesOptions,
+} from '@sanity/cli-build/_internal/build'
 export {extractManifestSchemaTypes} from '../actions/manifest/extractWorkspaceManifest.js'

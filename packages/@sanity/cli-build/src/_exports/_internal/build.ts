@@ -8,6 +8,11 @@ export {
   getModuleUrl,
 } from '../../actions/build/getAutoUpdatesImportMap.js'
 export {
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
+  type StudioEnvVariablesOptions,
+} from '../../actions/build/getEnvironmentVariables.js'
+export {
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
   getViteConfig,

@@ -6,6 +6,8 @@ import {
   copyDir,
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
   getViteConfig,
   resolveEntries,
   writeFavicons,
@@ -15,11 +17,6 @@ import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
 import {type DefineAppInput} from '@sanity/workbench-cli'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
-
-import {
-  getAppEnvironmentVariables,
-  getStudioEnvironmentVariables,
-} from './getEnvironmentVariables.js'
 
 export interface ChunkModule {
   name: string

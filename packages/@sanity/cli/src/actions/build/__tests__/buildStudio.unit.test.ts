@@ -31,10 +31,6 @@ vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: mockedBuildStaticFiles,
 }))
 
-vi.mock('../getEnvironmentVariables.js', () => ({
-  getStudioEnvironmentVariables: mockGetStudioEnvironmentVariables,
-}))
-
 vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
   return {
@@ -42,6 +38,7 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
     buildDebug: vi.fn(),
     checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
     checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
+    getStudioEnvironmentVariables: mockGetStudioEnvironmentVariables,
     resolveVendorBuildConfig: vi.fn().mockResolvedValue({
       entries: {},
       namesByChunkName: {},
