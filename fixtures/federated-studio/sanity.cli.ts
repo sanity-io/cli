@@ -1,5 +1,4 @@
-import {unstable_defineApp} from '@sanity/federation'
-import {defineCliConfig} from 'sanity/cli'
+import {defineCliConfig, unstable_defineApp} from 'sanity/cli'
 
 export default defineCliConfig({
   api: {
