@@ -23,6 +23,7 @@ interface DevServerRegistrationOptions {
   output: Output
   server: ViteDevServer
   workDir: string
+
   /**
    * Rebuild the app's federation remote when its interface set changes, awaited
    * *before* the registry patch — the patch reloads the workbench page, which must
