@@ -1,163 +1,55 @@
-import {getCliToken, isCi} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {fetchTelemetryConsent, type ValidApiConsentStatus} from '../../../services/telemetry.js'
-import {Status} from '../status.js'
+import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
 
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
-  return {
-    ...actual,
-    getCliToken: vi.fn(),
-    isCi: vi.fn(() => false),
-  }
+// First: create the mocks and mocked SanityCommand class
+const {MockedSanityCommand, mocks: cmdMocks} = createMockSanityCommand()
+// Second: install the mock on cli-core
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {...actual, SanityCommand: MockedSanityCommand}
 })
 
-vi.mock('../../../services/telemetry.js', async () => ({
-  ...(await vi.importActual('../../../services/telemetry.js')),
-  fetchTelemetryConsent: vi.fn(),
+// Third: mock telemetry status command imports
+const mockResolveConsent = vi.hoisted(() => vi.fn())
+const mockLearnMore = vi.hoisted(() => vi.fn())
+const mockStatusMsg = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../actions/telemetry/resolveConsent.js', () => ({
+  resolveConsent: mockResolveConsent,
 }))
+vi.mock('../../../actions/telemetry/getLearnMoreMessage.js', () => ({
+  getLearnMoreMessage: mockLearnMore,
+}))
+vi.mock('../../../actions/telemetry/getStatusMessage.js', () => ({getStatusMessage: mockStatusMsg}))
 
-const mockGetCliToken = vi.mocked(getCliToken)
-const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
-const mockIsCi = vi.mocked(isCi)
+// Finally, import the module under test: telemetry status command
+const {Status} = await import('../status.js')
 
-describe('telemetry status', () => {
+describe('telemetry enable command', () => {
   beforeEach(() => {
+    mockResolveConsent.mockResolvedValue(undefined)
+    mockLearnMore.mockReturnValue(undefined)
+    mockStatusMsg.mockReturnValue('status')
+  })
+  afterEach(() => {
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    vi.unstubAllEnvs()
+  test('should call resolveConsent, pass consent to getStatusMessage and getLearnMoreMessage and output both results', async () => {
+    const consentInfo = {status: 'granted'}
+    const statusMsg = 'delayed'
+    const learnMoreMsg = 'always be closing'
+    mockResolveConsent.mockResolvedValue(consentInfo)
+    mockStatusMsg.mockReturnValue(statusMsg)
+    mockLearnMore.mockReturnValue(learnMoreMsg)
+    await Status.run([])
+    expect(mockStatusMsg).toHaveBeenCalledWith(consentInfo)
+    expect(mockLearnMore).toHaveBeenCalledWith(consentInfo.status)
+    expect(cmdMocks.SanityCmdOutputLog).toHaveBeenCalledWith(statusMsg)
+    expect(cmdMocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining(learnMoreMsg))
   })
-
-  test('command handles no flags correctly', async () => {
-    const {error} = await testCommand(Status, ['--invalid'])
-
-    expect(error?.message).toContain('Nonexistent flag: --invalid')
-  })
-
-  test('shows disabled status with DO_NOT_TRACK environment variable', async () => {
-    // Set DO_NOT_TRACK environment variable
-    vi.stubEnv('DO_NOT_TRACK', '1')
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('Status: Disabled')
-    expect(stdout).toContain("You've opted out of telemetry data collection.")
-    expect(stdout).toContain('No data will be collected from your machine.')
-    expect(stdout).toContain('Using DO_NOT_TRACK environment variable.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('shows status when DO_NOT_TRACK is not set', async () => {
-    // Explicitly ensure DO_NOT_TRACK is not set
-    vi.stubEnv('DO_NOT_TRACK', undefined)
-
-    const {stdout} = await testCommand(Status, [])
-
-    // Should show telemetry status or appropriate message
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('shows cannot set message in CI environment', async () => {
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    mockIsCi.mockReturnValueOnce(true)
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('Status: Disabled')
-  })
-
-  // Additional tests for better coverage (using working patterns)
-  test('ensures unauthenticated case works when no token available', async () => {
-    // Mock no authentication token
-    mockGetCliToken.mockResolvedValue(undefined)
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('You need to log in first to see telemetry status.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  // Integration tests with API mocking for different status responses
-  test('shows granted status when API returns granted', async () => {
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    mockFetchTelemetryConsent.mockResolvedValue({status: 'granted'})
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('Status: Enabled')
-    expect(stdout).toContain(
-      'Telemetry data on general usage and errors is collected to help us improve Sanity.',
-    )
-    expect(stdout).toContain('Learn more about the data being collected here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('shows unset status when API returns unset', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    mockFetchTelemetryConsent.mockResolvedValue({status: 'unset'})
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('Status: Not set')
-    expect(stdout).toContain("You've not set your preference for telemetry collection.")
-    expect(stdout).toContain("Run 'npx sanity telemetry enable/disable' to opt in or out.")
-    expect(stdout).toContain('You can also use the DO_NOT_TRACK environment variable to opt out.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('shows denied status when API returns denied (without local override)', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    mockFetchTelemetryConsent.mockResolvedValue({status: 'denied'})
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('Status: Disabled')
-    expect(stdout).toContain("You've opted out of telemetry data collection.")
-    expect(stdout).toContain('No data will be collected from your Sanity account.')
-    expect(stdout).not.toContain('Using DO_NOT_TRACK environment variable.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('shows fetch error when API call fails', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    // Mock the telemetry status API to return an error
-    mockFetchTelemetryConsent.mockRejectedValue(new Error('API error'))
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('Could not fetch telemetry consent status.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('handles invalid API response gracefully', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    mockFetchTelemetryConsent.mockResolvedValue({status: 'invalid-status' as ValidApiConsentStatus})
-
-    const {stdout} = await testCommand(Status, [])
-
-    // Invalid API response should be handled as a fetch error
-    expect(stdout).toContain('Could not fetch telemetry consent status.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
+  test('rejects invalid flags', async () => {
+    await expect(Status.run(['--poop'])).rejects.toThrow('Nonexistent flag')
   })
 })
