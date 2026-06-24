@@ -1,4 +1,7 @@
-import {Command} from '@oclif/core'
+import {resolve} from 'node:path'
+
+import {Command, Config} from '@oclif/core'
+import {type LoadOptions} from '@oclif/core/interfaces'
 import {type Output, SanityCommandInterface} from '@sanity/cli-core'
 import {vi} from 'vitest'
 
@@ -28,6 +31,24 @@ export function createMockSanityCommand() {
         error: mocks.SanityCmdOutputError,
         log: mocks.SanityCmdOutputLog,
         warn: mocks.SanityCmdOutputWarn,
+      }
+      public static override run<T extends Command>(
+        this: new (argv: string[], config: Config) => T,
+        argv?: string[],
+        opts?: LoadOptions,
+      ): Promise<ReturnType<T['run']>> {
+        const testRoot = process.env.OCLIF_TEST_ROOT
+          ? resolve(process.cwd(), process.env.OCLIF_TEST_ROOT)
+          : undefined
+
+        if (typeof opts === 'string' || opts instanceof Config) {
+          return super.run(argv, opts) as Promise<ReturnType<T['run']>>
+        }
+
+        return super.run(argv, {
+          ...opts,
+          root: opts?.root ?? testRoot ?? process.cwd(),
+        }) as Promise<ReturnType<T['run']>>
       }
       public exit(code?: number) {
         return mocks.OclifCmdExit(code)
