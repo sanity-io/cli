@@ -1,10 +1,13 @@
-// Node-only dev entry: the workbench dev-server registry the CLI's dev
-// orchestration drives. It tracks running studio/app dev servers (single
-// instance via a lock + PID-liveness), and the workbench host watches it to
-// render local panels/services without a deploy. The CLI owns the orchestration
-// (starting servers, extracting manifests); this package owns the registry it
-// registers into and watches.
+// Node-only dev entry: the dev-server registry the CLI drives and the workbench
+// host watches (singleton lock + PID-liveness), plus the interface model derived
+// from `unstable_defineApp`.
 export {canonicalizeWatchDir} from '../actions/dev/canonicalizeWatchDir.js'
+export {deriveInterfaces, type DevServerInterface} from '../actions/dev/deriveInterfaces.js'
+export {
+  createInterfacesTracker,
+  interfaceSetId,
+  trackInterfaceSet,
+} from '../actions/dev/interfaceSetId.js'
 export {
   acquireWorkbenchLock,
   type DevServerManifest,
