@@ -51,7 +51,7 @@ export function getDevServerConfig({
   return {
     ...baseConfig,
     // The app's navigable entry. A branded app that omits `entry` has no app
-    // view (sanity-io/workbench spec 002-workbench-extension-api, US5): the runtime/federation skip the `./App` render path entirely.
+    // view: the runtime/federation skip the `./App` render path entirely.
     entry: app?.entry,
     // `devAction` passes an explicit port when a running workbench claimed the
     // configured one; otherwise the shared resolution stands.

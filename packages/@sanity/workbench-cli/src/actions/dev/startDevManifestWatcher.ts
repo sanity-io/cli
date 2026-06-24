@@ -27,7 +27,7 @@ interface ManifestPatch<T> {
   /**
    * Workbench interfaces (views/services/app view) re-derived from the config
    * on each change, so editing `views`/`services`/`entry` in `sanity.cli.ts`
-   * re-syncs live like `title`/`icon` (FR-024). `undefined` only for
+   * re-syncs live like `title`/`icon`. `undefined` only for
    * non-branded configs — the registry patch is a shallow merge, so extractors
    * must re-derive rather than omit, or the registered set gets wiped.
    */

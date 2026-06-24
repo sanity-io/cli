@@ -10,7 +10,7 @@ export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[nu
  * its registry entry: `views` → panels, `services` → workers, `entry` → the
  * navigable `app` view (`entry_point` is the raw `src`, not a resolved URL).
  * `undefined` for a non-branded app; a studio that declares `entry` is rejected
- * (FR-026, studio app views are not implemented yet).
+ * (studio app views are not implemented yet).
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
