@@ -103,6 +103,7 @@ Code for sanity cli
 - [`sanity schemas extract`](#sanity-schemas-extract)
 - [`sanity schemas list`](#sanity-schemas-list)
 - [`sanity schemas validate`](#sanity-schemas-validate)
+- [`sanity skills install`](#sanity-skills-install)
 - [`sanity telemetry disable`](#sanity-telemetry-disable)
 - [`sanity telemetry enable`](#sanity-telemetry-enable)
 - [`sanity telemetry status`](#sanity-telemetry-status)
@@ -501,7 +502,7 @@ USAGE
     --stack-id <value> | --stack-name <value>] [--project-id <value> | --organization-id <value>]
 
 ARGUMENTS
-  [DIR]  Directory to create the local Blueprint in
+  [DIR]  Directory to create the local Blueprint in (defaults to the current directory)
 
 FLAGS
   --blueprint-type=<option>  Blueprint manifest type to use for the local Blueprint
@@ -528,8 +529,13 @@ DESCRIPTION
 
   After initialization, use 'blueprints plan' to preview changes, then 'blueprints deploy' to apply them.
 
+  Running without a directory prompts to confirm the current directory. Run 'blueprints init .' to initialize in the
+  current directory without a prompt.
+
 EXAMPLES
   $ sanity blueprints init
+
+  $ sanity blueprints init .
 
   $ sanity blueprints init [directory]
 
@@ -3183,6 +3189,24 @@ EXAMPLES
   Generate a report which can be analyzed with https://esbuild.github.io/analyze/
 
     $ sanity schemas validate --debug-metafile-path metafile.json
+```
+
+## `sanity skills install`
+
+Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
+
+```
+USAGE
+  $ sanity skills install
+
+DESCRIPTION
+  Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor,
+  Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
+
+EXAMPLES
+  Install Sanity agent skills for detected AI editors
+
+    $ sanity skills install
 ```
 
 ## `sanity telemetry disable`
