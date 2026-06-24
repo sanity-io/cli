@@ -2,8 +2,8 @@ import {EventEmitter} from 'node:events'
 
 import {afterEach, beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 
-import {createMockOutput} from '../../__tests__/testHelpers.js'
 import {startDevManifestWatcher} from '../startDevManifestWatcher.js'
+import {createMockOutput} from './devTestHelpers.js'
 
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
 const mockFsWatch = vi.hoisted(() => vi.fn())

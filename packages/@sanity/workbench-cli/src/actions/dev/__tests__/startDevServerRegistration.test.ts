@@ -1,39 +1,26 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockOutput, workbenchApp, workbenchCliConfig} from '../../__tests__/testHelpers.js'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
+import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
 
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
-const mockExtractCoreAppManifest = vi.hoisted(() => vi.fn())
-const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
-const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
-const mockGetAppId = vi.hoisted(() => vi.fn())
+const mockExtractManifest = vi.hoisted(() => vi.fn())
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
 
-// The core-app watcher re-reads the config to re-derive interfaces on each edit.
+// The watcher re-reads the config to re-derive interfaces on each edit.
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
 // Only the registry write is mocked; `deriveInterfaces`/`trackInterfaceSet` are
-// pure and exercised for real, as they were before moving into workbench-cli.
-vi.mock('@sanity/workbench-cli/dev', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@sanity/workbench-cli/dev')>()),
+// pure and run for real.
+vi.mock('../registry.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../registry.js')>()),
   registerDevServer: mockRegisterDevServer,
 }))
 vi.mock('../startDevManifestWatcher.js', () => ({
   startDevManifestWatcher: mockStartDevManifestWatcher,
-}))
-vi.mock('../../../manifest/extractCoreAppManifest.js', () => ({
-  extractCoreAppManifest: mockExtractCoreAppManifest,
-}))
-vi.mock('../extractDevServerManifest.js', () => ({
-  extractStudioManifest: mockExtractStudioManifest,
-}))
-vi.mock('../../../../util/appId.js', () => ({
-  checkForDeprecatedAppId: mockCheckForDeprecatedAppId,
-  getAppId: mockGetAppId,
 }))
 
 function mockServer({host, port = 3334}: {host?: boolean | string; port?: number} = {}) {
@@ -43,13 +30,28 @@ function mockServer({host, port = 3334}: {host?: boolean | string; port?: number
   }
 }
 
+type RegistrationOptions = Parameters<typeof startDevServerRegistration>[0]
+
+/** Run registration with sensible defaults; override only what a test asserts on. */
+function register(overrides: Partial<RegistrationOptions> = {}) {
+  return startDevServerRegistration({
+    appId: undefined,
+    cliConfig: workbenchCliConfig(),
+    extractManifest: mockExtractManifest,
+    isApp: false,
+    output: createMockOutput(),
+    server: mockServer({port: 3334}) as any,
+    workDir: '/tmp/sanity-project',
+    ...overrides,
+  })
+}
+
 describe('startDevServerRegistration', () => {
   beforeEach(() => {
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
-    mockExtractCoreAppManifest.mockResolvedValue(undefined)
+    mockExtractManifest.mockResolvedValue(undefined)
     mockGetCliConfigUncached.mockResolvedValue({app: workbenchApp()})
-    mockGetAppId.mockReturnValue(undefined)
   })
 
   afterEach(() => {
@@ -57,45 +59,21 @@ describe('startDevServerRegistration', () => {
   })
 
   test('registers studio in registry', async () => {
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({server: mockServer({port: 3334}) as any})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({
-        host: 'localhost',
-        port: 3334,
-        type: 'studio',
-      }),
+      expect.objectContaining({host: 'localhost', port: 3334, type: 'studio'}),
     )
   })
 
-  test('passes deployment.appId to registerDevServer', async () => {
-    mockGetAppId.mockReturnValue('app-abc')
-
-    await startDevServerRegistration({
-      cliConfig: {app: workbenchApp(), deployment: {appId: 'app-abc'}},
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+  test('records the caller-resolved appId on the registry entry', async () => {
+    await register({appId: 'app-abc'})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'app-abc'}))
   })
 
   test('forwards api.projectId to registerDevServer', async () => {
-    await startDevServerRegistration({
-      cliConfig: {api: {projectId: 'x1g7jygt'}, app: workbenchApp()},
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({cliConfig: {api: {projectId: 'x1g7jygt'}, app: workbenchApp()} as any})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({projectId: 'x1g7jygt'}),
@@ -103,40 +81,14 @@ describe('startDevServerRegistration', () => {
   })
 
   test('omits projectId when api.projectId is not configured', async () => {
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register()
 
     const [registerArg] = mockRegisterDevServer.mock.calls[0]
     expect(registerArg.projectId).toBeUndefined()
   })
 
-  test('checks for deprecated app.id', async () => {
-    const output = createMockOutput()
-
-    await startDevServerRegistration({
-      cliConfig: {app: workbenchApp({id: 'legacy-app'})},
-      isApp: false,
-      output,
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
-
-    expect(mockCheckForDeprecatedAppId).toHaveBeenCalledWith(expect.objectContaining({output}))
-  })
-
   test('registers without icon/title — they are derived from the inlined manifest', async () => {
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register()
 
     const [registerArg] = mockRegisterDevServer.mock.calls[0]
     expect(registerArg).not.toHaveProperty('icon')
@@ -144,13 +96,7 @@ describe('startDevServerRegistration', () => {
   })
 
   test('registers app under the host applied by the vite dev server', async () => {
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({host: 'mydev.local', port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({server: mockServer({host: 'mydev.local', port: 3334}) as any})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({host: 'mydev.local'}),
@@ -158,37 +104,19 @@ describe('startDevServerRegistration', () => {
   })
 
   test('falls back to localhost when the vite server host is not a string', async () => {
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({host: true, port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({server: mockServer({host: true, port: 3334}) as any})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({host: 'localhost'}))
   })
 
   test('registers app type when isApp is true', async () => {
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: true,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({isApp: true})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
   })
 
   test('starts the manifest watcher for studios', async () => {
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({isApp: false})
 
     expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -201,13 +129,7 @@ describe('startDevServerRegistration', () => {
   })
 
   test('starts the manifest watcher for core apps', async () => {
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: true,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({isApp: true})
 
     expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
       expect.objectContaining({extract: expect.any(Function), workDir: '/tmp/sanity-project'}),
@@ -216,73 +138,31 @@ describe('startDevServerRegistration', () => {
     expect(mockStartDevManifestWatcher.mock.calls[0][0].extraWatchFilenames).toBeUndefined()
   })
 
-  test('wires extractCoreAppManifest into the core-app watcher and re-derives interfaces', async () => {
-    const appManifest = {icon: '<svg><path d="M0 0"/></svg>', title: 'My App', version: '1'}
-    mockExtractCoreAppManifest.mockResolvedValue(appManifest)
-    // A fresh config read with a panel → the watcher re-derives + forwards it.
+  test('wires the injected extractManifest into the watcher and re-derives interfaces alongside it', async () => {
+    const manifest = {icon: '<svg><path d="M0 0"/></svg>', title: 'My App', version: '1'}
+    mockExtractManifest.mockResolvedValue(manifest)
+    // A fresh config read with a panel → the watcher re-derives + forwards it
+    // alongside the manifest (which stays pure).
     mockGetCliConfigUncached.mockResolvedValue({
       app: workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]}),
     })
 
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: true,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({isApp: true})
 
     const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
-    // The manifest stays pure; interfaces ride alongside as a separate field.
-    await expect(
-      extract({configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}),
-    ).resolves.toEqual({
+    const params = {configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}
+    await expect(extract(params)).resolves.toEqual({
       interfaces: [{entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'}],
-      manifest: appManifest,
+      manifest,
     })
-    expect(mockExtractCoreAppManifest).toHaveBeenCalledWith({workDir: '/tmp/sanity-project'})
-  })
-
-  test('wires extractStudioManifest into the studio watcher and re-derives interfaces', async () => {
-    const studioManifest = {version: 3, workspaces: []}
-    mockExtractStudioManifest.mockResolvedValue(studioManifest)
-    // Studios declare panels/workers in `sanity.cli.ts` too — the watcher must
-    // re-derive them. A hardcoded `interfaces: undefined` would wipe the
-    // registered set on the first regeneration (the registry patch is a
-    // shallow merge).
-    mockGetCliConfigUncached.mockResolvedValue({
-      app: workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]}),
-    })
-
-    await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
-
-    const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
-    await expect(
-      extract({configPath: '/tmp/sanity-project/sanity.config.ts', workDir: '/tmp/sanity-project'}),
-    ).resolves.toEqual({
-      interfaces: [{entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'}],
-      manifest: studioManifest,
-    })
-    expect(mockExtractStudioManifest).toHaveBeenCalled()
+    expect(mockExtractManifest).toHaveBeenCalledWith(params)
   })
 
   test('calls manifest cleanup on close', async () => {
     const mockCleanup = vi.fn()
     mockRegisterDevServer.mockReturnValue({release: mockCleanup, update: vi.fn()})
 
-    const result = await startDevServerRegistration({
-      cliConfig: workbenchCliConfig(),
-      isApp: false,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    const result = await register()
 
     await result.close()
     expect(mockCleanup).toHaveBeenCalled()
@@ -294,65 +174,19 @@ describe('startDevServerRegistration', () => {
       throw error
     })
 
-    await expect(
-      startDevServerRegistration({
-        cliConfig: workbenchCliConfig(),
-        isApp: false,
-        output: createMockOutput(),
-        server: mockServer({port: 3334}) as any,
-        workDir: '/tmp/sanity-project',
-      }),
-    ).rejects.toThrow(error)
+    await expect(register()).rejects.toThrow(error)
   })
 
   test('propagates error when startDevManifestWatcher rejects', async () => {
     const error = new Error('Watcher setup failed')
     mockStartDevManifestWatcher.mockRejectedValue(error)
 
-    await expect(
-      startDevServerRegistration({
-        cliConfig: workbenchCliConfig(),
-        isApp: false,
-        output: createMockOutput(),
-        server: mockServer({port: 3334}) as any,
-        workDir: '/tmp/sanity-project',
-      }),
-    ).rejects.toThrow(error)
-  })
-
-  test('calls output.error when both app.id and deployment.appId are set', async () => {
-    mockCheckForDeprecatedAppId.mockImplementation(({output}: {output: any}) => {
-      output.error('Found both app.id (deprecated) and deployment.appId', {exit: 1})
-    })
-
-    const output = createMockOutput()
-
-    await startDevServerRegistration({
-      cliConfig: {
-        app: workbenchApp({id: 'legacy-app'}),
-        deployment: {appId: 'new-app'},
-      },
-      isApp: false,
-      output,
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
-
-    expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('Found both app.id (deprecated) and deployment.appId'),
-      expect.objectContaining({exit: 1}),
-    )
+    await expect(register()).rejects.toThrow(error)
   })
 
   // US5 — `entry` declares an SDK app's navigable `app` view.
   test('forwards an `app` interface derived from `entry` for an SDK app', async () => {
-    await startDevServerRegistration({
-      cliConfig: {app: workbenchApp({entry: './src/App.tsx'})},
-      isApp: true,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({cliConfig: {app: workbenchApp({entry: './src/App.tsx'})} as any, isApp: true})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -364,13 +198,7 @@ describe('startDevServerRegistration', () => {
   })
 
   test('forwards no `app` interface when an SDK app declares no `entry`', async () => {
-    await startDevServerRegistration({
-      cliConfig: {app: workbenchApp()},
-      isApp: true,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({cliConfig: {app: workbenchApp()} as any, isApp: true})
 
     const {interfaces} = mockRegisterDevServer.mock.calls[0][0]
     expect(
@@ -380,13 +208,7 @@ describe('startDevServerRegistration', () => {
 
   test('rejects a studio that declares `entry` — app views for studios are not implemented yet', async () => {
     await expect(
-      startDevServerRegistration({
-        cliConfig: {app: workbenchApp({entry: './src/App.tsx'})},
-        isApp: false,
-        output: createMockOutput(),
-        server: mockServer({port: 3334}) as any,
-        workDir: '/tmp/sanity-project',
-      }),
+      register({cliConfig: {app: workbenchApp({entry: './src/App.tsx'})} as any, isApp: false}),
     ).rejects.toThrow('App views for studios are not implemented yet')
   })
 
@@ -399,14 +221,7 @@ describe('startDevServerRegistration', () => {
     const update = vi.fn()
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
 
-    await startDevServerRegistration({
-      cliConfig: {app: workbenchApp()}, // no interfaces yet
-      isApp: true,
-      onInterfaceSetChange,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({cliConfig: {app: workbenchApp()} as any, isApp: true, onInterfaceSetChange})
     const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
 
     // A panel appears → rebuild, then patch the registry.
@@ -424,15 +239,12 @@ describe('startDevServerRegistration', () => {
     const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
 
-    await startDevServerRegistration({
+    await register({
       cliConfig: {
         app: workbenchApp({views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}]}),
-      },
+      } as any,
       isApp: true,
       onInterfaceSetChange,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
     })
     const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
 
@@ -454,14 +266,7 @@ describe('startDevServerRegistration', () => {
     const update = vi.fn()
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
 
-    await startDevServerRegistration({
-      cliConfig: {app: workbenchApp()}, // no interfaces yet
-      isApp: true,
-      onInterfaceSetChange,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({cliConfig: {app: workbenchApp()} as any, isApp: true, onInterfaceSetChange})
     const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
 
     // The failure must reach the watcher (it owns the warning), and the
@@ -487,14 +292,7 @@ describe('startDevServerRegistration', () => {
     const update = vi.fn()
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
 
-    await startDevServerRegistration({
-      cliConfig: {app: workbenchApp()}, // no interfaces yet
-      isApp: true,
-      onInterfaceSetChange,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({cliConfig: {app: workbenchApp()} as any, isApp: true, onInterfaceSetChange})
     const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
 
     await watcherUpdate({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'a'})
@@ -511,13 +309,7 @@ describe('startDevServerRegistration', () => {
     const update = vi.fn()
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
 
-    await startDevServerRegistration({
-      cliConfig: {app: workbenchApp()}, // no interfaces yet
-      isApp: true,
-      output: createMockOutput(),
-      server: mockServer({port: 3334}) as any,
-      workDir: '/tmp/sanity-project',
-    })
+    await register({cliConfig: {app: workbenchApp()} as any, isApp: true})
     const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
 
     // The set changed but no handler was passed (e.g. studios) — no crash, and

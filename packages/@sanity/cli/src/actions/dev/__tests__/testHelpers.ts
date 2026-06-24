@@ -4,7 +4,6 @@ import {unstable_defineApp} from '@sanity/workbench-cli'
 import {afterEach, beforeEach, type Mock, vi} from 'vitest'
 
 import {type DevActionOptions} from '../types.js'
-import {type StartWorkbenchOptions} from '../workbench/startWorkbenchDevServer.js'
 
 /** Shared test helpers for dev-action test suites. */
 
@@ -50,14 +49,10 @@ export const DEV_FLAGS = {
   port: '3333',
 } as const
 
-export function createDevOptions(
-  overrides: Partial<StartWorkbenchOptions> = {},
-): StartWorkbenchOptions {
+export function createDevOptions(overrides: Partial<DevActionOptions> = {}): DevActionOptions {
   return {
     cliConfig: {} as CliConfig,
     flags: DEV_FLAGS,
-    httpHost: 'localhost',
-    httpPort: 3333,
     isApp: false,
     output: createMockOutput(),
     workDir: '/tmp/sanity-project',

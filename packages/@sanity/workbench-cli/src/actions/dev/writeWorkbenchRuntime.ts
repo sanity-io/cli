@@ -1,7 +1,9 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {devDebug} from '../devDebug.js'
+import {subdebug} from '@sanity/cli-core'
+
+const devDebug = subdebug('dev')
 
 const workbenchJsTemplate = `\
 // This file is auto-generated on 'sanity dev'

@@ -59,6 +59,7 @@
   "dependencies": {
     "@module-federation/vite": "1.16.0",
     "@sanity/cli-core": "workspace:^",
+    "@vitejs/plugin-react": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
   },

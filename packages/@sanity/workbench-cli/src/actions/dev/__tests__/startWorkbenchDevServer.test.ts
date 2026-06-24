@@ -1,12 +1,12 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
 import {
   createDevOptions,
   createMockOutput,
   workbenchApp,
   workbenchCliConfig,
-} from '../../__tests__/testHelpers.js'
-import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
+} from './devTestHelpers.js'
 
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
@@ -30,8 +30,8 @@ vi.mock('../writeWorkbenchRuntime.js', () => ({
 }))
 // Registry/lock I/O is mocked; the pure `createInterfacesTracker` runs for
 // real so the watcher's reload-vs-reconcile decision is exercised, not stubbed.
-vi.mock('@sanity/workbench-cli/dev', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@sanity/workbench-cli/dev')>()),
+vi.mock('../registry.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../registry.js')>()),
   acquireWorkbenchLock: mockAcquireWorkbenchLock,
   getRegisteredServers: mockGetRegisteredServers,
   readWorkbenchLock: mockReadWorkbenchLock,
@@ -374,54 +374,16 @@ describe('startWorkbenchDevServer', () => {
   })
 
   describe('reactStrictMode', () => {
-    test('uses SANITY_STUDIO_REACT_STRICT_MODE=true env var over cliConfig', async () => {
-      vi.stubEnv('SANITY_STUDIO_REACT_STRICT_MODE', 'true')
+    // The env-var-vs-config resolution now lives in the CLI caller and is
+    // injected; the server just forwards the resolved value to the runtime.
+    test('forwards the injected reactStrictMode to the runtime template', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
         createDevOptions({
-          cliConfig: {
-            app: workbenchApp({organizationId: 'org-test'}),
-            reactStrictMode: false,
-          },
-        }),
-      )
-
-      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
-        expect.objectContaining({reactStrictMode: true}),
-      )
-    })
-
-    test('uses SANITY_STUDIO_REACT_STRICT_MODE=false env var over cliConfig', async () => {
-      vi.stubEnv('SANITY_STUDIO_REACT_STRICT_MODE', 'false')
-      mockResolveLocalPackage.mockResolvedValue({})
-      mockCreateServer.mockResolvedValue(createMockServer())
-
-      await startWorkbenchDevServer(
-        createDevOptions({
-          cliConfig: {
-            app: workbenchApp({organizationId: 'org-test'}),
-            reactStrictMode: true,
-          },
-        }),
-      )
-
-      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
-        expect.objectContaining({reactStrictMode: false}),
-      )
-    })
-
-    test('falls back to cliConfig.reactStrictMode when env var is not set', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
-      mockCreateServer.mockResolvedValue(createMockServer())
-
-      await startWorkbenchDevServer(
-        createDevOptions({
-          cliConfig: {
-            app: workbenchApp({organizationId: 'org-test'}),
-            reactStrictMode: true,
-          },
+          cliConfig: {app: workbenchApp({organizationId: 'org-test'})},
+          reactStrictMode: true,
         }),
       )
 

@@ -1,21 +1,25 @@
-import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
-import {isWorkbenchApp, resolveLocalPackage} from '@sanity/cli-core'
 import {
-  acquireWorkbenchLock,
-  createInterfacesTracker,
-  type DevServerManifest,
-  getRegisteredServers,
-  readWorkbenchLock,
-  watchRegistry,
-} from '@sanity/workbench-cli/dev'
+  type CliConfig,
+  isWorkbenchApp,
+  type Output,
+  resolveLocalPackage,
+  subdebug,
+} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
 import {z} from 'zod/mini'
 
-import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
-import {devDebug} from '../devDebug.js'
-import {type DevActionOptions} from '../types.js'
+import {createInterfacesTracker} from './interfaceSetId.js'
+import {
+  acquireWorkbenchLock,
+  type DevServerManifest,
+  getRegisteredServers,
+  readWorkbenchLock,
+  watchRegistry,
+} from './registry.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
+
+const devDebug = subdebug('dev')
 
 const noop = async () => {}
 
@@ -38,9 +42,16 @@ interface WorkbenchDevServerResult {
   workbenchPort: number
 }
 
-export interface StartWorkbenchOptions extends DevActionOptions {
+export interface StartWorkbenchOptions {
+  /** Dependency-cache dir for the workbench Vite server, kept apart from the user's own. */
+  cacheDir: string
+  cliConfig: CliConfig
   httpHost: string | undefined
   httpPort: number
+  output: Output
+  /** Wrap the workbench in React StrictMode; the CLI resolves it (unset collapses to `false`). */
+  reactStrictMode: boolean
+  workDir: string
 }
 
 /**
@@ -52,7 +63,15 @@ export interface StartWorkbenchOptions extends DevActionOptions {
 export async function startWorkbenchDevServer(
   options: StartWorkbenchOptions,
 ): Promise<WorkbenchDevServerResult> {
-  const {cliConfig, httpHost, httpPort: workbenchPort, output, workDir} = options
+  const {
+    cacheDir,
+    cliConfig,
+    httpHost,
+    httpPort: workbenchPort,
+    output,
+    reactStrictMode,
+    workDir,
+  } = options
 
   // Workbench is opted into solely by calling `unstable_defineApp`.
   if (!isWorkbenchApp(cliConfig?.app)) {
@@ -98,9 +117,11 @@ export async function startWorkbenchDevServer(
   let result: Awaited<ReturnType<typeof createWorkbenchViteServer>>
   try {
     result = await createWorkbenchViteServer({
+      cacheDir,
       cliConfig,
       httpHost,
       output,
+      reactStrictMode,
       workbenchPort,
       workDir,
     })
@@ -129,9 +150,11 @@ export async function startWorkbenchDevServer(
 }
 
 interface CreateWorkbenchViteServerOptions {
-  cliConfig: DevActionOptions['cliConfig']
+  cacheDir: string
+  cliConfig: CliConfig
   httpHost: string | undefined
-  output: DevActionOptions['output']
+  output: Output
+  reactStrictMode: boolean
   workbenchPort: number
   workDir: string
 }
@@ -144,12 +167,9 @@ interface CreateWorkbenchViteServerResult {
 async function createWorkbenchViteServer(
   options: CreateWorkbenchViteServerOptions,
 ): Promise<CreateWorkbenchViteServerResult | undefined> {
-  const {cliConfig, httpHost, output, workbenchPort, workDir} = options
+  const {cacheDir, cliConfig, httpHost, output, reactStrictMode, workbenchPort, workDir} = options
 
   const remoteUrl = parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
-  // The workbench runtime template needs a concrete boolean (it has no studio
-  // default to defer to), so collapse an unset config to off.
-  const reactStrictMode = resolveReactStrictMode(cliConfig) ?? false
 
   const organizationId = resolveOrganizationId(cliConfig)
 
@@ -163,7 +183,7 @@ async function createWorkbenchViteServer(
 
   const viteConfig: InlineConfig = {
     // Custom cache directory so sanity's vite cache doesn't conflict with local vite projects
-    cacheDir: `${SANITY_CACHE_DIR}/vite`,
+    cacheDir,
     configFile: false,
     define: {
       __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
@@ -256,7 +276,7 @@ async function createWorkbenchViteServer(
 // organization ID. Deliberately no fallback (e.g. resolving it from the
 // configured project): the lookup would need an authenticated user and an
 // API round-trip on every startup for something the opt-in already declares.
-const resolveOrganizationId = (cliConfig: DevActionOptions['cliConfig']): string => {
+const resolveOrganizationId = (cliConfig: CliConfig): string => {
   if (cliConfig.app?.organizationId) {
     return cliConfig.app.organizationId
   }
