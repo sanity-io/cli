@@ -8,10 +8,10 @@ import {
   checkStudioDependencyVersions,
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
-  getStudioEnvironmentVariables,
   resolveVendorBuildConfig,
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
+import {getStudioEnvironmentVariables} from '@sanity/cli-build/_internal/env'
 import {
   type CliConfig,
   getCliTelemetry,

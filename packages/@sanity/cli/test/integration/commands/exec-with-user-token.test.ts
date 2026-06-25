@@ -71,26 +71,40 @@ describe('exec --with-user-token', {timeout: 15 * 1000}, () => {
     vi.unstubAllEnvs()
   })
 
-  test('errors when no auth token is found', async () => {
+  test('errors when no auth token is found', async (t) => {
     // Ensure no token is available from any source
     vi.stubEnv('SANITY_AUTH_TOKEN', '')
     vi.stubEnv('SANITY_CLI_CONFIG_PATH', join(tmpdir(), 'sanity-cli-nonexistent', 'config.json'))
 
-    const {error} = await testCommand(ExecCommand, [scriptPath, '--with-user-token'])
+    const {error, stdout, stderr} = await testCommand(ExecCommand, [
+      scriptPath,
+      '--with-user-token',
+    ])
+    t.onTestFailed(() => {
+      console.log(stdout)
+      console.warn(stderr)
+    })
 
     expect(error).toBeInstanceOf(CLIError)
     expect(error?.message).toContain('--with-user-token specified')
     expect(error?.message).toContain('sanity login')
   })
 
-  test.skipIf(isWindowsNode24OrUp)('passes token to getCliClient()', async () => {
+  test.skipIf(isWindowsNode24OrUp)('passes token to getCliClient()', async (t) => {
     const tokenScriptPath = join(exampleDir, 'test-token-script.ts')
     await copyFile(join(fixtureDir, 'exec-get-user-token.ts'), tokenScriptPath)
 
     const {cleanup} = await setupTestAuth('test-fake-token-abc123')
 
     try {
-      const {error, stdout} = await testCommand(ExecCommand, [tokenScriptPath, '--with-user-token'])
+      const {error, stdout, stderr} = await testCommand(ExecCommand, [
+        tokenScriptPath,
+        '--with-user-token',
+      ])
+      t.onTestFailed(() => {
+        console.log(stdout)
+        console.warn(stderr)
+      })
 
       if (error) throw error
 

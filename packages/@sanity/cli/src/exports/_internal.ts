@@ -2,4 +2,4 @@ export {extractManifestSchemaTypes} from '../actions/manifest/extractWorkspaceMa
 export {
   getStudioEnvironmentVariables,
   type StudioEnvVariablesOptions,
-} from '@sanity/cli-build/_internal/build'
+} from '@sanity/cli-build/_internal/env'

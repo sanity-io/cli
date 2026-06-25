@@ -39,13 +39,16 @@ vi.mock('@sanity/cli-build/_internal/build', () => ({
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
   getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
   getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
-  getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),
   resolveVendorBuildConfig: vi.fn().mockResolvedValue({
     entries: {},
     namesByChunkName: {},
     specifiersByChunkName: {},
   }),
   StudioBuildTrace: {},
+}))
+
+vi.mock('@sanity/cli-build/_internal/env', () => ({
+  getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
