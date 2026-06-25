@@ -184,7 +184,7 @@ describe('startDevServerRegistration', () => {
     await expect(register()).rejects.toThrow(error)
   })
 
-  // US5 — `entry` declares an SDK app's navigable `app` view.
+  // `entry` declares an SDK app's navigable `app` view.
   test('forwards an `app` interface derived from `entry` for an SDK app', async () => {
     await register({cliConfig: {app: workbenchApp({entry: './src/App.tsx'})} as any, isApp: true})
 
@@ -212,8 +212,8 @@ describe('startDevServerRegistration', () => {
     ).rejects.toThrow('App views for studios are not implemented yet')
   })
 
-  // FR-024 — adding/removing a view or service must rebuild the federation
-  // remote so the new interface gets an expose + artifact. The watcher drives it.
+  // Adding/removing a view or service must rebuild the federation remote so the
+  // new interface gets an expose + artifact. The watcher drives it.
   const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
 
   test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {

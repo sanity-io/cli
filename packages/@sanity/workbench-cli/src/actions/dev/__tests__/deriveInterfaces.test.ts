@@ -53,7 +53,7 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('rejects a studio that declares entry (FR-026)', () => {
+  test('rejects a studio that declares entry', () => {
     const app = workbenchApp({entry: './src/App.tsx'})
     expect(() => deriveInterfaces(app, {isApp: false})).toThrow(
       'App views for studios are not implemented yet',

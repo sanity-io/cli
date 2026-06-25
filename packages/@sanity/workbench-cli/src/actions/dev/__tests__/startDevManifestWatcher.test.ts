@@ -276,7 +276,7 @@ describe('startDevManifestWatcher', () => {
     const APP_CONFIG_PATH = '/tmp/sdk-app/sanity.cli.ts'
     const appManifest = {icon: '<svg/>', title: 'My App', version: '1'}
     // Interfaces ride alongside the manifest (not inside it) and re-sync on
-    // every config edit — FR-024.
+    // every config edit.
     const appInterfaces = [
       {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
     ]
