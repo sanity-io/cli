@@ -1,6 +1,4 @@
-import {resolve} from 'node:path'
-
-import {Command, Config, Flags} from '@oclif/core'
+import {Command, Flags} from '@oclif/core'
 import {afterEach, beforeEach, describe, expect, Mock, test, vi} from 'vitest'
 
 const {SanityCommand} = await import('../SanityCommand.js')
@@ -27,21 +25,6 @@ function createMockedRunCommand<T extends typeof Command>(mocks: {
           return trimmed
         },
       }),
-    }
-    // Use OCLIF_TEST_ROOT, set in vitest configs in this repo, as a fallback root directory for OCLIF.
-    // Without this, unit tests yield warnings in console output (not catastrophic, but annoying).
-    public static override run<T extends Command>(...args: Parameters<typeof Command.run>) {
-      const [argv, opts] = args
-      const testRoot = process.env.OCLIF_TEST_ROOT
-        ? resolve(process.cwd(), process.env.OCLIF_TEST_ROOT)
-        : undefined
-      if (typeof opts === 'string' || opts instanceof Config) {
-        return super.run(argv, opts) as Promise<ReturnType<T['run']>>
-      }
-      return super.run(argv, {
-        ...opts,
-        root: opts?.root ?? testRoot ?? process.cwd(),
-      }) as Promise<ReturnType<T['run']>>
     }
     public async getCliConfig() {
       return (mocks.cliConfig || vi.fn(() => ({api: {}})))()
