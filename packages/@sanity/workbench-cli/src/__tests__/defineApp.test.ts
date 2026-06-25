@@ -99,6 +99,24 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     ).toBe(false)
   })
 
+  test('validates the internal isSingleton when present', () => {
+    const parsed = DefineAppInputSchema.parse({
+      isSingleton: true,
+      name: 'media',
+      organizationId: 'org-1',
+      title: 'Media',
+    })
+    expect(parsed.isSingleton).toBe(true)
+    expect(
+      DefineAppInputSchema.safeParse({
+        isSingleton: 'yes',
+        name: 'media',
+        organizationId: 'org-1',
+        title: 'Media',
+      }).success,
+    ).toBe(false)
+  })
+
   test('accepts group and priority, rejecting an unknown group', () => {
     const parsed = DefineAppInputSchema.parse({
       group: 'dock.system',
@@ -223,5 +241,9 @@ describe('type surface', () => {
 
   test('does not expose the internal applicationType', () => {
     expectTypeOf<DefineAppResult>().not.toHaveProperty('applicationType')
+  })
+
+  test('does not expose the internal isSingleton', () => {
+    expectTypeOf<DefineAppResult>().not.toHaveProperty('isSingleton')
   })
 })
