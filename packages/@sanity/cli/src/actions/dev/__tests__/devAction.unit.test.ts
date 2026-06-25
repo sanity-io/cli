@@ -126,18 +126,15 @@ describe('devAction', () => {
   })
 
   describe('workbench remote', () => {
-    // The remote is the shell that renders other workbench apps, so it can't
-    // render itself — an internal env var runs it as a plain standalone server.
-    test('runs as a plain dev server with no workbench orchestration', async () => {
+    // devAction no longer special-cases the remote: every workbench app routes to
+    // startWorkbenchDev, which runs the remote (it can't render itself) as a plain
+    // server internally.
+    test('still routes to startWorkbenchDev with the remote flag set', async () => {
       vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
-      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3333}))
 
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
 
-      expect(mockStartWorkbenchDev).not.toHaveBeenCalled()
-      expect(mockStartAppDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: true}),
-      )
+      expect(mockStartWorkbenchDev).toHaveBeenCalled()
     })
   })
 })

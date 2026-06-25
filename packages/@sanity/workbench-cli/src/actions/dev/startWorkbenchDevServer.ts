@@ -6,7 +6,7 @@ import {
   subdebug,
 } from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
-import {createServer, type InlineConfig, type Plugin} from 'vite'
+import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from 'vite'
 import {z} from 'zod/mini'
 
 import {createInterfacesTracker} from './interfaceSetId.js'
@@ -34,6 +34,65 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
     type,
   })),
 })
+
+/**
+ * Bridge the dev-server registry into a workbench Vite server's HMR channel so
+ * the page tracks apps as they come and go. A changed interface set means a
+ * rebuilt remote — full-reload to drop the stale remote-entry; otherwise
+ * rebroadcast for a soft reconcile. Returns a detach fn.
+ */
+function attachViteDevServerBridge(server: ViteDevServer): () => void {
+  server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
+    client.send(
+      'sanity:workbench:local-applications',
+      toApplicationsPayload(getRegisteredServers()),
+    )
+  })
+
+  const setTracker = createInterfacesTracker()
+  const registryWatcher = watchRegistry((servers) => {
+    if (setTracker.hasChanged(servers)) {
+      server.ws.send({type: 'full-reload'})
+      return
+    }
+    server.ws.send('sanity:workbench:local-applications', toApplicationsPayload(servers))
+  })
+
+  return () => registryWatcher.close()
+}
+
+/**
+ * Make the workbench remote act as the machine's workbench: claim the singleton
+ * lock so app `sanity dev`s register into it instead of each starting their own,
+ * and bridge the registry so the remote shows the local apps. No-op lock if one
+ * is already held.
+ */
+export function startWorkbenchRemoteCoordinator(options: {
+  httpHost: string | undefined
+  port: number
+  server: ViteDevServer
+}): {close: () => Promise<void>} {
+  const {httpHost, port, server} = options
+
+  const lock = acquireWorkbenchLock({host: httpHost || 'localhost', port})
+  if (!lock) {
+    const existing = readWorkbenchLock()
+    devDebug(
+      'Workbench lock already held by pid %d on port %d; bridging the registry without claiming it',
+      existing?.pid,
+      existing?.port,
+    )
+  }
+
+  const detachBridge = attachViteDevServerBridge(server)
+
+  return {
+    close: async () => {
+      detachBridge()
+      lock?.release()
+    },
+  }
+}
 
 interface WorkbenchDevServerResult {
   close: () => Promise<void>
@@ -244,29 +303,12 @@ async function createWorkbenchViteServer(
     devDebug('Warming workbench remote at %s', remoteUrl)
   }
 
-  server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
-    client.send(
-      'sanity:workbench:local-applications',
-      toApplicationsPayload(getRegisteredServers()),
-    )
-  })
-
-  // A changed interface set means the remote was rebuilt with new exposes —
-  // full-reload so the page drops the stale remote-entry; otherwise rebroadcast
-  // the app list for a soft reconcile.
-  const setTracker = createInterfacesTracker()
-  const registryWatcher = watchRegistry((servers) => {
-    if (setTracker.hasChanged(servers)) {
-      server.ws.send({type: 'full-reload'})
-      return
-    }
-    server.ws.send('sanity:workbench:local-applications', toApplicationsPayload(servers))
-  })
+  const detachBridge = attachViteDevServerBridge(server)
 
   return {
     actualPort,
     close: async () => {
-      registryWatcher.close()
+      detachBridge()
       await server.close()
     },
   }
