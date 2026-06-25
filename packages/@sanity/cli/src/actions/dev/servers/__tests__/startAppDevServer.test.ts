@@ -119,7 +119,6 @@ describe('startAppDevServer', () => {
         cliConfig: workbenchCliConfig(),
         flags: {...DEV_FLAGS, 'load-in-dashboard': false},
         output,
-        workbenchAvailable: true,
       }),
     )
 
@@ -146,24 +145,24 @@ describe('startAppDevServer', () => {
     )
   })
 
-  test('logs "App dev server started" for workbench apps when workbench is not available', async () => {
+  test('logs "App dev server started" for workbench apps when asked to announce its URL', async () => {
     mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
     const output = createMockOutput()
 
     await startAppDevServer(
-      createOptions({cliConfig: workbenchCliConfig(), output, workbenchAvailable: false}),
+      createOptions({announceUrl: true, cliConfig: workbenchCliConfig(), output}),
     )
 
     expect(output.log).toHaveBeenCalledWith('App dev server started on port 3334')
     expect(mockGetDashboardAppURL).not.toHaveBeenCalled()
   })
 
-  test('skips the port log line for workbench apps when workbench is available', async () => {
+  test('skips the port log line for workbench apps when the workbench announces instead', async () => {
     mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
     const output = createMockOutput()
 
     await startAppDevServer(
-      createOptions({cliConfig: workbenchCliConfig(), output, workbenchAvailable: true}),
+      createOptions({announceUrl: false, cliConfig: workbenchCliConfig(), output}),
     )
 
     // 'Starting dev server' is still logged, but the port announcement is not

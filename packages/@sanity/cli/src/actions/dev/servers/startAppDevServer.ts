@@ -10,7 +10,7 @@ import {getDashboardAppURL} from './getDashboardAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 
 export async function startAppDevServer(options: DevActionOptions): Promise<StartDevServerResult> {
-  const {cliConfig, flags, httpPort, output, workbenchAvailable, workDir} = options
+  const {announceUrl = true, cliConfig, flags, httpPort, output, workDir} = options
 
   const isWorkbenchApp = determineIsWorkbenchApp(cliConfig?.app)
 
@@ -48,10 +48,9 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
     const {port} = server.config.server
 
     if (isWorkbenchApp) {
-      // Federated apps surface through the workbench, so the dashboard URL is
-      // meaningless for them. When the workbench runs, devAction announces its
-      // URL instead — only the package-unavailable fallback logs from here.
-      if (!workbenchAvailable) {
+      // Federated apps surface through the workbench, which announces the URL;
+      // only the package-unavailable fallback announces from here.
+      if (announceUrl) {
         output.log(`App dev server started on port ${port}`)
       }
     } else {
