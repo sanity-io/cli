@@ -219,7 +219,9 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           importDebug(`Failed to create dataset ${newDatasetName}: ${message}`, error)
-          return this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {exit: 1})
+          return this.output.error(`Failed to create dataset ${newDatasetName}: ${message}`, {
+            exit: 1,
+          })
         }
       }
     }
@@ -262,7 +264,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
         ...(assetConcurrency === undefined ? {} : {assetConcurrency}),
       }
 
-      const {numDocs, warnings} = await sanityImport(stream as NodeJS.ReadableStream, importOptions)
+      const {numDocs, warnings} = await sanityImport(stream, importOptions)
 
       if (this.stepStart) {
         const timeSpent = prettyMs(Date.now() - this.stepStart, {secondsDecimalDigits: 2})
