@@ -9,6 +9,7 @@ import {
   getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
 } from '@sanity/cli-build/_internal/build'
+import {getAppEnvironmentVariables} from '@sanity/cli-build/_internal/env'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -29,7 +30,6 @@ import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 

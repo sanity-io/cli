@@ -29,10 +29,6 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
-vi.mock('../getEnvironmentVariables.js', () => ({
-  getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),
-}))
-
 vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
@@ -49,6 +45,10 @@ vi.mock('@sanity/cli-build/_internal/build', () => ({
     specifiersByChunkName: {},
   }),
   StudioBuildTrace: {},
+}))
+
+vi.mock('@sanity/cli-build/_internal/env', () => ({
+  getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {

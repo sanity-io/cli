@@ -99,8 +99,15 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       vi.unstubAllEnvs()
     })
 
-    test.skipIf(isWindowsNode24OrUp)('executes script successfully', async () => {
-      const {error, stdout} = await testCommand(ExecCommand, [scriptPath])
+    test.skipIf(isWindowsNode24OrUp)('executes script successfully', async (t) => {
+      const {error, stderr, stdout} = await testCommand(ExecCommand, [scriptPath])
+      // output stdout and stderr to help diagnose the failure
+      t.onTestFailed(() => {
+        // eslint-disable-next-line no-console
+        console.log(stdout)
+        // eslint-disable-next-line no-console
+        console.warn(stderr)
+      })
 
       if (error) throw error
 
@@ -110,7 +117,7 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       expect(data.env.SANITY_BASE_PATH).toBe(exampleDir)
     })
 
-    test.skipIf(!TEST_TOKEN)('executes script with --with-user-token flag', async () => {
+    test.skipIf(!TEST_TOKEN)('executes script with --with-user-token flag', async (t) => {
       if (!TEST_TOKEN) return // TypeScript guard
 
       // Set up test auth config with token
@@ -119,7 +126,17 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       try {
         vi.stubEnv('SANITY_CLI_CONFIG_PATH', TEST_CONFIG_PATH)
         vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
-        const {error, stdout} = await testCommand(ExecCommand, [scriptPath, '--with-user-token'])
+        const {error, stderr, stdout} = await testCommand(ExecCommand, [
+          scriptPath,
+          '--with-user-token',
+        ])
+        // output stdout and stderr to help diagnose the failure
+        t.onTestFailed(() => {
+          // eslint-disable-next-line no-console
+          console.log(stdout)
+          // eslint-disable-next-line no-console
+          console.warn(stderr)
+        })
 
         if (error) throw error
 
@@ -137,8 +154,18 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       }
     })
 
-    test.skipIf(isWindowsNode24OrUp)('executes script with --mock-browser-env flag', async () => {
-      const {error, stdout} = await testCommand(ExecCommand, [scriptPath, '--mock-browser-env'])
+    test.skipIf(isWindowsNode24OrUp)('executes script with --mock-browser-env flag', async (t) => {
+      const {error, stderr, stdout} = await testCommand(ExecCommand, [
+        scriptPath,
+        '--mock-browser-env',
+      ])
+      // output stdout and stderr to help diagnose the failure
+      t.onTestFailed(() => {
+        // eslint-disable-next-line no-console
+        console.log(stdout)
+        // eslint-disable-next-line no-console
+        console.warn(stderr)
+      })
 
       if (error) throw error
 

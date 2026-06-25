@@ -11,6 +11,7 @@ import {
   resolveVendorBuildConfig,
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
+import {getStudioEnvironmentVariables} from '@sanity/cli-build/_internal/env'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -34,7 +35,6 @@ import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 

@@ -1,4 +1,4 @@
-import {loadEnv} from '../../util/loadEnv.js'
+import {loadEnv} from 'vite'
 
 const appEnvPrefix = 'SANITY_APP_'
 const studioEnvPrefix = 'SANITY_STUDIO_'

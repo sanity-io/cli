@@ -32,6 +32,10 @@
       "source": "./src/_exports/_internal/build.ts",
       "default": "./dist/_exports/_internal/build.js"
     },
+    "./_internal/env": {
+      "source": "./src/_exports/_internal/env.ts",
+      "default": "./dist/_exports/_internal/env.js"
+    },
     "./_internal/extract": {
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
