@@ -208,7 +208,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       )
     }
 
-    table.printTable()
+    this.output.log(table.render())
   }
 
   private async handleAttachMode(projectId: string, jobId: string): Promise<void> {
@@ -335,7 +335,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       })
 
       if (jobs.length === 0) {
-        this.log("This project doesn't have any dataset copy jobs")
+        this.output.log("This project doesn't have any dataset copy jobs")
         return
       }
 
@@ -343,7 +343,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to list dataset copy jobs: %s', message, error)
-      this.error(`Failed to list dataset copy jobs: ${message}`, {exit: 1})
+      return this.output.error(`Failed to list dataset copy jobs: ${message}`, {exit: 1})
     }
   }
 
