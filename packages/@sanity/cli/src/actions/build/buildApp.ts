@@ -5,11 +5,11 @@ import {styleText} from 'node:util'
 import {
   AppBuildTrace,
   buildDebug,
-  getAppEnvironmentVariables,
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
 } from '@sanity/cli-build/_internal/build'
+import {getAppEnvironmentVariables} from '@sanity/cli-build/_internal/env'
 import {
   type CliConfig,
   getCliTelemetry,

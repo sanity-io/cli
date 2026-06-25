@@ -31,8 +31,15 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
   return {
     ...original,
-    getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
     resolveVendorBuildConfig: vi.fn(),
+  }
+})
+
+vi.mock('@sanity/cli-build/_internal/env', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@sanity/cli-build/_internal/env')>()
+  return {
+    ...original,
+    getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
   }
 })
 

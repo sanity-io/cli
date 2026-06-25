@@ -76,12 +76,15 @@ describe('exec --with-user-token', {timeout: 15 * 1000}, () => {
     vi.stubEnv('SANITY_AUTH_TOKEN', '')
     vi.stubEnv('SANITY_CLI_CONFIG_PATH', join(tmpdir(), 'sanity-cli-nonexistent', 'config.json'))
 
-    const {error, stdout, stderr} = await testCommand(ExecCommand, [
+    const {error, stderr, stdout} = await testCommand(ExecCommand, [
       scriptPath,
       '--with-user-token',
     ])
+    // output stdout and stderr to help diagnose the failure
     t.onTestFailed(() => {
+      // eslint-disable-next-line no-console
       console.log(stdout)
+      // eslint-disable-next-line no-console
       console.warn(stderr)
     })
 
@@ -97,12 +100,15 @@ describe('exec --with-user-token', {timeout: 15 * 1000}, () => {
     const {cleanup} = await setupTestAuth('test-fake-token-abc123')
 
     try {
-      const {error, stdout, stderr} = await testCommand(ExecCommand, [
+      const {error, stderr, stdout} = await testCommand(ExecCommand, [
         tokenScriptPath,
         '--with-user-token',
       ])
+      // output stdout and stderr to help diagnose the failure
       t.onTestFailed(() => {
+        // eslint-disable-next-line no-console
         console.log(stdout)
+        // eslint-disable-next-line no-console
         console.warn(stderr)
       })
 

@@ -101,8 +101,11 @@ describe('#exec', {timeout: 15 * 1000}, () => {
 
     test.skipIf(isWindowsNode24OrUp)('executes script successfully', async (t) => {
       const {error, stderr, stdout} = await testCommand(ExecCommand, [scriptPath])
+      // output stdout and stderr to help diagnose the failure
       t.onTestFailed(() => {
+        // eslint-disable-next-line no-console
         console.log(stdout)
+        // eslint-disable-next-line no-console
         console.warn(stderr)
       })
 
@@ -127,8 +130,11 @@ describe('#exec', {timeout: 15 * 1000}, () => {
           scriptPath,
           '--with-user-token',
         ])
+        // output stdout and stderr to help diagnose the failure
         t.onTestFailed(() => {
+          // eslint-disable-next-line no-console
           console.log(stdout)
+          // eslint-disable-next-line no-console
           console.warn(stderr)
         })
 
@@ -153,8 +159,11 @@ describe('#exec', {timeout: 15 * 1000}, () => {
         scriptPath,
         '--mock-browser-env',
       ])
+      // output stdout and stderr to help diagnose the failure
       t.onTestFailed(() => {
+        // eslint-disable-next-line no-console
         console.log(stdout)
+        // eslint-disable-next-line no-console
         console.warn(stderr)
       })
 

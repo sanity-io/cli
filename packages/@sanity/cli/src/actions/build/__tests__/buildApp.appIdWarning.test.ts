@@ -36,7 +36,6 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   return {
     ...actual,
     AppBuildTrace: {},
-    getAppEnvironmentVariables: vi.fn().mockReturnValue({}),
     getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
     getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
     resolveVendorBuildConfig: vi.fn().mockResolvedValue({
@@ -44,6 +43,14 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
       namesByChunkName: {},
       specifiersByChunkName: {},
     }),
+  }
+})
+
+vi.mock('@sanity/cli-build/_internal/env', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-build/_internal/env')>()
+  return {
+    ...actual,
+    getAppEnvironmentVariables: vi.fn().mockReturnValue({}),
   }
 })
 
