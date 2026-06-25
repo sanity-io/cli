@@ -56,7 +56,7 @@ function determineBump(type, breaking, body) {
   if (breaking) return 'major'
   if (body.split('\n').some((l) => l.startsWith('BREAKING CHANGE:'))) return 'major'
   if (type === 'feat') return 'minor'
-  if (['fix', 'perf', 'revert'].includes(type)) return 'patch'
+  if (['fix', 'perf', 'refactor', 'revert'].includes(type)) return 'patch'
   return null
 }
 
