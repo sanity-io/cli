@@ -1,7 +1,7 @@
 import {resolve} from 'node:path'
 
 import {Command, Config, Flags} from '@oclif/core'
-import {afterEach, describe, expect, Mock, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, Mock, test, vi} from 'vitest'
 
 const {SanityCommand} = await import('../SanityCommand.js')
 
@@ -56,75 +56,73 @@ describe('SanityCommand', () => {
     vi.clearAllMocks()
   })
   describe('getProjectId', () => {
+    let id: string
+    beforeEach(() => {
+      id = ''
+    })
     test('returns --project-id value if provided', async () => {
-      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          const id = await this.getProjectId()
-          expect(id).toEqual('torment nexus')
+          id = await this.getProjectId()
         },
       })
       await cmdClass.run(['--project-id', 'torment nexus'])
+      expect(id).toEqual('torment nexus')
     })
 
     test('supports deprecated flag (e.g. --project) value if specified and provided', async () => {
-      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          const id = await this.getProjectId({deprecatedFlagName: 'project'})
-          expect(id).toEqual('torment nexus')
+          id = await this.getProjectId({deprecatedFlagName: 'project'})
         },
       })
-      await cmdClass.run(['--project', 'torment nexus'])
+      await cmdClass.run(['--project', 'oopsy daisy'])
+      expect(id).toEqual('oopsy daisy')
     })
 
     test('supports deprecated short char flag (e.g. --project) value if specified and provided', async () => {
-      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          const id = await this.getProjectId({deprecatedFlagName: 'project'})
-          expect(id).toEqual('torment nexus')
+          id = await this.getProjectId({deprecatedFlagName: 'project'})
         },
       })
       await cmdClass.run(['-p', 'torment nexus'])
+      expect(id).toEqual('torment nexus')
     })
 
     test('--project-id takes precedence over deprecated --project', async () => {
-      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          const id = await this.getProjectId({deprecatedFlagName: 'project'})
-          expect(id).toEqual('good')
+          id = await this.getProjectId({deprecatedFlagName: 'project'})
         },
       })
       await cmdClass.run(['--project', 'bad', '--project-id', 'good'])
+      expect(id).toEqual('good')
     })
 
     test('should invoke getCliConfig as fallback return', async () => {
-      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         cliConfig: vi.fn(() => ({api: {projectId: 'default-project'}})),
         run: async function () {
-          const id = await this.getProjectId()
-          expect(id).toEqual('default-project')
+          id = await this.getProjectId()
         },
       })
       await cmdClass.run([])
+      expect(id).toEqual('default-project')
     })
 
     test('should invoke explictly-provided fallback function as return', async () => {
-      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          const id = await this.getProjectId({
+          id = await this.getProjectId({
             async fallback() {
               return 'manhattan'
             },
           })
-          expect(id).toEqual('manhattan')
         },
       })
       await cmdClass.run([])
+      expect(id).toEqual('manhattan')
     })
 
     test('should throw if no project ID was resolved', async () => {
