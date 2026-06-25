@@ -9,6 +9,15 @@ import {type DevActionOptions, type StartDevServerResult} from '../types.js'
 import {getDashboardAppURL} from './getDashboardAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 
+// Bind-only addresses ('0.0.0.0', '::') aren't routable in every browser; the
+// displayed URL falls back to localhost. The bind address itself is untouched.
+function toDisplayHost(host: string | undefined): string {
+  if (!host || host === '0.0.0.0' || host === '::' || host === '[::]') {
+    return 'localhost'
+  }
+  return host
+}
+
 export async function startAppDevServer(options: DevActionOptions): Promise<StartDevServerResult> {
   const {announceUrl = true, cliConfig, flags, httpPort, output, workDir} = options
 
@@ -47,13 +56,12 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
 
     const {port} = server.config.server
 
-    if (isWorkbenchApp) {
-      // Federated apps surface through the workbench, which announces the URL;
-      // only the package-unavailable fallback announces from here.
-      if (announceUrl) {
-        output.log(`App dev server started on port ${port}`)
-      }
-    } else {
+    // Federated apps surface through the workbench, which announces the URL;
+    // only the package-unavailable fallback announces from here.
+    if (isWorkbenchApp && announceUrl) {
+      const url = `http://${toDisplayHost(config.httpHost)}:${port}`
+      output.log(`App dev server started at ${styleText(['blue', 'underline'], url)}`)
+    } else if (!isWorkbenchApp) {
       const httpHost = config.httpHost || 'localhost'
 
       const dashboardAppUrl = await getDashboardAppURL({

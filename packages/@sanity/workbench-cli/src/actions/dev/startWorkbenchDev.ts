@@ -5,7 +5,10 @@ import {type CliConfig, type Output} from '@sanity/cli-core'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
-import {startWorkbenchDevServer} from './startWorkbenchDevServer.js'
+import {
+  startWorkbenchDevServer,
+  startWorkbenchRemoteCoordinator,
+} from './startWorkbenchDevServer.js'
 
 /** How long teardown runs before re-raising the signal to force-exit — enough for
  * Vite/watchers to close, short enough not to strand a backgrounded process. */
@@ -74,6 +77,26 @@ export async function startWorkbenchDev(
     startAppServer,
     workDir,
   } = options
+
+  // The remote can't render itself, so it runs as a plain app server (not the
+  // shell) that still claims the lock and bridges the registry, so app
+  // `sanity dev`s register into it.
+  if (process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true') {
+    const remote = await startAppServer({announceUrl: true, cliConfig, httpPort})
+    if (!remote.started) return {close: async () => {}}
+
+    const addr = remote.server.httpServer?.address()
+    const port =
+      (typeof addr === 'object' && addr ? addr.port : remote.server.config.server.port) ?? httpPort
+    const coordinator = startWorkbenchRemoteCoordinator({httpHost, port, server: remote.server})
+
+    return {
+      close: async () => {
+        await coordinator.close()
+        await remote.close()
+      },
+    }
+  }
 
   // Unwound in reverse on any failure or on close(): the watcher stops before
   // the app server, and the supervisor waits out an in-flight rebuild.

@@ -97,6 +97,9 @@ minimumReleaseAgeExclude:
   - 'vite'
   - '@vitejs/*'
   - 'vitest'
+  # Pinned to the module-federation/vite#854 pkg.pr.new preview for the
+  # #RUNTIME-002 fix; its MF runtime deps are newer than the release-age window.
+  - '@module-federation/*'
   - '@vitest/*'
   # Bump for jiti with ts path support, can remove after ~May 9th
   - 'jiti@2.7.0'

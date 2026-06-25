@@ -153,7 +153,8 @@ describe('startAppDevServer', () => {
       createOptions({announceUrl: true, cliConfig: workbenchCliConfig(), output}),
     )
 
-    expect(output.log).toHaveBeenCalledWith('App dev server started on port 3334')
+    expect(output.log).toHaveBeenCalledWith(expect.stringContaining('App dev server started at'))
+    expect(output.log).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3334'))
     expect(mockGetDashboardAppURL).not.toHaveBeenCalled()
   })
 

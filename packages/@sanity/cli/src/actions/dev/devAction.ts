@@ -27,11 +27,6 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     workDir,
   })
 
-  // The workbench remote renders other workbench apps, so it can't render
-  // itself — this internal flag runs it as a plain, standalone dev server.
-  const isWorkbenchRemote =
-    isWorkbenchApp(cliConfig?.app) && process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true'
-
   // The app/studio server, parameterized per call; `announceUrl` is false when
   // the workbench announces the URL on its behalf.
   const startAppServer = (params: {announceUrl: boolean; cliConfig: CliConfig; httpPort: number}) =>
@@ -42,7 +37,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       httpPort: params.httpPort,
     })
 
-  if (isWorkbenchApp(cliConfig?.app) && !isWorkbenchRemote) {
+  if (isWorkbenchApp(cliConfig?.app)) {
     // Lazy so a non-workbench `sanity dev` never loads the package. `doImport`
     // is path-based and doesn't apply to a bare specifier.
     // eslint-disable-next-line no-restricted-syntax
@@ -66,8 +61,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     })
   }
 
-  // Plain studio/app (incl. the workbench remote): one dev server announcing its
-  // own URL — no lock, registry, or signals.
+  // Plain non-workbench studio/app: one dev server announcing its own URL.
   const result = await startAppServer({announceUrl: true, cliConfig, httpPort})
   return {close: result.started ? result.close : noop}
 }
