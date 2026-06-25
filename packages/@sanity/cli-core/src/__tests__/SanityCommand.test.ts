@@ -57,6 +57,7 @@ describe('SanityCommand', () => {
   })
   describe('getProjectId', () => {
     test('returns --project-id value if provided', async () => {
+      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
           const id = await this.getProjectId()
@@ -67,6 +68,7 @@ describe('SanityCommand', () => {
     })
 
     test('supports deprecated flag (e.g. --project) value if specified and provided', async () => {
+      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
           const id = await this.getProjectId({deprecatedFlagName: 'project'})
@@ -77,6 +79,7 @@ describe('SanityCommand', () => {
     })
 
     test('supports deprecated short char flag (e.g. --project) value if specified and provided', async () => {
+      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
           const id = await this.getProjectId({deprecatedFlagName: 'project'})
@@ -87,6 +90,7 @@ describe('SanityCommand', () => {
     })
 
     test('--project-id takes precedence over deprecated --project', async () => {
+      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
           const id = await this.getProjectId({deprecatedFlagName: 'project'})
@@ -97,6 +101,7 @@ describe('SanityCommand', () => {
     })
 
     test('should invoke getCliConfig as fallback return', async () => {
+      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         cliConfig: vi.fn(() => ({api: {projectId: 'default-project'}})),
         run: async function () {
@@ -108,6 +113,7 @@ describe('SanityCommand', () => {
     })
 
     test('should invoke explictly-provided fallback function as return', async () => {
+      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
           const id = await this.getProjectId({
@@ -122,6 +128,7 @@ describe('SanityCommand', () => {
     })
 
     test('should throw if no project ID was resolved', async () => {
+      expect.assertions(1)
       const cmdClass = createMockedRunCommand({
         run: async function () {
           try {
