@@ -5,27 +5,28 @@ import {testCommand} from '@sanity/cli-test'
 import {sanityImport} from '@sanity/import'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {NEW_DATASET_VALUE} from '../../../prompts/promptForDataset.js'
-import {ImportDatasetCommand} from '../import.js'
+import {ImportDatasetCommand} from '../../../../src/commands/datasets/import.js'
+import {NEW_DATASET_VALUE} from '../../../../src/prompts/promptForDataset.js'
 
 const mockPromptForDataset = vi.hoisted(() => vi.fn())
 const mockPromptForDatasetName = vi.hoisted(() => vi.fn())
 const mockListDatasets = vi.hoisted(() => vi.fn())
 const mockCreateDataset = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../prompts/promptForDataset.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../prompts/promptForDataset.js')>()
+vi.mock('../../../../src/prompts/promptForDataset.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../../../src/prompts/promptForDataset.js')>()
   return {
     ...actual,
     promptForDataset: mockPromptForDataset,
   }
 })
 
-vi.mock('../../../prompts/promptForDatasetName.js', () => ({
+vi.mock('../../../src/prompts/promptForDatasetName.js', () => ({
   promptForDatasetName: mockPromptForDatasetName,
 }))
 
-vi.mock('../../../services/datasets.js', () => ({
+vi.mock('../../../src/services/datasets.js', () => ({
   createDataset: mockCreateDataset,
   listDatasets: mockListDatasets,
 }))

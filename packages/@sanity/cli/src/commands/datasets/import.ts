@@ -193,7 +193,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
     const {source, targetDataset: targetDatasetArg} = args
 
     if (targetDatasetArg && !datasetFlag) {
-      this.warn(
+      this.output.warn(
         'Positional dataset argument is deprecated. Use the --dataset flag instead: --dataset <name>',
       )
     }
@@ -201,7 +201,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
     let dataset = datasetFlag ?? targetDatasetArg
     if (!dataset) {
       if (this.isUnattended()) {
-        this.error(
+        return this.output.error(
           'Missing dataset. Use the --dataset flag to specify a dataset: --dataset <name>',
           {exit: 1},
         )
@@ -219,7 +219,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           importDebug(`Failed to create dataset ${newDatasetName}: ${message}`, error)
-          this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {exit: 1})
+          return this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {exit: 1})
         }
       }
     }
@@ -276,7 +276,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
         }
       }
 
-      this.log('Done! Imported %d documents to dataset "%s"\n', numDocs, dataset)
+      this.output.log('Done! Imported %d documents to dataset "%s"\n', numDocs, dataset)
       this.printWarnings(warnings)
     } catch (err) {
       if (this.spinInterval) {
@@ -288,14 +288,12 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
         this.currentProgress.fail()
       }
 
-      if ((err as Error).name === 'ReplacementCharError') {
-        this.error(
-          `Import failed due to unicode replacement characters in the data.\n${(err as Error).message}\n\nIf you are certain you want to proceed with the import despite potentially corrupt data, re-run the import with the \`--allow-replacement-characters\` flag set.`,
-          {exit: 1},
-        )
-      } else {
-        this.error((err as Error).stack || (err as Error).message, {exit: 1})
-      }
+      return (err as Error).name === 'ReplacementCharError'
+        ? this.output.error(
+            `Import failed due to unicode replacement characters in the data.\n${(err as Error).message}\n\nIf you are certain you want to proceed with the import despite potentially corrupt data, re-run the import with the \`--allow-replacement-characters\` flag set.`,
+            {exit: 1},
+          )
+        : this.output.error((err as Error).stack || (err as Error).message, {exit: 1})
     }
   }
 
@@ -365,11 +363,13 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       return
     }
 
-    this.warn(`Failed to import the following ${assetFails.length > 1 ? 'assets' : 'asset'}:`)
+    this.output.warn(
+      `Failed to import the following ${assetFails.length > 1 ? 'assets' : 'asset'}:`,
+    )
 
     for (const warning of assetFails) {
       if (warning.url) {
-        this.warn(`  ${warning.url}`)
+        this.output.warn(`  ${warning.url}`)
       }
     }
   }
