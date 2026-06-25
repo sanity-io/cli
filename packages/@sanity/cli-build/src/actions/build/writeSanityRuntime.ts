@@ -67,8 +67,10 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
   let watcher: FSWatcher | undefined
 
   if (watch) {
-    watcher = chokidarWatch(getPossibleDocumentComponentLocations(cwd)).on('all', () =>
-      renderAndWriteDocument(),
+    // Skip the initial scan; the explicit renderAndWriteDocument() below handles first generation.
+    watcher = chokidarWatch(getPossibleDocumentComponentLocations(cwd), {ignoreInitial: true}).on(
+      'all',
+      () => renderAndWriteDocument(),
     )
   }
 
