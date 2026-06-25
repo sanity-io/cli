@@ -76,6 +76,26 @@ describe('SanityCommand', () => {
       await cmdClass.run(['--project', 'torment nexus'])
     })
 
+    test('supports deprecated short char flag (e.g. --project) value if specified and provided', async () => {
+      const cmdClass = createMockedRunCommand({
+        run: async function () {
+          const id = await this.getProjectId({deprecatedFlagName: 'project'})
+          expect(id).toEqual('torment nexus')
+        },
+      })
+      await cmdClass.run(['-p', 'torment nexus'])
+    })
+
+    test('--project-id takes precedence over deprecated --project', async () => {
+      const cmdClass = createMockedRunCommand({
+        run: async function () {
+          const id = await this.getProjectId({deprecatedFlagName: 'project'})
+          expect(id).toEqual('good')
+        },
+      })
+      await cmdClass.run(['--project', 'bad', '--project-id', 'good'])
+    })
+
     test('should invoke getCliConfig as fallback return', async () => {
       const cmdClass = createMockedRunCommand({
         cliConfig: vi.fn(() => ({api: {projectId: 'default-project'}})),

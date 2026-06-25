@@ -103,89 +103,6 @@ describe('#documents:query', () => {
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
   })
 
-  test('--project-id flag overrides CLI config projectId', async () => {
-    const mockResults = [{_id: 'test', title: 'Test'}]
-
-    mockFetch.mockResolvedValue(mockResults)
-
-    const {stdout} = await testCommand(
-      QueryDocumentCommand,
-      ['*[_type == "movie"]', '--project-id', 'flag-project'],
-      {
-        mocks: defaultMocks,
-      },
-    )
-
-    expect(stdout).toContain('"_id": "test"')
-    // Verify that --project-id ('flag-project') was used, not config ('test-project')
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'flag-project'}),
-    )
-  })
-
-  test('uses deprecated --project flag when no --project-id or config', async () => {
-    const mockResults = [{_id: 'test', title: 'Test'}]
-
-    mockFetch.mockResolvedValue(mockResults)
-
-    const {stderr, stdout} = await testCommand(
-      QueryDocumentCommand,
-      ['*[_type == "movie"]', '--project', 'other-project'],
-      {
-        mocks: {
-          ...defaultMocks,
-          cliConfig: {api: {dataset: testDataset}},
-        },
-      },
-    )
-
-    expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('"project" flag has been deprecated')
-    expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
-  })
-
-  test('deprecated --project flag overrides CLI config projectId', async () => {
-    const mockResults = [{_id: 'test', title: 'Test'}]
-
-    mockFetch.mockResolvedValue(mockResults)
-
-    const {stderr, stdout} = await testCommand(
-      QueryDocumentCommand,
-      ['*[_type == "movie"]', '--project', 'override-project'],
-      {
-        mocks: defaultMocks,
-      },
-    )
-
-    expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('"project" flag has been deprecated')
-    // Verify that --project ('override-project') was used, not config ('test-project')
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'override-project'}),
-    )
-  })
-
-  test('--project-id takes precedence over deprecated --project', async () => {
-    const mockResults = [{_id: 'test', title: 'Test'}]
-
-    mockFetch.mockResolvedValue(mockResults)
-
-    const {stderr, stdout} = await testCommand(
-      QueryDocumentCommand,
-      ['*[_type == "movie"]', '--project-id', 'new-id', '--project', 'old-id'],
-      {
-        mocks: defaultMocks,
-      },
-    )
-
-    expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('"project" flag has been deprecated')
-    // Verify that --project-id ('new-id') was used, not --project ('old-id')
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'new-id'}),
-    )
-  })
-
   test('uses anonymous flag to skip authentication', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
@@ -232,19 +149,6 @@ describe('#documents:query', () => {
 
     expect(stderr).toContain('--api-version not specified, using `2025-08-15`')
     expect(stdout).toContain('"_id": "test"')
-  })
-
-  test('fails when no project ID is configured or provided', async () => {
-    const {error} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {dataset: testDataset}},
-      },
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('fails when no dataset is configured or provided', async () => {
@@ -335,20 +239,6 @@ describe('#documents:query', () => {
       expect(mockGetProjectCliClient).toHaveBeenCalledWith(
         expect.objectContaining({dataset: 'staging', projectId: 'flag-project'}),
       )
-    })
-
-    test('errors when no project root and no --project-id', async () => {
-      const {error} = await testCommand(
-        QueryDocumentCommand,
-        ['*[_type == "post"]', '--dataset', 'production'],
-        {
-          mocks: noProjectRootMocks,
-        },
-      )
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('errors when no project root with --project-id but no --dataset', async () => {

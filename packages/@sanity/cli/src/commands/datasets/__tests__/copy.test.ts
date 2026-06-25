@@ -544,42 +544,4 @@ describe('#dataset:copy', () => {
       expect(error?.oclif?.exit).toBe(2)
     })
   })
-
-  test('uses --project-id flag when provided', async () => {
-    mockListDatasets.mockResolvedValue([
-      createMockDataset('production'),
-      createMockDataset('staging'),
-    ])
-    mockApi({
-      apiVersion: DATASET_API_VERSION,
-      method: 'put',
-      projectId: 'other-project',
-      uri: `/datasets/production/copy`,
-    }).reply(200, {jobId: 'job-other'})
-    mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
-
-    const {error, stdout} = await testCommand(
-      CopyDatasetCommand,
-      ['--project-id', 'other-project', 'production', 'backup'],
-      {mocks: defaultMocks},
-    )
-
-    expect(error).toBeUndefined()
-    expect(stdout).toContain('Job job-other started')
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'other-project'}),
-    )
-  })
-
-  test('errors when no project ID is found', async () => {
-    const {error} = await testCommand(CopyDatasetCommand, ['production', 'backup'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: undefined},
-      },
-    })
-
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
-  })
 })

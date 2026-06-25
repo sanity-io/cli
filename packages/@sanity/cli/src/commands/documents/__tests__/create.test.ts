@@ -313,24 +313,6 @@ describe('#documents:create', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('throws error when no project ID is configured', async () => {
-    const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {
-          api: {
-            dataset: 'production',
-            projectId: undefined,
-          },
-        },
-      },
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('throws error when no dataset is configured and none provided', async () => {
     const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json'], {
       mocks: {
@@ -952,16 +934,6 @@ describe('#documents:create', () => {
           projectId: 'my-project',
         }),
       )
-    })
-
-    test('errors when no project root and no --project-id', async () => {
-      const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json'], {
-        mocks: noProjectRootMocks,
-      })
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('errors when no project root with --project-id but no --dataset', async () => {
