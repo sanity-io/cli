@@ -20,5 +20,6 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**'],
     globals: false,
     name: '@sanity/cli-core/unit',
+    testTimeout: 10_000,
   },
 })

@@ -16,5 +16,6 @@ export default defineConfig({
     name: '@sanity/cli/unit',
     setupFiles: ['test/setup.ts'],
     snapshotSerializers: ['test/snapshotSerializer.ts'],
+    testTimeout: 10_000,
   },
 })

@@ -1,7 +1,7 @@
 import {resolve} from 'node:path'
 
 import {Command, Config} from '@oclif/core'
-import {type Output, SanityCommandInterface} from '@sanity/cli-core'
+import {type Output, type SanityCommandInterface} from '@sanity/cli-core'
 import {vi} from 'vitest'
 
 export function createMockSanityCommand() {
