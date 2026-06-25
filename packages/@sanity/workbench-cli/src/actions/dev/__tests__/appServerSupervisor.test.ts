@@ -1,6 +1,10 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type AppServerResult, startAppServerSupervisor} from '../appServerSupervisor.js'
+import {
+  type AppServerResult,
+  type StartAppServer,
+  startAppServerSupervisor,
+} from '../appServerSupervisor.js'
 import {workbenchCliConfig} from './devTestHelpers.js'
 
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
@@ -10,7 +14,10 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
 
-function mockAppServer({port = 3334}: {port?: number} = {}): AppServerResult {
+function mockAppServer({port = 3334}: {port?: number} = {}): Extract<
+  AppServerResult,
+  {started: true}
+> {
   return {
     close: vi.fn().mockResolvedValue(undefined),
     server: {config: {server: {port}}} as never,
@@ -18,7 +25,7 @@ function mockAppServer({port = 3334}: {port?: number} = {}): AppServerResult {
   }
 }
 
-async function startSupervisor(start: ReturnType<typeof vi.fn>) {
+async function startSupervisor(start: StartAppServer) {
   const result = await startAppServerSupervisor({
     cliConfig: workbenchCliConfig(),
     start,
