@@ -22,12 +22,21 @@ export function ExampleComponent() {
       </p>
       <div className="code-hint">
         <p>
-          A good next step is fetching content. The <code>useDocuments</code> hook returns document
-          handles you can pass to other hooks for display and editing:
+          A good next step is fetching content. Data hooks like <code>useDocuments</code> suspend
+          while loading, so render them inside a <code>{'<Suspense>'}</code> boundary:
         </p>
-        <pre>{`import {useDocuments} from '@sanity/sdk-react'
+        <pre>{`import {Suspense} from 'react'
+import {useDocuments} from '@sanity/sdk-react'
 
-const {data} = useDocuments({documentType: 'yourType'})`}</pre>
+function DocumentList() {
+  // useDocuments returns handles you can pass to other hooks
+  const {data} = useDocuments({documentType: 'yourType'})
+  return <ul>{data.map((doc) => <li key={doc.documentId}>{doc.documentId}</li>)}</ul>
+}
+
+<Suspense fallback={<div>Loading...</div>}>
+  <DocumentList />
+</Suspense>`}</pre>
       </div>
       <ul className="example-links">
         <li>

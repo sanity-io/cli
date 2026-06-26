@@ -19,7 +19,8 @@ export function ExampleComponent() {
             <Text muted>
               You can also replace this component with components of your own. Render them in your
               app by importing and using them in your application’s <code>src/App.tsx</code> file. A
-              good next step is fetching content with the <code>useDocuments</code> hook.
+              good next step is fetching content with the <code>useDocuments</code> hook. Data hooks
+              suspend while loading, so render them inside a <code>{'<Suspense>'}</code> boundary.
             </Text>
             <Text muted>
               Looking for more guidance? See the{' '}
