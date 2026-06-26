@@ -371,6 +371,53 @@ describe('#dataset:copy', () => {
           targetDataset: 'backup',
         }),
       )
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job job-skip completed/i),
+      )
+    })
+
+    test('copies dataset with detach flag (does not wait for completion)', async () => {
+      mockListDatasets.mockResolvedValue([
+        createMockDataset('production'),
+        createMockDataset('staging'),
+      ])
+      mockCopyDataset.mockResolvedValue({jobId: 'job-detach'})
+
+      await CopyDatasetCommand.run(['production', 'backup', '--detach'])
+
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job job-detach started/i),
+      )
+      expect(mocks.SanityCmdOutputLog).not.toHaveBeenCalledWith(
+        expect.stringMatching(/job job-detach completed/i),
+      )
+      expect(mockFollowCopyJob).not.toHaveBeenCalled()
+    })
+
+    test('handles copy dataset errors', async () => {
+      mockListDatasets.mockResolvedValue([
+        createMockDataset('production'),
+        createMockDataset('staging'),
+      ])
+      mockCopyDataset.mockRejectedValue(new Error('boom'))
+
+      await CopyDatasetCommand.run(['production', 'backup'])
+
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringMatching(/dataset copying failed: boom/i),
+        {exit: 1},
+      )
+    })
+
+    test('handles list datasets error', async () => {
+      mockListDatasets.mockRejectedValue(new Error('boom'))
+
+      await CopyDatasetCommand.run(['production', 'backup'])
+
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringMatching(/failed to fetch datasets: boom/i),
+        {exit: 1},
+      )
     })
   })
 })

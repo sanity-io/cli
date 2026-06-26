@@ -253,7 +253,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to fetch datasets: %s', message, error)
-      this.error(`Failed to fetch datasets: ${message}`, {exit: 1})
+      return this.output.error(`Failed to fetch datasets: ${message}`, {exit: 1})
     }
 
     const datasetNames = new Set(datasetsResponse.map((ds) => ds.name))
