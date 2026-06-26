@@ -27,15 +27,12 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
-vi.mock('../buildStaticFiles.js', () => ({
-  buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
-}))
-
 vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
   return {
     ...actual,
     AppBuildTrace: {},
+    buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
     getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
     getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
     resolveVendorBuildConfig: vi.fn().mockResolvedValue({

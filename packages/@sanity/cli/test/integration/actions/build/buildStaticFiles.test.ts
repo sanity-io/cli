@@ -4,11 +4,9 @@ import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
-import {resolveVendorBuildConfig} from '@sanity/cli-build/_internal/build'
+import {buildStaticFiles, resolveVendorBuildConfig} from '@sanity/cli-build/_internal/build'
 import {init, parse} from 'es-module-lexer'
 import {afterAll, beforeAll, describe, expect, test} from 'vitest'
-
-import {buildStaticFiles} from '../../../../src/actions/build/buildStaticFiles.js'
 
 // The repo's basic-studio fixture (a workspace package with react, react-dom,
 // styled-components and sanity installed) doubles as a real studio to build.

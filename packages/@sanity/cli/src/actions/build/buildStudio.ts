@@ -4,11 +4,14 @@ import {styleText} from 'node:util'
 
 import {
   buildDebug,
+  buildStaticFiles,
   checkRequiredDependencies,
   checkStudioDependencyVersions,
+  formatModuleSizes,
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
+  sortModulesBySize,
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
 import {getStudioEnvironmentVariables} from '@sanity/cli-build/_internal/env'
@@ -32,11 +35,9 @@ import {
   CompareDependencyVersionsResult,
 } from '../../util/compareDependencyVersions.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
-import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
-import {buildStaticFiles} from './buildStaticFiles.js'
 import {determineBasePath} from './determineBasePath.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'

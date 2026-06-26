@@ -29,23 +29,24 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
-vi.mock('../buildStaticFiles.js', () => ({
-  buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
-}))
-
-vi.mock('@sanity/cli-build/_internal/build', () => ({
-  buildDebug: vi.fn(),
-  checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
-  checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
-  getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
-  getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
-  resolveVendorBuildConfig: vi.fn().mockResolvedValue({
-    entries: {},
-    namesByChunkName: {},
-    specifiersByChunkName: {},
-  }),
-  StudioBuildTrace: {},
-}))
+vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    buildDebug: vi.fn(),
+    buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
+    checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
+    checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
+    getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
+    getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
+    resolveVendorBuildConfig: vi.fn().mockResolvedValue({
+      entries: {},
+      namesByChunkName: {},
+      specifiersByChunkName: {},
+    }),
+    StudioBuildTrace: {},
+  }
+})
 
 vi.mock('@sanity/cli-build/_internal/env', () => ({
   getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),

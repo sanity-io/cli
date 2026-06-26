@@ -1,24 +1,20 @@
 import path from 'node:path'
 
-import {
-  type AutoUpdatesBuildConfig,
-  buildDebug,
-  copyDir,
-  extendViteConfigWithUserConfig,
-  finalizeViteConfig,
-  getViteConfig,
-  resolveEntries,
-  writeFavicons,
-  writeSanityRuntime,
-} from '@sanity/cli-build/_internal/build'
-import {
-  getAppEnvironmentVariables,
-  getStudioEnvironmentVariables,
-} from '@sanity/cli-build/_internal/env'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
 import {type DefineAppInput} from '@sanity/workbench-cli'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
+
+import {copyDir} from '../../util/copyDir.js'
+import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
+import {buildDebug} from './buildDebug.js'
+import {
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
+} from './getEnvironmentVariables.js'
+import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
+import {writeFavicons} from './writeFavicons.js'
+import {resolveEntries, writeSanityRuntime} from './writeSanityRuntime.js'
 
 export interface ChunkModule {
   name: string

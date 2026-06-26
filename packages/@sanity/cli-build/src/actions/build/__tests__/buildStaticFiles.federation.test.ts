@@ -20,14 +20,26 @@ vi.mock('vite', () => ({
   createBuilder: mockCreateBuilder,
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', () => ({
-  buildDebug: vi.fn(),
+vi.mock('../../../util/copyDir.js', () => ({
   copyDir: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../buildDebug.js', () => ({
+  buildDebug: vi.fn(),
+}))
+
+vi.mock('../getViteConfig.js', () => ({
   extendViteConfigWithUserConfig: mockExtendViteConfigWithUserConfig,
   finalizeViteConfig: mockFinalizeViteConfig,
   getViteConfig: mockGetViteConfig,
-  resolveEntries: mockResolveEntries,
+}))
+
+vi.mock('../writeFavicons.js', () => ({
   writeFavicons: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../writeSanityRuntime.js', () => ({
+  resolveEntries: mockResolveEntries,
   writeSanityRuntime: mockWriteSanityRuntime,
 }))
 
