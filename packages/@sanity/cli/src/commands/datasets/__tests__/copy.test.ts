@@ -109,7 +109,7 @@ describe('#dataset:copy', () => {
       {desc: '--list with --detach', flags: ['--list', '--detach']},
       {desc: '--attach with --detach', flags: ['--attach', 'job-123', '--detach']},
     ])('errors when using mutually exclusive flags: $desc', async ({flags}) => {
-      expect(CopyDatasetCommand.run(flags)).rejects.toThrow(
+      await expect(CopyDatasetCommand.run(flags)).rejects.toThrow(
         expect.objectContaining({
           message: expect.stringContaining('cannot also be provided when using'),
         }),
@@ -120,7 +120,7 @@ describe('#dataset:copy', () => {
       {flag: '--offset', value: '2'},
       {flag: '--limit', value: '10'},
     ])('errors when $flag is used without --list', async ({flag, value}) => {
-      expect(CopyDatasetCommand.run([flag, value])).rejects.toThrow(
+      await expect(CopyDatasetCommand.run([flag, value])).rejects.toThrow(
         expect.objectContaining({
           message: expect.stringMatching(/all of the following must be provided.*--list/i),
         }),
