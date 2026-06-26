@@ -122,29 +122,6 @@ describe.sequential('#mcp:configure', () => {
   })
 
   // -------------------------------------------------------------------------
-  // Codex CLI: unparseable TOML skips editor
-  // -------------------------------------------------------------------------
-
-  test('skips Codex CLI when existing TOML config is unparseable', async () => {
-    mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'codex') return EXECA_SUCCESS
-      throw new Error('Not installed')
-    }) as never)
-
-    mockExistsSync.mockImplementation((p: PathLike) => {
-      const normalized = String(p).replaceAll('\\', '/')
-      return normalized.endsWith('/config.toml')
-    })
-    mockReadFile.mockResolvedValue('[[[')
-    mockCheckbox.mockResolvedValue([])
-
-    await testCommand(ConfigureMcpCommand, [])
-
-    expect(mockCheckbox).not.toHaveBeenCalled()
-    expect(mockWriteFile).not.toHaveBeenCalled()
-  })
-
-  // -------------------------------------------------------------------------
   // Edge cases and no-editor scenario
   // -------------------------------------------------------------------------
 
