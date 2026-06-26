@@ -27,7 +27,10 @@ import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
-import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {
+  compareDependencyVersions,
+  CompareDependencyVersionsResult,
+} from '../../util/compareDependencyVersions.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
@@ -42,6 +45,9 @@ interface InternalBuildOptions {
   appId: string | undefined
   autoUpdatesEnabled: boolean
   calledFromDeploy: boolean | undefined
+  compareDependencyVersions: (
+    packages: {name: string; version: string}[],
+  ) => Promise<CompareDependencyVersionsResult>
   determineBasePath: () => string
   isApp: boolean
   isWorkbenchApp: boolean
@@ -73,6 +79,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   // the workbench capability so it's gated on the brand, like the app build.
   const workbench = resolveWorkbenchApp(cliConfig)
 
+  const appId = getAppId(cliConfig)
+
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
   }): Promise<void> => {
@@ -86,9 +94,10 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   }
 
   await internalBuildStudio({
-    appId: getAppId(cliConfig),
+    appId,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy,
+    compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
     isWorkbenchApp: !!workbench,
@@ -186,11 +195,8 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     autoUpdatesCssUrls = getAutoUpdatesCssUrls(sanityDependencies, {appId})
 
     // Check the versions
-    const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
-      sanityDependencies,
-      workDir,
-      {appId},
-    )
+    const {mismatched, unresolvedPrerelease} =
+      await options.compareDependencyVersions(sanityDependencies)
 
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})

@@ -25,7 +25,10 @@ import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
-import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {
+  compareDependencyVersions,
+  CompareDependencyVersionsResult,
+} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
@@ -38,6 +41,9 @@ interface InternalBuildOptions {
   appTitle: string | undefined
   autoUpdatesEnabled: boolean
   calledFromDeploy: boolean | undefined
+  compareDependencyVersions: (
+    packages: {name: string; version: string}[],
+  ) => Promise<CompareDependencyVersionsResult>
   determineBasePath: () => string
   entry: string | undefined
   isWorkbenchApp: boolean
@@ -68,11 +74,14 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   // legacy `app` config object — resolve the workbench capability to read them.
   const workbench = resolveWorkbenchApp(cliConfig)
 
+  const appId = getAppId(cliConfig)
+
   await internalBuildApp({
-    appId: getAppId(cliConfig),
+    appId,
     appTitle: app?.title,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy: options.calledFromDeploy,
+    compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: app?.entry,
     isWorkbenchApp: !!workbench,
@@ -149,11 +158,8 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
     }
 
     // Check the versions
-    const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
-      autoUpdatedPackages,
-      workDir,
-      {appId},
-    )
+    const {mismatched, unresolvedPrerelease} =
+      await options.compareDependencyVersions(autoUpdatedPackages)
 
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
