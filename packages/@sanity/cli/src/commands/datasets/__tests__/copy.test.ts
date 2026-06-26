@@ -154,7 +154,14 @@ describe('#dataset:copy', () => {
           withHistory: false,
         },
       ])
+
       await CopyDatasetCommand.run(['--list', '--offset', '2', '--limit', '10'])
+
+      expect(mockListDatasetCopyJobs).toHaveBeenCalledWith({
+        limit: 10,
+        offset: 2,
+        projectId: TEST_PROJECT_ID,
+      })
       expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
         expect.stringMatching(/job-1.*production/i),
       )
@@ -246,7 +253,7 @@ describe('#dataset:copy', () => {
   })
 
   describe('copy mode', () => {
-    test('copies provided source to target dataset', async () => {
+    test('copies provided source to target dataset, honouring defaults for skip-content-releases and skip-history flags', async () => {
       mockListDatasets.mockResolvedValue([
         createMockDataset('production'),
         createMockDataset('staging'),
@@ -259,6 +266,8 @@ describe('#dataset:copy', () => {
       expect(mockCopyDataset).toHaveBeenCalledWith(
         expect.objectContaining({
           projectId: TEST_PROJECT_ID,
+          skipContentReleases: false,
+          skipHistory: false,
           sourceDataset: 'production',
           targetDataset: 'backup',
         }),
