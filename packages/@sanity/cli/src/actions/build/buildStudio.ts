@@ -44,7 +44,7 @@ import {type BuildOptions} from './types.js'
 interface InternalBuildOptions {
   appId: string | undefined
   autoUpdatesEnabled: boolean
-  calledFromDeploy: boolean | undefined
+  checkAppId: () => void
   compareDependencyVersions: (
     packages: {name: string; version: string}[],
   ) => Promise<CompareDependencyVersionsResult>
@@ -54,7 +54,6 @@ interface InternalBuildOptions {
   minify: boolean
   outDir: string | undefined
   output: Output
-  projectId: string | undefined
   reactCompiler: CliConfig['reactCompiler']
   schemaExtraction: CliConfig['schemaExtraction']
   services: DefineAppInput['services']
@@ -96,7 +95,14 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   await internalBuildStudio({
     appId,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
-    calledFromDeploy,
+    checkAppId: () => {
+      // Warn if auto updates enabled but no appId configured.
+      // Skip when called from deploy, since deploy handles appId itself
+      // (prompts the user and tells them to add it to config).
+      if (!appId && !options.calledFromDeploy) {
+        warnAboutMissingAppId({appType: 'studio', output, projectId: cliConfig?.api?.projectId})
+      }
+    },
     compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
@@ -104,7 +110,6 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     minify: Boolean(flags.minify),
     outDir,
     output,
-    projectId: cliConfig?.api?.projectId,
     reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
     services: workbench?.services,
@@ -133,7 +138,6 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     minify,
     outDir,
     output,
-    projectId,
     reactCompiler,
     schemaExtraction,
     services,
@@ -172,12 +176,8 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
 
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
 
-    // Warn if auto updates enabled but no appId configured.
-    // Skip when called from deploy, since deploy handles appId itself
-    // (prompts the user and tells them to add it to config).
-    if (!appId && !options.calledFromDeploy) {
-      warnAboutMissingAppId({appType: 'studio', output, projectId})
-    }
+    // Warn if auto updates enabled but no appId configured
+    options.checkAppId()
 
     const installedVisionVersion = await getLocalPackageVersion('@sanity/vision', workDir)
     const cleanVisionVersion = installedVisionVersion

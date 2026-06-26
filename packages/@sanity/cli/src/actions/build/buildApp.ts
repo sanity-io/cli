@@ -40,7 +40,7 @@ interface InternalBuildOptions {
   appId: string | undefined
   appTitle: string | undefined
   autoUpdatesEnabled: boolean
-  calledFromDeploy: boolean | undefined
+  checkAppId: () => void
   compareDependencyVersions: (
     packages: {name: string; version: string}[],
   ) => Promise<CompareDependencyVersionsResult>
@@ -80,7 +80,14 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     appId,
     appTitle: app?.title,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
-    calledFromDeploy: options.calledFromDeploy,
+    checkAppId: () => {
+      // Warn if auto updates enabled but no appId configured.
+      // Skip when called from deploy, since deploy handles appId itself
+      // (prompts the user and tells them to add it to config).
+      if (!appId && !options.calledFromDeploy) {
+        warnAboutMissingAppId({appType: 'app', output})
+      }
+    },
     compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: app?.entry,
@@ -151,11 +158,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
 
     // Warn if auto updates enabled but no appId configured.
-    // Skip when called from deploy, since deploy handles appId itself
-    // (prompts the user and tells them to add it to config).
-    if (!appId && !options.calledFromDeploy) {
-      warnAboutMissingAppId({appType: 'app', output})
-    }
+    options.checkAppId()
 
     // Check the versions
     const {mismatched, unresolvedPrerelease} =
