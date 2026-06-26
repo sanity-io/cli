@@ -15,6 +15,14 @@ export function createMockSanityCommand() {
     SanityCmdOutputLog: vi.fn(),
     SanityCmdOutputWarn: vi.fn(),
     SanityCmdResolveIsInteractive: vi.fn(),
+    SanityCmdTelemetry: {
+      error: vi.fn(),
+      log: vi.fn(),
+      resume: vi.fn(),
+      start: vi.fn(),
+      trace: vi.fn().mockImplementation(() => mocks.SanityCmdTelemetry),
+      updateUserProperties: vi.fn(),
+    },
   }
 
   return {
@@ -29,6 +37,7 @@ export function createMockSanityCommand() {
         log: mocks.SanityCmdOutputLog,
         warn: mocks.SanityCmdOutputWarn,
       }
+      telemetry = mocks.SanityCmdTelemetry
       public exit(code?: number) {
         return mocks.OclifCmdExit(code)
       }
