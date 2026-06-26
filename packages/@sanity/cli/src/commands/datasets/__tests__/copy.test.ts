@@ -1,80 +1,85 @@
-import {input, select} from '@sanity/cli-core/ux'
-import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
-import {of, throwError} from 'rxjs'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {of} from 'rxjs'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {DATASET_API_VERSION, followCopyJobProgress} from '../../../services/datasets.js'
-import {CopyDatasetCommand} from '../copy.js'
+import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
 
-const mockListDatasets = vi.hoisted(() => vi.fn())
-const mockGetProjectCliClient = vi.hoisted(() => vi.fn())
-const testProjectId = vi.hoisted(() => 'test-project')
-const testToken = vi.hoisted(() => 'test-token')
-
+// First: create the mocks and mocked SanityCommand class
+const {MockedSanityCommand, mocks} = createMockSanityCommand()
+// Second: install the mock on cli-core
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-
-  // Dynamically create a test client based on the projectId passed to getProjectCliClient,
-  // so that HTTP requests target the correct host (e.g. other-project.api.sanity.io).
-  mockGetProjectCliClient.mockImplementation((options?: {projectId?: string}) => {
-    const client = createTestClient({
-      apiVersion: 'v2025-09-16',
-      projectId: options?.projectId ?? testProjectId,
-      token: testToken,
-    })
-    return Promise.resolve({
-      datasets: {
-        list: mockListDatasets,
-      } as never,
-      request: client.request,
-    })
-  })
-
   return {
     ...actual,
-    getProjectCliClient: mockGetProjectCliClient,
+    SanityCommand: MockedSanityCommand,
+  }
+})
+
+// Third: mock dataset copy command imports
+const mockPromptForDataset = vi.hoisted(() => vi.fn())
+const mockPromptForDatasetName = vi.hoisted(() => vi.fn())
+const mockValidateDatasetName = vi.hoisted(() => vi.fn())
+const mockListDatasets = vi.hoisted(() => vi.fn())
+const mockListDatasetCopyJobs = vi.hoisted(() => vi.fn())
+const mockCopyDataset = vi.hoisted(() => vi.fn())
+const mockFollowCopyJob = vi.hoisted(() => vi.fn())
+const mockHardExit = vi.hoisted(() => vi.fn())
+const mockSpinFail = vi.hoisted(() => vi.fn())
+const mockSpinStart = vi.hoisted(() => vi.fn())
+const mockSpinSucceed = vi.hoisted(() => vi.fn())
+const mockSpinSetText = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../prompts/promptForDataset.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../prompts/promptForDataset.js')>()
+  return {
+    ...actual,
+    promptForDataset: mockPromptForDataset,
+  }
+})
+
+vi.mock('../../../prompts/promptForDatasetName.js', () => ({
+  promptForDatasetName: mockPromptForDatasetName,
+}))
+
+vi.mock('../../../actions/dataset/validateDatasetName.js', () => ({
+  validateDatasetName: mockValidateDatasetName,
+}))
+
+vi.mock('../../../services/datasets.js', () => ({
+  copyDataset: mockCopyDataset,
+  followCopyJobProgress: mockFollowCopyJob,
+  listDatasetCopyJobs: mockListDatasetCopyJobs,
+  listDatasets: mockListDatasets,
+}))
+
+vi.mock('@oclif/core/errors', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@oclif/core/errors')>()
+  return {
+    ...actual,
+    exit: mockHardExit,
   }
 })
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  const mockSpin = {
+    fail: mockSpinFail.mockReturnThis(),
+    start: mockSpinStart.mockReturnThis(),
+    succeed: mockSpinSucceed.mockReturnThis(),
+  }
+  Object.defineProperty(mockSpin, 'text', {
+    configurable: true,
+    set: mockSpinSetText,
+  })
   return {
     ...actual,
-    input: vi.fn(),
-    select: vi.fn(),
+    spinner: vi.fn(() => mockSpin),
   }
 })
 
-vi.mock('../../../prompts/promptForProject.js', async () => {
-  const {NonInteractiveError} =
-    await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
-  return {
-    promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
-  }
-})
+// Finally, import the module under test: dataset copy command
+const {CopyDatasetCommand} = await import('../copy.js')
 
-vi.mock('../../../services/datasets.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../services/datasets.js')>()
-  return {
-    ...actual,
-    // Keep only followCopyJobProgress mocked since it uses EventSource streaming
-    followCopyJobProgress: vi.fn(),
-  }
-})
-
-const defaultMocks = {
-  cliConfig: {api: {projectId: testProjectId}},
-  projectRoot: {
-    directory: '/test/path',
-    path: '/test/path/sanity.config.ts',
-    type: 'studio' as const,
-  },
-  token: testToken,
-}
-
-const mockFollowCopyJobProgress = vi.mocked(followCopyJobProgress)
-
+const TEST_PROJECT_ID = '1337newb'
 function createMockDataset(name: string) {
   return {
     aclMode: 'public' as const,
@@ -89,21 +94,47 @@ function createMockDataset(name: string) {
 }
 
 describe('#dataset:copy', () => {
+  beforeEach(() => {
+    mocks.SanityCmdGetProjectId.mockResolvedValue(TEST_PROJECT_ID)
+    mocks.SanityCmdIsUnattended.mockReturnValue(false)
+    mockValidateDatasetName.mockReturnValue(undefined)
+  })
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
+  })
+
+  describe('flag validation', () => {
+    test.each([
+      {desc: '--list with --attach', flags: ['--list', '--attach', 'job-123']},
+      {desc: '--list with --detach', flags: ['--list', '--detach']},
+      {desc: '--attach with --detach', flags: ['--attach', 'job-123', '--detach']},
+    ])('errors when using mutually exclusive flags: $desc', async ({flags}) => {
+      await expect(CopyDatasetCommand.run(flags)).rejects.toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining('cannot also be provided when using'),
+        }),
+      )
+    })
+
+    test.each([
+      {flag: '--offset', value: '2'},
+      {flag: '--limit', value: '10'},
+    ])('errors when $flag is used without --list', async ({flag, value}) => {
+      await expect(CopyDatasetCommand.run([flag, value])).rejects.toThrow(
+        expect.objectContaining({
+          message: expect.stringMatching(/all of the following must be provided.*--list/i),
+        }),
+      )
+    })
   })
 
   describe('list mode', () => {
-    test('lists copy jobs successfully', async () => {
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'get',
-        projectId: testProjectId,
-        uri: `/projects/${testProjectId}/datasets/copy`,
-      }).reply(200, [
+    beforeEach(() => {
+      mockListDatasetCopyJobs.mockResolvedValue([])
+    })
+
+    test('shows list dataset copy job API response, passing pagination parameters', async () => {
+      mockListDatasetCopyJobs.mockResolvedValue([
         {
           createdAt: '2023-01-01T00:00:00Z',
           id: 'job-1',
@@ -124,94 +155,50 @@ describe('#dataset:copy', () => {
         },
       ])
 
-      const {stdout} = await testCommand(CopyDatasetCommand, ['--list'], {mocks: defaultMocks})
+      await CopyDatasetCommand.run(['--list', '--offset', '2', '--limit', '10'])
 
-      expect(stdout).toContain('Dataset copy jobs')
-      expect(stdout).toContain('job-1')
-      expect(stdout).toContain('job-2')
-      expect(stdout).toContain('production')
-      expect(stdout).toContain('staging')
-    })
-
-    test('lists copy jobs with offset and limit', async () => {
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'get',
-        projectId: testProjectId,
-        query: {
-          limit: '10',
-          offset: '2',
-        },
-        uri: `/projects/${testProjectId}/datasets/copy`,
-      }).reply(200, [
-        {
-          createdAt: '2023-01-01T00:00:00Z',
-          id: 'job-2',
-          sourceDataset: 'production',
-          state: 'completed',
-          targetDataset: 'backup',
-          updatedAt: '2023-01-01T00:05:00Z',
-          withHistory: true,
-        },
-        {
-          createdAt: '2023-01-02T00:00:00Z',
-          id: 'job-3',
-          sourceDataset: 'staging',
-          state: 'failed',
-          targetDataset: 'test',
-          updatedAt: '2023-01-02T00:02:00Z',
-          withHistory: false,
-        },
-      ])
-
-      const {stdout} = await testCommand(
-        CopyDatasetCommand,
-        ['--list', '--offset', '2', '--limit', '10'],
-        {
-          mocks: defaultMocks,
-        },
+      expect(mockListDatasetCopyJobs).toHaveBeenCalledWith({
+        limit: 10,
+        offset: 2,
+        projectId: TEST_PROJECT_ID,
+      })
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job-1.*production/i),
       )
-
-      expect(stdout).toContain('job-2')
-      expect(stdout).toContain('job-3')
-      expect(stdout).toContain('production')
-      expect(stdout).toContain('staging')
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job-2.*staging/i),
+      )
     })
 
     test('shows message when no copy jobs exist', async () => {
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'get',
-        projectId: testProjectId,
-        uri: `/projects/${testProjectId}/datasets/copy`,
-      }).reply(200, [])
-
-      const {stdout} = await testCommand(CopyDatasetCommand, ['--list'], {mocks: defaultMocks})
-
-      expect(stdout).toContain("This project doesn't have any dataset copy jobs")
+      mockListDatasetCopyJobs.mockResolvedValue([])
+      await CopyDatasetCommand.run(['--list'])
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/doesn't have any dataset copy jobs/i),
+      )
     })
 
-    test('handles errors when listing copy jobs', async () => {
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'get',
-        projectId: testProjectId,
-        uri: `/projects/${testProjectId}/datasets/copy`,
-      }).reply(500, {
-        error: 'API Error',
-        message: 'API Error',
-      })
-
-      const {error} = await testCommand(CopyDatasetCommand, ['--list'], {mocks: defaultMocks})
-
-      expect(error?.message).toContain('Failed to list dataset copy jobs')
-      expect(error?.oclif?.exit).toBe(1)
+    test('errors and exits if list copy job API throws', async () => {
+      mockListDatasetCopyJobs.mockRejectedValue('boom')
+      await CopyDatasetCommand.run(['--list'])
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringMatching(/failed to list dataset copy jobs.*boom/i),
+        {exit: 1},
+      )
     })
   })
 
   describe('attach mode', () => {
+    test('rejects whitespace-only jobId', async () => {
+      await CopyDatasetCommand.run(['--attach', '    '])
+
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringMatching(/supply a valid jobId/i),
+        {exit: 1},
+      )
+    })
     test('attaches to running job and shows progress', async () => {
-      mockFollowCopyJobProgress.mockReturnValue(
+      mockFollowCopyJob.mockReturnValue(
         of(
           {progress: 25, type: 'progress'},
           {progress: 50, type: 'progress'},
@@ -220,134 +207,97 @@ describe('#dataset:copy', () => {
         ),
       )
 
-      const {stdout} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'], {
-        mocks: defaultMocks,
-      })
+      await CopyDatasetCommand.run(['--attach', 'job-123'])
 
-      expect(mockFollowCopyJobProgress).toHaveBeenCalledWith({
+      expect(mockFollowCopyJob).toHaveBeenCalledWith({
         jobId: 'job-123',
-        projectId: 'test-project',
+        projectId: TEST_PROJECT_ID,
       })
-      expect(stdout).toContain('Job job-123 completed')
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job-123 completed/i),
+      )
+    })
+    test('errors out if progress tracking throws', async () => {
+      mockFollowCopyJob.mockThrow(new Error('boom'))
+
+      await CopyDatasetCommand.run(['--attach', 'job-123'])
+
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringMatching(/failed to attach to copy.*boom/i),
+        {exit: 1},
+      )
     })
 
-    test('handles progress tracking errors', async () => {
-      mockFollowCopyJobProgress.mockReturnValue(throwError(() => new Error('Connection lost')))
-
-      const {error} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'], {
-        mocks: defaultMocks,
-      })
-
-      expect(error?.message).toContain('Failed to attach to copy job: Connection lost')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
-    test('rejects whitespace-only jobId', async () => {
-      const {error} = await testCommand(CopyDatasetCommand, ['--attach', '   '], {
-        mocks: defaultMocks,
-      })
-
-      expect(error?.message).toContain('Please supply a valid jobId')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
-    test('handles JSON parse errors from EventSource', async () => {
-      mockFollowCopyJobProgress.mockReturnValue(
-        throwError(() => new Error('Invalid JSON received from server: Unexpected token')),
+    test('ignores reconnect CopyJobProgressEvents for purposes of progress reporting', async () => {
+      mockFollowCopyJob.mockReturnValue(
+        of(
+          {progress: 25, type: 'progress'},
+          {type: 'reconnect'},
+          {progress: 50, type: 'progress'},
+          {progress: 100, type: 'progress'},
+        ),
       )
 
-      const {error} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'], {
-        mocks: defaultMocks,
-      })
+      await CopyDatasetCommand.run(['--attach', 'job-123'])
 
-      expect(error?.message).toContain('Invalid JSON received from server')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
-    test('handles EventSource reconnection', async () => {
-      mockFollowCopyJobProgress.mockReturnValue(
-        of({progress: 25, type: 'progress'}, {type: 'reconnect'}, {progress: 50, type: 'progress'}),
-      )
-
-      const {stdout} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'], {
-        mocks: defaultMocks,
-      })
-
-      expect(mockFollowCopyJobProgress).toHaveBeenCalledWith({
+      expect(mockFollowCopyJob).toHaveBeenCalledWith({
         jobId: 'job-123',
-        projectId: 'test-project',
+        projectId: TEST_PROJECT_ID,
       })
-      expect(stdout).toContain('Job job-123 completed')
-    })
-
-    test('handles channel_error from EventSource', async () => {
-      mockFollowCopyJobProgress.mockReturnValue(
-        throwError(() => new Error('Copy job failed: Channel closed unexpectedly')),
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job-123 completed/i),
       )
-
-      const {error} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'], {
-        mocks: defaultMocks,
-      })
-
-      expect(error?.message).toContain('Copy job failed')
-      expect(error?.oclif?.exit).toBe(1)
+      // Should set text on spinner only for events that contained progress number values, ignoring reconnect events
+      expect(mockSpinSetText).toHaveBeenCalledTimes(3)
     })
   })
 
   describe('copy mode', () => {
-    test('copies dataset with provided arguments', async () => {
+    test('copies provided source to target dataset, honouring defaults for skip-content-releases and skip-history flags', async () => {
       mockListDatasets.mockResolvedValue([
         createMockDataset('production'),
         createMockDataset('staging'),
       ])
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'put',
-        projectId: testProjectId,
-        uri: `/datasets/production/copy`,
-      }).reply(200, {jobId: 'job-456'})
-      mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
+      mockCopyDataset.mockResolvedValue({jobId: 'job-456'})
+      mockFollowCopyJob.mockReturnValue(of({progress: 100, type: 'progress'}))
 
-      const {stdout} = await testCommand(CopyDatasetCommand, ['production', 'backup'], {
-        mocks: defaultMocks,
-      })
+      await CopyDatasetCommand.run(['production', 'backup'])
 
-      expect(stdout).toContain('Copying dataset production to backup')
-      expect(stdout).toContain('Job job-456 started')
-      expect(stdout).toContain('Job job-456 completed')
+      expect(mockCopyDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectId: TEST_PROJECT_ID,
+          skipContentReleases: false,
+          skipHistory: false,
+          sourceDataset: 'production',
+          targetDataset: 'backup',
+        }),
+      )
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/Copying dataset production to backup/i),
+      )
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job job-456 started/i),
+      )
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job job-456 completed/i),
+      )
     })
 
-    test('prompts for source dataset when not provided', async () => {
-      const mockSelect = vi.mocked(select)
-      const mockInput = vi.mocked(input)
-
+    test('prompts for source and target datasets when not provided', async () => {
       mockListDatasets.mockResolvedValue([
         createMockDataset('production'),
         createMockDataset('staging'),
       ])
-      mockSelect.mockResolvedValueOnce('production')
-      mockInput.mockResolvedValueOnce('backup')
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'put',
-        projectId: testProjectId,
-        uri: `/datasets/production/copy`,
-      }).reply(200, {jobId: 'job-789'})
-      mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
+      mockCopyDataset.mockResolvedValue({jobId: 'italian'})
+      mockFollowCopyJob.mockReturnValue(of({progress: 100, type: 'progress'}))
+      mockPromptForDataset.mockResolvedValue('production')
+      mockPromptForDatasetName.mockResolvedValue('backup')
 
-      const {error} = await testCommand(CopyDatasetCommand, [], {
-        mocks: defaultMocks,
-      })
+      await CopyDatasetCommand.run([])
 
-      if (error) throw error
-      expect(mockInput).toHaveBeenCalledOnce()
-
-      expect(mockSelect).toHaveBeenCalledWith({
-        choices: expect.arrayContaining([
-          expect.objectContaining({value: 'production'}),
-          expect.objectContaining({value: 'staging'}),
-        ]),
-        message: 'Select the dataset name:',
+      expect(mockPromptForDataset).toHaveBeenCalledOnce()
+      expect(mockPromptForDatasetName).toHaveBeenCalledWith({
+        message: 'Target dataset name:',
       })
     })
 
@@ -357,7 +307,7 @@ describe('#dataset:copy', () => {
         description: 'source dataset name is invalid',
         expectedError: 'must be all lowercase',
         setupMocks: () => {
-          // No additional mocks needed - validation happens before dataset fetch
+          mockValidateDatasetName.mockReturnValue('must be all lowercase')
         },
       },
       {
@@ -376,6 +326,8 @@ describe('#dataset:copy', () => {
         description: 'target dataset name is invalid',
         expectedError: 'must be all lowercase',
         setupMocks: () => {
+          mockValidateDatasetName.mockImplementationOnce(() => undefined)
+          mockValidateDatasetName.mockImplementationOnce(() => 'must be all lowercase')
           mockListDatasets.mockResolvedValue([
             createMockDataset('production'),
             createMockDataset('staging'),
@@ -396,74 +348,41 @@ describe('#dataset:copy', () => {
     ])('errors when $description', async ({args, expectedError, setupMocks}) => {
       setupMocks()
 
-      const {error} = await testCommand(CopyDatasetCommand, args, {mocks: defaultMocks})
+      await CopyDatasetCommand.run(args)
 
-      expect(error?.message).toContain(expectedError)
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(expectedError)),
+        {exit: 1},
+      )
     })
 
-    test('copies dataset with skip-history flag', async () => {
+    test('passes skip-history and skip-content-releases flags to copy dataset method if provided', async () => {
       mockListDatasets.mockResolvedValue([
         createMockDataset('production'),
         createMockDataset('staging'),
       ])
-      let capturedBody: Record<string, unknown> | undefined
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'put',
-        projectId: testProjectId,
-        uri: `/datasets/production/copy`,
-      }).reply(200, (_uri, body) => {
-        capturedBody = body as Record<string, unknown>
-        return {jobId: 'job-skip'}
-      })
-      mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
+      mockCopyDataset.mockResolvedValue({jobId: 'job-skip'})
+      mockFollowCopyJob.mockReturnValue(of({progress: 100, type: 'progress'}))
 
-      const {error} = await testCommand(
-        CopyDatasetCommand,
-        ['production', 'backup', '--skip-history'],
-        {mocks: defaultMocks},
-      )
-
-      if (error) throw error
-      expect(capturedBody).toEqual({
-        skipContentReleases: false,
-        skipHistory: true,
-        targetDataset: 'backup',
-      })
-    })
-
-    test('copies dataset with skip-content-releases flag', async () => {
-      mockListDatasets.mockResolvedValue([
-        createMockDataset('production'),
-        createMockDataset('staging'),
+      await CopyDatasetCommand.run([
+        'production',
+        'backup',
+        '--skip-history',
+        '--skip-content-releases',
       ])
-      let capturedBody: Record<string, unknown> | undefined
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'put',
-        projectId: testProjectId,
-        uri: `/datasets/production/copy`,
-      }).reply(200, (_uri, body) => {
-        capturedBody = body as Record<string, unknown>
-        return {jobId: 'job-no-releases'}
-      })
-      mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
 
-      const {error, stdout} = await testCommand(
-        CopyDatasetCommand,
-        ['production', 'backup', '--skip-content-releases'],
-        {mocks: defaultMocks},
+      expect(mockCopyDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectId: TEST_PROJECT_ID,
+          skipContentReleases: true,
+          skipHistory: true,
+          sourceDataset: 'production',
+          targetDataset: 'backup',
+        }),
       )
-
-      if (error) throw error
-      expect(capturedBody).toEqual({
-        skipContentReleases: true,
-        skipHistory: false,
-        targetDataset: 'backup',
-      })
-      expect(stdout).toContain('Job job-no-releases started')
-      expect(stdout).toContain('Job job-no-releases completed')
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job job-skip completed/i),
+      )
     })
 
     test('copies dataset with detach flag (does not wait for completion)', async () => {
@@ -471,20 +390,17 @@ describe('#dataset:copy', () => {
         createMockDataset('production'),
         createMockDataset('staging'),
       ])
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'put',
-        projectId: testProjectId,
-        uri: `/datasets/production/copy`,
-      }).reply(200, {jobId: 'job-detach'})
+      mockCopyDataset.mockResolvedValue({jobId: 'job-detach'})
 
-      const {stdout} = await testCommand(CopyDatasetCommand, ['production', 'backup', '--detach'], {
-        mocks: defaultMocks,
-      })
+      await CopyDatasetCommand.run(['production', 'backup', '--detach'])
 
-      expect(stdout).toContain('Job job-detach started')
-      expect(stdout).not.toContain('Job job-detach completed')
-      expect(mockFollowCopyJobProgress).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect.stringMatching(/job job-detach started/i),
+      )
+      expect(mocks.SanityCmdOutputLog).not.toHaveBeenCalledWith(
+        expect.stringMatching(/job job-detach completed/i),
+      )
+      expect(mockFollowCopyJob).not.toHaveBeenCalled()
     })
 
     test('handles copy dataset errors', async () => {
@@ -492,56 +408,25 @@ describe('#dataset:copy', () => {
         createMockDataset('production'),
         createMockDataset('staging'),
       ])
-      mockApi({
-        apiVersion: DATASET_API_VERSION,
-        method: 'put',
-        projectId: testProjectId,
-        uri: `/datasets/production/copy`,
-      }).reply(500, {
-        error: 'Insufficient permissions',
-        message: 'Insufficient permissions',
-      })
+      mockCopyDataset.mockRejectedValue(new Error('boom'))
 
-      const {error} = await testCommand(CopyDatasetCommand, ['production', 'backup'], {
-        mocks: defaultMocks,
-      })
+      await CopyDatasetCommand.run(['production', 'backup'])
 
-      expect(error?.message).toContain('Dataset copying failed')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringMatching(/dataset copying failed: boom/i),
+        {exit: 1},
+      )
     })
 
-    test('handles fetch datasets error', async () => {
-      mockListDatasets.mockRejectedValue(new Error('Network error'))
+    test('handles list datasets error', async () => {
+      mockListDatasets.mockRejectedValue(new Error('boom'))
 
-      const {error} = await testCommand(CopyDatasetCommand, ['production', 'backup'], {
-        mocks: defaultMocks,
-      })
+      await CopyDatasetCommand.run(['production', 'backup'])
 
-      expect(error?.message).toContain('Failed to fetch datasets: Network error')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-  })
-
-  describe('flag validation', () => {
-    test.each([
-      {desc: '--list with --attach', flags: ['--list', '--attach', 'job-123']},
-      {desc: '--list with --detach', flags: ['--list', '--detach']},
-      {desc: '--attach with --detach', flags: ['--attach', 'job-123', '--detach']},
-    ])('errors when using mutually exclusive flags: $desc', async ({flags}) => {
-      const {error} = await testCommand(CopyDatasetCommand, flags, {mocks: defaultMocks})
-
-      expect(error?.message).toContain('cannot also be provided when using')
-      expect(error?.oclif?.exit).toBe(2)
-    })
-
-    test.each([
-      {flag: '--offset', value: '2'},
-      {flag: '--limit', value: '10'},
-    ])('errors when $flag is used without --list', async ({flag, value}) => {
-      const {error} = await testCommand(CopyDatasetCommand, [flag, value], {mocks: defaultMocks})
-
-      expect(error?.message).toContain('--list')
-      expect(error?.oclif?.exit).toBe(2)
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringMatching(/failed to fetch datasets: boom/i),
+        {exit: 1},
+      )
     })
   })
 })

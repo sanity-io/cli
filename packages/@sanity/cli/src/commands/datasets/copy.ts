@@ -208,23 +208,23 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       )
     }
 
-    table.printTable()
+    this.output.log(table.render())
   }
 
   private async handleAttachMode(projectId: string, jobId: string): Promise<void> {
     copyDatasetDebug('Attaching to copy job %s', jobId)
 
     if (jobId.trim() === '') {
-      this.error('Please supply a valid jobId', {exit: 1})
+      return this.output.error('Please supply a valid jobId', {exit: 1})
     }
 
     try {
       await this.subscribeToProgress(projectId, jobId)
-      this.log(`Job ${styleText('green', jobId)} completed`)
+      this.output.log(`Job ${styleText('green', jobId)} completed`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to attach to copy job: %s', message, error)
-      this.error(`Failed to attach to copy job: ${message}`, {exit: 1})
+      return this.output.error(`Failed to attach to copy job: ${message}`, {exit: 1})
     }
   }
 
@@ -243,7 +243,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     if (sourceDataset) {
       const nameError = validateDatasetName(sourceDataset)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        return this.output.error(nameError, {exit: 1})
       }
     }
 
@@ -253,7 +253,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to fetch datasets: %s', message, error)
-      this.error(`Failed to fetch datasets: ${message}`, {exit: 1})
+      return this.output.error(`Failed to fetch datasets: ${message}`, {exit: 1})
     }
 
     const datasetNames = new Set(datasetsResponse.map((ds) => ds.name))
@@ -266,7 +266,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
 
     if (!datasetNames.has(sourceDataset)) {
-      this.error(`Source dataset "${sourceDataset}" doesn't exist`, {exit: 1})
+      return this.output.error(`Source dataset "${sourceDataset}" doesn't exist`, {exit: 1})
     }
 
     // Get and validate target dataset
@@ -274,7 +274,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     if (targetDataset) {
       const nameError = validateDatasetName(targetDataset)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        return this.output.error(nameError, {exit: 1})
       }
     } else {
       targetDataset = await promptForDatasetName({
@@ -283,17 +283,17 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
 
     if (datasetNames.has(targetDataset)) {
-      this.error(`Target dataset "${targetDataset}" already exists`, {exit: 1})
+      return this.output.error(`Target dataset "${targetDataset}" already exists`, {exit: 1})
     }
 
     // Start the copy job
     try {
-      this.log(
+      this.output.log(
         `Copying dataset ${styleText('green', sourceDataset)} to ${styleText('green', targetDataset)}...`,
       )
 
       if (!skipHistory) {
-        this.log(
+        this.output.log(
           `Note: You can run this command with flag '--skip-history'. The flag will reduce copy time in larger datasets.`,
         )
       }
@@ -306,18 +306,18 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         targetDataset,
       })
 
-      this.log(`Job ${styleText('green', response.jobId)} started`)
+      this.output.log(`Job ${styleText('green', response.jobId)} started`)
 
       if (flags.detach) {
         return
       }
 
       await this.subscribeToProgress(projectId, response.jobId)
-      this.log(`Job ${styleText('green', response.jobId)} completed`)
+      this.output.log(`Job ${styleText('green', response.jobId)} completed`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Dataset copying failed: %s', message, error)
-      this.error(`Dataset copying failed: ${message}`, {exit: 1})
+      return this.output.error(`Dataset copying failed: ${message}`, {exit: 1})
     }
   }
 
@@ -335,7 +335,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       })
 
       if (jobs.length === 0) {
-        this.log("This project doesn't have any dataset copy jobs")
+        this.output.log("This project doesn't have any dataset copy jobs")
         return
       }
 
@@ -343,12 +343,11 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to list dataset copy jobs: %s', message, error)
-      this.error(`Failed to list dataset copy jobs: ${message}`, {exit: 1})
+      return this.output.error(`Failed to list dataset copy jobs: ${message}`, {exit: 1})
     }
   }
 
   private async subscribeToProgress(projectId: string, jobId: string): Promise<void> {
-    let currentProgress = 0
     const spin = spinner('').start()
 
     return new Promise<void>((resolve, reject) => {
@@ -371,9 +370,8 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         },
         next: (event: CopyJobProgressEvent) => {
           if (typeof event.progress === 'number') {
-            currentProgress = event.progress
+            spin.text = `Copy in progress: ${event.progress}%`
           }
-          spin.text = `Copy in progress: ${currentProgress}%`
         },
       })
 
