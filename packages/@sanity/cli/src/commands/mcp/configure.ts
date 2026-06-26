@@ -30,13 +30,15 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       trace.error(toError(error))
 
       if (error instanceof LoginError) {
-        this.error(
+        return this.output.error(
           `Failed to verify authentication credentials: ${error.message}. Try running \`sanity login\`.`,
           {exit: 1},
         )
       }
 
-      this.error(`Failed to check authentication: ${getErrorMessage(error)}`, {exit: 1})
+      return this.output.error(`Failed to check authentication: ${getErrorMessage(error)}`, {
+        exit: 1,
+      })
     }
 
     try {
@@ -59,7 +61,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       }
     } catch (error) {
       trace.error(toError(error))
-      this.error(getErrorMessage(error), {exit: 1})
+      return this.output.error(getErrorMessage(error), {exit: 1})
     }
   }
 }
