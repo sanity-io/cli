@@ -35,12 +35,12 @@ describe('#mcp:configure', () => {
   beforeEach(() => {
     mocks.SanityCmdIsUnattended.mockReturnValue(false)
     mockEnsureAuthenticated.mockResolvedValue({})
-    mockSetupMCP.mockResolvedValue({configuredEditors:})
+    mockSetupMCP.mockResolvedValue({configuredEditors: {}, detectedEditors: {}})
   })
   afterEach(() => {
     vi.clearAllMocks()
   })
   test('ensures authentication and delegates to setupMCP on success', async () => {
-
+    ConfigureMcpCommand.run()
   })
 })

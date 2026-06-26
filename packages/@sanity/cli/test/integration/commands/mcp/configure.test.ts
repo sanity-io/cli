@@ -738,7 +738,7 @@ describe.sequential('#mcp:configure', () => {
   })
 
   test('suggests login when login fails', async () => {
-    const {LoginError} = await import('../../../errors/LoginError.js')
+    const {LoginError} = await import('../../../../src/errors/LoginError.js')
     mockEnsureAuthenticated.mockRejectedValue(new LoginError('No authentication providers found'))
 
     const {error} = await testCommand(ConfigureMcpCommand, [])
