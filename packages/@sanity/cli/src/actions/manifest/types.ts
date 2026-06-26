@@ -19,18 +19,10 @@ export interface CreateManifest {
   workspaces: ManifestWorkspaceFile[]
 }
 
-/**
- * Core-app application manifest. Mirrors the workbench's
- * `CoreAppUserApplicationManifest` schema. Strictly validated via zod
- * since the CLI produces the payload in full.
- */
-export const coreAppManifestSchema = z.object({
-  icon: z.optional(z.string()),
-  title: z.optional(z.string()),
-  version: z.string(),
-})
-
-export type CoreAppManifest = z.infer<typeof coreAppManifestSchema>
+// The studio/app manifest contract lives in `@sanity/cli-core` so the CLI and
+// the workbench dev-server registry validate against the same schemas without
+// depending on each other.
+export {type CoreAppManifest, coreAppManifestSchema, type StudioManifest} from '@sanity/cli-core'
 
 export interface ManifestWorkspaceFile extends Omit<CreateWorkspaceManifest, 'schema' | 'tools'> {
   schema: string // filename

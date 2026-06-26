@@ -171,6 +171,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   const mcpResult = await setupMCP({
     editors: detectedEditors,
     mode: options.mcpMode,
+    output,
     skillsMode: options.skillsMode,
   })
 
@@ -188,7 +189,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   async function installSkills(): Promise<void> {
     if (mcpResult.skillsToInstall.length === 0) return
     try {
-      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall})
+      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall, output})
       trace.log({
         installedAgents: skillsResult.installedAgents,
         skipped: skillsResult.skipped,
@@ -204,6 +205,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       trace.error(err)
     }
   }
+
+  // Install skills right after the MCP/skills prompt so the progress + result
+  // surface in sequence, rather than trailing the studio "Success!" output.
+  await installSkills()
 
   const {alreadyConfiguredEditors} = mcpResult
   if (alreadyConfiguredEditors.length > 0) {
@@ -262,7 +267,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       trace,
       workDir,
     })
-    await installSkills()
     trace.complete()
     return
   }
@@ -280,10 +284,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       outputPath,
     })
     await writeStagingEnvIfNeeded(output, outputPath)
-    await installSkills()
     trace.complete()
     return
   }
+
+  // Workbench is opt-in (no prompt): the flag swaps the scaffolded
+  // `sanity.cli.*` over to `unstable_defineApp` — the branded app is the sole
+  // workbench opt-in.
+  const workbench = flagOrDefault(options.unstableWorkbench, false)
 
   const sharedParams = {
     defaults,
@@ -295,6 +303,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     remoteTemplateInfo,
     sluggedName,
     trace,
+    workbench,
     workDir,
   }
 
@@ -307,8 +316,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
         isFirstProject,
         projectId,
       }))
-
-  await installSkills()
 
   trace.complete()
 }

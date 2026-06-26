@@ -13,6 +13,8 @@ const baseConfig = {
     '.changeset/changelog.mjs',
     // Generated test fixture copies (gitignored, populated during test runs)
     'packages/@sanity/cli-test/fixtures/**',
+    // Local temporary fixture copies generated during local test runs
+    'tmp/**',
   ],
   workspaces: {
     'fixtures/*': {
@@ -43,6 +45,8 @@ const baseConfig = {
       project,
     },
     'packages/@repo/coverage-delta': {
+      // GitHub CLI binary used in CI to post/update pull request comments
+      ignoreBinaries: ['gh'],
       project,
     },
     'packages/@repo/upload-docs': {
@@ -69,8 +73,6 @@ const baseConfig = {
         'src/**/*.worker.ts',
         'package.config.ts',
       ],
-      // debug is used for type checking
-      ignoreDependencies: ['@types/debug'],
       project,
     },
     'packages/@sanity/cli-core': {
@@ -88,6 +90,10 @@ const baseConfig = {
       project: ['helpers/**/*.{js,ts}', '__tests__/**/*.{js,ts}'],
     },
     'packages/@sanity/cli-test': {
+      entry: ['package.config.ts'],
+      project,
+    },
+    'packages/@sanity/workbench-cli': {
       entry: ['package.config.ts'],
       project,
     },

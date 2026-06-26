@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-build",
-  "version": "1.0.3",
+  "version": "1.1.1",
   "description": "Internal Sanity package for building studios and apps",
   "keywords": [
     "cli",
@@ -32,6 +32,10 @@
       "source": "./src/_exports/_internal/build.ts",
       "default": "./dist/_exports/_internal/build.js"
     },
+    "./_internal/env": {
+      "source": "./src/_exports/_internal/env.ts",
+      "default": "./dist/_exports/_internal/env.js"
+    },
     "./_internal/extract": {
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
@@ -61,12 +65,14 @@
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@sanity/types": "catalog:",
+    "@sanity/workbench-cli": "workspace:^",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "cjs-module-lexer": "^2.2.0",
     "debug": "catalog:",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
+    "oneline": "^2.0.0",
     "picomatch": "^4.0.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -89,7 +95,7 @@
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
     "@types/picomatch": "^4.0.3",
-    "@types/react": "^19.2.16",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/semver": "^7.7.1",
     "@vitest/coverage-istanbul": "catalog:",
@@ -112,6 +118,6 @@
     }
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

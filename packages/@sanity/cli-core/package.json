@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "2.0.1",
+  "version": "2.1.1",
   "description": "Sanity CLI core package",
   "keywords": [
     "cli",
@@ -27,7 +27,7 @@
   "type": "module",
   "sideEffects": false,
   "main": "./dist/_exports/index.js",
-  "types": "dist/_exports/index.d.ts",
+  "types": "./dist/_exports/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/_exports/index.ts",
@@ -68,7 +68,7 @@
     "@sanity/client": "catalog:",
     "boxen": "^8.0.1",
     "debug": "catalog:",
-    "get-it": "^8.7.2",
+    "get-it": "^8.8.0",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
     "jiti": "^2.7.0",
@@ -111,6 +111,6 @@
     }
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

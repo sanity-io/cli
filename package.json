@@ -43,6 +43,10 @@
     "test": "vitest run",
     "pretest:e2e": "pnpm run build:cli",
     "test:e2e": "pnpm --filter @sanity/cli-e2e test",
+    "pretest:integration": "pnpm run build:cli",
+    "test:integration": "vitest run --project !*/unit",
+    "pretest:unit": "pnpm run build:cli",
+    "test:unit": "vitest run --project */unit",
     "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
     "version-packages": "changeset version && node .changeset/postversion.mjs",
@@ -59,21 +63,21 @@
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "husky": "^9.1.7",
-    "knip": "^6.15.0",
+    "knip": "^6.17.1",
     "lint-staged": "^16.4.0",
     "oxfmt": "catalog:",
     "rimraf": "catalog:",
-    "turbo": "^2.9.16",
+    "turbo": "^2.9.18",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "resolutions": {
-    "@sanity/client": "^7.22.1"
+    "@sanity/client": "^7.23.0"
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   },
-  "packageManager": "pnpm@10.34.1",
+  "packageManager": "pnpm@10.34.4",
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",

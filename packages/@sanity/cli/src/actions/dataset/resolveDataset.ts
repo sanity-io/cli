@@ -1,3 +1,4 @@
+import {type Output} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {promptForDataset} from '../../prompts/promptForDataset.js'
@@ -5,6 +6,9 @@ import {listDatasets} from '../../services/datasets.js'
 import {assertDatasetExists} from '../backup/assertDatasetExist.js'
 
 interface ResolveDatasetOptions {
+  /** Output to use for user-facing messages from the calling command */
+  output: Output
+
   projectId: string
 
   dataset?: string
@@ -22,6 +26,7 @@ interface ResolveDatasetResult {
  */
 export async function resolveDataset({
   dataset,
+  output,
   projectId,
 }: ResolveDatasetOptions): Promise<ResolveDatasetResult> {
   const datasets = await listDatasets(projectId)
@@ -31,7 +36,7 @@ export async function resolveDataset({
   }
 
   if (dataset) {
-    assertDatasetExists(datasets, dataset)
+    assertDatasetExists(datasets, dataset, output)
   } else {
     dataset = await promptForDataset({datasets})
   }

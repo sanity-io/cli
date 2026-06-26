@@ -26,14 +26,14 @@ export class Disable extends SanityCommand<typeof Disable> {
         status: 'denied',
       })
 
-      this.log(result.message)
+      this.output.log(result.message)
 
       if (result.changed) {
-        this.log(`\n${telemetryLearnMoreMessage('denied')}`)
+        this.output.log(`\n${telemetryLearnMoreMessage('denied')}`)
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'An unknown error occurred'
-      this.error(message, {exit: 1})
+      this.output.error(message, {exit: 1})
     }
   }
 }

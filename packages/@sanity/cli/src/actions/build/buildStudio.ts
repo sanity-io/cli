@@ -4,10 +4,14 @@ import {styleText} from 'node:util'
 
 import {
   buildDebug,
-  buildVendorDependencies,
+  checkRequiredDependencies,
   checkStudioDependencyVersions,
+  getAutoUpdatesCssUrls,
+  getAutoUpdatesImportMap,
+  resolveVendorBuildConfig,
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
+import {getStudioEnvironmentVariables} from '@sanity/cli-build/_internal/env'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -18,20 +22,22 @@ import {
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {type DefineAppInput} from '@sanity/workbench-cli'
+import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
-import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {
+  compareDependencyVersions,
+  CompareDependencyVersionsResult,
+} from '../../util/compareDependencyVersions.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
-import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
-import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 
@@ -39,18 +45,24 @@ interface InternalBuildOptions {
   appId: string | undefined
   autoUpdatesEnabled: boolean
   calledFromDeploy: boolean | undefined
+  compareDependencyVersions: (
+    packages: {name: string; version: string}[],
+  ) => Promise<CompareDependencyVersionsResult>
   determineBasePath: () => string
   isApp: boolean
+  isWorkbenchApp: boolean
   minify: boolean
   outDir: string | undefined
   output: Output
   projectId: string | undefined
   reactCompiler: CliConfig['reactCompiler']
   schemaExtraction: CliConfig['schemaExtraction']
+  services: DefineAppInput['services']
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
   upgradePackages(options: {packages: [name: string, version: string][]}): Promise<void>
+  views: DefineAppInput['views']
   vite: UserViteConfig | undefined
   workDir: string
 }
@@ -62,6 +74,12 @@ interface InternalBuildOptions {
  */
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
+
+  // `views`/`services` live on the branded `unstable_defineApp` result — resolve
+  // the workbench capability so it's gated on the brand, like the app build.
+  const workbench = resolveWorkbenchApp(cliConfig)
+
+  const appId = getAppId(cliConfig)
 
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
@@ -76,21 +94,25 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   }
 
   await internalBuildStudio({
-    appId: getAppId(cliConfig),
+    appId,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy,
+    compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
+    isWorkbenchApp: !!workbench,
     minify: Boolean(flags.minify),
     outDir,
     output,
     projectId: cliConfig?.api?.projectId,
     reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
+    services: workbench?.services,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: Boolean(flags.yes),
     upgradePackages: upgradePkgs,
+    views: workbench?.views,
     vite: cliConfig.vite,
     workDir,
   })
@@ -114,10 +136,12 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     projectId,
     reactCompiler,
     schemaExtraction,
+    services,
     sourceMap,
     stats,
     unattendedMode,
     upgradePackages,
+    views,
     vite,
     workDir,
   } = options
@@ -171,11 +195,8 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     autoUpdatesCssUrls = getAutoUpdatesCssUrls(sanityDependencies, {appId})
 
     // Check the versions
-    const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
-      sanityDependencies,
-      workDir,
-      {appId},
-    )
+    const {mismatched, unresolvedPrerelease} =
+      await options.compareDependencyVersions(sanityDependencies)
 
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
@@ -275,14 +296,12 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
   const trace = getCliTelemetry().trace(StudioBuildTrace)
   trace.start()
 
-  let importMap
-
-  if (autoUpdatesEnabled) {
-    importMap = {
-      imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
-        ...autoUpdatesImports,
-      },
+  let autoUpdates
+  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
+    autoUpdates = {
+      cssUrls: autoUpdatesCssUrls,
+      imports: autoUpdatesImports,
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: false}),
     }
   }
 
@@ -290,15 +309,17 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
-      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
+      autoUpdates,
       basePath,
       cwd: workDir,
-      importMap,
+      isWorkbenchApp: options.isWorkbenchApp,
       minify,
       outputDir,
       reactCompiler,
       schemaExtraction,
+      services,
       sourceMap,
+      views,
       vite,
     })
 

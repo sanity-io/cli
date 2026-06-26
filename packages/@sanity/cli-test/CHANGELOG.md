@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.0.1](https://github.com/sanity-io/cli/compare/cli-test-v2.0.0...cli-test-v2.0.1)
+
+_2026-06-23_
+
+### Bug Fixes
+
+- **deps:** remove rolldown overrides now that vite 8.1.0 ships rolldown 1.1.2 ([#1356](https://github.com/sanity-io/cli/pull/1356)) ([d96cf4f](https://github.com/sanity-io/cli/commit/d96cf4f37648f82416b11753b85d9eba1c3e1742))
+- **deps:** update dependency esbuild to ^0.28.1 ([#1358](https://github.com/sanity-io/cli/pull/1358)) ([7c51459](https://github.com/sanity-io/cli/commit/7c51459eec929c37fd8951f5457de0cdf0aa7ab4))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.1
+
+## [2.0.0](https://github.com/sanity-io/cli/compare/cli-test-v1.0.1...cli-test-v2.0.0)
+
+_2026-06-22_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1347](https://github.com/sanity-io/cli/pull/1347)) ([fbd5084](https://github.com/sanity-io/cli/commit/fbd5084525c8c1bbba024f8160d1076201091988))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.0
+
 ## [1.0.1](https://github.com/sanity-io/cli/compare/cli-test-v1.0.0...cli-test-v1.0.1)
 
 _2026-06-04_

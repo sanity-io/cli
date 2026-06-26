@@ -36,7 +36,7 @@ export async function handlePrereleaseVersions({
       {exit: 1},
     )
     // output.error with exit: 1 throws, but TypeScript doesn't know that
-    throw new Error('unreachable')
+    return
   }
 
   const choice = await select({
@@ -54,7 +54,7 @@ export async function handlePrereleaseVersions({
   if (choice === 'cancel') {
     output.error('Declined to continue with build', {exit: 1})
     // output.error with exit: 1 throws, but TypeScript doesn't know that
-    throw new Error('unreachable')
+    return
   }
 
   output.warn('Auto-updates disabled for this build')

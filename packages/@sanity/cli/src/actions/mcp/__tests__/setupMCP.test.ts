@@ -35,6 +35,12 @@ vi.mock('../../skills/readSkillState.js', () => ({
   readSkillState: mockReadSkillState,
 }))
 
+const mockOutput = {
+  error: vi.fn() as never,
+  log: vi.fn(),
+  warn: vi.fn(),
+}
+
 function editor(overrides: Partial<Editor> & Pick<Editor, 'name'>): Editor {
   return {
     configPath: `/fake/${overrides.name}/config.json`,
@@ -60,7 +66,7 @@ describe('setupMCP', () => {
   // -------------------------------------------------------------------------
 
   test('mcpMode: skip with default skillsMode skip short-circuits', async () => {
-    const result = await setupMCP({mode: 'skip'})
+    const result = await setupMCP({mode: 'skip', output: mockOutput})
 
     expect(result.skipped).toBe(true)
     expect(result.skillsToInstall).toEqual([])
@@ -75,13 +81,16 @@ describe('setupMCP', () => {
       editor({name: 'VS Code'}),
     ])
 
-    const result = await setupMCP({mode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
 
     expect(mockPromptForMCPSetup).not.toHaveBeenCalled()
     expect(mockWriteMCPConfig).toHaveBeenCalledTimes(2)
     expect(result.configuredEditors).toEqual(['Cursor', 'VS Code'])
     expect(result.skillsToInstall).toEqual([])
     expect(result.skipped).toBe(false)
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('MCP configured for Cursor, VS Code'),
+    )
   })
 
   test('mcpMode: prompt with skillsMode skip uses today’s message', async () => {
@@ -90,7 +99,7 @@ describe('setupMCP', () => {
     mockDetectAvailableEditors.mockResolvedValue(editors)
     mockPromptForMCPSetup.mockResolvedValue([{action: 'mcp-only', editor: editors[0]}])
 
-    const result = await setupMCP({mode: 'prompt'})
+    const result = await setupMCP({mode: 'prompt', output: mockOutput})
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(
       expect.objectContaining({message: 'Configure Sanity MCP server?'}),
@@ -102,7 +111,7 @@ describe('setupMCP', () => {
     defaultMocks()
     const editors: Editor[] = [{configPath: '/tmp/cursor', configured: false, name: 'Cursor'}]
 
-    const result = await setupMCP({editors, mode: 'auto'})
+    const result = await setupMCP({editors, mode: 'auto', output: mockOutput})
 
     expect(mockDetectAvailableEditors).not.toHaveBeenCalled()
     expect(result.configuredEditors).toEqual(['Cursor'])
@@ -115,7 +124,7 @@ describe('setupMCP', () => {
     ]
     mockDetectAvailableEditors.mockResolvedValue(editors)
 
-    const result = await setupMCP({mode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
 
     expect(mockWriteMCPConfig).not.toHaveBeenCalled()
     expect(result.skipped).toBe(true)
@@ -130,9 +139,10 @@ describe('setupMCP', () => {
     defaultMocks()
     mockDetectAvailableEditors.mockResolvedValue([editor({name: 'Cursor'})])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(mockReadSkillState).toHaveBeenCalledWith({
+      editors: [editor({name: 'Cursor'})],
       skillNames: ['sanity-best-practices', 'sanity-migration'],
     })
     expect(result.configuredEditors).toEqual(['Cursor'])
@@ -144,7 +154,7 @@ describe('setupMCP', () => {
     mockReadSkillState.mockResolvedValue({installedAgentDisplayNames: new Set(['Cursor'])})
     mockDetectAvailableEditors.mockResolvedValue([editor({name: 'Cursor'})])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(result.configuredEditors).toEqual(['Cursor'])
     expect(result.skillsToInstall).toEqual(['cursor'])
@@ -156,7 +166,7 @@ describe('setupMCP', () => {
       editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
     ])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(mockWriteMCPConfig).not.toHaveBeenCalled()
     expect(result.configuredEditors).toEqual([])
@@ -167,7 +177,7 @@ describe('setupMCP', () => {
     defaultMocks()
     mockDetectAvailableEditors.mockResolvedValue([editor({name: 'Zed'})])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(result.configuredEditors).toEqual(['Zed'])
     expect(result.skillsToInstall).toEqual([])
@@ -180,7 +190,7 @@ describe('setupMCP', () => {
       editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
     ])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(result.skipped).toBe(true)
     expect(result.alreadyConfiguredEditors).toEqual(['Cursor'])
@@ -193,7 +203,7 @@ describe('setupMCP', () => {
       editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Zed'}),
     ])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(result.skipped).toBe(true)
     expect(result.alreadyConfiguredEditors).toEqual(['Zed'])
@@ -208,7 +218,7 @@ describe('setupMCP', () => {
     defaultMocks()
     mockDetectAvailableEditors.mockResolvedValue([editor({name: 'Cursor'}), editor({name: 'Zed'})])
 
-    const result = await setupMCP({mode: 'skip', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'skip', output: mockOutput, skillsMode: 'auto'})
 
     // Zed (mcp-only) gets dropped; Cursor downgrades to skill-only — no MCP write
     expect(mockWriteMCPConfig).not.toHaveBeenCalled()
@@ -228,7 +238,7 @@ describe('setupMCP', () => {
       }),
     ])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'skip'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'skip'})
 
     expect(mockReadSkillState).not.toHaveBeenCalled()
     expect(result.configuredEditors).toEqual(['Cursor'])
@@ -239,6 +249,7 @@ describe('setupMCP', () => {
     const result = await setupMCP({
       editors: [editor({name: 'Cursor'})],
       mode: 'skip',
+      output: mockOutput,
       skillsMode: 'skip',
     })
 
@@ -257,7 +268,7 @@ describe('setupMCP', () => {
     mockDetectAvailableEditors.mockResolvedValue(editors)
     mockPromptForMCPSetup.mockResolvedValue([{action: 'mcp-and-skill', editor: editors[0]}])
 
-    await setupMCP({mode: 'prompt', skillsMode: 'prompt'})
+    await setupMCP({mode: 'prompt', output: mockOutput, skillsMode: 'prompt'})
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -272,7 +283,7 @@ describe('setupMCP', () => {
     mockDetectAvailableEditors.mockResolvedValue(editors)
     mockPromptForMCPSetup.mockResolvedValue([{action: 'mcp-and-skill', editor: editors[0]}])
 
-    const result = await setupMCP({mode: 'prompt', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'prompt', output: mockOutput, skillsMode: 'auto'})
 
     expect(mockPromptForMCPSetup).toHaveBeenCalled()
     expect(result.configuredEditors).toEqual(['Cursor'])
@@ -285,7 +296,7 @@ describe('setupMCP', () => {
       editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
     ])
 
-    const result = await setupMCP({mode: 'skip', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'skip', output: mockOutput, skillsMode: 'auto'})
 
     expect(mockPromptForMCPSetup).not.toHaveBeenCalled()
     expect(result.skillsToInstall).toEqual(['cursor'])
@@ -299,7 +310,7 @@ describe('setupMCP', () => {
     mockDetectAvailableEditors.mockResolvedValue(editors)
     mockPromptForMCPSetup.mockResolvedValue([{action: 'skill-only', editor: editors[0]}])
 
-    const result = await setupMCP({mode: 'skip', skillsMode: 'prompt'})
+    const result = await setupMCP({mode: 'skip', output: mockOutput, skillsMode: 'prompt'})
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(
       expect.objectContaining({message: 'Install Sanity agent skills for these editors?'}),
@@ -312,11 +323,12 @@ describe('setupMCP', () => {
     mockDetectAvailableEditors.mockResolvedValue([editor({name: 'Cursor'})])
     mockPromptForMCPSetup.mockResolvedValue(null)
 
-    const result = await setupMCP({mode: 'prompt', skillsMode: 'prompt'})
+    const result = await setupMCP({mode: 'prompt', output: mockOutput, skillsMode: 'prompt'})
 
     expect(mockWriteMCPConfig).not.toHaveBeenCalled()
     expect(result.skillsToInstall).toEqual([])
     expect(result.skipped).toBe(true)
+    expect(mockOutput.log).toHaveBeenCalledWith('MCP configuration skipped')
   })
 
   // -------------------------------------------------------------------------
@@ -332,11 +344,12 @@ describe('setupMCP', () => {
       if (e.name === 'Cursor') throw new Error('disk full')
     })
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(result.configuredEditors).toEqual(['Claude Code'])
     expect(result.skillsToInstall).toEqual(['claude-code'])
     expect(result.error).toBeInstanceOf(Error)
+    expect(mockOutput.warn).toHaveBeenCalledWith('Could not configure MCP for Cursor: disk full')
   })
 
   test('skill state probe failure → over-install (treat all as not installed)', async () => {
@@ -346,7 +359,7 @@ describe('setupMCP', () => {
       editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
     ])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(result.skillsToInstall).toEqual(['cursor'])
   })
@@ -358,7 +371,7 @@ describe('setupMCP', () => {
       editor({name: 'VS Code Insiders'}),
     ])
 
-    const result = await setupMCP({mode: 'auto', skillsMode: 'auto'})
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(result.skillsToInstall).toEqual(['github-copilot'])
   })

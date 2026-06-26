@@ -27,15 +27,6 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
-vi.mock('../getAutoUpdatesImportMap.js', () => ({
-  getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
-  getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
-}))
-
-vi.mock('../getEnvironmentVariables.js', () => ({
-  getAppEnvironmentVariables: vi.fn().mockReturnValue({}),
-}))
-
 vi.mock('../buildStaticFiles.js', () => ({
   buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
@@ -45,7 +36,21 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   return {
     ...actual,
     AppBuildTrace: {},
-    buildVendorDependencies: vi.fn().mockResolvedValue({}),
+    getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
+    getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
+    resolveVendorBuildConfig: vi.fn().mockResolvedValue({
+      entries: {},
+      namesByChunkName: {},
+      specifiersByChunkName: {},
+    }),
+  }
+})
+
+vi.mock('@sanity/cli-build/_internal/env', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-build/_internal/env')>()
+  return {
+    ...actual,
+    getAppEnvironmentVariables: vi.fn().mockReturnValue({}),
   }
 })
 

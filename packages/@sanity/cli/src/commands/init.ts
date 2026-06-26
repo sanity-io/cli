@@ -200,6 +200,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Enable TypeScript support',
       exclusive: ['bare'],
     }),
+    'unstable--workbench': Flags.boolean({
+      allowNo: true,
+      default: undefined,
+      description: 'Opt into workbench: scaffolds the CLI config with unstable_defineApp',
+      // Internal-only while workbench is unstable — keep it out of help/docs
+      hidden: true,
+    }),
     visibility: Flags.string({
       description: 'Visibility mode for dataset',
       helpValue: '<mode>',

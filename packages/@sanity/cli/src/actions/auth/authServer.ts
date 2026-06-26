@@ -7,8 +7,40 @@ import {getTokenDetails} from '../../services/auth.js'
 import {type TokenDetails} from './types.js'
 
 const debug = subdebug('auth')
-const callbackPorts = [4321, 4000, 3003, 1234, 8080, 13_333]
+const defaultCallbackPort = 4321
 const callbackEndpoint = '/callback'
+
+/**
+ * Get the port to first attempt binding the auth callback server to.
+ *
+ * The auth backend accepts any `http://localhost:<port>` origin for token
+ * callbacks, but we prefer a predictable port: it is friendlier for users who
+ * need to allow or forward the port (e.g. logging in from a remote machine over
+ * an SSH tunnel). If the preferred port is taken, we fall back to an
+ * OS-assigned ephemeral port.
+ *
+ * The `SANITY_CLI_CALLBACK_PORT` environment variable overrides the preferred
+ * port (`0` for an OS-assigned port). The override exists primarily for tests,
+ * where OS-assigned ports prevent collisions between tests running in parallel.
+ *
+ * @returns Port number to attempt first
+ * @internal
+ */
+function getPreferredCallbackPort(): number {
+  const override = process.env.SANITY_CLI_CALLBACK_PORT
+  if (!override) {
+    return defaultCallbackPort
+  }
+
+  debug('Using callback port from SANITY_CLI_CALLBACK_PORT: %s', override)
+
+  const port = Number.parseInt(override.trim(), 10)
+  if (Number.isNaN(port) || port < 0 || port > 65_535) {
+    throw new Error(`Invalid SANITY_CLI_CALLBACK_PORT value: "${override}"`)
+  }
+
+  return port
+}
 
 const platformNames: Record<string, string | undefined> = {
   aix: 'AIX',
@@ -28,7 +60,7 @@ const platformNames: Record<string, string | undefined> = {
  * do a request to the `/auth/fetch` endpoint with to get the actual auth token,
  * invalidating the SID in the process.
  *
- * If we fail to bind to the first port, we retry with the next port in the list.
+ * If we fail to bind to the preferred port, we retry with an OS-assigned port.
  *
  * @param providerUrl - The URL of the login provider
  * @returns Resolves with HTTP server instance, a login URL to send user to, and a `token` promise
@@ -39,9 +71,6 @@ export function startServerForTokenCallback(
 ): Promise<{loginUrl: URL; server: Server; token: Promise<TokenDetails>}> {
   const sanityUrl = getSanityUrl()
 
-  const attemptPorts = [...callbackPorts]
-  let callbackPort = attemptPorts.shift()
-
   // note: replace with `Promise.withResolvers()` when minimum Node.js is 22+
   let resolveToken: (resolvedToken: PromiseLike<TokenDetails> | TokenDetails) => void
   let rejectToken: (reason: Error) => void
@@ -51,6 +80,8 @@ export function startServerForTokenCallback(
   })
 
   return new Promise((resolve, reject) => {
+    let callbackPort = getPreferredCallbackPort()
+
     const server = createServer(async function onCallbackServerRequest(req, res) {
       function failLoginRequest(code = '') {
         res.writeHead(303, 'See Other', {
@@ -110,14 +141,13 @@ export function startServerForTokenCallback(
     })
 
     server.on('error', function onCallbackServerError(err) {
-      if ('code' in err && err.code === 'EADDRINUSE') {
-        callbackPort = attemptPorts.shift()
-        if (!callbackPort) {
-          reject(new Error('Failed to find port number to bind auth callback server to'))
-          return
-        }
-
-        debug('Port busy, trying %d', callbackPort)
+      // The auth backend accepts any localhost port in the callback origin, so if
+      // the preferred port is busy we fall back to an OS-assigned ephemeral port.
+      // Port 0 cannot itself be "in use" - an EADDRINUSE there means something is
+      // genuinely wrong, so only fall back once.
+      if ('code' in err && err.code === 'EADDRINUSE' && callbackPort !== 0) {
+        debug('Port %d busy, falling back to OS-assigned port', callbackPort)
+        callbackPort = 0
         server.listen(callbackPort)
       } else {
         reject(err)

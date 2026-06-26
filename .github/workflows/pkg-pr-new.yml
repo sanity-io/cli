@@ -25,14 +25,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Build CLI packages
         run: pnpm build:cli
@@ -45,6 +45,7 @@ jobs:
             './packages/@sanity/cli-core' \
             './packages/@sanity/cli-test' \
             './packages/@sanity/eslint-config-cli' \
+            './packages/@sanity/workbench-cli' \
             --pnpm \
             --json pkg-pr-new-output.json \
             --comment=off \

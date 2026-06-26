@@ -2,7 +2,14 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {AppBuildTrace, buildDebug, buildVendorDependencies} from '@sanity/cli-build/_internal/build'
+import {
+  AppBuildTrace,
+  buildDebug,
+  getAutoUpdatesCssUrls,
+  getAutoUpdatesImportMap,
+  resolveVendorBuildConfig,
+} from '@sanity/cli-build/_internal/build'
+import {getAppEnvironmentVariables} from '@sanity/cli-build/_internal/env'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -13,16 +20,19 @@ import {
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {type DefineAppInput} from '@sanity/workbench-cli'
+import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {getAppId} from '../../util/appId.js'
-import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {
+  compareDependencyVersions,
+  CompareDependencyVersionsResult,
+} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
-import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 
@@ -31,16 +41,22 @@ interface InternalBuildOptions {
   appTitle: string | undefined
   autoUpdatesEnabled: boolean
   calledFromDeploy: boolean | undefined
+  compareDependencyVersions: (
+    packages: {name: string; version: string}[],
+  ) => Promise<CompareDependencyVersionsResult>
   determineBasePath: () => string
   entry: string | undefined
+  isWorkbenchApp: boolean
   minify: boolean
   outDir: string | undefined
   output: Output
   reactCompiler: CliConfig['reactCompiler']
   schemaExtraction: CliConfig['schemaExtraction']
+  services: DefineAppInput['services']
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
+  views: DefineAppInput['views']
   vite: UserViteConfig | undefined
   workDir: string
 }
@@ -53,21 +69,32 @@ interface InternalBuildOptions {
 export async function buildApp(options: BuildOptions): Promise<void> {
   const {cliConfig, flags, outDir, output, workDir} = options
 
+  const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined
+  // `views`/`services` live on the branded `unstable_defineApp` result, not the
+  // legacy `app` config object — resolve the workbench capability to read them.
+  const workbench = resolveWorkbenchApp(cliConfig)
+
+  const appId = getAppId(cliConfig)
+
   await internalBuildApp({
-    appId: getAppId(cliConfig),
-    appTitle: cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined,
+    appId,
+    appTitle: app?.title,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     calledFromDeploy: options.calledFromDeploy,
+    compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
-    entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
+    entry: app?.entry,
+    isWorkbenchApp: !!workbench,
     minify: flags.minify,
     outDir,
     output,
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     schemaExtraction: cliConfig?.schemaExtraction,
+    services: workbench?.services,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: flags.yes,
+    views: workbench?.views,
     vite: cliConfig.vite,
     workDir,
   })
@@ -131,11 +158,8 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
     }
 
     // Check the versions
-    const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
-      autoUpdatedPackages,
-      workDir,
-      {appId},
-    )
+    const {mismatched, unresolvedPrerelease} =
+      await options.compareDependencyVersions(autoUpdatedPackages)
 
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
@@ -200,14 +224,12 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
   const trace = getCliTelemetry().trace(AppBuildTrace)
   trace.start()
 
-  let importMap: {imports?: Record<string, string>} | undefined
-
-  if (autoUpdatesEnabled) {
-    importMap = {
-      imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
-        ...autoUpdatesImports,
-      },
+  let autoUpdates
+  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
+    autoUpdates = {
+      cssUrls: autoUpdatesCssUrls,
+      imports: autoUpdatesImports,
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: true}),
     }
   }
 
@@ -216,17 +238,19 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
 
     const bundle = await buildStaticFiles({
       appTitle: options.appTitle,
-      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
+      autoUpdates,
       basePath,
       cwd: workDir,
       entry: options.entry,
-      importMap,
       isApp: true,
+      isWorkbenchApp: options.isWorkbenchApp,
       minify: options.minify,
       outputDir,
       reactCompiler: options.reactCompiler,
       schemaExtraction: options.schemaExtraction,
+      services: options.services,
       sourceMap: options.sourceMap,
+      views: options.views,
       vite: options.vite,
     })
 

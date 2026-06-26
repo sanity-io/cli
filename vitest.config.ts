@@ -34,6 +34,7 @@ export default defineConfig({
         'packages/@sanity/cli/**/*.{ts,tsx}',
         'packages/@sanity/cli-build/**/*.{ts,tsx}',
         'packages/@sanity/cli-core/**/*.{ts,tsx}',
+        'packages/@sanity/workbench-cli/**/*.{ts,tsx}',
         'packages/create-sanity/**/*.{ts,tsx}',
       ],
       provider: 'istanbul',
@@ -43,17 +44,25 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
     onUnhandledError(error) {
       /**
-       * Ignore flaky unhandled errors that only happen on the CI since upgrading to vite 8, which does not happen locally
+       * Ignore worker unexpected exit errors due to SIGSEGV from rolldown v1.0.1+: https://github.com/rolldown/rolldown/issues/9722
+       * Node 22 still exhibits SIGABRT issues, and Windows exhibits lots of .. issues.
        */
-      if (process.env.CI === 'true' && error.message.includes('Worker forks emitted error')) {
+      if (
+        process.env.CI === 'true' &&
+        (process.version.startsWith('v22.') || process.platform === 'win32') &&
+        error.message.includes('Worker forks emitted error')
+      ) {
         return false
       }
     },
     outputFile: OUTPUT_FILE,
     projects: [
-      'packages/@sanity/cli',
+      'packages/@sanity/cli/vitest.config.ts',
+      'packages/@sanity/cli/vitest.config.integration.ts',
       'packages/@sanity/cli-build',
       'packages/@sanity/cli-core',
+      'packages/@sanity/workbench-cli/vitest.config.ts',
+      'packages/@sanity/workbench-cli/vitest.config.integration.ts',
       'packages/create-sanity',
     ],
     reporters: ['default', ...(IS_AGENT ? ['json'] : [])],

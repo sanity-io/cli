@@ -3,15 +3,16 @@ import {
   getViteConfig,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
+import {
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
+} from '@sanity/cli-build/_internal/env'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
+import {type DefineAppInput} from '@sanity/workbench-cli'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
 
-import {
-  getAppEnvironmentVariables,
-  getStudioEnvironmentVariables,
-} from '../actions/build/getEnvironmentVariables.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityTypegenPlugin} from './vite/plugin-typegen.js'
 
@@ -31,9 +32,12 @@ export interface DevServerOptions {
   entry?: string
   httpHost?: string
   isApp?: boolean
+  isWorkbenchApp?: boolean
   projectName?: string
   schemaExtraction?: CliConfig['schemaExtraction']
+  services?: DefineAppInput['services']
   typegen?: CliConfig['typegen']
+  views?: DefineAppInput['views']
   vite?: UserViteConfig
 }
 
@@ -53,20 +57,24 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     httpHost,
     httpPort,
     isApp,
+    isWorkbenchApp,
     reactCompiler,
     reactStrictMode,
     schemaExtraction,
+    services,
     typegen,
+    views,
     vite: extendViteConfig,
   } = options
 
   debug('Writing Sanity runtime files')
-  const watcher = await writeSanityRuntime({
+  const {entries, watcher} = await writeSanityRuntime({
     appTitle,
     basePath,
     cwd,
     entry,
     isApp,
+    isWorkbenchApp,
     reactStrictMode,
     watch: true,
   })
@@ -95,12 +103,16 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     ],
     basePath,
     cwd,
+    entries,
     getEnvironmentVariables,
     isApp,
+    isWorkbenchApp,
     mode: 'development',
     reactCompiler,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
+    services,
+    views,
   })
 
   // Extend Vite configuration with user-provided config

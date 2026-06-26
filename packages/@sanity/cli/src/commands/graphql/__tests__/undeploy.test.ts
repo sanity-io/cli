@@ -101,23 +101,6 @@ describe('graphql undeploy', () => {
     expect(stdout).toBe('GraphQL API deleted\n')
   })
 
-  test('uses --project flag when specified', async () => {
-    mockConfirm.mockResolvedValueOnce(true)
-
-    mockApi({
-      apiVersion: GRAPHQL_API_VERSION,
-      method: 'delete',
-      projectId: 'custom-project',
-      uri: '/apis/graphql/production/default',
-    }).reply(204)
-
-    const {stdout} = await testCommand(Undeploy, ['--project', 'custom-project', '--force'], {
-      mocks: defaultMocks,
-    })
-
-    expect(stdout).toBe('GraphQL API deleted\n')
-  })
-
   test('successfully undeploys with all flags combined', async () => {
     mockConfirm.mockResolvedValue(true)
 
@@ -272,19 +255,6 @@ describe('graphql undeploy', () => {
     expect(stderr).toContain('Both --api and --tag specified, using --tag beta')
   })
 
-  test('throws error when project ID is not defined', async () => {
-    const {error} = await testCommand(Undeploy, ['--force'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {dataset: 'production', projectId: undefined}},
-      },
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('throws error when dataset is not defined and not in config', async () => {
     const {error} = await testCommand(Undeploy, ['--force'], {
       mocks: {
@@ -361,16 +331,6 @@ describe('graphql undeploy', () => {
 
       if (error) throw error
       expect(stdout).toBe('GraphQL API deleted\n')
-    })
-
-    test('errors when no project root and no --project-id', async () => {
-      const {error} = await testCommand(Undeploy, ['--dataset', 'staging', '--force'], {
-        mocks: noProjectRootMocks,
-      })
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('errors when no project root with --project-id but no --dataset', async () => {

@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-test",
-  "version": "1.0.1",
+  "version": "2.0.1",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
     "cli",
@@ -62,7 +62,7 @@
     "@sanity/cli-core": "workspace:*",
     "@swc/core": "catalog:",
     "ansis": "^4.2.0",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "nock": "catalog:",
     "ora": "catalog:",
     "tinyglobby": "catalog:"
@@ -72,7 +72,7 @@
     "@oclif/core": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@sanity/client": "^7.22.1",
+    "@sanity/client": "^7.23.0",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
@@ -92,6 +92,6 @@
     "vitest": ">=3.0.0 <5.0.0"
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

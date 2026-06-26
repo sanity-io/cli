@@ -1,17 +1,10 @@
-import {ux} from '@oclif/core'
-import {subdebug} from '@sanity/cli-core'
+import {type Output, subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
-import {readSkillState} from '../skills/readSkillState.js'
-import {SANITY_SKILL_NAMES} from '../skills/setupSkills.js'
+import {getSkillCandidates} from '../skills/skillCandidates.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
-import {
-  EDITOR_CONFIGS,
-  type EditorName,
-  getSkillsCliAgent,
-  getSkillsCliAgentDisplayName,
-} from './editorConfigs.js'
+import {EDITOR_CONFIGS, type EditorName, getSkillsCliAgent} from './editorConfigs.js'
 import {type EditorAction, type EditorChoice, promptForMCPSetup} from './promptForMCPSetup.js'
 import {type Editor} from './types.js'
 import {validateEditorTokens} from './validateEditorTokens.js'
@@ -24,6 +17,12 @@ const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server f
 type Mode = 'auto' | 'prompt' | 'skip'
 
 interface MCPSetupOptions {
+  /**
+   * Output to use for user-facing messages, so they go through the calling
+   * command rather than directly to stdout/stderr.
+   */
+  output: Output
+
   /**
    * Pre-detected editors. When omitted, `detectAvailableEditors()` is called.
    * Accepting this from the caller avoids re-running detection (which probes
@@ -76,18 +75,23 @@ interface ClassifiedEditor {
 /**
  * Classify each editor into one of four actions based on MCP status and
  * whether the Sanity skills are already installed for its skills-CLI agent.
+ *
+ * `skillCandidateNames` is the set of editor names that still want a skills
+ * install (have a skills-CLI mapping AND aren't already installed), derived
+ * once via the shared `getSkillCandidates` primitive.
  */
-function classifyEditors(editors: Editor[]): ClassifiedEditor[] {
+function classifyEditors(
+  editors: Editor[],
+  skillCandidateNames: Set<EditorName>,
+): ClassifiedEditor[] {
   return editors.map((editor) => {
     const needsMCP = !editor.configured || editor.authStatus !== 'valid'
-    const skillsCliAgent = getSkillsCliAgent(editor.name)
-    const hasSkillMapping = Boolean(skillsCliAgent)
-    const skillInstalled = editor.skillInstalled === true
+    const hasSkillMapping = Boolean(getSkillsCliAgent(editor.name))
 
     if (needsMCP) {
       return {action: hasSkillMapping ? 'mcp-and-skill' : 'mcp-only', editor}
     }
-    if (hasSkillMapping && !skillInstalled) {
+    if (skillCandidateNames.has(editor.name)) {
       return {action: 'skill-only', editor}
     }
     return {action: 'none', editor}
@@ -152,8 +156,8 @@ function getPromptMessage(mcpMode: Mode, skillsMode: Mode): string {
  * and the result includes `skillsToInstall` — agent IDs the caller should
  * install via `setupSkills`. `setupMCP` itself never installs skills.
  */
-export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResult> {
-  const {explicit = false, mode: mcpMode = 'prompt', skillsMode = 'skip'} = options ?? {}
+export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult> {
+  const {explicit = false, mode: mcpMode = 'prompt', output, skillsMode = 'skip'} = options
 
   // 1. Both opted out → nothing to do.
   if (mcpMode === 'skip' && skillsMode === 'skip') {
@@ -175,7 +179,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
 
   if (editors.length === 0) {
     if (explicit) {
-      ux.warn(NO_EDITORS_DETECTED_MESSAGE)
+      output.warn(NO_EDITORS_DETECTED_MESSAGE)
     }
     return {
       alreadyConfiguredEditors: [],
@@ -190,16 +194,17 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   await validateEditorTokens(editors)
 
   // 4. Read skill state when skills are in scope so classification can dedup
+  const skillCandidateNames = new Set<EditorName>()
   if (skillsMode !== 'skip') {
-    const {installedAgentDisplayNames} = await readSkillState({skillNames: SANITY_SKILL_NAMES})
-    for (const editor of editors) {
-      const displayName = getSkillsCliAgentDisplayName(editor.name)
-      editor.skillInstalled = displayName ? installedAgentDisplayNames.has(displayName) : false
+    const candidates = await getSkillCandidates(editors)
+    for (const candidate of candidates) {
+      const {editor} = candidate
+      skillCandidateNames.add(editor.name)
     }
   }
 
   // 5. Classify + mask
-  const classified = classifyEditors(editors)
+  const classified = classifyEditors(editors, skillCandidateNames)
   const actionable = applyMasking(classified, mcpMode, skillsMode)
 
   // "Already configured" surfaces editors whose MCP setup is valid (skill
@@ -212,7 +217,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   if (actionable.length === 0) {
     mcpDebug('Nothing actionable after classification + masking')
     if (explicit) {
-      ux.stdout(`${logSymbols.success} All detected editors are already configured`)
+      output.log(`${logSymbols.success} All detected editors are already configured`)
     }
     return {
       alreadyConfiguredEditors,
@@ -236,7 +241,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       })
 
   if (!selected || selected.length === 0) {
-    ux.stdout('MCP configuration skipped')
+    output.log('MCP configuration skipped')
     return {
       alreadyConfiguredEditors,
       configuredEditors: [],
@@ -270,8 +275,8 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
         mcpDebug('Error creating MCP token', error)
-        ux.warn(`Could not configure MCP: ${err.message}`)
-        ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
+        output.warn(`Could not configure MCP: ${err.message}`)
+        output.warn('You can set up MCP manually later using https://mcp.sanity.io')
         mcpError = err
       }
     }
@@ -284,15 +289,15 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error))
           mcpDebug('Error writing MCP config for %s: %O', choice.editor.name, error)
-          ux.warn(`Could not configure MCP for ${choice.editor.name}: ${err.message}`)
-          ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
+          output.warn(`Could not configure MCP for ${choice.editor.name}: ${err.message}`)
+          output.warn('You can set up MCP manually later using https://mcp.sanity.io')
           mcpError = err
         }
       }
     }
 
     if (configuredEditors.length > 0) {
-      ux.stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
+      output.log(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
     }
   }
 

@@ -1,10 +1,9 @@
 import path from 'node:path'
 
+import {getModuleUrl} from '@sanity/cli-build/_internal/build'
 import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core'
 import {createRequester} from '@sanity/cli-core/request'
 import {coerce, eq, prerelease, parse as semverParse} from 'semver'
-
-import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
 
 const defaultRequester = createRequester({
   middleware: {httpErrors: false, promise: {onlyBody: false}},
@@ -21,7 +20,7 @@ export interface UnresolvedPrerelease {
   version: string
 }
 
-interface CompareDependencyVersionsResult {
+export interface CompareDependencyVersionsResult {
   mismatched: Array<CompareDependencyVersions>
   unresolvedPrerelease: Array<UnresolvedPrerelease>
 }

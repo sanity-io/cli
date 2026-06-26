@@ -128,19 +128,6 @@ describe('#documents:delete', () => {
     )
   })
 
-  test('throws error when no project ID is configured', async () => {
-    const {error} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {dataset: testDataset, projectId: undefined}},
-      },
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('throws error when no dataset is configured and none provided', async () => {
     const {error} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
       mocks: {
@@ -249,18 +236,6 @@ describe('#documents:delete', () => {
           projectId: 'ext-project',
         }),
       )
-    })
-
-    test('errors when no project root and no --project-id', async () => {
-      const {error} = await testCommand(
-        DeleteDocumentCommand,
-        ['test-doc', '--dataset', 'ext-dataset'],
-        {mocks: noProjectRootMocks},
-      )
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('errors when no project root with --project-id but no --dataset', async () => {

@@ -1,5 +1,55 @@
 # Changelog
 
+## [1.1.1](https://github.com/sanity-io/cli/compare/cli-build-v1.1.0...cli-build-v1.1.1)
+
+_2026-06-23_
+
+### Bug Fixes
+
+- **deps:** remove rolldown overrides now that vite 8.1.0 ships rolldown 1.1.2 ([#1356](https://github.com/sanity-io/cli/pull/1356)) ([d96cf4f](https://github.com/sanity-io/cli/commit/d96cf4f37648f82416b11753b85d9eba1c3e1742))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.1
+
+## [1.1.0](https://github.com/sanity-io/cli/compare/cli-build-v1.0.5...cli-build-v1.1.0)
+
+_2026-06-22_
+
+### Features
+
+- **cli-build:** preconnect and modulepreload the CDN sanity module for auto-update studios ([#1276](https://github.com/sanity-io/cli/pull/1276)) ([71d4f20](https://github.com/sanity-io/cli/commit/71d4f20e27edc112038a6887284baeeca772cc73))
+- add workbench under unstable flags ([#907](https://github.com/sanity-io/cli/pull/907)) ([a2deacf](https://github.com/sanity-io/cli/commit/a2deacf2ed71783bb34927aca9d2b9b41c2f0f3d))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.0
+    - @sanity/workbench-cli bumped to 1.1.0
+
+## [1.0.5](https://github.com/sanity-io/cli/compare/cli-build-v1.0.4...cli-build-v1.0.5)
+
+_2026-06-11_
+
+### Bug Fixes
+
+- **deps:** bump sanity monorepo packages to v6 ([#1258](https://github.com/sanity-io/cli/pull/1258)) ([72bde8f](https://github.com/sanity-io/cli/commit/72bde8f016ee958b8745e5f01d12b4c6149d6df1))
+
+  Updates `@sanity/schema`, `@sanity/types`, `@sanity/codegen`, `@sanity/import`, and `@sanity/migrate` in `@sanity/cli`, and `@sanity/schema` and `@sanity/types` in `@sanity/cli-build`, to versions compatible with Sanity v6.
+
+## [1.0.4](https://github.com/sanity-io/cli/compare/cli-build-v1.0.3...cli-build-v1.0.4)
+
+_2026-06-11_
+
+### Bug Fixes
+
+- **cli-build:** emit vendor chunks in single vite build for auto-updates ([#1223](https://github.com/sanity-io/cli/pull/1223)) ([a59950f](https://github.com/sanity-io/cli/commit/a59950f8213a5f523270b990a0606ad073316d7a))
+
+  Auto-updating studios and apps no longer run `vite.build` twice, roughly halving `sanity build` times. The vendor packages (`react`, `react-dom`, `styled-components`) are emitted as hashed browser-loadable ESM chunks by the same build that bundles the studio/app, and the import map in `index.html` is derived from the build output. The internal `buildVendorDependencies` helper is removed in favor of `resolveVendorBuildConfig` and a consolidated `autoUpdates` build option.
+
 ## [1.0.3](https://github.com/sanity-io/cli/compare/cli-build-v1.0.2...cli-build-v1.0.3)
 
 _2026-06-10_

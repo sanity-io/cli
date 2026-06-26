@@ -37,6 +37,7 @@ export async function initStudio({
   remoteTemplateInfo,
   sluggedName,
   trace,
+  workbench,
   workDir,
 }: {
   datasetName: string
@@ -52,6 +53,7 @@ export async function initStudio({
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
+  workbench: boolean
   workDir: string
 }): Promise<void> {
   const {importDataset, unattended} = options
@@ -101,6 +103,7 @@ export async function initStudio({
     templateName,
     trace,
     useTypeScript,
+    workbench,
     workDir,
   })
 

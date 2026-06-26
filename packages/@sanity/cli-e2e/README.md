@@ -170,7 +170,7 @@ describe('sanity --help', () => {
 
 Two workflows run e2e tests:
 
-- **`.github/workflows/e2e.yml`** — runs on PRs that touch `packages/@sanity/cli*`, `packages/create-sanity`, `fixtures/`, or `pnpm-lock.yaml`, and on every push to `main`. Matrix: Node 20/22/24 × 2 vitest shards. Uses the working-tree CLI (packed by `globalSetup`).
+- **`.github/workflows/e2e.yml`** — runs on PRs that touch `packages/@sanity/cli*`, `packages/create-sanity`, `fixtures/`, or `pnpm-lock.yaml`, and on every push to `main`. Matrix: Node 22/24/26 × 2 vitest shards. Uses the working-tree CLI (packed by `globalSetup`).
 - **`.github/workflows/e2e-scheduled.yml`** — runs hourly (and on manual dispatch) against `sanity@latest` from npm. Catches regressions in the published artifact and posts to Slack on failure.
 
 To trigger the scheduled workflow manually against a specific version, use **Run workflow** on the Actions tab and supply a `cli_version` (e.g. `5.20.0`).

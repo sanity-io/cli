@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.1.1](https://github.com/sanity-io/cli/compare/cli-core-v2.1.0...cli-core-v2.1.1)
+
+_2026-06-23_
+
+### Bug Fixes
+
+- **deps:** remove rolldown overrides now that vite 8.1.0 ships rolldown 1.1.2 ([#1356](https://github.com/sanity-io/cli/pull/1356)) ([d96cf4f](https://github.com/sanity-io/cli/commit/d96cf4f37648f82416b11753b85d9eba1c3e1742))
+
+## [2.1.0](https://github.com/sanity-io/cli/compare/cli-core-v2.0.1...cli-core-v2.1.0)
+
+_2026-06-22_
+
+### Features
+
+- add workbench under unstable flags ([#907](https://github.com/sanity-io/cli/pull/907)) ([a2deacf](https://github.com/sanity-io/cli/commit/a2deacf2ed71783bb34927aca9d2b9b41c2f0f3d))
+
 ## [2.0.1](https://github.com/sanity-io/cli/compare/cli-core-v2.0.0...cli-core-v2.0.1)
 
 _2026-06-04_

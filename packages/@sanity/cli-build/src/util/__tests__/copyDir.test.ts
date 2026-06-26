@@ -1,19 +1,52 @@
+import {constants as fsConstants} from 'node:fs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-import {afterEach, beforeEach, describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {copyDir, skipIfExistsError} from '../copyDir'
 
-let workDir: string
+vi.mock('node:fs/promises', () => ({
+  default: {
+    copyFile: vi.fn(),
+    mkdir: vi.fn(),
+    readdir: vi.fn(),
+    stat: vi.fn(),
+  },
+}))
 
-beforeEach(async () => {
-  workDir = await fs.mkdtemp(path.join(os.tmpdir(), 'copydir-test-'))
+const mkdir = vi.mocked(fs.mkdir)
+const readdir = vi.mocked(fs.readdir)
+const stat = vi.mocked(fs.stat)
+const copyFile = vi.mocked(fs.copyFile)
+
+const tmpdir = os.tmpdir()
+
+function fileStat() {
+  return {isDirectory: () => false, isFile: () => true} as Awaited<ReturnType<typeof fs.stat>>
+}
+
+function dirStat() {
+  return {isDirectory: () => true, isFile: () => false} as Awaited<ReturnType<typeof fs.stat>>
+}
+
+function fsError(code: string): Error & {code: string} {
+  const err = new Error(code) as Error & {code: string}
+  err.code = code
+  return err
+}
+
+beforeEach(() => {
+  // Safe defaults: mkdir/copyFile succeed, source dirs are empty, all entries are files.
+  mkdir.mockResolvedValue(undefined)
+  readdir.mockResolvedValue([])
+  stat.mockResolvedValue(fileStat())
+  copyFile.mockResolvedValue(undefined)
 })
 
-afterEach(async () => {
-  await fs.rm(workDir, {force: true, recursive: true})
+afterEach(() => {
+  vi.clearAllMocks()
 })
 
 describe('#skipIfExistsError', () => {
@@ -36,134 +69,193 @@ describe('#skipIfExistsError', () => {
 
 describe('#copyDir', () => {
   test('creates destination directory when it does not exist', async () => {
-    const src = path.join(workDir, 'src')
-    const dest = path.join(workDir, 'nested', 'dest')
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'nested/dest')
 
-    await fs.mkdir(src, {recursive: true})
-    await fs.writeFile(path.join(src, 'file.txt'), 'hello')
+    readdir.mockResolvedValue(['file.txt'] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+    stat.mockResolvedValue(fileStat())
 
     await copyDir(src, dest)
 
-    const destStat = await fs.stat(dest)
-    expect(destStat.isDirectory()).toBe(true)
-    expect(await fs.readFile(path.join(dest, 'file.txt'), 'utf8')).toBe('hello')
+    expect(mkdir).toHaveBeenCalledWith(dest, {recursive: true})
+    expect(copyFile).toHaveBeenCalledWith(
+      path.resolve(src, 'file.txt'),
+      path.resolve(dest, 'file.txt'),
+    )
   })
 
   test('copies files from source to destination', async () => {
-    const src = path.join(workDir, 'src')
-    const dest = path.join(workDir, 'dest')
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
-    await fs.mkdir(src, {recursive: true})
-    await fs.writeFile(path.join(src, 'a.txt'), 'A')
-    await fs.writeFile(path.join(src, 'b.txt'), 'B')
+    readdir.mockResolvedValue(['a.txt', 'b.txt'] as unknown as Awaited<
+      ReturnType<typeof fs.readdir>
+    >)
+    stat.mockResolvedValue(fileStat())
 
     await copyDir(src, dest)
 
-    expect(await fs.readFile(path.join(dest, 'a.txt'), 'utf8')).toBe('A')
-    expect(await fs.readFile(path.join(dest, 'b.txt'), 'utf8')).toBe('B')
+    expect(copyFile).toHaveBeenCalledTimes(2)
+    expect(copyFile).toHaveBeenCalledWith(path.resolve(src, 'a.txt'), path.resolve(dest, 'a.txt'))
+    expect(copyFile).toHaveBeenCalledWith(path.resolve(src, 'b.txt'), path.resolve(dest, 'b.txt'))
   })
 
   test('recursively copies subdirectories', async () => {
-    const src = path.join(workDir, 'src')
-    const dest = path.join(workDir, 'dest')
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
+    const subSrc = path.join(src, 'sub')
+    const deeperSrc = path.join(subSrc, 'deeper')
 
-    await fs.mkdir(path.join(src, 'sub', 'deeper'), {recursive: true})
-    await fs.writeFile(path.join(src, 'top.txt'), 'top')
-    await fs.writeFile(path.join(src, 'sub', 'mid.txt'), 'mid')
-    await fs.writeFile(path.join(src, 'sub', 'deeper', 'bottom.txt'), 'bottom')
+    readdir.mockImplementation(async (dir) => {
+      if (dir === src) return ['top.txt', 'sub'] as never
+      if (dir === subSrc) return ['mid.txt', 'deeper'] as never
+      if (dir === deeperSrc) return ['bottom.txt'] as never
+      return [] as never
+    })
+
+    stat.mockImplementation(async (p) => {
+      if (p === subSrc || p === deeperSrc) return dirStat()
+      return fileStat()
+    })
 
     await copyDir(src, dest)
 
-    expect(await fs.readFile(path.join(dest, 'top.txt'), 'utf8')).toBe('top')
-    expect(await fs.readFile(path.join(dest, 'sub', 'mid.txt'), 'utf8')).toBe('mid')
-    expect(await fs.readFile(path.join(dest, 'sub', 'deeper', 'bottom.txt'), 'utf8')).toBe('bottom')
+    // Destination directory and every nested destination directory are created.
+    expect(mkdir).toHaveBeenCalledWith(dest, {recursive: true})
+    expect(mkdir).toHaveBeenCalledWith(path.join(dest, 'sub'), {recursive: true})
+    expect(mkdir).toHaveBeenCalledWith(path.join(dest, 'sub', 'deeper'), {recursive: true})
+
+    // Every file in the tree is copied.
+    expect(copyFile).toHaveBeenCalledWith(path.join(src, 'top.txt'), path.join(dest, 'top.txt'))
+    expect(copyFile).toHaveBeenCalledWith(
+      path.join(subSrc, 'mid.txt'),
+      path.join(dest, 'sub', 'mid.txt'),
+    )
+    expect(copyFile).toHaveBeenCalledWith(
+      path.join(deeperSrc, 'bottom.txt'),
+      path.join(dest, 'sub', 'deeper', 'bottom.txt'),
+    )
+    expect(copyFile).toHaveBeenCalledTimes(3)
   })
 
   test('returns silently when source directory does not exist', async () => {
-    const src = path.join(workDir, 'missing')
-    const dest = path.join(workDir, 'dest')
+    const src = path.join(tmpdir, 'missing')
+    const dest = path.join(tmpdir, 'dest')
+
+    readdir.mockRejectedValue(fsError('ENOENT'))
 
     await expect(copyDir(src, dest)).resolves.toBeUndefined()
 
-    // Destination is still created
-    const destStat = await fs.stat(dest)
-    expect(destStat.isDirectory()).toBe(true)
-
-    const entries = await fs.readdir(dest)
-    expect(entries).toEqual([])
+    // Destination is still created.
+    expect(mkdir).toHaveBeenCalledWith(dest, {recursive: true})
+    // No files are copied.
+    expect(copyFile).not.toHaveBeenCalled()
   })
 
   test('overwrites existing files when skipExisting is not set', async () => {
-    const src = path.join(workDir, 'src')
-    const dest = path.join(workDir, 'dest')
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
-    await fs.mkdir(src, {recursive: true})
-    await fs.mkdir(dest, {recursive: true})
-    await fs.writeFile(path.join(src, 'file.txt'), 'new')
-    await fs.writeFile(path.join(dest, 'file.txt'), 'old')
+    readdir.mockResolvedValue(['file.txt'] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+    stat.mockResolvedValue(fileStat())
 
     await copyDir(src, dest)
 
-    expect(await fs.readFile(path.join(dest, 'file.txt'), 'utf8')).toBe('new')
+    // copyFile is called without the COPYFILE_EXCL flag, so existing files are overwritten.
+    expect(copyFile).toHaveBeenCalledWith(
+      path.resolve(src, 'file.txt'),
+      path.resolve(dest, 'file.txt'),
+    )
+    expect(copyFile).toHaveBeenCalledTimes(1)
+    // Sanity check: no flag argument was passed.
+    expect(copyFile.mock.calls[0]).toHaveLength(2)
   })
 
   test('does not overwrite existing files when skipExisting is true', async () => {
-    const src = path.join(workDir, 'src')
-    const dest = path.join(workDir, 'dest')
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
-    await fs.mkdir(src, {recursive: true})
-    await fs.mkdir(dest, {recursive: true})
-    await fs.writeFile(path.join(src, 'existing.txt'), 'new')
-    await fs.writeFile(path.join(src, 'fresh.txt'), 'fresh')
-    await fs.writeFile(path.join(dest, 'existing.txt'), 'old')
+    readdir.mockResolvedValue(['existing.txt', 'fresh.txt'] as unknown as Awaited<
+      ReturnType<typeof fs.readdir>
+    >)
+    stat.mockResolvedValue(fileStat())
+
+    // Simulate the destination file already existing for the first entry.
+    copyFile.mockImplementationOnce(async () => {
+      throw fsError('EEXIST')
+    })
 
     await copyDir(src, dest, true)
 
-    // Existing file is preserved
-    expect(await fs.readFile(path.join(dest, 'existing.txt'), 'utf8')).toBe('old')
-    // New file is copied
-    expect(await fs.readFile(path.join(dest, 'fresh.txt'), 'utf8')).toBe('fresh')
+    // copyFile is invoked with the COPYFILE_EXCL flag for both entries.
+    expect(copyFile).toHaveBeenCalledWith(
+      path.resolve(src, 'existing.txt'),
+      path.resolve(dest, 'existing.txt'),
+      fsConstants.COPYFILE_EXCL,
+    )
+    expect(copyFile).toHaveBeenCalledWith(
+      path.resolve(src, 'fresh.txt'),
+      path.resolve(dest, 'fresh.txt'),
+      fsConstants.COPYFILE_EXCL,
+    )
+    expect(copyFile).toHaveBeenCalledTimes(2)
+  })
+
+  test('rethrows non-EEXIST errors when skipExisting is true', async () => {
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
+
+    readdir.mockResolvedValue(['file.txt'] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+    stat.mockResolvedValue(fileStat())
+    copyFile.mockRejectedValueOnce(fsError('EACCES'))
+
+    await expect(copyDir(src, dest, true)).rejects.toMatchObject({code: 'EACCES'})
   })
 
   test('skips entries where srcFile resolves to destDir', async () => {
     // When the destination directory is nested inside the source directory,
     // copyDir should skip the destination to avoid infinite recursion.
-    const src = path.join(workDir, 'src')
+    const src = path.join(tmpdir, 'src')
     const dest = path.join(src, 'dest')
 
-    await fs.mkdir(src, {recursive: true})
-    await fs.mkdir(dest, {recursive: true})
-    await fs.writeFile(path.join(src, 'file.txt'), 'content')
+    readdir.mockResolvedValue(['file.txt', 'dest'] as unknown as Awaited<
+      ReturnType<typeof fs.readdir>
+    >)
+    stat.mockResolvedValue(fileStat())
 
     await copyDir(src, dest)
 
-    expect(await fs.readFile(path.join(dest, 'file.txt'), 'utf8')).toBe('content')
-    // The dest should not contain a nested copy of itself
-    const nestedDest = path.join(dest, 'dest')
-    await expect(fs.stat(nestedDest)).rejects.toMatchObject({code: 'ENOENT'})
+    // Only the non-dest entry is copied.
+    expect(copyFile).toHaveBeenCalledTimes(1)
+    expect(copyFile).toHaveBeenCalledWith(
+      path.resolve(src, 'file.txt'),
+      path.resolve(dest, 'file.txt'),
+    )
+    // stat is never called for the dest entry because the `srcFile === destDir`
+    // check short-circuits the loop body first.
+    expect(stat).toHaveBeenCalledTimes(1)
+    expect(stat).toHaveBeenCalledWith(path.resolve(src, 'file.txt'))
   })
 
   test('rejects when source is not a directory', async () => {
-    const src = path.join(workDir, 'src')
-    const dest = path.join(workDir, 'dest')
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
-    // Source is a file, not a directory — readdir will throw ENOTDIR.
-    await fs.writeFile(src, 'not-a-dir')
+    // Source is a file, not a directory — readdir throws ENOTDIR, which is not
+    // caught by tryReadDir and therefore propagates.
+    readdir.mockRejectedValue(fsError('ENOTDIR'))
 
     await expect(copyDir(src, dest)).rejects.toMatchObject({code: 'ENOTDIR'})
   })
 
   test('rejects when destination cannot be created', async () => {
-    const src = path.join(workDir, 'src')
-    const dest = path.join(workDir, 'dest')
+    const src = path.join(tmpdir, 'src')
+    const dest = path.join(tmpdir, 'dest')
 
-    await fs.mkdir(src, {recursive: true})
-    await fs.writeFile(path.join(src, 'file.txt'), 'data')
+    mkdir.mockRejectedValue(fsError('ENOTDIR'))
 
-    // Pre-create dest as a regular file so the initial mkdir(dest, {recursive: true})
-    // fails because the path exists but is not a directory.
-    await fs.writeFile(dest, 'not-a-dir')
-
-    await expect(copyDir(src, dest)).rejects.toThrow()
+    await expect(copyDir(src, dest)).rejects.toMatchObject({code: 'ENOTDIR'})
+    // The failure happens before readdir is attempted.
+    expect(readdir).not.toHaveBeenCalled()
   })
 })

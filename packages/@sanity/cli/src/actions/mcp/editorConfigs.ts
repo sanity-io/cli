@@ -49,6 +49,10 @@ interface EditorConfig {
    * Omit when the editor has no skills CLI equivalent.
    */
   skillsCliAgent?: string
+  /**
+   * The directory to install skills to.
+   */
+  skillsDir?: string
 }
 
 /**
@@ -228,6 +232,7 @@ function readTokenFromHttpHeaders(serverConfig: Record<string, unknown>): string
 
 // -- Defaults & build server config functions --
 
+export const UNIVERSAL_SKILLS_DIR = '.agents/skills'
 /** Most editors share these values — entries only need to declare `detect` + any overrides. */
 const EDITOR_DEFAULTS = {
   buildServerConfig: defaultHttpConfig,
@@ -235,6 +240,7 @@ const EDITOR_DEFAULTS = {
   format: 'jsonc' as const,
   oauthOnly: false,
   readToken: readTokenFromHeaders,
+  skillsDir: UNIVERSAL_SKILLS_DIR,
 }
 
 function buildAntigravityServerConfig(token: string): Record<string, unknown> {
@@ -309,6 +315,7 @@ export const EDITOR_CONFIGS = {
     detect: detectClaudeCode,
     oauthOnly: true,
     skillsCliAgent: 'claude-code',
+    skillsDir: '.claude/skills',
   },
   // Doc: https://github.com/cline/cline — VS Code extension (saoudrizwan.claude-dev)
   // Path: <VS Code User>/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
@@ -424,8 +431,34 @@ const SKILLS_CLI_AGENT_DISPLAY_NAMES: Record<string, string> = {
   opencode: 'OpenCode',
 }
 
+export function isUniversalSkillsCliAgentByEditorName(editorName: EditorName): boolean {
+  return EDITOR_CONFIGS[editorName]?.skillsDir === UNIVERSAL_SKILLS_DIR
+}
+
 /** Display name used by the skills CLI for the given editor, if it has a mapping. */
 export function getSkillsCliAgentDisplayName(editorName: EditorName): string | undefined {
   const agent = getSkillsCliAgent(editorName)
   return agent ? SKILLS_CLI_AGENT_DISPLAY_NAMES[agent] : undefined
+}
+
+/** Display name for a skills-CLI agent ID (e.g. `'cursor'` → `'Cursor'`). */
+export function getSkillsCliAgentDisplayNameById(agentId: string): string | undefined {
+  return SKILLS_CLI_AGENT_DISPLAY_NAMES[agentId]
+}
+
+/**
+ * The relative, home-anchored directory the `skills` CLI installs into for a
+ * given agent ID (e.g. `'cursor'` → `'.agents/skills'`, `'claude-code'` →
+ * `'.claude/skills'`). Derived from `EDITOR_CONFIGS` so it stays a single
+ * source of truth.
+ */
+export function getSkillsCliAgentSkillsDir(agentName: string): string | undefined {
+  for (const name of Object.keys(EDITOR_CONFIGS) as EditorName[]) {
+    const config = EDITOR_CONFIGS[name]
+    const agent = getSkillsCliAgent(name)
+    if (agent === agentName) {
+      return config.skillsDir
+    }
+  }
+  return undefined
 }
