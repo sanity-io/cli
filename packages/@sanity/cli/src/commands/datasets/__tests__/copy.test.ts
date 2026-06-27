@@ -3,17 +3,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
 
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    SanityCommand: MockedSanityCommand,
-  }
-})
-
 // Third: mock dataset copy command imports
 const mockPromptForDataset = vi.hoisted(() => vi.fn())
 const mockPromptForDatasetName = vi.hoisted(() => vi.fn())
@@ -76,9 +65,6 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-// Finally, import the module under test: dataset copy command
-const {CopyDatasetCommand} = await import('../copy.js')
-
 const TEST_PROJECT_ID = '1337newb'
 function createMockDataset(name: string) {
   return {
@@ -92,6 +78,12 @@ function createMockDataset(name: string) {
     tags: [],
   }
 }
+
+const {createCmdInstance, mocks} = await createMockSanityCommand(
+  import.meta.dirname,
+  '../copy.js',
+  'CopyDatasetCommand',
+)
 
 describe('#dataset:copy', () => {
   beforeEach(() => {
@@ -109,7 +101,7 @@ describe('#dataset:copy', () => {
       {desc: '--list with --detach', flags: ['--list', '--detach']},
       {desc: '--attach with --detach', flags: ['--attach', 'job-123', '--detach']},
     ])('errors when using mutually exclusive flags: $desc', async ({flags}) => {
-      await expect(CopyDatasetCommand.run(flags)).rejects.toThrow(
+      await expect(createCmdInstance(flags).run()).rejects.toThrow(
         expect.objectContaining({
           message: expect.stringContaining('cannot also be provided when using'),
         }),
@@ -120,7 +112,7 @@ describe('#dataset:copy', () => {
       {flag: '--offset', value: '2'},
       {flag: '--limit', value: '10'},
     ])('errors when $flag is used without --list', async ({flag, value}) => {
-      await expect(CopyDatasetCommand.run([flag, value])).rejects.toThrow(
+      await expect(createCmdInstance([flag, value]).run()).rejects.toThrow(
         expect.objectContaining({
           message: expect.stringMatching(/all of the following must be provided.*--list/i),
         }),
@@ -155,7 +147,7 @@ describe('#dataset:copy', () => {
         },
       ])
 
-      await CopyDatasetCommand.run(['--list', '--offset', '2', '--limit', '10'])
+      await createCmdInstance(['--list', '--offset', '2', '--limit', '10']).run()
 
       expect(mockListDatasetCopyJobs).toHaveBeenCalledWith({
         limit: 10,
@@ -172,7 +164,7 @@ describe('#dataset:copy', () => {
 
     test('shows message when no copy jobs exist', async () => {
       mockListDatasetCopyJobs.mockResolvedValue([])
-      await CopyDatasetCommand.run(['--list'])
+      await createCmdInstance(['--list']).run()
       expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
         expect.stringMatching(/doesn't have any dataset copy jobs/i),
       )
@@ -180,7 +172,7 @@ describe('#dataset:copy', () => {
 
     test('errors and exits if list copy job API throws', async () => {
       mockListDatasetCopyJobs.mockRejectedValue('boom')
-      await CopyDatasetCommand.run(['--list'])
+      await createCmdInstance(['--list']).run()
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringMatching(/failed to list dataset copy jobs.*boom/i),
         {exit: 1},
@@ -190,7 +182,7 @@ describe('#dataset:copy', () => {
 
   describe('attach mode', () => {
     test('rejects whitespace-only jobId', async () => {
-      await CopyDatasetCommand.run(['--attach', '    '])
+      await createCmdInstance(['--attach', '    ']).run()
 
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringMatching(/supply a valid jobId/i),
@@ -207,7 +199,7 @@ describe('#dataset:copy', () => {
         ),
       )
 
-      await CopyDatasetCommand.run(['--attach', 'job-123'])
+      await createCmdInstance(['--attach', 'job-123']).run()
 
       expect(mockFollowCopyJob).toHaveBeenCalledWith({
         jobId: 'job-123',
@@ -220,7 +212,7 @@ describe('#dataset:copy', () => {
     test('errors out if progress tracking throws', async () => {
       mockFollowCopyJob.mockThrow(new Error('boom'))
 
-      await CopyDatasetCommand.run(['--attach', 'job-123'])
+      await createCmdInstance(['--attach', 'job-123']).run()
 
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringMatching(/failed to attach to copy.*boom/i),
@@ -238,7 +230,7 @@ describe('#dataset:copy', () => {
         ),
       )
 
-      await CopyDatasetCommand.run(['--attach', 'job-123'])
+      await createCmdInstance(['--attach', 'job-123']).run()
 
       expect(mockFollowCopyJob).toHaveBeenCalledWith({
         jobId: 'job-123',
@@ -261,7 +253,7 @@ describe('#dataset:copy', () => {
       mockCopyDataset.mockResolvedValue({jobId: 'job-456'})
       mockFollowCopyJob.mockReturnValue(of({progress: 100, type: 'progress'}))
 
-      await CopyDatasetCommand.run(['production', 'backup'])
+      await createCmdInstance(['production', 'backup']).run()
 
       expect(mockCopyDataset).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -293,7 +285,7 @@ describe('#dataset:copy', () => {
       mockPromptForDataset.mockResolvedValue('production')
       mockPromptForDatasetName.mockResolvedValue('backup')
 
-      await CopyDatasetCommand.run([])
+      await createCmdInstance([]).run()
 
       expect(mockPromptForDataset).toHaveBeenCalledOnce()
       expect(mockPromptForDatasetName).toHaveBeenCalledWith({
@@ -348,7 +340,7 @@ describe('#dataset:copy', () => {
     ])('errors when $description', async ({args, expectedError, setupMocks}) => {
       setupMocks()
 
-      await CopyDatasetCommand.run(args)
+      await createCmdInstance(args).run()
 
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringMatching(new RegExp(expectedError)),
@@ -364,12 +356,12 @@ describe('#dataset:copy', () => {
       mockCopyDataset.mockResolvedValue({jobId: 'job-skip'})
       mockFollowCopyJob.mockReturnValue(of({progress: 100, type: 'progress'}))
 
-      await CopyDatasetCommand.run([
+      await createCmdInstance([
         'production',
         'backup',
         '--skip-history',
         '--skip-content-releases',
-      ])
+      ]).run()
 
       expect(mockCopyDataset).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -392,7 +384,7 @@ describe('#dataset:copy', () => {
       ])
       mockCopyDataset.mockResolvedValue({jobId: 'job-detach'})
 
-      await CopyDatasetCommand.run(['production', 'backup', '--detach'])
+      await createCmdInstance(['production', 'backup', '--detach']).run()
 
       expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
         expect.stringMatching(/job job-detach started/i),
@@ -410,7 +402,7 @@ describe('#dataset:copy', () => {
       ])
       mockCopyDataset.mockRejectedValue(new Error('boom'))
 
-      await CopyDatasetCommand.run(['production', 'backup'])
+      await createCmdInstance(['production', 'backup']).run()
 
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringMatching(/dataset copying failed: boom/i),
@@ -421,7 +413,7 @@ describe('#dataset:copy', () => {
     test('handles list datasets error', async () => {
       mockListDatasets.mockRejectedValue(new Error('boom'))
 
-      await CopyDatasetCommand.run(['production', 'backup'])
+      await createCmdInstance(['production', 'backup']).run()
 
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringMatching(/failed to fetch datasets: boom/i),

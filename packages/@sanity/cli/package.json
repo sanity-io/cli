@@ -146,6 +146,7 @@
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
+    "@heroku-cli/test-utils": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
