@@ -328,8 +328,9 @@ const editorTestCases: EditorTestCase[] = [
   {
     detect: {cliCommands: ['codex']},
     expectedConfigPath: '.codex/config.toml',
-    expectedContentChecks: ['[mcp_servers.Sanity]', '[mcp_servers.Sanity.http_headers]'],
+    expectedContentChecks: ['[mcp_servers.Sanity]'],
     name: 'Codex CLI',
+    oauthOnly: true,
   },
   {
     detect: {
@@ -343,6 +344,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: convertToSystemPath('/tmp/custom-codex-home/config.toml'),
     name: 'Codex CLI',
+    oauthOnly: true,
   },
   {
     detect: {

@@ -71,7 +71,16 @@ describe('buildServerConfig', () => {
     })
   })
 
-  test('Codex CLI uses http_headers instead of headers', () => {
+  test('Codex CLI config uses OAuth (no http_headers)', () => {
+    const config = EDITOR_CONFIGS['Codex CLI'].buildServerConfig()
+
+    expect(config).toStrictEqual({
+      type: 'http',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('Codex CLI uses http_headers instead of headers when given a token', () => {
     const config = EDITOR_CONFIGS['Codex CLI'].buildServerConfig(testToken)
 
     expect(config).toStrictEqual({
@@ -81,12 +90,11 @@ describe('buildServerConfig', () => {
     })
   })
 
-  test('all editors except Cursor and Claude Code include auth credentials', () => {
+  test('all editors except OAuth-only ones include auth credentials', () => {
     const editorsWithToken = [
       'Antigravity',
       'Cline',
       'Cline CLI',
-      'Codex CLI',
       'Gemini CLI',
       'GitHub Copilot CLI',
       'MCPorter',
