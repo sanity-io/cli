@@ -78,8 +78,8 @@ export async function createMockSanityCommand(CommandClass: GenericCmd) {
   // Cast to constructor type to handle protected constructors
   const Ctor = CommandClass as {new (argv: string[], config: Interfaces.Config): CommandInstance}
   return {
-    createCmdInstance: (args: string[]) => {
-      return new Ctor(args, oclifConfig)
+    createCmdInstance: (args?: string[]) => {
+      return new Ctor(args || [], oclifConfig)
     },
     mocks,
   }
