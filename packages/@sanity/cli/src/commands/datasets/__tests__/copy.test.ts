@@ -65,6 +65,9 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
+const {CopyDatasetCommand} = await import('../copy.js')
+const {createCmdInstance, mocks} = await createMockSanityCommand(CopyDatasetCommand)
+
 const TEST_PROJECT_ID = '1337newb'
 function createMockDataset(name: string) {
   return {
@@ -78,12 +81,6 @@ function createMockDataset(name: string) {
     tags: [],
   }
 }
-
-const {createCmdInstance, mocks} = await createMockSanityCommand(
-  import.meta.dirname,
-  '../copy.js',
-  'CopyDatasetCommand',
-)
 
 describe('#dataset:copy', () => {
   beforeEach(() => {
