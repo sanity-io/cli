@@ -2,14 +2,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
 
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, SanityCommand: MockedSanityCommand}
-})
-
 // Third: mock extract schema command imports
 const mockExtractSchema = vi.hoisted(() => vi.fn())
 const mockWatchExtractSchema = vi.hoisted(() => vi.fn())
@@ -25,6 +17,7 @@ vi.mock('../../../actions/schema/watchExtractSchema.js', () => ({
 
 // Finally, import the module under test: extract schema command
 const {ExtractSchemaCommand} = await import('../extract.js')
+const {createCmdInstance, mocks} = await createMockSanityCommand(ExtractSchemaCommand)
 
 describe('schema extract command', () => {
   beforeEach(() => {
@@ -40,14 +33,14 @@ describe('schema extract command', () => {
   })
 
   test('schema command with no args should invoke extractSchema module', async () => {
-    await ExtractSchemaCommand.run([])
+    await createCmdInstance([]).run()
     expect(mockExtractSchema).toHaveBeenCalledOnce()
   })
   test('schema command with watch flag should invoke watchExtractSchema module', async () => {
-    await ExtractSchemaCommand.run(['--watch'])
+    await createCmdInstance(['--watch']).run()
     expect(mockWatchExtractSchema).toHaveBeenCalledOnce()
   })
   test('schema command bad flags', async () => {
-    await expect(ExtractSchemaCommand.run(['--poop'])).rejects.toThrow('Nonexistent flag')
+    await expect(createCmdInstance(['--poop']).run()).rejects.toThrow('Nonexistent flag')
   })
 })

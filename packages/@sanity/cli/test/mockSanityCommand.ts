@@ -22,6 +22,7 @@ const mocks = {
   SanityCmdOutputLog: vi.fn(),
   SanityCmdOutputWarn: vi.fn(),
   SanityCmdResolveIsInteractive: vi.fn(),
+  SanityGetProjectCliClient: vi.fn(),
 }
 class MockedSanityCommand extends Command implements SanityCommandInterface {
   args = {}
@@ -70,6 +71,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    getProjectCliClient: mocks.SanityGetProjectCliClient,
     SanityCommand: MockedSanityCommand,
   }
 })
