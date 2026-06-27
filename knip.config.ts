@@ -1,6 +1,6 @@
 import {type KnipConfig} from 'knip'
 
-const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
+const project = ['src/**/*.{js,jsx,ts,tsx}', 'test/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 
 const baseConfig = {
   // For now only care about cli package
