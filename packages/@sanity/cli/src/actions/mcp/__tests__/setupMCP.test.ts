@@ -74,6 +74,22 @@ describe('setupMCP', () => {
     expect(mockReadSkillState).not.toHaveBeenCalled()
   })
 
+  test('mcpMode: auto warns if no editors detected', async () => {
+    defaultMocks()
+    mockDetectAvailableEditors.mockResolvedValue([])
+
+    const result = await setupMCP({explicit: true, mode: 'auto', output: mockOutput})
+
+    expect(mockPromptForMCPSetup).not.toHaveBeenCalled()
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
+    expect(result.configuredEditors).toEqual([])
+    expect(result.skillsToInstall).toEqual([])
+    expect(result.skipped).toBe(true)
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining(`Couldn't auto-configure Sanity MCP server for your editor`),
+    )
+  })
+
   test('mcpMode: auto auto-selects actionable editors and writes configs', async () => {
     defaultMocks()
     mockDetectAvailableEditors.mockResolvedValue([
@@ -124,11 +140,14 @@ describe('setupMCP', () => {
     ]
     mockDetectAvailableEditors.mockResolvedValue(editors)
 
-    const result = await setupMCP({mode: 'auto', output: mockOutput})
+    const result = await setupMCP({explicit: true, mode: 'auto', output: mockOutput})
 
     expect(mockWriteMCPConfig).not.toHaveBeenCalled()
     expect(result.skipped).toBe(true)
     expect(result.alreadyConfiguredEditors).toEqual(['Cursor'])
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('All detected editors are already configured'),
+    )
   })
 
   // -------------------------------------------------------------------------
@@ -350,6 +369,27 @@ describe('setupMCP', () => {
     expect(result.skillsToInstall).toEqual(['claude-code'])
     expect(result.error).toBeInstanceOf(Error)
     expect(mockOutput.warn).toHaveBeenCalledWith('Could not configure MCP for Cursor: disk full')
+  })
+
+  test('MCP token creation failure warns', async () => {
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    mockWriteMCPConfig.mockResolvedValue(undefined)
+    mockReadSkillState.mockResolvedValue({installedAgentDisplayNames: new Set()})
+    // Only choose oauthonly=false editors here
+    mockDetectAvailableEditors.mockResolvedValue([editor({name: 'Cline'})])
+    mockCreateMCPToken.mockRejectedValue('boom')
+
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
+
+    expect(mockPromptForMCPSetup).not.toHaveBeenCalled()
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
+    expect(result.error).toBeInstanceOf(Error)
+    expect(result.configuredEditors).toEqual([])
+    expect(result.skillsToInstall).toEqual([])
+    expect(result.skipped).toBe(false)
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Could not configure MCP: boom'),
+    )
   })
 
   test('skill state probe failure → over-install (treat all as not installed)', async () => {

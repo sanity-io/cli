@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs'
-import fs from 'node:fs/promises'
+import {readFile} from 'node:fs/promises'
 
 import {subdebug} from '@sanity/cli-core'
 import {type ParseError, parse as parseJsonc} from 'jsonc-parser'
@@ -67,7 +67,7 @@ async function checkEditorConfig(name: EditorName, configPath: string): Promise<
 
   // Config exists - try to parse it
   try {
-    const content = await fs.readFile(configPath, 'utf8')
+    const content = await readFile(configPath, 'utf8')
     const config = parseConfig(content, format)
 
     if (config === null) {
