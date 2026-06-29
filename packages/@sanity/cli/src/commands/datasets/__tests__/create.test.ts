@@ -196,7 +196,7 @@ describe('#dataset:create', () => {
     mockSelect.mockResolvedValue('private')
 
     const {stderr, stdout} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
-      mocks: defaultMocks,
+      mocks: {...defaultMocks, isInteractive: true},
     })
 
     expect(mockSelect).toHaveBeenCalledWith({
