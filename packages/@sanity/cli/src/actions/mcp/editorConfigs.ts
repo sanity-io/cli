@@ -281,12 +281,17 @@ function buildGitHubCopilotCliServerConfig(token: string): Record<string, unknow
   }
 }
 
-function buildOpenCodeServerConfig(token: string): Record<string, unknown> {
-  return {
-    headers: {Authorization: `Bearer ${token}`},
+function buildOpenCodeServerConfig(token?: string): Record<string, unknown> {
+  const config: Record<string, unknown> = {
     type: 'remote',
     url: MCP_SERVER_URL,
   }
+
+  if (token) {
+    config.headers = {Authorization: `Bearer ${token}`}
+  }
+
+  return config
 }
 
 function buildZedServerConfig(token: string): Record<string, unknown> {
@@ -379,6 +384,7 @@ export const EDITOR_CONFIGS = {
     buildServerConfig: buildOpenCodeServerConfig,
     configKey: 'mcp',
     detect: detectOpenCode,
+    oauthOnly: true,
     skillsCliAgent: 'opencode',
   },
   // Doc: https://code.visualstudio.com/docs/copilot/chat/mcp-servers

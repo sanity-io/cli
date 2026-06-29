@@ -90,6 +90,15 @@ describe('buildServerConfig', () => {
     })
   })
 
+  test('OpenCode config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS.OpenCode.buildServerConfig()
+
+    expect(config).toStrictEqual({
+      type: 'remote',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
   test('all editors except OAuth-only ones include auth credentials', () => {
     const editorsWithToken = [
       'Antigravity',
@@ -98,7 +107,6 @@ describe('buildServerConfig', () => {
       'Gemini CLI',
       'GitHub Copilot CLI',
       'MCPorter',
-      'OpenCode',
       'VS Code',
       'VS Code Insiders',
       'Zed',
