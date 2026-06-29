@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../buildStudio.js'
@@ -29,22 +29,20 @@ vi.mock(import('../../../util/packageManager/upgradePackages.js'), () => ({
   upgradePackages: mockedUpgradePackages,
 }))
 
-vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
-  const original = await importOriginal()
-  return {
-    ...original,
-    buildDebug: vi.fn() as unknown as (typeof original)['buildDebug'],
-    buildStaticFiles: mockedBuildStaticFiles,
-    checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
-    checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
-    resolveVendorBuildConfig: vi.fn().mockResolvedValue({
-      entries: {},
-      namesByChunkName: {},
-      specifiersByChunkName: {},
-    }),
-    StudioBuildTrace: {} as unknown as (typeof original)['StudioBuildTrace'],
-  }
-})
+vi.mock('@sanity/cli-build/_internal/build', () => ({
+  buildDebug: vi.fn(),
+  buildStaticFiles: mockedBuildStaticFiles,
+  checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
+  checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
+  getAutoUpdatesCssUrls: vi.fn(),
+  getAutoUpdatesImportMap: vi.fn(),
+  resolveVendorBuildConfig: vi.fn().mockResolvedValue({
+    entries: {},
+    namesByChunkName: {},
+    specifiersByChunkName: {},
+  }),
+  StudioBuildTrace: {},
+}))
 
 vi.mock(import('@sanity/cli-build/_internal/env'), async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-build/_internal/env')>()
@@ -54,13 +52,9 @@ vi.mock(import('@sanity/cli-build/_internal/env'), async (importOriginal) => {
   }
 })
 
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...original,
-    isInteractive: mockedIsInteractive,
-  }
-})
+vi.mock(import('@sanity/cli-core/util/isInteractive'), () => ({
+  isInteractive: mockedIsInteractive,
+}))
 
 vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
