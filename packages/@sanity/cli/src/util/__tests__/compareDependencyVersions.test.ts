@@ -6,14 +6,13 @@ const mockReadPackageJson = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getLocalPackageVersion: mockGetLocalPackageVersion,
-    readPackageJson: mockReadPackageJson,
-  }
-})
+vi.mock('@sanity/cli-core/util/getLocalPackageVersion', () => ({
+  getLocalPackageVersion: mockGetLocalPackageVersion,
+}))
+vi.mock('@sanity/cli-core/util/readPackageJson', () => ({
+  readPackageJson: mockReadPackageJson,
+}))
+// TODO: mock getModuleUrl
 
 const autoUpdatePackages = [
   {name: 'sanity', version: '1.0.0'},
