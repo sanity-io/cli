@@ -29,6 +29,18 @@
   "main": "./dist/_exports/index.js",
   "types": "./dist/_exports/index.d.ts",
   "exports": {
+    "./SanityCommand": {
+      "source": "./src/SanityCommand.ts",
+      "default": "./dist/SanityCommand.js"
+    },
+    "./debug": {
+      "source": "./src/debug.ts",
+      "default": "./dist/debug.js"
+    },
+    "./types": {
+      "source": "./src/types.ts",
+      "default": "./dist/types.js"
+    },
     ".": {
       "source": "./src/_exports/index.ts",
       "default": "./dist/_exports/index.js"
@@ -45,9 +57,9 @@
       "source": "./src/_exports/package-manager.ts",
       "default": "./dist/_exports/package-manager.js"
     },
-    "./SanityCommand": {
-      "source": "./src/SanityCommand.ts",
-      "default": "./dist/SanityCommand.js"
+    "./config/cli/workbenchApp": {
+      "source": "./src/config/cli/workbenchApp.ts",
+      "default": "./dist/config/cli/workbenchApp.js"
     },
     "./config/cli/types/cliConfig": {
       "source": "./src/config/cli/types/cliConfig.ts",
@@ -60,10 +72,6 @@
     "./telemetry/getCliTelemetry": {
       "source": "./src/telemetry/getCliTelemetry.ts",
       "default": "./dist/telemetry/getCliTelemetry.js"
-    },
-    "./types": {
-      "source": "./src/types.ts",
-      "default": "./dist/types.js"
     },
     "./util/isInteractive": {
       "source": "./src/util/isInteractive.ts",

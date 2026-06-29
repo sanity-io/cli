@@ -1,7 +1,7 @@
 import path from 'node:path'
 
-import {isInteractive} from '@sanity/cli-core'
 import {getRunningPackageManager} from '@sanity/cli-core/package-manager'
+import {isInteractive} from '@sanity/cli-core/util/isInteractive'
 import {select} from '@sanity/cli-core/ux'
 import which from 'which'
 

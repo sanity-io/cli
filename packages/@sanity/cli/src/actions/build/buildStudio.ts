@@ -15,16 +15,20 @@ import {
   StudioBuildTrace,
 } from '@sanity/cli-build/_internal/build'
 import {getStudioEnvironmentVariables} from '@sanity/cli-build/_internal/env'
+import {type CliConfig} from '@sanity/cli-core/config/cli/types/cliConfig'
+import {type UserViteConfig} from '@sanity/cli-core/config/cli/types/userViteConfig'
+import {getCliTelemetry} from '@sanity/cli-core/telemetry/getCliTelemetry'
+import {type Output} from '@sanity/cli-core/types'
+import {getLocalPackageVersion} from '@sanity/cli-core/util/getLocalPackageVersion'
+import {isInteractive} from '@sanity/cli-core/util/isInteractive'
 import {
-  type CliConfig,
-  getCliTelemetry,
-  getLocalPackageVersion,
+  confirm,
   getTimer,
-  isInteractive,
-  type Output,
-  UserViteConfig,
-} from '@sanity/cli-core'
-import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+  logSymbols,
+  select,
+  spinner,
+  type SpinnerInstance,
+} from '@sanity/cli-core/ux'
 import {type DefineAppInput} from '@sanity/workbench-cli'
 import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'

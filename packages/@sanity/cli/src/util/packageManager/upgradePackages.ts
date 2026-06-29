@@ -1,5 +1,5 @@
-import {type Output} from '@sanity/cli-core'
 import {getYarnMajorVersion} from '@sanity/cli-core/package-manager'
+import {type Output} from '@sanity/cli-core/types'
 import {execa, type Options, type Result} from 'execa'
 
 import {getPartialEnvWithNpmPath, type PackageManager} from './packageManagerChoice.js'
