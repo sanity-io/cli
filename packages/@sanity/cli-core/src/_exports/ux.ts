@@ -28,3 +28,4 @@ export {
   spinnerPromise,
   type SpinnerPromiseOptions,
 } from '../ux/spinner.js'
+export {getTimer} from '../ux/timer.js'

@@ -15,7 +15,8 @@ import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
 } from '@sanity/cli-build/_internal/env'
-import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/config/cli/types/cliConfig'
+import {type UserViteConfig} from '@sanity/cli-core/config/cli/types/userViteConfig'
 import {type DefineAppInput} from '@sanity/workbench-cli'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'

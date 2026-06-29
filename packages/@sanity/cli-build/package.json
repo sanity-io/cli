@@ -28,6 +28,18 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./_internal/actions/build/buildDebug": {
+      "source": "./src/actions/build/buildDebug.ts",
+      "default": "./dist/actions/build/buildDebug.js"
+    },
+    "./_internal/actions/build/getAutoUpdatesImportMap": {
+      "source": "./src/actions/build/getAutoUpdatesImportMap.ts",
+      "default": "./dist/actions/build/getAutoUpdatesImportMap.js"
+    },
+    "./_internal/actions/build/resolveVendorBuildConfig": {
+      "source": "./src/actions/build/resolveVendorBuildConfig.ts",
+      "default": "./dist/actions/build/resolveVendorBuildConfig.js"
+    },
     "./_internal/build": {
       "source": "./src/_exports/_internal/build.ts",
       "default": "./dist/_exports/_internal/build.js"
@@ -39,6 +51,10 @@
     "./_internal/extract": {
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
+    },
+    "./_internal/telemetry/build": {
+      "source": "./src/telemetry/build.telemetry.ts",
+      "default": "./dist/telemetry/build.telemetry.js"
     },
     "./package.json": "./package.json"
   },

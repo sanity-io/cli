@@ -45,6 +45,38 @@
       "source": "./src/_exports/package-manager.ts",
       "default": "./dist/_exports/package-manager.js"
     },
+    "./SanityCommand": {
+      "source": "./src/SanityCommand.ts",
+      "default": "./dist/SanityCommand.js"
+    },
+    "./config/cli/types/cliConfig": {
+      "source": "./src/config/cli/types/cliConfig.ts",
+      "default": "./dist/config/cli/types/cliConfig.js"
+    },
+    "./config/cli/types/userViteConfig": {
+      "source": "./src/config/cli/types/userViteConfig.ts",
+      "default": "./dist/config/cli/types/userViteConfig.js"
+    },
+    "./telemetry/getCliTelemetry": {
+      "source": "./src/telemetry/getCliTelemetry.ts",
+      "default": "./dist/telemetry/getCliTelemetry.js"
+    },
+    "./types": {
+      "source": "./src/types.ts",
+      "default": "./dist/types.js"
+    },
+    "./util/isInteractive": {
+      "source": "./src/util/isInteractive.ts",
+      "default": "./dist/util/isInteractive.js"
+    },
+    "./util/getLocalPackageVersion": {
+      "source": "./src/util/getLocalPackageVersion.ts",
+      "default": "./dist/util/getLocalPackageVersion.js"
+    },
+    "./util/readPackageJson": {
+      "source": "./src/util/readPackageJson.ts",
+      "default": "./dist/util/readPackageJson.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
