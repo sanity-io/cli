@@ -1,10 +1,14 @@
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '@sanity/cli-build/_internal/build'
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {afterEach, describe, expect, test, vi} from 'vitest'
+
+import {buildStudio} from '../buildStudio.js'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockGetAutoUpdatesCssUrls = vi.hoisted(() => vi.fn())
+const mockGetAutoUpdatesImportMap = vi.hoisted(() => vi.fn())
+
 /** These are not relevant for what we are testing, but still needed to pass type checker */
 const FLAGS = {
   'auto-updates': true,
@@ -29,51 +33,44 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    buildDebug: vi.fn(),
-    buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
-    checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
-    checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
-    getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
-    getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
-    resolveVendorBuildConfig: vi.fn().mockResolvedValue({
-      entries: {},
-      namesByChunkName: {},
-      specifiersByChunkName: {},
-    }),
-    StudioBuildTrace: {},
-  }
-})
+vi.mock('@sanity/cli-build/_internal/build', () => ({
+  buildDebug: vi.fn(),
+  buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
+  checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
+  checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
+  getAutoUpdatesCssUrls: mockGetAutoUpdatesCssUrls.mockReturnValue([]),
+  getAutoUpdatesImportMap: mockGetAutoUpdatesImportMap.mockReturnValue({}),
+  resolveVendorBuildConfig: vi.fn().mockResolvedValue({
+    entries: {},
+    namesByChunkName: {},
+    specifiersByChunkName: {},
+  }),
+  StudioBuildTrace: {},
+}))
 
 vi.mock('@sanity/cli-build/_internal/env', () => ({
   getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getCliTelemetry: vi.fn().mockReturnValue({
-      trace: vi.fn().mockReturnValue({complete: vi.fn(), log: vi.fn(), start: vi.fn()}),
-    }),
-    getLocalPackageVersion: mockGetLocalPackageVersion,
-    getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
-    isInteractive: vi.fn().mockReturnValue(false),
-  }
-})
+vi.mock('@sanity/cli-core/telemetry/getCliTelemetry', () => ({
+  getCliTelemetry: vi.fn().mockReturnValue({
+    trace: vi.fn().mockReturnValue({complete: vi.fn(), log: vi.fn(), start: vi.fn()}),
+  }),
+}))
+vi.mock('@sanity/cli-core/util/getLocalPackageVersion', () => ({
+  getLocalPackageVersion: mockGetLocalPackageVersion,
+}))
+vi.mock('@sanity/cli-core/util/isInteractive', () => ({
+  isInteractive: vi.fn().mockReturnValue(false),
+}))
 
 vi.mock('@sanity/cli-core/ux', () => ({
   confirm: vi.fn(),
+  getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
   logSymbols: {info: 'i', warning: '!'},
   select: vi.fn(),
   spinner: vi.fn(() => ({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()})),
 }))
-
-// Import after mocks are set up
-const {buildStudio} = await import('../buildStudio.js')
 
 function createMockOutput(): Output {
   return {
@@ -170,7 +167,7 @@ describe('buildStudio appId warning', () => {
       workDir: '/tmp',
     })
 
-    const sanityDependencies = vi.mocked(getAutoUpdatesImportMap).mock.calls[0][0]
+    const sanityDependencies = mockGetAutoUpdatesImportMap.mock.calls[0][0]
     expect(sanityDependencies).toEqual(
       expect.arrayContaining([
         expect.objectContaining({cssFile: 'index.css', name: 'sanity'}),
@@ -183,6 +180,6 @@ describe('buildStudio appId warning', () => {
     )
 
     // The same dependency array is passed to getAutoUpdatesCssUrls
-    expect(vi.mocked(getAutoUpdatesCssUrls).mock.calls[0][0]).toBe(sanityDependencies)
+    expect(mockGetAutoUpdatesCssUrls.mock.calls[0][0]).toBe(sanityDependencies)
   })
 })
