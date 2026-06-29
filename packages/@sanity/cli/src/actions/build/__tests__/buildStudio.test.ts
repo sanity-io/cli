@@ -1,5 +1,7 @@
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+
+import {buildStudio} from '../buildStudio.js'
 
 const FLAGS = {
   'auto-updates': true,
@@ -19,19 +21,19 @@ const mockedUpgradePackages = vi.hoisted(() => vi.fn())
 const mockedIsInteractive = vi.hoisted(() => vi.fn())
 const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../util/compareDependencyVersions.js', () => ({
+vi.mock(import('../../../util/compareDependencyVersions.js'), () => ({
   compareDependencyVersions: mockedCompareDependencyVersions,
 }))
 
-vi.mock('../../../util/packageManager/upgradePackages.js', () => ({
+vi.mock(import('../../../util/packageManager/upgradePackages.js'), () => ({
   upgradePackages: mockedUpgradePackages,
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
+vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
+  const original = await importOriginal()
   return {
     ...original,
-    buildDebug: vi.fn(),
+    buildDebug: vi.fn() as unknown as (typeof original)['buildDebug'],
     buildStaticFiles: mockedBuildStaticFiles,
     checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
     checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
@@ -40,11 +42,11 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
       namesByChunkName: {},
       specifiersByChunkName: {},
     }),
-    StudioBuildTrace: {},
+    StudioBuildTrace: {} as unknown as (typeof original)['StudioBuildTrace'],
   }
 })
 
-vi.mock('@sanity/cli-build/_internal/env', async (importOriginal) => {
+vi.mock(import('@sanity/cli-build/_internal/env'), async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-build/_internal/env')>()
   return {
     ...original,
@@ -52,7 +54,7 @@ vi.mock('@sanity/cli-build/_internal/env', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...original,
@@ -60,7 +62,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
+vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
   mockedSpinner.mockImplementation(original.spinner)
   return {
@@ -70,9 +72,6 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
     spinner: mockedSpinner,
   }
 })
-
-// Import after mocks are set up
-const {buildStudio} = await import('../buildStudio.js')
 
 function createMockOutput(): Output {
   return {
