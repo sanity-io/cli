@@ -707,7 +707,8 @@ describe.sequential('#mcp:configure', () => {
 
   test('handles token creation error gracefully', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).endsWith('.gemini/settings.json')
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/.gemini/settings.json')
     })
 
     mockCheckbox.mockResolvedValue(['Gemini CLI'])
