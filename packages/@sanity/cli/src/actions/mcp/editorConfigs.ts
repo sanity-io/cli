@@ -395,6 +395,7 @@ export const EDITOR_CONFIGS = {
     ...EDITOR_DEFAULTS,
     configKey: 'servers',
     detect: detectVSCode,
+    oauthOnly: true,
     skillsCliAgent: 'github-copilot',
   },
   // Doc: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
@@ -403,6 +404,7 @@ export const EDITOR_CONFIGS = {
     ...EDITOR_DEFAULTS,
     configKey: 'servers',
     detect: detectVSCodeInsiders,
+    oauthOnly: true,
     skillsCliAgent: 'github-copilot',
   },
   // Doc: https://zed.dev/docs/assistant/model-context-protocol

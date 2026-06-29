@@ -212,6 +212,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: 'Code/User/mcp.json',
     name: 'VS Code',
+    oauthOnly: true,
     platform: 'darwin',
   },
   {
@@ -222,6 +223,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: String.raw`AppData\Roaming\Code\User\mcp.json`,
     name: 'VS Code',
+    oauthOnly: true,
     platform: 'win32',
   },
   {
@@ -231,6 +233,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: 'Code - Insiders/User/mcp.json',
     name: 'VS Code Insiders',
+    oauthOnly: true,
     platform: 'darwin',
   },
   {
@@ -241,6 +244,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: String.raw`AppData\Roaming\Code - Insiders\User\mcp.json`,
     name: 'VS Code Insiders',
+    oauthOnly: true,
     platform: 'win32',
   },
   {
