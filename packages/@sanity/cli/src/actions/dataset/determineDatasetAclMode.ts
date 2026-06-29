@@ -46,6 +46,11 @@ export async function determineDatasetAclMode(
 
   // Handle explicit custom/public requests
   if (visibility === 'custom' || visibility === 'public') {
+    if (visibility === 'public') {
+      output.warn(
+        'Creating a PUBLIC dataset. Anyone on the internet will be able to read its contents without authentication. If you plan to store any sensitive, personal, or proprietary data, re-run with --visibility private.',
+      )
+    }
     return visibility
   }
 
