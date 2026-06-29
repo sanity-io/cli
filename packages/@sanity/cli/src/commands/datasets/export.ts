@@ -3,7 +3,9 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
@@ -129,9 +131,12 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
       datasets = await listDatasets(projectId)
     } catch (error) {
       exportDebug('Error listing datasets', error)
-      this.error(`Failed to list datasets:\n${error instanceof Error ? error.message : error}`, {
-        exit: 1,
-      })
+      return this.output.error(
+        `Failed to list datasets:\n${error instanceof Error ? error.message : error}`,
+        {
+          exit: 1,
+        },
+      )
     }
 
     // Determine dataset name
@@ -144,30 +149,33 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
 
         if (defaultDataset) {
           dataset = defaultDataset
-          this.log(`Using default dataset: ${dataset}`)
+          this.output.log(`Using default dataset: ${dataset}`)
         } else {
           dataset = await promptForDataset({allowCreation: false, datasets})
         }
       } catch (error) {
         exportDebug('Error selecting dataset', error)
-        this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
-          exit: 1,
-        })
+        return this.output.error(
+          `Failed to select dataset:\n${error instanceof Error ? error.message : error}`,
+          {
+            exit: 1,
+          },
+        )
       }
     }
 
     // Validate dataset name
     const dsError = validateDatasetName(dataset)
     if (dsError) {
-      this.error(dsError, {exit: 1})
+      return this.output.error(dsError, {exit: 1})
     }
 
     // Verify existence of dataset before trying to export from it
     if (!datasets.some((set) => set.name === dataset)) {
-      this.error(`Dataset with name "${dataset}" not found`, {exit: 1})
+      return this.output.error(`Dataset with name "${dataset}" not found`, {exit: 1})
     }
 
-    this.log(
+    this.output.log(
       boxen(
         `Exporting from:
 projectId: ${projectId.padEnd(44)}
@@ -187,7 +195,7 @@ dataset: ${dataset.padEnd(46)}`,
 
     const outputPath = await this.getOutputPath(destinationPath, dataset, flags)
     if (!outputPath) {
-      this.error('Cancelled', {exit: 1})
+      return this.output.error('Cancelled', {exit: 1})
     }
 
     // Prepare export options
@@ -211,12 +219,12 @@ dataset: ${dataset.padEnd(46)}`,
     try {
       await exportDataset(exportOptions)
       succeed()
-      this.log(`Export finished (${prettyMs(Date.now() - start)})`)
+      this.output.log(`Export finished (${prettyMs(Date.now() - start)})`)
     } catch (error) {
       fail()
       const err = error instanceof Error ? error : new Error(String(error))
       exportDebug('Export failed', err)
-      this.error(`Export failed: ${err.message}`, {exit: 1})
+      return this.output.error(`Export failed: ${err.message}`, {exit: 1})
     }
   }
 
@@ -272,18 +280,16 @@ dataset: ${dataset.padEnd(46)}`,
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
         const errorWithCode = err as Error & {code?: string}
-        if (errorWithCode.code === 'EACCES') {
-          this.error(
-            `Permission denied: Cannot create directory "${createPath}". Please check write permissions.`,
-            {
+        return errorWithCode.code === 'EACCES'
+          ? this.output.error(
+              `Permission denied: Cannot create directory "${createPath}". Please check write permissions.`,
+              {
+                exit: 1,
+              },
+            )
+          : this.output.error(`Failed to create directory "${createPath}": ${err.message}`, {
               exit: 1,
-            },
-          )
-        } else {
-          this.error(`Failed to create directory "${createPath}": ${err.message}`, {
-            exit: 1,
-          })
-        }
+            })
       }
     }
 
@@ -291,9 +297,12 @@ dataset: ${dataset.padEnd(46)}`,
     const finalPathStats = await fs.stat(finalPath).catch(noop)
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
-      this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
-        exit: 1,
-      })
+      return this.output.error(
+        `File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`,
+        {
+          exit: 1,
+        },
+      )
     }
 
     return finalPath

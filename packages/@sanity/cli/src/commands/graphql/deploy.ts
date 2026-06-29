@@ -1,5 +1,6 @@
 import {Flags} from '@oclif/core'
-import {isInteractive, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {isInteractive} from '@sanity/cli-core/util'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import get from 'lodash-es/get.js'
 

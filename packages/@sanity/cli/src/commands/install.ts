@@ -1,5 +1,5 @@
 import {Args} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {
   installDeclaredPackages,

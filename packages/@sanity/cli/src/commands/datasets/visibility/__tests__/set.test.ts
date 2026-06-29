@@ -1,4 +1,4 @@
-import {NonInteractiveError} from '@sanity/cli-core'
+import {NonInteractiveError} from '@sanity/cli-core/errors'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 

@@ -1,4 +1,4 @@
-import {getStudioConfig} from '@sanity/cli-core'
+import {getStudioConfig} from '@sanity/cli-core/config'
 import {testCommand} from '@sanity/cli-test'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'

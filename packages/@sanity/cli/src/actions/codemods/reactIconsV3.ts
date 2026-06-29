@@ -1,4 +1,4 @@
-import {getLocalPackageVersion} from '@sanity/cli-core'
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {compare} from 'semver'
 
 import {type CodeMod} from './types.js'

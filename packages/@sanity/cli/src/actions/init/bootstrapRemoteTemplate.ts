@@ -1,7 +1,8 @@
 import {mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {Output, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type Output} from '@sanity/cli-core/types'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {getMonoRepo, GitHubFileReader, validateTemplate} from '@sanity/template-validator'
 import {type Framework, frameworks} from '@vercel/frameworks'

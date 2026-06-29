@@ -1,4 +1,4 @@
-import {type SanityOrgUser, type TelemetryUserProperties} from '@sanity/cli-core'
+import {type SanityOrgUser, type TelemetryUserProperties} from '@sanity/cli-core/types'
 import {select, Separator} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 

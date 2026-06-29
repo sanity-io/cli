@@ -1,5 +1,5 @@
-import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
-import {type CliConfig} from '@sanity/cli-core'
+import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/util'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'

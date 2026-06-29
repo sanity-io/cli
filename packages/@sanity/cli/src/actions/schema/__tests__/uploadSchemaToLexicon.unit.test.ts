@@ -1,4 +1,4 @@
-import {resolveLocalPackage} from '@sanity/cli-core'
+import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
 import {type Workspace} from 'sanity'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 

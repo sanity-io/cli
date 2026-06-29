@@ -1,4 +1,4 @@
-import {type PackageJson} from '@sanity/cli-core'
+import {type PackageJson} from '@sanity/cli-core/types'
 import {packageDirectory} from 'package-directory'
 import {describe, expect, test, vi} from 'vitest'
 

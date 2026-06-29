@@ -1,7 +1,8 @@
 import {inspect, styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {select} from '@sanity/cli-core/ux'
 import groupBy from 'lodash-es/groupBy.js'
 
@@ -73,11 +74,11 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     } catch (error) {
       const err = error as Error
       logsHookDebug(`Error fetching hooks for project ${projectId}`, err)
-      this.error(`Hook list retrieval failed:\n${err.message}`, {exit: 1})
+      return this.output.error(`Hook list retrieval failed:\n${err.message}`, {exit: 1})
     }
 
     if (hooks.length === 0) {
-      this.error('No hooks currently registered', {exit: 1})
+      return this.output.error('No hooks currently registered', {exit: 1})
     }
 
     // If hook name is provided, find that specific hook
@@ -85,7 +86,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     if (args.name) {
       selectedHook = hooks.find((hook) => hook.name.toLowerCase() === args.name?.toLowerCase())
       if (!selectedHook) {
-        this.error(`Hook with name "${args.name}" not found`, {exit: 1})
+        return this.output.error(`Hook with name "${args.name}" not found`, {exit: 1})
       }
     } else if (hooks.length === 1) {
       // If only one hook exists, use that
@@ -96,12 +97,12 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     }
 
     if (!selectedHook) {
-      this.error('No hook selected', {exit: 1})
+      return this.output.error('No hook selected', {exit: 1})
     }
 
     // Fetch messages and attempts for the selected hook
     let messages: HookMessage[]
-    let attempts: DeliveryAttempt[] = []
+    let attempts: DeliveryAttempt[]
     try {
       ;[messages, attempts] = await Promise.all([
         getHookMessagesForProject({
@@ -116,7 +117,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     } catch (error) {
       const err = error as Error
       logsHookDebug(`Error fetching logs for hook ${selectedHook.id}`, err)
-      this.error(`Hook logs retrieval failed:\n${err.message}`, {exit: 1})
+      return this.output.error(`Hook logs retrieval failed:\n${err.message}`, {exit: 1})
     }
 
     // Group attempts by message ID
@@ -150,51 +151,51 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
   ) {
     const {detailed} = options
 
-    this.log(`Date: ${message.createdAt}`)
-    this.log(`Status: ${message.status}`)
+    this.output.log(`Date: ${message.createdAt}`)
+    this.output.log(`Status: ${message.status}`)
     if (message.resultCode) {
-      this.log(`Result code: ${message.resultCode}`)
+      this.output.log(`Result code: ${message.resultCode}`)
     }
 
     if (message.failureCount > 0) {
-      this.log(`Failures: ${message.failureCount}`)
+      this.output.log(`Failures: ${message.failureCount}`)
     }
 
     if (detailed) {
-      this.log('Payload:')
+      this.output.log('Payload:')
       try {
         const payload = JSON.parse(message.payload)
-        this.log(inspect(payload, {colors: true}))
+        this.output.log(inspect(payload, {colors: true}))
       } catch (error) {
-        this.log(`Payload (raw): ${message.payload}`)
+        this.output.log(`Payload (raw): ${message.payload}`)
         logsHookDebug('Failed to parse payload JSON:', error)
       }
     }
 
     if (detailed && message.attempts && message.attempts.length > 0) {
-      this.log('Attempts:')
+      this.output.log('Attempts:')
       for (const attempt of message.attempts) {
         const date = this.formatAttemptDate(attempt.createdAt)
         const prefix = `  [${date}]`
 
         if (attempt.inProgress) {
-          this.log(`${prefix} ${styleText('yellow', 'Pending')}`)
+          this.output.log(`${prefix} ${styleText('yellow', 'Pending')}`)
         } else if (attempt.isFailure) {
           const failure = formatFailure(attempt, {includeHelp: true})
-          this.log(`${prefix} ${styleText('yellow', `Failure: ${failure}`)}`)
+          this.output.log(`${prefix} ${styleText('yellow', `Failure: ${failure}`)}`)
         } else {
-          this.log(`${prefix} Success: HTTP ${attempt.resultCode} (${attempt.duration}ms)`)
+          this.output.log(`${prefix} Success: HTTP ${attempt.resultCode} (${attempt.duration}ms)`)
         }
       }
     }
 
     // Leave some empty space between messages
-    this.log('')
+    this.output.log('')
   }
 
   private printSeparator(skip: boolean) {
     if (!skip) {
-      this.log('---\n')
+      this.output.log('---\n')
     }
   }
 

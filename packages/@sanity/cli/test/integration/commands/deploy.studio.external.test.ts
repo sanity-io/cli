@@ -1,4 +1,6 @@
-import {type CliConfig, exitCodes, studioWorkerTask} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {unstable_defineApp} from '@sanity/workbench-cli'

@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {of, throwError} from 'rxjs'

@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {bootstrapRemoteTemplate} from '../bootstrapRemoteTemplate.js'

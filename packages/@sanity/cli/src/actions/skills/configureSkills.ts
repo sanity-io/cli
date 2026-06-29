@@ -1,4 +1,5 @@
-import {type Output, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type Output} from '@sanity/cli-core/types'
 
 import {detectAvailableEditors} from '../mcp/detectAvailableEditors.js'
 import {type EditorName, getSkillsCliAgent} from '../mcp/editorConfigs.js'

@@ -3,12 +3,43 @@ import {dirname, join as joinPath} from 'node:path'
 
 import {z} from 'zod/mini'
 
-import {debug} from '../debug.js'
+import {debug} from '../_exports/debug.js'
 import {getSanityConfigDir} from '../util/getSanityConfigDir.js'
 import {readJsonFileSync} from '../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../util/writeJsonFileSync.js'
-import {clearCliTokenCache} from './cliTokenCache.js'
+import {clearCliTokenCache, getCachedToken, setCachedToken} from './cliTokenCache.js'
 
+// Re-export so existing consumers don't break
+export {clearCliTokenCache} from './cliTokenCache.js'
+
+// Only used for testing
+export const _internals = {
+  getCliUserConfig,
+}
+
+/**
+ * Get the CLI authentication token from the environment or the config file
+ *
+ * @returns A promise that resolves to a CLI token, or undefined if no token is found
+ * @internal
+ */
+export async function getCliToken(): Promise<string | undefined> {
+  const cached = getCachedToken()
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const token = process.env.SANITY_AUTH_TOKEN
+  if (token) {
+    const trimmed = token.trim()
+    setCachedToken(trimmed)
+    return trimmed
+  }
+
+  const configToken = _internals.getCliUserConfig('authToken')
+  setCachedToken(configToken)
+  return configToken
+}
 const cliUserConfigSchema = {
   authToken: z.optional(z.string()),
 }
@@ -54,7 +85,6 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
  *
  * @param prop - The property to get the value for
  * @returns The value of the given property
- * @internal
  */
 export function getCliUserConfig(prop: 'authToken'): string | undefined {
   const config = readConfig()

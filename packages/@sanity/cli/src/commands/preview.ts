@@ -1,7 +1,8 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {previewAction} from '../actions/preview/previewAction.js'
 import {type PreviewServer} from '../server/previewServer.js'

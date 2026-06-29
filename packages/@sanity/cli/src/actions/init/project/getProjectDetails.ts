@@ -1,4 +1,5 @@
-import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type SanityOrgUser, type TelemetryUserProperties} from '@sanity/cli-core/types'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {listOrganizations, type ProjectOrganization} from '../../../services/organizations.js'

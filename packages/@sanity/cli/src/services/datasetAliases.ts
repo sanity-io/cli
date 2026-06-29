@@ -1,4 +1,4 @@
-import {getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
 
 export const DATASET_ALIASES_API_VERSION = 'v2025-09-16'
 export const ALIAS_PREFIX = '~'

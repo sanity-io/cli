@@ -1,6 +1,10 @@
 import {describe, expect, test} from 'vitest'
 
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
+import {
+  getAutoUpdatesCssUrls,
+  getAutoUpdatesImportMap,
+  getModuleUrl,
+} from '../getAutoUpdatesImportMap.js'
 
 describe('getAutoUpdateImportMap() without app id', () => {
   test('works with sanity package', () => {
@@ -149,5 +153,26 @@ describe('getAutoUpdatesCssUrls() with app id', () => {
       'https://sanity-cdn.com/v1/modules/by-app/foo321bar123/t1755770630/%5E3.2.0/sanity/index.css',
       'https://sanity-cdn.com/v1/modules/by-app/foo321bar123/t1755770630/%5E3.2.0/@sanity__vision/index.css',
     ])
+  })
+})
+
+describe('getModuleUrl', () => {
+  test('should use the default module endpoint when no appId is provided', () => {
+    const res = getModuleUrl({name: 'sanity', version: '3.40.0'})
+
+    expect(res).toContain('/v1/modules/sanity/default/')
+    expect(res).not.toContain('/by-app/')
+  })
+
+  test('should use the app-specific module endpoint when appId is provided', () => {
+    const res = getModuleUrl(
+      {name: 'sanity', version: '3.40.0'},
+      {
+        appId: 'my-app-id',
+      },
+    )
+
+    expect(res).toContain('/v1/modules/by-app/my-app-id/')
+    expect(res).not.toContain('/default/')
   })
 })

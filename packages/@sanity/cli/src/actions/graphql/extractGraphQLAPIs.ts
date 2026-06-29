@@ -1,12 +1,9 @@
 import {isMainThread, type MessagePort} from 'node:worker_threads'
 
-import {
-  type CliConfig,
-  findStudioConfigPath,
-  getCliConfig,
-  studioWorkerTask,
-  subdebug,
-} from '@sanity/cli-core'
+import {findStudioConfigPath, getCliConfig} from '@sanity/cli-core/config'
+import {subdebug} from '@sanity/cli-core/debug'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
+import {type CliConfig} from '@sanity/cli-core/types'
 
 import {isSchemaError} from '../../util/isSchemaError.js'
 import {extractFromSanitySchema} from './extractFromSanitySchema.js'

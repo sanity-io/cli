@@ -1,4 +1,4 @@
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 import {select, Separator} from '@sanity/cli-core/ux'
 
 import {promptForDatasetName} from '../../../prompts/promptForDatasetName.js'

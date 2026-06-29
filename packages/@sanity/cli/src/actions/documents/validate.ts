@@ -1,4 +1,5 @@
-import {createStudioWorker, getGlobalCliClient} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
+import {createStudioWorker} from '@sanity/cli-core/tasks'
 import {type ClientConfig} from '@sanity/client'
 import {type ValidationMarker} from '@sanity/types'
 import {WorkerChannelReceiver} from '@sanity/worker-channels'

@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
 import {CLIError} from '@oclif/core/errors'
-import {setCliUserConfig} from '@sanity/cli-core'
+import {setCliUserConfig} from '@sanity/cli-core/services/cliUserConfig'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 

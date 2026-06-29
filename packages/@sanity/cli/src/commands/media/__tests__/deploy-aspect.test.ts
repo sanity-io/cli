@@ -1,6 +1,6 @@
 import {basename} from 'node:path'
 
-import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
 import {select} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {

@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
-import {getUserConfig, isCi} from '@sanity/cli-core'
+import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {isCi} from '@sanity/cli-core/util'
 import {boxen} from '@sanity/cli-core/ux'
 
 import {telemetryDebug} from './telemetryDebug.js'

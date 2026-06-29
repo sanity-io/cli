@@ -1,4 +1,4 @@
-import {getCliConfig} from '@sanity/cli-core'
+import {getCliConfig} from '@sanity/cli-core/config'
 import {testFixture} from '@sanity/cli-test'
 import {beforeAll, describe, expect, test} from 'vitest'
 

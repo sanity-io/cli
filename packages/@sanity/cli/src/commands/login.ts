@@ -2,7 +2,7 @@ import {text} from 'node:stream/consumers'
 
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {login} from '../actions/auth/login/login.js'
 

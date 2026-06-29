@@ -1,7 +1,7 @@
 import {existsSync} from 'node:fs'
 import path from 'node:path'
 
-import {CLITelemetryStore} from '@sanity/cli-core'
+import {type CLITelemetryStore} from '@sanity/cli-core/types'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {
   type GenerationResult,

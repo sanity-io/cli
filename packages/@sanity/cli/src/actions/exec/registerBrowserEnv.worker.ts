@@ -1,4 +1,4 @@
-import {mockBrowserEnvironment} from '@sanity/cli-core'
+import {mockBrowserEnvironment} from '@sanity/cli-core/browser' // TODO: this imports JSDOM! 46MB dependency
 
 // This script is meant to be used with Node's --import flag to preload
 // the Sanity Studio environment before executing user scripts.

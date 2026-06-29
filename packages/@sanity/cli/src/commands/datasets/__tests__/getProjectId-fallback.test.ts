@@ -1,4 +1,4 @@
-import {NonInteractiveError, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {NonInteractiveError, ProjectRootNotFoundError} from '@sanity/cli-core/errors'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 

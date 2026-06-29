@@ -3,16 +3,10 @@ import {mkdir} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {
-  clearCliTelemetry,
-  CLI_TELEMETRY_SYMBOL,
-  findProjectRoot,
-  getCliConfig,
-  getCliTelemetry,
-  getUserConfig,
-  isCi,
-  normalizePath,
-} from '@sanity/cli-core'
+import {findProjectRoot, getCliConfig} from '@sanity/cli-core/config'
+import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {clearCliTelemetry, CLI_TELEMETRY_SYMBOL, getCliTelemetry} from '@sanity/cli-core/telemetry'
+import {isCi, normalizePath} from '@sanity/cli-core/util'
 import {createTestToken, mockApi, testHook} from '@sanity/cli-test'
 import {type TelemetryEvent} from '@sanity/telemetry'
 import {cleanAll, pendingMocks} from 'nock'

@@ -4,7 +4,8 @@ import {
   checkRequiredDependencies,
   checkStudioDependencyVersions,
 } from '@sanity/cli-build/_internal/build'
-import {getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
+import {isInteractive} from '@sanity/cli-core/util'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 import {parse as semverParse} from 'semver'

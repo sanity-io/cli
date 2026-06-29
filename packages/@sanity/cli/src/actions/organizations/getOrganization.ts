@@ -1,4 +1,5 @@
-import {Output, type SanityOrgUser, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type Output, type SanityOrgUser} from '@sanity/cli-core/types'
 import {select, spinner} from '@sanity/cli-core/ux'
 
 import {promptForOrganizationName} from '../../prompts/promptForOrganizationName.js'

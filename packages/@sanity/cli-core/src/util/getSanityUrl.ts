@@ -1,3 +1,4 @@
+// Pure in-memory implementation. Widely exported.
 /**
  * @internal
  * @returns The Sanity URL for the given path, using the correct domain based on the environment

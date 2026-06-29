@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
 import {RawRequestOptions} from '@sanity/client'
 
 export const ORGANIZATIONS_API_VERSION = 'v2025-05-14'

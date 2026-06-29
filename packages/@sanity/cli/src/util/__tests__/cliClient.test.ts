@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {createClient, type SanityClient} from '@sanity/client'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 

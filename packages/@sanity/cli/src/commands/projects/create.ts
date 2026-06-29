@@ -1,6 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import {DatasetResponse} from '@sanity/client'
 

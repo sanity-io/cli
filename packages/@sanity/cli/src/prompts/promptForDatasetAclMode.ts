@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {select} from '@sanity/cli-core/ux'
 import {type DatasetAclMode} from '@sanity/client'
 

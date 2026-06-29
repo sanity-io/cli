@@ -1,7 +1,8 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
 import {boxen, spinner} from '@sanity/cli-core/ux'
 import {SanityClient} from '@sanity/client'
 import {type OperatorFunction, pipe, scan, tap} from 'rxjs'

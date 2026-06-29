@@ -1,4 +1,5 @@
-import {type SanityOrgUser, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type SanityOrgUser} from '@sanity/cli-core/types'
 import {select, Separator} from '@sanity/cli-core/ux'
 
 import {listOrganizations, type ProjectOrganization} from '../../../services/organizations.js'

@@ -1,4 +1,5 @@
-import {getSanityUrl, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {getSanityUrl} from '@sanity/cli-core/util'
 
 const debug = subdebug('dev:getDashboardAppURL')
 

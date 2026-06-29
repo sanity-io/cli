@@ -11,7 +11,7 @@ import {
 } from '@sanity/client'
 
 import {generateHelpUrl} from '../util/generateHelpUrl.js'
-import {getCliToken} from './getCliToken.js'
+import {getCliToken} from './cliUserConfig.js'
 
 const apiHosts: Record<string, string | undefined> = {
   staging: 'https://api.sanity.work',

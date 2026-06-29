@@ -3,7 +3,8 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {extendViteConfigWithUserConfig} from '@sanity/cli-build/_internal/build'
-import {getLocalPackageVersion, type UserViteConfig} from '@sanity/cli-core'
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
+import {type UserViteConfig} from '@sanity/cli-core/types'
 import {type InlineConfig, preview} from 'vite'
 
 import {serverDebug} from './serverDebug.js'

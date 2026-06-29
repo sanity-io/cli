@@ -1,7 +1,7 @@
 import {existsSync} from 'node:fs'
 import fs from 'node:fs/promises'
 
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 import {type ParseError, parse as parseJsonc} from 'jsonc-parser'
 import {parse as parseToml} from 'smol-toml'
 

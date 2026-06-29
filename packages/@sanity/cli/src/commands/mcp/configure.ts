@@ -1,4 +1,6 @@
-import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {isInteractive} from '@sanity/cli-core/util'
 
 import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
 import {setupMCP} from '../../actions/mcp/setupMCP.js'

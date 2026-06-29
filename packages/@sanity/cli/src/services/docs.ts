@@ -1,4 +1,4 @@
-import {getSanityUrl} from '@sanity/cli-core'
+import {getSanityUrl} from '@sanity/cli-core/util'
 
 const DOCS_API_TIMEOUT = 10_000
 

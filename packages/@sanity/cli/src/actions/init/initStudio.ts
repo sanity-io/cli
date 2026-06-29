@@ -1,6 +1,8 @@
 import {styleText} from 'node:util'
 
-import {getCliToken, type Output, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {getCliToken} from '@sanity/cli-core/services/cliUserConfig'
+import {type Output, type TelemetryUserProperties} from '@sanity/cli-core/types'
 import {confirm} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 

@@ -1,7 +1,9 @@
 import {spawn} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
-import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {isCi} from '@sanity/cli-core/util'
 import {gt as semverGt} from 'semver'
 
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'

@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {type ModuleFederationOptions} from '@module-federation/vite'
-import {type PackageJson} from '@sanity/cli-core'
+import {type PackageJson} from '@sanity/cli-core/types'
 import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'

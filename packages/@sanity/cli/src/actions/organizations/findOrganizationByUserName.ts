@@ -1,4 +1,4 @@
-import {type SanityOrgUser} from '@sanity/cli-core'
+import {type SanityOrgUser} from '@sanity/cli-core/types'
 
 import {type ProjectOrganization} from '../../services/organizations.js'
 

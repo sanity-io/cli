@@ -1,4 +1,4 @@
-import {getLocalPackageVersion} from '@sanity/cli-core'
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {testCommand} from '@sanity/cli-test'
 import {getLatestVersion} from 'get-latest-version'
 import {afterEach, describe, expect, test, vi} from 'vitest'

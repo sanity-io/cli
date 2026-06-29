@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 
 import {isWorkbenchApp} from '../../defineApp.js'
 import {type DevServerManifest} from './registry.js'

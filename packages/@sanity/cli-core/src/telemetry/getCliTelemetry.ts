@@ -1,4 +1,4 @@
-import {ux} from '@oclif/core'
+import {ux} from '@oclif/core' // TODO: should telemetry helpers be importing oclif? cli-build imports this... we should remove this.
 
 import {noopLogger} from './noopTelemetry.js'
 import {type CLITelemetryStore} from './types.js'
@@ -29,6 +29,7 @@ function getState(): CliTelemetryState | undefined {
 /**
  * @public
  */
+// TODO: change this API so that it accepts a channel for passing warnings through, otherwise this is pumped through OCLIF UX via singleton
 export function getCliTelemetry(): CLITelemetryStore {
   const state = getState()
   // This should never happen, but if it does, we return a noop logger to avoid errors.

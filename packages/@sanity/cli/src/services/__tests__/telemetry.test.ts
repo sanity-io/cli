@@ -1,4 +1,4 @@
-import {getUserConfig} from '@sanity/cli-core'
+import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
 import {mockApi} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 

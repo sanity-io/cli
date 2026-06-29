@@ -2,16 +2,18 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
+import {getCliTelemetry} from '@sanity/cli-core/telemetry'
+import {type CliConfig, type Output, type UserViteConfig} from '@sanity/cli-core/types'
+import {isInteractive} from '@sanity/cli-core/util'
 import {
-  type CliConfig,
-  getCliTelemetry,
-  getLocalPackageVersion,
+  confirm,
   getTimer,
-  isInteractive,
-  type Output,
-  type UserViteConfig,
-} from '@sanity/cli-core'
-import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+  logSymbols,
+  select,
+  spinner,
+  type SpinnerInstance,
+} from '@sanity/cli-core/ux'
 import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 

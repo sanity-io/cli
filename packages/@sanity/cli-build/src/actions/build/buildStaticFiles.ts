@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'

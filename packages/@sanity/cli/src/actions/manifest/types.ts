@@ -22,7 +22,11 @@ export interface CreateManifest {
 // The studio/app manifest contract lives in `@sanity/cli-core` so the CLI and
 // the workbench dev-server registry validate against the same schemas without
 // depending on each other.
-export {type CoreAppManifest, coreAppManifestSchema, type StudioManifest} from '@sanity/cli-core'
+export {
+  type CoreAppManifest,
+  coreAppManifestSchema,
+  type StudioManifest,
+} from '@sanity/cli-core/schemas'
 
 export interface ManifestWorkspaceFile extends Omit<CreateWorkspaceManifest, 'schema' | 'tools'> {
   schema: string // filename

@@ -1,4 +1,5 @@
-import {isInteractive, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {isInteractive} from '@sanity/cli-core/util'
 import {input, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 
 import {promptForProviders} from '../../../prompts/promptForProviders.js'

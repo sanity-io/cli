@@ -1,26 +1,12 @@
-import {
-  getCliToken,
-  getStudioConfig,
-  getUserConfig,
-  ProjectRootNotFoundError,
-  tryFindStudioConfigPath,
-} from '@sanity/cli-core'
-import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
+import {getStudioConfig, tryFindStudioConfigPath} from '@sanity/cli-core/config'
+import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
+import {getCliToken, getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {convertToSystemPath} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECTS_API_VERSION} from '../../services/projects.js'
 import {USERS_API_VERSION} from '../../services/user.js'
 import {Debug} from '../debug.js'
-
-// Mock fs/promises for findCliConfigFile
-vi.mock('node:fs/promises', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:fs/promises')>()
-  return {
-    ...actual,
-    access: vi.fn().mockRejectedValue(new Error('ENOENT')),
-  }
-})
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')

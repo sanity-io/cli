@@ -1,4 +1,5 @@
-import {doImport, resolveLocalPackage} from '@sanity/cli-core'
+import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
+import {doImport} from '@sanity/cli-core/util'
 import {type Schema} from '@sanity/types'
 import {type Workspace} from 'sanity'
 

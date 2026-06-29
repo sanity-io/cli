@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {Table} from 'console-table-printer'
 import sortBy from 'lodash-es/sortBy.js'
 

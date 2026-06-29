@@ -1,4 +1,4 @@
-import {getCliToken, setCliUserConfig} from '@sanity/cli-core'
+import {getCliToken, setCliUserConfig} from '@sanity/cli-core/services/cliUserConfig'
 import open from 'open'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 

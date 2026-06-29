@@ -1,4 +1,4 @@
-import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
 import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'

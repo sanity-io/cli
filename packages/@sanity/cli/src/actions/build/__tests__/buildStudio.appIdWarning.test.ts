@@ -1,9 +1,10 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {afterEach, describe, expect, test, vi} from 'vitest'
+
+import {buildStudio} from '../buildStudio.js'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
-const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockBuildStudio = vi.hoisted(() =>
   vi.fn().mockImplementation((options) => {
     options.checkAppId()
@@ -42,28 +43,13 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getCliTelemetry: vi.fn().mockReturnValue({
-      trace: vi.fn().mockReturnValue({complete: vi.fn(), log: vi.fn(), start: vi.fn()}),
-    }),
-    getLocalPackageVersion: mockGetLocalPackageVersion,
-    getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
-    isInteractive: vi.fn().mockReturnValue(false),
-  }
-})
-
 vi.mock('@sanity/cli-core/ux', () => ({
   confirm: vi.fn(),
+  getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
   logSymbols: {info: 'i', warning: '!'},
   select: vi.fn(),
   spinner: vi.fn(() => ({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()})),
 }))
-
-// Import after mocks are set up
-const {buildStudio} = await import('../buildStudio.js')
 
 function createMockOutput(): Output {
   return {

@@ -1,6 +1,7 @@
 import {Flags} from '@oclif/core'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {findProjectRoot, SanityCommand} from '@sanity/cli-core'
+import {findProjectRoot} from '@sanity/cli-core/config'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {manifestDebug} from '../../actions/manifest/debug.js'
 import {extractManifest} from '../../actions/manifest/extractManifest.js'

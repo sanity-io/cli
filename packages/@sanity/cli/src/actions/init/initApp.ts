@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {type Output, type TelemetryUserProperties} from '@sanity/cli-core'
+import {type Output, type TelemetryUserProperties} from '@sanity/cli-core/types'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 

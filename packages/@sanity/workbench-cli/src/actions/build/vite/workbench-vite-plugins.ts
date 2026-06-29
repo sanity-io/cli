@@ -7,7 +7,7 @@
 
 import path from 'node:path'
 
-import {readPackageJson} from '@sanity/cli-core'
+import {readPackageJson} from '@sanity/cli-core/package-manager'
 import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'

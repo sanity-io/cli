@@ -1,4 +1,5 @@
-import {getUserConfig, isCi} from '@sanity/cli-core'
+import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {isCi} from '@sanity/cli-core/util'
 import {testFixture, testHook} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 

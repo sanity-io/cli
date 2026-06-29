@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'

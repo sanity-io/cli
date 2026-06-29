@@ -2,7 +2,7 @@ import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {z} from 'zod/mini'
 
-import {subdebug} from '../../debug.js'
+import {subdebug} from '../../_exports/debug.js'
 import {doImport} from '../../util/doImport.js'
 import {safeStructuredClone} from '../../util/safeStructuredClone.js'
 import {getStudioWorkspaces} from './getStudioWorkspaces.js'

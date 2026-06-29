@@ -10,19 +10,15 @@ const mockGetCliToken = vi.hoisted(() => vi.fn())
 const mockGenerateHelpUrl = vi.hoisted(() => vi.fn())
 const mockIsHttpError = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/client', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/client')>('@sanity/client')
-  return {
-    ...actual,
-    createClient: mockCreateClient,
-    isHttpError: mockIsHttpError,
-    requester: {
-      clone: mockRequesterClone,
-    },
-  }
-})
+vi.mock('@sanity/client', () => ({
+  createClient: mockCreateClient,
+  isHttpError: mockIsHttpError,
+  requester: {
+    clone: mockRequesterClone,
+  },
+}))
 
-vi.mock('../getCliToken.js', () => ({
+vi.mock('../cliUserConfig.js', () => ({
   getCliToken: mockGetCliToken,
 }))
 

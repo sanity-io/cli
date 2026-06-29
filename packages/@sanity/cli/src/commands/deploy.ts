@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deployApp} from '../actions/deploy/deployApp.js'

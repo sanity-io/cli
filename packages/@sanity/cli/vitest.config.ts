@@ -14,7 +14,5 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', 'test/integration/**'],
     globals: false,
     name: '@sanity/cli/unit',
-    setupFiles: ['test/setup.ts'],
-    snapshotSerializers: ['test/snapshotSerializer.ts'],
   },
 })

@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 
 const wildcardReplacement = 'a-wild-card-r3pl4c3m3n7-a'
 const portReplacement = ':7777777'

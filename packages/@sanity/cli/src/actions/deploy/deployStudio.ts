@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {exitCodes} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {spinner} from '@sanity/cli-core/ux'
 import {getWorkbench} from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'

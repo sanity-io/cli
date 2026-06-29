@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import padStart from 'lodash-es/padStart.js'
 
 import {findSanityModulesVersions} from '../actions/versions/findSanityModulesVersions.js'

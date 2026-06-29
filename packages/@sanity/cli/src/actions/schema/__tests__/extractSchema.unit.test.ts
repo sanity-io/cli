@@ -1,5 +1,5 @@
 import {type ExtractOptions} from '@sanity/cli-build/_internal/extract'
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 const mockedSchemaExtraction = vi.hoisted(() => vi.fn())

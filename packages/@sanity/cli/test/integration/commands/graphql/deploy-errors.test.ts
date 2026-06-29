@@ -1,7 +1,7 @@
 import {writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {getCliConfig} from '@sanity/cli-core'
+import {getCliConfig} from '@sanity/cli-core/config'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'

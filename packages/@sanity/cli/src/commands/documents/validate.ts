@@ -3,7 +3,9 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {type CliConfig, ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
+import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
 import {type Level} from '../../actions/documents/types.js'

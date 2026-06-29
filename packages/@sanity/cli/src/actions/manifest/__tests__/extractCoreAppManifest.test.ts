@@ -1,21 +1,17 @@
-import {readFile} from 'node:fs/promises'
-
-import {getCliConfigUncached} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {extractCoreAppManifest, resolveTitleUpdate} from '../extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../types.js'
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getCliConfigUncached: vi.fn(),
-  }
-})
+const mockGetCliConfig = vi.hoisted(() => vi.fn())
+const mockReadFile = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core/config', () => ({
+  getCliConfigUncached: mockGetCliConfig,
+}))
 
 vi.mock('node:fs/promises', () => ({
-  readFile: vi.fn(),
+  readFile: mockReadFile,
 }))
 
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
@@ -25,9 +21,6 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
     spinner: vi.fn(() => ({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()})),
   }
 })
-
-const mockGetCliConfig = vi.mocked(getCliConfigUncached)
-const mockReadFile = vi.mocked(readFile)
 
 describe('extractCoreAppManifest', () => {
   afterEach(() => {

@@ -1,4 +1,4 @@
-import {getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'

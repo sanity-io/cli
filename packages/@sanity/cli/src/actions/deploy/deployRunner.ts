@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 
 import {
   type CheckReporter,

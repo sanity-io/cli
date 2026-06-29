@@ -1,6 +1,7 @@
 import {isMainThread} from 'node:worker_threads'
 
-import {findStudioConfigPath, getCliConfig, studioWorkerTask} from '@sanity/cli-core'
+import {findStudioConfigPath, getCliConfig} from '@sanity/cli-core/config'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
 
 import {type ExtractedGraphQLAPI} from './types.js'
 

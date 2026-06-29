@@ -1,4 +1,4 @@
-import {Output} from '@sanity/cli-core'
+import {Output} from '@sanity/cli-core/types'
 import {describe, expect, test, vi} from 'vitest'
 
 import {warnAboutMissingAppId} from '../warnAboutMissingAppId'

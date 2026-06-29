@@ -1,4 +1,5 @@
-import {type Output, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type Output} from '@sanity/cli-core/types'
 import {spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, DatasetResponse} from '@sanity/client'
 

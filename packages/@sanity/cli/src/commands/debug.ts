@@ -1,7 +1,8 @@
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
+import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {
   gatherAuthInfo,
@@ -94,29 +95,29 @@ export class Debug extends SanityCommand<typeof Debug> {
     const auth = await gatherAuthInfo(includeSecrets)
     if (!auth.hasToken) return
 
-    this.log(sectionHeader('Authentication'))
+    this.output.log(sectionHeader('Authentication'))
     const padTo = 10 // "Auth token" is the longest key
-    this.log(formatKeyValue('Auth token', auth.authToken, {padTo}))
-    this.log(formatKeyValue('User type', auth.userType, {padTo}))
+    this.output.log(formatKeyValue('Auth token', auth.authToken, {padTo}))
+    this.output.log(formatKeyValue('User type', auth.userType, {padTo}))
 
     if (!includeSecrets) {
-      this.log('  (run with --secrets to reveal token)')
+      this.output.log('  (run with --secrets to reveal token)')
     }
-    this.log('')
+    this.output.log('')
   }
 
   private async printCliSection(): Promise<void> {
-    this.log(sectionHeader('CLI'))
+    this.output.log(sectionHeader('CLI'))
 
     try {
       const cliInfo = await gatherCliInfo()
       const padTo = 9 // "Installed" is the longest key
-      this.log(formatKeyValue('Version', cliInfo.version, {padTo}))
-      this.log(formatKeyValue('Installed', cliInfo.installContext, {padTo}))
+      this.output.log(formatKeyValue('Version', cliInfo.version, {padTo}))
+      this.output.log(formatKeyValue('Installed', cliInfo.installContext, {padTo}))
     } catch {
-      this.log(`  ${styleText('red', 'Unable to determine CLI version')}`)
+      this.output.log(`  ${styleText('red', 'Unable to determine CLI version')}`)
     }
-    this.log('')
+    this.output.log('')
   }
 
   private printConfigStatus(
@@ -126,12 +127,12 @@ export class Debug extends SanityCommand<typeof Debug> {
     padTo: number,
   ): void {
     if (!fileName) {
-      this.log(formatKeyValue(label, `${styleText('red', '\u274C')} not found`, {padTo}))
+      this.output.log(formatKeyValue(label, `${styleText('red', '\u274C')} not found`, {padTo}))
       return
     }
 
     if (loadResult?.error) {
-      this.log(
+      this.output.log(
         formatKeyValue(
           label,
           `${styleText('yellow', '\u26A0\uFE0F')}  ${styleText('yellow', fileName)} (has errors)`,
@@ -139,7 +140,7 @@ export class Debug extends SanityCommand<typeof Debug> {
         ),
       )
     } else {
-      this.log(
+      this.output.log(
         formatKeyValue(label, `${styleText('green', '\u2705')} ${styleText('yellow', fileName)}`, {
           padTo,
         }),
@@ -152,18 +153,18 @@ export class Debug extends SanityCommand<typeof Debug> {
     cliConfigLoad: ConfigLoadResult<unknown> | undefined,
     studioLoad: ConfigLoadResult<unknown> | undefined,
   ): void {
-    this.log(sectionHeader('Project'))
+    this.output.log(sectionHeader('Project'))
 
     if (!project) {
-      this.log('  No project found\n')
+      this.output.log('  No project found\n')
       return
     }
 
     const padTo = 14
-    this.log(formatKeyValue('Root path', project.rootPath, {padTo}))
+    this.output.log(formatKeyValue('Root path', project.rootPath, {padTo}))
     this.printConfigStatus('CLI config', project.cliConfigPath, cliConfigLoad, padTo)
     this.printConfigStatus('Studio config', project.studioConfigPath, studioLoad, padTo)
-    this.log('')
+    this.output.log('')
   }
 
   private async printStudioSection(
@@ -173,68 +174,68 @@ export class Debug extends SanityCommand<typeof Debug> {
     projectId: string | undefined,
     userId: string | undefined,
   ): Promise<void> {
-    this.log(sectionHeader('Studio'))
+    this.output.log(sectionHeader('Studio'))
 
     if (studioLoad.error) {
-      this.log(`  ${styleText('red', 'Failed to load studio configuration:')}`)
+      this.output.log(`  ${styleText('red', 'Failed to load studio configuration:')}`)
       if (verbose) {
-        this.log(`  ${studioLoad.error.stack ?? studioLoad.error.message}\n`)
+        this.output.log(`  ${studioLoad.error.stack ?? studioLoad.error.message}\n`)
       } else {
-        this.log(`  ${truncate(studioLoad.error.message)}\n`)
+        this.output.log(`  ${truncate(studioLoad.error.message)}\n`)
       }
       return
     }
 
-    this.log('  Workspaces:')
+    this.output.log('  Workspaces:')
     for (const ws of studioLoad.value) {
       const label = ws.name ?? 'default'
-      this.log(`    ${label}`)
-      this.log(formatKeyValue('Project ID', ws.projectId, {indent: 6, padTo: 10}))
-      this.log(formatKeyValue('Dataset', ws.dataset, {indent: 6, padTo: 10}))
+      this.output.log(`    ${label}`)
+      this.output.log(formatKeyValue('Project ID', ws.projectId, {indent: 6, padTo: 10}))
+      this.output.log(formatKeyValue('Dataset', ws.dataset, {indent: 6, padTo: 10}))
     }
 
     // Full resolution: try to resolve plugins and get roles
     try {
       const resolved = await gatherResolvedWorkspaces(projectDirectory, userId)
 
-      this.log('')
-      this.log('  Resolved configuration:')
+      this.output.log('')
+      this.output.log('  Resolved configuration:')
       for (const ws of resolved) {
-        this.log(`    ${ws.name} (${ws.title})`)
+        this.output.log(`    ${ws.name} (${ws.title})`)
         if (ws.roles.length > 0) {
-          this.log(formatKeyValue('Roles', ws.roles, {indent: 6, padTo: 5}))
+          this.output.log(formatKeyValue('Roles', ws.roles, {indent: 6, padTo: 5}))
         }
       }
     } catch (err) {
-      this.log('')
+      this.output.log('')
       if (verbose && err instanceof Error && err.stack) {
-        this.log(`  ${styleText('dim', 'Unable to resolve full studio configuration:')}`)
-        this.log(`  ${styleText('dim', err.stack)}`)
+        this.output.log(`  ${styleText('dim', 'Unable to resolve full studio configuration:')}`)
+        this.output.log(`  ${styleText('dim', err.stack)}`)
       } else {
         const reason = truncate(err instanceof Error ? err.message : String(err))
-        this.log(
+        this.output.log(
           `  ${styleText('dim', `(unable to resolve full studio configuration: ${reason})`)}`,
         )
       }
     }
-    this.log('')
+    this.output.log('')
   }
 
   private async printUserSection(projectId: string | undefined): Promise<Error | UserInfo> {
-    this.log(`\n${sectionHeader('User')}`)
+    this.output.log(`\n${sectionHeader('User')}`)
 
     const user = await gatherUserInfo(projectId)
     if (user instanceof Error) {
-      this.log(`  ${user.message}\n`)
+      this.output.log(`  ${user.message}\n`)
       return user
     }
 
     const padTo = 8 // "Provider" is the longest key
-    this.log(formatKeyValue('Name', user.name, {padTo}))
-    this.log(formatKeyValue('Email', user.email, {padTo}))
-    this.log(formatKeyValue('ID', user.id, {padTo}))
-    this.log(formatKeyValue('Provider', user.provider, {padTo}))
-    this.log('')
+    this.output.log(formatKeyValue('Name', user.name, {padTo}))
+    this.output.log(formatKeyValue('Email', user.email, {padTo}))
+    this.output.log(formatKeyValue('ID', user.id, {padTo}))
+    this.output.log(formatKeyValue('Provider', user.provider, {padTo}))
+    this.output.log('')
     return user
   }
 }

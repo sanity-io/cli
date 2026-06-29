@@ -4,7 +4,9 @@ import os from 'node:os'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
 import {type MultipleMutationResult, type Mutation} from '@sanity/client'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
@@ -99,7 +101,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     if (!cliConfig.api?.dataset && !dataset) {
-      this.error(
+      this.output.error(
         'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',
         {exit: 1},
       )
@@ -115,11 +117,11 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     })
 
     if (replace && missing) {
-      this.error('Cannot use both --replace and --missing', {exit: 1})
+      return this.output.error('Cannot use both --replace and --missing', {exit: 1})
     }
 
     if (id && file) {
-      this.error('Cannot use --id when specifying a file path', {exit: 1})
+      return this.output.error('Cannot use --id when specifying a file path', {exit: 1})
     }
 
     let operation: MutationOperationName = 'create'
@@ -132,12 +134,12 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
         const contentPath = path.resolve(process.cwd(), file)
         const content = json5.parse(await fs.readFile(contentPath, 'utf8'))
         const result = await this.writeDocuments(content, operation)
-        this.log(this.getResultMessage(result, operation))
+        this.output.log(this.getResultMessage(result, operation))
         return
       } catch (error) {
         const err = error as Error
         createDocumentDebug(`Error creating documents from file ${file}`, err)
-        this.error(`Failed to create documents: ${err.message}`, {exit: 1})
+        return this.output.error(`Failed to create documents: ${err.message}`, {exit: 1})
       }
     }
 
@@ -172,9 +174,9 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       if (watch) {
         // If we're in watch mode, we want to run the creation on each change (if it validates)
         registerUnlinkOnSigInt(tmpFile)
-        this.log(`Watch mode: ${tmpFile}`)
-        this.log('Watch mode: Will write documents on each save.')
-        this.log('Watch mode: Press Ctrl + C to cancel watch mode.')
+        this.output.log(`Watch mode: ${tmpFile}`)
+        this.output.log('Watch mode: Will write documents on each save.')
+        this.output.log('Watch mode: Press Ctrl + C to cancel watch mode.')
 
         // Add race condition protection
         let isProcessing = false
@@ -201,7 +203,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     } catch (error) {
       const err = error as Error
       createDocumentDebug('Error in editor workflow', err)
-      this.error(`Failed to create documents: ${err.message}`, {exit: 1})
+      return this.output.error(`Failed to create documents: ${err.message}`, {exit: 1})
     }
   }
 
@@ -267,14 +269,14 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     }
 
     if (isEqual(content, defaultValue)) {
-      this.log('Value not modified, doing nothing.')
-      this.log('Modify document to trigger creation.')
+      this.output.log('Value not modified, doing nothing.')
+      this.output.log('Modify document to trigger creation.')
       return
     }
 
     try {
       const writeResult = await this.writeDocuments(content, operation)
-      this.log(this.getResultMessage(writeResult, operation))
+      this.output.log(this.getResultMessage(writeResult, operation))
     } catch (err) {
       const error = err as Error
       createDocumentDebug(`Failed to write documents`, error)
@@ -282,7 +284,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       if (error.message.includes('already exists')) {
         errorMessage += '\nPerhaps you want to use `--replace` or `--missing`?'
       }
-      this.error(errorMessage, {exit: 1})
+      return this.output.error(errorMessage, {exit: 1})
     }
   }
 

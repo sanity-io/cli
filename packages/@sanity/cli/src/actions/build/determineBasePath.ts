@@ -1,4 +1,4 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
 
 /**
  * Finds the basepath given conditions

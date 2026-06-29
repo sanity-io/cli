@@ -1,6 +1,6 @@
 import {Command} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {getLearnMoreMessage} from '../../actions/telemetry/getLearnMoreMessage.js'
 import {getStatusMessage} from '../../actions/telemetry/getStatusMessage.js'

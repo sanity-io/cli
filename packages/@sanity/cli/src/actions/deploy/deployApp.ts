@@ -2,7 +2,7 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
-import {exitCodes} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {spinner} from '@sanity/cli-core/ux'
 import {getWorkbench} from '@sanity/workbench-cli/deploy'
 import {pack} from 'tar-fs'

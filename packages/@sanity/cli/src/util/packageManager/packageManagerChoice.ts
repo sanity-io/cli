@@ -1,12 +1,13 @@
 import path from 'node:path'
 
-import {isInteractive} from '@sanity/cli-core'
 import {getRunningPackageManager} from '@sanity/cli-core/package-manager'
+import {isInteractive} from '@sanity/cli-core/util'
 import {select} from '@sanity/cli-core/ux'
 import which from 'which'
 
 import {preferredPm} from './preferredPm.js'
 
+// TODO: this is the same as cli-core/package-manager, with the addition of `manual`. DRY this up
 export type PackageManager = 'bun' | 'manual' | 'npm' | 'pnpm' | 'yarn'
 
 const EXPERIMENTAL = new Set(['bun'])

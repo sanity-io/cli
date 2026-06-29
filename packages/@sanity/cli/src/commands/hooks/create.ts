@@ -1,4 +1,6 @@
-import {getSanityUrl, SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {getSanityUrl} from '@sanity/cli-core/util'
 import open from 'open'
 
 import {promptForProject} from '../../prompts/promptForProject.js'

@@ -1,4 +1,4 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
 
 import {getUserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'

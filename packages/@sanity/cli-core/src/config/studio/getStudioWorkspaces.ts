@@ -5,7 +5,7 @@ import {isMainThread} from 'node:worker_threads'
 import {firstValueFrom, of} from 'rxjs'
 import {type Workspace} from 'sanity'
 
-import {subdebug} from '../../debug.js'
+import {subdebug} from '../../_exports/debug.js'
 import {doImport} from '../../util/doImport.js'
 import {getEmptyAuth} from '../../util/getEmptyAuth.js'
 import {resolveLocalPackage} from '../../util/resolveLocalPackage.js'

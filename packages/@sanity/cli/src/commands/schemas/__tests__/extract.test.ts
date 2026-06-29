@@ -1,6 +1,5 @@
+import {MockedSanityCommand, mocks} from '@sanity/cli-test/mocks'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-
-import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
 
 // First: create the mocks and mocked SanityCommand class
 const {MockedSanityCommand, mocks} = createMockSanityCommand()

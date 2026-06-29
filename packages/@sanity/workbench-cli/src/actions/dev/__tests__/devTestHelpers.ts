@@ -1,4 +1,4 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import {vi} from 'vitest'
 

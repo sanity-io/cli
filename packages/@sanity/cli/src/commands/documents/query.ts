@@ -1,5 +1,8 @@
 import {Args, Flags} from '@oclif/core'
-import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
+import {colorizeJson} from '@sanity/cli-core/ux'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {promptForProject} from '../../prompts/promptForProject.js'

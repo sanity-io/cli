@@ -9,7 +9,8 @@ import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
 } from '@sanity/cli-build/_internal/env'
-import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
+import {getCliTelemetry} from '@sanity/cli-core/telemetry'
+import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'

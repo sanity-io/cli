@@ -1,6 +1,7 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {getStudioWorkspaces, safeStructuredClone} from '@sanity/cli-core'
+import {getStudioWorkspaces} from '@sanity/cli-core/config'
+import {safeStructuredClone} from '@sanity/cli-core/util'
 
 import {uniqWorkspaceWorkerDataSchema} from './types.js'
 import {uniqByProjectIdDataset} from './utils/uniqByProjectIdDataset.js'

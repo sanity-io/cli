@@ -8,13 +8,12 @@ import {createMockOutput} from './devTestHelpers.js'
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
 const mockFsWatch = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    findProjectRoot: mockFindProjectRoot,
-  }
-})
+vi.mock('@sanity/cli-core/debug', () => ({
+  subdebug: vi.fn(() => vi.fn()),
+}))
+vi.mock('@sanity/cli-core/config', () => ({
+  findProjectRoot: mockFindProjectRoot,
+}))
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>()

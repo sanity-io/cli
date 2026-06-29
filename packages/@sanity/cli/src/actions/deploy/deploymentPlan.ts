@@ -2,7 +2,7 @@ import {readdir, stat} from 'node:fs/promises'
 import {join, relative, sep} from 'node:path'
 import {styleText} from 'node:util'
 
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {type DeployCheck} from './deployChecks.js'

@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
-import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type SanityOrgUser, type TelemetryUserProperties} from '@sanity/cli-core/types'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'

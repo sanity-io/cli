@@ -1,4 +1,5 @@
-import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type UserApplication} from '../../../services/userApplications.js'

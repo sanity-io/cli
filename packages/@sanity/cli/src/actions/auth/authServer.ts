@@ -1,7 +1,8 @@
 import {createServer, type Server} from 'node:http'
 import os from 'node:os'
 
-import {getSanityUrl, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {getSanityUrl} from '@sanity/cli-core/util'
 
 import {getTokenDetails} from '../../services/auth.js'
 import {type TokenDetails} from './types.js'

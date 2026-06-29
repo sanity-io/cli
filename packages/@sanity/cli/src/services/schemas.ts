@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
 
 import {type StoredWorkspaceSchema} from '../actions/manifest/types.js'
 

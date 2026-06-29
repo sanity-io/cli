@@ -6,7 +6,7 @@ import {finished} from 'node:stream/promises'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {boxen, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import pMap from 'p-map'

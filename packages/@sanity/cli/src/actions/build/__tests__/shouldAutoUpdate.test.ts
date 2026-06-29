@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {resolveAutoUpdates, shouldAutoUpdate} from '../shouldAutoUpdate'

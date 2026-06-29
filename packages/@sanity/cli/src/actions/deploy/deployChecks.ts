@@ -1,4 +1,6 @@
-import {type CliConfig, exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 

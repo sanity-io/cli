@@ -1,5 +1,6 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import open from 'open'
 
 const getOpenapiDebug = subdebug('openapi:get')
@@ -52,7 +53,7 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
 
     if (web) {
       const url = `https://www.sanity.io/docs/http-reference/${slug}`
-      this.log(`Opening ${url}`)
+      this.output.log(`Opening ${url}`)
       await open(url)
       return
     }
@@ -60,17 +61,20 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
     try {
       const specContent = await this.getSpecContent(slug, format)
 
-      this.log(specContent)
+      this.output.log(specContent)
     } catch (error) {
       getOpenapiDebug(`Error fetching OpenAPI spec ${slug}`, error)
 
       if (error instanceof Response && error.status === 404) {
-        this.error(`OpenAPI specification not found. ${slug}`, {exit: 1})
+        return this.output.error(`OpenAPI specification not found. ${slug}`, {exit: 1})
       }
 
-      this.error('The OpenAPI service is currently unavailable. Please try again later.', {
-        exit: 1,
-      })
+      return this.output.error(
+        'The OpenAPI service is currently unavailable. Please try again later.',
+        {
+          exit: 1,
+        },
+      )
     }
   }
 

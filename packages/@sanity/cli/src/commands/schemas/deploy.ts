@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'

@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 

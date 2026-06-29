@@ -1,4 +1,5 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {type Hook} from '../../actions/hook/types'
 import {promptForProject} from '../../prompts/promptForProject.js'
