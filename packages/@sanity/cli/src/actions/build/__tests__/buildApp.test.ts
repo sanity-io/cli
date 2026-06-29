@@ -1,5 +1,7 @@
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+
+import {buildApp} from '../buildApp.js'
 
 const FLAGS = {
   'auto-updates': true,
@@ -59,9 +61,6 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
     spinner: mockedSpinner,
   }
 })
-
-// Import after mocks are set up
-const {buildApp} = await import('../buildApp.js')
 
 function createMockOutput(): Output {
   return {

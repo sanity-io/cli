@@ -1,8 +1,9 @@
 import path from 'node:path'
 
 import {getModuleUrl} from '@sanity/cli-build/_internal/build'
-import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core'
 import {createRequester} from '@sanity/cli-core/request'
+import {getLocalPackageVersion} from '@sanity/cli-core/util/getLocalPackageVersion'
+import {readPackageJson} from '@sanity/cli-core/util/readPackageJson'
 import {coerce, eq, prerelease, parse as semverParse} from 'semver'
 
 const defaultRequester = createRequester({

@@ -44,6 +44,7 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
     experimental: {
       importDurations: {
+        limit: 50,
         print: true,
       },
     },

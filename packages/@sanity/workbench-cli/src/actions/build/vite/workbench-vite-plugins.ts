@@ -7,7 +7,7 @@
 
 import path from 'node:path'
 
-import {readPackageJson} from '@sanity/cli-core'
+import {readPackageJson} from '@sanity/cli-core/util/readPackageJson'
 import {type PluginOption} from 'vite'
 
 import {type DefineAppInput} from '../../../defineApp.js'

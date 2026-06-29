@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/config/cli/types/cliConfig'
+import {type Output} from '@sanity/cli-core/types'
 
 interface Options {
   cliConfig: CliConfig
