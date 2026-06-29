@@ -42,6 +42,11 @@ export default defineConfig({
     },
     // Add explicit exclude for test execution
     exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
+    experimental: {
+      importDurations: {
+        print: true,
+      },
+    },
     onUnhandledError(error) {
       /**
        * Ignore worker unexpected exit errors due to SIGSEGV from rolldown v1.0.1+: https://github.com/rolldown/rolldown/issues/9722
