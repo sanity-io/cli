@@ -1,5 +1,22 @@
 # Change Log
 
+## [7.4.1](https://github.com/sanity-io/cli/compare/cli-v7.4.0...cli-v7.4.1)
+
+_2026-06-29_
+
+### Bug Fixes
+
+- **mcp:** use oauth for codex cli config ([#1151](https://github.com/sanity-io/cli/pull/1151)) ([9f50d26](https://github.com/sanity-io/cli/commit/9f50d26933d4f777de08e023e4714e2367dcf282))
+- move logic for getting env vars into cli-build package ([#1373](https://github.com/sanity-io/cli/pull/1373)) ([ae0c624](https://github.com/sanity-io/cli/commit/ae0c624454dad4594eee21ff76a92c162272708e))
+- **workbench:** claim lock when developing workbench remote ([#1387](https://github.com/sanity-io/cli/pull/1387)) ([cb80a56](https://github.com/sanity-io/cli/commit/cb80a56b86d385ae2e0d57d0cfe10b7a993d8ee7))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 1.1.2
+    - @sanity/workbench-cli bumped to 1.1.1
+
 ## [7.4.0](https://github.com/sanity-io/cli/compare/cli-v7.3.0...cli-v7.4.0)
 
 _2026-06-23_

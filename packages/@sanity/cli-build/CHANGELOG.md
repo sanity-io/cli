@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.2](https://github.com/sanity-io/cli/compare/cli-build-v1.1.1...cli-build-v1.1.2)
+
+_2026-06-29_
+
+### Bug Fixes
+
+- **cli-build:** skip redundant initial render in sanity dev watcher ([#1388](https://github.com/sanity-io/cli/pull/1388)) ([adf90ea](https://github.com/sanity-io/cli/commit/adf90ea6691ee6c36849e426de9729533706f47f))
+- revert "feat(cli-build): preconnect and modulepreload the CDN sanity module for auto-update studios (#1276)" ([#1400](https://github.com/sanity-io/cli/pull/1400)) ([e29d4bb](https://github.com/sanity-io/cli/commit/e29d4bbd254f47afd976876587f5cd57dce149bc))
+- move logic for getting env vars into cli-build package ([#1373](https://github.com/sanity-io/cli/pull/1373)) ([ae0c624](https://github.com/sanity-io/cli/commit/ae0c624454dad4594eee21ff76a92c162272708e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.1.1
+
 ## [1.1.1](https://github.com/sanity-io/cli/compare/cli-build-v1.1.0...cli-build-v1.1.1)
 
 _2026-06-23_
