@@ -51,6 +51,7 @@ catalog:
   node-pty: ^1.1.0
   dotenv: ^17.4.2
   strip-ansi: ^7.1.0
+  '@heroku-cli/test-utils': ^1.0.0
 
   # CLI Framework
   '@oclif/core': ^4.11.7

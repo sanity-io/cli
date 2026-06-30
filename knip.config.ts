@@ -1,6 +1,6 @@
 import {type KnipConfig} from 'knip'
 
-const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
+const project = ['src/**/*.{js,jsx,ts,tsx}', 'test/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 
 const baseConfig = {
   // For now only care about cli package
@@ -61,6 +61,12 @@ const baseConfig = {
         // Worker files
         'src/**/*.worker.ts',
         'package.config.ts',
+      ],
+      ignoreFiles: [
+        'test/__fixtures__/cli-configs/error-both-ts-and-js/*', // used in an integration test
+        'test/__fixtures__/exec-*.ts',
+        'test/helpers/buildFixture.ts', // referenced in cli-test readme?
+        'test/snapshotSerializer.ts', // used in vitest.config
       ],
       oclif: {
         config: ['oclif.config.js'],

@@ -1,15 +1,6 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockSanityCommand} from '../../../test/mockSanityCommand.js'
-
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, SanityCommand: MockedSanityCommand}
-})
-
 // Third: mock doctor command imports
 const mockDoctorChecks = {cli: vi.fn()} // coupled to actions/doctor/checks/index.js
 const mockKnownChecks = Object.keys(mockDoctorChecks)
@@ -24,6 +15,8 @@ vi.mock('../../actions/doctor/runDoctorChecks.js', () => ({
 
 // Finally, import the module under test: doctor command
 const {DoctorCommand} = await import('../doctor.js')
+// First: create the mocks and mocked SanityCommand class
+const {createCmdInstance, mocks} = await createMockSanityCommand(DoctorCommand)
 
 describe('doctor command', () => {
   beforeEach(() => {
@@ -41,7 +34,7 @@ describe('doctor command', () => {
     const checkResults = {checks: [passingCheck], summary: {passed: 420}}
     mockRunDoctorChecks.mockResolvedValue(checkResults)
 
-    await DoctorCommand.run()
+    await createCmdInstance().run()
 
     expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Running diag'))
     expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
@@ -58,7 +51,7 @@ describe('doctor command', () => {
     const checkResults = {checks: [passingCheck], summary: {passed: 420}}
     mockRunDoctorChecks.mockResolvedValue(checkResults)
 
-    await DoctorCommand.run(['--json'])
+    await createCmdInstance(['--json']).run()
 
     expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
       expect.stringContaining(JSON.stringify(checkResults, null, 2)),
