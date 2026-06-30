@@ -42,7 +42,10 @@ vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => {
   }
 })
 
-vi.mock('../../../src/actions/manifest/extractCoreAppManifest.js', () => ({
+vi.mock('../../../src/actions/manifest/extractCoreAppManifest.js', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('../../../src/actions/manifest/extractCoreAppManifest.js')
+  >()),
   extractCoreAppManifest: vi.fn(),
 }))
 
