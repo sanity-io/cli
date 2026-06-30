@@ -291,8 +291,8 @@ function buildOpenCodeServerConfig(token: string): Record<string, unknown> {
 
 function buildZedServerConfig(token: string): Record<string, unknown> {
   return {
+    enabled: true,
     headers: {Authorization: `Bearer ${token}`},
-    settings: {},
     url: MCP_SERVER_URL,
   }
 }
