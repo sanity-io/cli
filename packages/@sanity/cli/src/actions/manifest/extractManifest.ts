@@ -2,8 +2,8 @@ import {
   type ExtractSchemaWorkerError,
   SchemaExtractionError,
 } from '@sanity/cli-build/_internal/extract'
-import {getTimer, studioWorkerTask} from '@sanity/cli-core'
-import {spinner} from '@sanity/cli-core/ux'
+import {studioWorkerTask} from '@sanity/cli-core/loaders/studio/studioWorkerTask'
+import {getTimer, spinner} from '@sanity/cli-core/ux'
 
 import {manifestDebug} from './debug.js'
 import {type CreateWorkspaceManifest, type ExtractManifestWorkerData} from './types'

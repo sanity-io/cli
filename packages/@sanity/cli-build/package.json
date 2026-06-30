@@ -56,6 +56,10 @@
       "source": "./src/telemetry/build.telemetry.ts",
       "default": "./dist/telemetry/build.telemetry.js"
     },
+    "./_internal/util": {
+      "source": "./src/_exports/_internal/util.ts",
+      "default": "./dist/_exports/_internal/util.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

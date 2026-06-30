@@ -57,6 +57,10 @@
       "source": "./src/_exports/package-manager.ts",
       "default": "./dist/_exports/package-manager.js"
     },
+    "./config/cli/getCliConfig": {
+      "source": "./src/config/cli/getCliConfig.ts",
+      "default": "./dist/config/cli/getCliConfig.js"
+    },
     "./config/cli/workbenchApp": {
       "source": "./src/config/cli/workbenchApp.ts",
       "default": "./dist/config/cli/workbenchApp.js"
@@ -69,9 +73,17 @@
       "source": "./src/config/cli/types/userViteConfig.ts",
       "default": "./dist/config/cli/types/userViteConfig.js"
     },
+    "./loaders/studio/studioWorkerTask": {
+      "source": "./src/loaders/studio/studioWorkerTask.ts",
+      "default": "./dist/loaders/studio/studioWorkerTask.js"
+    },
     "./telemetry/getCliTelemetry": {
       "source": "./src/telemetry/getCliTelemetry.ts",
       "default": "./dist/telemetry/getCliTelemetry.js"
+    },
+    "./util/doImport": {
+      "source": "./src/util/doImport.ts",
+      "default": "./dist/util/doImport.js"
     },
     "./util/isInteractive": {
       "source": "./src/util/isInteractive.ts",
@@ -80,6 +92,10 @@
     "./util/getLocalPackageVersion": {
       "source": "./src/util/getLocalPackageVersion.ts",
       "default": "./dist/util/getLocalPackageVersion.js"
+    },
+    "./util/getSanityEnvVar": {
+      "source": "./src/util/getSanityEnvVar.ts",
+      "default": "./dist/util/getSanityEnvVar.js"
     },
     "./util/readPackageJson": {
       "source": "./src/util/readPackageJson.ts",
