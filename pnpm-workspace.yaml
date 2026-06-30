@@ -102,8 +102,6 @@ minimumReleaseAgeExclude:
   - 'vite'
   - '@vitejs/*'
   - 'vitest'
-  # Transitive dependency of vite, published in lockstep with vite. Kept exempt
-  # so future vite bumps aren't blocked by a freshly published postcss release.
   - 'postcss'
   - '@module-federation/vite@1.16.11'
   - '@module-federation/dts-plugin@2.6.0'
