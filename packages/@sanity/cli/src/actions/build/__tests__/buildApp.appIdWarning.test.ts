@@ -30,6 +30,9 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
 }))
 
 vi.mock('@sanity/cli-build/_internal/actions/build/buildDebug', () => ({
+  buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
+}))
+vi.mock('@sanity/cli-build/_internal/actions/build/buildStaticFiles', () => ({
   buildDebug: vi.fn(),
 }))
 vi.mock('@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap', () => ({
@@ -45,7 +48,6 @@ vi.mock('@sanity/cli-build/_internal/actions/build/resolveVendorBuildConfig', ()
 }))
 vi.mock('@sanity/cli-build/_internal/telemetry/build', () => ({
   AppBuildTrace: {},
-  buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
 
 vi.mock('@sanity/cli-build/_internal/env', () => ({
