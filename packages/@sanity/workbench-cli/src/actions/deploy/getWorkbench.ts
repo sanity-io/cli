@@ -1,16 +1,12 @@
 // The deploy command's view of a workbench app: the resolved interfaces plus
-// the two deploy-time guards. `sanity deploy` calls `getWorkbench(config)` once
-// and either gets `null` (plain project — normal deploy) or an object it asks
-// to validate the app and its build output before shipping.
-//
-// Node-only (the build-output guard touches the filesystem).
-
-import {stat} from 'node:fs/promises'
-import {join} from 'node:path'
+// the deploy-time guards that need the app's declarations. `sanity deploy` calls
+// `getWorkbench(config)` once and either gets `null` (plain project — normal
+// deploy) or an object it asks to validate the app before shipping.
 
 import {type CliConfig} from '@sanity/cli-core'
 
 import {type ResolvedWorkbenchApp, resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
+import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDeployment.js'
 
 interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
   /**
@@ -20,12 +16,10 @@ interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
    */
   assertDeployable(): void
   /**
-   * Throws unless `sourceDir` is a directory holding a federation build.
-   * Workbench builds emit a module-federation remote instead of a static SPA,
-   * so the usual `index.html` contract doesn't apply — `mf-manifest.json` is the
-   * marker that `sanity build` produced a federation build.
+   * Validates the app's declared views into the application-service payload.
+   * Throws when a view declaration is malformed.
    */
-  checkBuiltOutput(sourceDir: string): Promise<void>
+  buildViewDeploymentPayload(applicationId: string): ViewDeploymentPayload
 }
 
 export function getWorkbench(
@@ -48,27 +42,8 @@ export function getWorkbench(
       }
     },
 
-    async checkBuiltOutput(sourceDir) {
-      try {
-        const stats = await stat(sourceDir)
-        if (!stats.isDirectory()) {
-          throw new Error(`"${sourceDir}" is not a directory`)
-        }
-      } catch (err) {
-        throw err.code === 'ENOENT' ? new Error(`Directory "${sourceDir}" does not exist`) : err
-      }
-
-      const manifestPath = join(sourceDir, 'mf-manifest.json')
-      try {
-        await stat(manifestPath)
-      } catch (err) {
-        throw err.code === 'ENOENT'
-          ? new Error(
-              `"${manifestPath}" does not exist. ` +
-                'The deploy directory must contain a federation build created with "sanity build".',
-            )
-          : err
-      }
+    buildViewDeploymentPayload(applicationId) {
+      return buildViewDeploymentPayload({applicationId, views})
     },
   }
 }
