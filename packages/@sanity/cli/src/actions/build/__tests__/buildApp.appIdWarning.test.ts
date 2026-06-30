@@ -30,10 +30,10 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
 }))
 
 vi.mock('@sanity/cli-build/_internal/actions/build/buildDebug', () => ({
-  buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
+  buildDebug: vi.fn(),
 }))
 vi.mock('@sanity/cli-build/_internal/actions/build/buildStaticFiles', () => ({
-  buildDebug: vi.fn(),
+  buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
 }))
 vi.mock('@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap', () => ({
   getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
