@@ -26,22 +26,28 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: mockedCompareDependencyVersions,
 }))
 
-vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
-  const original = await importOriginal()
-  return {
-    ...original,
-    buildStaticFiles: mockedBuildStaticFiles,
-    resolveVendorBuildConfig: vi.fn(),
-  }
-})
+vi.mock(import('@sanity/cli-build/_internal/actions/build/buildDebug'), () => ({
+  buildDebug:
+    vi.fn() as unknown as (typeof import('@sanity/cli-build/_internal/actions/build/buildDebug'))['buildDebug'],
+}))
 
-vi.mock(import('@sanity/cli-build/_internal/env'), async (importOriginal) => {
-  const original = await importOriginal()
-  return {
-    ...original,
-    getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
-  }
-})
+vi.mock(import('@sanity/cli-build/_internal/actions/build/buildStaticFiles'), () => ({
+  buildStaticFiles: mockedBuildStaticFiles,
+}))
+
+vi.mock(import('@sanity/cli-build/_internal/actions/build/resolveVendorBuildConfig'), () => ({
+  resolveVendorBuildConfig: vi.fn(),
+}))
+
+vi.mock(import('@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap'), () => ({
+  getAutoUpdatesCssUrls: vi.fn(),
+  getAutoUpdatesImportMap: vi.fn(),
+}))
+
+vi.mock(import('@sanity/cli-build/_internal/env'), () => ({
+  getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
+  getStudioEnvironmentVariables: vi.fn(),
+}))
 
 vi.mock(import('@sanity/cli-core/util/getLocalPackageVersion'), async (importOriginal) => {
   const original = await importOriginal()
@@ -71,9 +77,10 @@ vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
   }
 })
 
-vi.mock(import('@sanity/workbench-cli/build'), async () => {
-  return {resolveWorkbenchApp: mockedResolveWorkbenchApp, workbenchVitePlugins: vi.fn()}
-})
+vi.mock(import('@sanity/workbench-cli/build'), () => ({
+  resolveWorkbenchApp: mockedResolveWorkbenchApp,
+  workbenchVitePlugins: vi.fn(),
+}))
 
 function createMockOutput(): Output {
   return {

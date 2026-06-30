@@ -32,6 +32,10 @@
       "source": "./src/actions/build/buildDebug.ts",
       "default": "./dist/actions/build/buildDebug.js"
     },
+    "./_internal/actions/build/buildStaticFiles": {
+      "source": "./src/actions/build/buildStaticFiles.ts",
+      "default": "./dist/actions/build/buildStaticFiles.js"
+    },
     "./_internal/actions/build/getAutoUpdatesImportMap": {
       "source": "./src/actions/build/getAutoUpdatesImportMap.ts",
       "default": "./dist/actions/build/getAutoUpdatesImportMap.js"

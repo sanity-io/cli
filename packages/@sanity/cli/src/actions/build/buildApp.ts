@@ -3,18 +3,15 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {buildDebug} from '@sanity/cli-build/_internal/actions/build/buildDebug'
+import {buildStaticFiles} from '@sanity/cli-build/_internal/actions/build/buildStaticFiles'
 import {
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
 } from '@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap'
 import {resolveVendorBuildConfig} from '@sanity/cli-build/_internal/actions/build/resolveVendorBuildConfig'
-import {
-  buildStaticFiles,
-  formatModuleSizes,
-  sortModulesBySize,
-} from '@sanity/cli-build/_internal/build'
 import {getAppEnvironmentVariables} from '@sanity/cli-build/_internal/env'
 import {AppBuildTrace} from '@sanity/cli-build/_internal/telemetry/build'
+import {formatModuleSizes, sortModulesBySize} from '@sanity/cli-build/_internal/util'
 import {type CliConfig} from '@sanity/cli-core/config/cli/types/cliConfig'
 import {type UserViteConfig} from '@sanity/cli-core/config/cli/types/userViteConfig'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry/getCliTelemetry'
