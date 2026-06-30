@@ -15,6 +15,8 @@ export interface DeployAppOptions {
 
 export const deployStudioSchemasAndManifestsWorkerData = z.object({
   configPath: z.string(),
+  // Validate and extract only — skip schema and manifest uploads
+  dryRun: z.optional(z.boolean()),
   isExternal: z.boolean(),
   outPath: z.string(),
   projectId: z.string(),
@@ -26,3 +28,14 @@ export const deployStudioSchemasAndManifestsWorkerData = z.object({
 export type DeployStudioSchemasAndManifestsWorkerData = z.infer<
   typeof deployStudioSchemasAndManifestsWorkerData
 >
+
+/**
+ * Per-workspace summary reported back from the schema worker,
+ * used by dry runs to describe what passed validation.
+ */
+export interface WorkspaceSchemaSummary {
+  dataset: string
+  name: string
+  projectId: string
+  schemaTypes: number
+}

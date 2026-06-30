@@ -6,7 +6,10 @@ import {getCliTelemetry, studioWorkerTask, subdebug} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 
-import {type DeployStudioSchemasAndManifestsWorkerData} from './types.js'
+import {
+  type DeployStudioSchemasAndManifestsWorkerData,
+  type WorkspaceSchemaSummary,
+} from './types.js'
 
 type DeployStudioSchemasAndManifestsWorkerMessage =
   | {
@@ -17,7 +20,13 @@ type DeployStudioSchemasAndManifestsWorkerMessage =
   | {
       studioManifest: StudioManifest | null
       type: 'success'
+      workspaces: WorkspaceSchemaSummary[]
     }
+
+export interface DeployStudioSchemasAndManifestsResult {
+  studioManifest: StudioManifest | null
+  workspaces: WorkspaceSchemaSummary[]
+}
 
 const debug = subdebug('deployStudioSchemasAndManifests')
 
@@ -25,21 +34,35 @@ const debug = subdebug('deployStudioSchemasAndManifests')
  * 1. Extracts the create manifest in dist/static (automatically deployed with studio)
  * 2. Deploys the schemas to /schemas endpoint
  * 3. Creates a studio manifest, uploads it to user application and lexicon
+ *
+ * With `dryRun`, stops after extraction and validation — nothing is uploaded
+ * and no schema-deploy telemetry is recorded.
  */
 export async function deployStudioSchemasAndManifests(
   options: DeployStudioSchemasAndManifestsWorkerData,
-): Promise<StudioManifest | null> {
-  const {configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir} = options
-
-  const trace = getCliTelemetry().trace(SchemaDeploy, {
-    // If the studio is externally hosted, we don't need to extract the manifest
-    extractManifest: !isExternal,
-    manifestDir: outPath,
+): Promise<DeployStudioSchemasAndManifestsResult> {
+  const {
+    configPath,
+    dryRun = false,
+    isExternal,
+    outPath,
+    projectId,
     schemaRequired,
-  })
+    verbose,
+    workDir,
+  } = options
+
+  const trace = dryRun
+    ? null
+    : getCliTelemetry().trace(SchemaDeploy, {
+        // If the studio is externally hosted, we don't need to extract the manifest
+        extractManifest: !isExternal,
+        manifestDir: outPath,
+        schemaRequired,
+      })
 
   try {
-    trace.start()
+    trace?.start()
     const result = await studioWorkerTask<DeployStudioSchemasAndManifestsWorkerMessage>(
       new URL('deployStudioSchemasAndManifests.worker.js', import.meta.url),
       {
@@ -52,6 +75,7 @@ export async function deployStudioSchemasAndManifests(
         studioRootPath: workDir,
         workerData: {
           configPath,
+          dryRun,
           isExternal,
           outPath,
           projectId,
@@ -69,13 +93,15 @@ export async function deployStudioSchemasAndManifests(
       throw new SchemaExtractionError(result.error, result.validation)
     }
 
-    trace.complete()
-    ux.stdout(
-      `${styleText('gray', '↳ List deployed schemas with:')} ${styleText('cyan', 'sanity schema list')}`,
-    )
-    return result.studioManifest
+    trace?.complete()
+    if (!dryRun) {
+      ux.stdout(
+        `${styleText('gray', '↳ List deployed schemas with:')} ${styleText('cyan', 'sanity schema list')}`,
+      )
+    }
+    return {studioManifest: result.studioManifest, workspaces: result.workspaces}
   } catch (err) {
-    trace.error(err)
+    trace?.error(err)
     throw err
   }
 }

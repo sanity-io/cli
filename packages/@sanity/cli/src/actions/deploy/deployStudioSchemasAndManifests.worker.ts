@@ -21,7 +21,7 @@ async function main() {
     throw new Error('Should only be run in a worker!')
   }
 
-  const {configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir} =
+  const {configPath, dryRun, isExternal, outPath, projectId, schemaRequired, verbose, workDir} =
     deployStudioSchemasAndManifestsWorkerData.parse(workerData)
 
   try {
@@ -44,6 +44,28 @@ async function main() {
       projectId: manifest.projectId,
       title: manifest.title,
     }))
+
+    const workspaceSummaries = workspaceManifests.map((manifest) => ({
+      dataset: manifest.dataset,
+      name: manifest.name,
+      projectId: manifest.projectId,
+      schemaTypes: manifest.schema.length,
+    }))
+
+    // Extraction above is the validation work — a dry run stops short of uploading.
+    // The create-manifest is still written for internal deploys so the dry-run file
+    // summary matches what a real deploy would include in the tarball.
+    if (dryRun) {
+      if (!isExternal) {
+        await writeManifestFile({outPath, workDir, workspaceManifests})
+      }
+      parentPort.postMessage({
+        studioManifest: null,
+        type: 'success',
+        workspaces: workspaceSummaries,
+      })
+      return
+    }
 
     debug('Handling deployment for %s', isExternal ? 'external' : 'internal')
 
@@ -73,6 +95,7 @@ async function main() {
     parentPort.postMessage({
       studioManifest,
       type: 'success',
+      workspaces: workspaceSummaries,
     })
   } catch (error) {
     debug('Error deploying studio schemas and manifests', error)
