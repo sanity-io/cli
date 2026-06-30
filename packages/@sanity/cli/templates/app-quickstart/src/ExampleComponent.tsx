@@ -34,9 +34,13 @@ function DocumentList() {
   return <ul>{data.map((doc) => <li key={doc.documentId}>{doc.documentId}</li>)}</ul>
 }
 
-<Suspense fallback={<div>Loading...</div>}>
-  <DocumentList />
-</Suspense>`}</pre>
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DocumentList />
+    </Suspense>
+  )
+}`}</pre>
       </div>
       <ul className="example-links">
         <li>
