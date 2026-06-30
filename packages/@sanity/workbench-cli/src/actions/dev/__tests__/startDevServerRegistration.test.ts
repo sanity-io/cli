@@ -9,8 +9,7 @@ const mockExtractManifest = vi.hoisted(() => vi.fn())
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
 
 // The watcher re-reads the config to re-derive interfaces on each edit.
-vi.mock('@sanity/cli-core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+vi.mock('@sanity/cli-core/config/cli/getCliConfig', () => ({
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
 // Only the registry write is mocked; `deriveInterfaces`/`trackInterfaceSet` are
