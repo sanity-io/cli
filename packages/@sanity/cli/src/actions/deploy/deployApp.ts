@@ -21,27 +21,53 @@ import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCor
 import {type CoreAppManifest} from '../manifest/types.js'
 import {createUserApplicationForApp} from './createUserApplication.js'
 import {
+  checkAppTarget,
   checkAutoUpdates,
   checkBuild,
+  checkOutputDir,
   checkPackageVersion,
+  createAggregatingChecks,
   createFailFastChecks,
   type DeployChecks,
+  type DeployTarget,
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
+import {type DryRunReport, isDeployable} from './dryRunReport.js'
 import {findUserApplicationForApp} from './findUserApplication.js'
-import {type DeployAppOptions} from './types.js'
+import {type DeployFileSummary} from './listDeploymentFiles.js'
+import {type DeployAppOptions, type DeployFlags} from './types.js'
 
 type Workbench = ReturnType<typeof getWorkbench>
 
 /**
- * Builds and deploys a Sanity application.
+ * Builds and deploys a Sanity application. With --dry-run, runs the same
+ * sequence read-only and returns a report instead of shipping.
  *
  * @internal
  */
-export async function deployApp(options: DeployAppOptions): Promise<void> {
-  const {cliConfig, output} = options
+export async function deployApp(options: DeployAppOptions): Promise<DryRunReport | undefined> {
+  const {cliConfig, flags, output} = options
   const workbench = getWorkbench(cliConfig)
+
+  if (flags['dry-run']) {
+    const checks = createAggregatingChecks()
+    if (workbench) {
+      try {
+        workbench.assertDeployable()
+      } catch (err) {
+        checks.add({message: getErrorMessage(err), name: 'app-deployable', status: 'fail'})
+      }
+    }
+    const {files, target} = await createAppDeployment(options, checks, workbench)
+    return {
+      checks: checks.all(),
+      deployable: isDeployable(checks.all()),
+      dryRun: true,
+      files,
+      target,
+    }
+  }
 
   // A federated app with no entry, view or service would ship a remote with
   // nothing to load — fail before any prompts or API calls.
@@ -50,7 +76,7 @@ export async function deployApp(options: DeployAppOptions): Promise<void> {
       workbench.assertDeployable()
     } catch (err) {
       output.error(getErrorMessage(err), {exit: exitCodes.USAGE_ERROR})
-      return
+      return undefined
     }
   }
 
@@ -61,28 +87,32 @@ export async function deployApp(options: DeployAppOptions): Promise<void> {
     // Don't throw a generic error when the user cancels a prompt
     if (error.name === 'ExitPromptError') {
       output.error('Deployment cancelled by user', {exit: 1})
-      return
+      return undefined
     }
     if (error instanceof CLIError) {
       const {message, ...errorOptions} = error
       output.error(message, {...errorOptions, exit: 1})
-      return
+      return undefined
     }
     deployDebug('Error deploying application', error)
     output.error(`Error deploying application: ${error}`, {exit: 1})
   }
+  return undefined
 }
 
 interface AppDeployment {
   application: UserApplication | null
+  files: DeployFileSummary | null
   isAutoUpdating: boolean
   manifest: CoreAppManifest | undefined
+  target: DeployTarget | null
   version: string | null
 }
 
 /**
  * Validates the deploy, syncs the title from the manifest, and ships the build.
- * Steps report through `checks`; a real deploy fails fast on the first problem.
+ * Steps report through `checks` (fail fast for real deploys, aggregated for dry
+ * runs); side-effecting steps and the upload branch on `--dry-run`.
  */
 async function createAppDeployment(
   options: DeployAppOptions,
@@ -92,6 +122,7 @@ async function createAppDeployment(
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
   const workDir = projectRoot.directory
   const organizationId = cliConfig.app?.organizationId
+  const dryRun = !!flags['dry-run']
 
   const isAutoUpdating = checkAutoUpdates(checks, {cliConfig, flags})
 
@@ -108,8 +139,14 @@ async function createAppDeployment(
   )
 
   let application: UserApplication | null = null
+  let target: DeployTarget | null = null
   if (flags.external) {
     checks.add({message: EXTERNAL_APP_NOT_SUPPORTED, name: 'target', status: 'fail'})
+  } else if (dryRun) {
+    ;({existingApp: application, target} = await checkAppTarget(checks, {
+      appId: getAppId(cliConfig),
+      organizationId,
+    }))
   } else {
     application = await resolveAppApplication(options)
   }
@@ -120,7 +157,8 @@ async function createAppDeployment(
         autoUpdatesEnabled: isAutoUpdating,
         calledFromDeploy: true,
         cliConfig,
-        flags,
+        // Dry runs never prompt
+        flags: dryRun ? ({...flags, yes: true} as DeployFlags) : flags,
         outDir: sourceDir,
         output,
         workDir,
@@ -131,10 +169,16 @@ async function createAppDeployment(
     successMessage: 'App built',
   })
 
-  await verifyOutputDir({output, sourceDir, workbench})
+  let files: DeployFileSummary | null = null
+  if (dryRun) {
+    files = await checkOutputDir(checks, {sourceDir, workbench})
+  } else {
+    await verifyOutputDir({output, sourceDir, workbench})
+  }
 
   // Manifests aren't strictly essential, so a failure warns and continues
   let manifest: CoreAppManifest | undefined
+  let manifestFailed = false
   try {
     manifest = await extractCoreAppManifest({workDir})
   } catch (err) {
@@ -144,11 +188,26 @@ async function createAppDeployment(
       name: 'app-manifest',
       status: 'warn',
     })
+    manifestFailed = true
   }
 
   // Sync the application title from the manifest when it has changed
   const titleUpdate = application ? resolveTitleUpdate(manifest, application) : null
-  if (application && titleUpdate) {
+  if (dryRun) {
+    if (!manifestFailed) {
+      checks.add({
+        message: titleUpdate
+          ? titleUpdate.from
+            ? `Would update application title from "${titleUpdate.from}" to "${titleUpdate.to}"`
+            : `Would set application title to "${titleUpdate.to}"`
+          : manifest
+            ? 'App manifest extracted'
+            : 'No app manifest (no icon or title in app configuration)',
+        name: 'app-manifest',
+        status: 'pass',
+      })
+    }
+  } else if (application && titleUpdate) {
     deployDebug('Updating application title from manifest', titleUpdate)
     output.log(
       titleUpdate.from
@@ -171,7 +230,9 @@ async function createAppDeployment(
     }
   }
 
-  if (!application || !version) return {application, isAutoUpdating, manifest, version}
+  if (dryRun || !application || !version) {
+    return {application, files, isAutoUpdating, manifest, target, version}
+  }
 
   const parentDir = dirname(sourceDir)
   const base = basename(sourceDir)
@@ -192,7 +253,7 @@ async function createAppDeployment(
       }
     } catch (err) {
       output.error(`Invalid view declaration: ${getErrorMessage(err)}`, {exit: 1})
-      return {application, isAutoUpdating, manifest, version}
+      return {application, files, isAutoUpdating, manifest, target, version}
     }
   }
 
@@ -234,7 +295,7 @@ ${styleText(
 )}`)
   }
 
-  return {application, isAutoUpdating, manifest, version}
+  return {application, files, isAutoUpdating, manifest, target, version}
 }
 
 /** Resolves the app's target application, creating one when none exists. */

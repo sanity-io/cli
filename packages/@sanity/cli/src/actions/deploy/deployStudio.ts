@@ -13,49 +13,83 @@ import {pack} from 'tar-fs'
 import {createDeployment, type UserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {createStudioUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
   checkBuild,
+  checkOutputDir,
   checkPackageVersion,
+  checkStudioTarget,
+  createAggregatingChecks,
   createFailFastChecks,
   type DeployChecks,
+  type DeployTarget,
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
+import {type DryRunReport, isDeployable} from './dryRunReport.js'
 import {findUserApplicationForStudio} from './findUserApplication.js'
-import {type DeployAppOptions} from './types.js'
+import {type DeployFileSummary} from './listDeploymentFiles.js'
+import {type DeployAppOptions, type DeployFlags} from './types.js'
 
 /**
- * Builds and deploys the studio.
+ * Builds and deploys the studio. With --dry-run, runs the same sequence
+ * read-only and returns a report instead of shipping.
  */
-export async function deployStudio(options: DeployAppOptions): Promise<void> {
-  const {output} = options
+export async function deployStudio(options: DeployAppOptions): Promise<DryRunReport | undefined> {
+  const {cliConfig, flags, output} = options
+
+  if (flags['dry-run']) {
+    const checks = createAggregatingChecks()
+    const {files, target} = await createStudioDeployment(options, checks)
+
+    if (!getAppId(cliConfig) && target?.appId) {
+      checks.add({
+        message: `Add deployment.appId: '${target.appId}' to sanity.cli.ts to skip hostname lookups and prompts on deploy.`,
+        name: 'app-id-config',
+        status: 'warn',
+      })
+    }
+
+    return {
+      checks: checks.all(),
+      deployable: isDeployable(checks.all()),
+      dryRun: true,
+      files,
+      target,
+    }
+  }
+
   try {
     const checks = createFailFastChecks(output)
     await createStudioDeployment(options, checks)
   } catch (error) {
     if (error instanceof CLIError) {
       output.error(error.message, {exit: error.oclif?.exit ?? exitCodes.RUNTIME_ERROR})
-      return
+      return undefined
     }
     deployDebug('Error deploying studio', error)
     output.error(`Error deploying studio: ${error}`, {exit: 1})
   }
+  return undefined
 }
 
 interface StudioDeployment {
   application: UserApplication | null
+  files: DeployFileSummary | null
   isAutoUpdating: boolean
   studioManifest: StudioManifest | null
+  target: DeployTarget | null
   version: string | null
 }
 
 /**
  * Validates the deploy, extracts and uploads the schema, and ships the build.
- * Steps report through `checks`; a real deploy fails fast on the first problem.
+ * Steps report through `checks` (fail fast for real deploys, aggregated for dry
+ * runs); side-effecting steps and the upload branch on `--dry-run`.
  */
 async function createStudioDeployment(
   options: DeployAppOptions,
@@ -66,6 +100,7 @@ async function createStudioDeployment(
   const isExternal = !!flags.external
   const workbench = getWorkbench(cliConfig)
   const projectId = cliConfig.api?.projectId
+  const dryRun = !!flags['dry-run']
 
   const isAutoUpdating = checkAutoUpdates(checks, {cliConfig, flags})
 
@@ -94,7 +129,19 @@ async function createStudioDeployment(
       : {message: NO_PROJECT_ID, name: 'project-id', status: 'fail'},
   )
 
-  const application = await resolveStudioApplication(options)
+  let application: UserApplication | null = null
+  let target: DeployTarget | null = null
+  if (dryRun) {
+    target = await checkStudioTarget(checks, {
+      appId: getAppId(cliConfig),
+      isExternal,
+      projectId,
+      studioHost: cliConfig.studioHost,
+      urlFlag: flags.url,
+    })
+  } else {
+    application = await resolveStudioApplication(options)
+  }
 
   await checkBuild(checks, {
     build: () =>
@@ -102,7 +149,8 @@ async function createStudioDeployment(
         autoUpdatesEnabled: isAutoUpdating,
         calledFromDeploy: true,
         cliConfig,
-        flags,
+        // Dry runs never prompt
+        flags: dryRun ? ({...flags, yes: true} as DeployFlags) : flags,
         outDir: sourceDir,
         output,
         workDir,
@@ -111,36 +159,24 @@ async function createStudioDeployment(
     successMessage: 'Studio built',
   })
 
-  let studioManifest: StudioManifest | null = null
-  try {
-    studioManifest = await deployStudioSchemasAndManifests({
-      configPath: projectRoot.path,
-      isExternal,
-      outPath: `${sourceDir}/static`,
-      projectId: projectId ?? '',
-      schemaRequired: flags['schema-required'],
-      verbose: flags.verbose,
-      workDir,
-    })
-  } catch (error) {
-    deployDebug('Error deploying studio schemas and manifests', error)
-    if (error instanceof SchemaExtractionError) {
-      output.error(formatSchemaValidation(error.validation || []), {exit: 1})
-    }
-    output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
-  }
+  const studioManifest = await deployStudioSchema(options, checks)
 
-  if (!studioManifest) {
-    output.error('Failed to generate studio manifest. Please check your schemas and manifests.', {
-      exit: 1,
+  let files: DeployFileSummary | null = null
+  if (dryRun) {
+    files = await checkOutputDir(checks, {
+      skipReason: isExternal
+        ? 'Output directory check skipped for externally hosted studios'
+        : undefined,
+      sourceDir,
+      workbench,
     })
-  }
-
-  if (!isExternal) {
+  } else if (!isExternal) {
     await verifyOutputDir({output, sourceDir, workbench})
   }
 
-  if (!application || !version) return {application, isAutoUpdating, studioManifest, version}
+  if (dryRun || !application || !version) {
+    return {application, files, isAutoUpdating, studioManifest, target, version}
+  }
 
   let tarball: Gzip | undefined
   if (!isExternal) {
@@ -188,7 +224,7 @@ export default defineCliConfig({
     output.log(`\n${example}`)
   }
 
-  return {application, isAutoUpdating, studioManifest, version}
+  return {application, files, isAutoUpdating, studioManifest, target, version}
 }
 
 /** Resolves the studio's target application, registering a new host if none exists. */
@@ -228,6 +264,67 @@ async function resolveStudioApplication(
 
   deployDebug('Found user application', application)
   return application
+}
+
+/**
+ * Extracts and validates the schema. A real deploy uploads it and returns the
+ * studio manifest; a dry run validates only and reports a workspace summary.
+ */
+async function deployStudioSchema(
+  options: DeployAppOptions,
+  checks: DeployChecks,
+): Promise<StudioManifest | null> {
+  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+  const dryRun = !!flags['dry-run']
+  const schemaOptions = {
+    configPath: projectRoot.path,
+    isExternal: !!flags.external,
+    outPath: `${sourceDir}/static`,
+    projectId: cliConfig.api?.projectId ?? '',
+    schemaRequired: flags['schema-required'],
+    verbose: flags.verbose,
+    workDir: projectRoot.directory,
+  }
+
+  if (dryRun) {
+    await checks.run(
+      'schema',
+      async () => {
+        const {workspaces} = await deployStudioSchemasAndManifests({...schemaOptions, dryRun})
+        const typeCount = workspaces.reduce((count, workspace) => count + workspace.schemaTypes, 0)
+        checks.add({
+          message: `Schema valid (${workspaces.length} ${workspaces.length === 1 ? 'workspace' : 'workspaces'}, ${typeCount} ${typeCount === 1 ? 'type' : 'types'})`,
+          name: 'schema',
+          status: 'pass',
+        })
+      },
+      (err) =>
+        err instanceof SchemaExtractionError && err.validation
+          ? `Schema validation failed:\n${formatSchemaValidation(err.validation)}`
+          : `Schema validation failed: ${getErrorMessage(err)}`,
+    )
+    return null
+  }
+
+  let studioManifest: StudioManifest | null = null
+  try {
+    const result = await deployStudioSchemasAndManifests(schemaOptions)
+    studioManifest = result.studioManifest
+  } catch (error) {
+    deployDebug('Error deploying studio schemas and manifests', error)
+    if (error instanceof SchemaExtractionError) {
+      output.error(formatSchemaValidation(error.validation || []), {exit: 1})
+    }
+    output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
+  }
+
+  if (!studioManifest) {
+    output.error('Failed to generate studio manifest. Please check your schemas and manifests.', {
+      exit: 1,
+    })
+  }
+
+  return studioManifest
 }
 
 function studioBuildSkipReason({build, isExternal}: {build: boolean; isExternal: boolean}) {

@@ -1,12 +1,13 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deployApp} from '../actions/deploy/deployApp.js'
 import {deployDebug} from '../actions/deploy/deployDebug.js'
 import {deployStudio} from '../actions/deploy/deployStudio.js'
+import {type DryRunReport, renderDryRunReport} from '../actions/deploy/dryRunReport.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
 
@@ -19,6 +20,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
 
   static override description = 'Builds and deploys Sanity Studio or application to Sanity hosting'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
@@ -27,6 +30,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     {
       command: '<%= config.bin %> <%= command.id %> --no-minify --source-maps',
       description: 'Deploys non-minified build with source maps',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> --dry-run --json',
+      description: 'Validate the deployment without deploying, as machine-readable output',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --schema-required',
@@ -50,6 +57,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       default: true,
       description:
         'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
+    }),
+    'dry-run': Flags.boolean({
+      default: false,
+      description:
+        'Run all deploy checks and list the files that would be uploaded, without deploying. Exits non-zero when not deployable.',
     }),
     external: Flags.boolean({
       default: false,
@@ -85,7 +97,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     }),
   }
 
-  public async run(): Promise<void> {
+  public async run(): Promise<DryRunReport | undefined> {
     const {flags} = await this.parse(DeployCommand)
 
     const cliConfig = await this.getCliConfig()
@@ -96,8 +108,14 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     const defaultOutputDir = path.resolve(path.join(projectRoot.directory, 'dist'))
     const sourceDir = path.resolve(process.cwd(), this.args.sourceDir || defaultOutputDir)
 
-    // Skip the directory check if the studio is externally hosted
-    if (this.args.sourceDir && this.args.sourceDir !== 'dist' && !flags.external) {
+    // Skip the directory check for externally hosted studios, and for dry runs
+    // (which never prompt and never overwrite remote state)
+    if (
+      this.args.sourceDir &&
+      this.args.sourceDir !== 'dist' &&
+      !flags.external &&
+      !flags['dry-run']
+    ) {
       let relativeOutput = path.relative(process.cwd(), sourceDir)
       if (relativeOutput[0] !== '.') {
         relativeOutput = `./${relativeOutput}`
@@ -119,24 +137,20 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       this.output.log(`Building to ${relativeOutput}\n`)
     }
 
-    if (isApp) {
-      deployDebug('Deploying app')
-      await deployApp({
-        cliConfig,
-        flags,
-        output: this.output,
-        projectRoot,
-        sourceDir,
-      })
-    } else {
-      deployDebug('Deploying studio')
-      await deployStudio({
-        cliConfig,
-        flags,
-        output: this.output,
-        projectRoot,
-        sourceDir,
-      })
+    const deployOptions = {cliConfig, flags, output: this.output, projectRoot, sourceDir}
+
+    deployDebug(isApp ? 'Deploying app' : 'Deploying studio')
+    const report = isApp ? await deployApp(deployOptions) : await deployStudio(deployOptions)
+
+    // A report is only returned for dry runs
+    if (report) {
+      renderDryRunReport(report, this.output)
+      if (!report.deployable) {
+        // Set the exit code without throwing so --json still emits the full report
+        process.exitCode = exitCodes.USAGE_ERROR
+      }
     }
+
+    return report
   }
 }

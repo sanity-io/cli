@@ -10,12 +10,13 @@ import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {getAutoUpdateIssueMessage, resolveAutoUpdates} from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
 import {deployDebug} from './deployDebug.js'
+import {type DeployFileSummary, listDeploymentFiles} from './listDeploymentFiles.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
 
-type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
+export type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
 
-interface DeployCheck {
+export interface DeployCheck {
   message: string
 
   /** Stable identifier for machine consumers; the message carries the details */
@@ -166,6 +167,39 @@ export async function verifyOutputDir({
     deployDebug('Error checking directory', err)
     output.error(getErrorMessage(err), {exit: 1})
   }
+}
+
+/**
+ * Validates the output directory and lists the files a deploy would upload,
+ * reporting through `checks` instead of a spinner.
+ */
+export async function checkOutputDir(
+  checks: DeployChecks,
+  {
+    skipReason,
+    sourceDir,
+    workbench,
+  }: {
+    skipReason?: string
+    sourceDir: string
+    workbench: {checkBuiltOutput(sourceDir: string): Promise<void>} | null
+  },
+): Promise<DeployFileSummary | null> {
+  if (skipReason) {
+    checks.add({message: skipReason, name: 'output-dir', status: 'skip'})
+    return null
+  }
+
+  return checks.run('output-dir', async () => {
+    await (workbench ? workbench.checkBuiltOutput(sourceDir) : checkDir(sourceDir))
+    checks.add({message: `Output directory: ${sourceDir}`, name: 'output-dir', status: 'pass'})
+    const list = await listDeploymentFiles(sourceDir)
+    return {
+      count: list.length,
+      list,
+      totalBytes: list.reduce((total, file) => total + file.size, 0),
+    }
+  })
 }
 
 export interface DeployTarget {
