@@ -19,7 +19,7 @@ import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildApp} from '../build/buildApp.js'
 import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
-import {createUserApplicationForApp} from './createUserApplicationForApp.js'
+import {createUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
   checkBuild,
@@ -29,16 +29,11 @@ import {
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {findUserApplicationForApp} from './findUserApplicationForApp.js'
+import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
 type Workbench = ReturnType<typeof getWorkbench>
 
-/**
- * Builds and deploys a Sanity application.
- *
- * @internal
- */
 export async function deployApp(options: DeployAppOptions): Promise<void> {
   const {cliConfig, output} = options
   const workbench = getWorkbench(cliConfig)
@@ -223,16 +218,15 @@ ${styleText(
   return {application, isAutoUpdating, manifest, version}
 }
 
-/** Resolves the app's target application, creating one when none exists. */
 async function resolveAppApplication(options: DeployAppOptions): Promise<UserApplication | null> {
   const {cliConfig, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''
-  let application = await findUserApplicationForApp({cliConfig, organizationId, output})
+  let application = await findUserApplication({cliConfig, organizationId, output})
   deployDebug('User application found', application)
 
   if (!application) {
     deployDebug('No user application found. Creating a new one')
-    application = await createUserApplicationForApp(organizationId)
+    application = await createUserApplication(organizationId)
     deployDebug('User application created', application)
   }
 
