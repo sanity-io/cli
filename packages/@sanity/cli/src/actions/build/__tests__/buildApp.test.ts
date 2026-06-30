@@ -23,14 +23,11 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: mockedCompareDependencyVersions,
 }))
 
-vi.mock('../buildStaticFiles.js', () => ({
-  buildStaticFiles: mockedBuildStaticFiles,
-}))
-
 vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
   return {
     ...original,
+    buildStaticFiles: mockedBuildStaticFiles,
     resolveVendorBuildConfig: vi.fn(),
   }
 })

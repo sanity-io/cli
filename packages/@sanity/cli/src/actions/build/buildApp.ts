@@ -5,9 +5,12 @@ import {styleText} from 'node:util'
 import {
   AppBuildTrace,
   buildDebug,
+  buildStaticFiles,
+  formatModuleSizes,
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
   resolveVendorBuildConfig,
+  sortModulesBySize,
 } from '@sanity/cli-build/_internal/build'
 import {getAppEnvironmentVariables} from '@sanity/cli-build/_internal/env'
 import {
@@ -29,9 +32,7 @@ import {
   compareDependencyVersions,
   CompareDependencyVersionsResult,
 } from '../../util/compareDependencyVersions.js'
-import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
-import {buildStaticFiles} from './buildStaticFiles.js'
 import {determineBasePath} from './determineBasePath.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'

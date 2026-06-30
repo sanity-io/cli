@@ -27,15 +27,12 @@ vi.mock('../../../util/packageManager/upgradePackages.js', () => ({
   upgradePackages: mockedUpgradePackages,
 }))
 
-vi.mock('../buildStaticFiles.js', () => ({
-  buildStaticFiles: mockedBuildStaticFiles,
-}))
-
 vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
   return {
     ...original,
     buildDebug: vi.fn(),
+    buildStaticFiles: mockedBuildStaticFiles,
     checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
     checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
     resolveVendorBuildConfig: vi.fn().mockResolvedValue({
