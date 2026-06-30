@@ -15,14 +15,19 @@ const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
 const mockReadWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockWatchRegistry = vi.hoisted(() => vi.fn())
+const mockIsWorkbenchApp = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    resolveLocalPackage: mockResolveLocalPackage,
-  }
-})
+vi.mock(import('@sanity/cli-core/debug'), () => ({
+  subdebug: vi.fn().mockReturnValue(vi.fn()),
+}))
+vi.mock(import('@sanity/cli-core/config/cli/workbenchApp'), () => ({
+  isWorkbenchApp: mockIsWorkbenchApp,
+}))
+vi.mock(import('@sanity/cli-core/util/resolveLocalPackage'), () => ({
+  resolveLocalPackage: mockResolveLocalPackage,
+  resolveLocalPackageFrom: vi.fn(),
+  resolveLocalPackagePath: vi.fn(),
+}))
 vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
@@ -55,6 +60,7 @@ describe('startWorkbenchDevServer', () => {
     mockGetRegisteredServers.mockReturnValue([])
     mockReadWorkbenchLock.mockReturnValue(undefined)
     mockWatchRegistry.mockReturnValue({close: vi.fn()})
+    mockIsWorkbenchApp.mockReturnValue(true)
   })
 
   afterEach(() => {
@@ -64,6 +70,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('federation gate', () => {
     test('skips workbench entirely when federation is not enabled', async () => {
+      mockIsWorkbenchApp.mockReturnValue(false)
       const result = await startWorkbenchDevServer(createDevOptions())
 
       expect(result.workbenchAvailable).toBe(false)
@@ -73,6 +80,7 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('skips workbench when federation is explicitly disabled', async () => {
+      mockIsWorkbenchApp.mockReturnValue(false)
       const result = await startWorkbenchDevServer(createDevOptions({cliConfig: {}}))
 
       expect(result.workbenchAvailable).toBe(false)
@@ -81,6 +89,7 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('returns httpHost and workbenchPort even when federation is disabled', async () => {
+      mockIsWorkbenchApp.mockReturnValue(false)
       const result = await startWorkbenchDevServer(
         createDevOptions({httpHost: '0.0.0.0', httpPort: 4000}),
       )

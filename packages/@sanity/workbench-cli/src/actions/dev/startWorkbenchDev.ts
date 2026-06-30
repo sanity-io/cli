@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
 
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
 import {type DevServerManifest} from './registry.js'

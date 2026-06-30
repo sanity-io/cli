@@ -1,7 +1,7 @@
 import {stat} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {type DefineAppInput, unstable_defineApp} from '../../../defineApp.js'

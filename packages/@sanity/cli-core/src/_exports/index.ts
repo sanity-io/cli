@@ -1,3 +1,7 @@
+// DO NOT ADD NEW EXPORTS TO THIS FILE!
+// These are left here for backwards compatibility.
+// If you came here looking to add new erxports, instead take a look through the `exports` in package.json and think about which of those groups your new export belongs to. You may want to consider adding a _new_ export if there is no clean conceptual fit.
+// This is all in the name of minimizing 'barrel' export files and keeping `import`s fast. See the following for context: https://marvinh.dev/blog/speeding-up-javascript-ecosystem-part-7/
 export {getCliConfig, getCliConfigUncached} from '../config/cli/getCliConfig.js'
 export {getCliConfigSync} from '../config/cli/getCliConfigSync.js'
 export {type CliConfig} from '../config/cli/types/cliConfig.js'
