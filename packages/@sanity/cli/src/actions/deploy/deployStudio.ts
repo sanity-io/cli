@@ -38,13 +38,7 @@ export function deployStudio(options: DeployAppOptions): Promise<void> {
   })
 }
 
-/**
- * Validates the deploy, extracts and uploads the schema, and ships the build.
- *
- * Every step reports through `reporter`; a real deploy exits on the first
- * failure, a dry run collects them. The one `dry-run` stop below marks the line
- * between read-only checks and the mutations a real deploy performs.
- */
+/** Validates the deploy, extracts and uploads the schema, and ships the build. */
 async function runStudioDeployment(
   options: DeployAppOptions,
   reporter: CheckReporter,
@@ -125,8 +119,7 @@ async function runStudioDeployment(
 
 /**
  * Finds the application a real deploy targets, registering a studio host when
- * none is configured. In a dry run it resolves and reports the target read-only
- * — prompting and registration are the mutations a dry run skips.
+ * none is configured. A dry run resolves and reports the target read-only instead.
  */
 async function resolveStudioApplication(
   options: DeployAppOptions,
