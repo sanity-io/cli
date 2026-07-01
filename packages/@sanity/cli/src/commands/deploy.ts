@@ -51,6 +51,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description:
         'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
     }),
+    'dry-run': Flags.boolean({
+      default: false,
+      description: 'Report what would be deployed without uploading or creating anything',
+    }),
     external: Flags.boolean({
       default: false,
       description: 'Register an externally hosted studio',
@@ -103,8 +107,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      // Unattended runs (--yes or a non-interactive terminal) skip the overwrite prompt
-      if (!this.isUnattended()) {
+      // Unattended runs (--yes or a non-interactive terminal) and dry runs skip the overwrite prompt
+      if (!this.isUnattended() && !flags['dry-run']) {
         const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
         const shouldProceed =
           isEmpty ||
