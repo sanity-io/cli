@@ -5,11 +5,17 @@ import {createMockOutput, DEV_FLAGS as FLAGS} from '../../__tests__/testHelpers.
 import {getDevServerConfig} from '../getDevServerConfig.js'
 
 vi.mock('@sanity/cli-core/ux', () => ({
+  logSymbols: {error: '✖', info: 'ℹ', success: '✔', warning: '⚠'},
   spinner: vi.fn(() => ({
     start: vi.fn().mockReturnThis(),
     succeed: vi.fn(),
   })),
 }))
+
+// oclif types the flag as `boolean`, but with `default: undefined` an unset flag
+// is `undefined` at runtime — this helper lets tests exercise that path.
+const withBundleFlag = (value: boolean | undefined) =>
+  ({...FLAGS, 'experimental-bundle': value}) as typeof FLAGS
 
 describe('getDevServerConfig', () => {
   afterEach(() => {
@@ -180,5 +186,79 @@ describe('getDevServerConfig', () => {
       workDir: '/tmp',
     })
     expect(withoutOverride.httpPort).toBe(3333)
+  })
+
+  describe('experimental bundled dev mode', () => {
+    test('enables bundledDev when the --experimental-bundle flag is passed', () => {
+      const config = getDevServerConfig({
+        cliConfig: {},
+        flags: withBundleFlag(true),
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(config.bundledDev).toBe(true)
+    })
+
+    test('enables bundledDev from sanity.cli.ts when the flag is unset', () => {
+      const config = getDevServerConfig({
+        cliConfig: {experimental: {bundledDev: true}},
+        flags: withBundleFlag(undefined),
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(config.bundledDev).toBe(true)
+    })
+
+    test('the --no-experimental-bundle flag overrides a config opt-in', () => {
+      const config = getDevServerConfig({
+        cliConfig: {experimental: {bundledDev: true}},
+        flags: withBundleFlag(false),
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(config.bundledDev).toBe(false)
+    })
+
+    test('defaults bundledDev to false when neither flag nor config is set', () => {
+      const config = getDevServerConfig({
+        cliConfig: {},
+        flags: withBundleFlag(undefined),
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(config.bundledDev).toBe(false)
+    })
+
+    test('logs a notice when bundled dev mode is enabled', () => {
+      const output = createMockOutput()
+
+      getDevServerConfig({
+        cliConfig: {},
+        flags: withBundleFlag(true),
+        output,
+        workDir: '/tmp',
+      })
+
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining('experimental Vite bundled dev mode'),
+      )
+    })
+
+    test('does not log the notice when bundled dev mode is off', () => {
+      const output = createMockOutput()
+
+      getDevServerConfig({
+        cliConfig: {},
+        flags: withBundleFlag(undefined),
+        output,
+        workDir: '/tmp',
+      })
+
+      expect(output.log).not.toHaveBeenCalled()
+    })
   })
 })

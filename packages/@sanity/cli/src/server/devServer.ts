@@ -29,6 +29,8 @@ export interface DevServerOptions {
   staticPath: string
 
   appTitle?: string
+  /** Enable Vite's experimental bundled dev mode (`experimental.bundledDev`). */
+  bundledDev?: boolean
   entry?: string
   httpHost?: string
   isApp?: boolean
@@ -52,6 +54,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   const {
     appTitle,
     basePath,
+    bundledDev,
     cwd,
     entry,
     httpHost,
@@ -114,6 +117,15 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     services,
     views,
   })
+
+  // Opt into Vite's experimental bundled dev mode. Set before the user-config
+  // extension below so a `vite` override in sanity.cli.ts still has final say.
+  if (bundledDev) {
+    viteConfig = {
+      ...viteConfig,
+      experimental: {...viteConfig.experimental, bundledDev: true},
+    }
+  }
 
   // Extend Vite configuration with user-provided config
   if (extendViteConfig) {

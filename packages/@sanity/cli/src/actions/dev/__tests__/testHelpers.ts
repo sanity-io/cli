@@ -43,6 +43,7 @@ export function createMockOutput(): Output {
  * by the code under test but are required to type-check as `DevFlags`. */
 export const DEV_FLAGS = {
   'auto-updates': false,
+  'experimental-bundle': false,
   host: 'localhost',
   json: false,
   'load-in-dashboard': false,
