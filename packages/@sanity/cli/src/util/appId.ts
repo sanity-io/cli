@@ -25,17 +25,30 @@ function hasDeprecatedAppId(cliConfig: CliConfig) {
   return Boolean(getDeprecatedAppId(cliConfig))
 }
 
+/** The one app-id configuration problem to surface, if any. */
+export type AppIdIssue = 'conflicting-config' | 'deprecated-config'
+
+/**
+ * Decides which app-id problem a config has: both the deprecated `app.id` and
+ * `deployment.appId` (a conflict), only the deprecated one, or neither. Shared
+ * so the real deploy and the dry-run check reach the same verdict.
+ * @internal
+ */
+export function resolveAppIdIssue(cliConfig: CliConfig): AppIdIssue | null {
+  if (!hasDeprecatedAppId(cliConfig)) return null
+  return hasNewAppId(cliConfig) ? 'conflicting-config' : 'deprecated-config'
+}
+
 /**
  * Checks if an SDK app uses the deprecated app.id config & throws a warning if so.
  * @remarks Throws an error if an app uses both deployment.appId and app.id
  * @internal
  */
 export function checkForDeprecatedAppId({cliConfig, output}: Options): void {
-  const hasNew = hasNewAppId(cliConfig)
-  const hasOld = hasDeprecatedAppId(cliConfig)
+  const issue = resolveAppIdIssue(cliConfig)
 
-  // Throw an error if both the old and new app ID configs are found
-  if (hasOld && hasNew) {
+  // Both configs set: a real deploy can't pick one, so stop here
+  if (issue === 'conflicting-config') {
     output.error(
       `${styleText('bold', 'Found both app.id (deprecated) and deployment.appId in your application configuration.')}
 
@@ -47,7 +60,7 @@ Please remove app.id from your sanity.cli.js or sanity.cli.ts file.`,
   }
 
   // Just warn if only the old app ID config is found
-  if (hasOld) {
+  if (issue === 'deprecated-config') {
     output.warn(
       `${styleText('bold', 'The `app.id` config has moved to `deployment.appId`.')}
 

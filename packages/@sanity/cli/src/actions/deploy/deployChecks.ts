@@ -2,10 +2,8 @@ import {type CliConfig, getLocalPackageVersion, type Output} from '@sanity/cli-c
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 
-import {
-  APP_ID_NOT_FOUND_IN_ORGANIZATION,
-  cannotPromptForStudioHost,
-} from '../../util/errorMessages.js'
+import {resolveAppIdIssue} from '../../util/appId.js'
+import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {
   getAutoUpdateIssueMessage,
@@ -42,10 +40,13 @@ export interface CheckReporter {
 export function createFailFastReporter(output: Output): CheckReporter {
   return {
     report(check) {
+      // Fixes surface in both modes: appended after the message here, and in the
+      // dry-run report, so the problem and its fix never drift apart.
+      const text = check.solution ? `${check.message}: ${check.solution}` : check.message
       if (check.status === 'fail') {
-        output.error(check.message, {exit: check.exitCode ?? 1})
+        output.error(text, {exit: check.exitCode ?? 1})
       } else if (check.status === 'warn') {
-        output.warn(check.message)
+        output.warn(text)
       }
     },
   }
@@ -124,6 +125,28 @@ export function checkAutoUpdates(
   }
 
   return enabled
+}
+
+/**
+ * The dry-run form of the `app.id` config check a real deploy runs in
+ * `findUserApplication`: a conflict fails (both `app.id` and `deployment.appId`
+ * set), the deprecated config alone warns.
+ */
+export function checkAppId(reporter: CheckReporter, {cliConfig}: {cliConfig: CliConfig}): void {
+  const issue = resolveAppIdIssue(cliConfig)
+  if (issue === 'conflicting-config') {
+    reporter.report({
+      message: 'Both `app.id` (deprecated) and `deployment.appId` are set',
+      solution: 'Remove `app.id` from sanity.cli.ts',
+      status: 'fail',
+    })
+  } else if (issue === 'deprecated-config') {
+    reporter.report({
+      message: 'The `app.id` config is deprecated',
+      solution: 'Move it to `deployment.appId` in sanity.cli.ts',
+      status: 'warn',
+    })
+  }
 }
 
 export async function checkBuild(
@@ -299,10 +322,14 @@ export async function checkStudioTarget(
           return
         }
         case 'needs-input': {
-          // The same constraint an unattended deploy enforces, with the same message
+          // Dry-run only; a real deploy prompts, or errors in findUserApplication.
           reporter.report({
-            message: cannotPromptForStudioHost(isExternal),
-            solution: 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+            message: isExternal
+              ? 'No external studio URL configured'
+              : 'No studio hostname configured',
+            solution: isExternal
+              ? 'Set `studioHost` in sanity.cli.ts, or pass the full URL with --url'
+              : 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
             status: 'fail',
           })
           return

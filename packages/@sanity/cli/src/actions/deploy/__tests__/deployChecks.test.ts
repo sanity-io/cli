@@ -1,8 +1,9 @@
-import {type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type UserApplication} from '../../../services/userApplications.js'
 import {
+  checkAppId,
   checkAppTarget,
   checkAutoUpdates,
   checkStudioTarget,
@@ -67,6 +68,18 @@ describe('createFailFastReporter', () => {
     reporter.report({message: 'skipped', status: 'skip'})
     expect(output.error).not.toHaveBeenCalled()
     expect(output.warn).not.toHaveBeenCalled()
+  })
+
+  test('a fail appends its solution to the message', () => {
+    const output = mockOutput()
+    createFailFastReporter(output).report({message: 'boom', solution: 'do X', status: 'fail'})
+    expect(output.error).toHaveBeenCalledWith('boom: do X', {exit: 1})
+  })
+
+  test('a warn appends its solution to the message', () => {
+    const output = mockOutput()
+    createFailFastReporter(output).report({message: 'heads up', solution: 'do Y', status: 'warn'})
+    expect(output.warn).toHaveBeenCalledWith('heads up: do Y')
   })
 })
 
@@ -157,14 +170,17 @@ describe('checkStudioTarget', () => {
     )
   })
 
-  test('needs-input → fail check (unattended cannot prompt)', async () => {
+  test('needs-input → fail check with a pure problem and its fix', async () => {
     mockResolveStudio.mockResolvedValue({existing: [], type: 'needs-input'})
     const reporter = createCollectingReporter()
 
     await checkStudioTarget(reporter, studioArgs)
 
-    expect(reporter.results[0]).toMatchObject({status: 'fail'})
-    expect(reporter.results[0]?.message).toContain('Cannot prompt for studio hostname')
+    expect(reporter.results[0]).toMatchObject({
+      message: 'No studio hostname configured',
+      solution: 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+      status: 'fail',
+    })
   })
 
   test('invalid → fail check with the resolution message', async () => {
@@ -306,6 +322,39 @@ describe('checkAutoUpdates', () => {
       cliConfig: {deployment: {autoUpdates: true}},
       flags: {} as DeployFlags,
     })
+
+    expect(reporter.results).toHaveLength(0)
+  })
+})
+
+describe('checkAppId', () => {
+  test('both app.id and deployment.appId set is a fail check with a fix', () => {
+    const reporter = createCollectingReporter()
+
+    checkAppId(reporter, {cliConfig: {app: {id: 'old'}, deployment: {appId: 'new'}} as CliConfig})
+
+    expect(reporter.results).toEqual([
+      {
+        message: 'Both `app.id` (deprecated) and `deployment.appId` are set',
+        solution: 'Remove `app.id` from sanity.cli.ts',
+        status: 'fail',
+      },
+    ])
+  })
+
+  test('the deprecated app.id alone warns', () => {
+    const reporter = createCollectingReporter()
+
+    checkAppId(reporter, {cliConfig: {app: {id: 'old'}} as CliConfig})
+
+    expect(reporter.results).toEqual([expect.objectContaining({status: 'warn'})])
+    expect(reporter.results[0]?.message).toContain('deprecated')
+  })
+
+  test('deployment.appId alone records no check', () => {
+    const reporter = createCollectingReporter()
+
+    checkAppId(reporter, {cliConfig: {deployment: {appId: 'new'}} as CliConfig})
 
     expect(reporter.results).toHaveLength(0)
   })
