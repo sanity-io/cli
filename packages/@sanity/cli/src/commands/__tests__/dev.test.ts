@@ -1,12 +1,11 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test, vi} from 'vitest'
 
+import {createMockSanityCommand} from '../../../test/mockSanityCommand.js'
 import {workbenchApp} from '../../actions/dev/__tests__/testHelpers.js'
 
-import {createMockSanityCommand} from '../../../test/mockSanityCommand.js'
-
 // First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
+const {MockedSanityCommand} = createMockSanityCommand()
 
 // Second: install the mock on cli-core
 vi.mock('@sanity/cli-core', async (importOriginal) => {
