@@ -29,61 +29,17 @@ export async function findUserApplication(
 ): Promise<UserApplication | null> {
   const {cliConfig, organizationId, output, unattended = false} = options
 
+  // May throw when both app.id (deprecated) and deployment.appId are set — let
+  // it surface with its own exit code rather than get re-wrapped below.
+  checkForDeprecatedAppId({cliConfig, output})
+
   const spin = spinner('Checking application info...').start()
 
+  let resolution
   try {
-    checkForDeprecatedAppId({cliConfig, output})
-
     deployDebug('Resolving the deploy target from the local app config')
-    const resolution = await resolveAppDeployTarget({appId: getAppId(cliConfig), organizationId})
+    resolution = await resolveAppDeployTarget({appId: getAppId(cliConfig), organizationId})
     deployDebug('Resolved app deploy target', resolution)
-
-    switch (resolution.type) {
-      // The deploy validates organizationId before resolving, so this shouldn't happen
-      case 'blocked': {
-        spin.clear()
-        output.error(resolution.message, {exit: 1})
-        return null
-      }
-      case 'found': {
-        spin.succeed()
-        return resolution.application
-      }
-      // The provided application ID doesn't exist in the org
-      case 'invalid': {
-        spin.clear()
-        output.error(APP_ID_NOT_FOUND_IN_ORGANIZATION, {
-          exit: 1,
-          suggestions: ['Verify the appId in your configuration matches an existing application'],
-        })
-        return null
-      }
-      case 'needs-input': {
-        spin.info('No application ID configured')
-        // Nobody to prompt in unattended mode — a real deploy would hang otherwise
-        if (unattended) {
-          output.error(
-            'No `deployment.appId` configured. Set it in sanity.cli.ts to deploy without prompting.',
-            {exit: exitCodes.USAGE_ERROR},
-          )
-          return null
-        }
-        return promptForExistingApp(resolution.existing)
-      }
-      // No appId configured and no existing applications — the deploy creates one
-      case 'would-create': {
-        spin.info('No application ID configured')
-        // Creating one needs an interactive title prompt, which unattended can't answer
-        if (unattended) {
-          output.error(
-            'No application to deploy to. Run `sanity deploy` interactively once to create one.',
-            {exit: exitCodes.USAGE_ERROR},
-          )
-          return null
-        }
-        return null
-      }
-    }
   } catch (error) {
     // User can't access applications for the org
     if (error?.statusCode === 403) {
@@ -110,6 +66,53 @@ export async function findUserApplication(
     deployDebug('Error finding user application for app', error)
     output.error(error)
     return null
+  }
+
+  switch (resolution.type) {
+    // The deploy validates organizationId before resolving, so this shouldn't happen
+    case 'blocked': {
+      spin.clear()
+      output.error(resolution.message, {exit: 1})
+      return null
+    }
+    case 'found': {
+      spin.succeed()
+      return resolution.application
+    }
+    // The provided application ID doesn't exist in the org
+    case 'invalid': {
+      spin.clear()
+      output.error(APP_ID_NOT_FOUND_IN_ORGANIZATION, {
+        exit: 1,
+        suggestions: ['Verify the appId in your configuration matches an existing application'],
+      })
+      return null
+    }
+    case 'needs-input': {
+      spin.info('No application ID configured')
+      // Nobody to prompt in unattended mode — a real deploy would hang otherwise
+      if (unattended) {
+        output.error(
+          'No `deployment.appId` configured. Set it in sanity.cli.ts to deploy without prompting.',
+          {exit: exitCodes.USAGE_ERROR},
+        )
+        return null
+      }
+      return promptForExistingApp(resolution.existing)
+    }
+    // No appId configured and no existing applications — the deploy creates one
+    case 'would-create': {
+      spin.info('No application ID configured')
+      // Creating one needs an interactive title prompt, which unattended can't answer
+      if (unattended) {
+        output.error(
+          'No application to deploy to. Run `sanity deploy` interactively once to create one.',
+          {exit: exitCodes.USAGE_ERROR},
+        )
+        return null
+      }
+      return null
+    }
   }
 }
 
