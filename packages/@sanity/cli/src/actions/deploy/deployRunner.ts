@@ -11,9 +11,8 @@ import {type DeploymentFile, renderDeploymentPlan} from './deploymentPlan.js'
 import {type DeployAppOptions} from './types.js'
 
 /**
- * A deploy flow, split into the parts that differ between core apps and studios.
- * Everything the two share — mode selection, error handling, the dry-run plan —
- * lives in `runDeploy`, so both types read as the same sequence.
+ * The parts of a deploy that differ between core apps and studios. The shared
+ * sequence — mode selection, error handling, the dry-run plan — lives in `runDeploy`.
  */
 export interface DeploySpec {
   /** Files a real deploy would upload, listed only for the dry-run plan. */
@@ -24,10 +23,9 @@ export interface DeploySpec {
 }
 
 /**
- * Runs a deploy flow in whichever mode the flags select. A real deploy fails
- * fast and mutates; `--dry-run` collects every check and renders a plan without
- * mutating. Both drive the same `run` sequence, so the modes can't drift — the
- * mode lives only in the reporter and in the dry-run stop inside `run`.
+ * Runs a deploy in the mode the flags select. A real deploy fails fast and
+ * mutates; `--dry-run` drives the same `run` sequence read-only and renders a
+ * plan. The mode lives only in the reporter, so the two can't drift.
  */
 export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
   const {output} = options

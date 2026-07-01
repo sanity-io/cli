@@ -41,13 +41,7 @@ export function deployApp(options: DeployAppOptions): Promise<void> {
   })
 }
 
-/**
- * Validates the deploy, syncs the title from the manifest, and ships the build.
- *
- * Every step reports through `reporter`; a real deploy exits on the first
- * failure, a dry run collects them. The one `dry-run` stop below marks the line
- * between read-only checks and the mutations a real deploy performs.
- */
+/** Validates the deploy, syncs the title from the manifest, and ships the build. */
 async function runAppDeployment(options: DeployAppOptions, reporter: CheckReporter): Promise<void> {
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
@@ -144,8 +138,7 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
 
 /**
  * Finds the application a real deploy targets, creating one when none is
- * configured. In a dry run it resolves and reports the target read-only —
- * prompting and creation are the mutations a dry run skips.
+ * configured. A dry run resolves and reports the target read-only instead.
  */
 async function resolveAppApplication(
   options: DeployAppOptions,

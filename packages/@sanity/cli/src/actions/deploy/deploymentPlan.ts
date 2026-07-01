@@ -7,31 +7,22 @@ import {logSymbols} from '@sanity/cli-core/ux'
 
 import {type DeployCheck} from './deployChecks.js'
 
-/** A file a real deploy would upload, with its on-disk size. */
 export interface DeploymentFile {
   /** Path relative to the project root, POSIX-style. */
   path: string
-  /** Size in bytes. */
   size: number
 }
 
-/**
- * What a `--dry-run` deploy would do, gathered by running the real deploy
- * sequence with every mutation gated off. The shape is intentionally small;
- * extend it (schema diff, bundle size, …) as the dry run grows.
- */
+/** What a `--dry-run` deploy would do: the real deploy sequence with every mutation gated off. */
 export interface DeploymentPlan {
-  /** Every check the deploy sequence reported, in order. */
   checks: DeployCheck[]
-  /** Files a real deploy would upload, relative to the project root. */
   files: DeploymentFile[]
   type: 'coreApp' | 'studio'
 }
 
 /**
  * Lists the files a deploy would pack from `sourceDir`, as paths relative to
- * `fromDir` with their sizes. A missing directory yields an empty list rather
- * than throwing.
+ * `fromDir`. A missing directory yields an empty list rather than throwing.
  */
 export async function listDeploymentFiles(
   sourceDir: string,
@@ -64,7 +55,6 @@ export async function listDeploymentFiles(
   return files.toSorted((a, b) => a.path.localeCompare(b.path))
 }
 
-/** Renders a deployment plan as a minimal, human-readable report. */
 export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void {
   const label = plan.type === 'coreApp' ? 'application' : 'studio'
   const problems = plan.checks.filter((check) => check.status === 'fail')
@@ -73,8 +63,7 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
 
   output.log('\nDry run — no changes made.\n')
 
-  // Checks that passed or were skipped; problems and warnings get their own
-  // sections below so each fix sits next to the thing it fixes.
+  // Only pass/skip here; problems and warnings render below with their fixes.
   for (const check of plan.checks) {
     if (check.status === 'pass' || check.status === 'skip') {
       output.log(`  ${statusIcon(check.status)} ${check.message}`)
@@ -96,7 +85,6 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   }
 }
 
-/** Renders a titled list of checks, each with its fix indented beneath. */
 function renderIssues(output: Output, title: string, checks: DeployCheck[]): void {
   if (checks.length === 0) return
 
@@ -107,7 +95,6 @@ function renderIssues(output: Output, title: string, checks: DeployCheck[]): voi
   }
 }
 
-/** Bytes as megabytes with two decimals, e.g. `1.50 MB`. */
 function formatMB(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`
 }
