@@ -53,9 +53,8 @@ async function runStudioDeployment(
     // --external skips.
     reporter.report({
       exitCode: exitCodes.USAGE_ERROR,
-      message:
-        'Deploying a federated application to an external host is not yet supported. ' +
-        'Remove the `--external` flag to deploy to Sanity hosting.',
+      message: 'Deploying a federated application to an external host is not yet supported',
+      solution: 'Remove the --external flag to deploy to Sanity hosting',
       status: 'fail',
     })
   }
@@ -68,7 +67,11 @@ async function runStudioDeployment(
   reporter.report(
     projectId
       ? {message: `Project: ${projectId}`, status: 'pass'}
-      : {message: NO_PROJECT_ID, status: 'fail'},
+      : {
+          message: NO_PROJECT_ID,
+          solution: 'Add `api.projectId` to sanity.cli.ts',
+          status: 'fail',
+        },
   )
 
   const application = await resolveStudioApplication(options)

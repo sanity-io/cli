@@ -55,6 +55,7 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
       reporter.report({
         exitCode: exitCodes.USAGE_ERROR,
         message: getErrorMessage(err),
+        solution: 'Declare at least one entry, view, or service in the app',
         status: 'fail',
       })
     }
@@ -70,12 +71,20 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
   reporter.report(
     organizationId
       ? {message: `Organization: ${organizationId}`, status: 'pass'}
-      : {message: NO_ORGANIZATION_ID, status: 'fail'},
+      : {
+          message: NO_ORGANIZATION_ID,
+          solution: 'Add `app.organizationId` to sanity.cli.ts',
+          status: 'fail',
+        },
   )
 
   let application: UserApplication | null = null
   if (flags.external) {
-    reporter.report({message: EXTERNAL_APP_NOT_SUPPORTED, status: 'fail'})
+    reporter.report({
+      message: EXTERNAL_APP_NOT_SUPPORTED,
+      solution: 'Remove the --external flag — apps deploy to Sanity hosting',
+      status: 'fail',
+    })
   } else {
     application = await resolveAppApplication(options)
   }
