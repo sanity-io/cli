@@ -184,25 +184,6 @@ async function createAppDeployment(
   const base = basename(sourceDir)
   const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
 
-  // Register the app's declared views with the application service. The payload
-  // is validated and logged (the storing service doesn't exist yet); a malformed
-  // view declaration fails the deploy before we ship the bundle.
-  if (workbench) {
-    try {
-      const payload = workbench.buildViewDeploymentPayload(application.id)
-      if (payload.views.length > 0) {
-        output.log(
-          `Validated ${payload.views.length} view(s) for the application service (not yet persisted):`,
-        )
-        output.log(JSON.stringify(payload, null, 2))
-        deployDebug('View deployment payload', payload)
-      }
-    } catch (err) {
-      output.error(`Invalid view declaration: ${getErrorMessage(err)}`, {exit: 1})
-      return {application, isAutoUpdating, manifest, version}
-    }
-  }
-
   const spin = spinner('Deploying...').start()
   try {
     await createDeployment({
