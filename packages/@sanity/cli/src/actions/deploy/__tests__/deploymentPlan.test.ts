@@ -73,12 +73,36 @@ describe('renderDeploymentPlan', () => {
     expect(text).toContain('dist/index.html (1.50 MB)')
   })
 
-  test('reports non-deployable when a check failed', () => {
-    renderDeploymentPlan(studioPlan([{message: 'Missing project id', status: 'fail'}]), output)
+  test('lists problems with their solutions when a check failed', () => {
+    renderDeploymentPlan(
+      studioPlan([
+        {message: 'No project ID configured', solution: 'Add `api.projectId`', status: 'fail'},
+      ]),
+      output,
+    )
 
     const text = lines.join('\n')
-    expect(text).toContain('cannot be deployed')
+    expect(text).toContain("This studio can't be deployed.")
+    expect(text).toContain('Problems to fix:')
+    expect(text).toContain('No project ID configured')
+    expect(text).toContain('→ Add `api.projectId`')
     expect(text).toContain('Files to deploy (0.00 MB):')
+  })
+
+  test('surfaces warnings in their own section', () => {
+    renderDeploymentPlan(
+      studioPlan([
+        {message: 'Project: p1', status: 'pass'},
+        {message: 'The `autoUpdates` config has moved', solution: 'Move it', status: 'warn'},
+      ]),
+      output,
+    )
+
+    const text = lines.join('\n')
+    expect(text).toContain('This studio can be deployed.')
+    expect(text).toContain('Warnings:')
+    expect(text).toContain('The `autoUpdates` config has moved')
+    expect(text).toContain('→ Move it')
   })
 
   test('labels a core app deploy as an application', () => {
