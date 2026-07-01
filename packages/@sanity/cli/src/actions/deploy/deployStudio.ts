@@ -6,7 +6,7 @@ import {CLIError} from '@oclif/core/errors'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {getWorkbench} from '@sanity/workbench-cli/deploy'
+import {checkBuiltOutput, getWorkbench} from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
 
@@ -150,7 +150,7 @@ export async function deployStudio(options: DeployAppOptions) {
       // Ensure that the directory exists, is a directory and seems to have valid content
       spin = spin.start()
       try {
-        await (workbench ? workbench.checkBuiltOutput(sourceDir) : checkDir(sourceDir))
+        await (workbench ? checkBuiltOutput(sourceDir) : checkDir(sourceDir))
         spin.succeed()
       } catch (err) {
         spin.fail()

@@ -30,19 +30,17 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// `assertDeployable` stays real — it's pure config validation the no-interfaces
+// `getWorkbench`/`assertDeployable` stay real — pure config the no-interfaces
 // test exercises; only the fs-touching `checkBuiltOutput` is stubbed.
-vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()
-  return {
-    getWorkbench: (config: Parameters<typeof actual.getWorkbench>[0]) => {
-      const workbench = actual.getWorkbench(config)
-      return workbench && {...workbench, checkBuiltOutput: mockCheckBuiltOutput}
-    },
-  }
-})
+vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
+  checkBuiltOutput: mockCheckBuiltOutput,
+}))
 
-vi.mock('../../../src/actions/manifest/extractCoreAppManifest.js', () => ({
+vi.mock('../../../src/actions/manifest/extractCoreAppManifest.js', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('../../../src/actions/manifest/extractCoreAppManifest.js')
+  >()),
   extractCoreAppManifest: vi.fn(),
 }))
 
