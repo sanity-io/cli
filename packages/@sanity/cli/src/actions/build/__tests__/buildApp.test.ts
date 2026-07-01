@@ -1,5 +1,7 @@
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+
+import {buildApp} from '../buildApp.js'
 
 const FLAGS = {
   'auto-updates': true,
@@ -18,30 +20,37 @@ const mockGetAppEnvironmentVariables = vi.hoisted(() => vi.fn().mockReturnValue(
 const mockedIsInteractive = vi.hoisted(() => vi.fn(() => true))
 const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
 const mockedGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockedResolveWorkbenchApp = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: mockedCompareDependencyVersions,
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
-  return {
-    ...original,
-    buildStaticFiles: mockedBuildStaticFiles,
-    resolveVendorBuildConfig: vi.fn(),
-  }
-})
+vi.mock(import('@sanity/cli-build/_internal/actions/build/buildDebug'), () => ({
+  buildDebug:
+    vi.fn() as unknown as (typeof import('@sanity/cli-build/_internal/actions/build/buildDebug'))['buildDebug'],
+}))
 
-vi.mock('@sanity/cli-build/_internal/env', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-build/_internal/env')>()
-  return {
-    ...original,
-    getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
-  }
-})
+vi.mock(import('@sanity/cli-build/_internal/actions/build/buildStaticFiles'), () => ({
+  buildStaticFiles: mockedBuildStaticFiles,
+}))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-build/_internal/actions/build/resolveVendorBuildConfig'), () => ({
+  resolveVendorBuildConfig: vi.fn(),
+}))
+
+vi.mock(import('@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap'), () => ({
+  getAutoUpdatesCssUrls: vi.fn(),
+  getAutoUpdatesImportMap: vi.fn(),
+}))
+
+vi.mock(import('@sanity/cli-build/_internal/env'), () => ({
+  getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
+  getStudioEnvironmentVariables: vi.fn(),
+}))
+
+vi.mock(import('@sanity/cli-core/util/getLocalPackageVersion'), async (importOriginal) => {
+  const original = await importOriginal()
   return {
     ...original,
     getLocalPackageVersion: mockedGetLocalPackageVersion,
@@ -49,8 +58,16 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
+vi.mock(import('@sanity/cli-core/util/isInteractive'), async (importOriginal) => {
+  const original = await importOriginal()
+  return {
+    ...original,
+    isInteractive: mockedIsInteractive,
+  }
+})
+
+vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
+  const original = await importOriginal()
   mockedSpinner.mockImplementation(original.spinner)
   return {
     ...original,
@@ -60,8 +77,10 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   }
 })
 
-// Import after mocks are set up
-const {buildApp} = await import('../buildApp.js')
+vi.mock(import('@sanity/workbench-cli/build'), () => ({
+  resolveWorkbenchApp: mockedResolveWorkbenchApp,
+  workbenchVitePlugins: vi.fn(),
+}))
 
 function createMockOutput(): Output {
   return {
@@ -79,6 +98,7 @@ describe('#buildApp', () => {
     mockedConfirm.mockResolvedValue(true)
     mockedSelect.mockResolvedValue('disable-auto-updates')
     mockedGetLocalPackageVersion.mockResolvedValue('1.0.0')
+    mockedResolveWorkbenchApp.mockReturnValue({})
   })
 
   afterEach(() => {

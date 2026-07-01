@@ -1,7 +1,8 @@
 import {readFile} from 'node:fs/promises'
 import {relative, resolve} from 'node:path'
 
-import {doImport, getCliConfigUncached} from '@sanity/cli-core'
+import {getCliConfigUncached} from '@sanity/cli-core/config/cli/getCliConfig'
+import {doImport} from '@sanity/cli-core/util/doImport'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {getErrorMessage} from '../../util/getErrorMessage.js'

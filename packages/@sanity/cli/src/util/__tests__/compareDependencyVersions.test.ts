@@ -5,15 +5,19 @@ import {compareDependencyVersions} from '../compareDependencyVersions'
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockGetModuleUrl = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getLocalPackageVersion: mockGetLocalPackageVersion,
-    readPackageJson: mockReadPackageJson,
-  }
-})
+vi.mock('@sanity/cli-core/util/getLocalPackageVersion', () => ({
+  getLocalPackageVersion: mockGetLocalPackageVersion,
+}))
+vi.mock('@sanity/cli-core/util/readPackageJson', () => ({
+  readPackageJson: mockReadPackageJson,
+}))
+vi.mock('@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap', () => ({
+  getAutoUpdatesCssUrls: vi.fn(),
+  getAutoUpdatesImportMap: vi.fn(),
+  getModuleUrl: mockGetModuleUrl,
+}))
 
 const autoUpdatePackages = [
   {name: 'sanity', version: '1.0.0'},
@@ -463,50 +467,6 @@ describe('compareDependencyVersions', () => {
       await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
         'Failed to parse installed version for sanity',
       )
-    })
-  })
-
-  describe('module URL selection', () => {
-    it('should use the default module endpoint when no appId is provided', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
-      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
-      mockReadPackageJson.mockResolvedValueOnce({
-        dependencies: {sanity: '^3.40.0'},
-        devDependencies: {},
-        name: 'test-package',
-        version: '0.0.0',
-      })
-
-      await compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')
-
-      const url = mockRequest.mock.calls[0][0].url as string
-      expect(url).toContain('/v1/modules/sanity/default/')
-      expect(url).not.toContain('/by-app/')
-    })
-
-    it('should use the app-specific module endpoint when appId is provided', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
-      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
-      mockReadPackageJson.mockResolvedValueOnce({
-        dependencies: {sanity: '^3.40.0'},
-        devDependencies: {},
-        name: 'test-package',
-        version: '0.0.0',
-      })
-
-      await compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir', {
-        appId: 'my-app-id',
-      })
-
-      const url = mockRequest.mock.calls[0][0].url as string
-      expect(url).toContain('/v1/modules/by-app/my-app-id/')
-      expect(url).not.toContain('/default/')
     })
   })
 

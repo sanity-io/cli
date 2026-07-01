@@ -9,12 +9,9 @@ import {
 } from 'node:fs'
 import {join} from 'node:path'
 
-import {
-  coreAppManifestSchema,
-  getSanityDataDir,
-  studioManifestSchema,
-  subdebug,
-} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {coreAppManifestSchema, studioManifestSchema} from '@sanity/cli-core/manifest'
+import {getSanityDataDir} from '@sanity/cli-core/util/getSanityConfigDir'
 import {z} from 'zod/mini'
 
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'

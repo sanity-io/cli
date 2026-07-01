@@ -1,5 +1,6 @@
-import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
-import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
+import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/util'
+import {type CliConfig} from '@sanity/cli-core/config/cli/types/cliConfig'
+import {isWorkbenchApp} from '@sanity/cli-core/config/cli/workbenchApp'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'

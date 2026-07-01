@@ -5,26 +5,27 @@ import {createMockOutput, workbenchCliConfig} from './devTestHelpers.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevServerRegistration = vi.hoisted(() => vi.fn())
-const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
+const mockStartAppServerSupervisor = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
-  getCliConfigUncached: mockGetCliConfigUncached,
-}))
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
 }))
 vi.mock('../startDevServerRegistration.js', () => ({
   startDevServerRegistration: mockStartDevServerRegistration,
 }))
+vi.mock('../appServerSupervisor.js', () => ({
+  startAppServerSupervisor: mockStartAppServerSupervisor,
+}))
 
 /** A started app/studio dev server result, with a distinct close per call. */
 function mockAppServer({port = 3334}: {port?: number} = {}) {
-  return {
+  const mockServer = {
     close: vi.fn().mockResolvedValue(undefined),
     server: {config: {server: {port}}, httpServer: {address: () => ({port})}},
     started: true as const,
   }
+  // console.log('mock app server is', mockServer)
+  return mockServer
 }
 
 const mockStartAppServer = vi.hoisted(() => vi.fn())
@@ -49,11 +50,6 @@ function run(overrides: Partial<StartWorkbenchDevOptions> = {}) {
   })
 }
 
-/** Pull the rebuild hook the orchestrator handed to the registration. */
-function passedRebuild(): () => Promise<unknown> {
-  return mockStartDevServerRegistration.mock.calls[0][0].onInterfaceSetChange
-}
-
 /** The signal handler installed last. */
 function installedSignalHandler(): (signal: NodeJS.Signals) => void {
   return process.listeners('SIGINT').at(-1) as (signal: NodeJS.Signals) => void
@@ -62,14 +58,26 @@ function installedSignalHandler(): (signal: NodeJS.Signals) => void {
 describe('startWorkbenchDev', () => {
   beforeEach(() => {
     mockStartWorkbenchDevServer.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockName('default workbench close').mockResolvedValue(undefined),
       httpHost: 'localhost',
       workbenchAvailable: true,
       workbenchPort: 3333,
     })
     mockStartDevServerRegistration.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockStartAppServer.mockResolvedValue(mockAppServer({port: 3334}))
-    mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
+    mockStartAppServerSupervisor.mockImplementation(async (opts) => {
+      // console.log('starting app server with config', opts)
+      const server = await opts.start(opts.cliConfig)
+      if (!server.started) return {reason: server.reason, started: false}
+      return {
+        started: true,
+        supervisor: {
+          close: server.close,
+          rebuild: vi.fn(),
+          server: server.server,
+        },
+      }
+    })
   })
 
   afterEach(() => {
@@ -155,8 +163,8 @@ describe('startWorkbenchDev', () => {
     })
 
     test('tears down both servers and re-throws when registration fails', async () => {
-      const workbenchClose = vi.fn().mockResolvedValue(undefined)
-      const appClose = vi.fn().mockResolvedValue(undefined)
+      const workbenchClose = vi.fn().mockName('workbench close').mockResolvedValue(undefined)
+      const appClose = vi.fn().mockName('app close').mockResolvedValue(undefined)
       mockStartWorkbenchDevServer.mockResolvedValue({
         close: workbenchClose,
         httpHost: 'localhost',
@@ -185,7 +193,7 @@ describe('startWorkbenchDev', () => {
     })
 
     test('returns a workbench-only close and skips registration when the app server does not start', async () => {
-      const workbenchClose = vi.fn().mockResolvedValue(undefined)
+      const workbenchClose = vi.fn().mockName('test workbench close').mockResolvedValue(undefined)
       mockStartWorkbenchDevServer.mockResolvedValue({
         close: workbenchClose,
         httpHost: 'localhost',
@@ -199,82 +207,6 @@ describe('startWorkbenchDev', () => {
 
       expect(workbenchClose).toHaveBeenCalled()
       expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('rebuild', () => {
-    test('rebuilds the app server with a freshly-loaded config when the interface set changes', async () => {
-      const first = mockAppServer({port: 3334})
-      const second = mockAppServer({port: 3334})
-      mockStartAppServer.mockResolvedValueOnce(first).mockResolvedValueOnce(second)
-      const freshConfig = workbenchCliConfig()
-      mockGetCliConfigUncached.mockResolvedValue(freshConfig)
-
-      await run()
-      await passedRebuild()()
-
-      expect(first.close).toHaveBeenCalledTimes(1)
-      expect(mockStartAppServer).toHaveBeenCalledTimes(2)
-      expect(mockStartAppServer).toHaveBeenLastCalledWith(
-        expect.objectContaining({cliConfig: freshConfig}),
-      )
-    })
-
-    test('the rebuild hook resolves with the recreated server', async () => {
-      const second = mockAppServer({port: 3335})
-      mockStartAppServer
-        .mockResolvedValueOnce(mockAppServer({port: 3334}))
-        .mockResolvedValueOnce(second)
-
-      await run()
-
-      await expect(passedRebuild()()).resolves.toBe(second.server)
-    })
-
-    test('the rebuild hook rejects on an expected early exit, and close stays safe', async () => {
-      const first = mockAppServer({port: 3334})
-      mockStartAppServer
-        .mockResolvedValueOnce(first)
-        .mockResolvedValueOnce({reason: 'missing-organization-id', started: false})
-
-      const {close} = await run()
-
-      await expect(passedRebuild()()).rejects.toThrow(
-        'Dev server did not restart after the view/service change',
-      )
-      await expect(close()).resolves.toBeUndefined()
-      expect(first.close).toHaveBeenCalledTimes(1)
-    })
-
-    test('close() waits for an in-flight rebuild and closes the replacement server', async () => {
-      const first = mockAppServer({port: 3334})
-      const second = mockAppServer({port: 3334})
-      let releaseStart!: () => void
-      const startGate = new Promise<void>((resolve) => {
-        releaseStart = resolve
-      })
-      mockStartAppServer.mockResolvedValueOnce(first).mockImplementationOnce(async () => {
-        await startGate
-        return second
-      })
-
-      const {close} = await run()
-      const rebuild = passedRebuild()()
-      const closing = close()
-      releaseStart()
-
-      await rebuild
-      await closing
-      expect(second.close).toHaveBeenCalledTimes(1)
-    })
-
-    test('refuses a rebuild once shutdown has started', async () => {
-      const {close} = await run()
-      await close()
-
-      await expect(passedRebuild()()).rejects.toThrow('Dev server is shutting down')
-      // Only the initial startup reached the app server.
-      expect(mockStartAppServer).toHaveBeenCalledTimes(1)
     })
   })
 

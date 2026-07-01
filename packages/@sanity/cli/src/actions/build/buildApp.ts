@@ -2,27 +2,23 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {buildDebug} from '@sanity/cli-build/_internal/actions/build/buildDebug'
+import {buildStaticFiles} from '@sanity/cli-build/_internal/actions/build/buildStaticFiles'
 import {
-  AppBuildTrace,
-  buildDebug,
-  buildStaticFiles,
-  formatModuleSizes,
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
-  resolveVendorBuildConfig,
-  sortModulesBySize,
-} from '@sanity/cli-build/_internal/build'
+} from '@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap'
+import {resolveVendorBuildConfig} from '@sanity/cli-build/_internal/actions/build/resolveVendorBuildConfig'
 import {getAppEnvironmentVariables} from '@sanity/cli-build/_internal/env'
-import {
-  type CliConfig,
-  getCliTelemetry,
-  getLocalPackageVersion,
-  getTimer,
-  isInteractive,
-  type Output,
-  UserViteConfig,
-} from '@sanity/cli-core'
-import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {AppBuildTrace} from '@sanity/cli-build/_internal/telemetry/build'
+import {formatModuleSizes, sortModulesBySize} from '@sanity/cli-build/_internal/util'
+import {type CliConfig} from '@sanity/cli-core/config/cli/types/cliConfig'
+import {type UserViteConfig} from '@sanity/cli-core/config/cli/types/userViteConfig'
+import {getCliTelemetry} from '@sanity/cli-core/telemetry/getCliTelemetry'
+import {type Output} from '@sanity/cli-core/types'
+import {getLocalPackageVersion} from '@sanity/cli-core/util/getLocalPackageVersion'
+import {isInteractive} from '@sanity/cli-core/util/isInteractive'
+import {confirm, getTimer, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {type DefineAppInput} from '@sanity/workbench-cli'
 import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'

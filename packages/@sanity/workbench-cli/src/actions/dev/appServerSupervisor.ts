@@ -1,4 +1,5 @@
-import {type CliConfig, getCliConfigUncached} from '@sanity/cli-core'
+import {getCliConfigUncached} from '@sanity/cli-core/config/cli/getCliConfig'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {type ViteDevServer} from 'vite'
 
 /**

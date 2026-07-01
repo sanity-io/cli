@@ -1,10 +1,7 @@
-import {
-  type CliConfig,
-  isWorkbenchApp,
-  type Output,
-  resolveLocalPackage,
-  subdebug,
-} from '@sanity/cli-core'
+import {isWorkbenchApp} from '@sanity/cli-core/config/cli/workbenchApp'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
+import {resolveLocalPackage} from '@sanity/cli-core/util/resolveLocalPackage'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from 'vite'
 import {z} from 'zod/mini'

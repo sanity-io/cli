@@ -8,7 +8,7 @@
 import {stat} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 
 import {type ResolvedWorkbenchApp, resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 
