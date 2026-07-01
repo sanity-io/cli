@@ -47,6 +47,7 @@ const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): Deploy
   checks,
   files,
   type: 'studio',
+  version: '3.99.0',
 })
 
 describe('deploymentPlanToJson', () => {
@@ -62,6 +63,8 @@ describe('deploymentPlanToJson', () => {
     )
 
     expect(json).toEqual({
+      applicationType: 'studio',
+      applicationVersion: '3.99.0',
       checks: [
         {message: 'Project: p1', status: 'pass'},
         {message: 'No studio hostname configured', status: 'fail'},
@@ -69,7 +72,6 @@ describe('deploymentPlanToJson', () => {
       deployable: false,
       files: [{path: 'dist/index.html', size: 1_048_576}],
       totalBytes: 1_048_576,
-      type: 'studio',
     })
   })
 
@@ -136,7 +138,7 @@ describe('renderDeploymentPlan', () => {
   })
 
   test('labels a core app deploy as an application', () => {
-    renderDeploymentPlan({checks: [], files: [], type: 'coreApp'}, output)
+    renderDeploymentPlan({checks: [], files: [], type: 'coreApp', version: '1.0.0'}, output)
 
     expect(lines.join('\n')).toContain('This application can be deployed.')
   })

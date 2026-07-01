@@ -18,6 +18,8 @@ export interface DeploymentPlan {
   checks: DeployCheck[]
   files: DeploymentFile[]
   type: 'coreApp' | 'studio'
+  /** Installed framework version the deploy would use; `null` when not found. */
+  version: string | null
 }
 
 /**
@@ -68,18 +70,20 @@ function totalBytes(files: DeploymentFile[]): number {
  * derive from the plan, so the two can't drift.
  */
 export function deploymentPlanToJson(plan: DeploymentPlan): {
+  applicationType: DeploymentPlan['type']
+  applicationVersion: string | null
   checks: DeployCheck[]
   deployable: boolean
   files: DeploymentFile[]
   totalBytes: number
-  type: DeploymentPlan['type']
 } {
   return {
+    applicationType: plan.type,
+    applicationVersion: plan.version,
     checks: plan.checks,
     deployable: isDeployable(plan),
     files: plan.files,
     totalBytes: totalBytes(plan.files),
-    type: plan.type,
   }
 }
 

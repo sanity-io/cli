@@ -313,7 +313,8 @@ describe('#deploy studio', () => {
     // stdout is pure JSON — no human report leaks in
     expect(stdout).not.toContain('Dry run — no changes made.')
     const plan = JSON.parse(stdout)
-    expect(plan.type).toBe('studio')
+    expect(plan.applicationType).toBe('studio')
+    expect(typeof plan.applicationVersion).toBe('string')
     expect(plan.deployable).toBe(true)
     expect(plan.files).toContainEqual(expect.objectContaining({path: 'dist/index.html'}))
     expect(
@@ -366,9 +367,10 @@ describe('#deploy studio', () => {
     const result = JSON.parse(stdout)
     expect(result).toEqual({
       applicationId: studioAppId,
+      applicationType: 'studio',
+      applicationVersion: expect.any(String),
       deployed: true,
       location: `https://${studioHost}.sanity.studio`,
-      type: 'studio',
     })
   })
 
