@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {getLocalPackageVersion, type Output} from '@sanity/cli-core'
 
 import {
   type CheckReporter,
@@ -19,9 +19,11 @@ import {type DeployAppOptions} from './types.js'
 /** What a real deploy produced — the payload `--json` reports. */
 export interface DeployResult {
   applicationId: string
+  applicationType: 'coreApp' | 'studio'
+  /** Installed framework version the deploy used (`sanity` or `@sanity/sdk-react`). */
+  applicationVersion: string
   /** Deployed studio URL; `null` for core apps (no hosted URL). */
   location: string | null
-  type: 'coreApp' | 'studio'
 }
 
 /**
@@ -32,6 +34,8 @@ export interface DeployResult {
 export interface DeploySpec {
   /** Files a real deploy would upload, listed only for the dry-run plan. */
   listFiles: (options: DeployAppOptions) => Promise<DeploymentFile[]>
+  /** The framework package whose installed version the deploy reports. */
+  packageName: string
   /** The step sequence; every step reports through `reporter`. */
   run: (options: DeployAppOptions, reporter: CheckReporter) => Promise<DeployResult | void>
   type: 'coreApp' | 'studio'
@@ -93,7 +97,12 @@ async function runHuman(options: DeployAppOptions, spec: DeploySpec): Promise<vo
 async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise<DeploymentPlan> {
   const reporter = createCollectingReporter()
   await spec.run(options, reporter)
-  const plan: DeploymentPlan = {checks: reporter.results, files: [], type: spec.type}
+  const plan: DeploymentPlan = {
+    checks: reporter.results,
+    files: [],
+    type: spec.type,
+    version: await getLocalPackageVersion(spec.packageName, options.projectRoot.directory),
+  }
   // A blocked deploy uploads nothing, so only enumerate files for a deployable plan.
   if (isDeployable(plan)) plan.files = await spec.listFiles(options)
   return plan
