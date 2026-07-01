@@ -78,9 +78,9 @@ describe('deploymentPlanToJson', () => {
     expect(json).toEqual({
       applicationType: 'studio',
       applicationVersion: '3.99.0',
-      deployable: false,
       errors: {'No studio hostname configured': 'Set `studioHost`'},
       files: [{path: 'dist/index.html', size: 1_048_576}],
+      isDeployable: false,
       totalBytes: 1_048_576,
       warnings: ['The autoUpdates config has moved'],
     })
@@ -89,11 +89,11 @@ describe('deploymentPlanToJson', () => {
   test('an error without a solution maps to null', () => {
     const json = deploymentPlanToJson(studioPlan([{message: 'boom', status: 'fail'}]))
     expect(json.errors).toEqual({boom: null})
-    expect(json.deployable).toBe(false)
+    expect(json.isDeployable).toBe(false)
   })
 
-  test('deployable is true when no check failed', () => {
-    expect(deploymentPlanToJson(studioPlan([{message: 'ok', status: 'pass'}])).deployable).toBe(
+  test('isDeployable is true when no check failed', () => {
+    expect(deploymentPlanToJson(studioPlan([{message: 'ok', status: 'pass'}])).isDeployable).toBe(
       true,
     )
   })
