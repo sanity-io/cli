@@ -1,44 +1,58 @@
 import {Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-const FLAGS = {
-  'auto-updates': true,
-  json: false,
-  minify: true,
-  'source-maps': true,
-  stats: true,
-  yes: false,
-} as const
+import {BuildOptions} from '../buildApp.js'
+
+function buildOptions(
+  overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
+): BuildOptions {
+  return {
+    appId: undefined,
+    appTitle: undefined,
+    autoUpdatesEnabled: false,
+    checkAppId() {},
+    async compareDependencyVersions() {
+      return {mismatched: [], unresolvedPrerelease: []}
+    },
+    determineBasePath() {
+      return ''
+    },
+    entry: undefined,
+    isWorkbenchApp: false,
+    minify: true,
+    outDir: '/tmp/dist',
+    reactCompiler: undefined,
+    schemaExtraction: undefined,
+    services: [],
+    sourceMap: true,
+    stats: true,
+    unattendedMode: false,
+    views: [],
+    vite: undefined,
+    workDir: '/tmp',
+    ...overrides,
+  }
+}
 
 const mockedConfirm = vi.hoisted(() => vi.fn())
 const mockedSelect = vi.hoisted(() => vi.fn())
 const mockedSpinner = vi.hoisted(() => vi.fn())
-const mockedCompareDependencyVersions = vi.hoisted(() => vi.fn())
 const mockGetAppEnvironmentVariables = vi.hoisted(() => vi.fn().mockReturnValue({}))
 const mockedIsInteractive = vi.hoisted(() => vi.fn(() => true))
 const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
 const mockedGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: mockedCompareDependencyVersions,
+vi.mock(import('../buildStaticFiles.js'), () => ({
+  buildStaticFiles: mockedBuildStaticFiles,
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
-  return {
-    ...original,
-    buildStaticFiles: mockedBuildStaticFiles,
-    resolveVendorBuildConfig: vi.fn(),
-  }
-})
+vi.mock(import('../resolveVendorBuildConfig.js'), () => ({
+  resolveVendorBuildConfig: vi.fn(),
+}))
 
-vi.mock('@sanity/cli-build/_internal/env', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-build/_internal/env')>()
-  return {
-    ...original,
-    getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
-  }
-})
+vi.mock(import('../getEnvironmentVariables.js'), () => ({
+  getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
+}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -74,7 +88,6 @@ function createMockOutput(): Output {
 describe('#buildApp', () => {
   beforeEach(() => {
     mockedBuildStaticFiles.mockResolvedValue({chunks: []})
-    mockedCompareDependencyVersions.mockResolvedValue({mismatched: [], unresolvedPrerelease: []})
     mockedIsInteractive.mockReturnValue(true)
     mockedConfirm.mockResolvedValue(true)
     mockedSelect.mockResolvedValue('disable-auto-updates')
@@ -92,14 +105,7 @@ describe('#buildApp', () => {
       SANITY_APP_TEST_VAR: 'test-value',
     }))
 
-    await buildApp({
-      autoUpdatesEnabled: false,
-      cliConfig: {},
-      flags: {...FLAGS, yes: true},
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(buildOptions({output, unattendedMode: true}))
 
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('SANITY_APP_TEST_VAR'))
   })
@@ -111,14 +117,7 @@ describe('#buildApp', () => {
       moduleName === '@sanity/sdk-react' ? null : '1.0.0',
     )
 
-    await buildApp({
-      autoUpdatesEnabled: false,
-      cliConfig: {},
-      flags: {...FLAGS, yes: true},
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(buildOptions({output, unattendedMode: true}))
 
     expect(output.error).toHaveBeenCalledWith(
       'Failed to find installed @sanity/sdk-react version',
@@ -131,14 +130,7 @@ describe('#buildApp', () => {
 
     mockedBuildStaticFiles.mockRejectedValue(new Error('build static files error'))
 
-    await buildApp({
-      autoUpdatesEnabled: false,
-      cliConfig: {},
-      flags: {...FLAGS, yes: true},
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(buildOptions({output, unattendedMode: true}))
 
     expect(output.error).toHaveBeenCalledWith(
       'Failed to build Sanity application: build static files error',
@@ -150,14 +142,7 @@ describe('#buildApp', () => {
     const output = createMockOutput()
 
     const customDir = 'custom-output'
-    await buildApp({
-      autoUpdatesEnabled: false,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: customDir,
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(buildOptions({outDir: customDir, output}))
 
     expect(mockedConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -174,14 +159,7 @@ describe('#buildApp', () => {
     mockedConfirm.mockResolvedValue(false)
 
     const customDir = 'custom-output'
-    await buildApp({
-      autoUpdatesEnabled: false,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: customDir,
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(buildOptions({outDir: customDir, output}))
 
     expect(mockedSpinner).not.toHaveBeenCalledWith('Clean output folder')
     expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
@@ -190,20 +168,18 @@ describe('#buildApp', () => {
   test('should exit when user declines version diff prompt', async () => {
     const output = createMockOutput()
 
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
-      unresolvedPrerelease: [],
-    })
     mockedConfirm.mockResolvedValue(false)
 
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
+          unresolvedPrerelease: [],
+        }),
+        output,
+      }),
+    )
 
     expect(output.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
   })
@@ -211,20 +187,18 @@ describe('#buildApp', () => {
   test('should continue build when user confirms version diff prompt', async () => {
     const output = createMockOutput()
 
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
-      unresolvedPrerelease: [],
-    })
     mockedConfirm.mockResolvedValue(true)
 
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
+          unresolvedPrerelease: [],
+        }),
+        output,
+      }),
+    )
 
     expect(mockedConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -238,19 +212,17 @@ describe('#buildApp', () => {
   test('should error in unattended mode when prerelease versions are detected', async () => {
     const output = createMockOutput()
 
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [],
-      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-    })
-
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: {...FLAGS, yes: true},
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [],
+          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+        }),
+        output,
+        unattendedMode: true,
+      }),
+    )
 
     expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
       exit: 1,
@@ -264,20 +236,18 @@ describe('#buildApp', () => {
   test('should exit when user selects "cancel" for prerelease prompt', async () => {
     const output = createMockOutput()
 
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [],
-      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-    })
     mockedSelect.mockResolvedValue('cancel')
 
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [],
+          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+        }),
+        output,
+      }),
+    )
 
     expect(output.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
   })
@@ -285,20 +255,18 @@ describe('#buildApp', () => {
   test('should build without auto-updates when user selects "disable-auto-updates" for prerelease', async () => {
     const output = createMockOutput()
 
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [],
-      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-    })
     mockedSelect.mockResolvedValue('disable-auto-updates')
 
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [],
+          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+        }),
+        output,
+      }),
+    )
 
     expect(output.warn).toHaveBeenCalledWith('Auto-updates disabled for this build')
     expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
@@ -308,20 +276,18 @@ describe('#buildApp', () => {
   test('should skip version mismatch prompt after disabling auto-updates for prerelease', async () => {
     const output = createMockOutput()
 
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk', remote: '1.1.0'}],
-      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-    })
     mockedSelect.mockResolvedValue('disable-auto-updates')
 
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk', remote: '1.1.0'}],
+          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+        }),
+        output,
+      }),
+    )
 
     expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
     // select should only be called once (for the prerelease prompt), not twice
@@ -337,19 +303,17 @@ describe('#buildApp', () => {
   test('should skip version diff prompt in unattended mode', async () => {
     const output = createMockOutput()
 
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
-      unresolvedPrerelease: [],
-    })
-
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: {...FLAGS, yes: true},
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
+          unresolvedPrerelease: [],
+        }),
+        output,
+        unattendedMode: true,
+      }),
+    )
 
     expect(mockedConfirm).not.toHaveBeenCalled()
     expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
@@ -359,19 +323,17 @@ describe('#buildApp', () => {
     const output = createMockOutput()
 
     mockedIsInteractive.mockReturnValue(false)
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
-      unresolvedPrerelease: [],
-    })
 
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk-react', remote: '1.1.0'}],
+          unresolvedPrerelease: [],
+        }),
+        output,
+      }),
+    )
 
     expect(mockedConfirm).not.toHaveBeenCalled()
     expect(output.warn).toHaveBeenCalledWith(
@@ -384,19 +346,17 @@ describe('#buildApp', () => {
     const output = createMockOutput()
 
     mockedIsInteractive.mockReturnValue(false)
-    mockedCompareDependencyVersions.mockResolvedValue({
-      mismatched: [],
-      unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-    })
 
-    await buildApp({
-      autoUpdatesEnabled: true,
-      cliConfig: {},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [],
+          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+        }),
+        output,
+      }),
+    )
 
     expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
       exit: 1,
@@ -405,5 +365,25 @@ describe('#buildApp', () => {
       exit: 1,
     })
     expect(mockedSelect).not.toHaveBeenCalled()
+  })
+
+  test('should check appId when auto-updates are ebnabled', async () => {
+    const output = createMockOutput()
+
+    const mockCheckAppId = vi.fn()
+
+    await buildApp(buildOptions({autoUpdatesEnabled: true, checkAppId: mockCheckAppId, output}))
+
+    expect(mockCheckAppId).toHaveBeenCalled()
+  })
+
+  test('should not check appId when auto-updates are disabled', async () => {
+    const output = createMockOutput()
+
+    const mockCheckAppId = vi.fn()
+
+    await buildApp(buildOptions({checkAppId: mockCheckAppId, output}))
+
+    expect(mockCheckAppId).not.toHaveBeenCalled()
   })
 })

@@ -3,6 +3,12 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
+const mockedBuildApp = vi.hoisted(() =>
+  vi.fn().mockImplementation((options) => {
+    options.checkAppId()
+  }),
+)
+
 /** These are not relevant for what we are testing, but still needed to pass type checker */
 const FLAGS = {
   'auto-updates': true,
@@ -31,23 +37,7 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-build/_internal/build')>()
   return {
     ...actual,
-    AppBuildTrace: {},
-    buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
-    getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
-    getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
-    resolveVendorBuildConfig: vi.fn().mockResolvedValue({
-      entries: {},
-      namesByChunkName: {},
-      specifiersByChunkName: {},
-    }),
-  }
-})
-
-vi.mock('@sanity/cli-build/_internal/env', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-build/_internal/env')>()
-  return {
-    ...actual,
-    getAppEnvironmentVariables: vi.fn().mockReturnValue({}),
+    buildApp: mockedBuildApp,
   }
 })
 
@@ -112,22 +102,6 @@ describe('buildApp appId warning', () => {
       autoUpdatesEnabled: true,
       calledFromDeploy: true,
       cliConfig: {deployment: {autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
-
-    expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
-  })
-
-  test('should not warn about missing appId when auto-updates are disabled', async () => {
-    mockGetAppId.mockReturnValue(undefined)
-    const output = createMockOutput()
-
-    await buildApp({
-      autoUpdatesEnabled: false,
-      cliConfig: {deployment: {autoUpdates: false}},
       flags: FLAGS,
       outDir: '/tmp/dist',
       output,

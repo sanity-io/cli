@@ -1,6 +1,11 @@
 import path from 'node:path'
 
-import {getModuleUrl} from '@sanity/cli-build/_internal/build'
+import {
+  type CompareDependencyVersions,
+  type CompareDependencyVersionsResult,
+  getModuleUrl,
+  type UnresolvedPrerelease,
+} from '@sanity/cli-build/_internal/build'
 import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core'
 import {createRequester} from '@sanity/cli-core/request'
 import {coerce, eq, prerelease, parse as semverParse} from 'semver'
@@ -8,22 +13,6 @@ import {coerce, eq, prerelease, parse as semverParse} from 'semver'
 const defaultRequester = createRequester({
   middleware: {httpErrors: false, promise: {onlyBody: false}},
 })
-
-interface CompareDependencyVersions {
-  installed: string
-  pkg: string
-  remote: string
-}
-
-export interface UnresolvedPrerelease {
-  pkg: string
-  version: string
-}
-
-export interface CompareDependencyVersionsResult {
-  mismatched: Array<CompareDependencyVersions>
-  unresolvedPrerelease: Array<UnresolvedPrerelease>
-}
 
 interface CompareDependencyVersionsOptions {
   /** When provided, uses the app-specific module endpoint instead of the default endpoint. */
