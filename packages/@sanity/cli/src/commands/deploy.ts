@@ -60,6 +60,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description: 'Register an externally hosted studio',
       exclusive: ['source-maps', 'minify', 'build'],
     }),
+    json: Flags.boolean({
+      char: 'j',
+      default: false,
+      description: 'Output the result as JSON',
+    }),
     minify: Flags.boolean({
       allowNo: true,
       default: true,
@@ -107,9 +112,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      // A dry run is non-interactive (a preview / CI gate), so don't block on the
-      // overwrite prompt — the local build still writes to the directory.
-      if (!flags['dry-run']) {
+      // A dry run or --json is non-interactive (a preview / CI gate or machine
+      // output), so don't block on the overwrite prompt — the local build still
+      // writes to the directory.
+      if (!flags['dry-run'] && !flags.json) {
         const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
         const shouldProceed =
           isEmpty ||
@@ -123,7 +129,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         }
       }
 
-      this.output.log(`Building to ${relativeOutput}\n`)
+      // Keep stdout clean for --json; this human line would otherwise precede the payload
+      if (!flags.json) this.output.log(`Building to ${relativeOutput}\n`)
     }
 
     // A dry run is a non-interactive preview, so run unattended end-to-end — the

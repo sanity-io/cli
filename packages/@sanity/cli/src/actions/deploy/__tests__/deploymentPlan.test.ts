@@ -9,6 +9,7 @@ import {type DeployCheck} from '../deployChecks.js'
 import {
   type DeploymentFile,
   type DeploymentPlan,
+  deploymentPlanToJson,
   listDeploymentFiles,
   renderDeploymentPlan,
 } from '../deploymentPlan.js'
@@ -46,6 +47,44 @@ const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): Deploy
   checks,
   files,
   type: 'studio',
+  version: '3.99.0',
+})
+
+describe('deploymentPlanToJson', () => {
+  test('maps failing checks to fixes and warnings to messages, dropping pass/skip', () => {
+    const json = deploymentPlanToJson(
+      studioPlan(
+        [
+          {message: 'Project: p1', status: 'pass'},
+          {message: 'No studio hostname configured', solution: 'Set `studioHost`', status: 'fail'},
+          {message: 'The autoUpdates config has moved', status: 'warn'},
+        ],
+        [{path: 'dist/index.html', size: 1_048_576}],
+      ),
+    )
+
+    expect(json).toEqual({
+      applicationType: 'studio',
+      applicationVersion: '3.99.0',
+      errors: {'No studio hostname configured': 'Set `studioHost`'},
+      files: [{path: 'dist/index.html', size: 1_048_576}],
+      isDeployable: false,
+      totalBytes: 1_048_576,
+      warnings: ['The autoUpdates config has moved'],
+    })
+  })
+
+  test('an error without a solution maps to null', () => {
+    const json = deploymentPlanToJson(studioPlan([{message: 'boom', status: 'fail'}]))
+    expect(json.errors).toEqual({boom: null})
+    expect(json.isDeployable).toBe(false)
+  })
+
+  test('isDeployable is true when no check failed', () => {
+    expect(deploymentPlanToJson(studioPlan([{message: 'ok', status: 'pass'}])).isDeployable).toBe(
+      true,
+    )
+  })
 })
 
 describe('renderDeploymentPlan', () => {
@@ -104,7 +143,7 @@ describe('renderDeploymentPlan', () => {
   })
 
   test('labels a core app deploy as an application', () => {
-    renderDeploymentPlan({checks: [], files: [], type: 'coreApp'}, output)
+    renderDeploymentPlan({checks: [], files: [], type: 'coreApp', version: '1.0.0'}, output)
 
     expect(lines.join('\n')).toContain('This application can be deployed.')
   })
