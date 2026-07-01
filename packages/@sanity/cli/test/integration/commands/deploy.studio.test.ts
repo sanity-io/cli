@@ -275,6 +275,103 @@ describe('#deploy studio', () => {
     expect(stdout).not.toContain('Success! Studio deployed')
   })
 
+  test('should output the dry-run plan as JSON with --json', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+
+    await mkdir(join(cwd, 'dist'), {recursive: true})
+    await writeFile(join(cwd, 'dist', 'index.html'), '<html></html>')
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appHost: studioHost, appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: 'studio-app-id',
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    const {error, stdout} = await testCommand(
+      DeployCommand,
+      ['--dry-run', '--json', '--no-build'],
+      {
+        config: {root: cwd},
+        mocks: {cliConfig: {api: {projectId}, studioHost}},
+      },
+    )
+
+    if (error) throw error
+    // stdout is pure JSON — no human report leaks in
+    expect(stdout).not.toContain('Dry run — no changes made.')
+    const plan = JSON.parse(stdout)
+    expect(plan.type).toBe('studio')
+    expect(plan.deployable).toBe(true)
+    expect(plan.files).toContainEqual(expect.objectContaining({path: 'dist/index.html'}))
+    expect(
+      plan.checks.some((check: {message: string}) => check.message.includes('existing studio')),
+    ).toBe(true)
+  })
+
+  test('should output the deploy result as JSON with --json', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+    const studioAppId = 'studio-app-id'
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appHost: studioHost, appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: studioAppId,
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+    }).reply(
+      201,
+      {id: 'deployment-id', location: `https://${studioHost}.sanity.studio`},
+      {location: `https://${studioHost}.sanity.studio`},
+    )
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--json'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {api: {projectId}, studioHost}},
+    })
+
+    if (error) throw error
+    // stdout is pure JSON — the human "Success!" line is suppressed
+    expect(stdout).not.toContain('Success! Studio deployed')
+    const result = JSON.parse(stdout)
+    expect(result).toEqual({
+      applicationId: studioAppId,
+      deployed: true,
+      location: `https://${studioHost}.sanity.studio`,
+      type: 'studio',
+    })
+  })
+
   test('runs the dry-run build unattended so it cannot prompt', async () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd

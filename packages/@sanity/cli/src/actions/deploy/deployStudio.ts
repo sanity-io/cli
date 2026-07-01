@@ -24,7 +24,7 @@ import {
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles} from './deploymentPlan.js'
-import {runDeploy} from './deployRunner.js'
+import {type DeployResult, runDeploy} from './deployRunner.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
@@ -42,7 +42,7 @@ export function deployStudio(options: DeployAppOptions): Promise<void> {
 async function runStudioDeployment(
   options: DeployAppOptions,
   reporter: CheckReporter,
-): Promise<void> {
+): Promise<DeployResult | void> {
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
   const isExternal = !!flags.external
@@ -107,7 +107,7 @@ async function runStudioDeployment(
   if (!application || !version) return
 
   const studioManifest = await uploadStudioSchema(options, {isExternal})
-  await shipStudioDeployment({
+  const location = await shipStudioDeployment({
     application,
     isAutoUpdating,
     isExternal,
@@ -115,6 +115,8 @@ async function runStudioDeployment(
     studioManifest,
     version,
   })
+
+  return {applicationId: application.id, location, type: 'studio'}
 }
 
 /**
@@ -225,7 +227,7 @@ async function shipStudioDeployment({
   options: DeployAppOptions
   studioManifest: StudioManifest | null
   version: string
-}): Promise<void> {
+}): Promise<string> {
   const {cliConfig, output, sourceDir} = options
 
   let tarball: Gzip | undefined
@@ -257,7 +259,7 @@ async function shipStudioDeployment({
       : `\nSuccess! Studio deployed to ${styleText('cyan', location)}`,
   )
 
-  if (getAppId(cliConfig)) return
+  if (getAppId(cliConfig)) return location
 
   const example = `Example:
 export default defineCliConfig({
@@ -271,6 +273,8 @@ export default defineCliConfig({
   output.log(`to the \`deployment\` section in sanity.cli.js or sanity.cli.ts`)
   output.log(`to avoid prompting for application id on next deploy.`)
   output.log(`\n${example}`)
+
+  return location
 }
 
 function studioBuildSkipReason({build, isExternal}: {build: boolean; isExternal: boolean}) {
