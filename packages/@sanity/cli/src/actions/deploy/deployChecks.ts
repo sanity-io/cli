@@ -291,12 +291,20 @@ export async function checkStudioTarget(
           return
         }
         case 'invalid': {
-          reporter.report({message: resolution.message, status: 'fail'})
+          reporter.report({
+            message: resolution.message,
+            solution: 'Check `studioHost` and `deployment.appId` in sanity.cli.ts',
+            status: 'fail',
+          })
           return
         }
         case 'needs-input': {
           // The same constraint an unattended deploy enforces, with the same message
-          reporter.report({message: cannotPromptForStudioHost(isExternal), status: 'fail'})
+          reporter.report({
+            message: cannotPromptForStudioHost(isExternal),
+            solution: 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+            status: 'fail',
+          })
           return
         }
         case 'would-create': {
