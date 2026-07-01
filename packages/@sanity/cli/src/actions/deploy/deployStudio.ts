@@ -29,10 +29,13 @@ import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests
 import {findUserApplicationForStudio} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
+const STUDIO_PACKAGE = 'sanity'
+
 export function deployStudio(options: DeployAppOptions): Promise<void> {
   return runDeploy(options, {
     listFiles: ({flags, projectRoot, sourceDir}) =>
       flags.external ? Promise.resolve([]) : listDeploymentFiles(sourceDir, projectRoot.directory),
+    packageName: STUDIO_PACKAGE,
     run: runStudioDeployment,
     type: 'studio',
   })
@@ -64,7 +67,7 @@ async function runStudioDeployment(
   }
 
   const version = await checkPackageVersion(reporter, {
-    moduleName: 'sanity',
+    moduleName: STUDIO_PACKAGE,
     workDir,
   })
 
@@ -116,7 +119,12 @@ async function runStudioDeployment(
     version,
   })
 
-  return {applicationId: application.id, location, type: 'studio'}
+  return {
+    applicationId: application.id,
+    applicationType: 'studio',
+    applicationVersion: version,
+    location,
+  }
 }
 
 /**

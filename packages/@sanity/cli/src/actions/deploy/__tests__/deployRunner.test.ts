@@ -20,6 +20,7 @@ describe('runDeploy dry run', () => {
     const output = mockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [],
+      packageName: 'sanity',
       run: async (_options, reporter) =>
         reporter.report({exitCode: 2, message: 'boom', status: 'fail'}),
       type: 'studio',
@@ -35,6 +36,7 @@ describe('runDeploy dry run', () => {
     const listFiles = vi.fn(async () => [{path: 'dist/index.html', size: 10}])
     const spec: DeploySpec = {
       listFiles,
+      packageName: 'sanity',
       run: async (_options, reporter) =>
         reporter.report({exitCode: 2, message: 'boom', status: 'fail'}),
       type: 'studio',
@@ -50,6 +52,7 @@ describe('runDeploy dry run', () => {
     const output = mockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [{path: 'dist/index.html', size: 10}],
+      packageName: 'sanity',
       run: async (_options, reporter) => reporter.report({message: 'Project: p1', status: 'pass'}),
       type: 'studio',
     }

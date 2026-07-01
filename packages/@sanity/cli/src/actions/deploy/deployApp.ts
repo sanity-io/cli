@@ -34,9 +34,12 @@ import {type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
+const APP_PACKAGE = '@sanity/sdk-react'
+
 export function deployApp(options: DeployAppOptions): Promise<void> {
   return runDeploy(options, {
     listFiles: ({projectRoot, sourceDir}) => listDeploymentFiles(sourceDir, projectRoot.directory),
+    packageName: APP_PACKAGE,
     run: runAppDeployment,
     type: 'coreApp',
   })
@@ -71,7 +74,7 @@ async function runAppDeployment(
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
   const version = await checkPackageVersion(reporter, {
-    moduleName: '@sanity/sdk-react',
+    moduleName: APP_PACKAGE,
     workDir,
   })
 
@@ -141,7 +144,12 @@ async function runAppDeployment(
 
   logAppDeployed({application, cliConfig, output})
 
-  return {applicationId: application.id, location: null, type: 'coreApp'}
+  return {
+    applicationId: application.id,
+    applicationType: 'coreApp',
+    applicationVersion: version,
+    location: null,
+  }
 }
 
 /**
