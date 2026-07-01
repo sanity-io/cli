@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {
   extendViteConfigWithUserConfig,
   getViteConfig,
@@ -120,9 +122,21 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
 
   // Opt into Vite's experimental bundled dev mode. Set before the user-config
   // extension below so a `vite` override in sanity.cli.ts still has final say.
+  //
+  // Bundled mode bundles the app up front from an HTML entry, defaulting to
+  // `<root>/index.html`. Sanity has no such file — it serves a virtual document
+  // rewritten to `.sanity/runtime/index.html` — so point the bundler at the real
+  // runtime HTML, otherwise the build fails with UNRESOLVED_ENTRY.
   if (bundledDev) {
     viteConfig = {
       ...viteConfig,
+      build: {
+        ...viteConfig.build,
+        rolldownOptions: {
+          ...viteConfig.build?.rolldownOptions,
+          input: path.join(cwd, '.sanity', 'runtime', 'index.html'),
+        },
+      },
       experimental: {...viteConfig.experimental, bundledDev: true},
     }
   }

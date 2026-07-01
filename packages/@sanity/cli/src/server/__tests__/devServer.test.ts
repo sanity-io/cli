@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type DevServerOptions, startDevServer} from '../devServer.js'
@@ -63,11 +65,23 @@ describe('startDevServer', () => {
     expect(passedConfig.experimental).toEqual({bundledDev: true})
   })
 
-  test('does not touch experimental options when bundledDev is off', async () => {
+  test('points the bundler at the runtime HTML entry when bundledDev is set', async () => {
+    await startDevServer(baseOptions({bundledDev: true, cwd: '/tmp/project'}))
+
+    const passedConfig = mockCreateServer.mock.calls[0][0]
+    // Without an explicit input, Vite bundled dev falls back to <root>/index.html
+    // which does not exist in a Sanity project.
+    expect(passedConfig.build.rolldownOptions.input).toBe(
+      path.join('/tmp/project', '.sanity', 'runtime', 'index.html'),
+    )
+  })
+
+  test('does not touch experimental or build options when bundledDev is off', async () => {
     await startDevServer(baseOptions({bundledDev: false}))
 
     const passedConfig = mockCreateServer.mock.calls[0][0]
     expect(passedConfig.experimental).toBeUndefined()
+    expect(passedConfig.build?.rolldownOptions).toBeUndefined()
   })
 
   test('preserves other experimental options while enabling bundledDev', async () => {
