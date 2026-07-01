@@ -126,11 +126,15 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       this.output.log(`Building to ${relativeOutput}\n`)
     }
 
+    // A dry run is a non-interactive preview, so run unattended end-to-end — the
+    // build (buildApp/buildStudio) otherwise prompts for prerelease/version choices.
+    const deployFlags = flags['dry-run'] ? {...flags, yes: true} : flags
+
     if (isApp) {
       deployDebug('Deploying app')
       await deployApp({
         cliConfig,
-        flags,
+        flags: deployFlags,
         output: this.output,
         projectRoot,
         sourceDir,
@@ -139,7 +143,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       deployDebug('Deploying studio')
       await deployStudio({
         cliConfig,
-        flags,
+        flags: deployFlags,
         output: this.output,
         projectRoot,
         sourceDir,

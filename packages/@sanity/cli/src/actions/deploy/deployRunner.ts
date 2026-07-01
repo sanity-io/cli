@@ -35,10 +35,10 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
     await spec.run(options, reporter)
     const files = await spec.listFiles(options)
     renderDeploymentPlan({checks: reporter.results, files, type: spec.type}, output)
-    // Exit non-zero when the plan isn't deployable so scripts can gate on it.
-    if (reporter.results.some((check) => check.status === 'fail')) {
-      output.error('Deploy blocked by failing checks.', {exit: 1})
-    }
+    // Exit like a real (fail-fast) deploy would on the first failing check, so a
+    // script gating on the exit code sees the same status.
+    const failed = reporter.results.find((check) => check.status === 'fail')
+    if (failed) output.error('Deploy blocked by failing checks.', {exit: failed.exitCode ?? 1})
     return
   }
 

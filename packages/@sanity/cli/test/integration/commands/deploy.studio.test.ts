@@ -275,6 +275,67 @@ describe('#deploy studio', () => {
     expect(stdout).not.toContain('Success! Studio deployed')
   })
 
+  test('runs the dry-run build unattended so it cannot prompt', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+
+    await mkdir(join(cwd, 'dist'), {recursive: true})
+    await writeFile(join(cwd, 'dist', 'index.html'), '<html></html>')
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appHost: studioHost, appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: 'studio-app-id',
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    await testCommand(DeployCommand, ['--dry-run'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {api: {projectId}, studioHost}},
+    })
+
+    expect(mockBuildStudio).toHaveBeenCalledWith(
+      expect.objectContaining({flags: expect.objectContaining({yes: true})}),
+    )
+  })
+
+  test('a dry run exits with the blocking check exit code, not a bare 1', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    // A federated studio can't deploy to an external host: the check reports a
+    // USAGE_ERROR, and the dry run should exit with that code like a real deploy.
+    const app = unstable_defineApp({
+      name: 'test-studio',
+      organizationId: 'org-1',
+      title: 'Test Studio',
+    }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
+    app.applicationType = 'studio'
+
+    const {error} = await testCommand(
+      DeployCommand,
+      ['--dry-run', '--external', '--url', 'https://studio.example.com'],
+      {
+        config: {root: cwd},
+        mocks: {cliConfig: {api: {projectId: 'test-project-id'}, app} as CliConfig},
+      },
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
   test('should validate the federation build shape for an unstable_defineApp studio', async () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd
