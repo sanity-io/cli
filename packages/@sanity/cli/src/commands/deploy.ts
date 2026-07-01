@@ -125,9 +125,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       this.output.log(`Building to ${relativeOutput}\n`)
     }
 
-    // An unattended run (--yes or a non-interactive terminal) deploys without any
-    // prompts downstream (application resolution, the build).
-    const deployFlags = this.isUnattended() ? {...flags, yes: true} : flags
+    // Unattended runs (--yes or a non-interactive terminal) and dry runs deploy
+    // without any downstream prompts — application resolution and the build
+    // (buildApp/buildStudio) otherwise stop for prerelease/version choices.
+    const deployFlags = this.isUnattended() || flags['dry-run'] ? {...flags, yes: true} : flags
 
     if (isApp) {
       deployDebug('Deploying app')
