@@ -12,7 +12,10 @@ export default {
       './dist/hooks/prerun/warnings.js',
     ],
   },
-  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/migrate', '@sanity/codegen'],
+  // Note: do not add '@sanity/migrate' here. The `migrations` commands now ship
+  // natively (see commands/migrations/); re-adding the plugin would register
+  // duplicate command ids.
+  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/codegen'],
   topics: {
     backups: {description: 'Manage dataset backups'},
     cors: {description: 'Manage CORS origins for your project'},
@@ -24,6 +27,7 @@ export default {
     manifest: {description: 'Extract studio configuration as JSON manifests'},
     mcp: {description: 'Configure Sanity MCP server for AI agents'},
     media: {description: 'Manage media assets and aspect definitions'},
+    migrations: {description: 'Run and manage content migrations'},
     openapi: {description: 'Manage OpenAPI specifications'},
     projects: {description: 'Manage Sanity projects'},
     schemas: {description: 'Manage and validate schemas'},
