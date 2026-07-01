@@ -1,10 +1,10 @@
-import type {SpinnerInstance} from '@sanity/cli-core/ux'
-import type {PersistOptions} from 'ora'
+import {type SpinnerInstance} from '@sanity/cli-core/ux'
+import {type PersistOptions} from 'ora'
 import {Mock, vi} from 'vitest'
 
 /**
  * Creates a mock spinner function to avoid writing output to stdout.
- * @param overrides Pass any mocks or stubs for test expectations
+ * @param overrides - Pass any mocks or stubs for test expectations
  * @internal
  */
 export function createMockSpinner(
@@ -12,45 +12,45 @@ export function createMockSpinner(
 ): Mock<(options: string) => SpinnerInstance> {
   return vi.fn(() => {
     return {
-      text: '',
-      prefixText: '',
-      suffixText: '',
-      color: false,
-      indent: 0,
-      spinner: {
-        interval: undefined,
-        frames: [],
+      clear: function (): SpinnerInstance {
+        throw new Error('Function not implemented.')
       },
-      isSpinning: false,
+      color: false,
+      fail: function (_text?: string): SpinnerInstance {
+        throw new Error('Function not implemented.')
+      },
+      frame: function (): string {
+        throw new Error('Function not implemented.')
+      },
+      indent: 0,
+      info: function (_text?: string): SpinnerInstance {
+        throw new Error('Function not implemented.')
+      },
       interval: 0,
-      start: function (text?: string): SpinnerInstance {
+      isSpinning: false,
+      prefixText: '',
+      render: function (): SpinnerInstance {
+        throw new Error('Function not implemented.')
+      },
+      spinner: {
+        frames: [],
+        interval: undefined,
+      },
+      start: function (_text?: string): SpinnerInstance {
         throw new Error('Function not implemented.')
       },
       stop: function (): SpinnerInstance {
         throw new Error('Function not implemented.')
       },
-      succeed: function (text?: string): SpinnerInstance {
+      stopAndPersist: function (_options?: PersistOptions): SpinnerInstance {
         throw new Error('Function not implemented.')
       },
-      fail: function (text?: string): SpinnerInstance {
+      succeed: function (_text?: string): SpinnerInstance {
         throw new Error('Function not implemented.')
       },
-      warn: function (text?: string): SpinnerInstance {
-        throw new Error('Function not implemented.')
-      },
-      info: function (text?: string): SpinnerInstance {
-        throw new Error('Function not implemented.')
-      },
-      stopAndPersist: function (options?: PersistOptions): SpinnerInstance {
-        throw new Error('Function not implemented.')
-      },
-      clear: function (): SpinnerInstance {
-        throw new Error('Function not implemented.')
-      },
-      render: function (): SpinnerInstance {
-        throw new Error('Function not implemented.')
-      },
-      frame: function (): string {
+      suffixText: '',
+      text: '',
+      warn: function (_text?: string): SpinnerInstance {
         throw new Error('Function not implemented.')
       },
       ...overrides,

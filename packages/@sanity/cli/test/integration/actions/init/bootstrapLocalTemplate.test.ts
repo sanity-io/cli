@@ -3,10 +3,10 @@ import {tmpdir} from 'node:os'
 import path from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
+import {createMockSpinner} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {resolveLatestVersions} from '../../../../src/util/resolveLatestVersions.js'
-import {createMockSpinner} from '@sanity/cli-test'
 
 const mockedSpinnerStart = vi.fn().mockReturnThis()
 const mockedSpinnerSucceed = vi.fn().mockReturnThis()
