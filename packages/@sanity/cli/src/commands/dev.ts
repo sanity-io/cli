@@ -26,12 +26,20 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
     '<%= config.bin %> <%= command.id %> --port=1942',
     '<%= config.bin %> <%= command.id %> --load-in-dashboard',
+    '<%= config.bin %> <%= command.id %> --experimental-bundle',
   ]
 
   static override flags = {
     'auto-updates': Flags.boolean({
       allowNo: true,
       description: 'Automatically update Sanity Studio dependencies',
+    }),
+    'experimental-bundle': Flags.boolean({
+      allowNo: true,
+      // Unset falls through to `experimental.bundledDev` in sanity.cli.ts; the
+      // explicit `--no-` form can still force it off.
+      default: undefined,
+      description: 'Experimental: enable Vite bundled dev mode (vite experimental.bundledDev)',
     }),
     host: Flags.string({
       description: 'Local network interface to listen on (default: localhost)',

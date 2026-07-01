@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {type CliConfig, getSanityEnvVar, isWorkbenchApp, type Output} from '@sanity/cli-core'
-import {spinner} from '@sanity/cli-core/ux'
+import {logSymbols, spinner} from '@sanity/cli-core/ux'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
 import {determineIsApp} from '../../../util/determineIsApp.js'
@@ -48,8 +48,17 @@ export function getDevServerConfig({
     )
   }
 
+  // Opt into Vite's experimental bundled dev mode. The CLI flag wins when set
+  // (including `--no-experimental-bundle` to force it off); otherwise fall back
+  // to `experimental.bundledDev` in sanity.cli.ts, defaulting to off.
+  const bundledDev = flags['experimental-bundle'] ?? cliConfig?.experimental?.bundledDev ?? false
+  if (bundledDev) {
+    output.log(`${logSymbols.info} Running dev server with experimental Vite bundled dev mode`)
+  }
+
   return {
     ...baseConfig,
+    bundledDev,
     // The app's navigable entry. A branded app that omits `entry` has no app
     // view: the runtime/federation skip the `./App` render path entirely.
     entry: app?.entry,
