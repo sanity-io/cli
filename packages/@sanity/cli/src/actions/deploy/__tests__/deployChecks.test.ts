@@ -154,6 +154,7 @@ describe('checkAppTarget', () => {
     await checkAppTarget(reporter, {appId: 'nope', organizationId: 'org-1'})
 
     expect(reporter.results[0]?.status).toBe('fail')
+    expect(reporter.results[0]?.solution).toContain('deployment.appId')
   })
 
   test('a 403 becomes a permissions fail check', async () => {

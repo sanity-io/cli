@@ -22,6 +22,8 @@ export interface DeployCheck {
 
   /** Exit code a real deploy uses when this check fails; defaults to 1 */
   exitCode?: number
+  /** Actionable fix, shown under a failing or warning check */
+  solution?: string
 }
 
 /**
@@ -67,12 +69,13 @@ export async function runStep<T>(
   name: string,
   work: () => Promise<T>,
   formatError: (err: unknown) => string = getErrorMessage,
+  solution?: string,
 ): Promise<T | null> {
   try {
     return await work()
   } catch (err) {
     deployDebug(`${name} step failed`, err)
-    reporter.report({message: formatError(err), status: 'fail'})
+    reporter.report({message: formatError(err), solution, status: 'fail'})
     return null
   }
 }
@@ -85,7 +88,11 @@ export async function checkPackageVersion(
   reporter.report(
     version
       ? {message: `Using ${moduleName} ${version}`, status: 'pass'}
-      : {message: `Failed to find installed ${moduleName} version`, status: 'fail'},
+      : {
+          message: `Failed to find installed ${moduleName} version`,
+          solution: `Install ${moduleName} in this project`,
+          status: 'fail',
+        },
   )
   return version
 }
@@ -137,6 +144,7 @@ export async function checkBuild(
       reporter.report({message: successMessage, status: 'pass'})
     },
     (err) => `Build failed: ${getErrorMessage(err)}`,
+    'Fix the build error above, then retry',
   )
 }
 
@@ -161,7 +169,11 @@ export async function verifyOutputDir({
   } catch (err) {
     spin.fail()
     deployDebug('Error checking directory', err)
-    reporter.report({message: getErrorMessage(err), status: 'fail'})
+    reporter.report({
+      message: getErrorMessage(err),
+      solution: 'Run the build first, or check the output directory',
+      status: 'fail',
+    })
   }
 }
 
@@ -197,12 +209,17 @@ export async function checkAppTarget(
           return
         }
         case 'invalid': {
-          reporter.report({message: APP_ID_NOT_FOUND_IN_ORGANIZATION, status: 'fail'})
+          reporter.report({
+            message: APP_ID_NOT_FOUND_IN_ORGANIZATION,
+            solution: 'Check `deployment.appId` matches an app in your organization',
+            status: 'fail',
+          })
           return
         }
         case 'needs-input': {
           reporter.report({
-            message: `No appId configured and ${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} found — deploy would prompt. Add deployment.appId to sanity.cli.ts.`,
+            message: `No \`deployment.appId\` configured and ${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} found — a real deploy would prompt`,
+            solution: 'Add `deployment.appId` to sanity.cli.ts',
             status: 'fail',
           })
           return
