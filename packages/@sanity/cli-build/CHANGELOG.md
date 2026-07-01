@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.0.0](https://github.com/sanity-io/cli/compare/cli-build-v1.1.2...cli-build-v2.0.0)
+
+_2026-06-30_
+
+### ⚠ BREAKING CHANGES
+
+- move buildStaticFiles into cli-build, clean up exports ([#1397](https://github.com/sanity-io/cli/pull/1397)) ([def5e11](https://github.com/sanity-io/cli/commit/def5e11efbe0e7859a3e3b014d17b3e6425feb21))
+
+### Bug Fixes
+
+- **deps:** pin vite to 8.1.0 to avoid broken 8.1.1 studio builds ([#1408](https://github.com/sanity-io/cli/pull/1408)) ([596baa7](https://github.com/sanity-io/cli/commit/596baa753d6479f2ca30318ca299aff3a0ad2aa8))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.2
+    - @sanity/workbench-cli bumped to 1.1.2
+
 ## [1.1.2](https://github.com/sanity-io/cli/compare/cli-build-v1.1.1...cli-build-v1.1.2)
 
 _2026-06-29_

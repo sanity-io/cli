@@ -17,21 +17,42 @@ export function ExampleComponent() {
         Welcome to your Sanity App{user?.name ? `, ${user.name}` : ''}!
       </h1>
       <p className="example-text">
-        This is an example component. You can replace this with your own content by creating a new
-        component and importing it in App.tsx.
+        This is an example component, rendered with the <code>useCurrentUser</code> hook from the
+        App SDK. Replace it with your own components by importing them in App.tsx.
       </p>
       <div className="code-hint">
         <p>
-          Quick tip: Create new components in separate files and import them like this in App.tsx /
-          App.jsx:
+          A good next step is fetching content. Data hooks like <code>useDocuments</code> suspend
+          while loading, so render them inside a <code>{'<Suspense>'}</code> boundary:
         </p>
-        <pre>{`import {YourComponent} from './YourComponent'
+        <pre>{`import {Suspense} from 'react'
+import {useDocuments} from '@sanity/sdk-react'
 
-// Then use it in your JSX
-<SanityApp config={sanityConfigs}>
-  <YourComponent />
-</SanityApp>`}</pre>
+function DocumentList() {
+  // useDocuments returns handles you can pass to other hooks
+  const {data} = useDocuments({documentType: 'yourType'})
+  return <ul>{data.map((doc) => <li key={doc.documentId}>{doc.documentId}</li>)}</ul>
+}
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DocumentList />
+    </Suspense>
+  )
+}`}</pre>
       </div>
+      <ul className="example-links">
+        <li>
+          <a href="https://www.sanity.io/docs/app-sdk">App SDK documentation</a>
+        </li>
+        <li>
+          <a href="https://reference.sanity.io/_sanity/sdk-react/">API reference</a>
+        </li>
+        <li>
+          <a href="https://sdk-explorer.sanity.io">SDK Explorer with example apps</a>
+        </li>
+      </ul>
     </div>
   )
 }
