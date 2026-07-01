@@ -2,10 +2,7 @@ import {type CliConfig, getLocalPackageVersion, type Output} from '@sanity/cli-c
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 
-import {
-  APP_ID_NOT_FOUND_IN_ORGANIZATION,
-  cannotPromptForStudioHost,
-} from '../../util/errorMessages.js'
+import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {
   getAutoUpdateIssueMessage,
@@ -42,10 +39,13 @@ export interface CheckReporter {
 export function createFailFastReporter(output: Output): CheckReporter {
   return {
     report(check) {
+      // Fixes surface in both modes: the dry-run report lists them, and a real
+      // deploy prints them under the failing (or warning) check.
+      const text = check.solution ? `${check.message}\n→ ${check.solution}` : check.message
       if (check.status === 'fail') {
-        output.error(check.message, {exit: check.exitCode ?? 1})
+        output.error(text, {exit: check.exitCode ?? 1})
       } else if (check.status === 'warn') {
-        output.warn(check.message)
+        output.warn(text)
       }
     },
   }
@@ -299,10 +299,14 @@ export async function checkStudioTarget(
           return
         }
         case 'needs-input': {
-          // The same constraint an unattended deploy enforces, with the same message
+          // Dry-run only; a real deploy prompts, or errors in findUserApplication.
           reporter.report({
-            message: cannotPromptForStudioHost(isExternal),
-            solution: 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+            message: isExternal
+              ? 'No external studio URL configured'
+              : 'No studio hostname configured',
+            solution: isExternal
+              ? 'Set `studioHost` in sanity.cli.ts, or pass the full URL with --url'
+              : 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
             status: 'fail',
           })
           return

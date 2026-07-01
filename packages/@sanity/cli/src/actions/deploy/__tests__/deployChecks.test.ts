@@ -68,6 +68,18 @@ describe('createFailFastReporter', () => {
     expect(output.error).not.toHaveBeenCalled()
     expect(output.warn).not.toHaveBeenCalled()
   })
+
+  test('a fail prints its solution beneath the message', () => {
+    const output = mockOutput()
+    createFailFastReporter(output).report({message: 'boom', solution: 'do X', status: 'fail'})
+    expect(output.error).toHaveBeenCalledWith('boom\n→ do X', {exit: 1})
+  })
+
+  test('a warn prints its solution beneath the message', () => {
+    const output = mockOutput()
+    createFailFastReporter(output).report({message: 'heads up', solution: 'do Y', status: 'warn'})
+    expect(output.warn).toHaveBeenCalledWith('heads up\n→ do Y')
+  })
 })
 
 describe('createCollectingReporter', () => {
@@ -157,14 +169,17 @@ describe('checkStudioTarget', () => {
     )
   })
 
-  test('needs-input → fail check (unattended cannot prompt)', async () => {
+  test('needs-input → fail check with a pure problem and its fix', async () => {
     mockResolveStudio.mockResolvedValue({existing: [], type: 'needs-input'})
     const reporter = createCollectingReporter()
 
     await checkStudioTarget(reporter, studioArgs)
 
-    expect(reporter.results[0]).toMatchObject({status: 'fail'})
-    expect(reporter.results[0]?.message).toContain('Cannot prompt for studio hostname')
+    expect(reporter.results[0]).toMatchObject({
+      message: 'No studio hostname configured',
+      solution: 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+      status: 'fail',
+    })
   })
 
   test('invalid → fail check with the resolution message', async () => {
