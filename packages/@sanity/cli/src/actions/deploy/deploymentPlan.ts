@@ -73,9 +73,9 @@ function totalBytes(files: DeploymentFile[]): number {
 export function deploymentPlanToJson(plan: DeploymentPlan): {
   applicationType: DeploymentPlan['type']
   applicationVersion: string | null
-  deployable: boolean
   errors: Record<string, string | null>
   files: DeploymentFile[]
+  isDeployable: boolean
   totalBytes: number
   warnings: string[]
 } {
@@ -89,9 +89,9 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
   return {
     applicationType: plan.type,
     applicationVersion: plan.version,
-    deployable: isDeployable(plan),
     errors,
     files: plan.files,
+    isDeployable: isDeployable(plan),
     totalBytes: totalBytes(plan.files),
     warnings,
   }

@@ -315,7 +315,7 @@ describe('#deploy studio', () => {
     const plan = JSON.parse(stdout)
     expect(plan.applicationType).toBe('studio')
     expect(typeof plan.applicationVersion).toBe('string')
-    expect(plan.deployable).toBe(true)
+    expect(plan.isDeployable).toBe(true)
     expect(plan.errors).toEqual({})
     expect(Array.isArray(plan.warnings)).toBe(true)
     expect(plan.files).toContainEqual(expect.objectContaining({path: 'dist/index.html'}))
