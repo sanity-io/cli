@@ -67,24 +67,43 @@ export async function listDeploymentFiles(
 /** Renders a deployment plan as a minimal, human-readable report. */
 export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void {
   const label = plan.type === 'coreApp' ? 'application' : 'studio'
-  const deployable = plan.checks.every((check) => check.status !== 'fail')
+  const problems = plan.checks.filter((check) => check.status === 'fail')
+  const warnings = plan.checks.filter((check) => check.status === 'warn')
   const totalBytes = plan.files.reduce((sum, file) => sum + file.size, 0)
 
   output.log('\nDry run — no changes made.\n')
 
+  // Checks that passed or were skipped; problems and warnings get their own
+  // sections below so each fix sits next to the thing it fixes.
   for (const check of plan.checks) {
-    output.log(`  ${statusIcon(check.status)} ${check.message}`)
+    if (check.status === 'pass' || check.status === 'skip') {
+      output.log(`  ${statusIcon(check.status)} ${check.message}`)
+    }
   }
 
   output.log(
-    deployable
+    problems.length === 0
       ? styleText('green', `\nThis ${label} can be deployed.`)
-      : styleText('red', `\nThis ${label} cannot be deployed — resolve the issues above.`),
+      : styleText('red', `\nThis ${label} can't be deployed.`),
   )
+
+  renderIssues(output, 'Problems to fix:', problems)
+  renderIssues(output, 'Warnings:', warnings)
 
   output.log(`\nFiles to deploy (${formatMB(totalBytes)}):`)
   for (const file of plan.files) {
     output.log(`  ${file.path} (${formatMB(file.size)})`)
+  }
+}
+
+/** Renders a titled list of checks, each with its fix indented beneath. */
+function renderIssues(output: Output, title: string, checks: DeployCheck[]): void {
+  if (checks.length === 0) return
+
+  output.log(`\n${title}`)
+  for (const check of checks) {
+    output.log(`  ${statusIcon(check.status)} ${check.message}`)
+    if (check.solution) output.log(`      → ${check.solution}`)
   }
 }
 
