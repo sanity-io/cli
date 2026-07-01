@@ -66,24 +66,34 @@ function totalBytes(files: DeploymentFile[]): number {
 }
 
 /**
- * The machine-readable form of the report `renderDeploymentPlan` prints. Both
- * derive from the plan, so the two can't drift.
+ * A problem-focused, machine-readable projection of the plan: blocking problems
+ * mapped to their fix, warnings as messages. Derived from the same checks the
+ * human report renders (its pass/skip lines are informational and omitted here).
  */
 export function deploymentPlanToJson(plan: DeploymentPlan): {
   applicationType: DeploymentPlan['type']
   applicationVersion: string | null
-  checks: DeployCheck[]
   deployable: boolean
+  errors: Record<string, string | null>
   files: DeploymentFile[]
   totalBytes: number
+  warnings: string[]
 } {
+  const errors: Record<string, string | null> = {}
+  const warnings: string[] = []
+  for (const check of plan.checks) {
+    if (check.status === 'fail') errors[check.message] = check.solution ?? null
+    else if (check.status === 'warn') warnings.push(check.message)
+  }
+
   return {
     applicationType: plan.type,
     applicationVersion: plan.version,
-    checks: plan.checks,
     deployable: isDeployable(plan),
+    errors,
     files: plan.files,
     totalBytes: totalBytes(plan.files),
+    warnings,
   }
 }
 
