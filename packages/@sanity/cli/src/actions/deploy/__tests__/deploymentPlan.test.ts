@@ -84,8 +84,7 @@ describe('renderDeploymentPlan', () => {
     const text = lines.join('\n')
     expect(text).toContain("This studio can't be deployed.")
     expect(text).toContain('Problems to fix:')
-    expect(text).toContain('No project ID configured')
-    expect(text).toContain('→ Add `api.projectId`')
+    expect(text).toContain('No project ID configured: Add `api.projectId`')
     expect(text).toContain('Files to deploy (0.00 MB):')
   })
 
@@ -101,8 +100,7 @@ describe('renderDeploymentPlan', () => {
     const text = lines.join('\n')
     expect(text).toContain('This studio can be deployed.')
     expect(text).toContain('Warnings:')
-    expect(text).toContain('The `autoUpdates` config has moved')
-    expect(text).toContain('→ Move it')
+    expect(text).toContain('The `autoUpdates` config has moved: Move it')
   })
 
   test('labels a core app deploy as an application', () => {

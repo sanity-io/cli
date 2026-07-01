@@ -39,9 +39,9 @@ export interface CheckReporter {
 export function createFailFastReporter(output: Output): CheckReporter {
   return {
     report(check) {
-      // Fixes surface in both modes: the dry-run report lists them, and a real
-      // deploy prints them under the failing (or warning) check.
-      const text = check.solution ? `${check.message}\n→ ${check.solution}` : check.message
+      // Fixes surface in both modes: appended after the message here, and in the
+      // dry-run report, so the problem and its fix never drift apart.
+      const text = check.solution ? `${check.message}: ${check.solution}` : check.message
       if (check.status === 'fail') {
         output.error(text, {exit: check.exitCode ?? 1})
       } else if (check.status === 'warn') {

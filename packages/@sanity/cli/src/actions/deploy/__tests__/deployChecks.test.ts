@@ -69,16 +69,16 @@ describe('createFailFastReporter', () => {
     expect(output.warn).not.toHaveBeenCalled()
   })
 
-  test('a fail prints its solution beneath the message', () => {
+  test('a fail appends its solution to the message', () => {
     const output = mockOutput()
     createFailFastReporter(output).report({message: 'boom', solution: 'do X', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom\n→ do X', {exit: 1})
+    expect(output.error).toHaveBeenCalledWith('boom: do X', {exit: 1})
   })
 
-  test('a warn prints its solution beneath the message', () => {
+  test('a warn appends its solution to the message', () => {
     const output = mockOutput()
     createFailFastReporter(output).report({message: 'heads up', solution: 'do Y', status: 'warn'})
-    expect(output.warn).toHaveBeenCalledWith('heads up\n→ do Y')
+    expect(output.warn).toHaveBeenCalledWith('heads up: do Y')
   })
 })
 

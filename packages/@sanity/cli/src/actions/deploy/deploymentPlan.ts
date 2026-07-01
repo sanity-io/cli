@@ -90,8 +90,8 @@ function renderIssues(output: Output, title: string, checks: DeployCheck[]): voi
 
   output.log(`\n${title}`)
   for (const check of checks) {
-    output.log(`  ${statusIcon(check.status)} ${check.message}`)
-    if (check.solution) output.log(`      → ${check.solution}`)
+    const fix = check.solution ? `: ${check.solution}` : ''
+    output.log(`  ${statusIcon(check.status)} ${check.message}${fix}`)
   }
 }
 

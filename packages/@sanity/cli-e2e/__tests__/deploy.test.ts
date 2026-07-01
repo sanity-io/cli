@@ -38,8 +38,8 @@ describe.skipIf(isRegistryMode)('sanity deploy --dry-run', {timeout: 180_000}, (
     const {stdout} = await runCli({args: ['deploy', '--dry-run'], cwd})
 
     expectDeploymentSummary(stdout)
-    // The missing studio hostname is surfaced with its fix
-    expect(stdout).toContain('→ Set `studioHost`')
+    // The missing studio hostname is surfaced with its fix on the same line
+    expect(stdout).toContain('No studio hostname configured: Set `studioHost`')
     expect(stdout).not.toContain('Success! Studio deployed')
   })
 
