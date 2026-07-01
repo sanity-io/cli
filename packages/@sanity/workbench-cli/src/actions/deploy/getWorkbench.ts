@@ -11,6 +11,7 @@ import {join} from 'node:path'
 import {type CliConfig} from '@sanity/cli-core'
 
 import {type ResolvedWorkbenchApp, resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
+import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDeployment.js'
 
 interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
   /**
@@ -19,6 +20,11 @@ interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
    * load, so deploy gates on this before any prompts or API calls.
    */
   assertDeployable(): void
+  /**
+   * Validates the app's declared views into the application-service payload.
+   * Throws when a view declaration is malformed.
+   */
+  buildViewDeploymentPayload(applicationId: string): ViewDeploymentPayload
   /**
    * Throws unless `sourceDir` is a directory holding a federation build.
    * Workbench builds emit a module-federation remote instead of a static SPA,
@@ -46,6 +52,10 @@ export function getWorkbench(
             'Add at least one to the app config.',
         )
       }
+    },
+
+    buildViewDeploymentPayload(applicationId) {
+      return buildViewDeploymentPayload({applicationId, views})
     },
 
     async checkBuiltOutput(sourceDir) {

@@ -1,7 +1,9 @@
 import {CLIError} from '@oclif/core/errors'
-import {input} from '@sanity/cli-core/ux'
+import {input, spinner} from '@sanity/cli-core/ux'
+import {customAlphabet} from 'nanoid'
 
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
+import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
@@ -22,6 +24,7 @@ interface CreateStudioUserApplicationOptions {
   urlType?: 'external' | 'internal'
 }
 
+/** Prompts for a studio hostname (or external URL) and registers it. */
 export async function createStudioUserApplication(options: CreateStudioUserApplicationOptions) {
   const {projectId, urlType = 'internal'} = options
   const {promise, resolve} = promiseWithResolvers<UserApplication>()
@@ -49,11 +52,7 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
       try {
         const response = await createUserApplication({
           appType: 'studio',
-          body: {
-            appHost,
-            type: 'studio',
-            urlType,
-          },
+          body: {appHost, type: 'studio', urlType},
           projectId,
         })
         resolve(response)
@@ -72,4 +71,58 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
   })
 
   return await promise
+}
+
+/** Prompts for a title and creates a core application, retrying if the host is taken. */
+export async function createUserApplicationForApp(
+  organizationId?: string,
+): Promise<UserApplication> {
+  if (!organizationId) {
+    throw new Error(NO_ORGANIZATION_ID)
+  }
+
+  // First get the title from the user
+  const title = await input({
+    message: 'Enter a title for your application:',
+    validate: (input: string) => input.length > 0 || 'Title is required',
+  })
+
+  return tryCreateApp(title, organizationId)
+}
+
+// appHosts have some restrictions (no uppercase, must start with a letter)
+const generateId = () => {
+  const letters = 'abcdefghijklmnopqrstuvwxyz'
+  const firstChar = customAlphabet(letters, 1)()
+  const rest = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 11)()
+  return `${firstChar}${rest}`
+}
+
+const tryCreateApp = async (title: string, organizationId: string) => {
+  // we will likely prepend this with an org ID or other parameter in the future
+  const appHost = generateId()
+
+  const spin = spinner('Creating application').start()
+
+  try {
+    const response = await createUserApplication({
+      appType: 'coreApp',
+      body: {appHost, title, type: 'coreApp', urlType: 'internal'},
+      organizationId,
+    })
+
+    spin.succeed()
+    return response
+  } catch (e) {
+    // if the name is taken, generate a new one and try again
+    if ([402, 409].includes(e?.statusCode)) {
+      deployDebug('App host taken, retrying with new host')
+      return tryCreateApp(title, organizationId)
+    }
+
+    spin.fail()
+
+    deployDebug('Error creating core application', e)
+    throw e
+  }
 }

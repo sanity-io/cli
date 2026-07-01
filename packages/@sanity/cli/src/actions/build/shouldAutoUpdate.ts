@@ -9,23 +9,39 @@ import {type BuildFlags} from './types.js'
 interface AutoUpdateSources {
   cliConfig: CliConfig
   flags: BuildFlags | DeployFlags | DevFlags
-  output: Output
 }
 
 /**
- * Compares parameters from various sources to determine whether or not to auto-update.
- * @remarks Throws an error if both the old and new auto update config are used; throws a warning if the old config is used, or if the auto updates flags are used.
+ * The single auto-update configuration problem to surface, if any.
+ * Flag usage takes precedence over config problems: when the deprecated flag
+ * is passed, config is not consulted, so config issues are not reported.
+ */
+type AutoUpdateIssue =
+  | {flag: '--auto-updates' | '--no-auto-updates'; type: 'deprecated-flag'}
+  | {type: 'conflicting-config'}
+  | {type: 'deprecated-config'}
+
+export interface AutoUpdateSettings {
+  enabled: boolean
+  issue: AutoUpdateIssue | null
+}
+
+/**
+ * Owns the auto-update rules: flag-over-config precedence, the deprecated
+ * top-level `autoUpdates` config, and the old/new config conflict.
+ * Returns plain facts so each surface (deploy warnings, dry-run checks)
+ * decides its own presentation.
+ *
  * @internal
  */
-export function shouldAutoUpdate({cliConfig, flags, output}: AutoUpdateSources): boolean {
-  // Auto updates in flags is deprecated; throw a warning if used
+export function resolveAutoUpdates({cliConfig, flags}: AutoUpdateSources): AutoUpdateSettings {
+  // Flags always take precedence over config
   if ('auto-updates' in flags) {
-    const flagUsed = flags['auto-updates'] ? '--auto-updates' : '--no-auto-updates'
-    output.warn(
-      `The ${flagUsed} flag is deprecated for deploy and build commands. Set the autoUpdates option in the deployment section of sanity.cli.ts or sanity.cli.js instead.`,
-    )
-    // Flags always take precedence over config
-    return Boolean(flags['auto-updates'])
+    const enabled = Boolean(flags['auto-updates'])
+    return {
+      enabled,
+      issue: {flag: enabled ? '--auto-updates' : '--no-auto-updates', type: 'deprecated-flag'},
+    }
   }
 
   const hasOldConfig = cliConfig && 'autoUpdates' in cliConfig
@@ -36,30 +52,74 @@ export function shouldAutoUpdate({cliConfig, flags, output}: AutoUpdateSources):
     cliConfig.deployment &&
     'autoUpdates' in cliConfig.deployment
 
-  if (hasOldConfig && hasNewConfig) {
-    output.error(
-      'Found both `autoUpdates` (deprecated) and `deployment.autoUpdates` in sanity.cli.js/.ts. Please remove the deprecated top level `autoUpdates` config.',
-      {
-        exit: 1,
-      },
-    )
+  if (hasNewConfig) {
+    return {
+      enabled: Boolean(cliConfig?.deployment?.autoUpdates),
+      issue: hasOldConfig ? {type: 'conflicting-config'} : null,
+    }
   }
 
   if (hasOldConfig) {
-    output.warn('The autoUpdates config has moved to deployment.autoUpdates.')
-    output.warn(`Please update sanity.cli.ts or sanity.cli.js and make the following change:
+    return {enabled: Boolean(cliConfig?.autoUpdates), issue: {type: 'deprecated-config'}}
+  }
+
+  return {enabled: false, issue: null}
+}
+
+/**
+ * The user-facing message for an auto-update configuration problem.
+ * Shared by every surface that reports the issue (deploy warnings, dry-run
+ * checks) so the wording has one home.
+ *
+ * @internal
+ */
+export function getAutoUpdateIssueMessage(issue: AutoUpdateIssue): string {
+  switch (issue.type) {
+    case 'conflicting-config': {
+      return 'Found both `autoUpdates` (deprecated) and `deployment.autoUpdates` in sanity.cli.js/.ts. Please remove the deprecated top level `autoUpdates` config.'
+    }
+    case 'deprecated-config': {
+      return 'The autoUpdates config has moved to deployment.autoUpdates.'
+    }
+    case 'deprecated-flag': {
+      return `The ${issue.flag} flag is deprecated for deploy and build commands. Set the autoUpdates option in the deployment section of sanity.cli.ts or sanity.cli.js instead.`
+    }
+  }
+}
+
+/**
+ * Resolves the auto-update setting and prints any configuration problem.
+ * @remarks Throws an error if both the old and new auto update config are used; throws a warning if the old config is used, or if the auto updates flags are used.
+ * @internal
+ */
+export function shouldAutoUpdate({
+  cliConfig,
+  flags,
+  output,
+}: AutoUpdateSources & {output: Output}): boolean {
+  const {enabled, issue} = resolveAutoUpdates({cliConfig, flags})
+
+  switch (issue?.type) {
+    case 'conflicting-config': {
+      output.error(getAutoUpdateIssueMessage(issue), {exit: 1})
+      break
+    }
+    case 'deprecated-config': {
+      output.warn(getAutoUpdateIssueMessage(issue))
+      output.warn(`Please update sanity.cli.ts or sanity.cli.js and make the following change:
   ${styleText('red', `-  autoUpdates: ${cliConfig.autoUpdates},`)}
   ${styleText('green', `+  deployment: {autoUpdates: ${cliConfig.autoUpdates}}`)}
 `)
+      break
+    }
+    case 'deprecated-flag': {
+      output.warn(getAutoUpdateIssueMessage(issue))
+      break
+    }
+    default: {
+      break
+    }
   }
 
-  if (hasNewConfig) {
-    return Boolean(cliConfig?.deployment?.autoUpdates)
-  }
-
-  if (hasOldConfig) {
-    return Boolean(cliConfig?.autoUpdates)
-  }
-
-  return false
+  return enabled
 }
