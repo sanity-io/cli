@@ -181,6 +181,21 @@ describe('#deploy app', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('a dry run does not prompt to overwrite a non-empty output directory', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockDirIsEmptyOrNonExistent.mockResolvedValue(false)
+
+    // A dry run is a preview; it must not block on the interactive overwrite prompt.
+    await testCommand(DeployCommand, ['build', '--dry-run', '--no-build'], {
+      config: {root: cwd},
+      mocks: defaultMocks,
+    })
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
   test('should re-deploy app if it already exists', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
