@@ -24,8 +24,8 @@ import {
   checkAutoUpdates,
   checkBuild,
   checkPackageVersion,
-  createFailFastChecks,
-  type DeployChecks,
+  type CheckReporter,
+  createFailFastReporter,
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
@@ -55,8 +55,8 @@ export async function deployApp(options: DeployAppOptions): Promise<void> {
   }
 
   try {
-    const checks = createFailFastChecks(output)
-    await createAppDeployment(options, checks, workbench)
+    const reporter = createFailFastReporter(output)
+    await createAppDeployment(options, reporter, workbench)
   } catch (error) {
     // Don't throw a generic error when the user cancels a prompt
     if (error.name === 'ExitPromptError') {
@@ -82,26 +82,30 @@ interface AppDeployment {
 
 /**
  * Validates the deploy, syncs the title from the manifest, and ships the build.
- * Steps report through `checks`; a real deploy fails fast on the first problem.
+ *
+ * Every step reports through `reporter`. In a real deploy a failed check exits
+ * immediately, so reaching any later step means the earlier ones passed. A dry
+ * run collects the failures instead and returns before shipping (the guard
+ * below), so the steps read as one straight sequence in both modes.
  */
 async function createAppDeployment(
   options: DeployAppOptions,
-  checks: DeployChecks,
+  reporter: CheckReporter,
   workbench: Workbench,
 ): Promise<AppDeployment> {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
   const workDir = projectRoot.directory
   const organizationId = cliConfig.app?.organizationId
 
-  const isAutoUpdating = checkAutoUpdates(checks, {cliConfig, flags})
+  const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
-  const version = await checkPackageVersion(checks, {
+  const version = await checkPackageVersion(reporter, {
     moduleName: '@sanity/sdk-react',
     name: 'sdk-version',
     workDir,
   })
 
-  checks.add(
+  reporter.report(
     organizationId
       ? {message: `Organization: ${organizationId}`, name: 'organization-id', status: 'pass'}
       : {message: NO_ORGANIZATION_ID, name: 'organization-id', status: 'fail'},
@@ -109,12 +113,12 @@ async function createAppDeployment(
 
   let application: UserApplication | null = null
   if (flags.external) {
-    checks.add({message: EXTERNAL_APP_NOT_SUPPORTED, name: 'target', status: 'fail'})
+    reporter.report({message: EXTERNAL_APP_NOT_SUPPORTED, name: 'target', status: 'fail'})
   } else {
     application = await resolveAppApplication(options)
   }
 
-  await checkBuild(checks, {
+  await checkBuild(reporter, {
     build: () =>
       buildApp({
         autoUpdatesEnabled: isAutoUpdating,
@@ -131,7 +135,7 @@ async function createAppDeployment(
     successMessage: 'App built',
   })
 
-  await verifyOutputDir({isWorkbenchApp: workbench !== null, output, sourceDir})
+  await verifyOutputDir({isWorkbenchApp: workbench !== null, reporter, sourceDir})
 
   // Manifests aren't strictly essential, so a failure warns and continues
   let manifest: CoreAppManifest | undefined
@@ -139,7 +143,7 @@ async function createAppDeployment(
     manifest = await extractCoreAppManifest({workDir})
   } catch (err) {
     deployDebug('Error extracting app manifest', err)
-    checks.add({
+    reporter.report({
       message: `Error extracting app manifest: ${getErrorMessage(err)}`,
       name: 'app-manifest',
       status: 'warn',
@@ -171,6 +175,9 @@ async function createAppDeployment(
     }
   }
 
+  // A real deploy has already exited if anything failed; landing here without a
+  // resolved application or version means a dry run collected problems — stop
+  // before shipping.
   if (!application || !version) return {application, isAutoUpdating, manifest, version}
 
   const parentDir = dirname(sourceDir)

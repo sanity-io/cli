@@ -29,75 +29,63 @@ interface DeployCheck {
 }
 
 /**
- * The mode seam for a deploy step sequence: steps report through this interface
- * and the adapter decides what a failure means, so one sequence can back more
- * than one deploy mode.
+ * Where deploy steps send their check outcomes — and the only place the deploy
+ * mode lives. A real deploy fails fast: a `fail` prints and exits immediately,
+ * which aborts the sequence. A dry run collects every outcome and never exits.
+ * Steps just call `report`; they never know which mode is running.
  */
-export interface DeployChecks {
-  add(check: DeployCheck): void
-  all(): DeployCheck[]
-  run<T>(
-    name: string,
-    fn: () => Promise<T>,
-    formatError?: (err: unknown) => string,
-  ): Promise<T | null>
+export interface CheckReporter {
+  report(check: DeployCheck): void
 }
 
-/**
- * Real deploys fail fast: a fail check exits immediately, warn checks print,
- * and `run` lets errors propagate to the command's own error handling.
- */
-export function createFailFastChecks(output: Output): DeployChecks {
+export function createFailFastReporter(output: Output): CheckReporter {
   return {
-    add(check) {
+    report(check) {
       if (check.status === 'fail') {
         output.error(check.message, {exit: check.exitCode ?? 1})
       } else if (check.status === 'warn') {
         output.warn(check.message)
       }
     },
-    all() {
-      return []
+  }
+}
+
+export function createCollectingReporter(): CheckReporter & {results: DeployCheck[]} {
+  const results: DeployCheck[] = []
+  return {
+    report(check) {
+      results.push(check)
     },
-    run(name, fn) {
-      return fn()
-    },
+    results,
   }
 }
 
 /**
- * Aggregating checks: a fail or warn check is recorded, never exits, and a
- * throw inside `run` becomes a fail check — so one broken step never aborts
- * the rest, and every problem is reported in one pass.
+ * Runs a fallible step and turns a throw into a `fail` check. In a real deploy
+ * that fail exits (aborting the run); in a dry run it's recorded and `null`
+ * comes back so the caller can skip the rest of the step.
  */
-export function createAggregatingChecks(): DeployChecks {
-  const checks: DeployCheck[] = []
-
-  return {
-    add(check) {
-      checks.push(check)
-    },
-    all() {
-      return checks
-    },
-    async run(name, fn, formatError = getErrorMessage) {
-      try {
-        return await fn()
-      } catch (err) {
-        deployDebug(`${name} check failed`, err)
-        checks.push({message: formatError(err), name, status: 'fail'})
-        return null
-      }
-    },
+export async function runStep<T>(
+  reporter: CheckReporter,
+  name: string,
+  work: () => Promise<T>,
+  formatError: (err: unknown) => string = getErrorMessage,
+): Promise<T | null> {
+  try {
+    return await work()
+  } catch (err) {
+    deployDebug(`${name} step failed`, err)
+    reporter.report({message: formatError(err), name, status: 'fail'})
+    return null
   }
 }
 
 export async function checkPackageVersion(
-  checks: DeployChecks,
+  reporter: CheckReporter,
   {moduleName, name, workDir}: {moduleName: string; name: string; workDir: string},
 ): Promise<string | null> {
   const version = await getLocalPackageVersion(moduleName, workDir)
-  checks.add(
+  reporter.report(
     version
       ? {message: `Using ${moduleName} ${version}`, name, status: 'pass'}
       : {message: `Failed to find installed ${moduleName} version`, name, status: 'fail'},
@@ -106,13 +94,13 @@ export async function checkPackageVersion(
 }
 
 export function checkAutoUpdates(
-  checks: DeployChecks,
+  reporter: CheckReporter,
   {cliConfig, flags}: {cliConfig: CliConfig; flags: DeployFlags},
 ): boolean {
   const {enabled, issue} = resolveAutoUpdates({cliConfig, flags})
 
   if (issue) {
-    checks.add({
+    reporter.report({
       message: getAutoUpdateIssueMessage(issue),
       name: 'auto-updates',
       // A config conflict makes a real deploy refuse to run; deprecations only warn
@@ -122,7 +110,7 @@ export function checkAutoUpdates(
     // The deprecated top-level config also gets the styled migration edit, the
     // same second warning the build/dev path prints through shouldAutoUpdate.
     if (issue.type === 'deprecated-config') {
-      checks.add({
+      reporter.report({
         message: getAutoUpdateMigrationHint(cliConfig.autoUpdates),
         name: 'auto-updates',
         status: 'warn',
@@ -134,7 +122,7 @@ export function checkAutoUpdates(
 }
 
 export async function checkBuild(
-  checks: DeployChecks,
+  reporter: CheckReporter,
   {
     build,
     skipReason,
@@ -142,15 +130,16 @@ export async function checkBuild(
   }: {build: () => Promise<void>; skipReason: string | undefined; successMessage: string},
 ): Promise<void> {
   if (skipReason) {
-    checks.add({message: skipReason, name: 'build', status: 'skip'})
+    reporter.report({message: skipReason, name: 'build', status: 'skip'})
     return
   }
 
-  await checks.run(
+  await runStep(
+    reporter,
     'build',
     async () => {
       await build()
-      checks.add({message: successMessage, name: 'build', status: 'pass'})
+      reporter.report({message: successMessage, name: 'build', status: 'pass'})
     },
     (err) => `Build failed: ${getErrorMessage(err)}`,
   )
@@ -162,22 +151,22 @@ export async function checkBuild(
  */
 export async function verifyOutputDir({
   isWorkbenchApp,
-  output,
+  reporter,
   sourceDir,
 }: {
   isWorkbenchApp: boolean
-  output: Output
+  reporter: CheckReporter
   sourceDir: string
 }): Promise<void> {
   const spin = spinner('Verifying local content...').start()
+  const verifyBuild = isWorkbenchApp ? checkBuiltOutput : checkDir
   try {
-    const verifyBuild = isWorkbenchApp ? checkBuiltOutput : checkDir
     await verifyBuild(sourceDir)
     spin.succeed()
   } catch (err) {
     spin.fail()
     deployDebug('Error checking directory', err)
-    output.error(getErrorMessage(err), {exit: 1})
+    reporter.report({message: getErrorMessage(err), name: 'output-dir', status: 'fail'})
   }
 }
 
@@ -199,17 +188,18 @@ interface DeployTarget {
  * same verdicts through findUserApplicationForApp.
  */
 export async function checkAppTarget(
-  checks: DeployChecks,
+  reporter: CheckReporter,
   {appId, organizationId}: {appId: string | undefined; organizationId: string | undefined},
 ): Promise<{existingApp: UserApplication | null; target: DeployTarget | null}> {
-  const result = await checks.run(
+  const result = await runStep(
+    reporter,
     'target',
     async () => {
       const resolution = await resolveAppDeployTarget({appId, organizationId})
 
       switch (resolution.type) {
         case 'blocked': {
-          checks.add({
+          reporter.report({
             message: `Deploy target not resolved — ${resolution.message}`,
             name: 'target',
             status: 'skip',
@@ -218,7 +208,7 @@ export async function checkAppTarget(
         }
         case 'found': {
           const {application} = resolution
-          checks.add({
+          reporter.report({
             message: `Deploys to existing application "${application.title ?? application.appHost}"`,
             name: 'target',
             status: 'pass',
@@ -235,11 +225,15 @@ export async function checkAppTarget(
           }
         }
         case 'invalid': {
-          checks.add({message: APP_ID_NOT_FOUND_IN_ORGANIZATION, name: 'target', status: 'fail'})
+          reporter.report({
+            message: APP_ID_NOT_FOUND_IN_ORGANIZATION,
+            name: 'target',
+            status: 'fail',
+          })
           return {existingApp: null, target: null}
         }
         case 'needs-input': {
-          checks.add({
+          reporter.report({
             message: `No appId configured and ${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} found — deploy would prompt. Add deployment.appId to sanity.cli.ts.`,
             name: 'target',
             status: 'fail',
@@ -247,7 +241,7 @@ export async function checkAppTarget(
           return {existingApp: null, target: null}
         }
         case 'would-create': {
-          checks.add({
+          reporter.report({
             message: 'Would create a new application deployment',
             name: 'target',
             status: 'pass',

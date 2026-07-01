@@ -1,7 +1,14 @@
+import {type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type UserApplication} from '../../../services/userApplications.js'
-import {checkAppTarget, checkAutoUpdates, createAggregatingChecks} from '../deployChecks.js'
+import {
+  checkAppTarget,
+  checkAutoUpdates,
+  createCollectingReporter,
+  createFailFastReporter,
+  runStep,
+} from '../deployChecks.js'
 import {resolveAppDeployTarget} from '../resolveDeployTarget.js'
 import {type DeployFlags} from '../types.js'
 
@@ -10,6 +17,8 @@ vi.mock('../resolveDeployTarget.js', () => ({
 }))
 
 const mockResolveApp = vi.mocked(resolveAppDeployTarget)
+
+const mockOutput = () => ({error: vi.fn(), warn: vi.fn()}) as unknown as Output
 
 function application(overrides: Partial<UserApplication> = {}): UserApplication {
   return {
@@ -28,29 +37,74 @@ function application(overrides: Partial<UserApplication> = {}): UserApplication 
 
 beforeEach(() => vi.clearAllMocks())
 
-describe('createAggregatingChecks', () => {
-  test('records checks without exiting', () => {
-    const checks = createAggregatingChecks()
-    checks.add({message: 'ok', name: 'a', status: 'pass'})
-    checks.add({message: 'bad', name: 'b', status: 'fail'})
-    expect(checks.all()).toHaveLength(2)
+describe('createFailFastReporter', () => {
+  test('a fail exits with its exit code', () => {
+    const output = mockOutput()
+    createFailFastReporter(output).report({exitCode: 2, message: 'boom', name: 'x', status: 'fail'})
+    expect(output.error).toHaveBeenCalledWith('boom', {exit: 2})
   })
 
-  test('a thrown step becomes a fail check', async () => {
-    const checks = createAggregatingChecks()
-    const result = await checks.run('boom', async () => {
+  test('a fail without an exit code defaults to 1', () => {
+    const output = mockOutput()
+    createFailFastReporter(output).report({message: 'boom', name: 'x', status: 'fail'})
+    expect(output.error).toHaveBeenCalledWith('boom', {exit: 1})
+  })
+
+  test('a warn prints and does not exit', () => {
+    const output = mockOutput()
+    createFailFastReporter(output).report({message: 'heads up', name: 'x', status: 'warn'})
+    expect(output.warn).toHaveBeenCalledWith('heads up')
+    expect(output.error).not.toHaveBeenCalled()
+  })
+
+  test('pass and skip are silent', () => {
+    const output = mockOutput()
+    const reporter = createFailFastReporter(output)
+    reporter.report({message: 'good', name: 'x', status: 'pass'})
+    reporter.report({message: 'skipped', name: 'y', status: 'skip'})
+    expect(output.error).not.toHaveBeenCalled()
+    expect(output.warn).not.toHaveBeenCalled()
+  })
+})
+
+describe('createCollectingReporter', () => {
+  test('collects every reported check on results', () => {
+    const reporter = createCollectingReporter()
+    reporter.report({message: 'ok', name: 'a', status: 'pass'})
+    reporter.report({message: 'bad', name: 'b', status: 'fail'})
+    expect(reporter.results).toHaveLength(2)
+  })
+})
+
+describe('runStep', () => {
+  test('returns the value when the work succeeds', async () => {
+    const reporter = createCollectingReporter()
+    const result = await runStep(reporter, 'ok', async () => 42)
+    expect(result).toBe(42)
+    expect(reporter.results).toHaveLength(0)
+  })
+
+  test('a throw becomes a fail check and returns null', async () => {
+    const reporter = createCollectingReporter()
+    const result = await runStep(reporter, 'boom', async () => {
       throw new Error('nope')
     })
     expect(result).toBeNull()
-    expect(checks.all()[0]).toMatchObject({name: 'boom', status: 'fail'})
-    expect(checks.all()[0]?.message).toContain('nope')
+    expect(reporter.results[0]).toMatchObject({name: 'boom', status: 'fail'})
+    expect(reporter.results[0]?.message).toContain('nope')
   })
 
-  test('run returns the value when the step succeeds', async () => {
-    const checks = createAggregatingChecks()
-    const result = await checks.run('ok', async () => 42)
-    expect(result).toBe(42)
-    expect(checks.all()).toHaveLength(0)
+  test('uses a custom formatError for the fail message', async () => {
+    const reporter = createCollectingReporter()
+    await runStep(
+      reporter,
+      'boom',
+      async () => {
+        throw new Error('raw')
+      },
+      () => 'friendly',
+    )
+    expect(reporter.results[0]?.message).toBe('friendly')
   })
 })
 
@@ -58,9 +112,9 @@ describe('checkAppTarget', () => {
   test('found → pass check, existing app and target', async () => {
     const app = application({appHost: 'app-host', id: 'core-1', title: 'My App', type: 'coreApp'})
     mockResolveApp.mockResolvedValue({application: app, type: 'found'})
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    const {existingApp, target} = await checkAppTarget(checks, {
+    const {existingApp, target} = await checkAppTarget(reporter, {
       appId: 'core-1',
       organizationId: 'org-1',
     })
@@ -73,14 +127,14 @@ describe('checkAppTarget', () => {
       isExternal: false,
       type: 'coreApp',
     })
-    expect(checks.all()[0]?.message).toContain('Deploys to existing application "My App"')
+    expect(reporter.results[0]?.message).toContain('Deploys to existing application "My App"')
   })
 
   test('would-create → pass check, no existing app', async () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    const {existingApp, target} = await checkAppTarget(checks, {
+    const {existingApp, target} = await checkAppTarget(reporter, {
       appId: undefined,
       organizationId: 'org-1',
     })
@@ -100,13 +154,13 @@ describe('checkAppTarget', () => {
       existing: [application(), application()],
       type: 'needs-input',
     })
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    const {target} = await checkAppTarget(checks, {appId: undefined, organizationId: 'org-1'})
+    const {target} = await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
     expect(target).toBeNull()
-    expect(checks.all()[0]).toMatchObject({name: 'target', status: 'fail'})
-    expect(checks.all()[0]?.message).toContain('2 existing applications found')
+    expect(reporter.results[0]).toMatchObject({name: 'target', status: 'fail'})
+    expect(reporter.results[0]?.message).toContain('2 existing applications found')
   })
 
   test('invalid → fail check', async () => {
@@ -115,71 +169,76 @@ describe('checkAppTarget', () => {
       reason: 'app-not-found',
       type: 'invalid',
     })
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    const {target} = await checkAppTarget(checks, {appId: 'nope', organizationId: 'org-1'})
+    const {target} = await checkAppTarget(reporter, {appId: 'nope', organizationId: 'org-1'})
 
     expect(target).toBeNull()
-    expect(checks.all()[0]?.status).toBe('fail')
+    expect(reporter.results[0]?.status).toBe('fail')
   })
 
   test('a 403 becomes a permissions fail check', async () => {
     mockResolveApp.mockRejectedValue(Object.assign(new Error('forbidden'), {statusCode: 403}))
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    const {target} = await checkAppTarget(checks, {appId: undefined, organizationId: 'org-1'})
+    const {target} = await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
     expect(target).toBeNull()
-    expect(checks.all()[0]?.message).toContain('don’t have permission')
+    expect(reporter.results[0]?.message).toContain('don’t have permission')
   })
 })
 
 describe('checkAutoUpdates', () => {
   test('a config conflict is a fail check', () => {
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    const enabled = checkAutoUpdates(checks, {
+    const enabled = checkAutoUpdates(reporter, {
       cliConfig: {autoUpdates: true, deployment: {autoUpdates: false}},
       flags: {} as DeployFlags,
     })
 
     expect(enabled).toBe(false)
-    expect(checks.all()).toEqual([expect.objectContaining({name: 'auto-updates', status: 'fail'})])
+    expect(reporter.results).toEqual([
+      expect.objectContaining({name: 'auto-updates', status: 'fail'}),
+    ])
   })
 
   test('the deprecated top-level config warns and includes the migration edit', () => {
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    const enabled = checkAutoUpdates(checks, {
+    const enabled = checkAutoUpdates(reporter, {
       cliConfig: {autoUpdates: true},
       flags: {} as DeployFlags,
     })
 
     expect(enabled).toBe(true)
-    const all = checks.all()
-    expect(all).toHaveLength(2)
-    expect(all.every((c) => c.name === 'auto-updates' && c.status === 'warn')).toBe(true)
-    expect(all[0]?.message).toContain('autoUpdates config has moved')
-    expect(all[1]?.message).toContain('Please update sanity.cli.ts')
-    expect(all[1]?.message).toContain('deployment: {autoUpdates: true}')
+    expect(reporter.results).toHaveLength(2)
+    expect(reporter.results.every((c) => c.name === 'auto-updates' && c.status === 'warn')).toBe(
+      true,
+    )
+    expect(reporter.results[0]?.message).toContain('autoUpdates config has moved')
+    expect(reporter.results[1]?.message).toContain('Please update sanity.cli.ts')
+    expect(reporter.results[1]?.message).toContain('deployment: {autoUpdates: true}')
   })
 
   test('a deprecated flag warns', () => {
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    checkAutoUpdates(checks, {cliConfig: {}, flags: {'auto-updates': true} as DeployFlags})
+    checkAutoUpdates(reporter, {cliConfig: {}, flags: {'auto-updates': true} as DeployFlags})
 
-    expect(checks.all()).toEqual([expect.objectContaining({name: 'auto-updates', status: 'warn'})])
+    expect(reporter.results).toEqual([
+      expect.objectContaining({name: 'auto-updates', status: 'warn'}),
+    ])
   })
 
   test('a clean config records no check', () => {
-    const checks = createAggregatingChecks()
+    const reporter = createCollectingReporter()
 
-    checkAutoUpdates(checks, {
+    checkAutoUpdates(reporter, {
       cliConfig: {deployment: {autoUpdates: true}},
       flags: {} as DeployFlags,
     })
 
-    expect(checks.all()).toHaveLength(0)
+    expect(reporter.results).toHaveLength(0)
   })
 })
