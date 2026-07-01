@@ -101,19 +101,18 @@ async function createAppDeployment(
 
   const version = await checkPackageVersion(reporter, {
     moduleName: '@sanity/sdk-react',
-    name: 'sdk-version',
     workDir,
   })
 
   reporter.report(
     organizationId
-      ? {message: `Organization: ${organizationId}`, name: 'organization-id', status: 'pass'}
-      : {message: NO_ORGANIZATION_ID, name: 'organization-id', status: 'fail'},
+      ? {message: `Organization: ${organizationId}`, status: 'pass'}
+      : {message: NO_ORGANIZATION_ID, status: 'fail'},
   )
 
   let application: UserApplication | null = null
   if (flags.external) {
-    reporter.report({message: EXTERNAL_APP_NOT_SUPPORTED, name: 'target', status: 'fail'})
+    reporter.report({message: EXTERNAL_APP_NOT_SUPPORTED, status: 'fail'})
   } else {
     application = await resolveAppApplication(options)
   }
@@ -145,7 +144,6 @@ async function createAppDeployment(
     deployDebug('Error extracting app manifest', err)
     reporter.report({
       message: `Error extracting app manifest: ${getErrorMessage(err)}`,
-      name: 'app-manifest',
       status: 'warn',
     })
   }

@@ -40,19 +40,19 @@ beforeEach(() => vi.clearAllMocks())
 describe('createFailFastReporter', () => {
   test('a fail exits with its exit code', () => {
     const output = mockOutput()
-    createFailFastReporter(output).report({exitCode: 2, message: 'boom', name: 'x', status: 'fail'})
+    createFailFastReporter(output).report({exitCode: 2, message: 'boom', status: 'fail'})
     expect(output.error).toHaveBeenCalledWith('boom', {exit: 2})
   })
 
   test('a fail without an exit code defaults to 1', () => {
     const output = mockOutput()
-    createFailFastReporter(output).report({message: 'boom', name: 'x', status: 'fail'})
+    createFailFastReporter(output).report({message: 'boom', status: 'fail'})
     expect(output.error).toHaveBeenCalledWith('boom', {exit: 1})
   })
 
   test('a warn prints and does not exit', () => {
     const output = mockOutput()
-    createFailFastReporter(output).report({message: 'heads up', name: 'x', status: 'warn'})
+    createFailFastReporter(output).report({message: 'heads up', status: 'warn'})
     expect(output.warn).toHaveBeenCalledWith('heads up')
     expect(output.error).not.toHaveBeenCalled()
   })
@@ -60,8 +60,8 @@ describe('createFailFastReporter', () => {
   test('pass and skip are silent', () => {
     const output = mockOutput()
     const reporter = createFailFastReporter(output)
-    reporter.report({message: 'good', name: 'x', status: 'pass'})
-    reporter.report({message: 'skipped', name: 'y', status: 'skip'})
+    reporter.report({message: 'good', status: 'pass'})
+    reporter.report({message: 'skipped', status: 'skip'})
     expect(output.error).not.toHaveBeenCalled()
     expect(output.warn).not.toHaveBeenCalled()
   })
@@ -70,8 +70,8 @@ describe('createFailFastReporter', () => {
 describe('createCollectingReporter', () => {
   test('collects every reported check on results', () => {
     const reporter = createCollectingReporter()
-    reporter.report({message: 'ok', name: 'a', status: 'pass'})
-    reporter.report({message: 'bad', name: 'b', status: 'fail'})
+    reporter.report({message: 'ok', status: 'pass'})
+    reporter.report({message: 'bad', status: 'fail'})
     expect(reporter.results).toHaveLength(2)
   })
 })
@@ -90,7 +90,7 @@ describe('runStep', () => {
       throw new Error('nope')
     })
     expect(result).toBeNull()
-    expect(reporter.results[0]).toMatchObject({name: 'boom', status: 'fail'})
+    expect(reporter.results[0]).toMatchObject({status: 'fail'})
     expect(reporter.results[0]?.message).toContain('nope')
   })
 
@@ -109,44 +109,25 @@ describe('runStep', () => {
 })
 
 describe('checkAppTarget', () => {
-  test('found → pass check, existing app and target', async () => {
+  test('found → pass check for the existing application', async () => {
     const app = application({appHost: 'app-host', id: 'core-1', title: 'My App', type: 'coreApp'})
     mockResolveApp.mockResolvedValue({application: app, type: 'found'})
     const reporter = createCollectingReporter()
 
-    const {existingApp, target} = await checkAppTarget(reporter, {
-      appId: 'core-1',
-      organizationId: 'org-1',
-    })
+    await checkAppTarget(reporter, {appId: 'core-1', organizationId: 'org-1'})
 
-    expect(existingApp).toBe(app)
-    expect(target).toEqual({
-      appId: 'core-1',
-      exists: true,
-      host: 'app-host',
-      isExternal: false,
-      type: 'coreApp',
-    })
+    expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "My App"')
   })
 
-  test('would-create → pass check, no existing app', async () => {
+  test('would-create → pass check', async () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
     const reporter = createCollectingReporter()
 
-    const {existingApp, target} = await checkAppTarget(reporter, {
-      appId: undefined,
-      organizationId: 'org-1',
-    })
+    await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
-    expect(existingApp).toBeNull()
-    expect(target).toEqual({
-      appId: null,
-      exists: false,
-      host: null,
-      isExternal: false,
-      type: 'coreApp',
-    })
+    expect(reporter.results[0]).toMatchObject({status: 'pass'})
+    expect(reporter.results[0]?.message).toContain('Would create a new application deployment')
   })
 
   test('needs-input → fail check (would prompt)', async () => {
@@ -156,10 +137,9 @@ describe('checkAppTarget', () => {
     })
     const reporter = createCollectingReporter()
 
-    const {target} = await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
+    await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
-    expect(target).toBeNull()
-    expect(reporter.results[0]).toMatchObject({name: 'target', status: 'fail'})
+    expect(reporter.results[0]).toMatchObject({status: 'fail'})
     expect(reporter.results[0]?.message).toContain('2 existing applications found')
   })
 
@@ -171,9 +151,8 @@ describe('checkAppTarget', () => {
     })
     const reporter = createCollectingReporter()
 
-    const {target} = await checkAppTarget(reporter, {appId: 'nope', organizationId: 'org-1'})
+    await checkAppTarget(reporter, {appId: 'nope', organizationId: 'org-1'})
 
-    expect(target).toBeNull()
     expect(reporter.results[0]?.status).toBe('fail')
   })
 
@@ -181,9 +160,9 @@ describe('checkAppTarget', () => {
     mockResolveApp.mockRejectedValue(Object.assign(new Error('forbidden'), {statusCode: 403}))
     const reporter = createCollectingReporter()
 
-    const {target} = await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
+    await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
-    expect(target).toBeNull()
+    expect(reporter.results[0]?.status).toBe('fail')
     expect(reporter.results[0]?.message).toContain('don’t have permission')
   })
 })
@@ -198,9 +177,7 @@ describe('checkAutoUpdates', () => {
     })
 
     expect(enabled).toBe(false)
-    expect(reporter.results).toEqual([
-      expect.objectContaining({name: 'auto-updates', status: 'fail'}),
-    ])
+    expect(reporter.results).toEqual([expect.objectContaining({status: 'fail'})])
   })
 
   test('the deprecated top-level config warns and includes the migration edit', () => {
@@ -213,9 +190,7 @@ describe('checkAutoUpdates', () => {
 
     expect(enabled).toBe(true)
     expect(reporter.results).toHaveLength(2)
-    expect(reporter.results.every((c) => c.name === 'auto-updates' && c.status === 'warn')).toBe(
-      true,
-    )
+    expect(reporter.results.every((c) => c.status === 'warn')).toBe(true)
     expect(reporter.results[0]?.message).toContain('autoUpdates config has moved')
     expect(reporter.results[1]?.message).toContain('Please update sanity.cli.ts')
     expect(reporter.results[1]?.message).toContain('deployment: {autoUpdates: true}')
@@ -226,9 +201,7 @@ describe('checkAutoUpdates', () => {
 
     checkAutoUpdates(reporter, {cliConfig: {}, flags: {'auto-updates': true} as DeployFlags})
 
-    expect(reporter.results).toEqual([
-      expect.objectContaining({name: 'auto-updates', status: 'warn'}),
-    ])
+    expect(reporter.results).toEqual([expect.objectContaining({status: 'warn'})])
   })
 
   test('a clean config records no check', () => {

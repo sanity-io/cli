@@ -2,7 +2,6 @@ import {type CliConfig, getLocalPackageVersion, type Output} from '@sanity/cli-c
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 
-import {type UserApplication} from '../../services/userApplications.js'
 import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {
@@ -17,11 +16,8 @@ import {type DeployFlags} from './types.js'
 
 type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
 
-interface DeployCheck {
+export interface DeployCheck {
   message: string
-
-  /** Stable identifier for machine consumers; the message carries the details */
-  name: string
   status: DeployCheckStatus
 
   /** Exit code a real deploy uses when this check fails; defaults to 1 */
@@ -63,7 +59,8 @@ export function createCollectingReporter(): CheckReporter & {results: DeployChec
 /**
  * Runs a fallible step and turns a throw into a `fail` check. In a real deploy
  * that fail exits (aborting the run); in a dry run it's recorded and `null`
- * comes back so the caller can skip the rest of the step.
+ * comes back so the caller can skip the rest of the step. `name` labels the
+ * step in debug logs.
  */
 export async function runStep<T>(
   reporter: CheckReporter,
@@ -75,20 +72,20 @@ export async function runStep<T>(
     return await work()
   } catch (err) {
     deployDebug(`${name} step failed`, err)
-    reporter.report({message: formatError(err), name, status: 'fail'})
+    reporter.report({message: formatError(err), status: 'fail'})
     return null
   }
 }
 
 export async function checkPackageVersion(
   reporter: CheckReporter,
-  {moduleName, name, workDir}: {moduleName: string; name: string; workDir: string},
+  {moduleName, workDir}: {moduleName: string; workDir: string},
 ): Promise<string | null> {
   const version = await getLocalPackageVersion(moduleName, workDir)
   reporter.report(
     version
-      ? {message: `Using ${moduleName} ${version}`, name, status: 'pass'}
-      : {message: `Failed to find installed ${moduleName} version`, name, status: 'fail'},
+      ? {message: `Using ${moduleName} ${version}`, status: 'pass'}
+      : {message: `Failed to find installed ${moduleName} version`, status: 'fail'},
   )
   return version
 }
@@ -102,7 +99,6 @@ export function checkAutoUpdates(
   if (issue) {
     reporter.report({
       message: getAutoUpdateIssueMessage(issue),
-      name: 'auto-updates',
       // A config conflict makes a real deploy refuse to run; deprecations only warn
       status: issue.type === 'conflicting-config' ? 'fail' : 'warn',
     })
@@ -112,7 +108,6 @@ export function checkAutoUpdates(
     if (issue.type === 'deprecated-config') {
       reporter.report({
         message: getAutoUpdateMigrationHint(cliConfig.autoUpdates),
-        name: 'auto-updates',
         status: 'warn',
       })
     }
@@ -130,7 +125,7 @@ export async function checkBuild(
   }: {build: () => Promise<void>; skipReason: string | undefined; successMessage: string},
 ): Promise<void> {
   if (skipReason) {
-    reporter.report({message: skipReason, name: 'build', status: 'skip'})
+    reporter.report({message: skipReason, status: 'skip'})
     return
   }
 
@@ -139,7 +134,7 @@ export async function checkBuild(
     'build',
     async () => {
       await build()
-      reporter.report({message: successMessage, name: 'build', status: 'pass'})
+      reporter.report({message: successMessage, status: 'pass'})
     },
     (err) => `Build failed: ${getErrorMessage(err)}`,
   )
@@ -166,32 +161,20 @@ export async function verifyOutputDir({
   } catch (err) {
     spin.fail()
     deployDebug('Error checking directory', err)
-    reporter.report({message: getErrorMessage(err), name: 'output-dir', status: 'fail'})
+    reporter.report({message: getErrorMessage(err), status: 'fail'})
   }
 }
 
-interface DeployTarget {
-  /** User application id when the deploy targets an existing application */
-  appId: string | null
-  /** Whether the target application already exists (false means deploy would create it) */
-  exists: boolean
-  /** Studio hostname or external URL */
-  host: string | null
-  /** A studio deployed to a host outside sanity.studio; always false for apps */
-  isExternal: boolean
-  type: 'coreApp' | 'studio'
-}
-
 /**
- * Maps the read-only app deploy-target verdict to a check and a target
- * descriptor. The rules live in resolveDeployTarget; a real deploy consumes the
- * same verdicts through findUserApplicationForApp.
+ * Reports the read-only app deploy-target verdict. The rules live in
+ * resolveDeployTarget; a real deploy consumes the same verdicts through
+ * findUserApplication.
  */
 export async function checkAppTarget(
   reporter: CheckReporter,
   {appId, organizationId}: {appId: string | undefined; organizationId: string | undefined},
-): Promise<{existingApp: UserApplication | null; target: DeployTarget | null}> {
-  const result = await runStep(
+): Promise<void> {
+  await runStep(
     reporter,
     'target',
     async () => {
@@ -201,61 +184,32 @@ export async function checkAppTarget(
         case 'blocked': {
           reporter.report({
             message: `Deploy target not resolved — ${resolution.message}`,
-            name: 'target',
             status: 'skip',
           })
-          return {existingApp: null, target: null}
+          return
         }
         case 'found': {
           const {application} = resolution
           reporter.report({
             message: `Deploys to existing application "${application.title ?? application.appHost}"`,
-            name: 'target',
             status: 'pass',
           })
-          return {
-            existingApp: application,
-            target: {
-              appId: application.id,
-              exists: true,
-              host: application.appHost,
-              isExternal: false,
-              type: 'coreApp' as const,
-            },
-          }
+          return
         }
         case 'invalid': {
-          reporter.report({
-            message: APP_ID_NOT_FOUND_IN_ORGANIZATION,
-            name: 'target',
-            status: 'fail',
-          })
-          return {existingApp: null, target: null}
+          reporter.report({message: APP_ID_NOT_FOUND_IN_ORGANIZATION, status: 'fail'})
+          return
         }
         case 'needs-input': {
           reporter.report({
             message: `No appId configured and ${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} found — deploy would prompt. Add deployment.appId to sanity.cli.ts.`,
-            name: 'target',
             status: 'fail',
           })
-          return {existingApp: null, target: null}
+          return
         }
         case 'would-create': {
-          reporter.report({
-            message: 'Would create a new application deployment',
-            name: 'target',
-            status: 'pass',
-          })
-          return {
-            existingApp: null,
-            target: {
-              appId: null,
-              exists: false,
-              host: null,
-              isExternal: false,
-              type: 'coreApp' as const,
-            },
-          }
+          reporter.report({message: 'Would create a new application deployment', status: 'pass'})
+          return
         }
       }
     },
@@ -264,6 +218,4 @@ export async function checkAppTarget(
         ? `You don’t have permission to view applications for the configured organization ID ("${organizationId}"). Verify the organization ID, or ask your organization’s admin for access.`
         : `Failed to resolve deploy target: ${getErrorMessage(err)}`,
   )
-
-  return result ?? {existingApp: null, target: null}
 }
