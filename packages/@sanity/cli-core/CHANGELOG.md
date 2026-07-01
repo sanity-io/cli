@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.3](https://github.com/sanity-io/cli/compare/cli-core-v2.1.2...cli-core-v2.1.3)
+
+_2026-07-01_
+
+### Bug Fixes
+
+- **deps:** unpin vite and bump to ^8.1.2 ([#1410](https://github.com/sanity-io/cli/pull/1410)) ([3801bd7](https://github.com/sanity-io/cli/commit/3801bd7ebc4aacf7f3e196b4dd73991f8a24d6b7))
+
 ## [2.1.2](https://github.com/sanity-io/cli/compare/cli-core-v2.1.1...cli-core-v2.1.2)
 
 _2026-06-30_
