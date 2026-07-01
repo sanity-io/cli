@@ -316,10 +316,9 @@ describe('#deploy studio', () => {
     expect(plan.applicationType).toBe('studio')
     expect(typeof plan.applicationVersion).toBe('string')
     expect(plan.deployable).toBe(true)
+    expect(plan.errors).toEqual({})
+    expect(Array.isArray(plan.warnings)).toBe(true)
     expect(plan.files).toContainEqual(expect.objectContaining({path: 'dist/index.html'}))
-    expect(
-      plan.checks.some((check: {message: string}) => check.message.includes('existing studio')),
-    ).toBe(true)
   })
 
   test('should output the deploy result as JSON with --json', async () => {

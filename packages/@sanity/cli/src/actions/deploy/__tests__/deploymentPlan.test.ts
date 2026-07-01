@@ -51,12 +51,13 @@ const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): Deploy
 })
 
 describe('deploymentPlanToJson', () => {
-  test('projects the plan into a machine-readable shape with a derived verdict and total', () => {
+  test('maps failing checks to fixes and warnings to messages, dropping pass/skip', () => {
     const json = deploymentPlanToJson(
       studioPlan(
         [
           {message: 'Project: p1', status: 'pass'},
-          {message: 'No studio hostname configured', status: 'fail'},
+          {message: 'No studio hostname configured', solution: 'Set `studioHost`', status: 'fail'},
+          {message: 'The autoUpdates config has moved', status: 'warn'},
         ],
         [{path: 'dist/index.html', size: 1_048_576}],
       ),
@@ -65,14 +66,18 @@ describe('deploymentPlanToJson', () => {
     expect(json).toEqual({
       applicationType: 'studio',
       applicationVersion: '3.99.0',
-      checks: [
-        {message: 'Project: p1', status: 'pass'},
-        {message: 'No studio hostname configured', status: 'fail'},
-      ],
       deployable: false,
+      errors: {'No studio hostname configured': 'Set `studioHost`'},
       files: [{path: 'dist/index.html', size: 1_048_576}],
       totalBytes: 1_048_576,
+      warnings: ['The autoUpdates config has moved'],
     })
+  })
+
+  test('an error without a solution maps to null', () => {
+    const json = deploymentPlanToJson(studioPlan([{message: 'boom', status: 'fail'}]))
+    expect(json.errors).toEqual({boom: null})
+    expect(json.deployable).toBe(false)
   })
 
   test('deployable is true when no check failed', () => {
