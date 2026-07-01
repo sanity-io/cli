@@ -321,6 +321,46 @@ describe('#deploy studio', () => {
     expect(plan.files).toContainEqual(expect.objectContaining({path: 'dist/index.html'}))
   })
 
+  test('keeps stdout pure JSON when --json is given a custom output directory', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+
+    await mkdir(join(cwd, 'output'), {recursive: true})
+    await writeFile(join(cwd, 'output', 'index.html'), '<html></html>')
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appHost: studioHost, appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: 'studio-app-id',
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    const {error, stdout} = await testCommand(
+      DeployCommand,
+      ['output', '--dry-run', '--json', '--no-build'],
+      {
+        config: {root: cwd},
+        mocks: {cliConfig: {api: {projectId}, studioHost}},
+      },
+    )
+
+    if (error) throw error
+    // The "Building to …" line must not precede the JSON payload
+    expect(stdout).not.toContain('Building to')
+    expect(() => JSON.parse(stdout)).not.toThrow()
+  })
+
   test('should output the deploy result as JSON with --json', async () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd
