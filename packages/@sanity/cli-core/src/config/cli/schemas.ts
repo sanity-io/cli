@@ -34,6 +34,12 @@ export const cliConfigSchema = z.object({
     }),
   ),
 
+  experimental: z.optional(
+    z.object({
+      bundledDev: z.optional(z.boolean()),
+    }),
+  ),
+
   graphql: z.optional(
     z.array(
       z.object({

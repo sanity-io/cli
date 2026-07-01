@@ -48,6 +48,18 @@ describe('getCliConfig', () => {
     expect(mockImportModule).toHaveBeenCalledOnce()
   })
 
+  test('preserves experimental.bundledDev rather than stripping it on parse', async () => {
+    const getCliConfig = await freshImport()
+    setupSingleConfig()
+    mockImportModule.mockResolvedValue({experimental: {bundledDev: true}})
+
+    const config = await getCliConfig(ROOT)
+
+    // The schema declares `experimental`; without it zod would drop the key and
+    // the sanity.cli.ts opt-in would never reach the dev server.
+    expect(config).toEqual({experimental: {bundledDev: true}})
+  })
+
   test('throws when no config found', async () => {
     const getCliConfig = await freshImport()
     mockFindPathForFiles.mockResolvedValue([
