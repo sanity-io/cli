@@ -1,3 +1,6 @@
+import {mkdir, writeFile} from 'node:fs/promises'
+import {join} from 'node:path'
+
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {unstable_defineApp} from '@sanity/workbench-cli'
@@ -219,6 +222,61 @@ describe('#deploy app', () => {
     expect(stderr).toContain('Deploying...')
 
     expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('should report the target and files in a dry run without deploying', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    await mkdir(join(cwd, 'dist'), {recursive: true})
+    await writeFile(join(cwd, 'dist', 'index.html'), '<html></html>')
+
+    // Read-only target lookup; no deployment POST is mocked, so a real ship
+    // would fail nock — proving the dry run never mutates.
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--dry-run'], {
+      config: {root: cwd},
+      mocks: defaultMocks,
+    })
+
+    if (error) throw error
+    expect(stdout).toContain('Dry run — no changes made.')
+    expect(stdout).toContain('Deploys to existing application "Existing App"')
+    expect(stdout).toContain('This application can be deployed.')
+    expect(stdout).toContain('Files to deploy (')
+    expect(stdout).toContain('dist/index.html (')
+    expect(stdout).not.toContain('Success! Application deployed')
+  })
+
+  test('should exit non-zero for a dry run that cannot deploy', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    // No organizationId configured → the target check fails, so the plan isn't
+    // deployable and the dry run must exit non-zero (usable as a CI gate).
+    const {error} = await testCommand(DeployCommand, ['--dry-run', '--no-build'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app: {}}},
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Deploy blocked')
   })
 
   test('should check the federation build dir for an unstable_defineApp app', async () => {
