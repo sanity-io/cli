@@ -21,13 +21,14 @@ const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
  * workbench opt-in. Narrows to the shared `app` config plus the workbench-only
  * fields a branded result carries: its `name`, the resolved `applicationType`
  * (settled by `parseWorkbenchCliConfig` on load, so callers read it instead of
- * re-deriving studio-vs-app), dock panel `views`, and background worker
- * `services`. The `type` literals match the `DefineAppInput` schema so
- * `views`/`services` stay assignable to `DefineAppInput['views' | 'services']`
- * downstream.
+ * re-deriving studio-vs-app), the internal `isSingleton` flag, dock panel
+ * `views`, and background worker `services`. The `type` literals match the
+ * `DefineAppInput` schema so `views`/`services` stay assignable to
+ * `DefineAppInput['views' | 'services']` downstream.
  */
 export function isWorkbenchApp(app: CliConfig['app']): app is NonNullable<CliConfig['app']> & {
   applicationType?: ApplicationType
+  isSingleton?: boolean
   name: string
   services?: {name: string; src: string; type: 'worker'}[]
   views?: {name: string; src: string; type: 'panel'}[]

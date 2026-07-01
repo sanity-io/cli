@@ -46,6 +46,8 @@ export const DefineAppInputSchema = z
     group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
+    /** Internal — Sanity-owned singleton apps only; excluded from the public `DefineAppInput`. @internal */
+    isSingleton: z.optional(z.boolean()),
     /** Unique app identifier — must match `APP_NAME_PATTERN`. */
     name: z.string().check(z.regex(APP_NAME_PATTERN, 'App `name` must match /^[a-zA-Z0-9_-]+$/')),
     /** Organization that owns the app — the workbench runs and deploys against it. */
@@ -100,11 +102,15 @@ export const DefineAppInputSchema = z
 
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
- * `applicationType` — that field is validated by the schema but is not part of
- * the public surface (Sanity-owned apps set it via `@ts-expect-error`).
+ * `applicationType` and `isSingleton` — both are validated by the schema but
+ * are not part of the public surface (Sanity-owned apps set them via
+ * `@ts-expect-error`).
  * @public
  */
-export type DefineAppInput = Omit<z.output<typeof DefineAppInputSchema>, 'applicationType'>
+export type DefineAppInput = Omit<
+  z.output<typeof DefineAppInputSchema>,
+  'applicationType' | 'isSingleton'
+>
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy

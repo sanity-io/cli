@@ -55,6 +55,23 @@ describe('getWorkbench', () => {
     expect(resolved.views).toHaveLength(1)
     expect(resolved.services).toHaveLength(1)
   })
+
+  test('threads the internal isSingleton flag through to the deploy command', () => {
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      // Sanity-owned apps set the hidden `isSingleton` via the same escape hatch as `applicationType`.
+      // @ts-expect-error - isSingleton is excluded from the public DefineAppInput
+      isSingleton: true,
+      name: 'test-app',
+      organizationId: 'org-id',
+      title: 'Test App',
+    })
+    expect(getWorkbench({app} as CliConfig)?.isSingleton).toBe(true)
+  })
+
+  test('leaves isSingleton undefined when the app does not set it', () => {
+    expect(workbench({entry: './src/App.tsx'}).isSingleton).toBeUndefined()
+  })
 })
 
 describe('assertDeployable', () => {

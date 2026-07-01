@@ -48,6 +48,14 @@ describe('parseWorkbenchCliConfig', () => {
     expect((config.app as {applicationType?: string}).applicationType).toBe('media-library')
   })
 
+  test('carries the internal isSingleton flag onto the resolved app', () => {
+    const app = brandedApp({isSingleton: true, name: 'media', title: 'Media'})
+
+    const config = parseWorkbenchCliConfig({app}, APP_DIR)
+
+    expect((config.app as {isSingleton?: boolean}).isSingleton).toBe(true)
+  })
+
   test('rejects an unknown applicationType', () => {
     const app = brandedApp({applicationType: 'Studio', name: 'typo', title: 'Typo'})
 

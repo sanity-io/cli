@@ -19,6 +19,8 @@ export interface ResolvedWorkbenchApp {
   readonly applicationType?: string
   /** SDK app-view entrypoint, when declared. */
   readonly entry?: string
+  /** Internal — marks a Sanity-owned singleton app. */
+  readonly isSingleton?: boolean
 }
 
 /**
@@ -33,6 +35,7 @@ export function resolveWorkbenchApp(
   return {
     applicationType: app.applicationType,
     entry: app.entry,
+    isSingleton: app.isSingleton,
     services: app.services ?? [],
     views: app.views ?? [],
   }
