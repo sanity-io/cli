@@ -1,8 +1,9 @@
-import {type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type UserApplication} from '../../../services/userApplications.js'
 import {
+  checkAppId,
   checkAppTarget,
   checkAutoUpdates,
   checkStudioTarget,
@@ -318,6 +319,39 @@ describe('checkAutoUpdates', () => {
       cliConfig: {deployment: {autoUpdates: true}},
       flags: {} as DeployFlags,
     })
+
+    expect(reporter.results).toHaveLength(0)
+  })
+})
+
+describe('checkAppId', () => {
+  test('both app.id and deployment.appId set is a fail check with a fix', () => {
+    const reporter = createCollectingReporter()
+
+    checkAppId(reporter, {cliConfig: {app: {id: 'old'}, deployment: {appId: 'new'}} as CliConfig})
+
+    expect(reporter.results).toEqual([
+      {
+        message: 'Both `app.id` (deprecated) and `deployment.appId` are set',
+        solution: 'Remove `app.id` from sanity.cli.ts',
+        status: 'fail',
+      },
+    ])
+  })
+
+  test('the deprecated app.id alone warns', () => {
+    const reporter = createCollectingReporter()
+
+    checkAppId(reporter, {cliConfig: {app: {id: 'old'}} as CliConfig})
+
+    expect(reporter.results).toEqual([expect.objectContaining({status: 'warn'})])
+    expect(reporter.results[0]?.message).toContain('deprecated')
+  })
+
+  test('deployment.appId alone records no check', () => {
+    const reporter = createCollectingReporter()
+
+    checkAppId(reporter, {cliConfig: {deployment: {appId: 'new'}} as CliConfig})
 
     expect(reporter.results).toHaveLength(0)
   })

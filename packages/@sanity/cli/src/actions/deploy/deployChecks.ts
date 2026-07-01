@@ -2,6 +2,7 @@ import {type CliConfig, getLocalPackageVersion, type Output} from '@sanity/cli-c
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 
+import {resolveAppIdIssue} from '../../util/appId.js'
 import {
   APP_ID_NOT_FOUND_IN_ORGANIZATION,
   cannotPromptForStudioHost,
@@ -125,6 +126,28 @@ export function checkAutoUpdates(
   }
 
   return enabled
+}
+
+/**
+ * The dry-run form of the `app.id` config check a real deploy runs in
+ * `findUserApplication`: a conflict fails (both `app.id` and `deployment.appId`
+ * set), the deprecated config alone warns.
+ */
+export function checkAppId(reporter: CheckReporter, {cliConfig}: {cliConfig: CliConfig}): void {
+  const issue = resolveAppIdIssue(cliConfig)
+  if (issue === 'conflicting-config') {
+    reporter.report({
+      message: 'Both `app.id` (deprecated) and `deployment.appId` are set',
+      solution: 'Remove `app.id` from sanity.cli.ts',
+      status: 'fail',
+    })
+  } else if (issue === 'deprecated-config') {
+    reporter.report({
+      message: 'The `app.id` config is deprecated',
+      solution: 'Move it to `deployment.appId` in sanity.cli.ts',
+      status: 'warn',
+    })
+  }
 }
 
 export async function checkBuild(

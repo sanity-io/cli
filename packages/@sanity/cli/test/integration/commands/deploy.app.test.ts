@@ -887,6 +887,30 @@ describe('#deploy app', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('a dry run also blocks when app.id and deployment.appId are both set', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    // The dry run must surface the same conflict a real deploy fails on, rather
+    // than reporting the app as deployable.
+    const {error} = await testCommand(DeployCommand, ['--dry-run', '--no-build'], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          ...defaultMocks.cliConfig,
+          app: {
+            id: appId,
+            organizationId,
+          },
+        },
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Deploy blocked')
+  })
+
   test('should show a warning if app.id (deprecated) is used', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd

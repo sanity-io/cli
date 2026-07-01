@@ -1,6 +1,7 @@
+import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {getAppId} from '../appId'
+import {getAppId, resolveAppIdIssue} from '../appId'
 
 const newCliConfig = {
   deployment: {
@@ -31,5 +32,21 @@ describe('getAppId', () => {
       ...oldCliConfig,
     })
     expect(result).toBe('new-id')
+  })
+})
+
+describe('resolveAppIdIssue', () => {
+  test('flags a conflict when both config styles are present', () => {
+    expect(resolveAppIdIssue({...newCliConfig, ...oldCliConfig} as CliConfig)).toBe(
+      'conflicting-config',
+    )
+  })
+
+  test('flags the deprecated config when only app.id is present', () => {
+    expect(resolveAppIdIssue(oldCliConfig as CliConfig)).toBe('deprecated-config')
+  })
+
+  test('returns null for the current config', () => {
+    expect(resolveAppIdIssue(newCliConfig as CliConfig)).toBeNull()
   })
 })
