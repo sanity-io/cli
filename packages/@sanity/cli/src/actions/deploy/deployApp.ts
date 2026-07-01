@@ -20,6 +20,7 @@ import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCor
 import {type CoreAppManifest} from '../manifest/types.js'
 import {createUserApplication} from './createUserApplication.js'
 import {
+  checkAppId,
   checkAppTarget,
   checkAutoUpdates,
   checkBuild,
@@ -148,6 +149,7 @@ async function resolveAppApplication(
   const organizationId = cliConfig.app?.organizationId ?? ''
 
   if (dryRun) {
+    checkAppId(reporter, {cliConfig})
     await checkAppTarget(reporter, {appId: getAppId(cliConfig), organizationId})
     return null
   }
