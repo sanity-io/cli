@@ -9,6 +9,7 @@ import {type DeployCheck} from '../deployChecks.js'
 import {
   type DeploymentFile,
   type DeploymentPlan,
+  deploymentPlanToJson,
   listDeploymentFiles,
   renderDeploymentPlan,
 } from '../deploymentPlan.js'
@@ -46,6 +47,37 @@ const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): Deploy
   checks,
   files,
   type: 'studio',
+})
+
+describe('deploymentPlanToJson', () => {
+  test('projects the plan into a machine-readable shape with a derived verdict and total', () => {
+    const json = deploymentPlanToJson(
+      studioPlan(
+        [
+          {message: 'Project: p1', status: 'pass'},
+          {message: 'No studio hostname configured', status: 'fail'},
+        ],
+        [{path: 'dist/index.html', size: 1_048_576}],
+      ),
+    )
+
+    expect(json).toEqual({
+      checks: [
+        {message: 'Project: p1', status: 'pass'},
+        {message: 'No studio hostname configured', status: 'fail'},
+      ],
+      deployable: false,
+      files: [{path: 'dist/index.html', size: 1_048_576}],
+      totalBytes: 1_048_576,
+      type: 'studio',
+    })
+  })
+
+  test('deployable is true when no check failed', () => {
+    expect(deploymentPlanToJson(studioPlan([{message: 'ok', status: 'pass'}])).deployable).toBe(
+      true,
+    )
+  })
 })
 
 describe('renderDeploymentPlan', () => {

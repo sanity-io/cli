@@ -7,38 +7,82 @@ import {
   createFailFastReporter,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {type DeploymentFile, renderDeploymentPlan} from './deploymentPlan.js'
+import {
+  type DeploymentFile,
+  type DeploymentPlan,
+  deploymentPlanToJson,
+  isDeployable,
+  renderDeploymentPlan,
+} from './deploymentPlan.js'
 import {type DeployAppOptions} from './types.js'
+
+/** What a real deploy produced — the payload `--json` reports. */
+export interface DeployResult {
+  applicationId: string
+  /** Deployed studio URL; `null` for core apps (no hosted URL). */
+  location: string | null
+  type: 'coreApp' | 'studio'
+}
 
 /**
  * The parts of a deploy that differ between core apps and studios. The shared
- * sequence — mode selection, error handling, the dry-run plan — lives in `runDeploy`.
+ * sequence — mode selection, error handling, the dry-run plan, `--json` — lives
+ * in `runDeploy`.
  */
 export interface DeploySpec {
   /** Files a real deploy would upload, listed only for the dry-run plan. */
   listFiles: (options: DeployAppOptions) => Promise<DeploymentFile[]>
   /** The step sequence; every step reports through `reporter`. */
-  run: (options: DeployAppOptions, reporter: CheckReporter) => Promise<void>
+  run: (options: DeployAppOptions, reporter: CheckReporter) => Promise<DeployResult | void>
   type: 'coreApp' | 'studio'
 }
 
 /**
- * Runs a deploy in the mode the flags select. A real deploy fails fast and
- * mutates; `--dry-run` drives the same `run` sequence read-only and renders a
- * plan. The mode lives only in the reporter, so the two can't drift.
+ * Runs a deploy in the mode the flags select: a real deploy fails fast and
+ * mutates, `--dry-run` drives the same `run` sequence read-only and renders a
+ * plan, and `--json` emits the same information as machine-readable JSON.
  */
 export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
+  if (!options.flags.json) {
+    await runHuman(options, spec)
+    return
+  }
+
+  const {output} = options
+  // JSON mode: sub-steps (build, schema upload) print progress straight to
+  // stdout, so route the whole run's stdout to stderr and emit only the payload.
+  const restoreStdout = redirectStdoutToStderr()
+  try {
+    if (options.flags['dry-run']) {
+      const reporter = createCollectingReporter()
+      await spec.run(options, reporter)
+      const plan = {checks: reporter.results, files: await spec.listFiles(options), type: spec.type}
+      restoreStdout()
+      output.log(JSON.stringify(deploymentPlanToJson(plan), null, 2))
+      exitIfBlocked(plan, output)
+      return
+    }
+
+    const result = await spec.run(options, createFailFastReporter(output))
+    restoreStdout()
+    if (result) output.log(JSON.stringify({deployed: true, ...result}, null, 2))
+  } catch (error) {
+    restoreStdout()
+    normalizeDeployError(error, output, spec.type)
+  } finally {
+    restoreStdout()
+  }
+}
+
+async function runHuman(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
   const {output} = options
 
   if (options.flags['dry-run']) {
     const reporter = createCollectingReporter()
     await spec.run(options, reporter)
-    const files = await spec.listFiles(options)
-    renderDeploymentPlan({checks: reporter.results, files, type: spec.type}, output)
-    // Exit like a real (fail-fast) deploy would on the first failing check, so a
-    // script gating on the exit code sees the same status.
-    const failed = reporter.results.find((check) => check.status === 'fail')
-    if (failed) output.error('Deploy blocked by failing checks.', {exit: failed.exitCode ?? 1})
+    const plan = {checks: reporter.results, files: await spec.listFiles(options), type: spec.type}
+    renderDeploymentPlan(plan, output)
+    exitIfBlocked(plan, output)
     return
   }
 
@@ -46,6 +90,25 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
     await spec.run(options, createFailFastReporter(output))
   } catch (error) {
     normalizeDeployError(error, output, spec.type)
+  }
+}
+
+/** Exits like a real (fail-fast) deploy would, on the first failing check's exit code. */
+function exitIfBlocked(plan: DeploymentPlan, output: Output): void {
+  if (isDeployable(plan)) return
+  const failed = plan.checks.find((check) => check.status === 'fail')
+  output.error('Deploy blocked by failing checks.', {exit: failed?.exitCode ?? 1})
+}
+
+/**
+ * Points `process.stdout` at stderr and returns an idempotent restore. Used in
+ * `--json` mode so a sub-step writing to stdout can't corrupt the payload.
+ */
+function redirectStdoutToStderr(): () => void {
+  const original = process.stdout.write.bind(process.stdout)
+  process.stdout.write = process.stderr.write.bind(process.stderr) as typeof process.stdout.write
+  return () => {
+    process.stdout.write = original
   }
 }
 

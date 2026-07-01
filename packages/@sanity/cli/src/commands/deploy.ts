@@ -60,6 +60,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description: 'Register an externally hosted studio',
       exclusive: ['source-maps', 'minify', 'build'],
     }),
+    json: Flags.boolean({
+      char: 'j',
+      default: false,
+      description: 'Output the result as JSON',
+    }),
     minify: Flags.boolean({
       allowNo: true,
       default: true,

@@ -30,7 +30,7 @@ import {
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles} from './deploymentPlan.js'
-import {runDeploy} from './deployRunner.js'
+import {type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
@@ -43,7 +43,10 @@ export function deployApp(options: DeployAppOptions): Promise<void> {
 }
 
 /** Validates the deploy, syncs the title from the manifest, and ships the build. */
-async function runAppDeployment(options: DeployAppOptions, reporter: CheckReporter): Promise<void> {
+async function runAppDeployment(
+  options: DeployAppOptions,
+  reporter: CheckReporter,
+): Promise<DeployResult | void> {
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
   const organizationId = cliConfig.app?.organizationId
@@ -135,6 +138,8 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
   await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
 
   logAppDeployed({application, cliConfig, output})
+
+  return {applicationId: application.id, location: null, type: 'coreApp'}
 }
 
 /**
