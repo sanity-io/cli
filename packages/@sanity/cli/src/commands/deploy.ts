@@ -107,17 +107,20 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
-      // Prompt to delete the directory if it's not empty
-      const shouldProceed =
-        isEmpty ||
-        (await confirm({
-          default: false,
-          message: `"${relativeOutput}" is not empty, do you want to proceed?`,
-        }))
+      // A dry run is non-interactive (a preview / CI gate), so don't block on the
+      // overwrite prompt — the local build still writes to the directory.
+      if (!flags['dry-run']) {
+        const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
+        const shouldProceed =
+          isEmpty ||
+          (await confirm({
+            default: false,
+            message: `"${relativeOutput}" is not empty, do you want to proceed?`,
+          }))
 
-      if (!shouldProceed) {
-        this.output.error('Cancelled.', {exit: 1})
+        if (!shouldProceed) {
+          this.output.error('Cancelled.', {exit: 1})
+        }
       }
 
       this.output.log(`Building to ${relativeOutput}\n`)
