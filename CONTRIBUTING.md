@@ -254,7 +254,7 @@ vi.mock(import('../dependency-that-source-under-test-relies-on.ts'), () => ({
 // implementation. Note that calling `importOriginal` will pull in the entire module, possibly bloating the import graph;
 // use sparingly and judiciously to keep unit tests fast. `pnpm test:unit path/to/your/test/file.test.ts` will print out a
 // summary of import path durations during test execution and the slowest modules contributing to slow import times.
-vi.mock(import('../dependency-that-source-under-test-relies-on.ts'), (importOriginal) => async {
+vi.mock(import('../other-dependency-that-source-under-test-relies-on.ts'), (importOriginal) => async {
   const actual = await importOriginal()
   return {
     ...actual,
