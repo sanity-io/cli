@@ -223,6 +223,7 @@ The three test types exist on a continuum: from fastest/cheapest/most-coupled-to
 - **New code**: Maximum coverage
 - **Modified code**: Maintain or improve existing coverage
 - Run `pnpm test:coverage` to get a per-file test coverage report printed to your terminal. This command accepts one or path parameters to test files in order to more granularly report test coverage.
+- Just because a test achieves 100% code coverage does not, by itself, mean the test is good. 100% code coverage means every logical branch of a unit was exercised - but _what is asserted on_ in the test is just as important as what code is exercised. Spend some time to reason through what kinds of assertions achieve the goals of the test.
 
 ### Writing Tests
 
@@ -243,8 +244,8 @@ import {thingBeingTested} from '../source-under-test.ts'
 const mockDependencyMethod = vi.hoisted(() => vi.fn())
 const mockOtherDependencyMethod = vi.hoisted(() => vi.fn())
 
-// Module imported in ../source-under-test.ts is mocked. Not ethat `vi.mock` and `vi.hoisted` are executed _before_ any
-// static imports by vitest as part of its transpilation, which is these mocks are in place by the time `thingBeingTested`
+// Module imported in ../source-under-test.ts is mocked. Note that `vi.mock` and `vi.hoisted` are executed _before_ any
+// static imports by vitest as part of its transpilation, meaning these mocks are in place by the time `thingBeingTested`
 // is imported.
 vi.mock(import('../dependency-that-source-under-test-relies-on.ts'), () => ({
   dependencyMethod: mockDependencyMethod,
@@ -268,7 +269,7 @@ describe('thingBeingTested', () => {
   })
 
   test('success scenario', async () => {
-    // 1. Mock dependencies
+    // 1. Set up mock behaviour
     mockDependencyMethod.mockResolvedValue({data: 'some mocked data'})
     mockOtherDependencyMethod.mockReturnValue({data: 'some other mocked data'})
 
@@ -281,8 +282,10 @@ describe('thingBeingTested', () => {
   })
 
   test('error scenario', async () => {
+    // 1. Set up mock behaviour - in this case, we create a fake failure mode
     mockDependencyMethod.mockRejectedValue(new Error('fail'))
 
+    // 2. Execute and assert on the module-under-test throwing an exception
     await expect(thingBeingTested()).rejects.toThrow('fail')
   })
 })
