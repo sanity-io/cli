@@ -61,11 +61,19 @@ describe('buildServerConfig', () => {
     })
   })
 
-  test('VS Code config includes Authorization header with token', () => {
-    const config = EDITOR_CONFIGS['VS Code'].buildServerConfig(testToken)
+  test('VS Code config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS['VS Code'].buildServerConfig()
 
     expect(config).toStrictEqual({
-      headers: {Authorization: `Bearer ${testToken}`},
+      type: 'http',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('VS Code Insiders config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS['VS Code Insiders'].buildServerConfig()
+
+    expect(config).toStrictEqual({
       type: 'http',
       url: 'https://mcp.sanity.io',
     })
@@ -90,6 +98,15 @@ describe('buildServerConfig', () => {
     })
   })
 
+  test('OpenCode config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS.OpenCode.buildServerConfig()
+
+    expect(config).toStrictEqual({
+      type: 'remote',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
   test('all editors except OAuth-only ones include auth credentials', () => {
     const editorsWithToken = [
       'Antigravity',
@@ -98,9 +115,6 @@ describe('buildServerConfig', () => {
       'Gemini CLI',
       'GitHub Copilot CLI',
       'MCPorter',
-      'OpenCode',
-      'VS Code',
-      'VS Code Insiders',
       'Zed',
     ] as const
 

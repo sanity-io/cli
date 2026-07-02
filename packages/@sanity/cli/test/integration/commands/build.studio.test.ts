@@ -2,10 +2,8 @@ import {readdir, readFile, writeFile} from 'node:fs/promises'
 import {platform} from 'node:os'
 import {join} from 'node:path'
 
-import {type CliConfig} from '@sanity/cli-core'
 import {testCommand, testFixture} from '@sanity/cli-test'
-import {unstable_defineApp} from '@sanity/workbench-cli'
-import {getWorkbench} from '@sanity/workbench-cli/deploy'
+import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {BuildCommand} from '../../../src/commands/build.js'
@@ -127,23 +125,15 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       const assetFiles = await readdir(join(cwd, 'dist', 'assets'))
       expect(assetFiles.some((f) => /^remote-entry-.+\.js$/.test(f))).toBe(true)
 
-      // The build output must satisfy the deploy gate: `sanity deploy` runs the
-      // workbench `checkBuiltOutput` (not the static-SPA check) and ships only if
-      // it finds the federation manifest. Asserting it against the real dist here
-      // closes the build→deploy seam that deploy.studio.test.ts can't — it mocks
-      // the build away.
-      const workbench = getWorkbench({
-        app: unstable_defineApp({
-          name: 'federated-studio',
-          organizationId: 'oSyH1iET5',
-          title: 'Federated Studio',
-        }),
-      } as CliConfig)
-      expect(workbench).not.toBeNull()
-      await expect(workbench!.checkBuiltOutput(join(cwd, 'dist'))).resolves.toBeUndefined()
+      // The build output must satisfy the deploy gate: `sanity deploy` runs
+      // `checkBuiltOutput` (not the static-SPA check) and ships only if it finds
+      // the federation manifest. Asserting it against the real dist here closes
+      // the build→deploy seam that deploy.studio.test.ts can't — it mocks the
+      // build away.
+      await expect(checkBuiltOutput(join(cwd, 'dist'))).resolves.toBeUndefined()
       // And the gate actually gates — a directory without the federation manifest
       // is rejected, so the pass above isn't `checkBuiltOutput` silently no-opping.
-      await expect(workbench!.checkBuiltOutput(cwd)).rejects.toThrow(/mf-manifest|federation/i)
+      await expect(checkBuiltOutput(cwd)).rejects.toThrow(/mf-manifest|federation/i)
     },
   )
 

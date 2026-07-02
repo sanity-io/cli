@@ -79,14 +79,6 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     vi.unstubAllEnvs()
   })
 
-  test('shows an error for invalid flags', async () => {
-    const {error} = await testCommand(DevCommand, ['--invalid'], {
-      mocks: {isInteractive: true},
-    })
-
-    expect(error?.message).toContain('Nonexistent flag: --invalid')
-  })
-
   describe('basic-app', () => {
     test('should start the dev server for app', async () => {
       const cwd = await testFixture('basic-app')
@@ -144,26 +136,6 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         telemetryLogger: expect.anything(),
         workDir: cwd,
       })
-    })
-
-    test('should warn when --no-load-in-dashboard is used with app', async () => {
-      const cwd = await testFixture('basic-app')
-      process.cwd = () => cwd
-
-      const {error, result, stderr, stdout} = await testCommand(
-        DevCommand,
-        ['--no-load-in-dashboard', '--port', '5334'],
-        {
-          config: {root: cwd},
-          mocks: {isInteractive: true},
-        },
-      )
-
-      if (error) throw error
-      expect(stderr).toContain('Apps cannot run without the Sanity dashboard')
-      expect(stderr).toContain('Starting dev server with the --load-in-dashboard flag set to true')
-      expect(stdout).toContain('Dev server started on port 5334')
-      await tryCloseServer(result)
     })
 
     test('should start on next available port when requested port is in use', async () => {

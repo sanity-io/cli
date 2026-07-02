@@ -22,10 +22,10 @@ const viewDeploymentPayloadSchema = z.object({
   views: z.array(viewRecordSchema),
 })
 
-type ViewDeploymentPayload = z.infer<typeof viewDeploymentPayloadSchema>
+export type ViewDeploymentPayload = z.infer<typeof viewDeploymentPayloadSchema>
 
 /**
- * Validate an app's declared views into the application-service payload.
+ * Validates an app's declared views into the application-service payload.
  * Throws (via Zod) when a view declaration is malformed.
  */
 export function buildViewDeploymentPayload(input: {

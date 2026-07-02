@@ -2,91 +2,96 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
-import {CLIError} from '@oclif/core/errors'
-import {exitCodes, getLocalPackageVersion} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {getWorkbench} from '@sanity/workbench-cli/deploy'
 import {pack} from 'tar-fs'
 
-import {createDeployment, updateUserApplication} from '../../services/userApplications.js'
+import {
+  createDeployment,
+  updateUserApplication,
+  type UserApplication,
+} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
-import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
+import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildApp} from '../build/buildApp.js'
-import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
-import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
+import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
-import {checkDir} from './checkDir.js'
-import {createUserApplicationForApp} from './createUserApplicationForApp.js'
+import {createUserApplication} from './createUserApplication.js'
+import {
+  checkAutoUpdates,
+  checkBuild,
+  checkPackageVersion,
+  type CheckReporter,
+  verifyOutputDir,
+} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {findUserApplicationForApp} from './findUserApplicationForApp.js'
+import {runDeploy} from './deployRunner.js'
+import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
-import {buildViewDeploymentPayload} from './viewDeployment.js'
+
+export function deployApp(options: DeployAppOptions): Promise<void> {
+  return runDeploy(options, {run: runAppDeployment, type: 'coreApp'})
+}
 
 /**
- * Deploy a Sanity application.
- *
- * @internal
+ * Validates the deploy, syncs the title from the manifest, and ships the build.
+ * Every step reports through `reporter`, and the first failure exits — so
+ * reaching any later step means the earlier ones passed.
  */
-export async function deployApp(options: DeployAppOptions) {
-  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+async function runAppDeployment(options: DeployAppOptions, reporter: CheckReporter): Promise<void> {
+  const {cliConfig, flags, output, sourceDir} = options
+  const workDir = options.projectRoot.directory
+  const organizationId = cliConfig.app?.organizationId
   const workbench = getWorkbench(cliConfig)
 
-  const workDir = projectRoot.directory
-
-  const organizationId = cliConfig.app?.organizationId
-  const appId = getAppId(cliConfig)
-  const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
-  const installedSdkVersion = await getLocalPackageVersion('@sanity/sdk-react', workDir)
-
-  if (!installedSdkVersion) {
-    output.error(`Failed to find installed @sanity/sdk-react version`, {exit: 1})
-    return
-  }
-
-  if (!organizationId) {
-    output.error(NO_ORGANIZATION_ID, {exit: 1})
-    return
-  }
-
-  if (flags.external) {
-    output.error('Deploying an app to an external host is not supported.', {exit: 1})
-  }
-
-  // Fail before any prompts or API calls when the app declares nothing to
-  // expose.
+  // A federated app with no entry, view or service would ship a remote with
+  // nothing to load — reported first so it fails before any prompt or API call.
   if (workbench) {
     try {
       workbench.assertDeployable()
     } catch (err) {
-      output.error(getErrorMessage(err), {exit: exitCodes.USAGE_ERROR})
-      return
+      reporter.report({
+        exitCode: exitCodes.USAGE_ERROR,
+        message: getErrorMessage(err),
+        solution: 'Declare at least one entry, view, or service in the app',
+        status: 'fail',
+      })
     }
   }
 
-  let spin = spinner('Verifying local content...')
+  const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
-  try {
-    let userApplication = await findUserApplicationForApp({
-      cliConfig,
-      organizationId,
-      output,
+  const version = await checkPackageVersion(reporter, {
+    moduleName: '@sanity/sdk-react',
+    workDir,
+  })
+
+  reporter.report(
+    organizationId
+      ? {message: `Organization: ${organizationId}`, status: 'pass'}
+      : {
+          message: NO_ORGANIZATION_ID,
+          solution: 'Add `app.organizationId` to sanity.cli.ts',
+          status: 'fail',
+        },
+  )
+
+  let application: UserApplication | null = null
+  if (flags.external) {
+    reporter.report({
+      message: EXTERNAL_APP_NOT_SUPPORTED,
+      solution: 'Remove the --external flag — apps deploy to Sanity hosting',
+      status: 'fail',
     })
+  } else {
+    application = await resolveAppApplication(options)
+  }
 
-    deployDebug(`User application found`, userApplication)
-
-    if (!userApplication) {
-      deployDebug(`No user application found. Creating a new one`)
-
-      userApplication = await createUserApplicationForApp(organizationId)
-      deployDebug(`User application created`, userApplication)
-    }
-
-    // Always build the project, unless --no-build is passed
-    const shouldBuild = flags.build
-    if (shouldBuild) {
-      deployDebug(`Building app`)
-      await buildApp({
+  await checkBuild(reporter, {
+    build: () =>
+      buildApp({
         autoUpdatesEnabled: isAutoUpdating,
         calledFromDeploy: true,
         cliConfig,
@@ -94,111 +99,146 @@ export async function deployApp(options: DeployAppOptions) {
         outDir: sourceDir,
         output,
         workDir,
-      })
-    }
+      }),
+    skipReason: flags.build
+      ? undefined
+      : 'Build skipped (--no-build) — validating existing output directory',
+    successMessage: 'App built',
+  })
 
-    // Ensure that the directory exists, is a directory and seems to have valid content
-    spin = spin.start()
-    try {
-      await (workbench ? workbench.checkBuiltOutput(sourceDir) : checkDir(sourceDir))
-      spin.succeed()
-    } catch (err) {
-      spin.fail()
-      deployDebug('Error checking directory', err)
-      output.error(getErrorMessage(err), {exit: 1})
-      return
-    }
+  await verifyOutputDir({isWorkbenchApp: workbench !== null, reporter, sourceDir})
 
-    // Create a tarball of the given directory
-    const parentDir = dirname(sourceDir)
-    const base = basename(sourceDir)
-    const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
-    let manifest: CoreAppManifest | undefined
-    try {
-      manifest = await extractCoreAppManifest({workDir})
-    } catch (err) {
-      deployDebug('Error extracting app manifest', err)
-      const message = getErrorMessage(err)
-      // manifests aren't strictly essential, so continue deploy
-      output.warn(`Error extracting app manifest: ${message}`)
-    }
+  // Manifests aren't strictly essential, so a failure warns and continues
+  let manifest: CoreAppManifest | undefined
+  try {
+    manifest = await extractCoreAppManifest({workDir})
+  } catch (err) {
+    deployDebug('Error extracting app manifest', err)
+    reporter.report({
+      message: `Error extracting app manifest: ${getErrorMessage(err)}`,
+      status: 'warn',
+    })
+  }
 
-    // Sync app title from manifest when it has changed (Brett user-applications)
-    if (manifest?.title !== undefined && manifest.title !== userApplication.title) {
-      deployDebug('Updating application title from manifest', {
-        from: userApplication.title,
-        to: manifest.title,
-      })
-      const existing = userApplication.title
-      output.log(
-        existing
-          ? `Updating title from "${existing}" to "${manifest.title}"`
-          : `Setting application title to "${manifest.title}"`,
-      )
-      spin = spinner(`Updating application title`).start()
-      try {
-        userApplication = await updateUserApplication({
-          applicationId: userApplication.id,
-          appType: 'coreApp',
-          body: {title: manifest.title},
-        })
-        spin.succeed()
-      } catch (err) {
-        spin.fail()
-        const message = getErrorMessage(err)
-        deployDebug('Error updating application title', {message})
-        output.warn(`Error updating application title: ${message}`)
-      }
-    }
+  // A real deploy has already exited if anything failed; landing here without a
+  // resolved application or version means the deploy target was never resolved.
+  if (!application || !version) return
 
-    // Register the app's declared views with the application service. That
-    // service doesn't exist yet, so validate the payload and log it (no store);
-    // a malformed view declaration fails the deploy before we ship the bundle.
-    // `views` lives on the branded `unstable_defineApp` result, not the legacy
-    // `app` config object.
-    const declaredViews = workbench?.views ?? []
-    if (declaredViews.length > 0) {
-      try {
-        const payload = buildViewDeploymentPayload({
-          applicationId: userApplication.id,
-          views: declaredViews,
-        })
-        output.log(
-          `Validated ${payload.views.length} view(s) for the application service (not yet persisted):`,
-        )
-        output.log(JSON.stringify(payload, null, 2))
-        deployDebug('View deployment payload', payload)
-      } catch (err) {
-        const message = getErrorMessage(err)
-        output.error(`Invalid view declaration: ${message}`, {exit: 1})
-        return
-      }
-    }
+  application = await syncApplicationTitle({application, manifest, output})
+  await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
 
-    spin = spinner('Deploying...').start()
+  logAppDeployed({application, cliConfig, output})
+}
+
+/** Finds the application a deploy targets, creating one when none is configured. */
+async function resolveAppApplication(options: DeployAppOptions): Promise<UserApplication | null> {
+  const {cliConfig, flags, output} = options
+  const organizationId = cliConfig.app?.organizationId ?? ''
+
+  let application = await findUserApplication({
+    cliConfig,
+    organizationId,
+    output,
+    unattended: !!flags.yes,
+  })
+  deployDebug('User application found', application)
+
+  if (!application) {
+    deployDebug('No user application found. Creating a new one')
+    application = await createUserApplication(organizationId)
+    deployDebug('User application created', application)
+  }
+
+  return application
+}
+
+/** Syncs the application title from the manifest when it has changed. */
+async function syncApplicationTitle({
+  application,
+  manifest,
+  output,
+}: {
+  application: UserApplication
+  manifest: CoreAppManifest | undefined
+  output: DeployAppOptions['output']
+}): Promise<UserApplication> {
+  const titleUpdate = resolveTitleUpdate(manifest, application)
+  if (!titleUpdate) return application
+
+  deployDebug('Updating application title from manifest', titleUpdate)
+  output.log(
+    titleUpdate.from
+      ? `Updating title from "${titleUpdate.from}" to "${titleUpdate.to}"`
+      : `Setting application title to "${titleUpdate.to}"`,
+  )
+  const spin = spinner('Updating application title').start()
+  try {
+    const updated = await updateUserApplication({
+      applicationId: application.id,
+      appType: 'coreApp',
+      body: {title: titleUpdate.to},
+    })
+    spin.succeed()
+    return updated
+  } catch (err) {
+    spin.fail()
+    const message = getErrorMessage(err)
+    deployDebug('Error updating application title', {message})
+    output.warn(`Error updating application title: ${message}`)
+    return application
+  }
+}
+
+async function shipAppDeployment({
+  application,
+  isAutoUpdating,
+  manifest,
+  sourceDir,
+  version,
+}: {
+  application: UserApplication
+  isAutoUpdating: boolean
+  manifest: CoreAppManifest | undefined
+  sourceDir: string
+  version: string
+}): Promise<void> {
+  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+
+  const spin = spinner('Deploying...').start()
+  try {
     await createDeployment({
-      applicationId: userApplication.id,
+      applicationId: application.id,
       isApp: true,
       isAutoUpdating,
       manifest,
       tarball,
-      version: installedSdkVersion,
+      version,
     })
+  } catch (error) {
+    spin.clear()
+    throw error
+  }
+  spin.succeed()
+}
 
-    spin.succeed()
+function logAppDeployed({
+  application,
+  cliConfig,
+  output,
+}: {
+  application: UserApplication
+  cliConfig: DeployAppOptions['cliConfig']
+  output: DeployAppOptions['output']
+}): void {
+  output.log(`\n🚀 ${styleText('bold', 'Success!')} Application deployed`)
 
-    // And let the user know we're done
-    output.log(`\n🚀 ${styleText('bold', 'Success!')} Application deployed`)
+  if (getAppId(cliConfig)) return
 
-    if (!appId) {
-      output.log(`\n════ ${styleText('bold', 'Next step:')} ════`)
-      output.log(
-        styleText(
-          'bold',
-          '\nAdd the deployment.appId to your sanity.cli.js or sanity.cli.ts file:',
-        ),
-      )
-      output.log(`
+  output.log(`\n════ ${styleText('bold', 'Next step:')} ════`)
+  output.log(
+    styleText('bold', '\nAdd the deployment.appId to your sanity.cli.js or sanity.cli.ts file:'),
+  )
+  output.log(`
 ${styleText(
   'dim',
   `app: {
@@ -208,25 +248,7 @@ ${styleText(
 ${styleText(
   ['bold', 'green'],
   `deployment: {
-  appId: '${userApplication.id}',
+  appId: '${application.id}',
 }\n`,
 )}`)
-    }
-  } catch (error) {
-    spin.clear()
-    // Don't throw generic error if user cancels
-    if (error.name === 'ExitPromptError') {
-      output.error('Deployment cancelled by user', {exit: 1})
-      return
-    }
-    // If the error is a CLIError, we can just output the message & error options (if any), while ensuring we exit
-    if (error instanceof CLIError) {
-      const {message, ...errorOptions} = error
-      output.error(message, {...errorOptions, exit: 1})
-      return
-    }
-
-    deployDebug('Error deploying application', error)
-    output.error(`Error deploying application: ${error}`, {exit: 1})
-  }
 }

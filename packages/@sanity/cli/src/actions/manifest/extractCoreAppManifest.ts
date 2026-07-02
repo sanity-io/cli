@@ -12,6 +12,22 @@ interface ExtractCoreAppManifestOptions {
   workDir: string
 }
 
+/**
+ * The title change a deploy would sync from the manifest to the user
+ * application, or null when the titles already match (or none is set).
+ *
+ * @internal
+ */
+export function resolveTitleUpdate(
+  manifest: CoreAppManifest | undefined,
+  application: {title: string | null},
+): {from: string | null; to: string} | null {
+  if (manifest?.title === undefined || manifest.title === application.title) {
+    return null
+  }
+  return {from: application.title, to: manifest.title}
+}
+
 const sanitizeIconPath = new URL('sanitizeIcon.js', import.meta.url).href
 
 /**

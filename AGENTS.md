@@ -5,7 +5,7 @@ Read and respect rules and conventions from CONTRIBUTING.md. Additionally:
 All commands are run from the root of the repo.
 
 - `pnpm test` - run all unit tests
-- `pnpm test <test-file>` - run specific test file. Example: `pnpm test packages/@sanity/cli/src/commands/documents/__tests__/get.test.ts`
+- `pnpm test <test-file>` - run specific test file(s); the arg is a path substring match. Example: `pnpm test documents/__tests__/get`
 - `pnpm test --coverage` - run tests with coverage report (output in `coverage/`)
 - `pnpm check:types` - TypeScript type checking
 - `pnpm check:lint` - ESLint + Prettier
@@ -117,10 +117,15 @@ Then run one of:
 pnpm test --changed --bail=1
 
 # Scoped to package
-pnpm test --filter=@sanity/cli --bail=1
+pnpm test --project=@sanity/cli --bail=1
 
-# Single file (when debugging a specific failure)
-pnpm test packages/@sanity/cli/src/hooks/commandNotFound/__tests__/topicAliases.test.ts
+# Single file (when debugging a specific failure) — the file arg is a substring
+# match against the path, so a unique fragment is enough
+pnpm test topicAliases
+
+# Single test within a file: by name (-t, a regex) or by line number (needs full path)
+pnpm test topicAliases -t "rewrites \"dataset list\""
+pnpm test packages/@sanity/cli/src/hooks/commandNotFound/__tests__/topicAliases.test.ts:23
 
 # Full suite (avoid — only for final validation before committing)
 pnpm test --bail=3
@@ -155,7 +160,7 @@ jq '{total: .numTotalTests, passed: .numPassedTests, failed: .numFailedTests, fi
 4. Read the failing test file and relevant source to understand the failure
 5. Fix the code
 6. Re-run ONLY the previously-failing files
-7. Once those pass, run the full affected package: `pnpm test --filter=<pkg>`
+7. Once those pass, run the full affected package: `pnpm test --project=<pkg>`
 8. Full suite only as final validation before committing
 
 # Debugging
@@ -170,6 +175,6 @@ jq '{total: .numTotalTests, passed: .numPassedTests, failed: .numFailedTests, fi
 
 - The update script runs `pnpm install --frozen-lockfile` and `pnpm build:cli` on startup. Dependencies and build artifacts should already be up to date when a session begins.
 - The test results JSON file requires `CLAUDECODE=1` (or `CODEX_CI=1`). Set `export CLAUDECODE=1` before running tests so the `$TEST_RESULTS` / `jq` workflow described above works as expected.
-- The full test suite takes ~10 minutes. Prefer scoped runs (`--changed`, `--filter`, or single files) during development. Before assuming a test failure is caused by your changes, check whether the same test also fails on `origin/main`.
+- The full test suite takes ~10 minutes. Prefer scoped runs (`--changed`, `--project`, or single files) during development. Before assuming a test failure is caused by your changes, check whether the same test also fails on `origin/main`.
 - CLI commands that hit the Sanity API (e.g. `documents query`, `login`) require authentication. Use fixture directories (e.g. `fixtures/basic-studio`) to run commands like `npx sanity debug`, `npx sanity doctor`, or `npx sanity versions` without authentication.
 - `pnpm install` may warn about ignored build scripts for `sharp` and `unrs-resolver`. These are safe to ignore; the `pnpm.onlyBuiltDependencies` allowlist in `package.json` already covers the required native modules (`@swc/core`, `esbuild`, `node-pty`).
