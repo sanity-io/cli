@@ -942,8 +942,9 @@ describe('#deploy app', () => {
       },
     })
 
-    // oclif wraps the warning at terminal width; flatten before asserting the full copy
-    const flatStderr = stderr.replaceAll(/\s*\n\s*›?\s*/g, ' ')
+    // oclif wraps the warning at terminal width and prefixes continuation lines
+    // (`›` on Unix, `»` on Windows); flatten before asserting the full copy
+    const flatStderr = stderr.replaceAll(/\s*\n\s*[›»]?\s*/g, ' ')
     expect(flatStderr).toContain(
       'The `app.id` config is deprecated: Move it to `deployment.appId` in sanity.cli.ts',
     )
