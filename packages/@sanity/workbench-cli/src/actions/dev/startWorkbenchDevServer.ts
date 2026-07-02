@@ -4,7 +4,7 @@ import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from '
 import {z} from 'zod/mini'
 
 import {isWorkbenchApp} from '../../defineApp.js'
-import {createInterfacesTracker} from './interfaceSetId.js'
+import {createExposesTracker} from './exposesSetId.js'
 import {
   acquireWorkbenchLock,
   type DevServerManifest,
@@ -19,15 +19,18 @@ const devDebug = subdebug('dev')
 const noop = async () => {}
 
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
-  applications: servers.map(({host, id, interfaces, manifest, port, projectId, type}) => ({
-    host,
-    id,
-    interfaces,
-    manifest,
-    port,
-    projectId,
-    type,
-  })),
+  applications: servers.map(
+    ({host, id, installationConfig, interfaces, manifest, port, projectId, type}) => ({
+      host,
+      id,
+      installationConfig,
+      interfaces,
+      manifest,
+      port,
+      projectId,
+      type,
+    }),
+  ),
 })
 
 /**
@@ -44,7 +47,7 @@ function attachViteDevServerBridge(server: ViteDevServer): () => void {
     )
   })
 
-  const setTracker = createInterfacesTracker()
+  const setTracker = createExposesTracker()
   const registryWatcher = watchRegistry((servers) => {
     if (setTracker.hasChanged(servers)) {
       server.ws.send({type: 'full-reload'})

@@ -183,6 +183,56 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(dupes.error?.issues[0]?.message).toMatch(/unique/)
   })
 
+  test('accepts an installation config and isSingleton', () => {
+    const parsed = DefineAppInputSchema.parse({
+      installationConfig: {
+        appType: 'media-library',
+        fields: [
+          {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+        ],
+      },
+      isSingleton: true,
+      name: 'media-library',
+      organizationId: 'org-1',
+      title: 'Media Library',
+    })
+    expect(parsed.isSingleton).toBe(true)
+    expect(parsed.installationConfig).toEqual({
+      appType: 'media-library',
+      fields: [
+        {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+      ],
+    })
+  })
+
+  test('rejects an installation config without fields', () => {
+    expect(
+      DefineAppInputSchema.safeParse({
+        installationConfig: {appType: 'media-library'},
+        name: 'media-library',
+        organizationId: 'org-1',
+        title: 'Media Library',
+      }).success,
+    ).toBe(false)
+  })
+
+  test('rejects duplicate field names within an installation config', () => {
+    const dupes = DefineAppInputSchema.safeParse({
+      installationConfig: {
+        appType: 'media-library',
+        fields: [
+          {name: 'description', src: './src/a.ts', title: 'A'},
+          {name: 'description', src: './src/b.ts', title: 'B'},
+        ],
+      },
+      name: 'media-library',
+      organizationId: 'org-1',
+      title: 'Media Library',
+    })
+    expect(dupes.success).toBe(false)
+    expect(dupes.error?.issues[0]?.message).toMatch(/unique/)
+  })
+
   test('rejects `entry` on a studio with a not-yet-implemented error', () => {
     const result = DefineAppInputSchema.safeParse({
       applicationType: 'studio',

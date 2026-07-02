@@ -62,7 +62,9 @@ export function getDevServerConfig({
     // The app's navigable entry. A branded app that omits `entry` has no app
     // view: the runtime/federation skip the `./App` render path entirely.
     entry: app?.entry,
-    exposes: isWorkbenchApp(app) ? {services: app.services, views: app.views} : undefined,
+    exposes: isWorkbenchApp(app)
+      ? {installationConfig: app.installationConfig, services: app.services, views: app.views}
+      : undefined,
     // `devAction` passes an explicit port when a running workbench claimed the
     // configured one; otherwise the shared resolution stands.
     httpPort: httpPort ?? baseConfig.httpPort,

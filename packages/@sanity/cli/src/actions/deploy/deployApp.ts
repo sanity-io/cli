@@ -32,6 +32,7 @@ import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles} from './deploymentPlan.js'
 import {runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
+import {buildInstallationConfigDeploymentPayload} from './installationConfigDeployment.js'
 import {type DeployAppOptions} from './types.js'
 
 export function deployApp(options: DeployAppOptions): Promise<void> {
@@ -134,6 +135,19 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
   if (!application || !version) return
 
   application = await syncApplicationTitle({application, manifest, output})
+
+  // The installation-config endpoint isn't wired yet: validate and log only.
+  // A malformed config throws and fails the deploy before we ship.
+  if (workbench?.installationConfig) {
+    const payload = buildInstallationConfigDeploymentPayload({
+      applicationId: application.id,
+      installationConfig: workbench.installationConfig,
+    })
+    output.log('Validated the installation config (not yet persisted):')
+    output.log(JSON.stringify(payload, null, 2))
+    deployDebug('Installation config deployment payload', payload)
+  }
+
   await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
 
   logAppDeployed({application, cliConfig, output})

@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {deriveInterfaces} from '../deriveInterfaces.js'
+import {deriveInstallationConfig, deriveInterfaces} from '../deriveInterfaces.js'
 import {workbenchApp} from './devTestHelpers.js'
 
 describe('deriveInterfaces', () => {
@@ -53,6 +53,20 @@ describe('deriveInterfaces', () => {
     ])
   })
 
+  test('does not put the installation config in the interface set', () => {
+    const app = workbenchApp({
+      installationConfig: {
+        appType: 'media-library',
+        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+      },
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
+    })
+    // only the panel — the config rides deriveInstallationConfig, not interfaces
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
+    ])
+  })
+
   test('rejects a studio that declares entry', () => {
     const app = workbenchApp({entry: './src/App.tsx'})
     expect(() => deriveInterfaces(app, {isApp: false})).toThrow(
@@ -65,5 +79,50 @@ describe('deriveInterfaces', () => {
     expect(deriveInterfaces(app, {isApp: false})).toEqual([
       {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
     ])
+  })
+})
+
+describe('deriveInstallationConfig', () => {
+  test('returns undefined for a non-branded app', () => {
+    expect(deriveInstallationConfig({title: 'Plain'} as CliConfig['app'])).toBeUndefined()
+    expect(deriveInstallationConfig(undefined)).toBeUndefined()
+  })
+
+  test('undefined for an app with no installation config', () => {
+    expect(
+      deriveInstallationConfig(
+        workbenchApp({views: [{name: 'feed', src: './f.tsx', type: 'panel'}]}),
+      ),
+    ).toBeUndefined()
+  })
+
+  test('forwards the serializable config on the wire (schema values load from the module)', () => {
+    const app = workbenchApp({
+      installationConfig: {
+        appType: 'media-library',
+        fields: [
+          {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+          {name: 'language', src: './src/language.ts', title: 'Language'},
+        ],
+      },
+    })
+    expect(deriveInstallationConfig(app)).toEqual({
+      appType: 'media-library',
+      fields: [
+        {name: 'description', public: true, title: 'Description'},
+        {name: 'language', public: undefined, title: 'Language'},
+      ],
+    })
+  })
+
+  test("forwards the config's appType discriminator (assigns the singleton, no app id)", () => {
+    const app = workbenchApp({
+      applicationType: 'media-library',
+      installationConfig: {
+        appType: 'media-library',
+        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+      },
+    })
+    expect(deriveInstallationConfig(app)?.appType).toBe('media-library')
   })
 })

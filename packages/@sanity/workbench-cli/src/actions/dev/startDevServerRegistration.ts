@@ -1,8 +1,9 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
-import {deriveInterfaces} from './deriveInterfaces.js'
-import {trackInterfaceSet} from './interfaceSetId.js'
+import {isWorkbenchApp} from '../../defineApp.js'
+import {deriveInstallationConfig, deriveInterfaces} from './deriveInterfaces.js'
+import {trackExposesSet} from './exposesSetId.js'
 import {type DevServerManifest, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
@@ -63,34 +64,50 @@ export async function startDevServerRegistration(
   const {host: appHost, port: appPort} = serverAddress(server)
 
   // Forwarded alongside (not inside) the manifest so the workbench renders local
-  // panels/workers without a deploy; the watcher re-derives them on each edit.
+  // panels/workers and reads the config without a deploy.
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
+  const installationConfig = deriveInstallationConfig(cliConfig.app)
+
+  // A singleton registers under its own type — it exists once, so the workbench
+  // routes it by type rather than app id.
+  const app = cliConfig.app
+  const isSingleton = isWorkbenchApp(app) && app.isSingleton === true
 
   const registration = registerDevServer({
     host: appHost,
     id: appId,
+    installationConfig,
     interfaces,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
-    type: isApp ? 'coreApp' : 'studio',
+    type: isSingleton ? 'media-library' : isApp ? 'coreApp' : 'studio',
     workDir,
   })
 
-  const interfaceSet = trackInterfaceSet(interfaces)
+  const exposesSet = trackExposesSet({installationConfig, interfaces})
 
   const watcher = await startDevManifestWatcher({
-    // Re-derive interfaces every pass (don't omit): the registry patch is a
-    // shallow merge, so omitting would wipe the registered set.
-    extract: async (params) => ({
-      interfaces: deriveInterfaces((await getCliConfigUncached(params.workDir)).app, {isApp}),
-      manifest: await extractManifest(params),
-    }),
+    // Re-derive every pass (don't omit): the registry patch is a shallow merge,
+    // so omitting would wipe the registered set.
+    extract: async (params) => {
+      const app = (await getCliConfigUncached(params.workDir)).app
+      return {
+        installationConfig: deriveInstallationConfig(app),
+        interfaces: deriveInterfaces(app, {isApp}),
+        manifest: await extractManifest(params),
+      }
+    },
     // A studio's root resolves to `sanity.config.*` but its interfaces live in
     // `sanity.cli.*` — watch that too. Apps already root at `sanity.cli.*`.
     extraWatchFilenames: isApp ? undefined : ['sanity.cli.js', 'sanity.cli.ts'],
     output,
     update: async (patch) => {
-      if (!interfaceSet.changed(patch.interfaces)) {
+      if (
+        !exposesSet.changed({
+          installationConfig: patch.installationConfig,
+          interfaces: patch.interfaces,
+        })
+      ) {
         registration.update(patch)
         return
       }
@@ -98,7 +115,10 @@ export async function startDevServerRegistration(
       // page, which must re-fetch a remote that already exposes the new interface.
       const rebuiltServer = await onInterfaceSetChange?.()
       // Commit only after a successful rebuild, so a thrown one retries next pass.
-      interfaceSet.commit(patch.interfaces)
+      exposesSet.commit({
+        installationConfig: patch.installationConfig,
+        interfaces: patch.interfaces,
+      })
       // The recreated server can bind a different port (non-strict ports).
       registration.update(rebuiltServer ? {...patch, ...serverAddress(rebuiltServer)} : patch)
     },

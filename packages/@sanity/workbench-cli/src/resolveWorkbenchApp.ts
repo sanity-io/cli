@@ -14,6 +14,7 @@ import {type DefineAppInput, isWorkbenchApp} from './defineApp.js'
  * @internal
  */
 export interface WorkbenchExposes {
+  installationConfig?: DefineAppInput['installationConfig']
   services?: DefineAppInput['services']
   views?: DefineAppInput['views']
 }
@@ -31,6 +32,8 @@ export interface ResolvedWorkbenchApp {
   readonly applicationType?: string
   /** SDK app-view entrypoint, when declared. */
   readonly entry?: string
+  /** Deploys on its own path, separate from the interfaces. */
+  readonly installationConfig?: DefineAppInput['installationConfig']
 }
 
 /**
@@ -46,6 +49,7 @@ export function resolveWorkbenchApp(
   return {
     applicationType: app.applicationType,
     entry: app.entry,
+    installationConfig: app.installationConfig,
     name: app.name,
     services: app.services ?? [],
     views: app.views ?? [],

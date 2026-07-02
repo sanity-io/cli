@@ -4,7 +4,7 @@ import {basename, dirname} from 'node:path'
 import {findProjectRoot, type Output, subdebug} from '@sanity/cli-core'
 
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
-import {type DevServerInterface} from './deriveInterfaces.js'
+import {type DevServerConfig, type DevServerInterface} from './deriveInterfaces.js'
 
 const devDebug = subdebug('dev')
 
@@ -24,6 +24,8 @@ interface ManifestPatch<T> {
   manifest: T | undefined
   manifestUpdatedAt: string
 
+  /** Same re-derive-don't-omit contract as `interfaces`. */
+  installationConfig?: DevServerConfig | undefined
   /**
    * Workbench interfaces (views/services/app view) re-derived from the config
    * on each change, so editing `views`/`services`/`entry` in `sanity.cli.ts`
@@ -41,10 +43,11 @@ interface StartDevManifestWatcherOptions<T> {
    * Receives the resolved config path (e.g. `sanity.config.ts` for studios,
    * `sanity.cli.ts` for core-apps) and the working directory.
    */
-  extract: (params: {
-    configPath: string
-    workDir: string
-  }) => Promise<{interfaces?: DevServerInterface[] | undefined; manifest: T | undefined}>
+  extract: (params: {configPath: string; workDir: string}) => Promise<{
+    installationConfig?: DevServerConfig | undefined
+    interfaces?: DevServerInterface[] | undefined
+    manifest: T | undefined
+  }>
   output: Output
   /**
    * Called after every successful extraction with the inlined manifest +
@@ -99,9 +102,14 @@ export async function startDevManifestWatcher<T>({
     }
     running = true
     try {
-      const {interfaces, manifest} = await extract({configPath, workDir})
+      const {installationConfig, interfaces, manifest} = await extract({configPath, workDir})
       if (closed) return
-      await update({interfaces, manifest, manifestUpdatedAt: new Date().toISOString()})
+      await update({
+        installationConfig,
+        interfaces,
+        manifest,
+        manifestUpdatedAt: new Date().toISOString(),
+      })
     } catch (err) {
       // Extractors print their own spinner failure; log the reason here so
       // the user sees what went wrong alongside the spinner indicator.
