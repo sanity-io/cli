@@ -2,7 +2,7 @@ import {type Output} from '@sanity/cli-core'
 import {DefinedTelemetryTrace} from '@sanity/telemetry'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type BuildOptions} from '../buildStudio.js'
+import {buildStudio, type BuildOptions} from '../buildStudio.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
 
 function buildOptions(
@@ -101,9 +101,6 @@ vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
     spinner: mockedSpinner,
   }
 })
-
-// Import after mocks are set up
-const {buildStudio} = await import('../buildStudio.js')
 
 function createMockOutput(): Output {
   return {

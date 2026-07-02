@@ -1,7 +1,7 @@
 import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type BuildOptions} from '../buildApp.js'
+import {buildApp, type BuildOptions} from '../buildApp.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
@@ -73,9 +73,6 @@ vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
     spinner: mockedSpinner,
   }
 })
-
-// Import after mocks are set up
-const {buildApp} = await import('../buildApp.js')
 
 function createMockOutput(): Output {
   return {
