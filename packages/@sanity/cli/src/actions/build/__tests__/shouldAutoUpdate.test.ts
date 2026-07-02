@@ -1,7 +1,7 @@
 import {type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {shouldAutoUpdate} from '../shouldAutoUpdate'
+import {resolveAutoUpdates, shouldAutoUpdate} from '../shouldAutoUpdate'
 import {type BuildFlags} from '../types'
 
 describe('shouldAutoUpdate', () => {
@@ -234,5 +234,57 @@ describe('shouldAutoUpdate', () => {
       )
       expect(mockOutput.warn).toHaveBeenCalledTimes(1)
     })
+  })
+})
+
+describe('resolveAutoUpdates', () => {
+  it('returns disabled with no issue when nothing is configured', () => {
+    expect(resolveAutoUpdates({cliConfig: {}, flags: {} as BuildFlags})).toEqual({
+      enabled: false,
+      issue: null,
+    })
+  })
+
+  it('reads deployment.autoUpdates without an issue', () => {
+    expect(
+      resolveAutoUpdates({cliConfig: {deployment: {autoUpdates: true}}, flags: {} as BuildFlags}),
+    ).toEqual({enabled: true, issue: null})
+    expect(
+      resolveAutoUpdates({cliConfig: {deployment: {autoUpdates: false}}, flags: {} as BuildFlags}),
+    ).toEqual({enabled: false, issue: null})
+  })
+
+  it('reports the deprecated top-level config', () => {
+    expect(resolveAutoUpdates({cliConfig: {autoUpdates: true}, flags: {} as BuildFlags})).toEqual({
+      enabled: true,
+      issue: {type: 'deprecated-config'},
+    })
+  })
+
+  it('reports a conflict when both configs are present, preferring the new value', () => {
+    expect(
+      resolveAutoUpdates({
+        cliConfig: {autoUpdates: true, deployment: {autoUpdates: false}},
+        flags: {} as BuildFlags,
+      }),
+    ).toEqual({enabled: false, issue: {type: 'conflicting-config'}})
+  })
+
+  it('reports the deprecated flag and takes its value', () => {
+    expect(
+      resolveAutoUpdates({cliConfig: {}, flags: {'auto-updates': true} as BuildFlags}),
+    ).toEqual({enabled: true, issue: {flag: '--auto-updates', type: 'deprecated-flag'}})
+    expect(
+      resolveAutoUpdates({cliConfig: {}, flags: {'auto-updates': false} as BuildFlags}),
+    ).toEqual({enabled: false, issue: {flag: '--no-auto-updates', type: 'deprecated-flag'}})
+  })
+
+  it('lets the flag take precedence over config, masking config issues', () => {
+    expect(
+      resolveAutoUpdates({
+        cliConfig: {autoUpdates: true, deployment: {autoUpdates: true}},
+        flags: {'auto-updates': false} as BuildFlags,
+      }),
+    ).toEqual({enabled: false, issue: {flag: '--no-auto-updates', type: 'deprecated-flag'}})
   })
 })

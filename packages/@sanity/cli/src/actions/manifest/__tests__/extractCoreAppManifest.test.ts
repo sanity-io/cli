@@ -3,7 +3,8 @@ import {readFile} from 'node:fs/promises'
 import {getCliConfigUncached} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {extractCoreAppManifest} from '../extractCoreAppManifest.js'
+import {extractCoreAppManifest, resolveTitleUpdate} from '../extractCoreAppManifest.js'
+import {type CoreAppManifest} from '../types.js'
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -131,5 +132,35 @@ describe('extractCoreAppManifest', () => {
     await expect(extractCoreAppManifest({workDir: '/project'})).rejects.toThrow(
       /Could not read icon file at "missing.svg"/,
     )
+  })
+})
+
+const manifestWithTitle = (title: string | undefined) => ({title}) as CoreAppManifest
+
+describe('resolveTitleUpdate', () => {
+  test('no update when the manifest has no title', () => {
+    expect(resolveTitleUpdate(manifestWithTitle(undefined), {title: 'Current'})).toBeNull()
+  })
+
+  test('no update when the manifest is missing entirely', () => {
+    expect(resolveTitleUpdate(undefined, {title: 'Current'})).toBeNull()
+  })
+
+  test('no update when the titles already match', () => {
+    expect(resolveTitleUpdate(manifestWithTitle('Same'), {title: 'Same'})).toBeNull()
+  })
+
+  test('renames when the manifest title differs', () => {
+    expect(resolveTitleUpdate(manifestWithTitle('New'), {title: 'Old'})).toEqual({
+      from: 'Old',
+      to: 'New',
+    })
+  })
+
+  test('sets the title when the application has none', () => {
+    expect(resolveTitleUpdate(manifestWithTitle('New'), {title: null})).toEqual({
+      from: null,
+      to: 'New',
+    })
   })
 })

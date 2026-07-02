@@ -21,16 +21,11 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// Only the fs-touching `checkBuiltOutput` is stubbed; `assertDeployable` stays real.
-vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()
-  return {
-    getWorkbench: (config: Parameters<typeof actual.getWorkbench>[0]) => {
-      const workbench = actual.getWorkbench(config)
-      return workbench && {...workbench, checkBuiltOutput: mockCheckBuiltOutput}
-    },
-  }
-})
+// Only the fs-touching `checkBuiltOutput` is stubbed; `getWorkbench` stays real.
+vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
+  checkBuiltOutput: mockCheckBuiltOutput,
+}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -474,6 +469,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -572,6 +568,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -673,6 +670,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -734,6 +732,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -1039,6 +1038,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 

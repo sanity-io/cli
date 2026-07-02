@@ -103,27 +103,33 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
-      // Prompt to delete the directory if it's not empty
-      const shouldProceed =
-        isEmpty ||
-        (await confirm({
-          default: false,
-          message: `"${relativeOutput}" is not empty, do you want to proceed?`,
-        }))
+      // Unattended runs (--yes or a non-interactive terminal) skip the overwrite prompt
+      if (!this.isUnattended()) {
+        const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
+        const shouldProceed =
+          isEmpty ||
+          (await confirm({
+            default: false,
+            message: `"${relativeOutput}" is not empty, do you want to proceed?`,
+          }))
 
-      if (!shouldProceed) {
-        this.output.error('Cancelled.', {exit: 1})
+        if (!shouldProceed) {
+          this.output.error('Cancelled.', {exit: 1})
+        }
       }
 
       this.output.log(`Building to ${relativeOutput}\n`)
     }
 
+    // An unattended run (--yes or a non-interactive terminal) deploys without any
+    // prompts downstream (application resolution, the build).
+    const deployFlags = this.isUnattended() ? {...flags, yes: true} : flags
+
     if (isApp) {
       deployDebug('Deploying app')
       await deployApp({
         cliConfig,
-        flags,
+        flags: deployFlags,
         output: this.output,
         projectRoot,
         sourceDir,
@@ -132,7 +138,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       deployDebug('Deploying studio')
       await deployStudio({
         cliConfig,
-        flags,
+        flags: deployFlags,
         output: this.output,
         projectRoot,
         sourceDir,
