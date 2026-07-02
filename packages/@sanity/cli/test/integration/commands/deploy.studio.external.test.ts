@@ -287,6 +287,7 @@ describe('#deploy studio (external)', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -361,6 +362,7 @@ describe('#deploy studio (external)', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 

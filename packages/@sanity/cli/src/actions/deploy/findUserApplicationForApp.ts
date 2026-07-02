@@ -3,7 +3,7 @@
  * that turns the resolveAppDeployTarget verdicts into prompts and exits.
  */
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
 import {type UserApplication} from '../../services/userApplications.js'
@@ -16,12 +16,14 @@ interface FindUserApplicationForAppOptions {
   cliConfig: CliConfig
   organizationId: string
   output: Output
+
+  unattended?: boolean
 }
 
 export async function findUserApplicationForApp(
   options: FindUserApplicationForAppOptions,
 ): Promise<UserApplication | null> {
-  const {cliConfig, organizationId, output} = options
+  const {cliConfig, organizationId, output, unattended = false} = options
 
   const spin = spinner('Checking application info...').start()
 
@@ -54,11 +56,27 @@ export async function findUserApplicationForApp(
       }
       case 'needs-input': {
         spin.info('No application ID configured')
+        // Nobody to prompt in unattended mode — a real deploy would hang otherwise
+        if (unattended) {
+          output.error(
+            'No `deployment.appId` configured. Set it in sanity.cli.ts to deploy without prompting.',
+            {exit: exitCodes.USAGE_ERROR},
+          )
+          return null
+        }
         return promptForExistingApp(resolution.existing)
       }
       // No appId configured and no existing applications — the deploy creates one
       case 'would-create': {
         spin.info('No application ID configured')
+        // Creating one needs an interactive title prompt, which unattended can't answer
+        if (unattended) {
+          output.error(
+            'No application to deploy to. Run `sanity deploy` interactively once to create one.',
+            {exit: exitCodes.USAGE_ERROR},
+          )
+          return null
+        }
         return null
       }
     }

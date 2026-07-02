@@ -32,27 +32,25 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
 
 // `getWorkbench`/`assertDeployable` stay real — pure config the no-interfaces
 // test exercises; only the fs-touching `checkBuiltOutput` is stubbed.
-vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
+vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
+  ...(await importOriginal()),
   checkBuiltOutput: mockCheckBuiltOutput,
 }))
 
-vi.mock('../../../src/actions/manifest/extractCoreAppManifest.js', async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import('../../../src/actions/manifest/extractCoreAppManifest.js')
-  >()),
-  extractCoreAppManifest: vi.fn(),
-}))
+vi.mock(
+  import('../../../src/actions/manifest/extractCoreAppManifest.js'),
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    extractCoreAppManifest: vi.fn(),
+  }),
+)
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    confirm: vi.fn(),
-    input: vi.fn(),
-    select: vi.fn(),
-  }
-})
+vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  confirm: vi.fn(),
+  input: vi.fn(),
+  select: vi.fn(),
+}))
 
 vi.mock('../../../src/util/dirIsEmptyOrNonExistent.js', () => ({
   dirIsEmptyOrNonExistent: vi.fn(() => true),
@@ -86,6 +84,9 @@ const defaultMocks = {
       appId,
     },
   },
+  // Deploy treats a non-interactive terminal as unattended; these tests exercise
+  // the interactive flows, so mark them interactive.
+  isInteractive: true,
 }
 
 describe('#deploy app', () => {
@@ -483,6 +484,7 @@ describe('#deploy app', () => {
             organizationId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -500,6 +502,58 @@ describe('#deploy app', () => {
     // Verify the spinner is stopped before returning - a running spinner
     // blocks the subsequent input() prompt, causing the CLI to hang
     expect(stderr).toContain('No application ID configured')
+  })
+
+  test('--yes errors instead of prompting to pick an existing application', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    // Existing apps but no configured appId → needs-input; unattended can't pick one.
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp', organizationId},
+      uri: `/user-applications`,
+    }).reply(200, [
+      {
+        appHost: 'existing-host',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: 'existing-app-id',
+        organizationId,
+        projectId: null,
+        title: 'Existing App',
+        type: 'coreApp',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      },
+    ])
+
+    const {error} = await testCommand(DeployCommand, ['--yes'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app: {organizationId}}},
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(mockSelect).not.toHaveBeenCalled()
+  })
+
+  test('--yes errors instead of prompting for a new application title', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    // No existing apps and no appId → would-create; unattended can't prompt for a title.
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp', organizationId},
+      uri: `/user-applications`,
+    }).reply(200, [])
+
+    const {error} = await testCommand(DeployCommand, ['--yes'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app: {organizationId}}},
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(mockInput).not.toHaveBeenCalled()
   })
 
   test('should skip build when --no-build flag is used', async () => {
@@ -866,6 +920,7 @@ describe('#deploy app', () => {
             organizationId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -909,6 +964,7 @@ describe('#deploy app', () => {
             organizationId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -975,6 +1031,7 @@ describe('#deploy app', () => {
             organizationId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -1066,6 +1123,7 @@ describe('#deploy app', () => {
             organizationId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -1220,6 +1278,7 @@ describe('#deploy app', () => {
             organizationId,
           },
         },
+        isInteractive: true,
       },
     })
 

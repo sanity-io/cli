@@ -225,9 +225,14 @@ ${styleText(
 
 /** Resolves the app's target application, creating one when none exists. */
 async function resolveAppApplication(options: DeployAppOptions): Promise<UserApplication | null> {
-  const {cliConfig, output} = options
+  const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''
-  let application = await findUserApplicationForApp({cliConfig, organizationId, output})
+  let application = await findUserApplicationForApp({
+    cliConfig,
+    organizationId,
+    output,
+    unattended: !!flags.yes,
+  })
   deployDebug('User application found', application)
 
   if (!application) {

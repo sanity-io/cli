@@ -469,6 +469,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -567,6 +568,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -668,6 +670,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -729,6 +732,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -1034,6 +1038,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
