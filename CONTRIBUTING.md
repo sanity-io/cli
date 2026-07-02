@@ -103,7 +103,7 @@ pnpm check:types           # TypeScript checking
 pnpm check:lint            # ESLint + Prettier
 pnpm check:deps            # Unused dependencies
 pnpm test:unit             # Run only unit tests
-pnpm test:unit:coverage    # Code coverage report based on unit tests
+pnpm test:coverage         # Code coverage report based on unit tests
 pnpm test:integration      # Run only integration tests
 pnpm test                  # Run all tests
 pnpm changeset             # Add a changeset (if your change affects published packages)
