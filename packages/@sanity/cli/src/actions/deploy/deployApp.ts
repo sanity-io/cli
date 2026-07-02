@@ -2,7 +2,6 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
-import {CLIError} from '@oclif/core/errors'
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {getWorkbench} from '@sanity/workbench-cli/deploy'
@@ -19,83 +18,48 @@ import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildApp} from '../build/buildApp.js'
 import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
-import {createUserApplicationForApp} from './createUserApplicationForApp.js'
+import {createUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
   checkBuild,
   checkPackageVersion,
   type CheckReporter,
-  createFailFastReporter,
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {findUserApplicationForApp} from './findUserApplicationForApp.js'
+import {runDeploy} from './deployRunner.js'
+import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
-type Workbench = ReturnType<typeof getWorkbench>
-
-/**
- * Builds and deploys a Sanity application.
- *
- * @internal
- */
-export async function deployApp(options: DeployAppOptions): Promise<void> {
-  const {cliConfig, output} = options
-  const workbench = getWorkbench(cliConfig)
-
-  // A federated app with no entry, view or service would ship a remote with
-  // nothing to load — fail before any prompts or API calls.
-  if (workbench) {
-    try {
-      workbench.assertDeployable()
-    } catch (err) {
-      output.error(getErrorMessage(err), {exit: exitCodes.USAGE_ERROR})
-      return
-    }
-  }
-
-  try {
-    const reporter = createFailFastReporter(output)
-    await createAppDeployment(options, reporter, workbench)
-  } catch (error) {
-    // Don't throw a generic error when the user cancels a prompt
-    if (error.name === 'ExitPromptError') {
-      output.error('Deployment cancelled by user', {exit: 1})
-      return
-    }
-    if (error instanceof CLIError) {
-      const {message, ...errorOptions} = error
-      output.error(message, {...errorOptions, exit: 1})
-      return
-    }
-    deployDebug('Error deploying application', error)
-    output.error(`Error deploying application: ${error}`, {exit: 1})
-  }
-}
-
-interface AppDeployment {
-  application: UserApplication | null
-  isAutoUpdating: boolean
-  manifest: CoreAppManifest | undefined
-  version: string | null
+export function deployApp(options: DeployAppOptions): Promise<void> {
+  return runDeploy(options, {run: runAppDeployment, type: 'coreApp'})
 }
 
 /**
  * Validates the deploy, syncs the title from the manifest, and ships the build.
- *
- * Every step reports through `reporter`. In a real deploy a failed check exits
- * immediately, so reaching any later step means the earlier ones passed. A dry
- * run collects the failures instead and returns before shipping (the guard
- * below), so the steps read as one straight sequence in both modes.
+ * Every step reports through `reporter`, and the first failure exits — so
+ * reaching any later step means the earlier ones passed.
  */
-async function createAppDeployment(
-  options: DeployAppOptions,
-  reporter: CheckReporter,
-  workbench: Workbench,
-): Promise<AppDeployment> {
-  const {cliConfig, flags, output, projectRoot, sourceDir} = options
-  const workDir = projectRoot.directory
+async function runAppDeployment(options: DeployAppOptions, reporter: CheckReporter): Promise<void> {
+  const {cliConfig, flags, output, sourceDir} = options
+  const workDir = options.projectRoot.directory
   const organizationId = cliConfig.app?.organizationId
+  const workbench = getWorkbench(cliConfig)
+
+  // A federated app with no entry, view or service would ship a remote with
+  // nothing to load — reported first so it fails before any prompt or API call.
+  if (workbench) {
+    try {
+      workbench.assertDeployable()
+    } catch (err) {
+      reporter.report({
+        exitCode: exitCodes.USAGE_ERROR,
+        message: getErrorMessage(err),
+        solution: 'Declare at least one entry, view, or service in the app',
+        status: 'fail',
+      })
+    }
+  }
 
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
@@ -107,12 +71,20 @@ async function createAppDeployment(
   reporter.report(
     organizationId
       ? {message: `Organization: ${organizationId}`, status: 'pass'}
-      : {message: NO_ORGANIZATION_ID, status: 'fail'},
+      : {
+          message: NO_ORGANIZATION_ID,
+          solution: 'Add `app.organizationId` to sanity.cli.ts',
+          status: 'fail',
+        },
   )
 
   let application: UserApplication | null = null
   if (flags.external) {
-    reporter.report({message: EXTERNAL_APP_NOT_SUPPORTED, status: 'fail'})
+    reporter.report({
+      message: EXTERNAL_APP_NOT_SUPPORTED,
+      solution: 'Remove the --external flag — apps deploy to Sanity hosting',
+      status: 'fail',
+    })
   } else {
     application = await resolveAppApplication(options)
   }
@@ -148,39 +120,89 @@ async function createAppDeployment(
     })
   }
 
-  // Sync the application title from the manifest when it has changed
-  const titleUpdate = application ? resolveTitleUpdate(manifest, application) : null
-  if (application && titleUpdate) {
-    deployDebug('Updating application title from manifest', titleUpdate)
-    output.log(
-      titleUpdate.from
-        ? `Updating title from "${titleUpdate.from}" to "${titleUpdate.to}"`
-        : `Setting application title to "${titleUpdate.to}"`,
-    )
-    const spin = spinner('Updating application title').start()
-    try {
-      application = await updateUserApplication({
-        applicationId: application.id,
-        appType: 'coreApp',
-        body: {title: titleUpdate.to},
-      })
-      spin.succeed()
-    } catch (err) {
-      spin.fail()
-      const message = getErrorMessage(err)
-      deployDebug('Error updating application title', {message})
-      output.warn(`Error updating application title: ${message}`)
-    }
+  // A real deploy has already exited if anything failed; landing here without a
+  // resolved application or version means the deploy target was never resolved.
+  if (!application || !version) return
+
+  application = await syncApplicationTitle({application, manifest, output})
+  await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
+
+  logAppDeployed({application, cliConfig, output})
+}
+
+/** Finds the application a deploy targets, creating one when none is configured. */
+async function resolveAppApplication(options: DeployAppOptions): Promise<UserApplication | null> {
+  const {cliConfig, flags, output} = options
+  const organizationId = cliConfig.app?.organizationId ?? ''
+
+  let application = await findUserApplication({
+    cliConfig,
+    organizationId,
+    output,
+    unattended: !!flags.yes,
+  })
+  deployDebug('User application found', application)
+
+  if (!application) {
+    deployDebug('No user application found. Creating a new one')
+    application = await createUserApplication(organizationId)
+    deployDebug('User application created', application)
   }
 
-  // A real deploy has already exited if anything failed; landing here without a
-  // resolved application or version means a dry run collected problems — stop
-  // before shipping.
-  if (!application || !version) return {application, isAutoUpdating, manifest, version}
+  return application
+}
 
-  const parentDir = dirname(sourceDir)
-  const base = basename(sourceDir)
-  const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
+/** Syncs the application title from the manifest when it has changed. */
+async function syncApplicationTitle({
+  application,
+  manifest,
+  output,
+}: {
+  application: UserApplication
+  manifest: CoreAppManifest | undefined
+  output: DeployAppOptions['output']
+}): Promise<UserApplication> {
+  const titleUpdate = resolveTitleUpdate(manifest, application)
+  if (!titleUpdate) return application
+
+  deployDebug('Updating application title from manifest', titleUpdate)
+  output.log(
+    titleUpdate.from
+      ? `Updating title from "${titleUpdate.from}" to "${titleUpdate.to}"`
+      : `Setting application title to "${titleUpdate.to}"`,
+  )
+  const spin = spinner('Updating application title').start()
+  try {
+    const updated = await updateUserApplication({
+      applicationId: application.id,
+      appType: 'coreApp',
+      body: {title: titleUpdate.to},
+    })
+    spin.succeed()
+    return updated
+  } catch (err) {
+    spin.fail()
+    const message = getErrorMessage(err)
+    deployDebug('Error updating application title', {message})
+    output.warn(`Error updating application title: ${message}`)
+    return application
+  }
+}
+
+async function shipAppDeployment({
+  application,
+  isAutoUpdating,
+  manifest,
+  sourceDir,
+  version,
+}: {
+  application: UserApplication
+  isAutoUpdating: boolean
+  manifest: CoreAppManifest | undefined
+  sourceDir: string
+  version: string
+}): Promise<void> {
+  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
 
   const spin = spinner('Deploying...').start()
   try {
@@ -197,15 +219,26 @@ async function createAppDeployment(
     throw error
   }
   spin.succeed()
+}
 
+function logAppDeployed({
+  application,
+  cliConfig,
+  output,
+}: {
+  application: UserApplication
+  cliConfig: DeployAppOptions['cliConfig']
+  output: DeployAppOptions['output']
+}): void {
   output.log(`\n🚀 ${styleText('bold', 'Success!')} Application deployed`)
 
-  if (!getAppId(cliConfig)) {
-    output.log(`\n════ ${styleText('bold', 'Next step:')} ════`)
-    output.log(
-      styleText('bold', '\nAdd the deployment.appId to your sanity.cli.js or sanity.cli.ts file:'),
-    )
-    output.log(`
+  if (getAppId(cliConfig)) return
+
+  output.log(`\n════ ${styleText('bold', 'Next step:')} ════`)
+  output.log(
+    styleText('bold', '\nAdd the deployment.appId to your sanity.cli.js or sanity.cli.ts file:'),
+  )
+  output.log(`
 ${styleText(
   'dim',
   `app: {
@@ -218,28 +251,4 @@ ${styleText(
   appId: '${application.id}',
 }\n`,
 )}`)
-  }
-
-  return {application, isAutoUpdating, manifest, version}
-}
-
-/** Resolves the app's target application, creating one when none exists. */
-async function resolveAppApplication(options: DeployAppOptions): Promise<UserApplication | null> {
-  const {cliConfig, flags, output} = options
-  const organizationId = cliConfig.app?.organizationId ?? ''
-  let application = await findUserApplicationForApp({
-    cliConfig,
-    organizationId,
-    output,
-    unattended: !!flags.yes,
-  })
-  deployDebug('User application found', application)
-
-  if (!application) {
-    deployDebug('No user application found. Creating a new one')
-    application = await createUserApplicationForApp(organizationId)
-    deployDebug('User application created', application)
-  }
-
-  return application
 }

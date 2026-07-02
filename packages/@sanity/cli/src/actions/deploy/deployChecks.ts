@@ -2,7 +2,10 @@ import {type CliConfig, getLocalPackageVersion, type Output} from '@sanity/cli-c
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 
-import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
+import {
+  APP_ID_NOT_FOUND_IN_ORGANIZATION,
+  cannotPromptForStudioHost,
+} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {
   getAutoUpdateIssueMessage,
@@ -11,7 +14,7 @@ import {
 } from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
 import {deployDebug} from './deployDebug.js'
-import {resolveAppDeployTarget} from './resolveDeployTarget.js'
+import {resolveAppDeployTarget, resolveStudioDeployTarget} from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
 
 type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
@@ -39,10 +42,11 @@ export interface CheckReporter {
 export function createFailFastReporter(output: Output): CheckReporter {
   return {
     report(check) {
+      const text = check.solution ? `${check.message}: ${check.solution}` : check.message
       if (check.status === 'fail') {
-        output.error(check.message, {exit: check.exitCode ?? 1})
+        output.error(text, {exit: check.exitCode ?? 1})
       } else if (check.status === 'warn') {
-        output.warn(check.message)
+        output.warn(text)
       }
     },
   }
@@ -234,5 +238,88 @@ export async function checkAppTarget(
       (err as {statusCode?: number})?.statusCode === 403
         ? `You don’t have permission to view applications for the configured organization ID ("${organizationId}"). Verify the organization ID, or ask your organization’s admin for access.`
         : `Failed to resolve deploy target: ${getErrorMessage(err)}`,
+  )
+}
+
+/**
+ * Reports the read-only studio deploy-target verdict. The rules live in
+ * resolveDeployTarget; a real deploy consumes the same verdicts through
+ * findUserApplicationForStudio.
+ */
+export async function checkStudioTarget(
+  reporter: CheckReporter,
+  {
+    appId,
+    isExternal,
+    projectId,
+    studioHost,
+    urlFlag,
+  }: {
+    appId: string | undefined
+    isExternal: boolean
+    projectId: string | undefined
+    studioHost: string | undefined
+    urlFlag: string | undefined
+  },
+): Promise<void> {
+  const studioUrl = (host: string) => (isExternal ? host : `https://${host}.sanity.studio`)
+
+  await runStep(
+    reporter,
+    'target',
+    async () => {
+      const resolution = await resolveStudioDeployTarget({
+        appId,
+        isExternal,
+        projectId,
+        studioHost,
+        urlFlag,
+      })
+
+      switch (resolution.type) {
+        case 'blocked': {
+          reporter.report({
+            message: `Deploy target not resolved — ${resolution.message}`,
+            status: 'skip',
+          })
+          return
+        }
+        case 'found': {
+          reporter.report({
+            message: `Deploys to existing studio ${studioUrl(resolution.application.appHost)}`,
+            status: 'pass',
+          })
+          return
+        }
+        case 'invalid': {
+          reporter.report({
+            message: resolution.message,
+            solution: 'Check `studioHost` and `deployment.appId` in sanity.cli.ts',
+            status: 'fail',
+          })
+          return
+        }
+        case 'needs-input': {
+          // The same constraint an unattended deploy enforces, with the same message
+          reporter.report({
+            message: cannotPromptForStudioHost(isExternal),
+            solution: 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+            status: 'fail',
+          })
+          return
+        }
+        case 'would-create': {
+          const {appHost} = resolution
+          reporter.report({
+            message: isExternal
+              ? `Would register external studio at ${appHost}`
+              : `Would create studio hostname ${studioUrl(appHost)} (name availability is checked on deploy)`,
+            status: 'pass',
+          })
+          return
+        }
+      }
+    },
+    (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,
   )
 }
