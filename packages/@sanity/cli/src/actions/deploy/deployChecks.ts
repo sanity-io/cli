@@ -42,10 +42,11 @@ export interface CheckReporter {
 export function createFailFastReporter(output: Output): CheckReporter {
   return {
     report(check) {
+      const text = check.solution ? `${check.message}: ${check.solution}` : check.message
       if (check.status === 'fail') {
-        output.error(check.message, {exit: check.exitCode ?? 1})
+        output.error(text, {exit: check.exitCode ?? 1})
       } else if (check.status === 'warn') {
-        output.warn(check.message)
+        output.warn(text)
       }
     },
   }
