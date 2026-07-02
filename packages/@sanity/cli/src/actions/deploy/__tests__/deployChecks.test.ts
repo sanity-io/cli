@@ -1,4 +1,4 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type UserApplication} from '../../../services/userApplications.js'
@@ -170,17 +170,21 @@ describe('checkStudioTarget', () => {
     )
   })
 
-  test('needs-input → fail check (unattended cannot prompt)', async () => {
+  test('needs-input → fail check with a pure problem and its fix', async () => {
     mockResolveStudio.mockResolvedValue({existing: [], type: 'needs-input'})
     const reporter = createCollectingReporter()
 
     await checkStudioTarget(reporter, studioArgs)
 
-    expect(reporter.results[0]).toMatchObject({status: 'fail'})
-    expect(reporter.results[0]?.message).toContain('Cannot prompt for studio hostname')
+    expect(reporter.results[0]).toMatchObject({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'No studio hostname configured',
+      solution: 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+      status: 'fail',
+    })
   })
 
-  test('invalid → fail check with the resolution message', async () => {
+  test('invalid app-not-found → fail check exits 1, like a real deploy', async () => {
     mockResolveStudio.mockResolvedValue({
       message: 'Cannot find app with app ID nope',
       reason: 'app-not-found',
@@ -191,7 +195,24 @@ describe('checkStudioTarget', () => {
     await checkStudioTarget(reporter, {...studioArgs, appId: 'nope'})
 
     expect(reporter.results[0]).toMatchObject({
+      exitCode: 1,
       message: 'Cannot find app with app ID nope',
+      status: 'fail',
+    })
+  })
+
+  test('invalid host → fail check exits USAGE_ERROR, like a real deploy', async () => {
+    mockResolveStudio.mockResolvedValue({
+      message: 'Invalid studio hostname',
+      reason: 'invalid-host',
+      type: 'invalid',
+    })
+    const reporter = createCollectingReporter()
+
+    await checkStudioTarget(reporter, {...studioArgs, urlFlag: 'bad host'})
+
+    expect(reporter.results[0]).toMatchObject({
+      exitCode: exitCodes.USAGE_ERROR,
       status: 'fail',
     })
   })
@@ -246,7 +267,7 @@ describe('checkAppTarget', () => {
 
     await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
-    expect(reporter.results[0]).toMatchObject({status: 'fail'})
+    expect(reporter.results[0]).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
     expect(reporter.results[0]?.message).toContain('2 existing applications found')
   })
 

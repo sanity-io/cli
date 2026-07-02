@@ -7,24 +7,18 @@ import {runCli} from '../helpers/runCli.js'
 const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
 /**
- * Asserts the shared shape of a `--dry-run` report: the header, at least one
- * built file, and the studio/app entrypoint. Each file renders as
- * `  <path> (<size> MB)`; the summary line ends with `):`, so it's excluded.
- *
- * The bare fixtures have no deploy target configured, so the plan reports a
- * blocking problem — which lets us verify problems and their fixes surface
- * end-to-end. A dry run still builds, renders the plan, and never deploys.
+ * Asserts the shared shape of a blocked `--dry-run` report: the header, the
+ * "can't be deployed" verdict, and its problems. The bare fixtures have no
+ * deploy target configured, so the plan is blocked — which lets us verify
+ * problems and their fixes surface end-to-end. A blocked deploy uploads nothing,
+ * so it lists no files. A dry run still builds, renders the plan, and never deploys.
  */
 function expectDeploymentSummary(stdout: string): void {
   expect(stdout).toContain('Dry run — no changes made.')
 
-  const fileLines = stdout.split('\n').filter((line) => /\(\d+\.\d+ MB\)$/.test(line))
-  expect(fileLines.length).toBeGreaterThan(0)
-  expect(stdout).toContain('index.html')
-
-  // No deploy target → a blocking problem in the report
   expect(stdout).toContain("can't be deployed")
   expect(stdout).toContain('Problems to fix:')
+  expect(stdout).not.toContain('Files to deploy')
 }
 
 // `deploy --dry-run` is safe against real infrastructure: it builds locally and

@@ -1,12 +1,9 @@
-import {type CliConfig, getLocalPackageVersion, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
-import {
-  APP_ID_NOT_FOUND_IN_ORGANIZATION,
-  cannotPromptForStudioHost,
-} from '../../util/errorMessages.js'
+import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {
   getAutoUpdateIssueMessage,
@@ -43,6 +40,8 @@ export interface CheckReporter {
 export function createFailFastReporter(output: Output): CheckReporter {
   return {
     report(check) {
+      // Fixes surface in both modes: appended after the message here, and in the
+      // dry-run report, so the problem and its fix never drift apart.
       const text = check.solution ? `${check.message}: ${check.solution}` : check.message
       if (check.status === 'fail') {
         output.error(text, {exit: check.exitCode ?? 1})
@@ -245,6 +244,8 @@ export async function checkAppTarget(
         }
         case 'needs-input': {
           reporter.report({
+            // Matches the exit code an unattended real deploy uses (findUserApplication)
+            exitCode: exitCodes.USAGE_ERROR,
             message: `No \`deployment.appId\` configured and ${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} found — a real deploy would prompt`,
             solution: 'Add `deployment.appId` to sanity.cli.ts',
             status: 'fail',
@@ -316,6 +317,8 @@ export async function checkStudioTarget(
         }
         case 'invalid': {
           reporter.report({
+            // A bad host is a usage error; other invalid targets exit 1 — same as findUserApplicationForStudio
+            exitCode: resolution.reason === 'invalid-host' ? exitCodes.USAGE_ERROR : 1,
             message: resolution.message,
             solution: 'Check `studioHost` and `deployment.appId` in sanity.cli.ts',
             status: 'fail',
@@ -323,10 +326,16 @@ export async function checkStudioTarget(
           return
         }
         case 'needs-input': {
-          // The same constraint an unattended deploy enforces, with the same message
+          // Dry-run only; a real deploy prompts, or errors in findUserApplication.
           reporter.report({
-            message: cannotPromptForStudioHost(isExternal),
-            solution: 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+            // Matches the exit code an unattended real deploy uses (findUserApplicationForStudio)
+            exitCode: exitCodes.USAGE_ERROR,
+            message: isExternal
+              ? 'No external studio URL configured'
+              : 'No studio hostname configured',
+            solution: isExternal
+              ? 'Set `studioHost` in sanity.cli.ts, or pass the full URL with --url'
+              : 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
             status: 'fail',
           })
           return

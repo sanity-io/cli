@@ -101,6 +101,18 @@ describe('renderDeploymentPlan', () => {
     expect(text).not.toContain('Files to deploy')
   })
 
+  test('omits the files section for a blocked plan even when files are present', () => {
+    renderDeploymentPlan(
+      studioPlan(
+        [{message: 'No project ID configured', status: 'fail'}],
+        [{path: 'dist/index.html', size: 1_048_576}],
+      ),
+      output,
+    )
+
+    expect(lines.join('\n')).not.toContain('Files to deploy')
+  })
+
   test('surfaces warnings in their own section', () => {
     renderDeploymentPlan(
       studioPlan([

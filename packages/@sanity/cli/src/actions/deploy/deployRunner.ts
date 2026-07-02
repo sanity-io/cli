@@ -7,7 +7,7 @@ import {
   createFailFastReporter,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {type DeploymentFile, renderDeploymentPlan} from './deploymentPlan.js'
+import {type DeploymentFile, type DeploymentPlan, renderDeploymentPlan} from './deploymentPlan.js'
 import {type DeployAppOptions} from './types.js'
 
 /**
@@ -33,11 +33,16 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
   if (options.flags['dry-run']) {
     const reporter = createCollectingReporter()
     await spec.run(options, reporter)
-    const files = await spec.listFiles(options)
-    renderDeploymentPlan({checks: reporter.results, files, type: spec.type}, output)
+    const failed = reporter.results.find((check) => check.status === 'fail')
+    const plan: DeploymentPlan = {
+      checks: reporter.results,
+      // A blocked deploy uploads nothing, so only enumerate files for a deployable plan.
+      files: failed ? [] : await spec.listFiles(options),
+      type: spec.type,
+    }
+    renderDeploymentPlan(plan, output)
     // Exit like a real (fail-fast) deploy would on the first failing check, so a
     // script gating on the exit code sees the same status.
-    const failed = reporter.results.find((check) => check.status === 'fail')
     if (failed) output.error('Deploy blocked by failing checks.', {exit: failed.exitCode ?? 1})
     return
   }

@@ -30,6 +30,22 @@ describe('runDeploy dry run', () => {
     expect(output.error).toHaveBeenCalledWith('Deploy blocked by failing checks.', {exit: 2})
   })
 
+  test('a blocked plan lists no files, even when listFiles would return some', async () => {
+    const output = mockOutput()
+    const listFiles = vi.fn(async () => [{path: 'dist/index.html', size: 10}])
+    const spec: DeploySpec = {
+      listFiles,
+      run: async (_options, reporter) =>
+        reporter.report({exitCode: 2, message: 'boom', status: 'fail'}),
+      type: 'studio',
+    }
+
+    await runDeploy(dryRunOptions(output), spec)
+
+    expect(listFiles).not.toHaveBeenCalled()
+    expect(output.log).not.toHaveBeenCalledWith(expect.stringContaining('Files to deploy'))
+  })
+
   test('a deployable dry run renders the plan without erroring', async () => {
     const output = mockOutput()
     const spec: DeploySpec = {
