@@ -217,17 +217,6 @@ This project employs three different types of tests: unit, integration and end-t
 
 The three test types exist on a continuum: from fastest/cheapest/most-coupled-to-implementation to slowest/most-expensive/least-coupled-to-implementation.
 
-### Testing Rules
-
-- Use `vi.mocked()` for type-safe mocking
-- Use `vi.hoisted(() => vi.fn())` for client method mocks
-- Clear mocks in `afterEach()` with `vi.clearAllMocks()`
-- Test both success and error paths
-- In success tests, use `if (error) throw error` - NOT `expect(error).toBeUndefined()` (better stack traces on failure)
-- In error tests, assert `expect(error).toBeInstanceOf(Error)` along with exit code and message assertions
-- Never use `any` in mock types - use proper typing or `unknown`
-- If a heavy integration test must be used, use the `testCommand()` and `testFixture()` helpers from `@sanity/cli-test` for command execution
-
 ### Test Code Coverage Goals
 
 - Code coverage is _only_ reported from unit test execution. Reporting code coverage from heavier integration or E2E tests, which may coincidentally exercise code paths unrelated to the tests, falsely increases code coverage, giving a false sense of security.
@@ -242,8 +231,6 @@ This section describes how to write unit and integration tests, which apply to a
 #### Writing Unit Tests
 
 Unit tests are our primary tool for quality assurance. Before writing integration or E2E tests, unit tests should be written. Mock out all imported modules as part of the beginning of the test; a unit test exercises a specific module, not its dependencies. If you need to test logic within an imported module, write a unit test for the imported module! Do not unit test third party dependencies.
-
-For an example of a unit test employing solid mocking practices, see `packages/@sanity/cli/src/actions/telemetry/__tests__/resolveConsent.test.ts`. It mocks all imported modules but one (a dependency-less `isTrueish` helper method), and when the test is run with code coverage reporting enabled (`pnpm test:coverage packages/@sanity/cli/src/actions/telemetry/__tests__/resolveConsent.test.ts`) yields 100% code coverage on the module-under-test.
 
 The following is an example unit test for a fake `source-under-test.ts` file. It breaks down the test into static imports, mock setup and module mocking, and finally the test cases themselves, with mock manipulation in different test cases.
 
@@ -301,19 +288,28 @@ describe('thingBeingTested', () => {
 })
 ```
 
+For an example of a unit test employing solid mocking practices, see `packages/@sanity/cli/src/actions/telemetry/__tests__/resolveConsent.test.ts`. It mocks all imported modules but one (a dependency-less `isTrueish` helper method), and when the test is run with code coverage reporting enabled (`pnpm test:coverage packages/@sanity/cli/src/actions/telemetry/__tests__/resolveConsent.test.ts`) yields 100% code coverage on the module-under-test.
+
 ##### Writing Unit Tests for a `SanityCommand` Implementation
 
-OCLIF `Command` class implementations for the `packages/@sanity/cli` project should extend from the the `@sanity/cli` package's `SanityCommand.ts` class, which provides affordances like retrieving Sanity configurations, terminal output helper methods and automatic flag parsing. To make testing of these CLI command entry points easier, there is a mock `SanityCommand` implementation that can be used as a module mock: `packages/@sanity/cli/test/mockSanityCommand.ts`. All other unit testing guidelines in the previous section should also be followed for unit testing `SanityCommand`-extended classes.
+OCLIF `Command` class implementations for the `packages/@sanity/cli` project should extend from the the `@sanity/cli` package's `SanityCommand.ts` class, which provides affordances like retrieving Sanity configurations, terminal output helper methods and automatic flag parsing (implementation of commands are described in more detail in [Command Implementation](#command-implementation)). To make testing of these CLI command entry points easier, there is a mock `SanityCommand` implementation that can be used as a module mock: `packages/@sanity/cli/test/mockSanityCommand.ts`. All other unit testing guidelines in the previous section should also be followed for unit testing `SanityCommand`-extended classes.
+
+The key differences for unit testing a Command class compared to any unit testing any other module are:
+
+1. The use of the `createMockSanityCommand` test helper, which returns the `MockSanityCommand` to install as a subsitute for `SanityCommand`, as well as the `mocks` shimmed into this mock class.
+2. The need to dynamically import the command being tested using `await import`. This is due to the need to execute the `createMockSanityCommand` helper first before pulling in command-under-test.
+
+For details on affordances provided by the mock `SanityCommand`, see its source at `packages/@sanity/cli/test/mockSanityCommand.ts`. The most common assertions used in `SanityCommand` unit tests are asserting on what is displayed in the terminal as a result of running the command. The `SanityCmdOutput*` properties exposed on the `mocks` object returned by `createMockSanityCommand()` allow for asserting on how `output.log`, `output.warn` and `output.error` are called within the Command.
+
+For an example of a unit test leveraging the mock `SanityCommand` class, see `packages/@sanity/cli/src/commands/__tests__/doctor.test.ts`.
 
 #### Writing Integration Tests
 
-Sometimes, critical use cases call for leveraging heavier integration tests. Segregate heavy tests that use the filesystem (e.g. test fixtures) or may take longer to run into the `test/integration` folder of the relevant package.
+Sometimes, critical use cases call for leveraging heavier integration tests. Segregate heavy tests that use the filesystem (e.g. test fixtures) or may take longer to run into the `test/integration` folder of the relevant package. If a heavy integration test must be used, use the `testCommand()` and `testFixture()` helpers from `@sanity/cli-test` for command execution. Note that this shells out to a live terminal and thus is inherently slower.
 
-##### Avoiding Flaky Tests: Timing and Ports
+In order to avoid flaky integration tests - especially those that interact with real servers (or any asynchronous work) - we need to take extra care to stay reliable on slow CI runners and when running in parallel with other test files. Three rules:
 
-Tests that interact with real servers (or any asynchronous work) need extra care to stay reliable on slow CI runners - Windows runners in particular - and when running in parallel with other test files. Three rules:
-
-#### 1. Never sleep for a fixed duration
+##### 1. Never sleep for a fixed duration
 
 A fixed `setTimeout` encodes an assumption about how fast the machine is. That assumption will eventually be wrong somewhere, and the resulting failures are intermittent, platform-specific, and expensive to debug. We have had Windows-only CI failures because a login command took longer than a hardcoded 100ms to start its callback server.
 
@@ -337,7 +333,7 @@ Find a signal that proves the thing you are waiting for has actually happened:
 
 Polling must have an upper bound, and hitting it should fail the test with a message that explains what never happened. Be generous (10-15 seconds is fine): healthy runs never get near the bound, and a generous bound never causes a flake.
 
-#### 2. Never hardcode port numbers
+##### 2. Never hardcode port numbers
 
 A hardcoded port is shared global state. Another test file running in a parallel vitest worker can bind the same port, and so can unrelated software on the CI machine. Use port `0` so the OS assigns a unique free port, then discover the actual port through an observable signal (printed output, a mock call) rather than assuming it.
 
@@ -364,250 +360,18 @@ vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', `${blocker.port},0`)
 
 `testCommand()` resolves with an `{error}` property instead of rejecting, so an abandoned command promise never crashes a test - it just keeps running. If a test starts a long-running command and an assertion fails before the command is awaited, the leaked command keeps its server bound and consumes nock mocks registered by later tests. The result is cascading, misleading failures in tests far away from the root cause.
 
-Register cleanup that settles the command even when the test fails, e.g. from an `afterEach` hook. See the `activeLogins` registry in `packages/@sanity/cli/src/commands/__tests__/login.test.ts` for a complete example of all three rules.
-
-### No Interleaved CLI Output in Tests
-
-Test runs must not print CLI messages to the terminal. When a test interleaves lines like `✔ MCP configured for Cursor` with the vitest reporter output, it means the code under test writes directly to the process streams instead of going through an injected output.
-
-The rule: all user-facing output flows through the `Output` abstraction (`{log, warn, error}` from `@sanity/cli-core`). Commands use `this.output` and pass it down; actions accept it as an `output` option and never write to the streams themselves. Do not use `ux` from `@oclif/core` in actions - `ux.stdout`/`ux.stderr` are bare `console.log`/`console.error` calls, which bypass output capture in action-level tests (vitest's own console interception is disabled in this repo).
-
-This also makes messages assertable. Tests inject a mock and assert against it instead of scraping stdout:
-
-```typescript
-const mockOutput = {
-  error: vi.fn() as never,
-  log: vi.fn(),
-  warn: vi.fn(),
-}
-
-test('reports configured editors', async () => {
-  const result = await setupMCP({mode: 'auto', output: mockOutput})
-
-  if (result.error) throw result.error
-  expect(mockOutput.log).toHaveBeenCalledWith(expect.stringContaining('MCP configured for Cursor'))
-})
-```
-
-If an action needs to terminate with a user-facing error, call `output.error(message, {exit: 1})` (it throws like `this.error` does) rather than `ux.error`. Code that runs outside a command, such as an oclif hook, owns its own stream writes and should pass a sink into any action it calls (see `telemetryDisclosure` for an example).
-
-### Mocking Strategy: What to Mock and When
-
-Follow this hierarchy when writing tests (prefer higher levels):
-
-#### 1. HTTP-Level Mocking (Preferred)
-
-**Pattern A: Pure HTTP Mocking (Simplest)**
-
-Mock HTTP endpoints directly:
-
-```typescript
-import {mockApi} from '@sanity/cli-test'
-
-test('lists users successfully', async () => {
-  mockApi({
-    apiVersion: 'v2021-06-07',
-    uri: '/projects/my-project/users',
-    method: 'GET',
-  }).reply(200, [{id: 'user-1', email: 'test@example.com'}])
-
-  const {stdout, error} = await testCommand(UsersListCommand, ['--project', 'my-project'])
-
-  if (error) throw error
-  expect(stdout).toContain('test@example.com')
-})
-```
-
-**Pattern B: HTTP with Test Client**
-
-For commands that need both HTTP mocking and client methods:
-
-```typescript
-import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  const testClient = createTestClient({
-    apiVersion: 'v2021-06-07',
-    token: 'test-token',
-  })
-
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      request: testClient.request,
-      users: {
-        getById: vi.fn().mockResolvedValue({...}),
-      },
-    }),
-  }
-})
-
-test('creates project', async () => {
-  mockApi({
-    apiVersion: 'v2021-06-07',
-    method: 'POST',
-    uri: '/projects',
-  }).reply(200, {projectId: 'test-project'})
-
-  const {stdout, error} = await testCommand(CreateProjectCommand, ['Test Project'])
-
-  if (error) throw error
-  expect(stdout).toContain('test-project')
-})
-```
-
-**Choose HTTP mocking when:**
-
-- Testing error handling from API responses
-- Testing request formatting and response parsing
-- Integration-style tests
-- Avoiding mocking implementation details
-
-#### 2. Client-Level Mocking (Default for Unit Tests)
-
-Mock API client methods directly:
-
-```typescript
-import {testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
-
-const mockGetById = vi.hoisted(() => vi.fn())
-const mockListDatasets = vi.hoisted(() => vi.fn())
-
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      users: {
-        getById: mockGetById,
-      },
-      datasets: {
-        list: mockListDatasets,
-      },
-    }),
-  }
-})
-
-describe('my command', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test('fetches user and datasets', async () => {
-    mockGetById.mockResolvedValue({id: 'user-123', email: 'test@example.com'})
-    mockListDatasets.mockResolvedValue([{name: 'production'}])
-
-    const {stdout, error} = await testCommand(MyCommand, [])
-
-    if (error) throw error
-    expect(stdout).toContain('test@example.com')
-    expect(mockGetById).toHaveBeenCalledWith('user-123')
-    expect(mockListDatasets).toHaveBeenCalled()
-  })
-
-  test('handles API error', async () => {
-    mockGetById.mockRejectedValue(new Error('API error'))
-
-    const {error} = await testCommand(MyCommand, [])
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Failed to fetch user')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-})
-```
-
-**Choose client mocking when:**
-
-- Testing command orchestration logic
-- Multiple client methods are called
-- Need fine-grained control over mock behavior
-- Don't need to test HTTP request/response details
-
-#### 3. Action-Level Mocking (Sometimes)
-
-Mock action functions when they have complex logic tested separately:
-
-```typescript
-vi.mock('../../actions/build/buildApp.js', () => ({
-  buildApp: vi.fn(),
-}))
-
-const mockBuildApp = vi.mocked(buildApp)
-
-test('deploy command calls build', async () => {
-  mockBuildApp.mockResolvedValue({success: true})
-
-  await testCommand(DeployCommand, [])
-
-  expect(mockBuildApp).toHaveBeenCalledWith(expect.objectContaining({...}))
-})
-```
-
-**Choose action mocking when:**
-
-- Action has complex business logic tested in its own test file
-- Action has side effects (file system operations, spawning processes)
-- Testing command orchestration without action implementation details
-
-#### Never Mock Service Files
-
-Do not mock service files directly. Mock the client or HTTP layer instead.
-
-```typescript
-// Wrong - don't mock service files
-vi.mock('../../services/users.js', () => ({
-  getUserById: vi.fn(),
-}))
-
-// Correct - mock the client that services use
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      users: {
-        getById: vi.fn().mockResolvedValue({id: 'user-123', email: 'test@example.com'}),
-      },
-    }),
-  }
-})
-```
-
-**Why:** Service mocks don't break when the service's internal client usage changes - meaning tests keep passing while production code is broken. Client-level mocks catch these breaking changes because they must match the actual client API.
-
-### How to Choose Your Mocking Strategy
-
-1. **Does the command make HTTP requests that you need to test?**
-   - Yes -> Use `mockApi()` (HTTP-level mocking)
-   - No -> Continue to #2
-
-2. **Does the command call multiple client methods?**
-   - Yes -> Use client-level mocking
-   - No -> Continue to #3
-
-3. **Does the command call an action with complex logic?**
-   - Yes, and action is tested separately -> Mock the action
-   - Yes, but action is NOT tested separately -> Mock the client
-   - No -> Mock the client
-
-### Refactoring Tests That Mock Services
-
-If you encounter a test that mocks a service file:
-
-1. Identify what API calls the service makes
-2. Replace service mock with:
-   - `mockApi()` for HTTP-level testing (preferred)
-   - Client-level mocking if multiple client methods are needed
-3. Update assertions to verify the same behavior
-4. Run tests to ensure they still pass
+Register cleanup that settles the command even when the test fails, e.g. from an `afterEach` hook.
 
 ---
 
 ## Command Implementation
+
+Sanity CLI commands all extend from the `SanityCommand` class, which provides several affordances that should be leveraged by commands. See `SanityCommand`'s implementation at `packages/@sanity/cli-core/src/SanityCommand.ts` for details, but particularly useful utilities provided by this class include:
+
+- `stdout`, `stderr` and process exiting/erroring helpers via `this.output`. Crucial to use `this.output` as this allows for easier unit testing of the command via `packages/@sanity/cli/test/mockSanityCommand.ts`.
+- `getCliConfig()` helper method for retrieving Sanity-specific configuration.
+- `getProjectId()` helper method for retrieving relevant project ID for project-specific CLI commands.
+- `getProjectRoot()` helper method for retrieving a filesystem location denoting Sanity project root.
 
 ### Basic Command Structure
 
@@ -646,7 +410,7 @@ export class MyCommand extends SanityCommand<typeof MyCommand> {
     const cliConfig = await this.getCliConfig()
     const projectId = cliConfig.api?.projectId
     if (!projectId) {
-      this.error('Project ID not found')
+      this.output.error('Project ID not found')
     }
 
     // 2. Get API client (if needed)
@@ -659,11 +423,11 @@ export class MyCommand extends SanityCommand<typeof MyCommand> {
     // 3. Execute logic (preferably call action)
     try {
       const result = await performAction(client, args.myArg)
-      this.log(JSON.stringify(result, null, 2))
+      this.output.log(JSON.stringify(result, null, 2))
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
       debug('Operation failed', error)
-      this.error(`Failed: ${message}`, {exit: 1})
+      this.output.error(`Failed: ${message}`, {exit: 1})
     }
   }
 }
@@ -685,14 +449,14 @@ try {
 
   // Show user-friendly message
   const message = error instanceof Error ? error.message : 'Unknown error'
-  this.error(`User-facing message: ${message}`, {exit: 1})
+  this.output.error(`User-facing message: ${message}`, {exit: 1})
 }
 ```
 
 ### Interactive Prompts
 
 ```typescript
-import {select, input, confirm} from '@inquirer/prompts'
+import {select, input, confirm} from '@sanity/cli-core/ux'
 
 // Selection prompt
 const dataset = await select({
@@ -721,26 +485,26 @@ const confirmed = await confirm({
 ```typescript
 // Colorized JSON
 import {colorizeJson} from '@sanity/cli-core'
-this.log(colorizeJson(data))
+this.output.log(colorizeJson(data))
 
 // Colors
 import {styleText} from 'node:util'
-this.log(styleText('green', 'Success!'))
-this.log(styleText('yellow', 'Warning:'), 'Something to note')
-this.log(styleText('red', 'Error:'), 'Operation failed')
+this.output.log(styleText('green', 'Success!'))
+this.output.log(styleText('yellow', 'Warning:'), 'Something to note')
+this.output.log(styleText('red', 'Error:'), 'Operation failed')
 
 // JSON output
-this.log(JSON.stringify(data, null, 2))
+this.output.log(JSON.stringify(data, null, 2))
 
 // Symbols
-import {logSymbols} from '@sanity/cli-core'
-this.log(`${logSymbols.success} Operation completed`)
-this.log(`${logSymbols.error} Operation failed`)
-this.log(`${logSymbols.info} Additional information`)
-this.log(`${logSymbols.warning} Proceed with caution`)
+import {logSymbols} from '@sanity/cli-core/ux'
+this.output.log(`${logSymbols.success} Operation completed`)
+this.output.log(`${logSymbols.error} Operation failed`)
+this.output.log(`${logSymbols.info} Additional information`)
+this.output.log(`${logSymbols.warning} Proceed with caution`)
 
 // Spinner
-import {spinner} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 const spin = spinner('Loading...').start()
 await operation()
 spin.stop()
@@ -754,7 +518,7 @@ const table = new Table({
   ],
 })
 datasets.forEach((d) => table.addRow(d))
-table.printTable()
+this.output.log(table.render()) // allows for unit testing table contents via mock SanityCommand output log assertions
 ```
 
 ### Debug Logging
@@ -818,7 +582,7 @@ Commands should call services, not make API requests directly.
 - [ ] TypeScript compiles: `pnpm check:types`
 - [ ] Code is linted: `pnpm check:lint`
 - [ ] Dependencies checked: `pnpm check:deps`
-- [ ] Test coverage maintained or improved: `pnpm test --coverage`
+- [ ] Test coverage maintained or improved: `pnpm test:coverage`
 - [ ] Examples updated if needed
 - [ ] Documentation updated if needed
 
