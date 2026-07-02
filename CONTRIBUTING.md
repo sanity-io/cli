@@ -171,7 +171,7 @@ catch (error: any) { }
   - Commands extend `SanityCommand` from `@sanity/cli-core`
 - Unit Test files: `__tests__/` folder relative to the file being tested (e.g., `src/commands/__tests__/<command-name>.test.ts`)
   - Unit tests for `SanityCommands` should leverage `createMockSanityCommand()` test helper from `@sanity/cli/test/mockSanityCommand.ts`
-- Integration Test files: `test/integration` folder relative to the logic being tested (e.g. `test/integration/commands/__tests__/<command-name>.test.ts`)
+- Integration Test files: `test/integration` folder located in the root of the package and mirroring the `src/` path of the main module(s) under test (e.g. `test/integration/commands/__tests__/<command-name>.test.ts`)
 - When adding or migrating commands, check for existing utilities in `src/utils/` and `@sanity/cli-core`
 
 ---
@@ -181,8 +181,8 @@ catch (error: any) { }
 Commands use a small set of exit codes aligned with oclif defaults and Unix convention.
 
 - **0 - Success**: Command completed normally. Implicit when `run()` returns without throwing. Only use `this.exit(0)` when you need to short-circuit early on a successful path.
-- **1 - Runtime error**: Something went wrong during execution that is not the user's fault. API failures, network errors, missing project config, file system errors, unexpected state. Use `this.error(message, {exit: 1})`.
-- **2 - Usage error**: The user provided invalid input to the CLI itself. Bad arguments, unknown flags, invalid flag values, failing input validation. This is oclif's default for `this.error()` and all parse errors, so omitting the `exit` option also gives you 2. Use `this.error(message, {exit: 2})` or `this.error(message)`.
+- **1 - Runtime error**: Something went wrong during execution that is not the user's fault. API failures, network errors, missing project config, file system errors, unexpected state. Use `this.output.error(message, {exit: 1})`.
+- **2 - Usage error**: The user provided invalid input to the CLI itself. Bad arguments, unknown flags, invalid flag values, failing input validation. This is oclif's default for `this.output.error()` and all parse errors, so omitting the `exit` option also gives you 2. Use `this.output.error(message, {exit: 2})` or `this.output.error(message)`.
 - **3 - User abort**: The user declined a confirmation prompt or otherwise chose not to proceed. The command didn't fail, but it also didn't complete its intended action. Use `this.exit(exitCodes.USER_ABORT)`. Import `exitCodes` from `@sanity/cli-core`.
 - **130 - User abort (signal)**: The user cancelled via Ctrl+C or dismissed a prompt without answering. Handled automatically by `SanityCommand.catch()` - commands should not set this manually.
 
@@ -190,14 +190,14 @@ Commands use a small set of exit codes aligned with oclif defaults and Unix conv
 
 - User passed `--dataset` with a name that doesn't match the allowed pattern? **Exit 2** - they gave bad input.
 - The dataset name is valid but the API says it doesn't exist? **Exit 1** - runtime failure.
-- `this.error('No project ID found')` when `--project-id` was required but missing? **Exit 2** - usage error.
+- `this.output.error('No project ID found')` when `--project-id` was required but missing? **Exit 2** - usage error.
 - API returned 500 while creating a dataset? **Exit 1** - runtime failure.
 - User says "no" to "Deploy anyway despite version mismatch?" **Exit 3** - user chose not to proceed.
 - User hits Ctrl+C during a prompt? **Exit 130** - handled by base class, no action needed.
 
 ### In Practice
 
-- For `this.error()`: pass `{exit: 1}` for runtime errors, `{exit: 2}` (or omit) for usage errors.
+- For `this.output.error()`: pass `{exit: 1}` for runtime errors, `{exit: 2}` (or omit) for usage errors.
 - For user-declined prompts: `this.exit(exitCodes.USER_ABORT)` after logging a message like "Deploy cancelled."
 - For custom error classes extending `CLIError`: set `exit` in the constructor options.
 - For `this.exit()`: only use for early termination (exit 0 for success, exit 1 for programmatic failure like `doctor` checks failing).
@@ -207,20 +207,18 @@ Commands use a small set of exit codes aligned with oclif defaults and Unix conv
 
 ## Testing Requirements
 
-This project employs three different types of tests: unit, integration and end-to-end (e2e). Ideally the amounts of each test type is distributed in a classic test pyramid, with unit tests making up a majority of the tests while integration and e2e tests are employed sparingly covering critical paths. All three types of tests are necessary to ensure a solid quality assurance process, but the tradeoffs between them should be understood in order to balance test reliability, infrastructure requirements, costs, and run times.
+This project employs three different types of tests: unit, integration and end-to-end (e2e). Ideally the amounts of each test type is distributed in a [test pyramid](https://martinfowler.com/articles/practical-test-pyramid.html), with unit tests making up a majority of the tests while integration and e2e tests are employed sparingly, covering critical paths. All three types of tests are necessary to ensure a solid quality assurance process, but the tradeoffs between them should be understood in order to balance test reliability, infrastructure requirements, costs and test execution times.
 
-**Unit tests** target a single source file (unit), mocking out a majority, if not all, of its dependencies in order to be able to exercise every logical branch within the unit via manipulation of its mocks. Because these tests mock out dependencies - and thus expensive I/O operations like file and network calls - unit tests are _fast_ - executing in a few milliseconds at most. Due to their single-unit narrow scope, unit tests are heavily coupled to the implementation of the unit they are testing. As a unit evolves and changes, typically so must its unit test. Unit tests in this project are stored next to the unit they are testing, under the `__tests__/` directory where the unit exists and named the same as the unit they are testing together with a `.test.ts` extension.
+**Unit tests** target a single source file (unit), mocking out a majority (ideally all!) of its dependencies in order to be able to exercise every logical branch within the unit via manipulation of its mocks. Because these tests mock out dependencies - and thus expensive I/O operations like file and network calls - unit tests are _fast_ - executing in a few milliseconds at most. Due to their single-unit narrow scope, unit tests are heavily coupled to the implementation of the unit they are testing. As a unit evolves and changes, typically so must its unit test. Unit tests in this project are stored next to the unit they are testing, under the `__tests__/` directory where the unit exists and named the same as the unit they are testing together with a `.test.ts` extension.
 
-**Integration tests** have broader scope (target more than a single source file) and may or may not employ mocking. As a result, these tests are more expensive than unit tests in terms of execution time and setup, and may be coupled to specific filesystem fixtures or configurations. As a result of a lack of mocking, they are also more brittle and can be subject to so-called 'flakiness' - transient or intermittent issues due to e.g. network partitions, low level operating system race conditions, resource exhaustion, etc. Integration tests in this project are stored under the `test/integration/` directory of each package.
+**Integration tests** (also known as "service tests") have broader scope (target more than a single source file) and may or may not employ mocking. As a result, these tests are more expensive than unit tests in terms of execution time and setup, and may be coupled to specific filesystem fixtures or configurations. As a result of a lack of mocking, they are also more brittle and can be subject to so-called 'flakiness' - transient or intermittent issues due to e.g. network partitions, low level operating system race conditions, resource exhaustion, etc. Integration tests in this project are stored under the `test/integration/` directory of each package.
 
-**End-to-end tests** have even-broader scope, typically being completely detached from any specific implementation and are written in a more black-box manner mimicking end-user interactions. They often integrate with live remot environments (staging or production). For these reasons, e2e tests are even-more expensive than integration tests and generally even-less reliable.
+**End-to-end (E2E) tests** (also known as "UI tests") have even-broader scope, typically being completely detached from any specific implementation and are written in a more black-box manner, mimicking end-user interactions. They often integrate with live remote environments (staging or production). For these reasons, E2E tests are even-more expensive than integration tests and generally even-less reliable. E2E are stored under `@sanity/packages/cli-e2e`.
 
 The three test types exist on a continuum: from fastest/cheapest/most-coupled-to-implementation to slowest/most-expensive/least-coupled-to-implementation.
 
 ### Testing Rules
 
-- Prefer lightweight unit tests over integration tests where possible
-- Segregate heavy tests that use the filesystem, fixtures or may take longer to run into `packages/@sanity/cli/test/integration`
 - Use `vi.mocked()` for type-safe mocking
 - Use `vi.hoisted(() => vi.fn())` for client method mocks
 - Clear mocks in `afterEach()` with `vi.clearAllMocks()`
@@ -230,48 +228,88 @@ The three test types exist on a continuum: from fastest/cheapest/most-coupled-to
 - Never use `any` in mock types - use proper typing or `unknown`
 - If a heavy integration test must be used, use the `testCommand()` and `testFixture()` helpers from `@sanity/cli-test` for command execution
 
-### Coverage Goals
+### Test Code Coverage Goals
 
+- Code coverage is _only_ reported from unit test execution. Reporting code coverage from heavier integration or E2E tests, which may coincidentally exercise code paths unrelated to the tests, falsely increases code coverage, giving a false sense of security.
 - **New code**: Maximum coverage
 - **Modified code**: Maintain or improve existing coverage
-- Run `pnpm test:coverage` to get a per-file test coverage report printed to your terminal
+- Run `pnpm test:coverage` to get a per-file test coverage report printed to your terminal. This command accepts one or path parameters to test files in order to more granularly report test coverage.
 
-### Test Structure
+### Writing Tests
+
+This section describes how to write unit and integration tests, which apply to all packages in this repository. Guidance on how to write E2E tests is covered in more detail in the `packages/@sanity/cli-e2e` package documentation.
+
+#### Writing Unit Tests
+
+Unit tests are our primary tool for quality assurance. Before writing integration or E2E tests, unit tests should be written. Mock out all imported modules as part of the beginning of the test; a unit test exercises a specific module, not its dependencies. If you need to test logic within an imported module, write a unit test for the imported module! Do not unit test third party dependencies.
+
+For an example of a unit test employing solid mocking practices, see `packages/@sanity/cli/src/actions/telemetry/__tests__/resolveConsent.test.ts`. It mocks all imported modules but one (a dependency-less `isTrueish` helper method), and when the test is run with code coverage reporting enabled (`pnpm test:coverage packages/@sanity/cli/src/actions/telemetry/__tests__/resolveConsent.test.ts`) yields 100% code coverage on the module-under-test.
+
+The following is an example unit test for a fake `source-under-test.ts` file. It breaks down the test into static imports, mock setup and module mocking, and finally the test cases themselves, with mock manipulation in different test cases.
 
 ```typescript
 import {describe, test, expect, afterEach, vi} from 'vitest'
-import {testCommand} from '@sanity/cli-test'
 
-describe('feature description', () => {
+import {thingBeingTested} from '../source-under-test.ts'
+
+// Hoisted granular mocks defined that individual tests can adjust as needed
+const mockDependencyMethod = vi.hoisted(() => vi.fn())
+const mockOtherDependencyMethod = vi.hoisted(() => vi.fn())
+
+// Module imported in ../source-under-test.ts is mocked. Not ethat `vi.mock` and `vi.hoisted` are executed _before_ any
+// static imports by vitest as part of its transpilation, which is these mocks are in place by the time `thingBeingTested`
+// is imported.
+vi.mock(import('../dependency-that-source-under-test-relies-on.ts'), () => ({
+  dependencyMethod: mockDependencyMethod,
+}))
+// Another module imported in ../source-under-test.ts is mocked, but this one allowing for the module being mocked to be
+// truly imported. This may be useful when mocking out very large or complex modules where you want to preserve the module's
+// implementation. Note that calling `importOriginal` will pull in the entire module, possibly bloating the import graph;
+// use sparingly and judiciously to keep unit tests fast. `pnpm test:unit path/to/your/test/file.test.ts` will print out a
+// summary of import path durations during test execution and the slowest modules contributing to slow import times.
+vi.mock(import('../dependency-that-source-under-test-relies-on.ts'), (importOriginal) => async {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    otherDependencyMethod: mockOtherDependencyMethod,
+  }
+})
+
+describe('thingBeingTested', () => {
   afterEach(() => {
     vi.clearAllMocks() // Always clean up
   })
 
   test('success scenario', async () => {
     // 1. Mock dependencies
-    vi.mocked(dependency).mockResolvedValue(mockData)
+    mockDependencyMethod.mockResolvedValue({data: 'some mocked data'})
+    mockOtherDependencyMethod.mockReturnValue({data: 'some other mocked data'})
 
-    // 2. Execute command
-    const {stdout, stderr, error} = await testCommand(Command, ['args'])
+    // 2. Invoke the export being exercised from the module-under-test
+    const result = await thingBeingTested()
 
-    // 3. Assert - use throw for better stack traces on failure
-    if (error) throw error
-    expect(stdout).toContain('expected')
+    // 3. Assert on the results return and/or on the state of the mocks
+    expect(result).toContain('expected')
+    expect(mockDependencyMethod).toHaveBeenCalledWith('some expected parameter value')
   })
 
   test('error scenario', async () => {
-    vi.mocked(dependency).mockRejectedValue(new Error('fail'))
+    mockDependencyMethod.mockRejectedValue(new Error('fail'))
 
-    const {error} = await testCommand(Command, ['args'])
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Failed to')
-    expect(error?.oclif?.exit).toBe(1)
+    await expect(thingBeingTested()).rejects.toThrow('fail')
   })
 })
 ```
 
-### Avoiding Flaky Tests: Timing and Ports
+##### Writing Unit Tests for a `SanityCommand` Implementation
+
+OCLIF `Command` class implementations for the `packages/@sanity/cli` project should extend from the the `@sanity/cli` package's `SanityCommand.ts` class, which provides affordances like retrieving Sanity configurations, terminal output helper methods and automatic flag parsing. To make testing of these CLI command entry points easier, there is a mock `SanityCommand` implementation that can be used as a module mock: `packages/@sanity/cli/test/mockSanityCommand.ts`. All other unit testing guidelines in the previous section should also be followed for unit testing `SanityCommand`-extended classes.
+
+#### Writing Integration Tests
+
+Sometimes, critical use cases call for leveraging heavier integration tests. Segregate heavy tests that use the filesystem (e.g. test fixtures) or may take longer to run into the `test/integration` folder of the relevant package.
+
+##### Avoiding Flaky Tests: Timing and Ports
 
 Tests that interact with real servers (or any asynchronous work) need extra care to stay reliable on slow CI runners - Windows runners in particular - and when running in parallel with other test files. Three rules:
 
