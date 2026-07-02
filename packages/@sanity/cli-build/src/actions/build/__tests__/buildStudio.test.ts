@@ -1,8 +1,8 @@
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {DefinedTelemetryTrace} from '@sanity/telemetry'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {BuildOptions} from '../buildStudio.js'
+import {type BuildOptions} from '../buildStudio.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
 
 function buildOptions(
@@ -82,8 +82,8 @@ vi.mock(import('../getEnvironmentVariables.js'), () => ({
   getStudioEnvironmentVariables: mockGetStudioEnvironmentVariables,
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const original = await importOriginal()
   return {
     ...original,
     getLocalPackageVersion: mockGetLocalPackageVersion,
@@ -91,8 +91,8 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
+vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
+  const original = await importOriginal()
   mockedSpinner.mockImplementation(original.spinner)
   return {
     ...original,

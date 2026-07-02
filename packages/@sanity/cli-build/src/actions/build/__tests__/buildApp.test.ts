@@ -1,7 +1,7 @@
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {BuildOptions} from '../buildApp.js'
+import {type BuildOptions} from '../buildApp.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
@@ -54,8 +54,8 @@ vi.mock(import('../getEnvironmentVariables.js'), () => ({
   getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const original = await importOriginal()
   return {
     ...original,
     getLocalPackageVersion: mockedGetLocalPackageVersion,
@@ -63,7 +63,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
+vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
   mockedSpinner.mockImplementation(original.spinner)
   return {

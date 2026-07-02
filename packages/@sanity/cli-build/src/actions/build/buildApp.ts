@@ -9,7 +9,7 @@ import {
   getTimer,
   isInteractive,
   type Output,
-  UserViteConfig,
+  type UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {type DefineAppInput} from '@sanity/workbench-cli'
