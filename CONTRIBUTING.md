@@ -89,7 +89,7 @@ npx sanity <command>
 # Watch mode (rebuilds on changes)
 pnpm watch:cli
 
-# In another terminal, test your changes
+# In another terminal, manually test your changes
 cd fixtures/basic-studio
 DEBUG=sanity:* npx sanity <your-command>
 ```
@@ -102,10 +102,10 @@ Before submitting a PR, run:
 pnpm check:types           # TypeScript checking
 pnpm check:lint            # ESLint + Prettier
 pnpm check:deps            # Unused dependencies
-pnpm test                  # Run all tests
 pnpm test:unit             # Run only unit tests
-pnpm test:integration      # Run only integration tests
 pnpm test:unit --coverage  # Coverage report based on unit tests
+pnpm test:integration      # Run only integration tests
+pnpm test                  # Run all tests
 pnpm changeset             # Add a changeset (if your change affects published packages)
 ```
 
