@@ -10,7 +10,7 @@ import path from 'node:path'
 import {readPackageJson} from '@sanity/cli-core'
 import {type PluginOption} from 'vite'
 
-import {type DefineAppInput} from '../../../defineApp.js'
+import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {federation} from './plugin.js'
 
 interface WorkbenchViteOptions {
@@ -23,12 +23,9 @@ interface WorkbenchViteOptions {
    */
   entries: {relativeConfigLocation: string | null; relativeEntry: string | null}
 
+  exposes?: WorkbenchExposes
   /** App (vs studio) build — selects the discriminated federation option shape. */
   isApp?: boolean
-  /** Declared background services. */
-  services?: DefineAppInput['services']
-  /** Declared dock views. */
-  views?: DefineAppInput['views']
 }
 
 /**
@@ -50,7 +47,7 @@ function requireStudioConfigPath(relativeConfigLocation: string | null): string 
 
 /** Build the Vite plugins for a workbench app's module-federation remote. */
 export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promise<PluginOption> {
-  const {cwd, entries, isApp, services, views} = options
+  const {cwd, entries, exposes, isApp} = options
   const pkgJson = await readPackageJson(path.join(cwd, 'package.json'))
 
   return federation({
@@ -65,9 +62,8 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
           isApp: false as const,
           studioConfigPath: requireStudioConfigPath(entries.relativeConfigLocation),
         }),
+    exposes,
     pkgJson,
-    services,
-    views,
     workDir: cwd,
   })
 }

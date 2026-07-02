@@ -8,6 +8,16 @@ import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
 
 import {type DefineAppInput} from './defineApp.js'
 
+/**
+ * Bundled so adding a declaration family touches this type and the artifact
+ * expanders, not every hop of build/dev plumbing in between.
+ * @internal
+ */
+export interface WorkbenchExposes {
+  services?: DefineAppInput['services']
+  views?: DefineAppInput['views']
+}
+
 /** @public */
 export interface ResolvedWorkbenchApp {
   /** Background worker services the app declares. */
@@ -30,6 +40,7 @@ export function resolveWorkbenchApp(
 ): ResolvedWorkbenchApp | null {
   const app = cliConfig?.app
   if (!isWorkbenchApp(app)) return null
+
   return {
     applicationType: app.applicationType,
     entry: app.entry,

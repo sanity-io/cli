@@ -71,10 +71,11 @@ describe('workbenchVitePlugins', () => {
     await workbenchVitePlugins({
       cwd,
       entries: {relativeConfigLocation: null, relativeEntry: '../../src/App'},
+      exposes: {services, views},
       isApp: true,
-      services,
-      views,
     })
-    expect(mockFederation).toHaveBeenCalledWith(expect.objectContaining({services, views}))
+    expect(mockFederation).toHaveBeenCalledWith(
+      expect.objectContaining({exposes: {services, views}}),
+    )
   })
 })

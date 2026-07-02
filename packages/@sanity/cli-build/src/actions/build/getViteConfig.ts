@@ -7,8 +7,7 @@ import {
   getCliTelemetry,
   type UserViteConfig,
 } from '@sanity/cli-core'
-import {type DefineAppInput} from '@sanity/workbench-cli'
-import {workbenchVitePlugins} from '@sanity/workbench-cli/build'
+import {type WorkbenchExposes, workbenchVitePlugins} from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -76,6 +75,8 @@ interface ViteOptions {
    */
   basePath?: string
 
+  exposes?: WorkbenchExposes
+
   isApp?: boolean
 
   /**
@@ -103,22 +104,11 @@ interface ViteOptions {
    * HTTP development server configuration
    */
   server?: {host?: string; port?: number}
-  /**
-   * Background services the workbench app declares. Built into self-contained
-   * worker bundles and exposed through module federation as `./services/<name>`.
-   */
-  services?: DefineAppInput['services']
 
   /**
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
-
-  /**
-   * Views the workbench app declares. Built into render-contract artifacts and
-   * exposed through module federation as `./views/<name>`.
-   */
-  views?: DefineAppInput['views']
 }
 
 /**
@@ -133,6 +123,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     basePath: rawBasePath = '/',
     cwd,
     entries,
+    exposes,
     isApp,
     isWorkbenchApp,
     minify,
@@ -141,10 +132,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     reactCompiler,
     schemaExtraction,
     server,
-    services,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
-    views,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -209,7 +198,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       // Federation builds only need the federation plugin — skip client-specific
       // plugins (favicons, runtime rewrite, build entries)
       ...(isWorkbenchApp
-        ? [...sharedPlugins, await workbenchVitePlugins({cwd, entries, isApp, services, views})]
+        ? [...sharedPlugins, await workbenchVitePlugins({cwd, entries, exposes, isApp})]
         : [
             ...sharedPlugins,
             sanityFaviconsPlugin({

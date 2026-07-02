@@ -8,7 +8,7 @@ import {
   getStudioEnvironmentVariables,
 } from '@sanity/cli-build/_internal/env'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
-import {type DefineAppInput} from '@sanity/workbench-cli'
+import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
@@ -30,14 +30,13 @@ export interface DevServerOptions {
 
   appTitle?: string
   entry?: string
+  exposes?: WorkbenchExposes
   httpHost?: string
   isApp?: boolean
   isWorkbenchApp?: boolean
   projectName?: string
   schemaExtraction?: CliConfig['schemaExtraction']
-  services?: DefineAppInput['services']
   typegen?: CliConfig['typegen']
-  views?: DefineAppInput['views']
   vite?: UserViteConfig
 }
 
@@ -54,6 +53,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     basePath,
     cwd,
     entry,
+    exposes,
     httpHost,
     httpPort,
     isApp,
@@ -61,9 +61,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     reactCompiler,
     reactStrictMode,
     schemaExtraction,
-    services,
     typegen,
-    views,
     vite: extendViteConfig,
   } = options
 
@@ -104,6 +102,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     basePath,
     cwd,
     entries,
+    exposes,
     getEnvironmentVariables,
     isApp,
     isWorkbenchApp,
@@ -111,8 +110,6 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     reactCompiler,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
-    services,
-    views,
   })
 
   // Extend Vite configuration with user-provided config
