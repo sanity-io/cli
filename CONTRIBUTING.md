@@ -25,7 +25,7 @@ For detailed setup, see [Development Workflow](#development-workflow).
   - Contains `SanityCommand` that all commands extend
   - Provides helper methods for API clients, logging, and error handling
   - Can be extended by external CLI modules
-- **`@sanity/cli-test`**: Testing utilities for CLI commands
+- **`@sanity/cli-test`**: Integration testing utilities for use with non-unit-tests
 
 ### Separation of Concerns
 
