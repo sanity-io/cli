@@ -1,5 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {resolveConsent} from '../resolveConsent.js'
+
 const mockIsCi = vi.hoisted(() => vi.fn())
 const mockGetCliToken = vi.hoisted(() => vi.fn())
 const mockFetchTelemetry = vi.hoisted(() => vi.fn())
@@ -23,8 +25,6 @@ vi.mock('../../../services/telemetry.js', async (importOriginal) => {
 vi.mock('../telemetryDebug.js', async () => ({
   telemetryDebug: mockTelemetryDebug,
 }))
-
-const {resolveConsent} = await import('../resolveConsent.js')
 
 describe('actions telemetry resolveConsent', () => {
   beforeEach(() => {
