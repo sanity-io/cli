@@ -116,11 +116,8 @@ function normalizeDeployError(error: unknown, output: Output, type: 'coreApp' | 
     output.error('Deployment cancelled by user', {exit: 1})
     return
   }
-  // A failed check already carries its own exit code; keep it
-  if (error instanceof CLIError) {
-    output.error(error.message, {exit: error.oclif?.exit ?? 1})
-    return
-  }
+  // A failed check already carries its own message and exit code; rethrow untouched
+  if (error instanceof CLIError) throw error
   deployDebug(`Error deploying ${noun}`, error)
   output.error(`Error deploying ${noun}: ${error}`, {exit: 1})
 }
