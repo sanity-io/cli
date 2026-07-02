@@ -47,49 +47,30 @@ export interface DeploySpec {
  * plan, and `--json` emits the same information as machine-readable JSON.
  */
 export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
-  if (!options.flags.json) {
-    await runHuman(options, spec)
-    return
-  }
-
   const {output} = options
-  // JSON mode: sub-steps (build, schema upload) print progress straight to
+  const json = !!options.flags.json
+
+  // In JSON mode sub-steps (build, schema upload) print progress straight to
   // stdout, so route the whole run's stdout to stderr and emit only the payload.
-  const restoreStdout = redirectStdoutToStderr()
+  const restoreStdout = json ? redirectStdoutToStderr() : () => {}
   try {
     if (options.flags['dry-run']) {
       const plan = await collectPlan(options, spec)
       restoreStdout()
-      output.log(JSON.stringify(deploymentPlanToJson(plan), null, 2))
+      if (json) output.log(JSON.stringify(deploymentPlanToJson(plan), null, 2))
+      else renderDeploymentPlan(plan, output)
       exitIfBlocked(plan, output)
       return
     }
 
     const result = await spec.run(options, createFailFastReporter(output))
     restoreStdout()
-    if (result) output.log(JSON.stringify({deployed: true, ...result}, null, 2))
+    if (json && result) output.log(JSON.stringify({deployed: true, ...result}, null, 2))
   } catch (error) {
     restoreStdout()
     normalizeDeployError(error, output, spec.type)
   } finally {
     restoreStdout()
-  }
-}
-
-async function runHuman(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
-  const {output} = options
-
-  if (options.flags['dry-run']) {
-    const plan = await collectPlan(options, spec)
-    renderDeploymentPlan(plan, output)
-    exitIfBlocked(plan, output)
-    return
-  }
-
-  try {
-    await spec.run(options, createFailFastReporter(output))
-  } catch (error) {
-    normalizeDeployError(error, output, spec.type)
   }
 }
 
