@@ -224,7 +224,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
     if (!this.flags.mcp || !this.resolveIsInteractive()) {
       mcpMode = 'skip'
-    } else if (this.flags.yes) {
+    } else if (this.isUnattended()) {
+      // Any unattended run (e.g. --yes, --json) configures MCP with defaults rather than prompting
       mcpMode = 'auto'
     }
 
