@@ -12,7 +12,12 @@ import {
 } from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
 import {deployDebug} from './deployDebug.js'
-import {resolveAppDeployTarget, resolveStudioDeployTarget} from './resolveDeployTarget.js'
+import {
+  type AppDeployTargetResolution,
+  resolveAppDeployTarget,
+  resolveStudioDeployTarget,
+  type StudioDeployTargetResolution,
+} from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
 
 type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
@@ -204,10 +209,57 @@ export async function verifyOutputDir({
 }
 
 /**
- * Reports the read-only app deploy-target verdict. The rules live in
- * resolveDeployTarget; a real deploy consumes the same verdicts through
- * findUserApplication.
+ * The single diagnosis for each app deploy-target verdict, shared by the
+ * dry-run report and the real deploy's unattended error paths so message,
+ * fix, and exit code can't drift between the two.
  */
+export function describeAppTarget(resolution: AppDeployTargetResolution): DeployCheck {
+  switch (resolution.type) {
+    case 'blocked': {
+      return {message: `Deploy target not resolved — ${resolution.message}`, status: 'skip'}
+    }
+    case 'found': {
+      const {application} = resolution
+      return {
+        message: `Deploys to existing application "${application.title ?? application.appHost}"`,
+        status: 'pass',
+      }
+    }
+    case 'invalid': {
+      return {
+        message: APP_ID_NOT_FOUND_IN_ORGANIZATION,
+        solution: 'Check `deployment.appId` matches an app in your organization',
+        status: 'fail',
+      }
+    }
+    case 'needs-input': {
+      return {
+        exitCode: exitCodes.USAGE_ERROR,
+        message: `No \`deployment.appId\` configured (${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} to choose from)`,
+        solution: 'Add `deployment.appId` to sanity.cli.ts',
+        status: 'fail',
+      }
+    }
+    // Creating an application prompts for a title, which no unattended run
+    // (including a dry run) can answer
+    case 'would-create': {
+      return {
+        exitCode: exitCodes.USAGE_ERROR,
+        message: 'No application to deploy to — creating one needs an interactive prompt',
+        solution:
+          'Run `sanity deploy` interactively once, or add `deployment.appId` to sanity.cli.ts',
+        status: 'fail',
+      }
+    }
+  }
+}
+
+export function describeAppTargetError(err: unknown, organizationId: string | undefined): string {
+  return (err as {statusCode?: number})?.statusCode === 403
+    ? `You don’t have permission to view applications for the configured organization ID ("${organizationId}"). Verify the organization ID, or ask your organization’s admin for access.`
+    : `Failed to resolve deploy target: ${getErrorMessage(err)}`
+}
+
 export async function checkAppTarget(
   reporter: CheckReporter,
   {appId, organizationId}: {appId: string | undefined; organizationId: string | undefined},
@@ -215,70 +267,62 @@ export async function checkAppTarget(
   await runStep(
     reporter,
     'target',
-    async () => {
-      const resolution = await resolveAppDeployTarget({appId, organizationId})
-
-      switch (resolution.type) {
-        case 'blocked': {
-          reporter.report({
-            message: `Deploy target not resolved — ${resolution.message}`,
-            status: 'skip',
-          })
-          return
-        }
-        case 'found': {
-          const {application} = resolution
-          reporter.report({
-            message: `Deploys to existing application "${application.title ?? application.appHost}"`,
-            status: 'pass',
-          })
-          return
-        }
-        case 'invalid': {
-          reporter.report({
-            message: APP_ID_NOT_FOUND_IN_ORGANIZATION,
-            solution: 'Check `deployment.appId` matches an app in your organization',
-            status: 'fail',
-          })
-          return
-        }
-        case 'needs-input': {
-          reporter.report({
-            // Matches the exit code an unattended real deploy uses (findUserApplication)
-            exitCode: exitCodes.USAGE_ERROR,
-            message: `No \`deployment.appId\` configured and ${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} found — a real deploy would prompt`,
-            solution: 'Add `deployment.appId` to sanity.cli.ts',
-            status: 'fail',
-          })
-          return
-        }
-        case 'would-create': {
-          reporter.report({message: 'Would create a new application deployment', status: 'pass'})
-          return
-        }
-      }
-    },
-    (err) =>
-      (err as {statusCode?: number})?.statusCode === 403
-        ? `You don’t have permission to view applications for the configured organization ID ("${organizationId}"). Verify the organization ID, or ask your organization’s admin for access.`
-        : `Failed to resolve deploy target: ${getErrorMessage(err)}`,
+    async () =>
+      reporter.report(describeAppTarget(await resolveAppDeployTarget({appId, organizationId}))),
+    (err) => describeAppTargetError(err, organizationId),
   )
 }
 
-/**
- * Reports the read-only studio deploy-target verdict. The rules live in
- * resolveDeployTarget; a real deploy consumes the same verdicts through
- * findUserApplicationForStudio.
- */
+/** Same contract as {@link describeAppTarget}, for the studio verdicts. */
+export function describeStudioTarget(
+  resolution: StudioDeployTargetResolution,
+  {isExternal}: {isExternal: boolean},
+): DeployCheck {
+  const studioUrl = (host: string) => (isExternal ? host : `https://${host}.sanity.studio`)
+
+  switch (resolution.type) {
+    case 'blocked': {
+      return {message: `Deploy target not resolved — ${resolution.message}`, status: 'skip'}
+    }
+    case 'found': {
+      return {
+        message: `Deploys to existing studio ${studioUrl(resolution.application.appHost)}`,
+        status: 'pass',
+      }
+    }
+    case 'invalid': {
+      return {
+        // A bad host is a usage error; other invalid targets exit 1
+        exitCode: resolution.reason === 'invalid-host' ? exitCodes.USAGE_ERROR : 1,
+        message: resolution.message,
+        solution: 'Check `studioHost` and `deployment.appId` in sanity.cli.ts',
+        status: 'fail',
+      }
+    }
+    case 'needs-input': {
+      return {
+        exitCode: exitCodes.USAGE_ERROR,
+        message: isExternal ? 'No external studio URL configured' : 'No studio hostname configured',
+        solution: isExternal
+          ? 'Set `studioHost` in sanity.cli.ts, or pass the full URL with --url'
+          : 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+        status: 'fail',
+      }
+    }
+    case 'would-create': {
+      return {
+        message: isExternal
+          ? `Would register external studio at ${resolution.appHost}`
+          : `Would create studio hostname ${studioUrl(resolution.appHost)} (name availability is checked on deploy)`,
+        status: 'pass',
+      }
+    }
+  }
+}
+
 export async function checkStudioTarget(
   reporter: CheckReporter,
-  {
-    appId,
-    isExternal,
-    projectId,
-    studioHost,
-    urlFlag,
-  }: {
+  options: {
     appId: string | undefined
     isExternal: boolean
     projectId: string | undefined
@@ -286,72 +330,15 @@ export async function checkStudioTarget(
     urlFlag: string | undefined
   },
 ): Promise<void> {
-  const studioUrl = (host: string) => (isExternal ? host : `https://${host}.sanity.studio`)
-
   await runStep(
     reporter,
     'target',
-    async () => {
-      const resolution = await resolveStudioDeployTarget({
-        appId,
-        isExternal,
-        projectId,
-        studioHost,
-        urlFlag,
-      })
-
-      switch (resolution.type) {
-        case 'blocked': {
-          reporter.report({
-            message: `Deploy target not resolved — ${resolution.message}`,
-            status: 'skip',
-          })
-          return
-        }
-        case 'found': {
-          reporter.report({
-            message: `Deploys to existing studio ${studioUrl(resolution.application.appHost)}`,
-            status: 'pass',
-          })
-          return
-        }
-        case 'invalid': {
-          reporter.report({
-            // A bad host is a usage error; other invalid targets exit 1 — same as findUserApplicationForStudio
-            exitCode: resolution.reason === 'invalid-host' ? exitCodes.USAGE_ERROR : 1,
-            message: resolution.message,
-            solution: 'Check `studioHost` and `deployment.appId` in sanity.cli.ts',
-            status: 'fail',
-          })
-          return
-        }
-        case 'needs-input': {
-          // Dry-run only; a real deploy prompts, or errors in findUserApplication.
-          reporter.report({
-            // Matches the exit code an unattended real deploy uses (findUserApplicationForStudio)
-            exitCode: exitCodes.USAGE_ERROR,
-            message: isExternal
-              ? 'No external studio URL configured'
-              : 'No studio hostname configured',
-            solution: isExternal
-              ? 'Set `studioHost` in sanity.cli.ts, or pass the full URL with --url'
-              : 'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
-            status: 'fail',
-          })
-          return
-        }
-        case 'would-create': {
-          const {appHost} = resolution
-          reporter.report({
-            message: isExternal
-              ? `Would register external studio at ${appHost}`
-              : `Would create studio hostname ${studioUrl(appHost)} (name availability is checked on deploy)`,
-            status: 'pass',
-          })
-          return
-        }
-      }
-    },
+    async () =>
+      reporter.report(
+        describeStudioTarget(await resolveStudioDeployTarget(options), {
+          isExternal: options.isExternal,
+        }),
+      ),
     (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,
   )
 }

@@ -82,6 +82,8 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
         },
   )
 
+  checkAppId(reporter, {cliConfig})
+
   let application: UserApplication | null = null
   if (flags.external) {
     reporter.report({
@@ -149,7 +151,6 @@ async function resolveAppApplication(
   const organizationId = cliConfig.app?.organizationId ?? ''
 
   if (dryRun) {
-    checkAppId(reporter, {cliConfig})
     await checkAppTarget(reporter, {appId: getAppId(cliConfig), organizationId})
     return null
   }

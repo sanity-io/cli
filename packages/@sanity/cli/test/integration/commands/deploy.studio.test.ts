@@ -948,7 +948,7 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error finding user application')
+    expect(error?.message).toContain('Failed to resolve deploy target')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1325,8 +1325,8 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error finding user application')
     expect(error?.message).toContain(`Cannot find app with app ID ${studioAppId}`)
+    expect(error?.message).toContain('Check `studioHost` and `deployment.appId` in sanity.cli.ts')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1364,8 +1364,8 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error finding user application')
     expect(error?.message).toContain(`Cannot find app with app ID ${studioAppId}`)
+    expect(error?.message).toContain('Check `studioHost` and `deployment.appId` in sanity.cli.ts')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1736,8 +1736,10 @@ describe('#deploy studio', () => {
       })
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Cannot prompt for studio hostname in unattended mode')
-      expect(error?.message).toContain('Use --url to specify the studio hostname')
+      expect(error?.message).toContain('No studio hostname configured')
+      expect(error?.message).toContain(
+        'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+      )
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
@@ -1787,8 +1789,10 @@ describe('#deploy studio', () => {
       })
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Cannot prompt for studio hostname in unattended mode')
-      expect(error?.message).toContain('Use --url to specify the studio hostname')
+      expect(error?.message).toContain('No studio hostname configured')
+      expect(error?.message).toContain(
+        'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+      )
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockSelect).not.toHaveBeenCalled()
     })

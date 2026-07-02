@@ -248,14 +248,15 @@ describe('checkAppTarget', () => {
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "My App"')
   })
 
-  test('would-create → pass check', async () => {
+  test('would-create → fail check (creating one needs an interactive prompt)', async () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
     const reporter = createCollectingReporter()
 
     await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
-    expect(reporter.results[0]).toMatchObject({status: 'pass'})
-    expect(reporter.results[0]?.message).toContain('Would create a new application deployment')
+    expect(reporter.results[0]).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
+    expect(reporter.results[0]?.message).toContain('No application to deploy to')
+    expect(reporter.results[0]?.solution).toContain('interactively once')
   })
 
   test('needs-input → fail check (would prompt)', async () => {
@@ -268,7 +269,7 @@ describe('checkAppTarget', () => {
     await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
     expect(reporter.results[0]).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
-    expect(reporter.results[0]?.message).toContain('2 existing applications found')
+    expect(reporter.results[0]?.message).toContain('2 existing applications to choose from')
   })
 
   test('invalid → fail check', async () => {

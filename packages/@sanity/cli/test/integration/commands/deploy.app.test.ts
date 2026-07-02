@@ -789,7 +789,7 @@ describe('#deploy app', () => {
       },
     })
 
-    expect(error?.message).toContain('Error deploying application')
+    expect(error?.message).toContain('Failed to resolve deploy target')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -897,7 +897,7 @@ describe('#deploy app', () => {
     })
 
     expect(error?.message).toContain(
-      'Found both app.id (deprecated) and deployment.appId in your application configuration.\n\nPlease remove app.id from your sanity.cli.js or sanity.cli.ts file.',
+      'Both `app.id` (deprecated) and `deployment.appId` are set: Remove `app.id` from sanity.cli.ts',
     )
     expect(error?.oclif?.exit).toBe(1)
   })
@@ -942,7 +942,11 @@ describe('#deploy app', () => {
       },
     })
 
-    expect(stderr).toContain('The `app.id` config has moved to `deployment.appId`.')
+    // oclif wraps the warning at terminal width; flatten before asserting the full copy
+    const flatStderr = stderr.replaceAll(/\s*\n\s*›?\s*/g, ' ')
+    expect(flatStderr).toContain(
+      'The `app.id` config is deprecated: Move it to `deployment.appId` in sanity.cli.ts',
+    )
   })
 
   test('should handle app creation with retry when host is taken', async () => {
