@@ -1,9 +1,9 @@
-import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
-import {tmpdir} from 'node:os'
+import {type Dirent, type Stats} from 'node:fs'
+import {readdir, stat} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
-import {afterEach, beforeEach, describe, expect, test} from 'vitest'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type DeployCheck} from '../deployChecks.js'
 import {
@@ -13,23 +13,34 @@ import {
   renderDeploymentPlan,
 } from '../deploymentPlan.js'
 
+vi.mock(import('node:fs/promises'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  readdir: vi.fn(),
+  stat: vi.fn(),
+}))
+
+const mockReaddir = vi.mocked(readdir)
+const mockStat = vi.mocked(stat)
+
+// Minimal Dirent stand-in: listDeploymentFiles only reads `name` and `isDirectory()`.
+const dirent = (name: string, isDirectory: boolean): Dirent =>
+  ({isDirectory: () => isDirectory, name}) as Dirent
+
 describe('listDeploymentFiles', () => {
-  let dir: string
-
-  beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'deploy-plan-'))
-  })
-
-  afterEach(async () => {
-    await rm(dir, {force: true, recursive: true})
-  })
+  beforeEach(() => vi.clearAllMocks())
 
   test('lists nested files as sorted paths with sizes, relative to fromDir', async () => {
-    await mkdir(join(dir, 'dist', 'assets'), {recursive: true})
-    await writeFile(join(dir, 'dist', 'index.html'), 'x')
-    await writeFile(join(dir, 'dist', 'assets', 'app.js'), 'xyz')
+    mockReaddir.mockImplementation((async (dir: string) => {
+      if (dir.endsWith(join('dist', 'assets'))) return [dirent('app.js', false)]
+      if (dir.endsWith('dist')) return [dirent('index.html', false), dirent('assets', true)]
+      return []
+    }) as unknown as typeof readdir)
+    mockStat.mockImplementation(
+      (async (file: string) =>
+        ({size: file.endsWith('app.js') ? 3 : 1}) as Stats) as unknown as typeof stat,
+    )
 
-    const files = await listDeploymentFiles(join(dir, 'dist'), dir)
+    const files = await listDeploymentFiles(join('/root', 'dist'), '/root')
 
     expect(files).toEqual([
       {path: 'dist/assets/app.js', size: 3},
@@ -38,7 +49,8 @@ describe('listDeploymentFiles', () => {
   })
 
   test('returns an empty list when the directory is missing', async () => {
-    expect(await listDeploymentFiles(join(dir, 'missing'), dir)).toEqual([])
+    mockReaddir.mockRejectedValue(new Error('ENOENT'))
+    expect(await listDeploymentFiles(join('/root', 'missing'), '/root')).toEqual([])
   })
 })
 
@@ -85,7 +97,8 @@ describe('renderDeploymentPlan', () => {
     expect(text).toContain("This studio can't be deployed.")
     expect(text).toContain('Problems to fix:')
     expect(text).toContain('No project ID configured: Add `api.projectId`')
-    expect(text).toContain('Files to deploy (0.00 MB):')
+    // No files to list, so the section is omitted rather than shown as "0.00 MB"
+    expect(text).not.toContain('Files to deploy')
   })
 
   test('surfaces warnings in their own section', () => {

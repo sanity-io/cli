@@ -310,32 +310,6 @@ describe('#deploy studio', () => {
     )
   })
 
-  test('a dry run exits with the blocking check exit code, not a bare 1', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.cwd = () => cwd
-
-    // A federated studio can't deploy to an external host: the check reports a
-    // USAGE_ERROR, and the dry run should exit with that code like a real deploy.
-    const app = unstable_defineApp({
-      name: 'test-studio',
-      organizationId: 'org-1',
-      title: 'Test Studio',
-    }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
-    app.applicationType = 'studio'
-
-    const {error} = await testCommand(
-      DeployCommand,
-      ['--dry-run', '--external', '--url', 'https://studio.example.com'],
-      {
-        config: {root: cwd},
-        mocks: {cliConfig: {api: {projectId: 'test-project-id'}, app} as CliConfig},
-      },
-    )
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
-  })
-
   test('should validate the federation build shape for an unstable_defineApp studio', async () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd

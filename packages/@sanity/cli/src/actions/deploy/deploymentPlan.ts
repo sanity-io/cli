@@ -79,9 +79,12 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   renderIssues(output, 'Problems to fix:', problems)
   renderIssues(output, 'Warnings:', warnings)
 
-  output.log(`\nFiles to deploy (${formatMB(totalBytes)}):`)
-  for (const file of plan.files) {
-    output.log(`  ${file.path} (${formatMB(file.size)})`)
+  // A blocked plan often has no files; skip the section rather than show "0.00 MB".
+  if (plan.files.length > 0) {
+    output.log(`\nFiles to deploy (${formatMB(totalBytes)}):`)
+    for (const file of plan.files) {
+      output.log(`  ${file.path} (${formatMB(file.size)})`)
+    }
   }
 }
 
