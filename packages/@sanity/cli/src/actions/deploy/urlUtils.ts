@@ -1,3 +1,10 @@
+import {getSanityUrl} from '@sanity/cli-core'
+
+/** A deployed core app has no host of its own; it's only reachable in the dashboard. */
+export function getCoreAppUrl(organizationId: string, appId: string): string {
+  return getSanityUrl(`/@${organizationId}/application/${appId}`)
+}
+
 /**
  * Validates that the given string is a valid http or https URL.
  * Returns `true` if valid, or an error message string if invalid.

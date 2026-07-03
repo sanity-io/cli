@@ -238,7 +238,13 @@ describe('checkStudioTarget', () => {
 
 describe('checkAppTarget', () => {
   test('found → pass check for the existing application', async () => {
-    const app = application({appHost: 'app-host', id: 'core-1', title: 'My App', type: 'coreApp'})
+    const app = application({
+      appHost: 'app-host',
+      id: 'core-1',
+      organizationId: 'org-1',
+      title: 'My App',
+      type: 'coreApp',
+    })
     mockResolveApp.mockResolvedValue({application: app, type: 'found'})
     const reporter = createCollectingReporter()
 
@@ -246,6 +252,7 @@ describe('checkAppTarget', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "My App"')
+    expect(reporter.results[0]?.message).toContain('/@org-1/application/core-1')
   })
 
   test('would-create → fail check (creating one needs an interactive prompt)', async () => {

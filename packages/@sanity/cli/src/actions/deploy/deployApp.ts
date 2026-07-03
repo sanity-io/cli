@@ -33,6 +33,7 @@ import {listDeploymentFiles} from './deploymentPlan.js'
 import {type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
+import {getCoreAppUrl} from './urlUtils.js'
 
 const APP_PACKAGE = '@sanity/sdk-react'
 
@@ -263,7 +264,11 @@ function logAppDeployed({
   cliConfig: DeployAppOptions['cliConfig']
   output: DeployAppOptions['output']
 }): void {
-  output.log(`\n🚀 ${styleText('bold', 'Success!')} Application deployed`)
+  const organizationId = cliConfig.app?.organizationId ?? application.organizationId ?? undefined
+  const deployedTo = organizationId
+    ? ` to ${styleText('cyan', getCoreAppUrl(organizationId, application.id))}`
+    : ''
+  output.log(`\nSuccess! Application deployed${deployedTo}`)
 
   if (getAppId(cliConfig)) return
 

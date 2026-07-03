@@ -5,6 +5,7 @@ import {styleText} from 'node:util'
 import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
+import {pluralize} from '../../util/pluralize.js'
 import {type DeployCheck} from './deployChecks.js'
 
 export interface DeploymentFile {
@@ -122,7 +123,9 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
 
   // A blocked deploy uploads nothing, so only list files for a deployable plan.
   if (isDeployable(plan) && plan.files.length > 0) {
-    output.log(`\nFiles to deploy (${formatMB(totalBytes(plan.files))}):`)
+    output.log(
+      `\nFiles to deploy (${plan.files.length} ${pluralize('file', plan.files.length)}, ${formatMB(totalBytes(plan.files))}):`,
+    )
     for (const file of plan.files) {
       output.log(`  ${file.path} (${formatMB(file.size)})`)
     }
