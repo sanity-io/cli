@@ -608,13 +608,25 @@ describe('startWorkbenchDevServer', () => {
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
         {host: 'localhost', id: 'app-1', pid: 2, port: 3334, type: 'studio'},
-        {host: 'localhost', installationConfig, pid: 3, port: 3337, type: 'media-library'},
+        {
+          host: 'localhost',
+          installationConfig,
+          moduleName: 'media-library',
+          pid: 3,
+          port: 3337,
+          type: 'media-library',
+        },
       ])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [expect.objectContaining({id: 'app-1', type: 'studio'})],
         installationConfigs: [
-          {config: installationConfig, host: 'localhost', id: undefined, port: 3337},
+          {
+            config: {fields: [{name: 'description', public: true, title: 'Description'}]},
+            moduleName: 'media-library',
+            remoteURL: 'http://localhost:3337',
+            type: 'media-library',
+          },
         ],
       })
     })

@@ -72,12 +72,14 @@ export async function startDevServerRegistration(
   // routes it by type rather than app id.
   const app = cliConfig.app
   const isSingleton = isWorkbenchApp(app) && app.isSingleton === true
+  const moduleName = isWorkbenchApp(app) ? app.name : undefined
 
   const registration = registerDevServer({
     host: appHost,
     id: appId,
     installationConfig,
     interfaces,
+    moduleName,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     type: isSingleton ? 'media-library' : isApp ? 'coreApp' : 'studio',
