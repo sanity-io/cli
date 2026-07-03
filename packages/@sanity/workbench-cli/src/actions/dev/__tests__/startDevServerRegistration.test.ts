@@ -66,7 +66,7 @@ describe('startDevServerRegistration', () => {
     )
   })
 
-  test('flags a media-library app as a singleton', async () => {
+  test('registers a media-library app as a coreApp', async () => {
     await register({
       cliConfig: workbenchCliConfig({
         app: workbenchApp({applicationType: 'media-library', isSingleton: true}),
@@ -74,9 +74,7 @@ describe('startDevServerRegistration', () => {
       isApp: true,
     })
 
-    expect(mockRegisterDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({isSingleton: true, type: 'coreApp'}),
-    )
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
   })
 
   test('records the caller-resolved appId on the registry entry', async () => {

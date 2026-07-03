@@ -1,7 +1,6 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
-import {isWorkbenchApp} from '../../defineApp.js'
 import {deriveInstallationConfigs, deriveInterfaces} from './deriveInterfaces.js'
 import {trackExposesSet} from './exposesSetId.js'
 import {type DevServerManifest, registerDevServer} from './registry.js'
@@ -68,15 +67,11 @@ export async function startDevServerRegistration(
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
   const installationConfigs = deriveInstallationConfigs(cliConfig.app)
 
-  const app = cliConfig.app
-  const isSingleton = isWorkbenchApp(app) && app.isSingleton === true
-
   const registration = registerDevServer({
     host: appHost,
     id: appId,
     installationConfigs,
     interfaces,
-    isSingleton,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     type: isApp ? 'coreApp' : 'studio',

@@ -70,9 +70,6 @@ const devServerManifestSchema = z.object({
   interfaces: z.optional(
     z.array(z.object({entry_point: z.string(), interface_type: z.string(), name: z.string()})),
   ),
-  // A singleton (the media library) is config-only — it can't declare views or
-  // services, so the workbench takes its config, not the app itself.
-  isSingleton: z.optional(z.boolean()),
   /**
    * Inlined manifest — either a {@link StudioManifest} or {@link CoreAppManifest},
    * validated against the shared cli-core schemas. The registry stores and

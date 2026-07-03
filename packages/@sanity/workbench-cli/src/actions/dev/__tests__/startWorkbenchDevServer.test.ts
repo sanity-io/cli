@@ -594,7 +594,7 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
-    test('routes a singleton to installationConfigs instead of applications', async () => {
+    test('routes a config-only server (no interfaces) to installationConfigs, not applications', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
@@ -611,7 +611,6 @@ describe('startWorkbenchDevServer', () => {
         {
           host: 'localhost',
           installationConfigs: [{...installationConfig, moduleName: 'media-library'}],
-          isSingleton: true,
           pid: 3,
           port: 3337,
           type: 'coreApp',
@@ -631,7 +630,7 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
-    test('omits a config-less singleton from both channels', async () => {
+    test('a config server that also has interfaces lands in both channels', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
@@ -639,12 +638,27 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
-      watchCallback([{host: 'localhost', isSingleton: true, pid: 3, port: 3337, type: 'coreApp'}])
+      watchCallback([
+        {
+          host: 'localhost',
+          id: 'app-1',
+          installationConfigs: [
+            {appType: 'media-library', fields: [], moduleName: 'media-library'},
+          ],
+          interfaces: [{entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}],
+          pid: 3,
+          port: 3337,
+          type: 'coreApp',
+        },
+      ])
 
-      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
-        applications: [],
-        installationConfigs: [],
-      })
+      const payload = mockServer.ws.send.mock.calls.at(-1)?.[1]
+      expect(payload.applications).toEqual([
+        expect.objectContaining({id: 'app-1', type: 'coreApp'}),
+      ])
+      expect(payload.installationConfigs).toEqual([
+        expect.objectContaining({moduleName: 'media-library', type: 'media-library'}),
+      ])
     })
 
     test('full-reloads the page when a running app gains or drops an interface', async () => {

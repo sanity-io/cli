@@ -18,11 +18,20 @@ const devDebug = subdebug('dev')
 
 const noop = async () => {}
 
-// A singleton is config-only, so it rides `installationConfigs` instead of
-// appearing as a local application.
+// A dev server feeds two independent channels: `applications` (local apps) and
+// `installationConfigs` (whatever declares one) — an app with both interfaces
+// and a config lands in both. The one thing kept out of `applications` is a
+// config-only server: an installation config with no interfaces (the media
+// library). Anything else — studio, app, or a config that also has interfaces —
+// is a local app.
+const isLocalApp = (server: DevServerManifest): boolean => {
+  const configOnly = Boolean(server.installationConfigs?.length) && !server.interfaces?.length
+  return !configOnly
+}
+
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
   applications: servers
-    .filter((server) => !server.isSingleton)
+    .filter((server) => isLocalApp(server))
     .map(({host, id, interfaces, manifest, port, projectId, type}) => ({
       host,
       id,
