@@ -16,10 +16,10 @@
     "@sanity/sdk-react": "^2.13.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "sanity": "workbench",
+    "sanity": "catalog:",
     "styled-components": "^6.4.0"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "catalog:"
   }
 }
