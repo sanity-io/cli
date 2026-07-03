@@ -12,7 +12,7 @@ import {
   type UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
-import {type DefineAppInput} from '@sanity/workbench-cli'
+import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {AppBuildTrace} from '../../telemetry/build.telemetry.js'
@@ -41,13 +41,13 @@ export interface BuildOptions {
   output: Output
   reactCompiler: CliConfig['reactCompiler']
   schemaExtraction: CliConfig['schemaExtraction']
-  services: DefineAppInput['services']
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
-  views: DefineAppInput['views']
   vite: UserViteConfig | undefined
   workDir: string
+
+  exposes?: WorkbenchExposes
 }
 
 /**
@@ -188,15 +188,14 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       basePath,
       cwd: workDir,
       entry: options.entry,
+      exposes: options.exposes,
       isApp: true,
       isWorkbenchApp: options.isWorkbenchApp,
       minify: options.minify,
       outputDir,
       reactCompiler: options.reactCompiler,
       schemaExtraction: options.schemaExtraction,
-      services: options.services,
       sourceMap: options.sourceMap,
-      views: options.views,
       vite: options.vite,
     })
 

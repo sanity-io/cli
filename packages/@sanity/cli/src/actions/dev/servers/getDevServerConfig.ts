@@ -37,8 +37,8 @@ export function getDevServerConfig({
 
   const isApp = cliConfig ? determineIsApp(cliConfig) : false
   const reactStrictMode = resolveReactStrictMode(cliConfig)
-  // `views` is declared via `unstable_defineApp`, so read it off the branded
-  // app result rather than the legacy `app` config type.
+  // `views`/`services` are declared via `unstable_defineApp`, so read them off
+  // the branded app result rather than the legacy `app` config type.
   const app = cliConfig?.app
 
   const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
@@ -53,15 +53,14 @@ export function getDevServerConfig({
     // The app's navigable entry. A branded app that omits `entry` has no app
     // view: the runtime/federation skip the `./App` render path entirely.
     entry: app?.entry,
+    exposes: isWorkbenchApp(app) ? {services: app.services, views: app.views} : undefined,
     // `devAction` passes an explicit port when a running workbench claimed the
     // configured one; otherwise the shared resolution stands.
     httpPort: httpPort ?? baseConfig.httpPort,
     isWorkbenchApp: isWorkbenchApp(app),
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
-    services: isWorkbenchApp(app) ? app.services : undefined,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
-    views: isWorkbenchApp(app) ? app.views : undefined,
   }
 }

@@ -4,7 +4,7 @@ import {type ModuleFederationOptions} from '@module-federation/vite'
 import {type PackageJson} from '@sanity/cli-core'
 import {type PluginOption} from 'vite'
 
-import {type DefineAppInput} from '../../../defineApp.js'
+import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {artifactExposes, workbenchArtifacts} from '../artifact.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './constants.js'
 import {type FederationOptions, sanityModuleFederation} from './plugins/plugin-module-federation.js'
@@ -16,20 +16,8 @@ import {
 } from './plugins/plugin-sanity-federation-runtime.js'
 
 interface FederationPluginOptionsBase extends Omit<Partial<FederationOptions>, 'exposes'> {
-  exposes?: Record<string, string>
+  exposes?: WorkbenchExposes
   pkgJson?: PackageJson
-  /**
-   * Background services the app declares. Each is built into a self-contained
-   * worker bundle plus a loader module exposed as `./services/<name>`, so the
-   * workbench host can fetch the worker URL and run it.
-   */
-  services?: DefineAppInput['services']
-  /**
-   * Views the app declares. Each component of a view is built into a
-   * render-contract artifact and exposed as `./views/<view>/<component>` so the
-   * workbench host can load each as its own island.
-   */
-  views?: DefineAppInput['views']
   /**
    * Current working directory to read package.json from, defaults to process.cwd()
    */
@@ -72,14 +60,7 @@ type FederationPluginOptions = AppFederationPluginOptions | StudioFederationPlug
  * @internal
  */
 export const federation = (options: FederationPluginOptions): PluginOption => {
-  const {
-    exposes: defaultExposes = {},
-    name: defaultName,
-    pkgJson,
-    services = [],
-    views = [],
-    workDir = process.cwd(),
-  } = options
+  const {exposes, name: defaultName, pkgJson, workDir = process.cwd()} = options
 
   let name = defaultName
 
@@ -107,17 +88,12 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
 
   const entryPath = resolveEntryPath(generatedEntry)
 
-  const resolvedExposes: Record<string, string> = {}
-  for (const [key, exposePath] of Object.entries(defaultExposes)) {
-    resolvedExposes[key] = resolveEntryPath(exposePath) ?? exposePath
-  }
-
   // Each view component (`./views/<view>/<component>`) and each service loader
   // (`./services/<name>`) is exposed straight to the host, pointing at the file
   // the extension-artifacts plugin generates under RUNTIME_DIR. A service's
   // worker bundle carries no expose — the host reaches it through its loader.
-  const artifacts = workbenchArtifacts({services, views})
-  const interfaceExposes = artifactExposes(artifacts, (artifactPath) =>
+  const artifacts = workbenchArtifacts(exposes ?? {})
+  const artifactModuleExposes = artifactExposes(artifacts, (artifactPath) =>
     resolveEntryPath(`./${RUNTIME_DIR}/${artifactPath}`),
   )
 
@@ -126,10 +102,9 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
   // entry expose `./App` (the generated render entry).
   const exposesApp = !options.isApp || options.appEntry !== undefined
 
-  const exposes: NonNullable<ModuleFederationOptions['exposes']> = {
+  const federationExposes: NonNullable<ModuleFederationOptions['exposes']> = {
     ...(exposesApp ? {'./App': entryPath} : {}),
-    ...resolvedExposes,
-    ...interfaceExposes,
+    ...artifactModuleExposes,
   }
 
   const runtimeOptions: FederationRuntimeOptions = options.isApp
@@ -140,6 +115,6 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     sanityEnvironmentPlugin({input: entryPath}),
     sanityFederationRuntime(runtimeOptions),
     sanityExtensionArtifacts({artifacts}),
-    sanityModuleFederation({exposes, name}),
+    sanityModuleFederation({exposes: federationExposes, name}),
   ]
 }

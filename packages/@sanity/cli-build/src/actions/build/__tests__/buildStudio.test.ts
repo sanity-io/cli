@@ -2,7 +2,7 @@ import {type Output} from '@sanity/cli-core'
 import {DefinedTelemetryTrace} from '@sanity/telemetry'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {buildStudio, type BuildOptions} from '../buildStudio.js'
+import {type BuildOptions, buildStudio} from '../buildStudio.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
 
 function buildOptions(
@@ -24,12 +24,10 @@ function buildOptions(
     outDir: '/tmp/dist',
     reactCompiler: undefined,
     schemaExtraction: undefined,
-    services: [],
     sourceMap: true,
     stats: true,
     unattendedMode: false,
     async upgradePackages() {},
-    views: [],
     vite: undefined,
     workDir: '/tmp',
     ...overrides,

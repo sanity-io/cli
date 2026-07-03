@@ -5,4 +5,4 @@
 // view (`getWorkbench`) is the deploy entry's export.
 
 export {workbenchVitePlugins} from '../actions/build/vite/workbench-vite-plugins.js'
-export {resolveWorkbenchApp} from '../resolveWorkbenchApp.js'
+export {resolveWorkbenchApp, type WorkbenchExposes} from '../resolveWorkbenchApp.js'
