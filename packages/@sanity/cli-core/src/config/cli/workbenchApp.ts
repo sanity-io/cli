@@ -4,22 +4,12 @@ import {join} from 'node:path'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
 
-/**
- * The brand `unstable_defineApp` stamps on its result. The typed check lives in
- * `@sanity/workbench-cli`, which depends on cli-core — importing it here would
- * cycle, and would pull workbench machinery into the hot config-load path.
- * `Symbol.for` re-derives the same global symbol, so this check is identical;
- * the shared contract is the symbol string plus the `APPLICATION_TYPES` mirror
- * below.
- */
+// Re-derived via `Symbol.for`, not imported from `@sanity/workbench-cli`: that
+// import would cycle (it depends on cli-core) and pull workbench code into the
+// hot config-load path.
 const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
 
-/**
- * Deliberately duplicates `@sanity/workbench-cli`'s `isWorkbenchApp`: that one
- * owns the typed narrowing, but cli-core can't import it (it would cycle — see
- * the brand note above), and config-load routing only needs the boolean anyway.
- * The two stay in sync through the shared `Symbol.for` brand, not a shared import.
- */
+/** Boolean brand check for config-load routing; the typed narrowing is `@sanity/workbench-cli`'s `isWorkbenchApp`. */
 export function isWorkbenchApp(app: CliConfig['app']): boolean {
   return typeof app === 'object' && app !== null && WORKBENCH_APP_BRAND in app
 }
@@ -33,9 +23,9 @@ const STUDIO_CONFIG_FILES = [
   'sanity.config.cjs',
 ]
 
-// Mirrors the `ApplicationType` enum in `@sanity/cli-build`'s `defineApp` schema.
-// `unstable_defineApp` is a pure identity wrapper that doesn't validate its
-// input, so the loader is the first place an explicit `applicationType` can be checked.
+// Mirrors the `ApplicationType` enum in `@sanity/workbench-cli`'s `defineApp`
+// schema — `unstable_defineApp` doesn't validate, so the loader is the first
+// place `applicationType` can be checked. Kept in sync by a test there.
 const APPLICATION_TYPES = ['coreApp', 'studio', 'canvas', 'dashboard', 'media-library'] as const
 
 /** The resolved kind of a workbench app — `studio` or one of the SDK app types. */
@@ -45,11 +35,7 @@ function isApplicationType(value: unknown): value is ApplicationType {
   return typeof value === 'string' && (APPLICATION_TYPES as readonly string[]).includes(value)
 }
 
-/**
- * Infer the application type for a workbench app when `unstable_defineApp`
- * didn't set one: a project with a `sanity.config.*` is a studio, otherwise a
- * core (SDK) app. An explicit `applicationType` always wins.
- */
+/** Infer the type when unset: `sanity.config.*` present → studio, else core (SDK) app. */
 function detectApplicationType(projectDir: string): ApplicationType {
   return STUDIO_CONFIG_FILES.some((file) => existsSync(join(projectDir, file)))
     ? 'studio'
@@ -57,16 +43,13 @@ function detectApplicationType(projectDir: string): ApplicationType {
 }
 
 /**
- * Parse a config whose `app` is a branded `unstable_defineApp(...)` result.
- * The branded `app` bypasses the legacy `app` object schema (which would strip
- * its identity fields and the brand symbol); every other field is still
- * validated. The brand is preserved so downstream code relies on the
- * `isWorkbenchApp` identity (`@sanity/workbench-cli`) instead of a flag.
+ * Parse a config whose `app` is a branded `unstable_defineApp(...)` result. The
+ * branded `app` bypasses the legacy `app` schema (which would strip its identity
+ * fields and the brand); every other field is still validated.
  *
- * Resolves `applicationType` here — as early as possible — so studio-vs-app
- * classification is settled once and read off the app everywhere else. The
- * resolved value lands on a clone, never the caller's object, so re-parsing the
- * same `app` for a different directory can't inherit a stale inference.
+ * Resolves `applicationType` once, here, so studio-vs-app is settled everywhere
+ * downstream. The value lands on a clone, never the caller's object, so
+ * re-parsing the same `app` for another directory can't inherit a stale guess.
  */
 export function parseWorkbenchCliConfig(cliConfig: unknown, projectDir: string): CliConfig {
   const {app, ...rest} = cliConfig as Record<string, unknown> & {
@@ -85,9 +68,8 @@ export function parseWorkbenchCliConfig(cliConfig: unknown, projectDir: string):
   }
   const applicationType = explicit ?? detectApplicationType(projectDir)
 
-  // Clone the branded app rather than mutating the caller's object. Copying own
-  // property descriptors carries over the non-enumerable `unstable_defineApp`
-  // brand, which a spread would drop.
+  // Clone via property descriptors, not spread — carries over the non-enumerable
+  // brand and avoids mutating the caller's object.
   const resolvedApp = Object.defineProperties({}, Object.getOwnPropertyDescriptors(app)) as Record<
     string,
     unknown
