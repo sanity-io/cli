@@ -8,7 +8,7 @@ import {NotFoundError} from '../../errors/NotFoundError.js'
 import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
-import {hasWorkbenchAppBrand, parseWorkbenchCliConfig} from './workbenchApp.js'
+import {isWorkbenchApp, parseWorkbenchCliConfig} from './workbenchApp.js'
 
 /**
  * Get the CLI config for a project synchronously, given the root path.
@@ -50,7 +50,7 @@ export function getCliConfigSync(rootPath: string): CliConfig {
 
   // Branch as early as possible: a branded `unstable_defineApp(...)` opts into
   // workbench behavior, so its `app` skips the legacy `app` schema entirely.
-  if (hasWorkbenchAppBrand(cliConfig?.app)) {
+  if (isWorkbenchApp(cliConfig?.app)) {
     return parseWorkbenchCliConfig(cliConfig, rootPath)
   }
 

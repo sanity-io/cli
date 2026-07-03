@@ -14,8 +14,13 @@ import {type CliConfig} from './types/cliConfig.js'
  */
 const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
 
-/** Config-load routing only — field-level narrowing is `isWorkbenchApp` in `@sanity/workbench-cli`. */
-export function hasWorkbenchAppBrand(app: CliConfig['app']): boolean {
+/**
+ * Deliberately duplicates `@sanity/workbench-cli`'s `isWorkbenchApp`: that one
+ * owns the typed narrowing, but cli-core can't import it (it would cycle — see
+ * the brand note above), and config-load routing only needs the boolean anyway.
+ * The two stay in sync through the shared `Symbol.for` brand, not a shared import.
+ */
+export function isWorkbenchApp(app: CliConfig['app']): boolean {
   return typeof app === 'object' && app !== null && WORKBENCH_APP_BRAND in app
 }
 
