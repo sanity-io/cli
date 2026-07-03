@@ -1,7 +1,8 @@
 import path from 'node:path'
 
-import {type CliConfig, getSanityEnvVar, isWorkbenchApp, type Output} from '@sanity/cli-core'
+import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
 import {determineIsApp} from '../../../util/determineIsApp.js'

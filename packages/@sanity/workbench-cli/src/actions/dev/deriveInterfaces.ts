@@ -1,5 +1,6 @@
-import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
 
+import {isWorkbenchApp} from '../../defineApp.js'
 import {type DevServerManifest} from './registry.js'
 
 /** One forwarded interface record on the dev-server registry entry. */

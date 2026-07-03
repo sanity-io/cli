@@ -1,11 +1,13 @@
-import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
+import {type ApplicationType} from '@sanity/cli-core'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {
   DefineAppInputSchema,
   type DefineAppResult,
   type DockGroup,
+  isWorkbenchApp,
   unstable_defineApp,
+  type WorkbenchApp,
 } from '../defineApp.js'
 
 // The brand is a global-registry symbol; re-derive it the way the CLI loader
@@ -41,11 +43,16 @@ describe('unstable_defineApp', () => {
     expect(app.icon).toBe('./icon.svg')
   })
 
-  test('is recognised by `@sanity/cli-core`s `isWorkbenchApp` (shared Symbol.for contract)', () => {
+  test('is recognised by `isWorkbenchApp` (Symbol.for brand contract)', () => {
     const app = unstable_defineApp({name: 'drop-desk', organizationId: 'org-1', title: 'Drop Desk'})
-    // The whole point of branding via `Symbol.for`: cli-core re-derives the same
-    // global symbol and discriminates on it without importing this module.
-    expect(isWorkbenchApp(app as CliConfig['app'])).toBe(true)
+    expect(isWorkbenchApp(app)).toBe(true)
+  })
+
+  test("cli-core's `ApplicationType` mirror stays in sync with the schema enum", () => {
+    // cli-core mirrors the list at config load (it can't depend on this package)
+    expectTypeOf<
+      Exclude<WorkbenchApp['applicationType'], undefined>
+    >().toEqualTypeOf<ApplicationType>()
   })
 })
 
