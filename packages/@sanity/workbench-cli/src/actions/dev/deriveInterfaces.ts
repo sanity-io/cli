@@ -45,11 +45,10 @@ export function deriveInterfaces(
 }
 
 /**
- * The serializable configs (mirroring what Brett stores). One today; an array
- * so an app can expose more later. The fields' schema *values* can't serialize —
- * the workbench loads them from the federation module; `src` is a build-time
- * input and stays off the wire. `appType` is the config's discriminator, which
- * assigns it to the singleton (no app id to key on).
+ * Mirrors what Brett stores. The fields' schema *values* can't serialize — the
+ * workbench loads them from the federation module; `src` is a build-time input
+ * that stays off the wire. `appType` is the discriminator that routes the config
+ * to the singleton (no app id to key on).
  */
 export function deriveInstallationConfigs(app: CliConfig['app']): DevServerConfig[] {
   if (!isWorkbenchApp(app) || !app.installationConfig) return []

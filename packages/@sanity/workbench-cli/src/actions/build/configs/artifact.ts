@@ -4,7 +4,6 @@ import {
 } from '../../../contract.js'
 import {type GeneratedArtifact} from '../artifact.js'
 
-/** Subdirectory under the federation runtime dir where config modules live. */
 const CONFIGS_DIR_NAME = 'configs'
 
 /**
@@ -15,11 +14,7 @@ export interface ConfigArtifact {
   fields: {name: string; public?: boolean; src: string; title: string}[]
 }
 
-/**
- * Expand the installation config into one federation module aggregating all
- * fields — the host imports one live config value, and the module's HMR
- * self-accept swaps it in place on a field edit.
- */
+/** Expand the installation config into one federation module aggregating all fields, so the host imports one live config value. */
 export function installationConfigArtifacts(
   config: ConfigArtifact | undefined,
 ): GeneratedArtifact[] {
@@ -34,11 +29,9 @@ export function installationConfigArtifacts(
 }
 
 /**
- * Emits the config as `export const config`, shaped like the serializable
- * config the workbench receives over the dev-server wire — each field's
- * `{name, title, public}` — plus the live `defineField` schema value per field
- * (the one thing the wire can't carry). `appType` stays off the module: the
- * host assigns the config from the wire record, not the loaded module.
+ * Emits `export const config`: each field's serializable `{name, title, public}` plus its live `defineField`
+ * value (the one thing the dev-server wire can't carry). `appType` stays off the module — the host assigns it
+ * from the wire record.
  */
 function mediaLibraryInstallationConfigSource(input: {
   config: ConfigArtifact

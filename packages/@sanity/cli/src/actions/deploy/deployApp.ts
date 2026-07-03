@@ -136,8 +136,7 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
 
   application = await syncApplicationTitle({application, manifest, output})
 
-  // The installation-config endpoint isn't wired yet: validate and log only.
-  // A malformed config throws and fails the deploy before we ship.
+  // Endpoint isn't wired yet: validate and log the payload, don't send it.
   if (workbench?.installationConfig) {
     const payload = buildInstallationConfigDeploymentPayload({
       applicationId: application.id,

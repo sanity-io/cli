@@ -39,10 +39,9 @@ const devServerManifestSchema = z.object({
   host: z.string(),
   id: z.optional(z.string()),
   /**
-   * The serializable configs (what Brett stores on deploy). An array — an app
-   * may expose more than one. The fields' schema *values* live in the federation
-   * module the workbench loads; `src` is a build-time input and stays off the
-   * wire. Lenient; the workbench is the authority.
+   * What Brett stores on deploy. The fields' schema *values* live in the
+   * federation module the workbench loads; `src` is a build-time input and stays
+   * off the wire. Lenient — the workbench is the authority.
    */
   installationConfigs: z.optional(
     z.array(

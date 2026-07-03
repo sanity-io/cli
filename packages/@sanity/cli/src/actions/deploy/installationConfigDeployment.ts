@@ -12,14 +12,12 @@ const mediaLibraryInstallationConfigSchema = z.looseObject({
   fields: z.array(mediaLibraryFieldSchema),
 })
 
-// Discriminated on `appType` — the media-library config is the only shape the
-// deploy accepts today; other app families add their own members.
+// Only media-library today; other app families add their own union members.
 const installationConfigRecordSchema = z.discriminatedUnion('appType', [
   mediaLibraryInstallationConfigSchema,
 ])
 
-// Phase 1 stub: the endpoint isn't wired yet, so the payload is validated and
-// logged only — never sent. Builds the contract the endpoint will accept.
+// Contract for the not-yet-wired endpoint; validated and logged, never sent.
 const installationConfigDeploymentPayloadSchema = z.object({
   applicationId: z.string(),
   installationConfig: installationConfigRecordSchema,

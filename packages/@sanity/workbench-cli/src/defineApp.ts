@@ -50,16 +50,10 @@ export const DefineAppInputSchema = z
     group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
-    /**
-     * Compiled into a single config module and deployed as a versioned snapshot
-     * on the app's org installation — not to the application service the
-     * views/services register with.
-     */
+    /** Deployed as a versioned snapshot on the app's org installation, not the application service. */
     installationConfig: z.optional(InstallationConfigSchema),
     /**
-     * Internal — a Sanity-owned app deployed once, installed per organization
-     * (the installation the config deploys against). Validated here but
-     * excluded from the public `DefineAppInput` type.
+     * Sanity-owned app deployed once, installed per org; excluded from the public `DefineAppInput`.
      * @internal
      */
     isSingleton: z.optional(z.boolean()),
@@ -177,16 +171,13 @@ export function unstable_defineApp(input: DefineAppInput): DefineAppResult {
 }
 
 /**
- * One custom field a media library exposes. `src` default-exports a
- * `defineField(...)` schema type.
+ * One custom field a media library exposes. `src` default-exports a `defineField(...)` schema type.
  * @public
  */
 export interface MediaLibraryField {
   /** Unique within the media library. */
   name: string
-  /** Module that default-exports the `defineField(...)` schema type. */
   src: string
-  /** Label shown in the media library. */
   title: string
 
   /** Readable outside the owning organization. */
@@ -194,22 +185,18 @@ export interface MediaLibraryField {
 }
 
 /**
- * The media library is a Sanity-owned singleton, so authors don't name or title
- * the app — only `organizationId` is required.
+ * Sanity-owned singleton, so authors don't name or title the app — only `organizationId` is required.
  * @public
  */
 export interface DefineMediaLibraryInput {
   /** Organization that owns the media library — the CLI runs and deploys against it. */
   organizationId: string
 
-  /** Custom fields the media library exposes. */
   fields?: MediaLibraryField[]
 }
 
 /**
- * Declare the Sanity Media Library as a workbench app. Sugar over
- * `unstable_defineApp`: a singleton whose `fields` become its installation
- * config, so it rides the same build/dev path as any workbench app.
+ * Declare the Sanity Media Library as a workbench app — a singleton whose `fields` become its installation config.
  * @public
  */
 export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): DefineAppResult {

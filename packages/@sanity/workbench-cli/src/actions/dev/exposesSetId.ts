@@ -2,16 +2,14 @@ import {INSTALLATION_CONFIG_TYPE} from '../../contract.js'
 import {type DevServerConfig, type DevServerInterface} from './deriveInterfaces.js'
 import {type DevServerManifest} from './registry.js'
 
-/** Everything the remote build exposes — interfaces plus installation configs. */
 interface ExposeSet {
   installationConfigs?: readonly DevServerConfig[] | undefined
   interfaces?: readonly DevServerInterface[] | undefined
 }
 
 /**
- * Order-independent identity of an app's exposed-module set. A changed id means
- * the remote was rebuilt with new exposes; reordering and field-content edits
- * (HMR swaps, not new exposes) keep the same id.
+ * Order-independent id of an app's exposed-module set. Changes only when the
+ * remote is rebuilt with new exposes; HMR swaps and reordering keep the same id.
  */
 export function exposesSetId({installationConfigs, interfaces}: ExposeSet): string {
   const keys = [

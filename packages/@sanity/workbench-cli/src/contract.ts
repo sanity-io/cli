@@ -72,8 +72,7 @@ const MediaLibraryFieldSchema = z.object({
 })
 
 /**
- * Stamped wherever the config crosses a boundary (expose path, module, registry
- * wire) so the authoring model doesn't carry a constant discriminator.
+ * Stamped where the config crosses a boundary so the authoring model doesn't carry a constant discriminator.
  * @internal
  */
 export const INSTALLATION_CONFIG_TYPE = 'installation_config'
@@ -92,9 +91,7 @@ const MediaLibraryInstallationConfigSchema = z.object({
 })
 
 /**
- * An app's optional installation config — a discriminated union on `appType`,
- * media-library the only member today. Compiles into one federation module and
- * deploys as a versioned snapshot on the app's org installation, not an interface.
+ * An app's optional installation config, keyed by `appType`; deploys as a versioned snapshot, not an interface.
  * @internal
  */
 export const InstallationConfigSchema = z.discriminatedUnion('appType', [
