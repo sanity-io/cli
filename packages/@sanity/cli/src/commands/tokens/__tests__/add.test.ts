@@ -178,6 +178,8 @@ describe('#tokens:add', () => {
 
     const parsedOutput = JSON.parse(stdout)
     expect(parsedOutput).toEqual(mockToken)
+    expect(mockedSelect).not.toHaveBeenCalled()
+    expect(mockedInput).not.toHaveBeenCalled()
   })
 
   test('works in unattended mode with --yes flag', async () => {
@@ -207,6 +209,8 @@ describe('#tokens:add', () => {
 
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: Unattended Token')
+    expect(mockedSelect).not.toHaveBeenCalled()
+    expect(mockedInput).not.toHaveBeenCalled()
   })
 
   test('handles invalid role error', async () => {
