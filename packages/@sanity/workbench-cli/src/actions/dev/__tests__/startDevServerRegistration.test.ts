@@ -66,7 +66,7 @@ describe('startDevServerRegistration', () => {
     )
   })
 
-  test('registers a media-library app under the singleton type', async () => {
+  test('flags a media-library app as a singleton', async () => {
     await register({
       cliConfig: workbenchCliConfig({
         app: workbenchApp({applicationType: 'media-library', isSingleton: true}),
@@ -75,7 +75,7 @@ describe('startDevServerRegistration', () => {
     })
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({type: 'media-library'}),
+      expect.objectContaining({isSingleton: true, type: 'coreApp'}),
     )
   })
 
@@ -165,7 +165,7 @@ describe('startDevServerRegistration', () => {
     const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
     const params = {configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}
     await expect(extract(params)).resolves.toEqual({
-      installationConfig: undefined,
+      installationConfigs: [],
       interfaces: [{entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'}],
       manifest,
     })

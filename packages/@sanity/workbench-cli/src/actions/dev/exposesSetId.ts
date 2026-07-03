@@ -2,9 +2,9 @@ import {INSTALLATION_CONFIG_TYPE} from '../../contract.js'
 import {type DevServerConfig, type DevServerInterface} from './deriveInterfaces.js'
 import {type DevServerManifest} from './registry.js'
 
-/** Everything the remote build exposes — interfaces plus the installation config. */
+/** Everything the remote build exposes — interfaces plus installation configs. */
 interface ExposeSet {
-  installationConfig?: DevServerConfig | undefined
+  installationConfigs?: readonly DevServerConfig[] | undefined
   interfaces?: readonly DevServerInterface[] | undefined
 }
 
@@ -13,12 +13,12 @@ interface ExposeSet {
  * the remote was rebuilt with new exposes; reordering and field-content edits
  * (HMR swaps, not new exposes) keep the same id.
  */
-export function exposesSetId({installationConfig, interfaces}: ExposeSet): string {
+export function exposesSetId({installationConfigs, interfaces}: ExposeSet): string {
   const keys = [
     ...(interfaces ?? []).map((iface) =>
       [iface.interface_type, iface.name, iface.entry_point].join('::'),
     ),
-    ...(installationConfig ? [`config::${INSTALLATION_CONFIG_TYPE}`] : []),
+    ...(installationConfigs?.length ? [`config::${INSTALLATION_CONFIG_TYPE}`] : []),
   ]
   if (keys.length === 0) return ''
   return keys.toSorted().join('|')
@@ -45,7 +45,7 @@ const serverKey = (server: DevServerManifest): string =>
   `${server.id ?? ''}@${server.host ?? ''}:${server.port}`
 
 const serverExposesId = (server: DevServerManifest): string =>
-  exposesSetId({installationConfig: server.installationConfig, interfaces: server.interfaces})
+  exposesSetId({installationConfigs: server.installationConfigs, interfaces: server.interfaces})
 
 /**
  * Multi-app counterpart to {@link trackExposesSet}: true when a *known* app's

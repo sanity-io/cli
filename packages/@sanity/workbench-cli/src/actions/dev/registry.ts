@@ -39,19 +39,21 @@ const devServerManifestSchema = z.object({
   host: z.string(),
   id: z.optional(z.string()),
   /**
-   * The serializable config (what Brett stores on deploy). The fields' schema
-   * *values* live in the federation module the workbench loads; `src` is a
-   * build-time input and stays off the wire. Lenient; the workbench is the
-   * authority.
+   * The serializable configs (what Brett stores on deploy). An array — an app
+   * may expose more than one. The fields' schema *values* live in the federation
+   * module the workbench loads; `src` is a build-time input and stays off the
+   * wire. Lenient; the workbench is the authority.
    */
-  installationConfig: z.optional(
-    z.object({
-      // Identifies the owning app when it has no app id (singletons).
-      appType: z.optional(z.string()),
-      fields: z.array(
-        z.object({name: z.string(), public: z.optional(z.boolean()), title: z.string()}),
-      ),
-    }),
+  installationConfigs: z.optional(
+    z.array(
+      z.object({
+        // Identifies the owning app when it has no app id (singletons).
+        appType: z.optional(z.string()),
+        fields: z.array(
+          z.object({name: z.string(), public: z.optional(z.boolean()), title: z.string()}),
+        ),
+      }),
+    ),
   ),
   /**
    * Interfaces the app exposes, mapped from the declared `views` (dock panels,
@@ -66,6 +68,9 @@ const devServerManifestSchema = z.object({
   interfaces: z.optional(
     z.array(z.object({entry_point: z.string(), interface_type: z.string(), name: z.string()})),
   ),
+  // A singleton (the media library) is config-only — it can't declare views or
+  // services, so the workbench takes its config, not the app itself.
+  isSingleton: z.optional(z.boolean()),
   /**
    * Inlined manifest — either a {@link StudioManifest} or {@link CoreAppManifest},
    * validated against the shared cli-core schemas. The registry stores and
@@ -85,10 +90,7 @@ const devServerManifestSchema = z.object({
   port: z.number(),
   projectId: z.optional(z.string()),
   startedAt: z.string(),
-  // The dev-server kind the workbench routes on. `media-library` is a singleton
-  // (a `coreApp`-shaped manifest); the workbench identifies it by type, since a
-  // singleton exists once and can't be mapped by app id.
-  type: z.enum(['coreApp', 'studio', 'media-library']),
+  type: z.enum(['coreApp', 'studio']),
   version: z.literal(REGISTRY_VERSION),
   workDir: z.string(),
 })

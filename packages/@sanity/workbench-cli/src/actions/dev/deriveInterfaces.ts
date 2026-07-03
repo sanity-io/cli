@@ -6,8 +6,8 @@ import {type DevServerManifest} from './registry.js'
 /** One forwarded interface record on the dev-server registry entry. */
 export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[number]
 
-/** The forwarded installation config on the dev-server registry entry. */
-export type DevServerConfig = NonNullable<DevServerManifest['installationConfig']>
+/** One forwarded installation config on the dev-server registry entry. */
+export type DevServerConfig = NonNullable<DevServerManifest['installationConfigs']>[number]
 
 /**
  * Map a workbench app's declarations to the interface records forwarded on its
@@ -15,7 +15,7 @@ export type DevServerConfig = NonNullable<DevServerManifest['installationConfig'
  * navigable `app` view (`entry_point` is the raw `src`, not a resolved URL).
  * `undefined` for a non-branded app; a studio that declares `entry` is rejected
  * (studio app views are not implemented yet). The installation config is not an
- * interface — see {@link deriveInstallationConfig}.
+ * interface — see {@link deriveInstallationConfigs}.
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
@@ -45,19 +45,22 @@ export function deriveInterfaces(
 }
 
 /**
- * The serializable config (mirroring what Brett stores). The fields' schema
- * *values* can't serialize — the workbench loads them from the federation
- * module; `src` is a build-time input and stays off the wire. `appType` is the
- * config's discriminator, which assigns it to the singleton (no app id to key on).
+ * The serializable configs (mirroring what Brett stores). One today; an array
+ * so an app can expose more later. The fields' schema *values* can't serialize —
+ * the workbench loads them from the federation module; `src` is a build-time
+ * input and stays off the wire. `appType` is the config's discriminator, which
+ * assigns it to the singleton (no app id to key on).
  */
-export function deriveInstallationConfig(app: CliConfig['app']): DevServerConfig | undefined {
-  if (!isWorkbenchApp(app) || !app.installationConfig) return undefined
-  return {
-    appType: app.installationConfig.appType,
-    fields: app.installationConfig.fields.map((field) => ({
-      name: field.name,
-      public: field.public,
-      title: field.title,
-    })),
-  }
+export function deriveInstallationConfigs(app: CliConfig['app']): DevServerConfig[] {
+  if (!isWorkbenchApp(app) || !app.installationConfig) return []
+  return [
+    {
+      appType: app.installationConfig.appType,
+      fields: app.installationConfig.fields.map((field) => ({
+        name: field.name,
+        public: field.public,
+        title: field.title,
+      })),
+    },
+  ]
 }

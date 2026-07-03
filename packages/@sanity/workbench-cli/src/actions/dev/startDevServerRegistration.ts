@@ -2,7 +2,7 @@ import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-cor
 import {type ViteDevServer} from 'vite'
 
 import {isWorkbenchApp} from '../../defineApp.js'
-import {deriveInstallationConfig, deriveInterfaces} from './deriveInterfaces.js'
+import {deriveInstallationConfigs, deriveInterfaces} from './deriveInterfaces.js'
 import {trackExposesSet} from './exposesSetId.js'
 import {type DevServerManifest, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
@@ -64,12 +64,10 @@ export async function startDevServerRegistration(
   const {host: appHost, port: appPort} = serverAddress(server)
 
   // Forwarded alongside (not inside) the manifest so the workbench renders local
-  // panels/workers and reads the config without a deploy.
+  // panels/workers and reads the configs without a deploy.
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
-  const installationConfig = deriveInstallationConfig(cliConfig.app)
+  const installationConfigs = deriveInstallationConfigs(cliConfig.app)
 
-  // A singleton registers under its own type — it exists once, so the workbench
-  // routes it by type rather than app id.
   const app = cliConfig.app
   const isSingleton = isWorkbenchApp(app) && app.isSingleton === true
   const moduleName = isWorkbenchApp(app) ? app.name : undefined
@@ -77,16 +75,17 @@ export async function startDevServerRegistration(
   const registration = registerDevServer({
     host: appHost,
     id: appId,
-    installationConfig,
+    installationConfigs,
     interfaces,
+    isSingleton,
     moduleName,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
-    type: isSingleton ? 'media-library' : isApp ? 'coreApp' : 'studio',
+    type: isApp ? 'coreApp' : 'studio',
     workDir,
   })
 
-  const exposesSet = trackExposesSet({installationConfig, interfaces})
+  const exposesSet = trackExposesSet({installationConfigs, interfaces})
 
   const watcher = await startDevManifestWatcher({
     // Re-derive every pass (don't omit): the registry patch is a shallow merge,
@@ -94,7 +93,7 @@ export async function startDevServerRegistration(
     extract: async (params) => {
       const app = (await getCliConfigUncached(params.workDir)).app
       return {
-        installationConfig: deriveInstallationConfig(app),
+        installationConfigs: deriveInstallationConfigs(app),
         interfaces: deriveInterfaces(app, {isApp}),
         manifest: await extractManifest(params),
       }
@@ -106,7 +105,7 @@ export async function startDevServerRegistration(
     update: async (patch) => {
       if (
         !exposesSet.changed({
-          installationConfig: patch.installationConfig,
+          installationConfigs: patch.installationConfigs,
           interfaces: patch.interfaces,
         })
       ) {
@@ -118,7 +117,7 @@ export async function startDevServerRegistration(
       const rebuiltServer = await onInterfaceSetChange?.()
       // Commit only after a successful rebuild, so a thrown one retries next pass.
       exposesSet.commit({
-        installationConfig: patch.installationConfig,
+        installationConfigs: patch.installationConfigs,
         interfaces: patch.interfaces,
       })
       // The recreated server can bind a different port (non-strict ports).

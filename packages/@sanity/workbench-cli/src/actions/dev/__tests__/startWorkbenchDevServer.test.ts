@@ -594,7 +594,7 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
-    test('routes a media-library server to installationConfigs instead of applications', async () => {
+    test('routes a singleton to installationConfigs instead of applications', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
@@ -610,11 +610,12 @@ describe('startWorkbenchDevServer', () => {
         {host: 'localhost', id: 'app-1', pid: 2, port: 3334, type: 'studio'},
         {
           host: 'localhost',
-          installationConfig,
+          installationConfigs: [installationConfig],
+          isSingleton: true,
           moduleName: 'media-library',
           pid: 3,
           port: 3337,
-          type: 'media-library',
+          type: 'coreApp',
         },
       ])
 
@@ -631,7 +632,7 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
-    test('omits a config-less media-library server from both channels', async () => {
+    test('omits a config-less singleton from both channels', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
@@ -639,7 +640,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
-      watchCallback([{host: 'localhost', pid: 3, port: 3337, type: 'media-library'}])
+      watchCallback([{host: 'localhost', isSingleton: true, pid: 3, port: 3337, type: 'coreApp'}])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [],

@@ -23,7 +23,7 @@ const server = (
 ): DevServerManifest => ({
   host: 'localhost',
   id,
-  installationConfig: config,
+  installationConfigs: config ? [config] : undefined,
   interfaces,
   pid: 1,
   port,
@@ -61,7 +61,7 @@ describe('exposesSetId', () => {
   test('the installation config toggles the id (its module is a new expose)', () => {
     // adding the config changes the expose set → rebuild
     expect(exposesSetId({interfaces: [panel('a')]})).not.toBe(
-      exposesSetId({installationConfig, interfaces: [panel('a')]}),
+      exposesSetId({installationConfigs: [installationConfig], interfaces: [panel('a')]}),
     )
   })
 
@@ -101,7 +101,9 @@ describe('trackExposesSet', () => {
 
   test('the installation config appearing is a change off the seeded set', () => {
     const set = trackExposesSet({interfaces: [panel('a')]})
-    expect(set.changed({installationConfig, interfaces: [panel('a')]})).toBe(true)
+    expect(set.changed({installationConfigs: [installationConfig], interfaces: [panel('a')]})).toBe(
+      true,
+    )
   })
 
   test('treats undefined and empty as the same set', () => {
