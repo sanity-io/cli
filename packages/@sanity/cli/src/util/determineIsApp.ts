@@ -1,4 +1,5 @@
-import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
+import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 /**
  * Determine if the current project is an app (as opposed to a studio).

@@ -5,33 +5,17 @@ import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
 
 /**
- * The brand `unstable_defineApp` stamps on its result, registered in the global
- * symbol registry. `unstable_defineApp` lives in `@sanity/cli-build`, which
- * depends on cli-core — so cli-core can't import the brand without a cycle, and
- * wouldn't pull the build package into startup just for this identity check
- * anyway (cli-core is the hot path for every CLI command, most of which never
- * touch workbench). `Symbol.for` keys the same global symbol `unstable_defineApp`
- * stamps, so the check is identical; the only shared contract is the symbol
- * string, which cli-core mirrors (see `APPLICATION_TYPES` below).
+ * The brand `unstable_defineApp` stamps on its result. The typed check lives in
+ * `@sanity/workbench-cli`, which depends on cli-core — importing it here would
+ * cycle, and would pull workbench machinery into the hot config-load path.
+ * `Symbol.for` re-derives the same global symbol, so this check is identical;
+ * the shared contract is the symbol string plus the `APPLICATION_TYPES` mirror
+ * below.
  */
 const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
 
-/**
- * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
- * workbench opt-in. Narrows to the shared `app` config plus the workbench-only
- * fields a branded result carries: its `name`, the resolved `applicationType`
- * (settled by `parseWorkbenchCliConfig` on load, so callers read it instead of
- * re-deriving studio-vs-app), dock panel `views`, and background worker
- * `services`. The `type` literals match the `DefineAppInput` schema so
- * `views`/`services` stay assignable to `DefineAppInput['views' | 'services']`
- * downstream.
- */
-export function isWorkbenchApp(app: CliConfig['app']): app is NonNullable<CliConfig['app']> & {
-  applicationType?: ApplicationType
-  name: string
-  services?: {name: string; src: string; type: 'worker'}[]
-  views?: {name: string; src: string; type: 'panel'}[]
-} {
+/** Config-load routing only — field-level narrowing is `isWorkbenchApp` in `@sanity/workbench-cli`. */
+export function hasWorkbenchAppBrand(app: CliConfig['app']): boolean {
   return typeof app === 'object' && app !== null && WORKBENCH_APP_BRAND in app
 }
 
@@ -72,7 +56,7 @@ function detectApplicationType(projectDir: string): ApplicationType {
  * The branded `app` bypasses the legacy `app` object schema (which would strip
  * its identity fields and the brand symbol); every other field is still
  * validated. The brand is preserved so downstream code relies on the
- * `isWorkbenchApp` identity (above) instead of a flag.
+ * `isWorkbenchApp` identity (`@sanity/workbench-cli`) instead of a flag.
  *
  * Resolves `applicationType` here — as early as possible — so studio-vs-app
  * classification is settled once and read off the app everywhere else. The

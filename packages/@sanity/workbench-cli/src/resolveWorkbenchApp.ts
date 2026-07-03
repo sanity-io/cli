@@ -4,9 +4,9 @@
 // build their command-specific view on top of this one brand-check +
 // extraction, so the discrimination lives in exactly one place.
 
-import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
 
-import {type DefineAppInput} from './defineApp.js'
+import {type DefineAppInput, isWorkbenchApp} from './defineApp.js'
 
 /**
  * Bundled so adding a declaration family touches this type and the artifact
