@@ -9,7 +9,11 @@ import {type CliConfig} from './types/cliConfig.js'
 // hot config-load path.
 const WORKBENCH_APP_BRAND = Symbol.for('sanity.workbench.defineApp')
 
-/** Boolean brand check for config-load routing; the typed narrowing is `@sanity/workbench-cli`'s `isWorkbenchApp`. */
+/**
+ * Boolean brand check — used for config-load routing, kept exported for
+ * backward compatibility. For the typed narrowing (the app's declared fields),
+ * use `isWorkbenchApp` from `@sanity/workbench-cli`, derived from the schema.
+ */
 export function isWorkbenchApp(app: CliConfig['app']): boolean {
   return typeof app === 'object' && app !== null && WORKBENCH_APP_BRAND in app
 }

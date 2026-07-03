@@ -1,12 +1,7 @@
 ---
-'@sanity/cli-core': major
+'@sanity/cli-core': minor
 '@sanity/workbench-cli': minor
 '@sanity/cli': patch
 ---
 
-refactor(workbench): move `isWorkbenchApp` from `@sanity/cli-core` to
-`@sanity/workbench-cli`, next to the brand it checks. The narrowing now derives
-from the `unstable_defineApp` schema instead of a hand-mirrored shape, so a new
-app field can't silently drift out of the predicate. cli-core keeps a private
-brand check for config-load routing only; its public `isWorkbenchApp` export is
-removed.
+refactor(workbench): move the typed `isWorkbenchApp` to `@sanity/workbench-cli`, derived from the schema so it can't drift. `@sanity/cli-core` keeps a boolean `isWorkbenchApp` for compatibility.
