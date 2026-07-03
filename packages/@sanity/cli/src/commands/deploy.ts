@@ -116,9 +116,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      // Unattended runs (--yes or a non-interactive terminal), dry runs, and --json
-      // are all non-interactive, so skip the overwrite prompt
-      if (!this.isUnattended() && !flags['dry-run'] && !flags.json) {
+      if (!this.isUnattended() && !flags['dry-run']) {
         const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
         const shouldProceed =
           isEmpty ||
@@ -132,15 +130,12 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         }
       }
 
-      // Keep stdout clean for --json; this human line would otherwise precede the payload
+      // Keep --json's stdout clean for the payload
       if (!flags.json) this.output.log(`Building to ${relativeOutput}\n`)
     }
 
-    // Unattended runs (--yes or a non-interactive terminal), dry runs, and --json
-    // deploy without any downstream prompts — application resolution and the build
-    // (buildApp/buildStudio) otherwise stop for prerelease/version choices.
-    const deployFlags =
-      this.isUnattended() || flags['dry-run'] || flags.json ? {...flags, yes: true} : flags
+    // Force yes downstream: build/app resolution otherwise prompts for prerelease/version choices
+    const deployFlags = this.isUnattended() || flags['dry-run'] ? {...flags, yes: true} : flags
 
     if (isApp) {
       deployDebug('Deploying app')
