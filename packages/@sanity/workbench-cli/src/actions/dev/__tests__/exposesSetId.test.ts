@@ -65,6 +65,45 @@ describe('exposesSetId', () => {
     )
   })
 
+  test('a config field add or rename changes the id (module is build-baked)', () => {
+    const one: DevServerConfig = {fields: [{name: 'description', title: 'Description'}]}
+    const added: DevServerConfig = {
+      fields: [
+        {name: 'description', title: 'Description'},
+        {name: 'language', title: 'Language'},
+      ],
+    }
+    const renamed: DevServerConfig = {fields: [{name: 'locale', title: 'Description'}]}
+    expect(exposesSetId({installationConfigs: [one]})).not.toBe(
+      exposesSetId({installationConfigs: [added]}),
+    )
+    expect(exposesSetId({installationConfigs: [one]})).not.toBe(
+      exposesSetId({installationConfigs: [renamed]}),
+    )
+  })
+
+  test('reordering config fields is not a change', () => {
+    const a: DevServerConfig = {
+      fields: [
+        {name: 'x', title: 'X'},
+        {name: 'y', title: 'Y'},
+      ],
+    }
+    const b: DevServerConfig = {
+      fields: [
+        {name: 'y', title: 'Y'},
+        {name: 'x', title: 'X'},
+      ],
+    }
+    expect(exposesSetId({installationConfigs: [a]})).toBe(exposesSetId({installationConfigs: [b]}))
+  })
+
+  test('a field title/public edit is not a rebuild — those ride the wire, not the module', () => {
+    const a: DevServerConfig = {fields: [{name: 'x', public: true, title: 'X'}]}
+    const b: DevServerConfig = {fields: [{name: 'x', public: false, title: 'Renamed'}]}
+    expect(exposesSetId({installationConfigs: [a]})).toBe(exposesSetId({installationConfigs: [b]}))
+  })
+
   // The id is what both detection sites compare against their last-seen value;
   // these assert the change semantics they rely on.
   test('a changed id across an add, remove, or repoint signals the change', () => {

@@ -1,4 +1,3 @@
-import {INSTALLATION_CONFIG_TYPE} from '../../contract.js'
 import {type DevServerConfig, type DevServerInterface} from './deriveInterfaces.js'
 import {type DevServerManifest} from './registry.js'
 
@@ -16,7 +15,11 @@ export function exposesSetId({installationConfigs, interfaces}: ExposeSet): stri
     ...(interfaces ?? []).map((iface) =>
       [iface.interface_type, iface.name, iface.entry_point].join('::'),
     ),
-    ...(installationConfigs?.length ? [`config::${INSTALLATION_CONFIG_TYPE}`] : []),
+    // The config module is generated at build time, so a changed field set (add
+    // or rename) needs a rebuild — key on each field, not just "a config exists".
+    ...(installationConfigs ?? []).flatMap((config) =>
+      config.fields.map((field) => `config::${config.appType}::${field.name}`),
+    ),
   ]
   if (keys.length === 0) return ''
   return keys.toSorted().join('|')
