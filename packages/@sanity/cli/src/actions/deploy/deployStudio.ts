@@ -19,23 +19,26 @@ import {
   checkBuild,
   checkPackageVersion,
   type CheckReporter,
+  checkStudioTarget,
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
+import {listDeploymentFiles} from './deploymentPlan.js'
 import {runDeploy} from './deployRunner.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
 export function deployStudio(options: DeployAppOptions): Promise<void> {
-  return runDeploy(options, {run: runStudioDeployment, type: 'studio'})
+  return runDeploy(options, {
+    listFiles: ({flags, projectRoot, sourceDir}) =>
+      flags.external ? Promise.resolve([]) : listDeploymentFiles(sourceDir, projectRoot.directory),
+    run: runStudioDeployment,
+    type: 'studio',
+  })
 }
 
-/**
- * Validates the deploy, extracts and uploads the schema, and ships the build.
- * Every step reports through `reporter`, and the first failure exits — so
- * reaching any later step means the earlier ones passed.
- */
+/** Validates the deploy, extracts and uploads the schema, and ships the build. */
 async function runStudioDeployment(
   options: DeployAppOptions,
   reporter: CheckReporter,
@@ -45,6 +48,7 @@ async function runStudioDeployment(
   const isExternal = !!flags.external
   const isWorkbenchApp = getWorkbench(cliConfig) !== null
   const projectId = cliConfig.api?.projectId
+  const dryRun = !!flags['dry-run']
 
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
@@ -74,7 +78,7 @@ async function runStudioDeployment(
         },
   )
 
-  const application = await resolveStudioApplication(options)
+  const application = await resolveStudioApplication(options, {dryRun, reporter})
 
   await checkBuild(reporter, {
     build: () =>
@@ -95,6 +99,9 @@ async function runStudioDeployment(
     await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
   }
 
+  // Dry run stops here — everything below mutates.
+  if (dryRun) return
+
   // A real deploy has already exited if anything failed; landing here without a
   // resolved application or version means the deploy target was never resolved.
   if (!application || !version) return
@@ -110,14 +117,29 @@ async function runStudioDeployment(
   })
 }
 
-/** Finds the application a deploy targets, registering a studio host when none is configured. */
+/**
+ * Finds the application a real deploy targets, registering a studio host when
+ * none is configured. A dry run resolves and reports the target read-only instead.
+ */
 async function resolveStudioApplication(
   options: DeployAppOptions,
+  {dryRun, reporter}: {dryRun: boolean; reporter: CheckReporter},
 ): Promise<UserApplication | null> {
   const {cliConfig, flags, output} = options
   const isExternal = !!flags.external
-  const projectId = cliConfig.api?.projectId ?? ''
 
+  if (dryRun) {
+    await checkStudioTarget(reporter, {
+      appId: getAppId(cliConfig),
+      isExternal,
+      projectId: cliConfig.api?.projectId,
+      studioHost: cliConfig.studioHost,
+      urlFlag: flags.url,
+    })
+    return null
+  }
+
+  const projectId = cliConfig.api?.projectId ?? ''
   let application = await findUserApplicationForStudio({
     appId: getAppId(cliConfig),
     isExternal,

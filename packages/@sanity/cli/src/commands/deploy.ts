@@ -51,6 +51,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description:
         'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
     }),
+    'dry-run': Flags.boolean({
+      default: false,
+      description: 'Report what would be deployed without uploading or creating anything',
+    }),
     external: Flags.boolean({
       default: false,
       description: 'Register an externally hosted studio',
@@ -103,8 +107,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      // Unattended runs (--yes or a non-interactive terminal) skip the overwrite prompt
-      if (!this.isUnattended()) {
+      // Unattended runs (--yes or a non-interactive terminal) and dry runs skip the overwrite prompt
+      if (!this.isUnattended() && !flags['dry-run']) {
         const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
         const shouldProceed =
           isEmpty ||
@@ -121,9 +125,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       this.output.log(`Building to ${relativeOutput}\n`)
     }
 
-    // An unattended run (--yes or a non-interactive terminal) deploys without any
-    // prompts downstream (application resolution, the build).
-    const deployFlags = this.isUnattended() ? {...flags, yes: true} : flags
+    // Unattended runs (--yes or a non-interactive terminal) and dry runs deploy
+    // without any downstream prompts — application resolution and the build
+    // (buildApp/buildStudio) otherwise stop for prerelease/version choices.
+    const deployFlags = this.isUnattended() || flags['dry-run'] ? {...flags, yes: true} : flags
 
     if (isApp) {
       deployDebug('Deploying app')

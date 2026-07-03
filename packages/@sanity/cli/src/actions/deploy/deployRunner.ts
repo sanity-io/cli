@@ -1,28 +1,51 @@
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
 
-import {type CheckReporter, createFailFastReporter} from './deployChecks.js'
+import {
+  type CheckReporter,
+  createCollectingReporter,
+  createFailFastReporter,
+} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
+import {type DeploymentFile, type DeploymentPlan, renderDeploymentPlan} from './deploymentPlan.js'
 import {type DeployAppOptions} from './types.js'
 
 /**
- * A deploy flow, split into the parts that differ between core apps and studios.
- * Everything the two share — reporter setup and error handling — lives in
- * `runDeploy`, so both types read as the same sequence.
+ * The parts of a deploy that differ between core apps and studios. The shared
+ * sequence — mode selection, error handling, the dry-run plan — lives in `runDeploy`.
  */
 export interface DeploySpec {
+  /** Files a real deploy would upload, listed only for the dry-run plan. */
+  listFiles: (options: DeployAppOptions) => Promise<DeploymentFile[]>
   /** The step sequence; every step reports through `reporter`. */
   run: (options: DeployAppOptions, reporter: CheckReporter) => Promise<void>
   type: 'coreApp' | 'studio'
 }
 
 /**
- * Runs a deploy flow: the steps report through a fail-fast reporter — the first
- * failure prints and exits — and any escaping error is normalized to an exit
- * code.
+ * Runs a deploy in the mode the flags select. A real deploy fails fast and
+ * mutates; `--dry-run` drives the same `run` sequence read-only and renders a
+ * plan. The mode lives only in the reporter, so the two can't drift.
  */
 export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
   const {output} = options
+
+  if (options.flags['dry-run']) {
+    const reporter = createCollectingReporter()
+    await spec.run(options, reporter)
+    const failed = reporter.results.find((check) => check.status === 'fail')
+    const plan: DeploymentPlan = {
+      checks: reporter.results,
+      // A blocked deploy uploads nothing, so only enumerate files for a deployable plan.
+      files: failed ? [] : await spec.listFiles(options),
+      type: spec.type,
+    }
+    renderDeploymentPlan(plan, output)
+    // Exit like a real (fail-fast) deploy would on the first failing check, so a
+    // script gating on the exit code sees the same status.
+    if (failed) output.error('Deploy blocked by failing checks.', {exit: failed.exitCode ?? 1})
+    return
+  }
 
   try {
     await spec.run(options, createFailFastReporter(output))

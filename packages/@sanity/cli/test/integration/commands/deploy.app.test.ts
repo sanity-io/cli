@@ -1,3 +1,6 @@
+import {mkdir, writeFile} from 'node:fs/promises'
+import {join} from 'node:path'
+
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {unstable_defineApp} from '@sanity/workbench-cli'
@@ -178,6 +181,21 @@ describe('#deploy app', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('a dry run does not prompt to overwrite a non-empty output directory', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockDirIsEmptyOrNonExistent.mockResolvedValue(false)
+
+    // A dry run is a preview; it must not block on the interactive overwrite prompt.
+    await testCommand(DeployCommand, ['build', '--dry-run', '--no-build'], {
+      config: {root: cwd},
+      mocks: defaultMocks,
+    })
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
   test('should re-deploy app if it already exists', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
@@ -220,6 +238,61 @@ describe('#deploy app', () => {
     expect(stderr).toContain('Deploying...')
 
     expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('should report the target and files in a dry run without deploying', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    await mkdir(join(cwd, 'dist'), {recursive: true})
+    await writeFile(join(cwd, 'dist', 'index.html'), '<html></html>')
+
+    // Read-only target lookup; no deployment POST is mocked, so a real ship
+    // would fail nock — proving the dry run never mutates.
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--dry-run'], {
+      config: {root: cwd},
+      mocks: defaultMocks,
+    })
+
+    if (error) throw error
+    expect(stdout).toContain('Dry run — no changes made.')
+    expect(stdout).toContain('Deploys to existing application "Existing App"')
+    expect(stdout).toContain('This application can be deployed.')
+    expect(stdout).toContain('Files to deploy (')
+    expect(stdout).toContain('dist/index.html (')
+    expect(stdout).not.toContain('Success! Application deployed')
+  })
+
+  test('should exit non-zero for a dry run that cannot deploy', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    // No organizationId configured → the target check fails, so the plan isn't
+    // deployable and the dry run must exit non-zero (usable as a CI gate).
+    const {error} = await testCommand(DeployCommand, ['--dry-run', '--no-build'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app: {}}},
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Deploy blocked')
   })
 
   test('should check the federation build dir for an unstable_defineApp app', async () => {
@@ -716,7 +789,7 @@ describe('#deploy app', () => {
       },
     })
 
-    expect(error?.message).toContain('Error deploying application')
+    expect(error?.message).toContain('Failed to resolve deploy target')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -824,9 +897,33 @@ describe('#deploy app', () => {
     })
 
     expect(error?.message).toContain(
-      'Found both app.id (deprecated) and deployment.appId in your application configuration.\n\nPlease remove app.id from your sanity.cli.js or sanity.cli.ts file.',
+      'Both `app.id` (deprecated) and `deployment.appId` are set: Remove `app.id` from sanity.cli.ts',
     )
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('a dry run also blocks when app.id and deployment.appId are both set', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    // The dry run must surface the same conflict a real deploy fails on, rather
+    // than reporting the app as deployable.
+    const {error} = await testCommand(DeployCommand, ['--dry-run', '--no-build'], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          ...defaultMocks.cliConfig,
+          app: {
+            id: appId,
+            organizationId,
+          },
+        },
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Deploy blocked')
   })
 
   test('should show a warning if app.id (deprecated) is used', async () => {
@@ -845,7 +942,12 @@ describe('#deploy app', () => {
       },
     })
 
-    expect(stderr).toContain('The `app.id` config has moved to `deployment.appId`.')
+    // oclif wraps the warning at terminal width and prefixes continuation lines
+    // (`›` on Unix, `»` on Windows); flatten before asserting the full copy
+    const flatStderr = stderr.replaceAll(/\s*\n\s*[›»]?\s*/g, ' ')
+    expect(flatStderr).toContain(
+      'The `app.id` config is deprecated: Move it to `deployment.appId` in sanity.cli.ts',
+    )
   })
 
   test('should handle app creation with retry when host is taken', async () => {
