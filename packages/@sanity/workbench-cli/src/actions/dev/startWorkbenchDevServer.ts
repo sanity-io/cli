@@ -42,6 +42,9 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
       type,
     })),
   installationConfigs: servers.flatMap(({host, installationConfigs, port}) =>
+    // `config` is the app-type-specific payload (a media library carries
+    // `fields`; other types differ), so pass through whatever remains once the
+    // discriminator and transport coordinates are peeled off.
     (installationConfigs ?? []).map(({appType, moduleName, ...config}) => ({
       config,
       moduleName,

@@ -38,16 +38,15 @@ interface ManifestPatch<T> {
 
 interface StartDevManifestWatcherOptions<T> {
   /**
-   * Run the project-specific extraction and resolve to the inlined manifest
-   * plus the workbench `interfaces[]` (when the project declares them).
-   * Receives the resolved config path (e.g. `sanity.config.ts` for studios,
-   * `sanity.cli.ts` for core-apps) and the working directory.
+   * Run the project-specific extraction and resolve to the manifest patch, which
+   * the watcher stamps with `manifestUpdatedAt` before forwarding. Receives the
+   * resolved config path (`sanity.config.ts` for studios, `sanity.cli.ts` for
+   * core-apps) and the working directory.
    */
-  extract: (params: {configPath: string; workDir: string}) => Promise<{
-    installationConfigs?: DevServerConfig[] | undefined
-    interfaces?: DevServerInterface[] | undefined
-    manifest: T | undefined
-  }>
+  extract: (params: {
+    configPath: string
+    workDir: string
+  }) => Promise<Omit<ManifestPatch<T>, 'manifestUpdatedAt'>>
   output: Output
   /**
    * Called after every successful extraction with the inlined manifest +
