@@ -113,6 +113,7 @@ describe('deriveInstallationConfigs', () => {
           {name: 'description', public: true, title: 'Description'},
           {name: 'language', public: undefined, title: 'Language'},
         ],
+        moduleName: 'test-app',
       },
     ])
   })

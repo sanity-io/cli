@@ -610,9 +610,8 @@ describe('startWorkbenchDevServer', () => {
         {host: 'localhost', id: 'app-1', pid: 2, port: 3334, type: 'studio'},
         {
           host: 'localhost',
-          installationConfigs: [installationConfig],
+          installationConfigs: [{...installationConfig, moduleName: 'media-library'}],
           isSingleton: true,
-          moduleName: 'media-library',
           pid: 3,
           port: 3337,
           type: 'coreApp',

@@ -32,8 +32,8 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
       projectId,
       type,
     })),
-  installationConfigs: servers.flatMap(({host, installationConfigs, moduleName, port}) =>
-    (installationConfigs ?? []).map(({appType, ...config}) => ({
+  installationConfigs: servers.flatMap(({host, installationConfigs, port}) =>
+    (installationConfigs ?? []).map(({appType, moduleName, ...config}) => ({
       config,
       moduleName,
       remoteURL: `http://${host}:${port}`,

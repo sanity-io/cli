@@ -51,6 +51,9 @@ const devServerManifestSchema = z.object({
         fields: z.array(
           z.object({name: z.string(), public: z.optional(z.boolean()), title: z.string()}),
         ),
+        // The app's `unstable_defineApp` name — the module-federation alias the
+        // workbench loads this config's live values from.
+        moduleName: z.optional(z.string()),
       }),
     ),
   ),
@@ -82,9 +85,6 @@ const devServerManifestSchema = z.object({
    * workbench `watchRegistry` watcher and forces a rebroadcast to clients.
    */
   manifestUpdatedAt: z.optional(z.string()),
-  // The app's `unstable_defineApp` name, used as the module-federation alias
-  // when the workbench loads its exposed modules (e.g. a media library's config).
-  moduleName: z.optional(z.string()),
   pid: z.number(),
   port: z.number(),
   projectId: z.optional(z.string()),

@@ -70,7 +70,6 @@ export async function startDevServerRegistration(
 
   const app = cliConfig.app
   const isSingleton = isWorkbenchApp(app) && app.isSingleton === true
-  const moduleName = isWorkbenchApp(app) ? app.name : undefined
 
   const registration = registerDevServer({
     host: appHost,
@@ -78,7 +77,6 @@ export async function startDevServerRegistration(
     installationConfigs,
     interfaces,
     isSingleton,
-    moduleName,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     type: isApp ? 'coreApp' : 'studio',

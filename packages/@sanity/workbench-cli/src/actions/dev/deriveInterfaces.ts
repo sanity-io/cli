@@ -60,6 +60,7 @@ export function deriveInstallationConfigs(app: CliConfig['app']): DevServerConfi
         public: field.public,
         title: field.title,
       })),
+      moduleName: app.name,
     },
   ]
 }
