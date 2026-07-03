@@ -18,18 +18,23 @@ const devDebug = subdebug('dev')
 
 const noop = async () => {}
 
+// The media library is a config-only singleton (it can't declare views or
+// services), so it rides the `installationConfigs` channel instead of
+// appearing as a local application.
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
-  applications: servers.map(
-    ({host, id, installationConfig, interfaces, manifest, port, projectId, type}) => ({
+  applications: servers
+    .filter((server) => server.type !== 'media-library')
+    .map(({host, id, interfaces, manifest, port, projectId, type}) => ({
       host,
       id,
-      installationConfig,
       interfaces,
       manifest,
       port,
       projectId,
       type,
-    }),
+    })),
+  installationConfigs: servers.flatMap(({host, id, installationConfig, port}) =>
+    installationConfig ? [{config: installationConfig, host, id, port}] : [],
   ),
 })
 

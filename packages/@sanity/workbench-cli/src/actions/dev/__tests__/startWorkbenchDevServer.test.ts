@@ -531,6 +531,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'coreApp',
           },
         ],
+        installationConfigs: [],
       })
     })
 
@@ -554,6 +555,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'studio',
           },
         ],
+        installationConfigs: [],
       })
     })
 
@@ -588,6 +590,48 @@ describe('startWorkbenchDevServer', () => {
             type: 'studio',
           }),
         ],
+        installationConfigs: [],
+      })
+    })
+
+    test('routes a media-library server to installationConfigs instead of applications', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const installationConfig = {
+        appType: 'media-library',
+        fields: [{name: 'description', public: true, title: 'Description'}],
+      }
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        {host: 'localhost', id: 'app-1', pid: 2, port: 3334, type: 'studio'},
+        {host: 'localhost', installationConfig, pid: 3, port: 3337, type: 'media-library'},
+      ])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [expect.objectContaining({id: 'app-1', type: 'studio'})],
+        installationConfigs: [
+          {config: installationConfig, host: 'localhost', id: undefined, port: 3337},
+        ],
+      })
+    })
+
+    test('omits a config-less media-library server from both channels', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([{host: 'localhost', pid: 3, port: 3337, type: 'media-library'}])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [],
+        installationConfigs: [],
       })
     })
 
@@ -677,6 +721,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'coreApp',
           },
         ],
+        installationConfigs: [],
       })
     })
 
