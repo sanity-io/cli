@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.1](https://github.com/sanity-io/cli/compare/cli-build-v2.0.0...cli-build-v2.0.1)
+
+_2026-07-01_
+
+### Bug Fixes
+
+- **deps:** unpin vite and bump to ^8.1.2 ([#1410](https://github.com/sanity-io/cli/pull/1410)) ([3801bd7](https://github.com/sanity-io/cli/commit/3801bd7ebc4aacf7f3e196b4dd73991f8a24d6b7))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.3
+    - @sanity/workbench-cli bumped to 1.1.3
+
 ## [2.0.0](https://github.com/sanity-io/cli/compare/cli-build-v1.1.2...cli-build-v2.0.0)
 
 _2026-06-30_

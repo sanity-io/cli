@@ -1,5 +1,27 @@
 # Change Log
 
+## [7.5.0](https://github.com/sanity-io/cli/compare/cli-v7.4.2...cli-v7.5.0)
+
+_2026-07-01_
+
+### Features
+
+- use OAuth for authenticating MCP in `sanity init` for more clients ([#1403](https://github.com/sanity-io/cli/pull/1403)) ([b67bc0f](https://github.com/sanity-io/cli/commit/b67bc0f4fc594d9d7c336e63fee1d8094f668f8e))
+- **sdk:** add readme, agents.md, and claude skill with docs links to app templates ([#1303](https://github.com/sanity-io/cli/pull/1303)) ([77d9845](https://github.com/sanity-io/cli/commit/77d9845263079ba018d99d627b1bcddf115a649d))
+
+### Bug Fixes
+
+- update Zed MCP settings object format ([#1393](https://github.com/sanity-io/cli/pull/1393)) ([65e9ebf](https://github.com/sanity-io/cli/commit/65e9ebfcedf7ff617c644cf382fdec4651260eb6))
+- **deps:** unpin vite and bump to ^8.1.2 ([#1410](https://github.com/sanity-io/cli/pull/1410)) ([3801bd7](https://github.com/sanity-io/cli/commit/3801bd7ebc4aacf7f3e196b4dd73991f8a24d6b7))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 2.0.1
+    - @sanity/cli-core bumped to 2.1.3
+    - @sanity/workbench-cli bumped to 1.1.3
+
 ## [7.4.2](https://github.com/sanity-io/cli/compare/cli-v7.4.1...cli-v7.4.2)
 
 _2026-06-30_

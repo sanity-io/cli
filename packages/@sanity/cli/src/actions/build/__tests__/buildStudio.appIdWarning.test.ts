@@ -1,10 +1,15 @@
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '@sanity/cli-build/_internal/build'
 import {type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockBuildStudio = vi.hoisted(() =>
+  vi.fn().mockImplementation((options) => {
+    options.checkAppId()
+  }),
+)
+
 /** These are not relevant for what we are testing, but still needed to pass type checker */
 const FLAGS = {
   'auto-updates': true,
@@ -33,24 +38,9 @@ vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    buildDebug: vi.fn(),
-    buildStaticFiles: vi.fn().mockResolvedValue({chunks: []}),
-    checkRequiredDependencies: vi.fn().mockResolvedValue({installedSanityVersion: '3.0.0'}),
-    checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
-    getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
-    getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
-    resolveVendorBuildConfig: vi.fn().mockResolvedValue({
-      entries: {},
-      namesByChunkName: {},
-      specifiersByChunkName: {},
-    }),
-    StudioBuildTrace: {},
+    buildStudio: mockBuildStudio,
   }
 })
-
-vi.mock('@sanity/cli-build/_internal/env', () => ({
-  getStudioEnvironmentVariables: vi.fn().mockReturnValue({}),
-}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -123,22 +113,6 @@ describe('buildStudio appId warning', () => {
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
   })
 
-  test('should not warn about missing appId when auto-updates are disabled', async () => {
-    mockGetAppId.mockReturnValue(undefined)
-    const output = createMockOutput()
-
-    await buildStudio({
-      autoUpdatesEnabled: false,
-      cliConfig: {deployment: {autoUpdates: false}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
-
-    expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
-  })
-
   test('should not warn about missing appId when appId is configured', async () => {
     mockGetAppId.mockReturnValue('my-app-id')
     const output = createMockOutput()
@@ -153,36 +127,5 @@ describe('buildStudio appId warning', () => {
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
-  })
-
-  test('passes a vision entry with cssFile when @sanity/vision is installed locally', async () => {
-    mockGetAppId.mockReturnValue('my-app-id')
-    const output = createMockOutput()
-
-    mockGetLocalPackageVersion.mockResolvedValueOnce('3.5.0')
-
-    await buildStudio({
-      autoUpdatesEnabled: true,
-      cliConfig: {deployment: {appId: 'my-app-id', autoUpdates: true}},
-      flags: FLAGS,
-      outDir: '/tmp/dist',
-      output,
-      workDir: '/tmp',
-    })
-
-    const sanityDependencies = vi.mocked(getAutoUpdatesImportMap).mock.calls[0][0]
-    expect(sanityDependencies).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({cssFile: 'index.css', name: 'sanity'}),
-        expect.objectContaining({
-          cssFile: 'index.css',
-          name: '@sanity/vision',
-          version: '3.5.0',
-        }),
-      ]),
-    )
-
-    // The same dependency array is passed to getAutoUpdatesCssUrls
-    expect(vi.mocked(getAutoUpdatesCssUrls).mock.calls[0][0]).toBe(sanityDependencies)
   })
 })

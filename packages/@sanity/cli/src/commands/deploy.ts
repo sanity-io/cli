@@ -51,6 +51,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description:
         'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
     }),
+    'dry-run': Flags.boolean({
+      default: false,
+      description: 'Report what would be deployed without uploading or creating anything',
+    }),
     external: Flags.boolean({
       default: false,
       description: 'Register an externally hosted studio',
@@ -103,27 +107,34 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
-      // Prompt to delete the directory if it's not empty
-      const shouldProceed =
-        isEmpty ||
-        (await confirm({
-          default: false,
-          message: `"${relativeOutput}" is not empty, do you want to proceed?`,
-        }))
+      // Unattended runs (--yes or a non-interactive terminal) and dry runs skip the overwrite prompt
+      if (!this.isUnattended() && !flags['dry-run']) {
+        const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
+        const shouldProceed =
+          isEmpty ||
+          (await confirm({
+            default: false,
+            message: `"${relativeOutput}" is not empty, do you want to proceed?`,
+          }))
 
-      if (!shouldProceed) {
-        this.output.error('Cancelled.', {exit: 1})
+        if (!shouldProceed) {
+          this.output.error('Cancelled.', {exit: 1})
+        }
       }
 
       this.output.log(`Building to ${relativeOutput}\n`)
     }
 
+    // Unattended runs (--yes or a non-interactive terminal) and dry runs deploy
+    // without any downstream prompts — application resolution and the build
+    // (buildApp/buildStudio) otherwise stop for prerelease/version choices.
+    const deployFlags = this.isUnattended() || flags['dry-run'] ? {...flags, yes: true} : flags
+
     if (isApp) {
       deployDebug('Deploying app')
       await deployApp({
         cliConfig,
-        flags,
+        flags: deployFlags,
         output: this.output,
         projectRoot,
         sourceDir,
@@ -132,7 +143,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       deployDebug('Deploying studio')
       await deployStudio({
         cliConfig,
-        flags,
+        flags: deployFlags,
         output: this.output,
         projectRoot,
         sourceDir,

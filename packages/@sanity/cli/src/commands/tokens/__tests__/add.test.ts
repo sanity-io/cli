@@ -152,18 +152,6 @@ describe('#tokens:add', () => {
   })
 
   test('outputs JSON when --json flag is used', async () => {
-    const mockRoles = [
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read documents',
-        isCustom: false,
-        name: 'viewer',
-        projectId: 'test-project',
-        title: 'Viewer',
-      },
-    ]
-
     const mockToken = {
       id: 'token-json',
       key: 'sk_test_json1234',
@@ -177,11 +165,7 @@ describe('#tokens:add', () => {
       ],
     }
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/roles',
-    }).reply(200, mockRoles)
-
+    // --json is unattended, so the role defaults to viewer without a roles prompt
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'post',
@@ -194,6 +178,8 @@ describe('#tokens:add', () => {
 
     const parsedOutput = JSON.parse(stdout)
     expect(parsedOutput).toEqual(mockToken)
+    expect(mockedSelect).not.toHaveBeenCalled()
+    expect(mockedInput).not.toHaveBeenCalled()
   })
 
   test('works in unattended mode with --yes flag', async () => {
@@ -223,6 +209,8 @@ describe('#tokens:add', () => {
 
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: Unattended Token')
+    expect(mockedSelect).not.toHaveBeenCalled()
+    expect(mockedInput).not.toHaveBeenCalled()
   })
 
   test('handles invalid role error', async () => {

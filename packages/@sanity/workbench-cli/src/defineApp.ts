@@ -124,6 +124,23 @@ export interface DefineAppResult extends DefineAppInput {
 }
 
 /**
+ * A branded app as the CLI reads it — the full schema shape, including the
+ * internal fields `DefineAppInput` omits. Schema-derived so the narrowing
+ * can't drift from what the schema validates.
+ * @public
+ */
+export type WorkbenchApp = DefineAppResult & z.output<typeof DefineAppInputSchema>
+
+/**
+ * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
+ * workbench opt-in.
+ * @public
+ */
+export function isWorkbenchApp(app: unknown): app is WorkbenchApp {
+  return typeof app === 'object' && app !== null && WORKBENCH_APP in app
+}
+
+/**
  * Declare a Sanity Workbench application. Identity at runtime — returns the same
  * object reference, tagged with the workbench brand. Field validation (the
  * `name` pattern etc.) runs at build time in the CLI via `DefineAppInputSchema`;

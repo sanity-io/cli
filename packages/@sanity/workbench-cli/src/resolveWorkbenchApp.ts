@@ -4,9 +4,19 @@
 // build their command-specific view on top of this one brand-check +
 // extraction, so the discrimination lives in exactly one place.
 
-import {type CliConfig, isWorkbenchApp} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
 
-import {type DefineAppInput} from './defineApp.js'
+import {type DefineAppInput, isWorkbenchApp} from './defineApp.js'
+
+/**
+ * Bundled so adding a declaration family touches this type and the artifact
+ * expanders, not every hop of build/dev plumbing in between.
+ * @internal
+ */
+export interface WorkbenchExposes {
+  services?: DefineAppInput['services']
+  views?: DefineAppInput['views']
+}
 
 /** @public */
 export interface ResolvedWorkbenchApp {
@@ -30,6 +40,7 @@ export function resolveWorkbenchApp(
 ): ResolvedWorkbenchApp | null {
   const app = cliConfig?.app
   if (!isWorkbenchApp(app)) return null
+
   return {
     applicationType: app.applicationType,
     entry: app.entry,

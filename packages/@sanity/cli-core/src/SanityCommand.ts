@@ -240,10 +240,11 @@ export abstract class SanityCommand<T extends typeof Command>
    *
    * Most commands should take an explicit `--yes` flag to enable unattended mode, but
    * some commands may also be run in unattended mode if `process.stdin` is not a TTY
-   * (eg when running in a CI environment).
+   * (eg when running in a CI environment), or when `--json` asks for machine-readable
+   * output (a caller parsing JSON can't answer a prompt).
    */
   public isUnattended(): boolean {
-    return this.flags.yes || !this.resolveIsInteractive()
+    return this.flags.yes || this.flags.json || !this.resolveIsInteractive()
   }
 
   /**

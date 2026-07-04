@@ -1,3 +1,6 @@
+import {mkdir, writeFile} from 'node:fs/promises'
+import {join} from 'node:path'
+
 import {type CliConfig, exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
@@ -21,16 +24,11 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// Only the fs-touching `checkBuiltOutput` is stubbed; `assertDeployable` stays real.
-vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()
-  return {
-    getWorkbench: (config: Parameters<typeof actual.getWorkbench>[0]) => {
-      const workbench = actual.getWorkbench(config)
-      return workbench && {...workbench, checkBuiltOutput: mockCheckBuiltOutput}
-    },
-  }
-})
+// Only the fs-touching `checkBuiltOutput` is stubbed; `getWorkbench` stays real.
+vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
+  checkBuiltOutput: mockCheckBuiltOutput,
+}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -233,6 +231,83 @@ describe('#deploy studio', () => {
     expect(stderr).toContain('Verifying local content')
     expect(stderr).toContain('Deploying to sanity.studio')
     expect(stdout).toContain('Success! Studio deployed')
+  })
+
+  test('should report the target and files in a dry run without deploying', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+
+    // A built output the deploy would pack.
+    await mkdir(join(cwd, 'dist'), {recursive: true})
+    await writeFile(join(cwd, 'dist', 'index.html'), '<html></html>')
+
+    // The target lookup is read-only; no deployment POST is mocked, so a real
+    // ship would fail nock — proving the dry run never mutates.
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appHost: studioHost, appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: 'studio-app-id',
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--dry-run'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {api: {projectId}, studioHost}},
+    })
+
+    if (error) throw error
+    expect(stdout).toContain('Dry run — no changes made.')
+    expect(stdout).toContain('Deploys to existing studio')
+    expect(stdout).toContain('This studio can be deployed.')
+    expect(stdout).toContain('Files to deploy (')
+    expect(stdout).toContain('dist/index.html (')
+    expect(stdout).not.toContain('Success! Studio deployed')
+  })
+
+  test('runs the dry-run build unattended so it cannot prompt', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+
+    await mkdir(join(cwd, 'dist'), {recursive: true})
+    await writeFile(join(cwd, 'dist', 'index.html'), '<html></html>')
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appHost: studioHost, appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: 'studio-app-id',
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    await testCommand(DeployCommand, ['--dry-run'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {api: {projectId}, studioHost}},
+    })
+
+    expect(mockBuildStudio).toHaveBeenCalledWith(
+      expect.objectContaining({flags: expect.objectContaining({yes: true})}),
+    )
   })
 
   test('should validate the federation build shape for an unstable_defineApp studio', async () => {
@@ -474,6 +549,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -572,6 +648,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -673,6 +750,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -734,6 +812,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -869,7 +948,7 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error finding user application')
+    expect(error?.message).toContain('Failed to resolve deploy target')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1039,6 +1118,7 @@ describe('#deploy studio', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -1245,8 +1325,8 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error finding user application')
     expect(error?.message).toContain(`Cannot find app with app ID ${studioAppId}`)
+    expect(error?.message).toContain('Check `studioHost` and `deployment.appId` in sanity.cli.ts')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1284,8 +1364,8 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error finding user application')
     expect(error?.message).toContain(`Cannot find app with app ID ${studioAppId}`)
+    expect(error?.message).toContain('Check `studioHost` and `deployment.appId` in sanity.cli.ts')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1656,8 +1736,10 @@ describe('#deploy studio', () => {
       })
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Cannot prompt for studio hostname in unattended mode')
-      expect(error?.message).toContain('Use --url to specify the studio hostname')
+      expect(error?.message).toContain('No studio hostname configured')
+      expect(error?.message).toContain(
+        'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+      )
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
@@ -1707,8 +1789,10 @@ describe('#deploy studio', () => {
       })
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Cannot prompt for studio hostname in unattended mode')
-      expect(error?.message).toContain('Use --url to specify the studio hostname')
+      expect(error?.message).toContain('No studio hostname configured')
+      expect(error?.message).toContain(
+        'Set `studioHost` in sanity.cli.ts, or pass a hostname with --url',
+      )
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockSelect).not.toHaveBeenCalled()
     })

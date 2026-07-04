@@ -287,6 +287,7 @@ describe('#deploy studio (external)', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -361,6 +362,7 @@ describe('#deploy studio (external)', () => {
             projectId,
           },
         },
+        isInteractive: true,
       },
     })
 
@@ -722,8 +724,10 @@ describe('#deploy studio (external)', () => {
       })
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Cannot prompt for external studio URL in unattended mode')
-      expect(error?.message).toContain('Use --url to specify the external studio URL')
+      expect(error?.message).toContain('No external studio URL configured')
+      expect(error?.message).toContain(
+        'Set `studioHost` in sanity.cli.ts, or pass the full URL with --url',
+      )
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
@@ -773,8 +777,10 @@ describe('#deploy studio (external)', () => {
       })
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Cannot prompt for external studio URL in unattended mode')
-      expect(error?.message).toContain('Use --url to specify the external studio URL')
+      expect(error?.message).toContain('No external studio URL configured')
+      expect(error?.message).toContain(
+        'Set `studioHost` in sanity.cli.ts, or pass the full URL with --url',
+      )
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockSelect).not.toHaveBeenCalled()
     })

@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {isWorkbenchApp as determineIsWorkbenchApp} from '@sanity/cli-core'
+import {isWorkbenchApp as determineIsWorkbenchApp} from '@sanity/workbench-cli'
 
 import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'

@@ -1,14 +1,9 @@
-import {
-  type CliConfig,
-  isWorkbenchApp,
-  type Output,
-  resolveLocalPackage,
-  subdebug,
-} from '@sanity/cli-core'
+import {type CliConfig, type Output, resolveLocalPackage, subdebug} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from 'vite'
 import {z} from 'zod/mini'
 
+import {isWorkbenchApp} from '../../defineApp.js'
 import {createInterfacesTracker} from './interfaceSetId.js'
 import {
   acquireWorkbenchLock,

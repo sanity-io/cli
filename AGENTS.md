@@ -4,9 +4,11 @@ Read and respect rules and conventions from CONTRIBUTING.md. Additionally:
 
 All commands are run from the root of the repo.
 
-- `pnpm test` - run all unit tests
-- `pnpm test <test-file>` - run specific test file. Example: `pnpm test packages/@sanity/cli/src/commands/documents/__tests__/get.test.ts`
-- `pnpm test --coverage` - run tests with coverage report (output in `coverage/`)
+- `pnpm test:unit` - run all unit tests - first line of defense, should be run first, takes ~20s on a modern machine
+- `pnpm test:coverage` - run unit tests with coverage report output to terminal (and report files to `coverage/`)
+- `pnpm test:integration` - run all integration tests - much more expensive, takes ~3 mins on a modern machine, use sparingly or as a final validation check
+- `pnpm test` - run all tests
+- `pnpm test[:unit|:integration] <test-file>` - run specific test file(s); the arg is a path substring match. Example: `pnpm test documents/__tests__/get`
 - `pnpm check:types` - TypeScript type checking
 - `pnpm check:lint` - ESLint + Prettier
 - `pnpm check:deps` - unused dependency / export check
@@ -18,79 +20,13 @@ All commands are run from the root of the repo.
 # Workflow
 
 - Be sure to typecheck, lint, build, depcheck and run tests when you are done.
-- Testing coverage should be maximized. Prefer running tests with coverage and the goal is to achieve maximum testing coverage for any new code added.
+- Testing coverage should be maximized. Prefer running tests with coverage and the goal is to achieve maximum unit testing coverage for any new code added.
 - When creating pull requests, always follow the template in `.github/PULL_REQUEST_TEMPLATE.md`. Do not use your own format.
+- Releasable changes need a changeset, normally auto-generated from the PR's "Notes for release" section (empty uses the PR title; `N/A` skips it). See CONTRIBUTING.md "Automatic Changesets"; a hand-authored `.changeset/` file also works and takes precedence.
 
 # Testing Rules
 
-## ALWAYS:
-
-1. Default to HTTP mocking with `mockApi()` as your first choice
-2. Mock at the highest level possible: HTTP > Client > Action (never Service)
-3. Use `vi.hoisted(() => vi.fn())` for client method mocks
-4. Clear mocks in `afterEach()` with `vi.clearAllMocks()`
-5. Test both success and error scenarios
-6. Use `if (error) throw error` in success tests - NOT `expect(error).toBeUndefined()`
-7. Assert `expect(error).toBeInstanceOf(Error)` in error tests, along with exit code and message
-8. Settle every command started in a test before the test ends, even when the test fails - a leaked running command consumes the next test's nock mocks and ports (see `activeLogins` in `login.test.ts`)
-
-## NEVER:
-
-1. Never mock service files - always use client or HTTP mocking
-2. Never leave mocks active between tests
-3. Never use `any` in mock types
-4. Never mock without verifying the mock was called
-5. Never wait for async work (servers starting, output appearing) with fixed `setTimeout` sleeps - poll for an observable signal (printed output via the `onOutput` capture option, mock calls via `vi.waitFor`) with a generous deadline that fails the test
-6. Never hardcode port numbers in tests - use OS-assigned ports (`server.listen(0)`, `vi.stubEnv('SANITY_CLI_CALLBACK_PORTS', '0')` for the auth callback server) and discover the actual port from output or mock calls
-
-## Quick Reference
-
-**Simple HTTP API test:**
-
-```typescript
-mockApi({uri: '/endpoint'}).reply(200, {...})
-```
-
-**Client method mocking:**
-
-```typescript
-const mockMethod = vi.hoisted(() => vi.fn())
-
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      resource: {method: mockMethod},
-    }),
-  }
-})
-```
-
-**HTTP with mocked methods:**
-
-```typescript
-const testClient = createTestClient({apiVersion: '...', token: '...'})
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      request: testClient.request,
-      users: {getById: vi.fn()},
-    }),
-  }
-})
-
-mockApi({uri: '/endpoint'}).reply(200, {...})
-```
-
-**Reference**: See `packages/@sanity/cli/src/commands/__tests__/init/init.plan.test.ts` for a complete example.
-
-# Testing
-
-Uses vitest. Suite is very large and slow. Minimize full runs.
+Follow all instructions and guidance laid out in the Testing Requirements section in `CONTRIBUTING.md`.
 
 **Never pipe test output.** The following are all forbidden:
 
@@ -110,20 +46,31 @@ First, compute the output path (derived from cwd, matches `vitest.config.ts`):
 TEST_RESULTS="/tmp/test-results-$(echo -n "$(pwd)" | sha1sum | cut -c1-8).json"
 ```
 
+Next determine whether to run unit tests or integration tests. Start with unit tests as they take less time to complete. Depending on the available resources of the local machine, integration tests may experience failures like test worker deaths from OS signals. Older node versions, like node v22, experience these more frequently than newer versions. Export a `RUNTASK` variable choosing which tests to run:
+
+```bash
+RUNTASK="test:unit" # or "test:integration" for integration tests, or simply "test" for all tests
+```
+
 Then run one of:
 
 ```bash
 # Only tests affected by uncommitted changes (preferred starting point)
-pnpm test --changed --bail=1
+pnpm $RUNTASK --changed --bail=1
 
 # Scoped to package
-pnpm test --filter=@sanity/cli --bail=1
+pnpm $RUNTASK --project=@sanity/cli --bail=1
 
-# Single file (when debugging a specific failure)
-pnpm test packages/@sanity/cli/src/hooks/commandNotFound/__tests__/topicAliases.test.ts
+# Single file (when debugging a specific failure) — the file arg is a substring
+# match against the path, so a unique fragment is enough
+pnpm $RUNTASK topicAliases
+
+# Single test within a file: by name (-t, a regex) or by line number (needs full path)
+pnpm $RUNTASK topicAliases -t "rewrites \"dataset list\""
+pnpm $RUNTASK packages/@sanity/cli/src/hooks/commandNotFound/__tests__/topicAliases.test.ts:23
 
 # Full suite (avoid — only for final validation before committing)
-pnpm test --bail=3
+pnpm $RUNTASK --bail=3
 ```
 
 ## Reading test results
@@ -155,7 +102,7 @@ jq '{total: .numTotalTests, passed: .numPassedTests, failed: .numFailedTests, fi
 4. Read the failing test file and relevant source to understand the failure
 5. Fix the code
 6. Re-run ONLY the previously-failing files
-7. Once those pass, run the full affected package: `pnpm test --filter=<pkg>`
+7. Once those pass, run the full affected package: `pnpm $RUNTASK --project=<pkg>`
 8. Full suite only as final validation before committing
 
 # Debugging
@@ -170,6 +117,6 @@ jq '{total: .numTotalTests, passed: .numPassedTests, failed: .numFailedTests, fi
 
 - The update script runs `pnpm install --frozen-lockfile` and `pnpm build:cli` on startup. Dependencies and build artifacts should already be up to date when a session begins.
 - The test results JSON file requires `CLAUDECODE=1` (or `CODEX_CI=1`). Set `export CLAUDECODE=1` before running tests so the `$TEST_RESULTS` / `jq` workflow described above works as expected.
-- The full test suite takes ~10 minutes. Prefer scoped runs (`--changed`, `--filter`, or single files) during development. Before assuming a test failure is caused by your changes, check whether the same test also fails on `origin/main`.
+- The full test suite takes ~10 minutes. Prefer scoped runs (`--changed`, `--project`, or single files) during development. Before assuming a test failure is caused by your changes, check whether the same test also fails on `origin/main`.
 - CLI commands that hit the Sanity API (e.g. `documents query`, `login`) require authentication. Use fixture directories (e.g. `fixtures/basic-studio`) to run commands like `npx sanity debug`, `npx sanity doctor`, or `npx sanity versions` without authentication.
 - `pnpm install` may warn about ignored build scripts for `sharp` and `unrs-resolver`. These are safe to ignore; the `pnpm.onlyBuiltDependencies` allowlist in `package.json` already covers the required native modules (`@swc/core`, `esbuild`, `node-pty`).

@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
-import {type DefineAppInput} from '@sanity/workbench-cli'
+import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
 
@@ -34,6 +34,7 @@ interface StaticBuildOptions {
   appTitle?: string
   autoUpdates?: AutoUpdatesBuildConfig
   entry?: string
+  exposes?: WorkbenchExposes
   isApp?: boolean
   /** Workbench app (opted in via `unstable_defineApp`) — drives the federation build. */
   isWorkbenchApp?: boolean
@@ -41,9 +42,7 @@ interface StaticBuildOptions {
   profile?: boolean
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
-  services?: DefineAppInput['services']
   sourceMap?: boolean
-  views?: DefineAppInput['views']
   vite?: UserViteConfig
 }
 
@@ -61,15 +60,14 @@ export async function buildStaticFiles(
     basePath,
     cwd,
     entry,
+    exposes,
     isApp,
     isWorkbenchApp,
     minify = true,
     outputDir,
     reactCompiler,
     schemaExtraction,
-    services,
     sourceMap = false,
-    views,
     vite: extendViteConfig,
   } = options
 
@@ -88,6 +86,7 @@ export async function buildStaticFiles(
       basePath,
       cwd,
       entries,
+      exposes,
       getEnvironmentVariables,
       isApp,
       isWorkbenchApp,
@@ -98,9 +97,7 @@ export async function buildStaticFiles(
       // Schema extraction is a build-time artifact, not a client-specific step,
       // so a federated studio extracts its schema like the legacy studio build.
       schemaExtraction,
-      services,
       sourceMap,
-      views,
     })
 
     // Apply the user's Vite config so plugins like `@vanilla-extract/vite-plugin`

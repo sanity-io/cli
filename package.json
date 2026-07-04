@@ -42,6 +42,7 @@
     "pretest": "pnpm run build:cli",
     "test": "vitest run",
     "pretest:e2e": "pnpm run build:cli",
+    "test:coverage": "pnpm test:unit --coverage --coverage.reporter text",
     "test:e2e": "pnpm --filter @sanity/cli-e2e test",
     "pretest:integration": "pnpm run build:cli",
     "test:integration": "vitest run --project !*/unit",
