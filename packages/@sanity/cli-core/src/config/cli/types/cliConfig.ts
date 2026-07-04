@@ -63,17 +63,6 @@ export interface CliConfig {
     autoUpdates?: boolean
   }
 
-  /** Experimental, unstable options. May change or be removed without notice. */
-  experimental?: {
-    /**
-     * Enable Vite's experimental bundled dev mode for `sanity dev`. This serves bundled
-     * files during development, which can speed up startup and reloads for large projects.
-     * Can also be enabled per-run with `sanity dev --experimental-bundle`. Defaults to false.
-     * {@link https://vite.dev/guide/rolldown#full-bundle-mode}
-     */
-    bundledDev?: boolean
-  }
-
   /** Define the GraphQL APIs that the CLI can deploy and interact with */
   graphql?: Array<{
     filterSuffix?: string
@@ -159,6 +148,17 @@ export interface CliConfig {
      */
     enabled?: boolean
   }
+
+  /**
+   * Enable Vite's experimental bundled dev mode for `sanity dev`. This serves bundled
+   * files during development, which can speed up startup and reloads for large projects.
+   * Defaults to `false`.
+   *
+   * Unstable: may change or be removed without notice while the underlying Vite
+   * feature (`experimental.bundledDev`) is experimental.
+   * {@link https://vite.dev/guide/rolldown#full-bundle-mode}
+   */
+  unstable_bundledDev?: boolean
 
   /** Exposes the default Vite configuration for custom apps and the Studio so it can be changed and extended. */
   vite?: UserViteConfig

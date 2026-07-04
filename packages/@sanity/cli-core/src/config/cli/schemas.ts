@@ -34,12 +34,6 @@ export const cliConfigSchema = z.object({
     }),
   ),
 
-  experimental: z.optional(
-    z.object({
-      bundledDev: z.optional(z.boolean()),
-    }),
-  ),
-
   graphql: z.optional(
     z.array(
       z.object({
@@ -89,6 +83,8 @@ export const cliConfigSchema = z.object({
   ),
 
   studioHost: z.optional(z.string()),
+
+  unstable_bundledDev: z.optional(z.boolean()),
 
   vite: z.optional(z.custom<UserViteConfig>()),
 

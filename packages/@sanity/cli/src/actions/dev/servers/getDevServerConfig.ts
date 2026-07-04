@@ -49,10 +49,9 @@ export function getDevServerConfig({
     )
   }
 
-  // Opt into Vite's experimental bundled dev mode. The CLI flag wins when set
-  // (including `--no-experimental-bundle` to force it off); otherwise fall back
-  // to `experimental.bundledDev` in sanity.cli.ts, defaulting to off.
-  const bundledDev = flags['experimental-bundle'] ?? cliConfig?.experimental?.bundledDev ?? false
+  // Unstable opt-in to Vite's experimental bundled dev mode, via
+  // `unstable_bundledDev` in sanity.cli.ts. Defaults to off.
+  const bundledDev = cliConfig?.unstable_bundledDev ?? false
   if (bundledDev) {
     output.log(`${logSymbols.info} Running dev server with experimental Vite bundled dev mode`)
   }

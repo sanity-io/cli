@@ -12,11 +12,6 @@ vi.mock('@sanity/cli-core/ux', () => ({
   })),
 }))
 
-// oclif types the flag as `boolean`, but with `default: undefined` an unset flag
-// is `undefined` at runtime — this helper lets tests exercise that path.
-const withBundleFlag = (value: boolean | undefined) =>
-  ({...FLAGS, 'experimental-bundle': value}) as typeof FLAGS
-
 describe('getDevServerConfig', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
@@ -189,10 +184,10 @@ describe('getDevServerConfig', () => {
   })
 
   describe('experimental bundled dev mode', () => {
-    test('enables bundledDev when the --experimental-bundle flag is passed', () => {
+    test('enables bundledDev when unstable_bundledDev is set in sanity.cli.ts', () => {
       const config = getDevServerConfig({
-        cliConfig: {},
-        flags: withBundleFlag(true),
+        cliConfig: {unstable_bundledDev: true},
+        flags: FLAGS,
         output: createMockOutput(),
         workDir: '/tmp',
       })
@@ -200,21 +195,10 @@ describe('getDevServerConfig', () => {
       expect(config.bundledDev).toBe(true)
     })
 
-    test('enables bundledDev from sanity.cli.ts when the flag is unset', () => {
+    test('respects an explicit unstable_bundledDev: false', () => {
       const config = getDevServerConfig({
-        cliConfig: {experimental: {bundledDev: true}},
-        flags: withBundleFlag(undefined),
-        output: createMockOutput(),
-        workDir: '/tmp',
-      })
-
-      expect(config.bundledDev).toBe(true)
-    })
-
-    test('the --no-experimental-bundle flag overrides a config opt-in', () => {
-      const config = getDevServerConfig({
-        cliConfig: {experimental: {bundledDev: true}},
-        flags: withBundleFlag(false),
+        cliConfig: {unstable_bundledDev: false},
+        flags: FLAGS,
         output: createMockOutput(),
         workDir: '/tmp',
       })
@@ -222,10 +206,10 @@ describe('getDevServerConfig', () => {
       expect(config.bundledDev).toBe(false)
     })
 
-    test('defaults bundledDev to false when neither flag nor config is set', () => {
+    test('defaults bundledDev to false when the config option is absent', () => {
       const config = getDevServerConfig({
         cliConfig: {},
-        flags: withBundleFlag(undefined),
+        flags: FLAGS,
         output: createMockOutput(),
         workDir: '/tmp',
       })
@@ -237,8 +221,8 @@ describe('getDevServerConfig', () => {
       const output = createMockOutput()
 
       getDevServerConfig({
-        cliConfig: {},
-        flags: withBundleFlag(true),
+        cliConfig: {unstable_bundledDev: true},
+        flags: FLAGS,
         output,
         workDir: '/tmp',
       })
@@ -253,7 +237,7 @@ describe('getDevServerConfig', () => {
 
       getDevServerConfig({
         cliConfig: {},
-        flags: withBundleFlag(undefined),
+        flags: FLAGS,
         output,
         workDir: '/tmp',
       })
