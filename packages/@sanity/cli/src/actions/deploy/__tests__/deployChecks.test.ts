@@ -150,6 +150,7 @@ describe('checkStudioTarget', () => {
     // The URL the human report shows is the same one the JSON reporter reads
     expect(reporter.results[0]?.target).toEqual({
       applicationId: 'app-1',
+      title: null,
       url: 'https://my-studio.sanity.studio',
     })
   })

@@ -231,6 +231,7 @@ describe('#deploy studio', () => {
     expect(stderr).toContain('Verifying local content')
     expect(stderr).toContain('Deploying to sanity.studio')
     expect(stdout).toContain('Success! Studio deployed')
+    expect(stdout).toContain('— "Existing Studio"')
   })
 
   test('should report the target and files in a dry run without deploying', async () => {
@@ -322,6 +323,7 @@ describe('#deploy studio', () => {
     // The target the human report names is carried structured in the JSON too
     expect(plan.target).toEqual({
       applicationId: 'studio-app-id',
+      title: 'Existing Studio',
       url: 'https://existing-studio.sanity.studio',
     })
   })
@@ -411,6 +413,7 @@ describe('#deploy studio', () => {
     const result = JSON.parse(stdout)
     expect(result).toEqual({
       applicationId: studioAppId,
+      applicationTitle: 'Existing Studio',
       applicationType: 'studio',
       applicationVersion: expect.any(String),
       deployed: true,

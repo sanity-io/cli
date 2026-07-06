@@ -121,6 +121,7 @@ async function runStudioDeployment(
 
   return {
     applicationId: application.id,
+    applicationTitle: application.title,
     applicationType: 'studio',
     applicationVersion: version,
     location,
@@ -264,10 +265,11 @@ async function shipStudioDeployment({
   }
   spin.succeed()
 
+  const named = application.title ? ` — "${application.title}"` : ''
   output.log(
     isExternal
-      ? `\nSuccess! Studio registered`
-      : `\nSuccess! Studio deployed to ${styleText('cyan', location)}`,
+      ? `\nSuccess! Studio registered${named}`
+      : `\nSuccess! Studio deployed to ${styleText('cyan', location)}${named}`,
   )
 
   if (getAppId(cliConfig)) return location

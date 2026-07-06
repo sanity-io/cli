@@ -199,6 +199,7 @@ async function runAppDeployment(
 
   return {
     applicationId: application.id,
+    applicationTitle: application.title,
     applicationType: 'coreApp',
     applicationVersion: version,
     location: null,
@@ -320,7 +321,8 @@ export function logAppDeployed({
   output: DeployAppOptions['output']
 }): void {
   const url = getCoreAppUrl(application.organizationId, application.id)
-  output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}`)
+  const named = application.title ? ` — "${application.title}"` : ''
+  output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}${named}`)
 
   if (getAppId(cliConfig)) return
 

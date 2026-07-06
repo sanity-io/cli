@@ -237,7 +237,9 @@ describe('#deploy app', () => {
     expect(stderr).toContain('Verifying local content')
     expect(stderr).toContain('Deploying...')
 
-    expect(stdout).toContain('Success! Application deployed')
+    expect(stdout).toContain('Success! Application deployed to')
+    expect(stdout).toContain('/@org-id/application/app-id')
+    expect(stdout).toContain('— "Existing App"')
   })
 
   test('should report the target and files in a dry run without deploying', async () => {

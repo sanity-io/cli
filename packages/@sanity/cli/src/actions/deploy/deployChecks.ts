@@ -31,6 +31,8 @@ type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
 export interface DeployTarget {
   /** The application the deploy targets; `null` when a deploy would create one. */
   applicationId: string | null
+  /** The application's title; `null` when it has none (or isn't created yet). */
+  title: string | null
   /** Where the deployed studio/app is reachable; `null` when it can't be resolved yet. */
   url: string | null
 }
@@ -243,7 +245,7 @@ export function describeAppTarget(
       return {
         message: `Deploys to existing application "${title}" at ${url}`,
         status: 'pass',
-        target: {applicationId: application.id, url},
+        target: {applicationId: application.id, title: application.title ?? null, url},
       }
     }
     case 'invalid': {
@@ -318,7 +320,11 @@ export function describeStudioTarget(
       return {
         message: `Deploys to existing studio ${url}`,
         status: 'pass',
-        target: {applicationId: resolution.application.id, url},
+        target: {
+          applicationId: resolution.application.id,
+          title: resolution.application.title ?? null,
+          url,
+        },
       }
     }
     case 'invalid': {
@@ -348,7 +354,7 @@ export function describeStudioTarget(
           ? `Would register external studio at ${resolution.appHost}${titled}`
           : `Would create studio hostname ${url}${titled} (name availability is checked on deploy)`,
         status: 'pass',
-        target: {applicationId: null, url},
+        target: {applicationId: null, title: null, url},
       }
     }
   }

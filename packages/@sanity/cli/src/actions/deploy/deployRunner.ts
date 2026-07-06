@@ -21,6 +21,8 @@ import {type DeployAppOptions} from './types.js'
 /** What a real deploy produced — the payload `--json` reports. */
 export interface DeployResult {
   applicationId: string
+  /** The deployed application's title; `null` when it has none. */
+  applicationTitle: string | null
   applicationType: 'coreApp' | 'studio'
   /** Installed framework version the deploy used (`sanity` or `@sanity/sdk-react`). */
   applicationVersion: string
