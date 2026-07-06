@@ -227,13 +227,6 @@ becomes an adapter like `deploy`.
 - Small; the API client already moved in Phase 6.
 - **Done when:** `commands/undeploy.ts` imports its entry points from `@sanity/cli-deploy`.
 
-### Phase 8 — Adopt in runtime-cli (external)
-
-`runtime-cli` depends on `@sanity/cli-deploy` and wires its own `build` /
-`uploadSchemaAndManifest` / `extractManifest`, consuming the returned outcomes for its own
-reporting. Lands in the `runtime-cli` repo, out of scope here, but it's the reason for the
-shape.
-
 ## Non-goals
 
 - No change to deploy behaviour, output, or exit codes for CLI users.
@@ -244,8 +237,6 @@ shape.
 
 ## Risks and coordination
 
-- **`feat/deploy-json` overlaps Phase 2.** Both rework the same runner. Sequence them — do
-  not develop in parallel. Rebasing this work onto that branch is the cleaner path.
 - **API client scope.** The studio undeploy short-circuit assumes the delete endpoint
   accepts a studio delete by application id without the project scope. The code path is
   global; confirm against the user-applications API before relying on it.
