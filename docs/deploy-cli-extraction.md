@@ -23,7 +23,7 @@ to the caller.
 
 ## Goal: the interfaces
 
-The four entry points, exported from `@sanity/cli-deploy/_internal/deploy`:
+The entry points, exported from `@sanity/cli-deploy/_internal/deploy`:
 
 ```ts
 interface DeployContext {
@@ -55,18 +55,15 @@ function deployCoreApp(
   },
 ): Promise<Deployment>
 
-function undeployCoreApp(o: {
+// Resolve the target first with the exported resolveStudioDeployTarget /
+// resolveAppDeployTarget, then hand the resolved application to undeploy. Once
+// resolved it's the same for both kinds — the delete is global, the appType
+// comes from application.type.
+function undeploy(o: {
   output: Output
   isUnattended: boolean
-  appId: string // required — nothing to undeploy without it
-}): Promise<UndeployOutcome>
-
-function undeployStudio(
-  o: {
-    output: Output
-    isUnattended: boolean
-  } & ({appId: string} | {studioHost: string; projectId: string}),
-): Promise<UndeployOutcome>
+  application: {id: string; type: 'coreApp' | 'studio'; appHost: string; title: string | null}
+}): Promise<void>
 ```
 
 Return types — data only, no printing:
@@ -81,10 +78,6 @@ interface DeployResult {
   location: string | null // studio URL; null for core apps
 }
 
-type UndeployOutcome = {
-  application: {id: string; type: 'coreApp' | 'studio'; appHost: string; title: string | null}
-} | null // nothing to undeploy — the target didn't resolve to an existing application
-
 class DeployError extends Error {
   check: DeployCheck // the failing check: message, solution, exitCode
 }
@@ -97,8 +90,8 @@ class DeployError extends Error {
 - A real deploy blocked by a failing check throws `DeployError`, carrying the `DeployCheck`
   it stopped on (`message`, `solution`, `exitCode`).
 - Unexpected failures — network, build, schema extraction, filesystem — propagate unwrapped.
-- `undeployStudio` / `undeployCoreApp` return the removed application, or `null` when nothing
-  resolved; they throw only on an API failure.
+- `undeploy` operates on an already-resolved application; the caller resolves the target first
+  and skips the call when nothing resolves. It throws only on an API failure.
 - Ctrl+C at a prompt surfaces as the prompt library's `ExitPromptError` and propagates.
 - `DeployError` is exported, so callers can tell a blocking check from an unexpected failure.
 
@@ -107,9 +100,9 @@ class DeployError extends Error {
 **Moves into `@sanity/cli-deploy`** — deploy-intrinsic, and today only the command
 consumes it: `deployApp` → `deployCoreApp`, `deployStudio`, `deployRunner`, `deployChecks`,
 `deploymentPlan`, `resolveDeployTarget`, `findUserApplication`, `createUserApplication`,
-`installationConfigDeployment`, `checkDir`, `urlUtils`, `deployDebug`, the undeploy
-resolver, and the API client `services/userApplications.ts` (it needs only manifest
-_types_, which already live in `@sanity/cli-core`).
+`installationConfigDeployment`, `checkDir`, `urlUtils`, `deployDebug`, `undeploy`, and the
+API client `services/userApplications.ts` (it needs only manifest _types_, which already
+live in `@sanity/cli-core`).
 
 **Stays in `@sanity/cli`, injected as callbacks** — shared with other commands, so it
 can't move: the build wrappers (`build`), the studio schema/manifest worker
@@ -141,7 +134,7 @@ type of plain booleans and strings. The commands map their parsed flags onto it.
 
 ### Phase 2 — Return outcomes; stop exiting the process for control flow
 
-The entry points return `Deployment` / `UndeployOutcome`. A failing check throws a typed
+`deployStudio` / `deployCoreApp` return `Deployment`. A failing check throws a typed
 `DeployError` (message + exit code) instead of `output.error(msg, {exit})`. The
 commands catch it and exit; they also own the `--json` vs. human rendering
 (`renderDeploymentPlan` / `deploymentPlanToJson` become caller-side).
@@ -195,14 +188,14 @@ point the command adapters at the package.
 - **Done when:** `@sanity/cli` depends on `@sanity/cli-deploy`; the suite passes; `publint`
   and depcheck are clean.
 
-### Phase 7 — Move the undeploy entries into the package
+### Phase 7 — Move undeploy into the package
 
-Turn `getStudioOrAppUserApplication` into `undeployStudio` / `undeployCoreApp` behind the
-package export, reusing `resolveDeployTarget` for the studio lookup. `commands/undeploy.ts`
-becomes an adapter like `deploy`.
+Replace `getStudioOrAppUserApplication` with a single `undeploy` behind the package export.
+`commands/undeploy.ts` resolves the target with the exported resolvers, then calls `undeploy`
+— an adapter like `deploy`.
 
 - Small; the API client already moved in Phase 6.
-- **Done when:** `commands/undeploy.ts` imports its entry points from `@sanity/cli-deploy`.
+- **Done when:** `commands/undeploy.ts` imports `undeploy` from `@sanity/cli-deploy`.
 
 ## Non-goals
 
@@ -213,9 +206,9 @@ becomes an adapter like `deploy`.
 
 ## Risks and coordination
 
-- **API client scope.** The studio undeploy short-circuit assumes the delete endpoint
-  accepts a studio delete by application id without the project scope. The code path is
-  global; confirm against the user-applications API before relying on it.
+- **API client scope.** `undeploy` deletes by application id via the global endpoint (no
+  project scope). The code path is global today; confirm the user-applications API accepts a
+  studio delete this way before relying on it.
 - **Worker packaging.** The studio schema worker resolves itself via
   `new URL(..., import.meta.url)` and stays in `@sanity/cli`. Keeping it out of the moved
   package (injected instead) sidesteps shipping a worker inside a dependency.
