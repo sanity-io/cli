@@ -194,8 +194,7 @@ becomes an adapter like `deploy`.
 ## Non-goals
 
 - No change to deploy behaviour, output, or exit codes for CLI users.
-- No new deploy features. `--json` is the `feat/deploy-json` branch's work; this plan only
-  makes its result types the package's contract.
+- No new deploy features (`--json` output is separate work).
 - Manifest and schema extraction stay in `@sanity/cli`. Moving that shared stack is a
   separate effort.
 
