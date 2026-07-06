@@ -133,8 +133,6 @@ The entry points return `DeployOutcome` / `UndeployOutcome`. A failing check thr
 commands catch it and exit; they also own the `--json` vs. human rendering
 (`renderDeploymentPlan` / `deploymentPlanToJson` become caller-side).
 
-- The core behavioural refactor. Coordinate with `feat/deploy-json`, which already pushes
-  presentation to the edges — rebase onto it or land this there first.
 - May split: **2a** return values on the success and dry-run paths; **2b** replace the
   `process.exit` calls with thrown errors.
 - **Done when:** no `actions/deploy` code calls `output.error(..., {exit})`; `output` is
