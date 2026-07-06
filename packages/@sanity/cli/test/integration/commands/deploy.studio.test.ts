@@ -319,6 +319,11 @@ describe('#deploy studio', () => {
     expect(plan.errors).toEqual({})
     expect(Array.isArray(plan.warnings)).toBe(true)
     expect(plan.files).toContainEqual(expect.objectContaining({path: 'dist/index.html'}))
+    // The target the human report names is carried structured in the JSON too
+    expect(plan.target).toEqual({
+      applicationId: 'studio-app-id',
+      url: 'https://existing-studio.sanity.studio',
+    })
   })
 
   test('keeps stdout pure JSON when --json is given a custom output directory', async () => {

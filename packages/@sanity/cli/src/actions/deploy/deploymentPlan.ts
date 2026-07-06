@@ -6,7 +6,7 @@ import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {pluralize} from '../../util/pluralize.js'
-import {type DeployCheck} from './deployChecks.js'
+import {type DeployCheck, type DeployTarget} from './deployChecks.js'
 
 export interface DeploymentFile {
   /** Path relative to the project root, POSIX-style. */
@@ -18,6 +18,8 @@ export interface DeploymentFile {
 export interface DeploymentPlan {
   checks: DeployCheck[]
   files: DeploymentFile[]
+  /** The resolved deploy target; `null` when the checks can't determine one. */
+  target: DeployTarget | null
   type: 'coreApp' | 'studio'
   /** Installed framework version the deploy would use; `null` when not found. */
   version: string | null
@@ -77,6 +79,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
   errors: Record<string, string | null>
   files: DeploymentFile[]
   isDeployable: boolean
+  target: DeployTarget | null
   totalBytes: number
   warnings: string[]
 } {
@@ -93,6 +96,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
     errors,
     files: plan.files,
     isDeployable: isDeployable(plan),
+    target: plan.target,
     totalBytes: totalBytes(plan.files),
     warnings,
   }

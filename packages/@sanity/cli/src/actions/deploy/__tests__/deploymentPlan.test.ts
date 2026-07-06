@@ -58,6 +58,7 @@ describe('listDeploymentFiles', () => {
 const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): DeploymentPlan => ({
   checks,
   files,
+  target: null,
   type: 'studio',
   version: '3.99.0',
 })
@@ -81,9 +82,22 @@ describe('deploymentPlanToJson', () => {
       errors: {'No studio hostname configured': 'Set `studioHost`'},
       files: [{path: 'dist/index.html', size: 1_048_576}],
       isDeployable: false,
+      target: null,
       totalBytes: 1_048_576,
       warnings: ['The autoUpdates config has moved'],
     })
+  })
+
+  test('passes the resolved target through to the JSON', () => {
+    const target = {applicationId: 'app-1', url: 'https://my-studio.sanity.studio'}
+    const json = deploymentPlanToJson({
+      checks: [],
+      files: [],
+      target,
+      type: 'studio',
+      version: null,
+    })
+    expect(json.target).toEqual(target)
   })
 
   test('an error without a solution maps to null', () => {
@@ -168,7 +182,10 @@ describe('renderDeploymentPlan', () => {
   })
 
   test('labels a core app deploy as an application', () => {
-    renderDeploymentPlan({checks: [], files: [], type: 'coreApp', version: '1.0.0'}, output)
+    renderDeploymentPlan(
+      {checks: [], files: [], target: null, type: 'coreApp', version: '1.0.0'},
+      output,
+    )
 
     expect(lines.join('\n')).toContain('This application can be deployed.')
   })

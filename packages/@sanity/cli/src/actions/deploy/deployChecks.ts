@@ -23,6 +23,18 @@ import {getCoreAppUrl} from './urlUtils.js'
 
 type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
 
+/**
+ * Where a deploy resolves to, computed once from the deploy-target verdict. The
+ * dry-run report and its JSON both read this, so the human and machine outputs
+ * can't drift.
+ */
+export interface DeployTarget {
+  /** The application the deploy targets; `null` when a deploy would create one. */
+  applicationId: string | null
+  /** Where the deployed studio/app is reachable; `null` when it can't be resolved yet. */
+  url: string | null
+}
+
 export interface DeployCheck {
   message: string
   status: DeployCheckStatus
@@ -31,6 +43,8 @@ export interface DeployCheck {
   exitCode?: number
   /** Actionable fix, shown under a failing or warning check */
   solution?: string
+  /** Set on the deploy-target check with the resolved target both reporters read. */
+  target?: DeployTarget
 }
 
 /**
@@ -225,9 +239,11 @@ export function describeAppTarget(
     case 'found': {
       const {application} = resolution
       const title = application.title ?? application.appHost
+      const url = getCoreAppUrl(application.organizationId, application.id)
       return {
-        message: `Deploys to existing application "${title}" at ${getCoreAppUrl(application.organizationId, application.id)}`,
+        message: `Deploys to existing application "${title}" at ${url}`,
         status: 'pass',
+        target: {applicationId: application.id, url},
       }
     }
     case 'invalid': {
@@ -298,9 +314,11 @@ export function describeStudioTarget(
       return {message: `Deploy target not resolved — ${resolution.message}`, status: 'skip'}
     }
     case 'found': {
+      const url = studioUrl(resolution.application.appHost)
       return {
-        message: `Deploys to existing studio ${studioUrl(resolution.application.appHost)}`,
+        message: `Deploys to existing studio ${url}`,
         status: 'pass',
+        target: {applicationId: resolution.application.id, url},
       }
     }
     case 'invalid': {
@@ -323,12 +341,14 @@ export function describeStudioTarget(
       }
     }
     case 'would-create': {
+      const url = studioUrl(resolution.appHost)
       const titled = title ? ` titled "${title}"` : ''
       return {
         message: isExternal
           ? `Would register external studio at ${resolution.appHost}${titled}`
-          : `Would create studio hostname ${studioUrl(resolution.appHost)}${titled} (name availability is checked on deploy)`,
+          : `Would create studio hostname ${url}${titled} (name availability is checked on deploy)`,
         status: 'pass',
+        target: {applicationId: null, url},
       }
     }
   }

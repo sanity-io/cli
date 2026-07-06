@@ -88,6 +88,7 @@ async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise
   const plan: DeploymentPlan = {
     checks: reporter.results,
     files: [],
+    target: reporter.results.find((check) => check.target)?.target ?? null,
     type: spec.type,
     version: await getLocalPackageVersion(spec.packageName, options.projectRoot.directory),
   }

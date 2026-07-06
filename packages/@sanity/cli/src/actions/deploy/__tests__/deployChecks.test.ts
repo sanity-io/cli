@@ -147,6 +147,11 @@ describe('checkStudioTarget', () => {
     expect(reporter.results[0]?.message).toContain(
       'Deploys to existing studio https://my-studio.sanity.studio',
     )
+    // The URL the human report shows is the same one the JSON reporter reads
+    expect(reporter.results[0]?.target).toEqual({
+      applicationId: 'app-1',
+      url: 'https://my-studio.sanity.studio',
+    })
   })
 
   test('would-create → pass check', async () => {
@@ -267,6 +272,8 @@ describe('checkAppTarget', () => {
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "My App"')
     expect(reporter.results[0]?.message).toContain('/@org-1/application/core-1')
+    expect(reporter.results[0]?.target?.applicationId).toBe('core-1')
+    expect(reporter.results[0]?.target?.url).toContain('/@org-1/application/core-1')
   })
 
   test('would-create without a title → fail check pointing to --title', async () => {
