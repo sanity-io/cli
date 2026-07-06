@@ -100,7 +100,6 @@
     "@vercel/frameworks": "3.29.0",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",
-    "date-fns": "^4.4.0",
     "debug": "catalog:",
     "dotenv": "^17.4.2",
     "eventsource": "^4.1.0",

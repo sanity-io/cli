@@ -1,5 +1,5 @@
 import {of} from 'rxjs'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
 
@@ -77,7 +77,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
 })
 
 // Finally, import the module under test: dataset copy command
-const {CopyDatasetCommand} = await import('../copy.js')
+const {CopyDatasetCommand, formatDistance, formatDistanceToNow} = await import('../copy.js')
 
 const TEST_PROJECT_ID = '1337newb'
 function createMockDataset(name: string) {
@@ -428,5 +428,44 @@ describe('#dataset:copy', () => {
         {exit: 1},
       )
     })
+  })
+})
+
+describe('formatDistance', () => {
+  const base = new Date('2023-06-15T12:00:00Z')
+  const after = (seconds: number) => new Date(base.getTime() + seconds * 1000)
+
+  beforeAll(() => vi.stubEnv('TZ', 'UTC'))
+  afterAll(() => vi.unstubAllEnvs())
+
+  test.each([
+    [after(20), 'less than a minute'],
+    [after(70), '1 minute'],
+    [after(300), '5 minutes'],
+    [after(3600), 'about 1 hour'],
+    [after(3 * 3600), 'about 3 hours'],
+    [after(25 * 3600), '1 day'],
+    [after(3 * 86_400), '3 days'],
+    [after(35 * 86_400), 'about 1 month'],
+    [after(100 * 86_400), '3 months'],
+    [new Date('2024-01-01'), 'about 1 year'],
+    [new Date('2024-07-01'), 'over 1 year'],
+    [new Date('2024-11-01'), 'almost 2 years'],
+  ])('%s -> %s', (later, expected) => {
+    const reference = later.getFullYear() >= 2024 ? new Date('2023-01-01') : base
+    expect(formatDistance(later, reference)).toBe(expected)
+  })
+
+  test('is symmetric regardless of argument order', () => {
+    expect(formatDistance(base, after(300))).toBe('5 minutes')
+  })
+})
+
+describe('formatDistanceToNow', () => {
+  afterEach(() => vi.useRealTimers())
+
+  test('measures the distance from now', () => {
+    vi.setSystemTime(new Date('2023-06-15T12:00:00Z'))
+    expect(formatDistanceToNow(new Date('2023-06-15T11:00:00Z'))).toBe('about 1 hour')
   })
 })

@@ -5,9 +5,6 @@ import {exit} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {Table} from 'console-table-printer'
-import {formatDistance} from 'date-fns/formatDistance'
-import {formatDistanceToNow} from 'date-fns/formatDistanceToNow'
-import {parseISO} from 'date-fns/parseISO'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
@@ -21,9 +18,99 @@ import {
   listDatasetCopyJobs,
   listDatasets,
 } from '../../services/datasets.js'
+import {pluralize} from '../../util/pluralize.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const copyDatasetDebug = subdebug('dataset:copy')
+
+// Mirrors date-fns `formatDistance` (default options, en-US) so output is unchanged.
+const MINUTES_IN_DAY = 1440
+const MINUTES_IN_MONTH = 43_200
+const MINUTES_IN_ALMOST_TWO_DAYS = 2520
+
+function timezoneOffsetMs(date: Date): number {
+  const utc = new Date(
+    Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds(),
+    ),
+  )
+  utc.setUTCFullYear(date.getFullYear())
+  return date.getTime() - utc.getTime()
+}
+
+function isLastDayOfMonth(date: Date): boolean {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate() === date.getDate()
+}
+
+function differenceInMonths(later: Date, earlier: Date): number {
+  const sign = later.getTime() < earlier.getTime() ? -1 : 1
+  const difference = Math.abs(
+    (later.getFullYear() - earlier.getFullYear()) * 12 + (later.getMonth() - earlier.getMonth()),
+  )
+  if (difference < 1) return 0
+
+  const working = new Date(later)
+  if (working.getMonth() === 1 && working.getDate() > 27) working.setDate(30)
+  working.setMonth(working.getMonth() - sign * difference)
+
+  let lastMonthNotFull = Math.sign(working.getTime() - earlier.getTime()) === -sign
+  if (isLastDayOfMonth(later) && difference === 1 && later.getTime() > earlier.getTime()) {
+    lastMonthNotFull = false
+  }
+  return sign * (difference - (lastMonthNotFull ? 1 : 0)) || 0
+}
+
+export function formatDistance(dateLeft: Date, dateRight: Date): string {
+  const laterMs = Math.max(dateLeft.getTime(), dateRight.getTime())
+  const earlierMs = Math.min(dateLeft.getTime(), dateRight.getTime())
+  if (Number.isNaN(laterMs)) throw new RangeError('Invalid time value')
+  const later = new Date(laterMs)
+  const earlier = new Date(earlierMs)
+
+  const seconds = Math.trunc((laterMs - earlierMs) / 1000)
+  const offsetInSeconds = (timezoneOffsetMs(later) - timezoneOffsetMs(earlier)) / 1000
+  const minutes = Math.round((seconds - offsetInSeconds) / 60)
+
+  if (minutes < 2) return minutes === 0 ? 'less than a minute' : '1 minute'
+  if (minutes < 45) return `${minutes} ${pluralize('minute', minutes)}`
+  if (minutes < 90) return 'about 1 hour'
+  if (minutes < MINUTES_IN_DAY) {
+    const hours = Math.round(minutes / 60)
+    return `about ${hours} ${pluralize('hour', hours)}`
+  }
+  if (minutes < MINUTES_IN_ALMOST_TWO_DAYS) return '1 day'
+  if (minutes < MINUTES_IN_MONTH) {
+    const days = Math.round(minutes / MINUTES_IN_DAY)
+    return `${days} ${pluralize('day', days)}`
+  }
+  if (minutes < MINUTES_IN_MONTH * 2) {
+    const months = Math.round(minutes / MINUTES_IN_MONTH)
+    return `about ${months} ${pluralize('month', months)}`
+  }
+
+  const totalMonths = differenceInMonths(later, earlier)
+  if (totalMonths < 12) {
+    const months = Math.round(minutes / MINUTES_IN_MONTH)
+    return `${months} ${pluralize('month', months)}`
+  }
+
+  const years = Math.trunc(totalMonths / 12)
+  const monthsSinceStartOfYear = totalMonths % 12
+  if (monthsSinceStartOfYear < 3) return `about ${years} ${pluralize('year', years)}`
+  if (monthsSinceStartOfYear < 9) return `over ${years} ${pluralize('year', years)}`
+  const almostYears = years + 1
+  return `almost ${almostYears} ${pluralize('year', almostYears)}`
+}
+
+export function formatDistanceToNow(date: Date): string {
+  return formatDistance(date, new Date())
+}
 
 export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand> {
   static override args = {
@@ -167,12 +254,12 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
       let timeStarted = ''
       if (createdAt !== '') {
-        timeStarted = formatDistanceToNow(parseISO(createdAt))
+        timeStarted = formatDistanceToNow(new Date(createdAt))
       }
 
       let timeTaken = ''
       if (updatedAt !== '') {
-        timeTaken = formatDistance(parseISO(updatedAt), parseISO(createdAt))
+        timeTaken = formatDistance(new Date(updatedAt), new Date(createdAt))
       }
 
       let color: '' | 'green' | 'red' | 'yellow'
