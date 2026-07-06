@@ -1,10 +1,6 @@
 // Exports related to retrieving CLI, studio, app or workbench configuration or paths.
-// TODO: what is the difference between these exports, all imported from config/*, and:
-// - services/cliUserConfig (purely file-system operations, just like these exports).
-// - util/: getSanityEnvVar, getSanityConfigDir
-//
-// should the above not belong here, too? i think so. added:
-// - util/getWorkspace
+// TODO: what is the difference between these exports, all imported from config/*, and services/cliUserConfig (purely file-system operations, just like these exports).
+// suggest to combine it - thoughts?
 
 export {getCliConfig, getCliConfigUncached} from '../config/cli/getCliConfig.js'
 export {getCliConfigSync} from '../config/cli/getCliConfigSync.js'
