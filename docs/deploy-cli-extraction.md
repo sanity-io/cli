@@ -43,7 +43,7 @@ function deployStudio(
     projectId: string | undefined
     studioHost: string | undefined
     external: boolean
-    uploadSchemaAndManifest: () => Promise<StudioManifest | null>
+    deployStudioSchema: () => Promise<StudioManifest | null>
   },
 ): Promise<Deployment>
 
@@ -72,9 +72,7 @@ function undeployStudio(
 Return types — data only, no printing:
 
 ```ts
-type Deployment =
-  | {deployed: true; result: DeployResult}
-  | {deployed: false; plan: DeploymentPlan} // dry run
+type Deployment = {deployed: true; result: DeployResult} | {deployed: false; plan: DeploymentPlan} // dry run
 
 interface DeployResult {
   applicationId: string
@@ -86,7 +84,23 @@ interface DeployResult {
 type UndeployOutcome = {
   application: {id: string; type: 'coreApp' | 'studio'; appHost: string; title: string | null}
 } | null // nothing to undeploy — the target didn't resolve to an existing application
+
+class DeployError extends Error {
+  check: DeployCheck // the failing check: message, solution, exitCode
+}
 ```
+
+### Errors and control flow
+
+- `deployStudio` / `deployCoreApp` return a `Deployment` on success and on `--dry-run` — a
+  blocked dry run is data (`deployed: false`), not a throw.
+- A real deploy blocked by a failing check throws `DeployError`, carrying the `DeployCheck`
+  it stopped on (`message`, `solution`, `exitCode`).
+- Unexpected failures — network, build, schema extraction, filesystem — propagate unwrapped.
+- `undeployStudio` / `undeployCoreApp` return the removed application, or `null` when nothing
+  resolved; they throw only on an API failure.
+- Ctrl+C at a prompt surfaces as the prompt library's `ExitPromptError` and propagates.
+- `DeployError` is exported, so callers can tell a blocking check from an unexpected failure.
 
 ## Boundary
 
@@ -99,7 +113,7 @@ _types_, which already live in `@sanity/cli-core`).
 
 **Stays in `@sanity/cli`, injected as callbacks** — shared with other commands, so it
 can't move: the build wrappers (`build`), the studio schema/manifest worker
-(`uploadSchemaAndManifest`), and core-app manifest extraction (`extractManifest`). These
+(`deployStudioSchema`), and core-app manifest extraction (`extractManifest`). These
 sit on `actions/manifest` and `actions/schema`, used by `dev` and `manifest extract`.
 
 **Moves to `@sanity/cli-core`** — pure config resolvers now shared by build, dev, deploy,
@@ -128,7 +142,7 @@ type of plain booleans and strings. The commands map their parsed flags onto it.
 ### Phase 2 — Return outcomes; stop exiting the process for control flow
 
 The entry points return `Deployment` / `UndeployOutcome`. A failing check throws a typed
-`DeployCheckError` (message + exit code) instead of `output.error(msg, {exit})`. The
+`DeployError` (message + exit code) instead of `output.error(msg, {exit})`. The
 commands catch it and exit; they also own the `--json` vs. human rendering
 (`renderDeploymentPlan` / `deploymentPlanToJson` become caller-side).
 
@@ -159,7 +173,7 @@ build, and dev to import from cli-core.
 
 ### Phase 5 — Inject build and manifest/schema extraction
 
-The actions take `build`, `uploadSchemaAndManifest`, and `extractManifest` as callbacks.
+The actions take `build`, `deployStudioSchema`, and `extractManifest` as callbacks.
 The command wires the existing `buildStudio`/`buildApp`, the schema worker, and
 `extractCoreAppManifest`. Schema-error formatting moves into the injected callback so the
 action needn't know `SchemaExtractionError`.
