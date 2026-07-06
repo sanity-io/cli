@@ -43,6 +43,7 @@ export {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
   getCliTelemetry,
+  reportCliTraceError,
   setCliTelemetry,
 } from '../telemetry/getCliTelemetry.js'
 export {getTelemetryBaseInfo} from '../telemetry/getTelemetryBaseInfo.js'
@@ -52,7 +53,7 @@ export {
   type ConsentInformation,
   type TelemetryUserProperties,
 } from '../telemetry/types.js'
-export {type Output, type SanityOrgUser} from '../types.js'
+export {type Output, type RequireProps, type SanityOrgUser} from '../types.js'
 export {doImport} from '../util/doImport.js'
 export {mockBrowserEnvironment} from '../util/environment/mockBrowserEnvironment.js'
 export {getLocalPackageDir, getLocalPackageVersion} from '../util/getLocalPackageVersion.js'
