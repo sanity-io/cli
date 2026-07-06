@@ -96,15 +96,24 @@ class DeployError extends Error {
 
 ### Schema and manifest (studio)
 
-The studio `extractManifest` also uploads the schema, and that's forced, not a naming choice.
-`uploadSchema` takes the live `Schema` and walks the graph to build the Lexicon descriptor, so
-it runs in the worker; `generateStudioManifest` then embeds the descriptor id the upload
-returns. The manifest can't be built until the schema is uploaded, so one callback does both.
-A manifest/schema mismatch is impossible by construction. `deployStudio` calls it only on the
-real-deploy path, so a dry run uploads nothing. (`generateStudioManifest` works from
-serializable workspace metadata + descriptor ids, so manifest generation could later move into
-`deployStudio`; the Lexicon upload can't, short of reworking the descriptor converter.) Core
-apps have no schema — their `extractManifest` reads icon/title and is pure.
+For a studio, `extractManifest` does more than its name suggests — it uploads the schema too.
+That's forced by how the pieces depend on each other, not something a cleaner split would fix.
+
+Two constraints chain together. Uploading the schema to Lexicon returns a descriptor id, and
+the manifest has to embed that id — so the manifest can't be built until the schema is up. And
+the upload has to run in the worker: `uploadSchema` walks the live `Schema` to build the
+descriptor, and a live schema can't cross the worker boundary. So one worker pass uploads the
+schema and builds the manifest, then hands the manifest back.
+
+The payoff: a manifest can never reference a schema that wasn't uploaded — they stay in sync by
+construction. `deployStudio` runs this only on a real deploy, so a dry run uploads nothing.
+
+Core apps have no schema. Their `extractManifest` reads the icon and title from config and
+returns — pure, no upload.
+
+One refactor is on the table but doesn't touch the interface: `generateStudioManifest` builds
+from plain workspace metadata plus the descriptor ids, so manifest generation could move into
+`deployStudio` later. The Lexicon upload can't move without reworking the descriptor converter.
 
 ## Boundary
 
