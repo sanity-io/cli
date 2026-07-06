@@ -1,4 +1,4 @@
-import {getBrowserStubs} from './stubs.js'
+import {getBrowserStubs} from './stubs.js' // TODO: this imports jsdom!!! Unpacked Size (module + dependencies): 26 MB
 
 /**
  * Sets up browser globals (window, document, etc.) in the global scope.

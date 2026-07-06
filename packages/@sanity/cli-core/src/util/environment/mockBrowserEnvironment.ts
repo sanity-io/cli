@@ -1,6 +1,7 @@
-// TODO(SDK-983): Consider moving to @sanity/cli — only used there
+// TODO: Consider moving to @sanity/cli — only used there (SDK-983)
+// this file pulls in JSDOM, which is a 46MB dep. we should isolate the impact of this on the import graph. SDK-983 should be addressed.
 import {getStudioEnvironmentVariables} from './getStudioEnvironmentVariables.js'
-import {setupBrowserStubs} from './setupBrowserStubs.js'
+import {setupBrowserStubs} from './setupBrowserStubs.js' // TODO: this imports jsdom!!! Unpacked Size (module + dependencies): 26 MB
 
 /**
  * Mocks a browser-like environment for processes in the main thread by:

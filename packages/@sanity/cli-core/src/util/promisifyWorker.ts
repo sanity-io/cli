@@ -1,6 +1,6 @@
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
-import {subdebug} from '../debug.js'
+import {subdebug} from '../_exports/debug.js'
 
 const debug = subdebug('promisifyWorker')
 

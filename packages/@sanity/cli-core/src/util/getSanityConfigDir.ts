@@ -1,3 +1,4 @@
+// Pure in memory implementation, widely exported. Please keep it that way.
 import {homedir} from 'node:os'
 import {join as joinPath} from 'node:path'
 
