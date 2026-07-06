@@ -44,7 +44,6 @@ function deployStudio(
     studioHost: string | undefined
     external: boolean
     extractManifest: () => Promise<StudioManifest | null>
-    extractSchema: () => Promise<StudioSchema | null>
   },
 ): Promise<Deployment>
 
@@ -62,9 +61,10 @@ function undeploy(o: {
 }): Promise<{applicationId: string} | null>
 ```
 
-The extraction callbacks only extract; `deployStudio` / `deployCoreApp` own every
-upload (the manifest via `createDeployment`, the studio schema to the store), so the
-two can't drift. `undeploy` returns `null` when there was nothing to remove.
+Both entries take one `extractManifest` callback returning the manifest, which they upload via
+`createDeployment`. For studios, producing the manifest also uploads the schema (see below), so
+`deployStudio` calls it only on a real deploy. `undeploy` returns `null` when there was nothing
+to remove.
 
 Return types:
 
@@ -94,6 +94,18 @@ class DeployError extends Error {
 - Ctrl+C at a prompt surfaces as the prompt library's `ExitPromptError` and propagates.
 - `DeployError` is exported, so callers can tell a blocking check from an unexpected failure.
 
+### Schema and manifest (studio)
+
+The studio `extractManifest` also uploads the schema, and that's forced, not a naming choice.
+`uploadSchema` takes the live `Schema` and walks the graph to build the Lexicon descriptor, so
+it runs in the worker; `generateStudioManifest` then embeds the descriptor id the upload
+returns. The manifest can't be built until the schema is uploaded, so one callback does both.
+A manifest/schema mismatch is impossible by construction. `deployStudio` calls it only on the
+real-deploy path, so a dry run uploads nothing. (`generateStudioManifest` works from
+serializable workspace metadata + descriptor ids, so manifest generation could later move into
+`deployStudio`; the Lexicon upload can't, short of reworking the descriptor converter.) Core
+apps have no schema — their `extractManifest` reads icon/title and is pure.
+
 ## Boundary
 
 **Moves into `@sanity/cli-deploy`** — deploy-intrinsic, and today only the command
@@ -104,9 +116,10 @@ API client `services/userApplications.ts` (it needs only manifest _types_, which
 live in `@sanity/cli-core`).
 
 **Stays in `@sanity/cli`, injected as callbacks** — shared with other commands, so it
-can't move: the build wrappers (`build`), and manifest/schema extraction (`extractManifest`,
-`extractSchema`). These sit on `actions/manifest` and `actions/schema`, used by `dev` and
-`manifest extract`. The callbacks extract; the deploy functions perform the uploads.
+can't move: the build wrappers (`build`) and manifest extraction (`extractManifest`) — pure
+for core apps, worker-backed for studios (where producing the manifest also uploads the
+schema). These sit on `actions/manifest` and `actions/schema`, used by `dev` and `manifest
+extract`.
 
 **Moves to `@sanity/cli-core`** — pure config resolvers now shared by build, dev, deploy,
 _and_ undeploy: `getAppId` / `resolveAppIdIssue` ([`util/appId.ts`](../packages/@sanity/cli/src/util/appId.ts))
@@ -163,14 +176,13 @@ build, and dev to import from cli-core.
 - Independent of the rest; ships on its own.
 - **Done when:** the resolvers live in cli-core and deploy imports them from there.
 
-### Phase 5 — Inject extraction; own the uploads
+### Phase 5 — Inject build and manifest/schema extraction
 
-The actions take `build`, `extractManifest`, and (studio) `extractSchema` as callbacks, and
-perform the uploads themselves — the manifest via `createDeployment`, the studio schema to
-the store. The command wires the existing `buildStudio`/`buildApp`, the manifest/schema
-worker, and `extractCoreAppManifest`. This is where the worker moves from uploading to
-returning serializable artifacts (see Risks); schema-error formatting moves into the injected
-callback so the action needn't know `SchemaExtractionError`.
+The actions take `build` and `extractManifest` as callbacks, and attach the returned manifest
+via `createDeployment`. The command wires the existing `buildStudio`/`buildApp`, the
+schema/manifest worker (studio `extractManifest`), and `extractCoreAppManifest` (core app).
+Schema-error formatting moves into the callback so the action needn't know
+`SchemaExtractionError`.
 
 - After this, `actions/deploy` imports nothing from `actions/build`, `actions/manifest`, or
   `actions/schema`.
@@ -207,10 +219,6 @@ adapter like `deploy`.
 
 ## Risks and coordination
 
-- **Upload vs. extraction.** The studio manifest and schema are generated from live studio
-  objects in a worker; `uploadSchemaToLexicon` both generates the manifest and uploads it.
-  Moving the upload into `deployStudio` needs the worker to return serializable artifacts and
-  the deploy function to upload them — generation stays worker-bound.
 - **`undeploy` inputs.** Deleting is a global endpoint keyed by application id. Confirm the
   user-applications API accepts a studio delete without the project scope, whether it needs
   the `appType` query (drop `type` if not), and whether it surfaces not-found so `undeploy`
