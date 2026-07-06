@@ -27,7 +27,7 @@ export class ManageCommand extends SanityCommand<typeof ManageCommand> {
 
     const url = getManageUrl(projectId)
 
-    this.log(`Opening ${url}`)
+    this.output.log(`Opening ${url}`)
     await open(url)
   }
 }

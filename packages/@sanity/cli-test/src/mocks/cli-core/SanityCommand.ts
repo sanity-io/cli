@@ -20,8 +20,8 @@ export const mocks: MockCollection = {
   OclifCmdExit: vi.fn((_code?: number) => undefined as never),
   // Mock SanityCommand methods
   SanityCmdGetCliConfig: vi.fn(),
-  SanityCmdGetProjectId: vi.fn(),
-  SanityCmdGetProjectRoot: vi.fn(),
+  SanityCmdGetProjectId: vi.fn(() => 'cli-test-mock-project-id'),
+  SanityCmdGetProjectRoot: vi.fn(() => '/some/path/to/cli-test/mocks'),
   SanityCmdIsUnattended: vi.fn(),
   SanityCmdOutput: createMockOutput(),
   SanityCmdResolveIsInteractive: vi.fn(),

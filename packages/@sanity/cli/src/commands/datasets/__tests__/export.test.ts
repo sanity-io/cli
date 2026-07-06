@@ -11,14 +11,15 @@ vi.mock('@sanity/cli-core/SanityCommand', async () => {
   const actual = await import('@sanity/cli-test/mocks')
   return {SanityCommand: actual.MockedSanityCommand}
 })
-vi.mock('@sanity/cli-core/services/apiClient', () => ({
-  getProjectCliClient: vi.fn(),
-}))
+vi.mock(
+  '@sanity/cli-core/services/apiClient',
+  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
+)
+vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
 vi.mock('@sanity/client', () => ({}))
 vi.mock('@sanity/export', () => ({
   exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
-vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
 
 vi.mock('node:fs/promises', () => ({
   default: {
