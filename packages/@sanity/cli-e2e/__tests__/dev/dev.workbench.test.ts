@@ -44,14 +44,15 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     expect(output).toContain(`http://localhost:${port}`)
     expect(output).toContain(`app on port ${port + 1}`)
 
-    // The app server stamps the app's bus identity (`__SANITY_APP_ID__`) into
-    // the modules it serves — `@sanity/runtime` reads it where it connects. The
-    // fixture's probe module makes the define observable without the runtime.
-    const probe = await fetch(`http://localhost:${port + 1}/appId.ts`)
-    expect(probe.ok).toBe(true)
-    const probeSource = await probe.text()
-    expect(probeSource).toContain('"federated-studio"')
-    expect(probeSource).not.toContain('__SANITY_APP_ID__')
+    // The app server carries the app's bus identity (`__SANITY_APP_ID__`) for
+    // `@sanity/runtime`. In dev, Vite delivers `define` entries through the
+    // per-server `/@vite/env` module rather than by text replacement, so that
+    // module is where the id is observable.
+    const env = await fetch(`http://localhost:${port + 1}/@vite/env`)
+    expect(env.ok).toBe(true)
+    const envSource = await env.text()
+    expect(envSource).toContain('__SANITY_APP_ID__')
+    expect(envSource).toContain('"federated-studio"')
 
     session.sendControl('c')
     await session.waitForExit(15_000).catch(() => session.kill())

@@ -48,9 +48,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     stats: flags.stats,
     unattendedMode: flags.yes,
     vite: cliConfig.vite,
-    // The bus identity `@sanity/runtime` stamps on messages: the deployed
-    // application id when configured, else the app's `unstable_defineApp` name.
-    workbenchAppId: workbench ? (appId ?? workbench.name) : undefined,
+    workbenchAppId: workbench?.name,
     workDir,
   })
 }
