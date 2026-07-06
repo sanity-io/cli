@@ -1,11 +1,10 @@
 import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
-import {mockApi} from '@sanity/cli-test'
+import {apiClientMocks, cliUserConfigMocks} from '@sanity/cli-test/mocks'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   fetchTelemetryConsent,
   getTelemetryConsentCacheKey,
-  TELEMETRY_API_VERSION,
   TELEMETRY_CONSENT_CONFIG_KEY,
 } from '../telemetry.js'
 
@@ -20,18 +19,20 @@ function createInMemoryConfigStore() {
   }
 }
 
+vi.mock(
+  '@sanity/cli-core/services/apiClient',
+  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
+)
+vi.mock(
+  '@sanity/cli-core/services/cliUserConfig',
+  async () => (await import('@sanity/cli-test/mocks')).cliUserConfigMocks,
+)
+
 const testConfigStore = createInMemoryConfigStore()
-
-const mockGetCliToken = vi.hoisted(() => vi.fn<() => Promise<string | undefined>>())
-
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getCliToken: mockGetCliToken,
-    getUserConfig: vi.fn(() => testConfigStore),
-  }
-})
+const mockGetCliToken = cliUserConfigMocks.getCliToken
+const mockGetUserConfig = cliUserConfigMocks.getUserConfig
+const mockGetGlobalCliClient = apiClientMocks.getGlobalCliClient
+const mockApiRequest = vi.fn()
 
 describe('#getTelemetryConsentCacheKey', () => {
   test('returns base key when no token is provided', () => {
@@ -60,6 +61,8 @@ describe('#fetchTelemetryConsent', () => {
   beforeEach(() => {
     testConfigStore.clear()
     mockGetCliToken.mockResolvedValue('test-token')
+    mockGetUserConfig.mockReturnValue(testConfigStore)
+    mockGetGlobalCliClient.mockResolvedValue({request: mockApiRequest})
   })
 
   afterEach(() => {
@@ -67,22 +70,14 @@ describe('#fetchTelemetryConsent', () => {
   })
 
   test('should return the telemetry consent status', async () => {
-    mockApi({
-      apiVersion: TELEMETRY_API_VERSION,
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'granted'})
+    mockApiRequest.mockResolvedValue({status: 'granted'})
     const consent = await fetchTelemetryConsent()
 
     expect(consent).toEqual({status: 'granted'})
   })
 
   test('should cache consent under a token-scoped key', async () => {
-    mockApi({
-      apiVersion: TELEMETRY_API_VERSION,
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'granted'})
+    mockApiRequest.mockResolvedValue({status: 'granted'})
 
     await fetchTelemetryConsent()
 
@@ -94,22 +89,14 @@ describe('#fetchTelemetryConsent', () => {
   test('should not reuse cache from a different token', async () => {
     // Fetch and cache consent for token A
     mockGetCliToken.mockResolvedValue('token-a')
-    mockApi({
-      apiVersion: TELEMETRY_API_VERSION,
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'denied'})
+    mockApiRequest.mockResolvedValue({status: 'denied'})
 
     const consentA = await fetchTelemetryConsent()
     expect(consentA).toEqual({status: 'denied'})
 
     // Now switch to token B - should make a new API call, not reuse token A's cache
     mockGetCliToken.mockResolvedValue('token-b')
-    mockApi({
-      apiVersion: TELEMETRY_API_VERSION,
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'granted'})
+    mockApiRequest.mockResolvedValue({status: 'granted'})
 
     const consentB = await fetchTelemetryConsent()
     expect(consentB).toEqual({status: 'granted'})
@@ -117,11 +104,7 @@ describe('#fetchTelemetryConsent', () => {
 
   test('should use base key when no token is available', async () => {
     mockGetCliToken.mockResolvedValue(undefined)
-    mockApi({
-      apiVersion: TELEMETRY_API_VERSION,
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'unset'})
+    mockApiRequest.mockResolvedValue({status: 'unset'})
 
     const consent = await fetchTelemetryConsent()
     expect(consent).toEqual({status: 'unset'})
