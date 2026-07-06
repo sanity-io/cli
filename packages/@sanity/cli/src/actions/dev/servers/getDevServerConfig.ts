@@ -5,6 +5,7 @@ import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
+import {getAppId} from '../../../util/appId.js'
 import {determineIsApp} from '../../../util/determineIsApp.js'
 import {getSharedServerConfig} from '../../../util/getSharedServerConfig.js'
 import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
@@ -71,5 +72,9 @@ export function getDevServerConfig({
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
+    // The bus identity `@sanity/runtime` stamps on messages: the deployed
+    // application id when configured, else the app's `unstable_defineApp` name.
+    workbenchAppId:
+      isWorkbenchApp(app) && cliConfig ? (getAppId(cliConfig) ?? app.name) : undefined,
   }
 }

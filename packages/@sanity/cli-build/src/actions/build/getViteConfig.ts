@@ -109,6 +109,12 @@ interface ViteOptions {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
+
+  /**
+   * The workbench app's bus identity, stamped into its modules as
+   * `__SANITY_APP_ID__` for `@sanity/runtime`. Only read for workbench apps.
+   */
+  workbenchAppId?: string
 }
 
 /**
@@ -134,6 +140,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
+    workbenchAppId,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -198,7 +205,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       // Federation builds only need the federation plugin — skip client-specific
       // plugins (favicons, runtime rewrite, build entries)
       ...(isWorkbenchApp
-        ? [...sharedPlugins, await workbenchVitePlugins({cwd, entries, exposes, isApp})]
+        ? [
+            ...sharedPlugins,
+            await workbenchVitePlugins({appId: workbenchAppId, cwd, entries, exposes, isApp}),
+          ]
         : [
             ...sharedPlugins,
             sanityFaviconsPlugin({

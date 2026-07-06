@@ -44,6 +44,8 @@ interface StaticBuildOptions {
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
   vite?: UserViteConfig
+  /** The workbench app's bus identity (`__SANITY_APP_ID__`). */
+  workbenchAppId?: string
 }
 
 /**
@@ -69,6 +71,7 @@ export async function buildStaticFiles(
     schemaExtraction,
     sourceMap = false,
     vite: extendViteConfig,
+    workbenchAppId,
   } = options
 
   const mode = 'production'
@@ -98,6 +101,7 @@ export async function buildStaticFiles(
       // so a federated studio extracts its schema like the legacy studio build.
       schemaExtraction,
       sourceMap,
+      workbenchAppId,
     })
 
     // Apply the user's Vite config so plugins like `@vanilla-extract/vite-plugin`

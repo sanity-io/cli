@@ -62,6 +62,9 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     unattendedMode: Boolean(flags.yes),
     upgradePackages: upgradePkgs,
     vite: cliConfig.vite,
+    // The bus identity `@sanity/runtime` stamps on messages: the deployed
+    // application id when configured, else the app's `unstable_defineApp` name.
+    workbenchAppId: workbench ? (appId ?? workbench.name) : undefined,
     workDir,
   })
 }
