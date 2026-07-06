@@ -27,6 +27,7 @@ export const select: Mock = vi.fn()
 /** @internal */
 export const spinner: Mock = vi.fn(() => ({
   fail: vi.fn(),
+  render: vi.fn(),
   start: vi.fn().mockReturnThis(),
   succeed: vi.fn(),
 }))

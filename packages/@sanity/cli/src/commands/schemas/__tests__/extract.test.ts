@@ -1,12 +1,11 @@
-import {MockedSanityCommand, mocks} from '@sanity/cli-test/mocks'
+import {mocks} from '@sanity/cli-test/mocks'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, SanityCommand: MockedSanityCommand}
+import {ExtractSchemaCommand} from '../extract.js'
+
+vi.mock('@sanity/cli-core/SanityCommand', async () => {
+  const actual = await import('@sanity/cli-test/mocks')
+  return {SanityCommand: actual.MockedSanityCommand}
 })
 
 // Third: mock extract schema command imports
@@ -21,9 +20,6 @@ vi.mock('../../../actions/schema/getExtractOptions.js', () => ({
 vi.mock('../../../actions/schema/watchExtractSchema.js', () => ({
   watchExtractSchema: mockWatchExtractSchema,
 }))
-
-// Finally, import the module under test: extract schema command
-const {ExtractSchemaCommand} = await import('../extract.js')
 
 describe('schema extract command', () => {
   beforeEach(() => {

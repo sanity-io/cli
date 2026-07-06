@@ -3,12 +3,12 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
+import {apiClientMocks, mocks} from '@sanity/cli-test/mocks'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
 import json5 from 'json5'
 import {afterEach, beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 
-import {mocks} from '../../../../test/mockSanityCommand.js'
 import {CreateDocumentCommand} from '../create.js'
 
 vi.mock('node:fs/promises')
@@ -20,13 +20,14 @@ vi.mock('execa')
 vi.mock('json5')
 vi.mock('node:crypto')
 vi.mock('@sanity/client', () => ({}))
-const mockGetProjectCliClient = vi.hoisted(() => vi.fn())
+const mockGetProjectCliClient = apiClientMocks.getProjectCliClient
 
-vi.mock('@sanity/cli-core/services/apiClient', () => ({
-  getProjectCliClient: mockGetProjectCliClient,
-}))
+vi.mock(
+  '@sanity/cli-core/services/apiClient',
+  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
+)
 vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('../../../../test/mockSanityCommand.js')
+  const actual = await import('@sanity/cli-test/mocks')
   return {SanityCommand: actual.MockedSanityCommand}
 })
 vi.mock('../../../prompts/promptForProject.js', () => ({
@@ -135,8 +136,8 @@ describe('#documents:create', () => {
 
     await CreateDocumentCommand.run(['test-doc.json'])
 
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Created:'))
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Created:'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
     expect(mockFs.readFile).toHaveBeenCalledWith(
       path.resolve(process.cwd(), 'test-doc.json'),
       'utf8',
@@ -166,8 +167,8 @@ describe('#documents:create', () => {
 
     await CreateDocumentCommand.run(['test-doc.json', '--replace'])
 
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Upserted:'))
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Upserted:'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
     expect(mockTransaction).toHaveBeenCalledWith([{createOrReplace: mockDoc}])
   })
 
@@ -193,10 +194,10 @@ describe('#documents:create', () => {
 
     await CreateDocumentCommand.run(['test-doc.json', '--missing'])
 
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
       expect.stringContaining('Skipped (already exists):'),
     )
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
     expect(mockTransaction).toHaveBeenCalledWith([{createIfNotExists: mockDoc}])
   })
 
@@ -221,7 +222,7 @@ describe('#documents:create', () => {
 
       await CreateDocumentCommand.run([])
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Created:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Created:'))
       expect(mockFs.mkdir).toHaveBeenCalledWith(path.join(getPlatformTmpDir(), 'sanity-cli'), {
         mode: 0o700,
         recursive: true,
@@ -252,7 +253,7 @@ describe('#documents:create', () => {
 
     await CreateDocumentCommand.run(['test-doc.json', '--dataset', 'staging'])
 
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Created:'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Created:'))
     expect(mockGetProjectCliClient).toHaveBeenCalledWith(
       expect.objectContaining({
         dataset: 'staging',
@@ -262,7 +263,7 @@ describe('#documents:create', () => {
 
   test('throws error when both --replace and --missing flags are used', async () => {
     await CreateDocumentCommand.run(['test-doc.json', '--replace', '--missing'])
-    expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('Cannot use both --replace and --missing'),
       {exit: 1},
     )
@@ -270,7 +271,7 @@ describe('#documents:create', () => {
 
   test('throws error when --id and file path are both provided', async () => {
     await CreateDocumentCommand.run(['test-doc.json', '--id', 'myDocId'])
-    expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('Cannot use --id when specifying a file path'),
       {exit: 1},
     )
@@ -284,7 +285,7 @@ describe('#documents:create', () => {
       },
     })
     await CreateDocumentCommand.run(['test-doc.json'])
-    expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('No dataset specified'),
       {exit: 1},
     )
@@ -294,7 +295,7 @@ describe('#documents:create', () => {
     mockFs.readFile.mockRejectedValue(new Error('File not found'))
 
     await CreateDocumentCommand.run(['non-existent.json'])
-    expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('Failed to create documents'),
       {exit: 1},
     )
@@ -307,7 +308,7 @@ describe('#documents:create', () => {
     mockJson5.parse.mockReturnValue(invalidDoc)
 
     await CreateDocumentCommand.run(['invalid-doc.json'])
-    expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('Failed to create documents'),
       {exit: 1},
     )
@@ -393,7 +394,7 @@ describe('#documents:create', () => {
       mockJson5.parse.mockReturnValue(doc)
 
       await CreateDocumentCommand.run(['invalid-doc.json'])
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(expectedErrorSubstring),
         {exit: 1},
       )
@@ -424,7 +425,7 @@ describe('#documents:create', () => {
       mockJson5.parse.mockReturnValue(docs)
 
       await CreateDocumentCommand.run(['invalid-doc.json'])
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(expectedErrorSubstring),
         {exit: 1},
       )
@@ -456,8 +457,8 @@ describe('#documents:create', () => {
       await CreateDocumentCommand.run(['doc.json'])
       // Should not throw error, but should proceed with document creation
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Created:'))
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Created:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
       expect(mockTransaction).toHaveBeenCalledWith([{create: docWithReservedFields}])
     })
 
@@ -478,7 +479,7 @@ describe('#documents:create', () => {
       mockJson5.parse.mockReturnValue(emptyArray)
 
       await CreateDocumentCommand.run(['empty-doc.json'])
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('No documents provided'),
         {exit: 1},
       )
@@ -517,11 +518,11 @@ describe('#documents:create', () => {
 
       await CreateDocumentCommand.run(args)
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining(expectedMessage),
       )
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('doc1'))
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('doc2'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('doc1'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('doc2'))
 
       const expectedMutations = mockDocs.map((doc) => ({[operation]: doc}))
       expect(mockTransaction).toHaveBeenCalledWith(expectedMutations)
@@ -553,13 +554,13 @@ describe('#documents:create', () => {
 
       await CreateDocumentCommand.run(['docs.json', '--missing'])
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Created:'))
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('doc1'))
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('doc3'))
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Created:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('doc1'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('doc3'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Skipped (already exists):'),
       )
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('doc2'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('doc2'))
     })
   })
 
@@ -599,7 +600,7 @@ describe('#documents:create', () => {
           JSON.stringify(existingDoc, null, 2),
           expect.objectContaining({mode: 0o600}),
         )
-        expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Created:'))
+        expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Created:'))
       }),
     )
 
@@ -667,11 +668,11 @@ describe('#documents:create', () => {
 
         await CreateDocumentCommand.run([])
 
-        expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
           expect.stringContaining('Failed to write documents: Document already exists'),
           {exit: 1},
         )
-        expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
           expect.stringContaining('Perhaps you want to use `--replace` or `--missing`?'),
           {exit: 1},
         )
@@ -710,8 +711,8 @@ describe('#documents:create', () => {
         await CreateDocumentCommand.run([])
 
         // Should still succeed despite file cleanup error
-        expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Created:'))
-        expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
+        expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Created:'))
+        expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
         expect(mockFs.unlink).toHaveBeenCalled()
       }),
     )
@@ -745,13 +746,13 @@ describe('#documents:create', () => {
 
         await CreateDocumentCommand.run(['--watch'])
 
-        expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
           expect.stringContaining('Watch mode:'),
         )
-        expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
           expect.stringContaining('Will write documents on each save.'),
         )
-        expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+        expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
           expect.stringContaining('Press Ctrl + C to cancel watch mode.'),
         )
         expect(mockWatcher.on).toHaveBeenCalledWith('change', expect.any(Function))
@@ -810,8 +811,8 @@ describe('#documents:create', () => {
 
         await CreateDocumentCommand.run(['--watch'])
 
-        expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Created:'))
-        expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
+        expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Created:'))
+        expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('test-doc'))
         expect(mockTransaction).toHaveBeenCalledWith([{create: mockDoc}])
       }),
     )
