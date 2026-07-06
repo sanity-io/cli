@@ -89,40 +89,6 @@ type UndeployOutcome = {
 } | null // nothing to undeploy — the target didn't resolve to an existing application
 ```
 
-### Design rules behind the fields
-
-Names match `@sanity/cli-build` wherever the concept is shared: `output`, `workDir`,
-`isUnattended` (also the `SanityCommand.isUnattended()` method), `autoUpdatesEnabled`,
-`exposes`. `sourceDir` is the one deliberate divergence from build's `outDir` — deploy
-reads and uploads the directory, it doesn't write it.
-
-Optional vs. required is strict, and each `| undefined` earns its place:
-
-- `deploy*.appId` / `projectId` / `organizationId` / `studioHost` stay optional because
-  missing config is a real input the package turns into a failing check
-  (`NO_PROJECT_ID`, `NO_ORGANIZATION_ID`) — the dry-run report needs to name the problem.
-- `deploy*.appId` optional also covers the first deploy, where the package resolves,
-  prompts for, or creates the target.
-- `undeployCoreApp.appId` is **required** — an SDK app with no appId has nothing to remove.
-- `undeployStudio` is a **union**, not two optionals: you must pass an `appId`, or a
-  `studioHost` + `projectId` pair. The delete endpoint is global and keyed by the
-  application id, and `deployment.appId` _is_ that id, so an appId alone removes a studio.
-  `projectId` + `studioHost` are only the fallback for host-only studios that never got an appId.
-- `build: (() => Promise<void>) | null` — `null` is the explicit `--no-build` state.
-  Forcing the caller to pass it is stricter than an optional.
-- `UndeployOutcome` is `undeployed | null`, with no reason on the `null`. Because the
-  inputs above make an existing target mandatory, the only way to reach "nothing to undeploy"
-  inside the package is a target that didn't resolve — the missing-config cases are the
-  caller's to catch first, so there's nothing to distinguish.
-
-`exposes` (a `ResolvedWorkbenchApp`) replaces a boolean and a capability object at once.
-It's plain data — `{services, views, entry?, applicationType?, installationConfig?}` — so
-the package derives `isWorkbenchApp` from its presence, runs the "declares something
-deployable" guard against the data, reads `installationConfig` off it, and a report can
-enumerate the exposed surface. (Note: build's `WorkbenchExposes` type is missing `entry`;
-type this field as `ResolvedWorkbenchApp`, or add `entry` to `WorkbenchExposes` so both
-packages share one type.)
-
 ## Boundary
 
 **Moves into `@sanity/cli-deploy`** — deploy-intrinsic, and today only the command
