@@ -136,6 +136,7 @@ async function resolveStudioApplication(
       isExternal,
       projectId: cliConfig.api?.projectId,
       studioHost: cliConfig.studioHost,
+      title,
       urlFlag: flags.url,
     })
     return null

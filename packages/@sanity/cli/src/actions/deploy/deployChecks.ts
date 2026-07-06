@@ -252,7 +252,7 @@ export function describeAppTarget(
         exitCode: exitCodes.USAGE_ERROR,
         message: 'No application to deploy to — creating one needs a title',
         solution:
-          'Pass `--title "<name>"` to create one, or set `deployment.appId` in sanity.cli.ts to deploy to an existing app',
+          'Pass `--title "<name>"` or set `app.title` in sanity.cli.ts to create one, or set `deployment.appId` to deploy to an existing app',
         status: 'fail',
       }
     }
@@ -287,7 +287,7 @@ export async function checkAppTarget(
 /** Same contract as {@link describeAppTarget}, for the studio verdicts. */
 export function describeStudioTarget(
   resolution: StudioDeployTargetResolution,
-  {isExternal}: {isExternal: boolean},
+  {isExternal, title}: {isExternal: boolean; title?: string},
 ): DeployCheck {
   const studioUrl = (host: string) => (isExternal ? host : `https://${host}.sanity.studio`)
 
@@ -321,10 +321,11 @@ export function describeStudioTarget(
       }
     }
     case 'would-create': {
+      const titled = title ? ` titled "${title}"` : ''
       return {
         message: isExternal
-          ? `Would register external studio at ${resolution.appHost}`
-          : `Would create studio hostname ${studioUrl(resolution.appHost)} (name availability is checked on deploy)`,
+          ? `Would register external studio at ${resolution.appHost}${titled}`
+          : `Would create studio hostname ${studioUrl(resolution.appHost)}${titled} (name availability is checked on deploy)`,
         status: 'pass',
       }
     }
@@ -338,6 +339,7 @@ export async function checkStudioTarget(
     isExternal: boolean
     projectId: string | undefined
     studioHost: string | undefined
+    title: string | undefined
     urlFlag: string | undefined
   },
 ): Promise<void> {
@@ -348,6 +350,7 @@ export async function checkStudioTarget(
       reporter.report(
         describeStudioTarget(await resolveStudioDeployTarget(options), {
           isExternal: options.isExternal,
+          title: options.title,
         }),
       ),
     (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,

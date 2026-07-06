@@ -129,6 +129,7 @@ const studioArgs = {
   isExternal: false,
   projectId: 'project-1',
   studioHost: undefined,
+  title: undefined,
   urlFlag: undefined,
 }
 
@@ -153,6 +154,16 @@ describe('checkStudioTarget', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Would create studio hostname')
+  })
+
+  test('would-create with a title → pass check names the title', async () => {
+    mockResolveStudio.mockResolvedValue({appHost: 'new-studio', type: 'would-create'})
+    const reporter = createCollectingReporter()
+
+    await checkStudioTarget(reporter, {...studioArgs, title: 'My Studio'})
+
+    expect(reporter.results[0]).toMatchObject({status: 'pass'})
+    expect(reporter.results[0]?.message).toContain('titled "My Studio"')
   })
 
   test('external would-create → pass check', async () => {
@@ -257,6 +268,7 @@ describe('checkAppTarget', () => {
     expect(reporter.results[0]).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
     expect(reporter.results[0]?.message).toContain('No application to deploy to')
     expect(reporter.results[0]?.solution).toContain('--title')
+    expect(reporter.results[0]?.solution).toContain('app.title')
   })
 
   test('would-create with a title → pass check (creates without prompting)', async () => {

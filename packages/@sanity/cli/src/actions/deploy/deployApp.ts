@@ -149,8 +149,8 @@ async function resolveAppApplication(
 ): Promise<UserApplication | null> {
   const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''
-  // Blank --title normalizes to undefined so it falls back to the prompt
-  const title = flags.title?.trim() || undefined
+  // Create name from --title or `app.title` config; blank falls back to the prompt
+  const title = flags.title?.trim() || cliConfig.app?.title?.trim() || undefined
 
   if (dryRun) {
     await checkAppTarget(reporter, {appId: getAppId(cliConfig), organizationId, title})
