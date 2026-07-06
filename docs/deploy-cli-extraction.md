@@ -83,12 +83,10 @@ interface DeployResult {
   location: string | null // studio URL; null for core apps
 }
 
-type UndeployOutcome =
-  | {
-      kind: 'undeployed'
-      application: {id: string; type: 'coreApp' | 'studio'; appHost: string; title: string | null}
-    }
-  | {kind: 'nothing-to-undeploy'; reason: 'no-app-id' | 'not-found'}
+type UndeployOutcome = {
+  kind: 'undeployed'
+  application: {id: string; type: 'coreApp' | 'studio'; appHost: string; title: string | null}
+} | null // nothing to undeploy — the target didn't resolve to an existing application
 ```
 
 `DeployResult` and `DeploymentPlan` already exist on the in-flight `feat/deploy-json`
@@ -116,6 +114,10 @@ Optional vs. required is strict, and each `| undefined` earns its place:
   `projectId` + `studioHost` are only the fallback for host-only studios that never got an appId.
 - `build: (() => Promise<void>) | null` — `null` is the explicit `--no-build` state.
   Forcing the caller to pass it is stricter than an optional.
+- `UndeployOutcome` is `undeployed | null`, with no reason on the `null`. Because the
+  inputs above make an existing target mandatory, the only way to reach "nothing to undeploy"
+  inside the package is a target that didn't resolve — the missing-config cases are the
+  caller's to catch first, so there's nothing to distinguish.
 
 `exposes` (a `ResolvedWorkbenchApp`) replaces a boolean and a capability object at once.
 It's plain data — `{services, views, entry?, applicationType?, installationConfig?}` — so
