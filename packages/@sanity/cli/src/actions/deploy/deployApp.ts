@@ -149,9 +149,11 @@ async function resolveAppApplication(
 ): Promise<UserApplication | null> {
   const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''
+  // Blank --title normalizes to undefined so it falls back to the prompt
+  const title = flags.title?.trim() || undefined
 
   if (dryRun) {
-    await checkAppTarget(reporter, {appId: getAppId(cliConfig), organizationId})
+    await checkAppTarget(reporter, {appId: getAppId(cliConfig), organizationId, title})
     return null
   }
 
@@ -159,13 +161,14 @@ async function resolveAppApplication(
     cliConfig,
     organizationId,
     output,
+    title,
     unattended: !!flags.yes,
   })
   deployDebug('User application found', application)
 
   if (!application) {
     deployDebug('No user application found. Creating a new one')
-    application = await createUserApplication(organizationId)
+    application = await createUserApplication(organizationId, title)
     deployDebug('User application created', application)
   }
 

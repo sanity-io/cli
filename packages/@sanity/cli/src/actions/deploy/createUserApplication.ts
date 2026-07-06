@@ -24,11 +24,12 @@ function promiseWithResolvers<T>() {
 interface CreateStudioUserApplicationOptions {
   projectId: string
 
+  title?: string
   urlType?: 'external' | 'internal'
 }
 
 export async function createStudioUserApplication(options: CreateStudioUserApplicationOptions) {
-  const {projectId, urlType = 'internal'} = options
+  const {projectId, title, urlType = 'internal'} = options
   const {promise, resolve} = promiseWithResolvers<UserApplication>()
 
   const isExternal = urlType === 'external'
@@ -54,7 +55,7 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
       try {
         const response = await createUserApplicationRequest({
           appType: 'studio',
-          body: {appHost, type: 'studio', urlType},
+          body: {appHost, title, type: 'studio', urlType},
           projectId,
         })
         resolve(response)
@@ -75,18 +76,22 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
   return await promise
 }
 
-export async function createUserApplication(organizationId?: string): Promise<UserApplication> {
+export async function createUserApplication(
+  organizationId?: string,
+  title?: string,
+): Promise<UserApplication> {
   if (!organizationId) {
     throw new Error(NO_ORGANIZATION_ID)
   }
 
-  // First get the title from the user
-  const title = await input({
-    message: 'Enter a title for your application:',
-    validate: (input: string) => input.length > 0 || 'Title is required',
-  })
+  const resolvedTitle =
+    title ??
+    (await input({
+      message: 'Enter a title for your application:',
+      validate: (value: string) => value.length > 0 || 'Title is required',
+    }))
 
-  return tryCreateApp(title, organizationId)
+  return tryCreateApp(resolvedTitle, organizationId)
 }
 
 // appHosts have some restrictions (no uppercase, must start with a letter)

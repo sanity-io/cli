@@ -24,13 +24,14 @@ interface FindUserApplicationOptions {
   organizationId: string
   output: Output
 
+  title?: string
   unattended?: boolean
 }
 
 export async function findUserApplication(
   options: FindUserApplicationOptions,
 ): Promise<UserApplication | null> {
-  const {cliConfig, organizationId, output, unattended = false} = options
+  const {cliConfig, organizationId, output, title, unattended = false} = options
   const spin = spinner('Checking application info...').start()
 
   let resolution
@@ -49,11 +50,15 @@ export async function findUserApplication(
     return resolution.application
   }
 
-  // An interactive deploy prompts for a target (needs-input) or goes on to
-  // create one (would-create); everything else exits with the shared diagnosis.
-  if (!unattended && (resolution.type === 'needs-input' || resolution.type === 'would-create')) {
+  // null tells the caller to create. Unattended runs can only create with a
+  // --title; picking among existing apps (needs-input) always needs a prompt.
+  if (resolution.type === 'would-create' && (!unattended || title)) {
     spin.info('No application ID configured')
-    return resolution.type === 'needs-input' ? promptForExistingApp(resolution.existing) : null
+    return null
+  }
+  if (resolution.type === 'needs-input' && !unattended) {
+    spin.info('No application ID configured')
+    return promptForExistingApp(resolution.existing)
   }
 
   spin.clear()
@@ -74,6 +79,7 @@ interface FindUserApplicationForStudioOptions {
 
   appId?: string
   studioHost?: string
+  title?: string
   unattended?: boolean
   urlFlag?: string
 }
@@ -81,7 +87,16 @@ interface FindUserApplicationForStudioOptions {
 export async function findUserApplicationForStudio(
   options: FindUserApplicationForStudioOptions,
 ): Promise<UserApplication | null> {
-  const {appId, isExternal, output, projectId, studioHost, unattended = false, urlFlag} = options
+  const {
+    appId,
+    isExternal,
+    output,
+    projectId,
+    studioHost,
+    title,
+    unattended = false,
+    urlFlag,
+  } = options
   const urlType = isExternal ? 'external' : 'internal'
   const spin = spinner('Checking project info').start()
 
@@ -110,7 +125,13 @@ export async function findUserApplicationForStudio(
   // The configured host isn't registered yet — a deploy registers it without prompting
   if (resolution.type === 'would-create') {
     spin.succeed()
-    return createFromConfiguredHost({appHost: resolution.appHost, output, projectId, urlType})
+    return createFromConfiguredHost({
+      appHost: resolution.appHost,
+      output,
+      projectId,
+      title,
+      urlType,
+    })
   }
 
   if (resolution.type === 'needs-input' && !unattended) {
@@ -139,11 +160,13 @@ async function createFromConfiguredHost({
   appHost,
   output,
   projectId,
+  title,
   urlType,
 }: {
   appHost: string
   output: Output
   projectId: string
+  title?: string
   urlType: 'external' | 'internal'
 }): Promise<UserApplication | null> {
   if (urlType === 'external') {
@@ -162,7 +185,7 @@ async function createFromConfiguredHost({
   try {
     const response = await createUserApplication({
       appType: 'studio',
-      body: {appHost, type: 'studio', urlType},
+      body: {appHost, title, type: 'studio', urlType},
       projectId,
     })
     spin.succeed()

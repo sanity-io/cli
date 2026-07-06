@@ -629,6 +629,54 @@ describe('#deploy app', () => {
     expect(mockInput).not.toHaveBeenCalled()
   })
 
+  test('--yes --title creates a new application without prompting', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const newAppId = 'new-app-id'
+
+    // No existing apps and no appId → would-create; --title lets it create unattended.
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp', organizationId},
+      uri: `/user-applications`,
+    }).reply(200, [])
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {appType: 'coreApp', organizationId},
+      uri: `/user-applications`,
+    }).reply(200, {
+      appHost: 'generated-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: newAppId,
+      organizationId,
+      projectId: null,
+      title: 'My App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${newAppId}/deployments`,
+    }).reply(201, {id: 'deployment-id'}, {location: 'https://generated-host.sanity.app/'})
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--yes', '--title', 'My App'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app: {organizationId}}},
+    })
+
+    if (error) throw error
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(stdout).toContain('Success! Application deployed')
+    expect(stdout).toContain(`deployment: {\n  appId: '${newAppId}',`)
+  })
+
   test('should skip build when --no-build flag is used', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
