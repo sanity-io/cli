@@ -1,15 +1,14 @@
 import fs from 'node:fs/promises'
 
 import {type CliConfig} from '@sanity/cli-core/types'
-import {input} from '@sanity/cli-core/ux'
+import {mocks, uxMocks} from '@sanity/cli-test/mocks'
 import {exportDataset, type ExportResult} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {mocks} from '../../../../test/mockSanityCommand.js'
 import {DatasetExportCommand} from '../export.js'
 
 vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('../../../../test/mockSanityCommand.js')
+  const actual = await import('@sanity/cli-test/mocks')
   return {SanityCommand: actual.MockedSanityCommand}
 })
 vi.mock('@sanity/cli-core/services/apiClient', () => ({
@@ -19,18 +18,7 @@ vi.mock('@sanity/client', () => ({}))
 vi.mock('@sanity/export', () => ({
   exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
-vi.mock('@sanity/cli-core/ux', () => {
-  const mockSpin = {
-    fail: vi.fn().mockReturnThis(),
-    start: vi.fn().mockReturnThis(),
-    succeed: vi.fn().mockReturnThis(),
-  }
-  return {
-    boxen: vi.fn((str: string) => str),
-    input: vi.fn(),
-    spinner: vi.fn(() => mockSpin),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
 
 vi.mock('node:fs/promises', () => ({
   default: {
@@ -51,7 +39,6 @@ vi.mock('../../../services/datasets.js', () => ({
 }))
 
 const mockExportDataset = vi.mocked(exportDataset)
-const mockInput = vi.mocked(input)
 const mockFs = vi.mocked(fs)
 
 const TEST_CONFIG = {
@@ -104,7 +91,7 @@ const createTestContext = (overrides: TestContextOptions = {}) => {
 
   // Setup input if provided
   if (context.inputValue) {
-    mockInput.mockResolvedValueOnce(context.inputValue)
+    uxMocks.input.mockResolvedValueOnce(context.inputValue)
   }
 
   const apiConfig: CliConfig['api'] = {projectId: context.projectId}
@@ -158,15 +145,15 @@ describe('#dataset:export', () => {
           }),
         )
 
-        expect(mocks.SanityCmdOutputError).not.toHaveBeenCalled()
+        expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
         if (shouldShowDetails) {
-          expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+          expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
             expect.stringContaining('projectId: test-project'),
           )
-          expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+          expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
             expect.stringContaining('dataset: production'),
           )
-          expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+          expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
             expect.stringContaining('Export finished'),
           )
         }
@@ -193,7 +180,7 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run(['production'])
 
-      expect(mockInput).toHaveBeenCalledWith({
+      expect(uxMocks.input).toHaveBeenCalledWith({
         default: expect.stringMatching(/production\.tar\.gz$/),
         message: 'Output path:',
         transformer: expect.any(Function),
@@ -244,7 +231,7 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run([])
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Using default dataset: staging'),
       )
       expect(mockExportDataset).toHaveBeenCalledWith(
@@ -259,7 +246,7 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run(['staging', TEST_OUTPUTS.TAR_GZ])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         'Dataset with name "staging" not found',
         {exit: 1},
       )
@@ -284,11 +271,11 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run(['production', TEST_OUTPUTS.EXISTING])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(ERROR_MESSAGES.ALREADY_EXISTS),
         {exit: 1},
       )
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(ERROR_MESSAGES.USE_OVERWRITE),
         {exit: 1},
       )
@@ -315,11 +302,11 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run(['production', TEST_OUTPUTS.SUBDIR])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('Permission denied: Cannot create directory'),
         {exit: 1},
       )
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('Please check write permissions'),
         {exit: 1},
       )
@@ -334,11 +321,11 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run(['production', TEST_OUTPUTS.SUBDIR])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('Failed to create directory'),
         {exit: 1},
       )
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('Disk full'),
         {exit: 1},
       )
@@ -422,7 +409,7 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run([])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('User cancelled'),
         {exit: 1},
       )
@@ -435,7 +422,7 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(exportError.message),
         {exit: 1},
       )
@@ -446,7 +433,7 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run(['PROD-UCTION', TEST_OUTPUTS.TAR_GZ])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('lowercase'),
         {exit: 1},
       )
@@ -459,7 +446,7 @@ describe('#dataset:export', () => {
 
       await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(listError.message),
         {exit: 1},
       )
@@ -490,9 +477,9 @@ describe('#dataset:export', () => {
       await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ])
 
       // Verify command completed successfully
-      expect(mocks.SanityCmdOutputError).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
       expect(mockExportDataset).toHaveBeenCalled()
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Export finished'),
       )
     })
