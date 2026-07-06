@@ -195,15 +195,18 @@ async function uploadStudioSchema(
 
   let studioManifest: StudioManifest | null = null
   try {
-    studioManifest = await deployStudioSchemasAndManifests({
-      configPath: projectRoot.path,
-      isExternal,
-      outPath: `${sourceDir}/static`,
-      projectId: cliConfig.api?.projectId ?? '',
-      schemaRequired: flags['schema-required'],
-      verbose: flags.verbose,
-      workDir: projectRoot.directory,
-    })
+    studioManifest = await deployStudioSchemasAndManifests(
+      {
+        configPath: projectRoot.path,
+        isExternal,
+        outPath: `${sourceDir}/static`,
+        projectId: cliConfig.api?.projectId ?? '',
+        schemaRequired: flags['schema-required'],
+        verbose: flags.verbose,
+        workDir: projectRoot.directory,
+      },
+      output,
+    )
   } catch (error) {
     deployDebug('Error deploying studio schemas and manifests', error)
     if (error instanceof SchemaExtractionError) {
