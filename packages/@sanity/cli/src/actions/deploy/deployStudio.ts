@@ -127,6 +127,8 @@ async function resolveStudioApplication(
 ): Promise<UserApplication | null> {
   const {cliConfig, flags, output} = options
   const isExternal = !!flags.external
+  // Sets the title on a newly registered studio; blank falls back to undefined
+  const title = flags.title?.trim() || undefined
 
   if (dryRun) {
     await checkStudioTarget(reporter, {
@@ -134,6 +136,7 @@ async function resolveStudioApplication(
       isExternal,
       projectId: cliConfig.api?.projectId,
       studioHost: cliConfig.studioHost,
+      title,
       urlFlag: flags.url,
     })
     return null
@@ -146,6 +149,7 @@ async function resolveStudioApplication(
     output,
     projectId,
     studioHost: cliConfig.studioHost,
+    title,
     unattended: !!flags.yes,
     urlFlag: flags.url,
   })
@@ -162,6 +166,7 @@ async function resolveStudioApplication(
 
     application = await createStudioUserApplication({
       projectId,
+      title,
       urlType: isExternal ? 'external' : 'internal',
     })
     deployDebug('Created user application', application)

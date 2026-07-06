@@ -213,7 +213,10 @@ export async function verifyOutputDir({
  * dry-run report and the real deploy's unattended error paths so message,
  * fix, and exit code can't drift between the two.
  */
-export function describeAppTarget(resolution: AppDeployTargetResolution): DeployCheck {
+export function describeAppTarget(
+  resolution: AppDeployTargetResolution,
+  {title}: {title?: string} = {},
+): DeployCheck {
   switch (resolution.type) {
     case 'blocked': {
       return {message: `Deploy target not resolved — ${resolution.message}`, status: 'skip'}
@@ -240,14 +243,16 @@ export function describeAppTarget(resolution: AppDeployTargetResolution): Deploy
         status: 'fail',
       }
     }
-    // Creating an application prompts for a title, which no unattended run
-    // (including a dry run) can answer
+    // Without --title, creating an app needs a prompt no unattended run can answer
     case 'would-create': {
+      if (title) {
+        return {message: `Would create a new application "${title}"`, status: 'pass'}
+      }
       return {
         exitCode: exitCodes.USAGE_ERROR,
-        message: 'No application to deploy to — creating one needs an interactive prompt',
+        message: 'No application to deploy to — creating one needs a title',
         solution:
-          'Run `sanity deploy` interactively once, or add `deployment.appId` to sanity.cli.ts',
+          'Pass `--title "<name>"` or set `app.title` in sanity.cli.ts to create one, or set `deployment.appId` to deploy to an existing app',
         status: 'fail',
       }
     }
@@ -262,13 +267,19 @@ export function describeAppTargetError(err: unknown, organizationId: string | un
 
 export async function checkAppTarget(
   reporter: CheckReporter,
-  {appId, organizationId}: {appId: string | undefined; organizationId: string | undefined},
+  {
+    appId,
+    organizationId,
+    title,
+  }: {appId: string | undefined; organizationId: string | undefined; title?: string},
 ): Promise<void> {
   await runStep(
     reporter,
     'target',
     async () =>
-      reporter.report(describeAppTarget(await resolveAppDeployTarget({appId, organizationId}))),
+      reporter.report(
+        describeAppTarget(await resolveAppDeployTarget({appId, organizationId}), {title}),
+      ),
     (err) => describeAppTargetError(err, organizationId),
   )
 }
@@ -276,7 +287,7 @@ export async function checkAppTarget(
 /** Same contract as {@link describeAppTarget}, for the studio verdicts. */
 export function describeStudioTarget(
   resolution: StudioDeployTargetResolution,
-  {isExternal}: {isExternal: boolean},
+  {isExternal, title}: {isExternal: boolean; title?: string},
 ): DeployCheck {
   const studioUrl = (host: string) => (isExternal ? host : `https://${host}.sanity.studio`)
 
@@ -310,10 +321,11 @@ export function describeStudioTarget(
       }
     }
     case 'would-create': {
+      const titled = title ? ` titled "${title}"` : ''
       return {
         message: isExternal
-          ? `Would register external studio at ${resolution.appHost}`
-          : `Would create studio hostname ${studioUrl(resolution.appHost)} (name availability is checked on deploy)`,
+          ? `Would register external studio at ${resolution.appHost}${titled}`
+          : `Would create studio hostname ${studioUrl(resolution.appHost)}${titled} (name availability is checked on deploy)`,
         status: 'pass',
       }
     }
@@ -327,6 +339,7 @@ export async function checkStudioTarget(
     isExternal: boolean
     projectId: string | undefined
     studioHost: string | undefined
+    title: string | undefined
     urlFlag: string | undefined
   },
 ): Promise<void> {
@@ -337,6 +350,7 @@ export async function checkStudioTarget(
       reporter.report(
         describeStudioTarget(await resolveStudioDeployTarget(options), {
           isExternal: options.isExternal,
+          title: options.title,
         }),
       ),
     (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,

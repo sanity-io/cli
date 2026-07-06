@@ -577,56 +577,55 @@ describe('#deploy app', () => {
     expect(stderr).toContain('No application ID configured')
   })
 
-  test('--yes errors instead of prompting to pick an existing application', async () => {
+  test('--yes creates using app.title from config without prompting', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    // Existing apps but no configured appId → needs-input; unattended can't pick one.
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      query: {appType: 'coreApp', organizationId},
-      uri: `/user-applications`,
-    }).reply(200, [
-      {
-        appHost: 'existing-host',
-        createdAt: '2024-01-01T00:00:00Z',
-        id: 'existing-app-id',
-        organizationId,
-        projectId: null,
-        title: 'Existing App',
-        type: 'coreApp',
-        updatedAt: '2024-01-01T00:00:00Z',
-        urlType: 'internal',
-      },
-    ])
+    const newAppId = 'new-app-id'
 
-    const {error} = await testCommand(DeployCommand, ['--yes'], {
-      config: {root: cwd},
-      mocks: {cliConfig: {app: {organizationId}}},
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(mockSelect).not.toHaveBeenCalled()
-  })
-
-  test('--yes errors instead of prompting for a new application title', async () => {
-    const cwd = await testFixture('basic-app')
-    process.cwd = () => cwd
-
-    // No existing apps and no appId → would-create; unattended can't prompt for a title.
+    // No existing apps and no appId, but app.title in config supplies the name.
     mockApi({
       apiVersion: USER_APPLICATIONS_API_VERSION,
       query: {appType: 'coreApp', organizationId},
       uri: `/user-applications`,
     }).reply(200, [])
 
-    const {error} = await testCommand(DeployCommand, ['--yes'], {
-      config: {root: cwd},
-      mocks: {cliConfig: {app: {organizationId}}},
+    let createBody: {title?: string} | undefined
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {appType: 'coreApp', organizationId},
+      uri: `/user-applications`,
+    }).reply(200, (_uri, body) => {
+      createBody = body as {title?: string}
+      return {
+        appHost: 'generated-host',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: newAppId,
+        organizationId,
+        projectId: null,
+        title: 'Config App',
+        type: 'coreApp',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      }
     })
 
-    expect(error).toBeInstanceOf(Error)
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${newAppId}/deployments`,
+    }).reply(201, {id: 'deployment-id'}, {location: 'https://generated-host.sanity.app/'})
+
+    const {error} = await testCommand(DeployCommand, ['--yes'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app: {organizationId, title: 'Config App'}}},
+    })
+
+    if (error) throw error
     expect(mockInput).not.toHaveBeenCalled()
+    expect(createBody).toMatchObject({title: 'Config App'})
   })
 
   test('should skip build when --no-build flag is used', async () => {
