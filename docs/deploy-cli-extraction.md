@@ -73,8 +73,8 @@ Return types — data only, no printing:
 
 ```ts
 type DeployOutcome =
-  | {kind: 'deployed'; result: DeployResult}
-  | {kind: 'dry-run'; plan: DeploymentPlan}
+  | {deployed: true; result: DeployResult}
+  | {deployed: false; plan: DeploymentPlan} // dry run
 
 interface DeployResult {
   applicationId: string
@@ -88,10 +88,6 @@ type UndeployOutcome = {
   application: {id: string; type: 'coreApp' | 'studio'; appHost: string; title: string | null}
 } | null // nothing to undeploy — the target didn't resolve to an existing application
 ```
-
-`DeployResult` and `DeploymentPlan` already exist on the in-flight `feat/deploy-json`
-branch ([`deployRunner.ts`](../packages/@sanity/cli/src/actions/deploy/deployRunner.ts),
-`deploymentPlan.ts`). This plan adopts them rather than inventing new shapes.
 
 ### Design rules behind the fields
 
