@@ -5,7 +5,7 @@
 `@sanity/cli-build` already lives on its own so [runtime-cli](https://github.com/sanity-io/runtime-cli)
 can build studios and apps without pulling in the whole CLI. Deploy can't be
 reused the same way yet. `runtime-cli` wants `deployCoreApp` / `deployStudio`
-(and their undeploy pair) the same way it consumes `buildApp` / `buildStudio`.
+(and `undeploy`) the same way it consumes `buildApp` / `buildStudio`.
 
 Today the deploy action is welded to the CLI in four places:
 
@@ -33,53 +33,53 @@ interface DeployContext {
   isUnattended: boolean
   autoUpdatesEnabled: boolean
   dryRun: boolean
-  build: (() => Promise<void>) | null // null = --no-build (validate existing output)
-  exposes?: ResolvedWorkbenchApp // absent = plain project
+  build: (() => Promise<void>) | null
+  exposes?: ResolvedWorkbenchApp
 }
 
 function deployStudio(
   o: DeployContext & {
-    appId: string | undefined // undefined = resolve or create a target
+    applicationId: string | undefined
     projectId: string | undefined
     studioHost: string | undefined
     external: boolean
-    deployStudioSchema: () => Promise<StudioManifest | null>
+    extractManifest: () => Promise<StudioManifest | null>
+    extractSchema: () => Promise<StudioSchema | null>
   },
 ): Promise<Deployment>
 
 function deployCoreApp(
   o: DeployContext & {
-    appId: string | undefined
+    applicationId: string | undefined
     organizationId: string | undefined
     extractManifest: () => Promise<CoreAppManifest | undefined>
   },
 ): Promise<Deployment>
 
-// Resolve the target first with the exported resolveStudioDeployTarget /
-// resolveAppDeployTarget, then hand the resolved application to undeploy. Once
-// resolved it's the same for both kinds — the delete is global, the appType
-// comes from application.type.
 function undeploy(o: {
-  output: Output
-  isUnattended: boolean
-  application: {id: string; type: 'coreApp' | 'studio'; appHost: string; title: string | null}
-}): Promise<void>
+  applicationId: string
+  type: 'coreApp' | 'studio'
+}): Promise<{applicationId: string} | null>
 ```
 
-Return types — data only, no printing:
+The extraction callbacks only extract; `deployStudio` / `deployCoreApp` own every
+upload (the manifest via `createDeployment`, the studio schema to the store), so the
+two can't drift. `undeploy` returns `null` when there was nothing to remove.
+
+Return types:
 
 ```ts
-type Deployment = {deployed: true; result: DeployResult} | {deployed: false; plan: DeploymentPlan} // dry run
+type Deployment = {deployed: true; result: DeployResult} | {deployed: false; plan: DeploymentPlan}
 
 interface DeployResult {
   applicationId: string
   applicationType: 'coreApp' | 'studio'
-  applicationVersion: string // installed sanity / @sanity/sdk-react
-  location: string | null // studio URL; null for core apps
+  applicationVersion: string
+  location: string | null
 }
 
 class DeployError extends Error {
-  check: DeployCheck // the failing check: message, solution, exitCode
+  check: DeployCheck
 }
 ```
 
@@ -90,8 +90,7 @@ class DeployError extends Error {
 - A real deploy blocked by a failing check throws `DeployError`, carrying the `DeployCheck`
   it stopped on (`message`, `solution`, `exitCode`).
 - Unexpected failures — network, build, schema extraction, filesystem — propagate unwrapped.
-- `undeploy` operates on an already-resolved application; the caller resolves the target first
-  and skips the call when nothing resolves. It throws only on an API failure.
+- `undeploy` returns `null` when nothing was removed, and throws only on an API failure.
 - Ctrl+C at a prompt surfaces as the prompt library's `ExitPromptError` and propagates.
 - `DeployError` is exported, so callers can tell a blocking check from an unexpected failure.
 
@@ -105,9 +104,9 @@ API client `services/userApplications.ts` (it needs only manifest _types_, which
 live in `@sanity/cli-core`).
 
 **Stays in `@sanity/cli`, injected as callbacks** — shared with other commands, so it
-can't move: the build wrappers (`build`), the studio schema/manifest worker
-(`deployStudioSchema`), and core-app manifest extraction (`extractManifest`). These
-sit on `actions/manifest` and `actions/schema`, used by `dev` and `manifest extract`.
+can't move: the build wrappers (`build`), and manifest/schema extraction (`extractManifest`,
+`extractSchema`). These sit on `actions/manifest` and `actions/schema`, used by `dev` and
+`manifest extract`. The callbacks extract; the deploy functions perform the uploads.
 
 **Moves to `@sanity/cli-core`** — pure config resolvers now shared by build, dev, deploy,
 _and_ undeploy: `getAppId` / `resolveAppIdIssue` ([`util/appId.ts`](../packages/@sanity/cli/src/util/appId.ts))
@@ -164,12 +163,14 @@ build, and dev to import from cli-core.
 - Independent of the rest; ships on its own.
 - **Done when:** the resolvers live in cli-core and deploy imports them from there.
 
-### Phase 5 — Inject build and manifest/schema extraction
+### Phase 5 — Inject extraction; own the uploads
 
-The actions take `build`, `deployStudioSchema`, and `extractManifest` as callbacks.
-The command wires the existing `buildStudio`/`buildApp`, the schema worker, and
-`extractCoreAppManifest`. Schema-error formatting moves into the injected callback so the
-action needn't know `SchemaExtractionError`.
+The actions take `build`, `extractManifest`, and (studio) `extractSchema` as callbacks, and
+perform the uploads themselves — the manifest via `createDeployment`, the studio schema to
+the store. The command wires the existing `buildStudio`/`buildApp`, the manifest/schema
+worker, and `extractCoreAppManifest`. This is where the worker moves from uploading to
+returning serializable artifacts (see Risks); schema-error formatting moves into the injected
+callback so the action needn't know `SchemaExtractionError`.
 
 - After this, `actions/deploy` imports nothing from `actions/build`, `actions/manifest`, or
   `actions/schema`.
@@ -191,8 +192,8 @@ point the command adapters at the package.
 ### Phase 7 — Move undeploy into the package
 
 Replace `getStudioOrAppUserApplication` with a single `undeploy` behind the package export.
-`commands/undeploy.ts` resolves the target with the exported resolvers, then calls `undeploy`
-— an adapter like `deploy`.
+`commands/undeploy.ts` resolves the target for the confirm, then calls `undeploy` — an
+adapter like `deploy`.
 
 - Small; the API client already moved in Phase 6.
 - **Done when:** `commands/undeploy.ts` imports `undeploy` from `@sanity/cli-deploy`.
@@ -206,9 +207,14 @@ Replace `getStudioOrAppUserApplication` with a single `undeploy` behind the pack
 
 ## Risks and coordination
 
-- **API client scope.** `undeploy` deletes by application id via the global endpoint (no
-  project scope). The code path is global today; confirm the user-applications API accepts a
-  studio delete this way before relying on it.
+- **Upload vs. extraction.** The studio manifest and schema are generated from live studio
+  objects in a worker; `uploadSchemaToLexicon` both generates the manifest and uploads it.
+  Moving the upload into `deployStudio` needs the worker to return serializable artifacts and
+  the deploy function to upload them — generation stays worker-bound.
+- **`undeploy` inputs.** Deleting is a global endpoint keyed by application id. Confirm the
+  user-applications API accepts a studio delete without the project scope, whether it needs
+  the `appType` query (drop `type` if not), and whether it surfaces not-found so `undeploy`
+  can return `null`.
 - **Worker packaging.** The studio schema worker resolves itself via
   `new URL(..., import.meta.url)` and stays in `@sanity/cli`. Keeping it out of the moved
   package (injected instead) sidesteps shipping a worker inside a dependency.
