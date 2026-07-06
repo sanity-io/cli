@@ -1,10 +1,10 @@
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
-import {ListBackupCommand} from '../list.js'
+import {formatBackupTimestamp, ListBackupCommand, parseBackupDateFlag} from '../list.js'
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
 
@@ -262,5 +262,81 @@ describe('#backup:list', () => {
     })
     expect(error?.message).toContain('Failed to list datasets')
     expect(error?.oclif?.exit).toBe(1)
+  })
+})
+
+describe('formatBackupTimestamp', () => {
+  beforeAll(() => vi.stubEnv('TZ', 'UTC'))
+  afterAll(() => vi.unstubAllEnvs())
+
+  test.each([
+    ['2024-01-15T10:30:00Z', '2024-01-15 10:30:00'],
+    ['2024-01-14T09:20:00Z', '2024-01-14 09:20:00'],
+    ['2024-12-31T23:59:59Z', '2024-12-31 23:59:59'],
+    ['2024-06-01T00:00:00Z', '2024-06-01 00:00:00'],
+    ['2024-03-05T04:08:09Z', '2024-03-05 04:08:09'],
+  ])('%s -> %s', (input, expected) => {
+    expect(formatBackupTimestamp(input)).toBe(expected)
+  })
+})
+
+describe('formatBackupTimestamp in a non-UTC zone', () => {
+  beforeAll(() => vi.stubEnv('TZ', 'America/New_York'))
+  afterAll(() => vi.unstubAllEnvs())
+
+  test('renders the local wall-clock time', () => {
+    expect(formatBackupTimestamp('2024-01-15T10:30:00Z')).toBe('2024-01-15 05:30:00')
+  })
+})
+
+describe('parseBackupDateFlag', () => {
+  test('returns undefined when no date is given', () => {
+    expect(parseBackupDateFlag(undefined, 'after')).toBeUndefined()
+  })
+
+  test('parses a valid date to local midnight', () => {
+    const parsed = parseBackupDateFlag('2024-01-31', 'after')!
+    expect(parsed.getFullYear()).toBe(2024)
+    expect(parsed.getMonth()).toBe(0)
+    expect(parsed.getDate()).toBe(31)
+    expect(parsed.getHours()).toBe(0)
+    expect(parsed.getMinutes()).toBe(0)
+    expect(parsed.getSeconds()).toBe(0)
+  })
+
+  test('accepts a leap day', () => {
+    const parsed = parseBackupDateFlag('2024-02-29', 'after')!
+    expect(parsed.getMonth()).toBe(1)
+    expect(parsed.getDate()).toBe(29)
+  })
+
+  test('accepts single-digit month and day', () => {
+    const parsed = parseBackupDateFlag('2024-1-5', 'after')!
+    expect(parsed.getMonth()).toBe(0)
+    expect(parsed.getDate()).toBe(5)
+  })
+
+  test('treats an empty value as absent', () => {
+    expect(parseBackupDateFlag('', 'after')).toBeUndefined()
+  })
+
+  test.each(['2023-02-29', '2024-02-30', '2024-13-01', '2024-00-10', '2024-01-00'])(
+    'rejects out-of-range date %s',
+    (input) => {
+      expect(() => parseBackupDateFlag(input, 'after')).toThrow('Use YYYY-MM-DD')
+    },
+  )
+
+  test.each(['invalid-date', '2024/11/17', '2024-01-15extra'])(
+    'rejects malformed input %s',
+    (input) => {
+      expect(() => parseBackupDateFlag(input, 'after')).toThrow('Use YYYY-MM-DD')
+    },
+  )
+
+  test('names the offending flag in the error', () => {
+    expect(() => parseBackupDateFlag('nope', 'before')).toThrow(
+      "Invalid date format for '--before' flag. Use YYYY-MM-DD",
+    )
   })
 })

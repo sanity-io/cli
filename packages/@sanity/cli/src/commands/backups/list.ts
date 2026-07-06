@@ -3,10 +3,6 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {Table} from 'console-table-printer'
-import {isAfter} from 'date-fns/isAfter'
-import {isValid} from 'date-fns/isValid'
-import {lightFormat} from 'date-fns/lightFormat'
-import {parse} from 'date-fns/parse'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -15,6 +11,24 @@ import {listDatasets} from '../../services/datasets.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listBackupDebug = subdebug('backup:list')
+
+const pad = (value: number) => String(value).padStart(2, '0')
+
+export function formatBackupTimestamp(isoTimestamp: string): string {
+  const date = new Date(isoTimestamp)
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+export function parseBackupDateFlag(date: string | undefined, flagName: string): Date | undefined {
+  if (!date) return undefined
+  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(date)
+  if (match) {
+    const [, year, month, day] = match.map(Number)
+    const parsed = new Date(year, month - 1, day)
+    if (parsed.getMonth() === month - 1 && parsed.getDate() === day) return parsed
+  }
+  throw new Error(`Invalid date format for '--${flagName}' flag. Use YYYY-MM-DD`)
+}
 
 const DEFAULT_LIST_BACKUP_LIMIT = 30
 
@@ -107,10 +121,10 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     // Validate date flags
     if (flags.before || flags.after) {
       try {
-        const parsedBefore = this.processDateFlag(flags.before, 'before')
-        const parsedAfter = this.processDateFlag(flags.after, 'after')
+        const parsedBefore = parseBackupDateFlag(flags.before, 'before')
+        const parsedAfter = parseBackupDateFlag(flags.after, 'after')
 
-        if (parsedAfter && parsedBefore && isAfter(parsedAfter, parsedBefore)) {
+        if (parsedAfter && parsedBefore && parsedAfter.getTime() > parsedBefore.getTime()) {
           this.error('--after date must be before --before', {exit: 1})
         }
       } catch (err) {
@@ -163,7 +177,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
         const {createdAt, id} = backup
         table.addRow({
           backupId: id,
-          createdAt: lightFormat(Date.parse(createdAt), 'yyyy-MM-dd HH:mm:ss'),
+          createdAt: formatBackupTimestamp(createdAt),
           resource: 'Dataset',
         })
       }
@@ -178,16 +192,6 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
       listBackupDebug(`Failed to list backups for dataset ${dataset}:`, error)
       this.error(`List dataset backup failed: ${message}`, {exit: 1})
     }
-  }
-
-  private processDateFlag(date: string | undefined, flagName: string): Date | undefined {
-    if (!date) return undefined
-    const parsedDate = parse(date, 'yyyy-MM-dd', new Date())
-    if (isValid(parsedDate)) {
-      return parsedDate
-    }
-
-    throw new Error(`Invalid date format for '--${flagName}' flag. Use YYYY-MM-DD`)
   }
 
   private async promptForDataset(datasets: DatasetsResponse): Promise<string> {
