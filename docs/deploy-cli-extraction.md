@@ -45,7 +45,7 @@ function deployStudio(
     external: boolean
     uploadSchemaAndManifest: () => Promise<StudioManifest | null>
   },
-): Promise<DeployOutcome>
+): Promise<Deployment>
 
 function deployCoreApp(
   o: DeployContext & {
@@ -53,7 +53,7 @@ function deployCoreApp(
     organizationId: string | undefined
     extractManifest: () => Promise<CoreAppManifest | undefined>
   },
-): Promise<DeployOutcome>
+): Promise<Deployment>
 
 function undeployCoreApp(o: {
   output: Output
@@ -72,7 +72,7 @@ function undeployStudio(
 Return types — data only, no printing:
 
 ```ts
-type DeployOutcome =
+type Deployment =
   | {deployed: true; result: DeployResult}
   | {deployed: false; plan: DeploymentPlan} // dry run
 
@@ -84,7 +84,6 @@ interface DeployResult {
 }
 
 type UndeployOutcome = {
-  kind: 'undeployed'
   application: {id: string; type: 'coreApp' | 'studio'; appHost: string; title: string | null}
 } | null // nothing to undeploy — the target didn't resolve to an existing application
 ```
@@ -109,7 +108,7 @@ and `resolveAutoUpdates` + its message helpers ([`shouldAutoUpdate.ts`](../packa
 
 **Thin adapters left behind** — `commands/deploy.ts` and `commands/undeploy.ts` resolve
 config to primitives, inject the callbacks, own the oclif flags and the user-facing copy,
-and turn a `DeployOutcome` into human output or `--json`.
+and turn a `Deployment` into human output or `--json`.
 
 ## Phases
 
@@ -128,7 +127,7 @@ type of plain booleans and strings. The commands map their parsed flags onto it.
 
 ### Phase 2 — Return outcomes; stop exiting the process for control flow
 
-The entry points return `DeployOutcome` / `UndeployOutcome`. A failing check throws a typed
+The entry points return `Deployment` / `UndeployOutcome`. A failing check throws a typed
 `DeployCheckError` (message + exit code) instead of `output.error(msg, {exit})`. The
 commands catch it and exit; they also own the `--json` vs. human rendering
 (`renderDeploymentPlan` / `deploymentPlanToJson` become caller-side).
