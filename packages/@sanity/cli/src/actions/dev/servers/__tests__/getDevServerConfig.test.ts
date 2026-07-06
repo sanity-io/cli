@@ -5,6 +5,7 @@ import {createMockOutput, DEV_FLAGS as FLAGS} from '../../__tests__/testHelpers.
 import {getDevServerConfig} from '../getDevServerConfig.js'
 
 vi.mock('@sanity/cli-core/ux', () => ({
+  logSymbols: {error: '✖', info: 'ℹ', success: '✔', warning: '⚠'},
   spinner: vi.fn(() => ({
     start: vi.fn().mockReturnThis(),
     succeed: vi.fn(),
@@ -180,5 +181,68 @@ describe('getDevServerConfig', () => {
       workDir: '/tmp',
     })
     expect(withoutOverride.httpPort).toBe(3333)
+  })
+
+  describe('experimental bundled dev mode', () => {
+    test('enables bundledDev when unstable_bundledDev is set in sanity.cli.ts', () => {
+      const config = getDevServerConfig({
+        cliConfig: {unstable_bundledDev: true},
+        flags: FLAGS,
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(config.bundledDev).toBe(true)
+    })
+
+    test('respects an explicit unstable_bundledDev: false', () => {
+      const config = getDevServerConfig({
+        cliConfig: {unstable_bundledDev: false},
+        flags: FLAGS,
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(config.bundledDev).toBe(false)
+    })
+
+    test('defaults bundledDev to false when the config option is absent', () => {
+      const config = getDevServerConfig({
+        cliConfig: {},
+        flags: FLAGS,
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(config.bundledDev).toBe(false)
+    })
+
+    test('logs a notice when bundled dev mode is enabled', () => {
+      const output = createMockOutput()
+
+      getDevServerConfig({
+        cliConfig: {unstable_bundledDev: true},
+        flags: FLAGS,
+        output,
+        workDir: '/tmp',
+      })
+
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining('experimental Vite bundled dev mode'),
+      )
+    })
+
+    test('does not log the notice when bundled dev mode is off', () => {
+      const output = createMockOutput()
+
+      getDevServerConfig({
+        cliConfig: {},
+        flags: FLAGS,
+        output,
+        workDir: '/tmp',
+      })
+
+      expect(output.log).not.toHaveBeenCalled()
+    })
   })
 })

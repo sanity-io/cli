@@ -84,6 +84,8 @@ export const cliConfigSchema = z.object({
 
   studioHost: z.optional(z.string()),
 
+  unstable_bundledDev: z.optional(z.boolean()),
+
   vite: z.optional(z.custom<UserViteConfig>()),
 
   typegen: z.optional(z.custom<Partial<TypeGenConfig> & {enabled?: boolean}>()),

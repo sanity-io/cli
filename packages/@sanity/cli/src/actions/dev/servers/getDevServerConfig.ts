@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
-import {spinner} from '@sanity/cli-core/ux'
+import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
@@ -49,8 +49,16 @@ export function getDevServerConfig({
     )
   }
 
+  // Unstable opt-in to Vite's experimental bundled dev mode, via
+  // `unstable_bundledDev` in sanity.cli.ts. Defaults to off.
+  const bundledDev = cliConfig?.unstable_bundledDev ?? false
+  if (bundledDev) {
+    output.log(`${logSymbols.info} Running dev server with experimental Vite bundled dev mode`)
+  }
+
   return {
     ...baseConfig,
+    bundledDev,
     // The app's navigable entry. A branded app that omits `entry` has no app
     // view: the runtime/federation skip the `./App` render path entirely.
     entry: app?.entry,
