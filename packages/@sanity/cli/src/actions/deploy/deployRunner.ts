@@ -1,3 +1,5 @@
+import {format} from 'node:util'
+
 import {CLIError} from '@oclif/core/errors'
 import {getLocalPackageVersion, type Output} from '@sanity/cli-core'
 
@@ -50,27 +52,32 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
   const {output} = options
   const json = !!options.flags.json
 
-  // In JSON mode sub-steps (build, schema upload) print progress straight to
-  // stdout, so route the whole run's stdout to stderr and emit only the payload.
-  const restoreStdout = json ? redirectStdoutToStderr() : () => {}
+  // The JSON payload owns stdout, so the run's progress logs go to stderr; only
+  // the final JSON.stringify writes to stdout. Spinners are already on stderr.
+  const runOptions = json
+    ? {
+        ...options,
+        output: {
+          ...output,
+          log: (message = '', ...args: unknown[]) =>
+            void process.stderr.write(`${format(message, ...args)}\n`),
+        },
+      }
+    : options
+
   try {
     if (options.flags['dry-run']) {
-      const plan = await collectPlan(options, spec)
-      restoreStdout()
+      const plan = await collectPlan(runOptions, spec)
       if (json) output.log(JSON.stringify(deploymentPlanToJson(plan), null, 2))
       else renderDeploymentPlan(plan, output)
       exitIfBlocked(plan, output)
       return
     }
 
-    const result = await spec.run(options, createFailFastReporter(output))
-    restoreStdout()
+    const result = await spec.run(runOptions, createFailFastReporter(runOptions.output))
     if (json && result) output.log(JSON.stringify({deployed: true, ...result}, null, 2))
   } catch (error) {
-    restoreStdout()
     normalizeDeployError(error, output, spec.type)
-  } finally {
-    restoreStdout()
   }
 }
 
@@ -94,18 +101,6 @@ function exitIfBlocked(plan: DeploymentPlan, output: Output): void {
   if (isDeployable(plan)) return
   const failed = plan.checks.find((check) => check.status === 'fail')
   output.error('Deploy blocked by failing checks.', {exit: failed?.exitCode ?? 1})
-}
-
-/**
- * Points `process.stdout` at stderr and returns an idempotent restore. Used in
- * `--json` mode so a sub-step writing to stdout can't corrupt the payload.
- */
-function redirectStdoutToStderr(): () => void {
-  const original = process.stdout.write.bind(process.stdout)
-  process.stdout.write = process.stderr.write.bind(process.stderr) as typeof process.stdout.write
-  return () => {
-    process.stdout.write = original
-  }
 }
 
 function normalizeDeployError(error: unknown, output: Output, type: 'coreApp' | 'studio'): void {
