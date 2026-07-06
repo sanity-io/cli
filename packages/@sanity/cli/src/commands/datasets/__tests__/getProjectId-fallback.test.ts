@@ -1,40 +1,24 @@
 import {NonInteractiveError, ProjectRootNotFoundError} from '@sanity/cli-core/errors'
-import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ListDatasetCommand} from '../list.js'
 
-const mockPromptForProject = vi.hoisted(() => vi.fn())
+vi.mock('@sanity/cli-core/SanityCommand', async () => {
+  const actual = await import('@sanity/cli-test/mocks')
+  return {SanityCommand: actual.MockedSanityCommand}
+})
 
+const mockPromptForProject = vi.hoisted(() => vi.fn())
 vi.mock('../../../prompts/promptForProject.js', () => ({
   promptForProject: mockPromptForProject,
 }))
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      datasets: {
-        list: mockListDatasets,
-      } as never,
-      request: vi.fn().mockResolvedValue([]),
-    }),
-  }
-})
-
-const noProjectMocks = {
-  cliConfig: {api: {projectId: undefined}},
-  isInteractive: true,
-  projectRoot: {
-    directory: '/test/path',
-    path: '/test/path/sanity.config.ts',
-    type: 'studio' as const,
-  },
-  token: 'test-token',
-}
+const mockListDatasetAliases = vi.hoisted(() => vi.fn())
+vi.mock('../../../services/datasets.js', () => ({
+  listDatasetAliases: mockListDatasetAliases,
+  listDatasets: mockListDatasets,
+}))
 
 describe('getProjectId fallback', () => {
   afterEach(() => {
