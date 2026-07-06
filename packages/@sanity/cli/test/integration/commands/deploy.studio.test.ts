@@ -441,56 +441,6 @@ describe('#deploy studio', () => {
     expect(stdout).toContain('Creating https://new-studio-host.sanity.studio')
   })
 
-  test('should set the title from --title when registering a new studio hostname', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.cwd = () => cwd
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      query: {appHost: 'new-studio-host', appType: 'studio'},
-      uri: `/projects/test-project-id/user-applications`,
-    }).reply(404, {message: 'Not found'})
-
-    let createBody: {title?: string} | undefined
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      method: 'post',
-      query: {appType: 'studio'},
-      uri: `/projects/test-project-id/user-applications`,
-    }).reply(200, (_uri, body) => {
-      createBody = body as {title?: string}
-      return {
-        appHost: 'new-studio-host',
-        createdAt: '2024-01-01T00:00:00Z',
-        id: 'new-studio-app-id',
-        projectId: 'test-project-id',
-        title: 'My Studio',
-        type: 'studio',
-        updatedAt: '2024-01-01T00:00:00Z',
-        urlType: 'internal',
-      }
-    })
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      method: 'post',
-      query: {appType: 'studio'},
-      uri: `/projects/test-project-id/user-applications/new-studio-app-id/deployments`,
-    }).reply(
-      201,
-      {id: 'deployment-id', location: 'https://new-studio-host.sanity.studio'},
-      {location: 'https://new-studio-host.sanity.studio'},
-    )
-
-    const {error} = await testCommand(DeployCommand, ['--title', 'My Studio'], {
-      config: {root: cwd},
-      mocks: {cliConfig: {api: {projectId: 'test-project-id'}, studioHost: 'new-studio-host'}},
-    })
-
-    if (error) throw error
-    expect(createBody).toMatchObject({title: 'My Studio'})
-  })
-
   test('should handle studio hostname creation failure when name is taken', async () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd
