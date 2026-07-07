@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.0.0](https://github.com/sanity-io/cli/compare/cli-build-v2.0.1...cli-build-v3.0.0)
+
+_2026-07-07_
+
+### ⚠ BREAKING CHANGES
+
+- move internal build logic to cli-build package ([#1412](https://github.com/sanity-io/cli/pull/1412)) ([de6f30c](https://github.com/sanity-io/cli/commit/de6f30c9adcebecb6cdfd0510762ed1ca44d8fd1))
+
+### Features
+
+- **cli-build:** preconnect and modulepreload the CDN `sanity` module for auto-update studios ([#1402](https://github.com/sanity-io/cli/pull/1402)) ([afd62a5](https://github.com/sanity-io/cli/commit/afd62a5fcc2bb7640026a88f88f445a69293ef7b))
+
+  Re-introduces the resource hints reverted in #1400. `preconnect` only warms a socket, so it runs unconditionally and is safe in every engine. `modulepreload` follows the CDN's cross-origin redirect, which triggers a WebKit CORS bug that blanks the studio, so it is gated behind a positive allowlist: it runs only for engines confirmed to handle the redirect (desktop and Android Chromium and Gecko). Any unrecognised or WebKit engine - including all iOS browsers - falls back to the plain import-map load, costing a missed download rather than risking a blank studio.
+
+- **workbench:** stamp the app's bus identity into its bundle ([#1438](https://github.com/sanity-io/cli/pull/1438)) ([9c7b6cb](https://github.com/sanity-io/cli/commit/9c7b6cb8ae5859a378e2af3c70731cc6a8cefc91))
+
+### Bug Fixes
+
+- **workbench:** thread views/services as one `exposes` bundle through the ([#1424](https://github.com/sanity-io/cli/pull/1424)) ([bebd59b](https://github.com/sanity-io/cli/commit/bebd59b0002c52355efa41eea473b1e02b8b930c))
+  build/dev plumbing, so adding a declaration family no longer touches every hop
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.2.0
+    - @sanity/cli-core bumped to 2.2.0
+
 ## [2.0.1](https://github.com/sanity-io/cli/compare/cli-build-v2.0.0...cli-build-v2.0.1)
 
 _2026-07-01_
