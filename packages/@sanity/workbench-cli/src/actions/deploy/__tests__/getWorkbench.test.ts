@@ -112,3 +112,25 @@ describe('assertDeployable', () => {
     )
   })
 })
+
+describe('deploySingletonInstallationConfig / hasInterfaces', () => {
+  test('a media library with fields deploys its config and hosts no interfaces', () => {
+    const resolved = mediaLibrary({
+      fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+    })
+    expect(resolved.deploySingletonInstallationConfig).toBe(true)
+    expect(resolved.hasInterfaces).toBe(false)
+  })
+
+  test('a media library without fields carries no config to deploy', () => {
+    expect(mediaLibrary().deploySingletonInstallationConfig).toBe(false)
+  })
+
+  test('a non-singleton app never deploys a config, and reports its interfaces', () => {
+    const resolved = workbench({
+      views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}],
+    })
+    expect(resolved.deploySingletonInstallationConfig).toBe(false)
+    expect(resolved.hasInterfaces).toBe(true)
+  })
+})
