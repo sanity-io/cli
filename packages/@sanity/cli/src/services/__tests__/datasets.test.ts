@@ -1,4 +1,4 @@
-import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
+import {apiClientMocks} from '@sanity/cli-test/mocks'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -49,13 +49,10 @@ vi.mock('eventsource', () => {
   }
 })
 
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    getProjectCliClient: vi.fn(),
-  }
-})
+vi.mock(
+  import('@sanity/cli-core/services/apiClient'),
+  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
+)
 
 const mockClient = {
   config: vi.fn(),
@@ -68,7 +65,7 @@ const mockClient = {
   request: vi.fn(),
 }
 
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+const mockGetProjectCliClient = apiClientMocks.getProjectCliClient
 
 beforeEach(() => {
   mockGetProjectCliClient.mockResolvedValue(mockClient as never)

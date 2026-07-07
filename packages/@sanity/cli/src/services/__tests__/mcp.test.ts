@@ -1,16 +1,16 @@
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {apiClientMocks} from '@sanity/cli-test/mocks'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-const mockRequest = vi.hoisted(() => vi.fn())
+import {validateMCPToken} from '../mcp.js'
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...original,
-    getGlobalCliClient: vi.fn().mockResolvedValue({request: mockRequest}),
-  }
-})
-
-const {validateMCPToken} = await import('../mcp.js')
+vi.mock(
+  '@sanity/cli-core/services/apiClient',
+  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
+)
+const mockIsHttpError = vi.hoisted(() => vi.fn())
+vi.mock('@sanity/client', () => ({
+  isHttpError: mockIsHttpError,
+}))
 
 /** Build an error object that satisfies `isHttpError()` from sanity client */
 function httpError(statusCode: number) {
@@ -29,7 +29,13 @@ function httpError(statusCode: number) {
   return err
 }
 
+const mockRequest = vi.fn()
+
 describe('validateMCPToken', () => {
+  beforeEach(() => {
+    apiClientMocks.getGlobalCliClient.mockResolvedValue({request: mockRequest})
+    mockIsHttpError.mockReturnValue(false)
+  })
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -46,6 +52,7 @@ describe('validateMCPToken', () => {
   })
 
   test('returns false when server responds with 401', async () => {
+    mockIsHttpError.mockReturnValue(true)
     mockRequest.mockRejectedValue(httpError(401))
 
     const result = await validateMCPToken('expired-token')
@@ -54,6 +61,7 @@ describe('validateMCPToken', () => {
   })
 
   test('returns false when server responds with 403', async () => {
+    mockIsHttpError.mockReturnValue(true)
     mockRequest.mockRejectedValue(httpError(403))
 
     const result = await validateMCPToken('forbidden-token')
@@ -74,12 +82,11 @@ describe('validateMCPToken', () => {
   })
 
   test('passes the token to getGlobalCliClient', async () => {
-    const {getGlobalCliClient} = await import('@sanity/cli-core')
     mockRequest.mockResolvedValue({id: 'user-123'})
 
     await validateMCPToken('my-special-token')
 
-    expect(getGlobalCliClient).toHaveBeenCalledWith(
+    expect(apiClientMocks.getGlobalCliClient).toHaveBeenCalledWith(
       expect.objectContaining({
         requireUser: false,
         token: 'my-special-token',

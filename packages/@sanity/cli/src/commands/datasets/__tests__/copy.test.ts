@@ -1,40 +1,27 @@
+import {mocks, uxMocks} from '@sanity/cli-test/mocks'
 import {of} from 'rxjs'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
+import {CopyDatasetCommand} from '../copy.js'
 
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    SanityCommand: MockedSanityCommand,
-  }
+vi.mock('@sanity/cli-core/SanityCommand', async () => {
+  const actual = await import('@sanity/cli-test/mocks')
+  return {SanityCommand: actual.MockedSanityCommand}
 })
+vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
 
-// Third: mock dataset copy command imports
+const mockValidateDatasetName = vi.hoisted(() => vi.fn())
 const mockPromptForDataset = vi.hoisted(() => vi.fn())
 const mockPromptForDatasetName = vi.hoisted(() => vi.fn())
-const mockValidateDatasetName = vi.hoisted(() => vi.fn())
-const mockListDatasets = vi.hoisted(() => vi.fn())
-const mockListDatasetCopyJobs = vi.hoisted(() => vi.fn())
 const mockCopyDataset = vi.hoisted(() => vi.fn())
 const mockFollowCopyJob = vi.hoisted(() => vi.fn())
+const mockListDatasetCopyJobs = vi.hoisted(() => vi.fn())
+const mockListDatasets = vi.hoisted(() => vi.fn())
 const mockHardExit = vi.hoisted(() => vi.fn())
-const mockSpinFail = vi.hoisted(() => vi.fn())
-const mockSpinStart = vi.hoisted(() => vi.fn())
-const mockSpinSucceed = vi.hoisted(() => vi.fn())
-const mockSpinSetText = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../prompts/promptForDataset.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../prompts/promptForDataset.js')>()
-  return {
-    ...actual,
-    promptForDataset: mockPromptForDataset,
-  }
-})
+vi.mock('../../../prompts/promptForDataset.js', () => ({
+  promptForDataset: mockPromptForDataset,
+}))
 
 vi.mock('../../../prompts/promptForDatasetName.js', () => ({
   promptForDatasetName: mockPromptForDatasetName,
@@ -42,6 +29,10 @@ vi.mock('../../../prompts/promptForDatasetName.js', () => ({
 
 vi.mock('../../../actions/dataset/validateDatasetName.js', () => ({
   validateDatasetName: mockValidateDatasetName,
+}))
+
+vi.mock('../../../prompts/promptForProject.js', () => ({
+  promptForProject: vi.fn(),
 }))
 
 vi.mock('../../../services/datasets.js', () => ({
@@ -58,26 +49,6 @@ vi.mock('@oclif/core/errors', async (importOriginal) => {
     exit: mockHardExit,
   }
 })
-
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  const mockSpin = {
-    fail: mockSpinFail.mockReturnThis(),
-    start: mockSpinStart.mockReturnThis(),
-    succeed: mockSpinSucceed.mockReturnThis(),
-  }
-  Object.defineProperty(mockSpin, 'text', {
-    configurable: true,
-    set: mockSpinSetText,
-  })
-  return {
-    ...actual,
-    spinner: vi.fn(() => mockSpin),
-  }
-})
-
-// Finally, import the module under test: dataset copy command
-const {CopyDatasetCommand} = await import('../copy.js')
 
 const TEST_PROJECT_ID = '1337newb'
 function createMockDataset(name: string) {
@@ -162,10 +133,10 @@ describe('#dataset:copy', () => {
         offset: 2,
         projectId: TEST_PROJECT_ID,
       })
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/job-1.*production/i),
       )
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/job-2.*staging/i),
       )
     })
@@ -173,7 +144,7 @@ describe('#dataset:copy', () => {
     test('shows message when no copy jobs exist', async () => {
       mockListDatasetCopyJobs.mockResolvedValue([])
       await CopyDatasetCommand.run(['--list'])
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/doesn't have any dataset copy jobs/i),
       )
     })
@@ -181,7 +152,7 @@ describe('#dataset:copy', () => {
     test('errors and exits if list copy job API throws', async () => {
       mockListDatasetCopyJobs.mockRejectedValue('boom')
       await CopyDatasetCommand.run(['--list'])
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/failed to list dataset copy jobs.*boom/i),
         {exit: 1},
       )
@@ -192,7 +163,7 @@ describe('#dataset:copy', () => {
     test('rejects whitespace-only jobId', async () => {
       await CopyDatasetCommand.run(['--attach', '    '])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/supply a valid jobId/i),
         {exit: 1},
       )
@@ -213,7 +184,7 @@ describe('#dataset:copy', () => {
         jobId: 'job-123',
         projectId: TEST_PROJECT_ID,
       })
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/job-123 completed/i),
       )
     })
@@ -222,7 +193,7 @@ describe('#dataset:copy', () => {
 
       await CopyDatasetCommand.run(['--attach', 'job-123'])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/failed to attach to copy.*boom/i),
         {exit: 1},
       )
@@ -244,11 +215,11 @@ describe('#dataset:copy', () => {
         jobId: 'job-123',
         projectId: TEST_PROJECT_ID,
       })
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/job-123 completed/i),
       )
       // Should set text on spinner only for events that contained progress number values, ignoring reconnect events
-      expect(mockSpinSetText).toHaveBeenCalledTimes(3)
+      expect(uxMocks.spinnerText).toHaveBeenCalledTimes(3)
     })
   })
 
@@ -272,13 +243,13 @@ describe('#dataset:copy', () => {
           targetDataset: 'backup',
         }),
       )
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/Copying dataset production to backup/i),
       )
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/job job-456 started/i),
       )
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/job job-456 completed/i),
       )
     })
@@ -350,7 +321,7 @@ describe('#dataset:copy', () => {
 
       await CopyDatasetCommand.run(args)
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(new RegExp(expectedError)),
         {exit: 1},
       )
@@ -380,7 +351,7 @@ describe('#dataset:copy', () => {
           targetDataset: 'backup',
         }),
       )
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/job job-skip completed/i),
       )
     })
@@ -394,10 +365,10 @@ describe('#dataset:copy', () => {
 
       await CopyDatasetCommand.run(['production', 'backup', '--detach'])
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringMatching(/job job-detach started/i),
       )
-      expect(mocks.SanityCmdOutputLog).not.toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
         expect.stringMatching(/job job-detach completed/i),
       )
       expect(mockFollowCopyJob).not.toHaveBeenCalled()
@@ -412,7 +383,7 @@ describe('#dataset:copy', () => {
 
       await CopyDatasetCommand.run(['production', 'backup'])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/dataset copying failed: boom/i),
         {exit: 1},
       )
@@ -423,7 +394,7 @@ describe('#dataset:copy', () => {
 
       await CopyDatasetCommand.run(['production', 'backup'])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/failed to fetch datasets: boom/i),
         {exit: 1},
       )

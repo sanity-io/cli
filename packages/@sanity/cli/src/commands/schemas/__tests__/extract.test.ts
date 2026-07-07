@@ -8,7 +8,6 @@ vi.mock('@sanity/cli-core/SanityCommand', async () => {
   return {SanityCommand: actual.MockedSanityCommand}
 })
 
-// Third: mock extract schema command imports
 const mockExtractSchema = vi.hoisted(() => vi.fn())
 const mockWatchExtractSchema = vi.hoisted(() => vi.fn())
 const mockExtractOptions = vi.hoisted(() => vi.fn())
