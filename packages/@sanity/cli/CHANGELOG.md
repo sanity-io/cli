@@ -1,5 +1,21 @@
 # Change Log
 
+## [7.7.0](https://github.com/sanity-io/cli/compare/cli-v7.6.0...cli-v7.7.0)
+
+_2026-07-07_
+
+### Features
+
+- **deploy:** add a `--json` flag ([#1416](https://github.com/sanity-io/cli/pull/1416)) ([cba270a](https://github.com/sanity-io/cli/commit/cba270a578118027c5f08795c6e1a0fd58165847))
+
+  `sanity deploy --json` emits the deploy result — or, with `--dry-run`, the deploy plan — as machine-readable JSON: the resolved target (id, title, and dashboard/studio URL), framework version, files, and any blocking problems. It's built from the same source as the human report so the two can't drift, and core apps now print their dashboard URL in the plan and success output like studios already did.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.2.1
+
 ## [7.6.0](https://github.com/sanity-io/cli/compare/cli-v7.5.0...cli-v7.6.0)
 
 _2026-07-07_
