@@ -14,6 +14,7 @@ import {
   type FederationRuntimeOptions,
   sanityFederationRuntime,
 } from './plugins/plugin-sanity-federation-runtime.js'
+import {sanityFederationTypes} from './plugins/plugin-sanity-federation-types.js'
 
 interface FederationPluginOptionsBase extends Omit<Partial<FederationOptions>, 'exposes'> {
   exposes?: WorkbenchExposes
@@ -60,7 +61,7 @@ type FederationPluginOptions = AppFederationPluginOptions | StudioFederationPlug
  * @internal
  */
 export const federation = (options: FederationPluginOptions): PluginOption => {
-  const {exposes, name: defaultName, pkgJson, workDir = process.cwd()} = options
+  const {dev, exposes, name: defaultName, pkgJson, workDir = process.cwd()} = options
 
   let name = defaultName
 
@@ -115,6 +116,7 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     sanityEnvironmentPlugin({input: entryPath}),
     sanityFederationRuntime(runtimeOptions),
     sanityExtensionArtifacts({artifacts}),
-    sanityModuleFederation({exposes: federationExposes, name}),
+    sanityFederationTypes(),
+    sanityModuleFederation({dev, exposes: federationExposes, name}),
   ]
 }

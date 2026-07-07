@@ -27,6 +27,8 @@ interface WorkbenchViteOptions {
   /** The app's bus identity, stamped into its modules for `@sanity/runtime`. */
   appId?: string
 
+  /** Dev server build — surfaces type-generation errors only in dev, not production. */
+  dev?: boolean
   exposes?: WorkbenchExposes
   /** App (vs studio) build — selects the discriminated federation option shape. */
   isApp?: boolean
@@ -51,10 +53,11 @@ function requireStudioConfigPath(relativeConfigLocation: string | null): string 
 
 /** Build the Vite plugins for a workbench app's module-federation remote. */
 export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promise<PluginOption> {
-  const {appId, cwd, entries, exposes, isApp} = options
+  const {appId, cwd, dev, entries, exposes, isApp} = options
   const pkgJson = await readPackageJson(path.join(cwd, 'package.json'))
 
   const federationPlugin = federation({
+    dev,
     ...(isApp
       ? {
           // `null` relativeEntry (a branded app with no `entry`) → omit `appEntry`,
