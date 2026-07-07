@@ -1,3 +1,9 @@
+import {getSanityUrl} from '@sanity/cli-core'
+
+export function getCoreAppUrl(organizationId: string, appId: string): string {
+  return getSanityUrl(`/@${organizationId}/application/${appId}`)
+}
+
 /**
  * Validates that the given string is a valid http or https URL.
  * Returns `true` if valid, or an error message string if invalid.

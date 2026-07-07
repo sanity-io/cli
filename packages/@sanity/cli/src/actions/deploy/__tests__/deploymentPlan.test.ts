@@ -120,7 +120,7 @@ describe('renderDeploymentPlan', () => {
     expect(text).toContain('Dry run — no changes made.')
     expect(text).toContain('Project: p1')
     expect(text).toContain('This studio can be deployed.')
-    expect(text).toContain('Files to deploy (1.50 MB):')
+    expect(text).toContain('Files to deploy (1 file, 1.50 MB):')
     expect(text).toContain('dist/index.html (1.50 MB)')
   })
 

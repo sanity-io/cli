@@ -16,6 +16,7 @@ import {
   createDeployment,
   updateUserApplication,
   type UserApplication,
+  type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
@@ -38,6 +39,7 @@ import {listDeploymentFiles} from './deploymentPlan.js'
 import {type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
+import {getCoreAppUrl} from './urlUtils.js'
 
 const APP_PACKAGE = '@sanity/sdk-react'
 
@@ -104,7 +106,7 @@ async function runAppDeployment(
 
   checkAppId(reporter, {cliConfig})
 
-  let application: UserApplication | null = null
+  let application: UserApplicationResolved | null = null
   if (flags.external) {
     reporter.report({
       message: EXTERNAL_APP_NOT_SUPPORTED,
@@ -210,7 +212,7 @@ async function runAppDeployment(
 async function resolveAppApplication(
   options: DeployAppOptions,
   {dryRun, reporter}: {dryRun: boolean; reporter: CheckReporter},
-): Promise<UserApplication | null> {
+): Promise<UserApplicationResolved | null> {
   const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''
   // Create name from --title or `app.title` config; blank falls back to the prompt
@@ -245,10 +247,10 @@ async function syncApplicationTitle({
   manifest,
   output,
 }: {
-  application: UserApplication
+  application: UserApplicationResolved
   manifest: CoreAppManifest | undefined
   output: DeployAppOptions['output']
-}): Promise<UserApplication> {
+}): Promise<UserApplicationResolved> {
   const titleUpdate = resolveTitleUpdate(manifest, application)
   if (!titleUpdate) return application
 
@@ -308,16 +310,17 @@ async function shipAppDeployment({
   spin.succeed()
 }
 
-function logAppDeployed({
+export function logAppDeployed({
   application,
   cliConfig,
   output,
 }: {
-  application: UserApplication
+  application: UserApplicationResolved
   cliConfig: DeployAppOptions['cliConfig']
   output: DeployAppOptions['output']
 }): void {
-  output.log(`\n🚀 ${styleText('bold', 'Success!')} Application deployed`)
+  const url = getCoreAppUrl(application.organizationId, application.id)
+  output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}`)
 
   if (getAppId(cliConfig)) return
 

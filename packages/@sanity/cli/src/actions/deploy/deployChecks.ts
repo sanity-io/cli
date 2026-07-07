@@ -19,6 +19,7 @@ import {
   type StudioDeployTargetResolution,
 } from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
+import {getCoreAppUrl} from './urlUtils.js'
 
 type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
 
@@ -223,8 +224,9 @@ export function describeAppTarget(
     }
     case 'found': {
       const {application} = resolution
+      const title = application.title ?? application.appHost
       return {
-        message: `Deploys to existing application "${application.title ?? application.appHost}"`,
+        message: `Deploys to existing application "${title}" at ${getCoreAppUrl(application.organizationId, application.id)}`,
         status: 'pass',
       }
     }

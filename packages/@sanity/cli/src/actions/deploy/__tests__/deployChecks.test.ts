@@ -1,7 +1,10 @@
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type UserApplication} from '../../../services/userApplications.js'
+import {
+  type UserApplication,
+  type UserApplicationResolved,
+} from '../../../services/userApplications.js'
 import {
   checkAppId,
   checkAppTarget,
@@ -249,7 +252,13 @@ describe('checkStudioTarget', () => {
 
 describe('checkAppTarget', () => {
   test('found → pass check for the existing application', async () => {
-    const app = application({appHost: 'app-host', id: 'core-1', title: 'My App', type: 'coreApp'})
+    const app = application({
+      appHost: 'app-host',
+      id: 'core-1',
+      organizationId: 'org-1',
+      title: 'My App',
+      type: 'coreApp',
+    }) as UserApplicationResolved
     mockResolveApp.mockResolvedValue({application: app, type: 'found'})
     const reporter = createCollectingReporter()
 
@@ -257,6 +266,7 @@ describe('checkAppTarget', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "My App"')
+    expect(reporter.results[0]?.message).toContain('/@org-1/application/core-1')
   })
 
   test('would-create without a title → fail check pointing to --title', async () => {
@@ -283,7 +293,7 @@ describe('checkAppTarget', () => {
 
   test('needs-input → fail check (would prompt)', async () => {
     mockResolveApp.mockResolvedValue({
-      existing: [application(), application()],
+      existing: [application(), application()] as UserApplicationResolved[],
       type: 'needs-input',
     })
     const reporter = createCollectingReporter()
