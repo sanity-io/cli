@@ -1,3 +1,4 @@
+// Pure in-memory implementation. Widely exported.
 /**
  * @internal
  */

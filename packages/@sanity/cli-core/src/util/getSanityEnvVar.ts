@@ -1,3 +1,4 @@
+// Pure in-memory implementation. Widely exported.
 /**
  * Gets an environment variable with the appropriate Sanity prefix based on whether it's an app or studio.
  *

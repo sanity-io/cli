@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {getCliToken} from '../services/getCliToken.js'
+import {getCliToken} from '../config/cli/cliUserConfig.js'
 import {isStaging} from '../util/isStaging.js'
 
 /**

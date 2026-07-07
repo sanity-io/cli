@@ -33,17 +33,65 @@
       "source": "./src/_exports/index.ts",
       "default": "./dist/_exports/index.js"
     },
-    "./ux": {
-      "source": "./src/_exports/ux.ts",
-      "default": "./dist/_exports/ux.js"
+    "./apiClient": {
+      "source": "./src/apiClient.ts",
+      "default": "./dist/apiClient.js"
+    },
+    "./browser": {
+      "source": "./src/_exports/browser.ts",
+      "default": "./dist/_exports/browser.js"
+    },
+    "./config": {
+      "source": "./src/_exports/config.ts",
+      "default": "./dist/_exports/config.js"
+    },
+    "./debug": {
+      "source": "./src/_exports/debug.ts",
+      "default": "./dist/_exports/debug.js"
+    },
+    "./errors": {
+      "source": "./src/_exports/errors.ts",
+      "default": "./dist/_exports/errors.js"
+    },
+    "./package-manager": {
+      "source": "./src/_exports/package-manager.ts",
+      "default": "./dist/_exports/package-manager.js"
     },
     "./request": {
       "source": "./src/_exports/request.ts",
       "default": "./dist/_exports/request.js"
     },
-    "./package-manager": {
-      "source": "./src/_exports/package-manager.ts",
-      "default": "./dist/_exports/package-manager.js"
+    "./schemas": {
+      "source": "./src/_exports/schemas.ts",
+      "default": "./dist/_exports/schemas.js"
+    },
+    "./tasks": {
+      "source": "./src/_exports/tasks.ts",
+      "default": "./dist/_exports/tasks.js"
+    },
+    "./telemetry": {
+      "source": "./src/_exports/telemetry.ts",
+      "default": "./dist/_exports/telemetry.js"
+    },
+    "./types": {
+      "source": "./src/_exports/types.ts",
+      "default": "./dist/_exports/types.js"
+    },
+    "./util": {
+      "source": "./src/_exports/util.ts",
+      "default": "./dist/_exports/util.js"
+    },
+    "./ux": {
+      "source": "./src/_exports/ux.ts",
+      "default": "./dist/_exports/ux.js"
+    },
+    "./SanityCommand": {
+      "source": "./src/SanityCommand.ts",
+      "default": "./dist/SanityCommand.js"
+    },
+    "./ExitCodes": {
+      "source": "./src/exitCodes.ts",
+      "default": "./dist/exitCodes.js"
     },
     "./package.json": "./package.json"
   },

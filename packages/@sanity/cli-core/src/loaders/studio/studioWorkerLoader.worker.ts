@@ -5,12 +5,12 @@ import {ViteNodeRunner} from 'vite-node/client'
 import {ViteNodeServer} from 'vite-node/server'
 import {installSourcemapsSupport} from 'vite-node/source-map'
 
+import {subdebug} from '../../_exports/debug.js'
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types/cliConfig.js'
-import {subdebug} from '../../debug.js'
 import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
-import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
+import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js' // TODO: this imports jsdom!!! Unpacked Size (module + dependencies): 26 MB
 import {isRecord} from '../../util/isRecord.js'
 
 if (isMainThread) {

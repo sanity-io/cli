@@ -1,26 +1,28 @@
 import {mkdirSync} from 'node:fs'
-import {homedir} from 'node:os'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {clearCliTokenCache} from '../../services/cliTokenCache'
-import {getCliUserConfig, getUserConfig, setCliUserConfig} from '../../services/cliUserConfig'
-import {readJsonFileSync} from '../../util/readJsonFileSync'
-import {writeJsonFileSync} from '../../util/writeJsonFileSync'
+import {readJsonFileSync} from '../../../util/readJsonFileSync'
+import {writeJsonFileSync} from '../../../util/writeJsonFileSync.js'
+import {clearCliTokenCache, getCachedToken, setCachedToken} from '../cliTokenCache.js'
+import {
+  _internals,
+  getCliToken,
+  getCliUserConfig,
+  getUserConfig,
+  setCliUserConfig,
+} from '../cliUserConfig'
 
+// Mock out cache so we can control it
+vi.mock('../cliTokenCache.js')
+vi.mock('../../../util/readJsonFileSync.js')
+vi.mock('../../../util/writeJsonFileSync.js')
 vi.mock('node:fs')
-vi.mock('node:os')
-vi.mock('../../util/readJsonFileSync')
-vi.mock('../../util/writeJsonFileSync')
-vi.mock('../../services/cliTokenCache')
 
-const mockHomedir = '/mock/home/dir'
+const mockGetCliUserConfig = vi.spyOn(_internals, 'getCliUserConfig')
 
 describe('cliUserConfig', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
-    vi.mocked(homedir).mockReturnValue(mockHomedir)
-    vi.mocked(mkdirSync).mockReturnValue(undefined)
     vi.mocked(readJsonFileSync).mockReturnValue({})
     vi.mocked(writeJsonFileSync).mockReturnValue()
   })
@@ -29,8 +31,89 @@ describe('cliUserConfig', () => {
     vi.clearAllMocks()
   })
 
-  describe('readConfig behavior', () => {
-    test('returns empty config when file read fails', () => {
+  describe('getCliToken()', () => {
+    beforeEach(() => {
+      mockGetCliUserConfig.mockReturnValue('mock-token')
+    })
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    test('should return token from environment variable', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'test-token')
+      const token = await getCliToken()
+      expect(token).toBe('test-token')
+      expect(mockGetCliUserConfig).not.toHaveBeenCalled()
+    })
+
+    test('should return token from config if no environment variable is set', async () => {
+      mockGetCliUserConfig.mockImplementation(() => {
+        return 'config-token'
+      })
+
+      const token = await getCliToken()
+      expect(token).toBe('config-token')
+      expect(mockGetCliUserConfig).toHaveBeenCalledWith('authToken')
+    })
+
+    test('should return undefined if no token is available', async () => {
+      mockGetCliUserConfig.mockReturnValueOnce(undefined)
+
+      const token = await getCliToken()
+      expect(token).toBeUndefined()
+      expect(mockGetCliUserConfig).toHaveBeenCalledWith('authToken')
+    })
+
+    test('should return cached token if available', async () => {
+      vi.mocked(getCachedToken).mockReturnValue('cached-token')
+      const token = await getCliToken()
+      expect(token).toEqual('cached-token')
+    })
+
+    test('should cache the token from environment variable', async () => {
+      vi.mocked(getCachedToken).mockReturnValue(undefined)
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'cached-env-token')
+
+      const token = await getCliToken()
+      expect(token).toEqual('cached-env-token')
+      expect(vi.mocked(setCachedToken)).toHaveBeenCalledWith('cached-env-token')
+      expect(mockGetCliUserConfig).not.toHaveBeenCalled()
+    })
+
+    test('should cache the token from config', async () => {
+      vi.mocked(getCachedToken).mockReturnValue(undefined)
+      mockGetCliUserConfig.mockReturnValueOnce('cached-config-token')
+
+      const token = await getCliToken()
+      expect(token).toEqual('cached-config-token')
+      expect(vi.mocked(setCachedToken)).toHaveBeenCalledWith('cached-config-token')
+      expect(mockGetCliUserConfig).toHaveBeenCalledTimes(1)
+    })
+
+    test('should trim whitespace from environment token', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', '  trimmed-token  ')
+      const token = await getCliToken()
+      expect(token).toBe('trimmed-token')
+    })
+
+    test('should re-read after clearCliTokenCache', async () => {
+      mockGetCliUserConfig.mockReturnValueOnce('first-token')
+
+      const firstCall = await getCliToken()
+      expect(firstCall).toBe('first-token')
+
+      // Clear cache and set up a new return value
+      clearCliTokenCache()
+      mockGetCliUserConfig.mockReturnValueOnce('second-token')
+
+      const secondCall = await getCliToken()
+      expect(secondCall).toBe('second-token')
+      expect(mockGetCliUserConfig).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('getCliUserConfig()', () => {
+    test('returns empty config when file read throws', () => {
       vi.mocked(readJsonFileSync).mockImplementationOnce(() => {
         throw new Error('File not found')
       })
@@ -55,9 +138,6 @@ describe('cliUserConfig', () => {
       const result = getCliUserConfig('authToken')
       expect(result).toBeUndefined()
     })
-  })
-
-  describe('getCliUserConfig', () => {
     test('returns authToken when valid', () => {
       vi.mocked(readJsonFileSync).mockReturnValueOnce({
         authToken: 'test-token',

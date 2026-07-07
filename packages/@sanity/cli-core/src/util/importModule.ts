@@ -2,7 +2,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {createJiti, type JitiResolveOptions} from 'jiti'
 
-import {subdebug} from '../debug.js'
+import {subdebug} from '../_exports/debug.js'
 
 interface ImportModuleOptions {
   /**

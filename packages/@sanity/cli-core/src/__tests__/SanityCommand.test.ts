@@ -1,7 +1,7 @@
 import {Command, Flags} from '@oclif/core'
 import {afterEach, beforeEach, describe, expect, Mock, test, vi} from 'vitest'
 
-const {SanityCommand} = await import('../SanityCommand.js')
+import {SanityCommand} from '../SanityCommand.js'
 
 function createMockedRunCommand<T extends typeof Command>(mocks: {
   cliConfig?: Mock
