@@ -231,6 +231,7 @@ describe('#deploy studio', () => {
     expect(stderr).toContain('Verifying local content')
     expect(stderr).toContain('Deploying to sanity.studio')
     expect(stdout).toContain('Success! Studio deployed')
+    expect(stdout).toContain('— "Existing Studio"')
   })
 
   test('should report the target and files in a dry run without deploying', async () => {

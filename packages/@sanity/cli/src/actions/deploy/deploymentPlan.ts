@@ -5,7 +5,8 @@ import {styleText} from 'node:util'
 import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
-import {type DeployCheck} from './deployChecks.js'
+import {pluralize} from '../../util/pluralize.js'
+import {type DeployCheck, type DeployTarget} from './deployChecks.js'
 
 export interface DeploymentFile {
   /** Path relative to the project root, POSIX-style. */
@@ -17,7 +18,11 @@ export interface DeploymentFile {
 export interface DeploymentPlan {
   checks: DeployCheck[]
   files: DeploymentFile[]
+  /** The resolved deploy target; `null` when the checks can't determine one. */
+  target: DeployTarget | null
   type: 'coreApp' | 'studio'
+  /** Installed framework version the deploy would use; `null` when not found. */
+  version: string | null
 }
 
 /**
@@ -55,11 +60,52 @@ export async function listDeploymentFiles(
   return files.toSorted((a, b) => a.path.localeCompare(b.path))
 }
 
+export function isDeployable(plan: DeploymentPlan): boolean {
+  return plan.checks.every((check) => check.status !== 'fail')
+}
+
+function totalBytes(files: DeploymentFile[]): number {
+  return files.reduce((sum, file) => sum + file.size, 0)
+}
+
+/**
+ * A problem-focused, machine-readable projection of the plan: blocking problems
+ * mapped to their fix, warnings as messages. Derived from the same checks the
+ * human report renders (its pass/skip lines are informational and omitted here).
+ */
+export function deploymentPlanToJson(plan: DeploymentPlan): {
+  applicationType: DeploymentPlan['type']
+  applicationVersion: string | null
+  errors: Record<string, string | null>
+  files: DeploymentFile[]
+  isDeployable: boolean
+  target: DeployTarget | null
+  totalBytes: number
+  warnings: string[]
+} {
+  const errors: Record<string, string | null> = {}
+  const warnings: string[] = []
+  for (const check of plan.checks) {
+    if (check.status === 'fail') errors[check.message] = check.solution ?? null
+    else if (check.status === 'warn') warnings.push(check.message)
+  }
+
+  return {
+    applicationType: plan.type,
+    applicationVersion: plan.version,
+    errors,
+    files: plan.files,
+    isDeployable: isDeployable(plan),
+    target: plan.target,
+    totalBytes: totalBytes(plan.files),
+    warnings,
+  }
+}
+
 export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void {
   const label = plan.type === 'coreApp' ? 'application' : 'studio'
   const problems = plan.checks.filter((check) => check.status === 'fail')
   const warnings = plan.checks.filter((check) => check.status === 'warn')
-  const totalBytes = plan.files.reduce((sum, file) => sum + file.size, 0)
 
   output.log('\nDry run — no changes made.\n')
 
@@ -71,7 +117,7 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   }
 
   output.log(
-    problems.length === 0
+    isDeployable(plan)
       ? styleText('green', `\nThis ${label} can be deployed.`)
       : styleText('red', `\nThis ${label} can't be deployed.`),
   )
@@ -80,8 +126,10 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   renderIssues(output, 'Warnings:', warnings)
 
   // A blocked deploy uploads nothing, so only list files for a deployable plan.
-  if (problems.length === 0 && plan.files.length > 0) {
-    output.log(`\nFiles to deploy (${formatMB(totalBytes)}):`)
+  if (isDeployable(plan) && plan.files.length > 0) {
+    output.log(
+      `\nFiles to deploy (${plan.files.length} ${pluralize('file', plan.files.length)}, ${formatMB(totalBytes(plan.files))}):`,
+    )
     for (const file of plan.files) {
       output.log(`  ${file.path} (${formatMB(file.size)})`)
     }

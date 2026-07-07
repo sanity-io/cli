@@ -7,7 +7,11 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
-import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
+import {
+  createUserApplication,
+  type UserApplication,
+  type UserApplicationResolved,
+} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {
@@ -30,7 +34,7 @@ interface FindUserApplicationOptions {
 
 export async function findUserApplication(
   options: FindUserApplicationOptions,
-): Promise<UserApplication | null> {
+): Promise<UserApplicationResolved | null> {
   const {cliConfig, organizationId, output, title, unattended = false} = options
   const spin = spinner('Checking application info...').start()
 
@@ -207,7 +211,9 @@ async function createFromConfiguredHost({
   }
 }
 
-async function promptForExistingApp(existing: UserApplication[]): Promise<UserApplication | null> {
+async function promptForExistingApp(
+  existing: UserApplicationResolved[],
+): Promise<UserApplicationResolved | null> {
   const choices = existing.map((app) => ({name: app.title ?? app.appHost, value: app.appHost}))
 
   const selected = await select({

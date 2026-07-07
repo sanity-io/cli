@@ -60,6 +60,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description: 'Register an externally hosted studio',
       exclusive: ['source-maps', 'minify', 'build'],
     }),
+    json: Flags.boolean({
+      char: 'j',
+      default: false,
+      description: 'Output the result as JSON',
+    }),
     minify: Flags.boolean({
       allowNo: true,
       default: true,
@@ -111,7 +116,6 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      // Unattended runs (--yes or a non-interactive terminal) and dry runs skip the overwrite prompt
       if (!this.isUnattended() && !flags['dry-run']) {
         const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
         const shouldProceed =
@@ -126,12 +130,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         }
       }
 
-      this.output.log(`Building to ${relativeOutput}\n`)
+      // Keep --json's stdout clean for the payload
+      if (!flags.json) this.output.log(`Building to ${relativeOutput}\n`)
     }
 
-    // Unattended runs (--yes or a non-interactive terminal) and dry runs deploy
-    // without any downstream prompts — application resolution and the build
-    // (buildApp/buildStudio) otherwise stop for prerelease/version choices.
+    // Force yes downstream: build/app resolution otherwise prompts for prerelease/version choices
     const deployFlags = this.isUnattended() || flags['dry-run'] ? {...flags, yes: true} : flags
 
     if (isApp) {

@@ -2,6 +2,7 @@ import {
   getUserApplication,
   getUserApplications,
   type UserApplication,
+  type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
@@ -17,9 +18,9 @@ import {normalizeUrl, validateUrl} from './urlUtils.js'
  *
  * Transport errors (network, permissions) throw — they're not verdicts.
  */
-type CommonDeployTargetResolution =
-  | {application: UserApplication; type: 'found'}
-  | {existing: UserApplication[]; type: 'needs-input'}
+type CommonDeployTargetResolution<App extends UserApplication = UserApplication> =
+  | {application: App; type: 'found'}
+  | {existing: App[]; type: 'needs-input'}
   | {message: string; reason: 'app-not-found' | 'invalid-host'; type: 'invalid'}
   | {message: string; type: 'blocked'}
 
@@ -27,7 +28,9 @@ export type StudioDeployTargetResolution =
   | CommonDeployTargetResolution
   | {appHost: string; type: 'would-create'}
 
-export type AppDeployTargetResolution = CommonDeployTargetResolution | {type: 'would-create'}
+export type AppDeployTargetResolution =
+  | CommonDeployTargetResolution<UserApplicationResolved>
+  | {type: 'would-create'}
 
 /**
  * Owns the studio deploy-target rules: the --url flag over studioHost config,

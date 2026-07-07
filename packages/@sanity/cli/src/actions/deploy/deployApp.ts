@@ -16,6 +16,7 @@ import {
   createDeployment,
   updateUserApplication,
   type UserApplication,
+  type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
@@ -35,9 +36,12 @@ import {
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles} from './deploymentPlan.js'
-import {runDeploy} from './deployRunner.js'
+import {type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
+import {getCoreAppUrl} from './urlUtils.js'
+
+const APP_PACKAGE = '@sanity/sdk-react'
 
 export function deployApp(options: DeployAppOptions): Promise<void> {
   return runDeploy(options, {
@@ -48,7 +52,10 @@ export function deployApp(options: DeployAppOptions): Promise<void> {
 }
 
 /** Validates the deploy, syncs the title from the manifest, and ships the build. */
-async function runAppDeployment(options: DeployAppOptions, reporter: CheckReporter): Promise<void> {
+async function runAppDeployment(
+  options: DeployAppOptions,
+  reporter: CheckReporter,
+): Promise<DeployResult | void> {
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
   const organizationId = cliConfig.app?.organizationId
@@ -81,7 +88,7 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
   // `sanity` version instead.
   let version: string | null = null
   if (deployApplication) {
-    version = await checkPackageVersion(reporter, {moduleName: '@sanity/sdk-react', workDir})
+    version = await checkPackageVersion(reporter, {moduleName: APP_PACKAGE, workDir})
   } else if (deploySingletonInstallationConfig) {
     version = await checkPackageVersion(reporter, {moduleName: 'sanity', workDir})
   }
@@ -98,7 +105,7 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
 
   checkAppId(reporter, {cliConfig})
 
-  let application: UserApplication | null = null
+  let application: UserApplicationResolved | null = null
   if (flags.external) {
     reporter.report({
       message: EXTERNAL_APP_NOT_SUPPORTED,
@@ -176,8 +183,13 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
     })
   }
 
-  // A config-only singleton has no application to ship.
-  if (!deployApplication) return
+  // A config-only singleton ships no application, only its installation config.
+  if (!deployApplication) {
+    if (installationId && version) {
+      return {applicationType: 'coreApp', applicationVersion: version, installationId, target: null}
+    }
+    return
+  }
 
   // A real deploy has already exited if anything failed; landing here without a
   // resolved application or version means the deploy target was never resolved.
@@ -188,6 +200,16 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
   await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
 
   logAppDeployed({application, cliConfig, output})
+
+  return {
+    applicationType: 'coreApp',
+    applicationVersion: version,
+    target: {
+      applicationId: application.id,
+      title: application.title ?? null,
+      url: getCoreAppUrl(application.organizationId, application.id),
+    },
+  }
 }
 
 /**
@@ -197,7 +219,7 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
 async function resolveAppApplication(
   options: DeployAppOptions,
   {dryRun, reporter}: {dryRun: boolean; reporter: CheckReporter},
-): Promise<UserApplication | null> {
+): Promise<UserApplicationResolved | null> {
   const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''
   // Create name from --title or `app.title` config; blank falls back to the prompt
@@ -232,10 +254,10 @@ async function syncApplicationTitle({
   manifest,
   output,
 }: {
-  application: UserApplication
+  application: UserApplicationResolved
   manifest: CoreAppManifest | undefined
   output: DeployAppOptions['output']
-}): Promise<UserApplication> {
+}): Promise<UserApplicationResolved> {
   const titleUpdate = resolveTitleUpdate(manifest, application)
   if (!titleUpdate) return application
 
@@ -295,16 +317,18 @@ async function shipAppDeployment({
   spin.succeed()
 }
 
-function logAppDeployed({
+export function logAppDeployed({
   application,
   cliConfig,
   output,
 }: {
-  application: UserApplication
+  application: UserApplicationResolved
   cliConfig: DeployAppOptions['cliConfig']
   output: DeployAppOptions['output']
 }): void {
-  output.log(`\n🚀 ${styleText('bold', 'Success!')} Application deployed`)
+  const url = getCoreAppUrl(application.organizationId, application.id)
+  const named = application.title ? ` — "${application.title}"` : ''
+  output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}${named}`)
 
   if (getAppId(cliConfig)) return
 

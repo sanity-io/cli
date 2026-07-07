@@ -9,6 +9,7 @@ import {type DeployCheck} from '../deployChecks.js'
 import {
   type DeploymentFile,
   type DeploymentPlan,
+  deploymentPlanToJson,
   listDeploymentFiles,
   renderDeploymentPlan,
 } from '../deploymentPlan.js'
@@ -57,7 +58,63 @@ describe('listDeploymentFiles', () => {
 const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): DeploymentPlan => ({
   checks,
   files,
+  target: null,
   type: 'studio',
+  version: '3.99.0',
+})
+
+describe('deploymentPlanToJson', () => {
+  test('maps failing checks to fixes and warnings to messages, dropping pass/skip', () => {
+    const json = deploymentPlanToJson(
+      studioPlan(
+        [
+          {message: 'Project: p1', status: 'pass'},
+          {message: 'No studio hostname configured', solution: 'Set `studioHost`', status: 'fail'},
+          {message: 'The autoUpdates config has moved', status: 'warn'},
+        ],
+        [{path: 'dist/index.html', size: 1_048_576}],
+      ),
+    )
+
+    expect(json).toEqual({
+      applicationType: 'studio',
+      applicationVersion: '3.99.0',
+      errors: {'No studio hostname configured': 'Set `studioHost`'},
+      files: [{path: 'dist/index.html', size: 1_048_576}],
+      isDeployable: false,
+      target: null,
+      totalBytes: 1_048_576,
+      warnings: ['The autoUpdates config has moved'],
+    })
+  })
+
+  test('passes the resolved target through to the JSON', () => {
+    const target = {
+      applicationId: 'app-1',
+      title: 'My Studio',
+      url: 'https://my-studio.sanity.studio',
+    }
+    const json = deploymentPlanToJson({
+      checks: [],
+      files: [],
+      target,
+      type: 'studio',
+      version: null,
+    })
+    expect(json.target).toEqual(target)
+  })
+
+  test('an error without a solution maps to null', () => {
+    const json = deploymentPlanToJson(studioPlan([{message: 'boom', status: 'fail'}]))
+    expect(json.errors).toEqual({boom: null})
+    expect(json.isDeployable).toBe(false)
+  })
+
+  test('isDeployable is true when no check failed', () => {
+    expect(deploymentPlanToJson(studioPlan([{message: 'ok', status: 'pass'}])).isDeployable).toBe(
+      true,
+    )
+  })
 })
 
 describe('renderDeploymentPlan', () => {
@@ -81,7 +138,7 @@ describe('renderDeploymentPlan', () => {
     expect(text).toContain('Dry run — no changes made.')
     expect(text).toContain('Project: p1')
     expect(text).toContain('This studio can be deployed.')
-    expect(text).toContain('Files to deploy (1.50 MB):')
+    expect(text).toContain('Files to deploy (1 file, 1.50 MB):')
     expect(text).toContain('dist/index.html (1.50 MB)')
   })
 
@@ -129,7 +186,10 @@ describe('renderDeploymentPlan', () => {
   })
 
   test('labels a core app deploy as an application', () => {
-    renderDeploymentPlan({checks: [], files: [], type: 'coreApp'}, output)
+    renderDeploymentPlan(
+      {checks: [], files: [], target: null, type: 'coreApp', version: '1.0.0'},
+      output,
+    )
 
     expect(lines.join('\n')).toContain('This application can be deployed.')
   })
