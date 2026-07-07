@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 import {
   MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
   type MediaLibraryAssetAspectDocument,

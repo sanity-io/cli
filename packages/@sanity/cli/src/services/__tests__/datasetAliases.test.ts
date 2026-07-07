@@ -10,7 +10,7 @@ import {
 } from '../datasetAliases.js'
 
 vi.mock(
-  '@sanity/cli-core/services/apiClient',
+  '@sanity/cli-core/apiClient',
   async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
 )
 

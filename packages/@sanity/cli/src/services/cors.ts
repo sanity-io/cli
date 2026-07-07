@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 
 export const CORS_API_VERSION = 'v2025-08-14'
 

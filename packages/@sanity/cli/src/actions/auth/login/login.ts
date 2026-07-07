@@ -1,5 +1,5 @@
+import {getCliToken, getUserConfig, setCliUserConfig} from '@sanity/cli-core/config'
 import {subdebug} from '@sanity/cli-core/debug'
-import {getCliToken, getUserConfig, setCliUserConfig} from '@sanity/cli-core/services/cliUserConfig'
 import {type CLITelemetryStore, type Output} from '@sanity/cli-core/types'
 import {spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'

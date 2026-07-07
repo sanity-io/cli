@@ -1,5 +1,5 @@
+import {getUserConfig} from '@sanity/cli-core/config'
 import {subdebug} from '@sanity/cli-core/debug'
-import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
 import {getLatestVersion} from 'get-latest-version'
 
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'

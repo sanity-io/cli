@@ -1,4 +1,4 @@
-import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 import {type EmbeddingsSettings, type EmbeddingsSettingsBody} from '@sanity/client'
 
 import {DATASET_API_VERSION} from './datasets.js'

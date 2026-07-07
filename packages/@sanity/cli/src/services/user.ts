@@ -1,4 +1,4 @@
-import {getGlobalCliClient, getProjectCliClient} from '@sanity/cli-core/services/apiClient'
+import {getGlobalCliClient, getProjectCliClient} from '@sanity/cli-core/apiClient'
 import {type SanityOrgUser} from '@sanity/cli-core/types'
 
 import {type User} from '../actions/users/types.js'

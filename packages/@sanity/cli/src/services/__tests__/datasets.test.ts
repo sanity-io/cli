@@ -50,7 +50,7 @@ vi.mock('eventsource', () => {
 })
 
 vi.mock(
-  import('@sanity/cli-core/services/apiClient'),
+  import('@sanity/cli-core/apiClient'),
   async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
 )
 

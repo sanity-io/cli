@@ -1,8 +1,8 @@
 import {styleText} from 'node:util'
 
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 import {subdebug} from '@sanity/cli-core/debug'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
-import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {

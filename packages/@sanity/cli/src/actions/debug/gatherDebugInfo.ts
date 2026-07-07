@@ -1,8 +1,12 @@
 import {access} from 'node:fs/promises'
 import path from 'node:path'
 
-import {getStudioConfig, tryFindStudioConfigPath} from '@sanity/cli-core/config'
-import {getCliToken, getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {
+  getCliToken,
+  getStudioConfig,
+  getUserConfig,
+  tryFindStudioConfigPath,
+} from '@sanity/cli-core/config'
 
 import {getProjectById} from '../../services/projects.js'
 import {getCliUser, getProjectUser} from '../../services/user.js'

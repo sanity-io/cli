@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 
 import {BACKUP_API_VERSION} from '../actions/backup/constants.js'
 

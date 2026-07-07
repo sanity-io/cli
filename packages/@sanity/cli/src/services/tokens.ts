@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 
 import {type ProjectRole, type Token, type TokenResponse} from '../actions/tokens/types.js'
 

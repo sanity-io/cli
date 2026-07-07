@@ -1,5 +1,5 @@
 import {findProjectRootSync, getCliConfigSync} from '@sanity/cli-core/config'
-//  TODO: can this be replaced with cli-core/services/apiClient?
+//  TODO: can this be replaced with cli-core/apiClient?
 import {type ClientConfig, createClient, type SanityClient} from '@sanity/client'
 
 /**

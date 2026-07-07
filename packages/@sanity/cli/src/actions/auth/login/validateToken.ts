@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 import {isHttpError} from '@sanity/client'
 
 import {USERS_API_VERSION} from '../../../services/user.js'

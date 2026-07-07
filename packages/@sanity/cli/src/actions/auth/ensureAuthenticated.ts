@@ -1,4 +1,4 @@
-import {getCliToken} from '@sanity/cli-core/services/cliUserConfig'
+import {getCliToken} from '@sanity/cli-core/config'
 import {type CLITelemetryStore, type Output, type SanityOrgUser} from '@sanity/cli-core/types'
 import {isHttpError} from '@sanity/client'
 

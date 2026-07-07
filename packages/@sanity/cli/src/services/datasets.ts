@@ -1,4 +1,4 @@
-import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 import {
   type DatasetCreateOptions as ClientCreateOptions,
   type DatasetAclMode,

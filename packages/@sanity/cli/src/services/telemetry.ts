@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto'
 
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
-import {getCliToken, getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
+import {getCliToken, getUserConfig} from '@sanity/cli-core/config'
 import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {telemetryDebug} from '../actions/telemetry/telemetryDebug.js'

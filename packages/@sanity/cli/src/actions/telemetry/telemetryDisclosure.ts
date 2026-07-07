@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {getUserConfig} from '@sanity/cli-core/config'
 import {isCi} from '@sanity/cli-core/util'
 import {boxen} from '@sanity/cli-core/ux'
 

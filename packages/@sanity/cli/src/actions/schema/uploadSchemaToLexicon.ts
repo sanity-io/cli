@@ -1,9 +1,9 @@
 import {styleText} from 'node:util'
 
 import {ux} from '@oclif/core/ux'
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 import {subdebug} from '@sanity/cli-core/debug'
 import {getLocalPackageVersion, resolveLocalPackage} from '@sanity/cli-core/package-manager'
-import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
 import {doImport} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest, type Workspace} from 'sanity'

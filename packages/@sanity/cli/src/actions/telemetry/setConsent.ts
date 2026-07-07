@@ -1,5 +1,5 @@
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
-import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
+import {getUserConfig} from '@sanity/cli-core/config'
 import {type ConsentInformation} from '@sanity/cli-core/types'
 import {isCi} from '@sanity/cli-core/util'
 

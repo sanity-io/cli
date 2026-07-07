@@ -1,8 +1,8 @@
 import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 import {debug} from '@sanity/cli-core/debug'
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
 import FormData from 'form-data'
 import {type StudioManifest} from 'sanity'
 

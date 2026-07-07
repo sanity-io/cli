@@ -1,4 +1,4 @@
-import {getCliToken} from '@sanity/cli-core/services/cliUserConfig'
+import {getCliToken} from '@sanity/cli-core/config'
 import {type ConsentInformation} from '@sanity/cli-core/types'
 import {isCi} from '@sanity/cli-core/util'
 

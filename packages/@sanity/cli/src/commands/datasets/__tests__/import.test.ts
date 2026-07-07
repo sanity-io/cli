@@ -11,7 +11,7 @@ vi.mock('@sanity/cli-core/SanityCommand', async () => {
   return {SanityCommand: actual.MockedSanityCommand}
 })
 vi.mock(
-  '@sanity/cli-core/services/apiClient',
+  '@sanity/cli-core/apiClient',
   async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
 )
 vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)

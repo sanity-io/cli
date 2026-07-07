@@ -1,7 +1,7 @@
 import {Args} from '@oclif/core'
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 import {subdebug} from '@sanity/cli-core/debug'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
-import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {promptForProject} from '../../prompts/promptForProject.js'

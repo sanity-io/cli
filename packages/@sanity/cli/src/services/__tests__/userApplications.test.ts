@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core/services/apiClient'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {

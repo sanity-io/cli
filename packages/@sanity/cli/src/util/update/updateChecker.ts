@@ -1,8 +1,8 @@
 import {spawn} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
+import {getUserConfig} from '@sanity/cli-core/config'
 import {subdebug} from '@sanity/cli-core/debug'
-import {getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
 import {isCi} from '@sanity/cli-core/util'
 import {gt as semverGt} from 'semver'
 

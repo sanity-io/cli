@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {validateMCPToken} from '../mcp.js'
 
 vi.mock(
-  '@sanity/cli-core/services/apiClient',
+  '@sanity/cli-core/apiClient',
   async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
 )
 const mockIsHttpError = vi.hoisted(() => vi.fn())

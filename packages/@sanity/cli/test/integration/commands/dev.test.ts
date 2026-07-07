@@ -4,7 +4,7 @@ import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {checkRequiredDependencies} from '@sanity/cli-build/_internal/build'
-import {getProjectCliClient} from '@sanity/cli-core/services/apiClient'
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'

@@ -1,6 +1,10 @@
-import {getStudioConfig, tryFindStudioConfigPath} from '@sanity/cli-core/config'
+import {
+  getCliToken,
+  getStudioConfig,
+  getUserConfig,
+  tryFindStudioConfigPath,
+} from '@sanity/cli-core/config'
 import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
-import {getCliToken, getUserConfig} from '@sanity/cli-core/services/cliUserConfig'
 import {convertToSystemPath} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
