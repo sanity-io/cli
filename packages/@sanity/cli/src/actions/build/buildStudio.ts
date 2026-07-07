@@ -62,6 +62,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     unattendedMode: Boolean(flags.yes),
     upgradePackages: upgradePkgs,
     vite: cliConfig.vite,
+    workbenchAppId: workbench?.name,
     workDir,
   })
 }

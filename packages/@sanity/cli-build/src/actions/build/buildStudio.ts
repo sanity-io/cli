@@ -50,6 +50,9 @@ export interface BuildOptions {
   workDir: string
 
   exposes?: WorkbenchExposes
+
+  /** The workbench app's bus identity (`__SANITY_APP_ID__`). */
+  workbenchAppId?: string
 }
 
 /**
@@ -248,6 +251,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       schemaExtraction,
       sourceMap,
       vite,
+      workbenchAppId: options.workbenchAppId,
     })
 
     trace.log({

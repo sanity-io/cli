@@ -48,6 +48,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     stats: flags.stats,
     unattendedMode: flags.yes,
     vite: cliConfig.vite,
+    workbenchAppId: workbench?.name,
     workDir,
   })
 }

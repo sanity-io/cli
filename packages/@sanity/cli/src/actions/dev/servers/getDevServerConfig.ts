@@ -71,5 +71,6 @@ export function getDevServerConfig({
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
+    workbenchAppId: isWorkbenchApp(app) ? app.name : undefined,
   }
 }

@@ -20,6 +20,8 @@ export interface WorkbenchExposes {
 
 /** @public */
 export interface ResolvedWorkbenchApp {
+  /** The app's unique `name` from `unstable_defineApp`. */
+  readonly name: string
   /** Background worker services the app declares. */
   readonly services: NonNullable<DefineAppInput['services']>
   /** Dock panel views the app declares. */
@@ -44,6 +46,7 @@ export function resolveWorkbenchApp(
   return {
     applicationType: app.applicationType,
     entry: app.entry,
+    name: app.name,
     services: app.services ?? [],
     views: app.views ?? [],
   }
