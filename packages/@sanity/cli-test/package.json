@@ -33,9 +33,41 @@
       "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./mocks": {
-      "source": "./src/mocks/index.ts",
-      "default": "./dist/mocks/index.js"
+    "./mocks/cli-core/apiClient": {
+      "source": "./src/mocks/cli-core/apiClient.ts",
+      "default": "./dist/mocks/cli-core/apiClient.js"
+    },
+    "./mocks/cli-core/browser": {
+      "source": "./src/mocks/cli-core/browser.ts",
+      "default": "./dist/mocks/cli-core/browser.js"
+    },
+    "./mocks/cli-core/config": {
+      "source": "./src/mocks/cli-core/config.ts",
+      "default": "./dist/mocks/cli-core/config.js"
+    },
+    "./mocks/cli-core/package-manager": {
+      "source": "./src/mocks/cli-core/package-manager.ts",
+      "default": "./dist/mocks/cli-core/package-manager.js"
+    },
+    "./mocks/cli-core/request": {
+      "source": "./src/mocks/cli-core/request.ts",
+      "default": "./dist/mocks/cli-core/request.js"
+    },
+    "./mocks/cli-core/tasks": {
+      "source": "./src/mocks/cli-core/tasks.ts",
+      "default": "./dist/mocks/cli-core/tasks.js"
+    },
+    "./mocks/cli-core/telemetry": {
+      "source": "./src/mocks/cli-core/telemetry.ts",
+      "default": "./dist/mocks/cli-core/telemetry.js"
+    },
+    "./mocks/cli-core/ux": {
+      "source": "./src/mocks/cli-core/ux.ts",
+      "default": "./dist/mocks/cli-core/ux.js"
+    },
+    "./mocks/cli-core/SanityCommand": {
+      "source": "./src/mocks/cli-core/SanityCommand.ts",
+      "default": "./dist/mocks/cli-core/SanityCommand.js"
     },
     "./paths": {
       "source": "./src/utils/paths.ts",
