@@ -222,11 +222,8 @@ export function describeAppTarget(resolution: AppDeployTargetResolution): Deploy
     case 'found': {
       const {application} = resolution
       const title = application.title ?? application.appHost
-      const dashboardUrl = application.organizationId
-        ? ` at ${getCoreAppUrl(application.organizationId, application.id)}`
-        : ''
       return {
-        message: `Deploys to existing application "${title}"${dashboardUrl}`,
+        message: `Deploys to existing application "${title}" at ${getCoreAppUrl(application.organizationId, application.id)}`,
         status: 'pass',
       }
     }

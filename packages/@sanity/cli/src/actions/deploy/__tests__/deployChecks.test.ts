@@ -1,7 +1,10 @@
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type UserApplication} from '../../../services/userApplications.js'
+import {
+  type UserApplication,
+  type UserApplicationResolved,
+} from '../../../services/userApplications.js'
 import {
   checkAppId,
   checkAppTarget,
@@ -244,7 +247,7 @@ describe('checkAppTarget', () => {
       organizationId: 'org-1',
       title: 'My App',
       type: 'coreApp',
-    })
+    }) as UserApplicationResolved
     mockResolveApp.mockResolvedValue({application: app, type: 'found'})
     const reporter = createCollectingReporter()
 
@@ -268,7 +271,7 @@ describe('checkAppTarget', () => {
 
   test('needs-input → fail check (would prompt)', async () => {
     mockResolveApp.mockResolvedValue({
-      existing: [application(), application()],
+      existing: [application(), application()] as UserApplicationResolved[],
       type: 'needs-input',
     })
     const reporter = createCollectingReporter()

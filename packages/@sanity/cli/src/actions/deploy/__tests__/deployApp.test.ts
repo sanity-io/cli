@@ -1,12 +1,12 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {describe, expect, test, vi} from 'vitest'
 
-import {type UserApplication} from '../../../services/userApplications.js'
+import {type UserApplicationResolved} from '../../../services/userApplications.js'
 import {logAppDeployed} from '../deployApp.js'
 
 const mockOutput = () => ({log: vi.fn()}) as unknown as Output
 
-function application(overrides: Partial<UserApplication> = {}): UserApplication {
+function application(overrides: Partial<UserApplicationResolved> = {}): UserApplicationResolved {
   return {
     appHost: 'app-host',
     createdAt: '2024-01-01T00:00:00Z',
@@ -22,7 +22,7 @@ function application(overrides: Partial<UserApplication> = {}): UserApplication 
 }
 
 describe('logAppDeployed', () => {
-  test("prints the dashboard URL from the app's own organization, not the config", () => {
+  test("prints the dashboard URL from the deployed app's organization", () => {
     const output = mockOutput()
 
     logAppDeployed({
@@ -35,17 +35,5 @@ describe('logAppDeployed', () => {
       expect.stringContaining('Success! Application deployed to'),
     )
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('/@org-1/application/app-1'))
-  })
-
-  test('omits the URL when the application has no organization', () => {
-    const output = mockOutput()
-
-    logAppDeployed({
-      application: application({organizationId: null}),
-      cliConfig: {app: {organizationId: 'config-org'}, deployment: {appId: 'app-1'}} as CliConfig,
-      output,
-    })
-
-    expect(output.log).toHaveBeenCalledWith('\nSuccess! Application deployed')
   })
 })

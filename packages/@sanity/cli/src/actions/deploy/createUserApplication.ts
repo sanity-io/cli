@@ -5,6 +5,7 @@ import {customAlphabet} from 'nanoid'
 import {
   createUserApplication as createUserApplicationRequest,
   type UserApplication,
+  type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'
@@ -75,7 +76,9 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
   return await promise
 }
 
-export async function createUserApplication(organizationId?: string): Promise<UserApplication> {
+export async function createUserApplication(
+  organizationId?: string,
+): Promise<UserApplicationResolved> {
   if (!organizationId) {
     throw new Error(NO_ORGANIZATION_ID)
   }
