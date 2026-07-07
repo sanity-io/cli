@@ -1,9 +1,7 @@
-import {EventEmitter} from 'node:events'
-
 import {afterEach, beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 
 import {startDevManifestWatcher} from '../startDevManifestWatcher.js'
-import {createMockOutput} from './devTestHelpers.js'
+import {createMockOutput, FakeFsWatcher} from './devTestHelpers.js'
 
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
 const mockFsWatch = vi.hoisted(() => vi.fn())
@@ -23,21 +21,6 @@ vi.mock('node:fs', async (importOriginal) => {
     watch: mockFsWatch,
   }
 })
-
-/** Fake FSWatcher that exposes helpers for simulating events in tests. */
-// eslint-disable-next-line unicorn/prefer-event-target -- mirrors node's FSWatcher which extends EventEmitter
-class FakeFsWatcher extends EventEmitter {
-  public closed = false
-  public handler: ((event: string, filename: string | null) => void) | undefined
-
-  close() {
-    this.closed = true
-  }
-
-  emitChange(filename: string | null) {
-    this.handler?.('change', filename)
-  }
-}
 
 const WORK_DIR = '/tmp/studio'
 const STUDIO_CONFIG_PATH = '/tmp/studio/sanity.config.ts'
