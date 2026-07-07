@@ -1,7 +1,12 @@
 // Exports related to retrieving CLI, studio, app or workbench configuration or paths.
-// TODO: what is the difference between these exports, all imported from config/*, and services/cliUserConfig (purely file-system operations, just like these exports).
-// suggest to combine it - thoughts?
 
+export {
+  clearCliTokenCache,
+  getCliToken,
+  getCliUserConfig,
+  getUserConfig,
+  setCliUserConfig,
+} from '../config/cli/cliUserConfig.js'
 export {getCliConfig, getCliConfigUncached} from '../config/cli/getCliConfig.js'
 export {getCliConfigSync} from '../config/cli/getCliConfigSync.js'
 export {isWorkbenchApp, parseWorkbenchCliConfig} from '../config/cli/workbenchApp.js'

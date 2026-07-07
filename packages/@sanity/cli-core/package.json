@@ -33,6 +33,10 @@
       "source": "./src/_exports/index.ts",
       "default": "./dist/_exports/index.js"
     },
+    "./apiClient": {
+      "source": "./src/apiClient.ts",
+      "default": "./dist/apiClient.js"
+    },
     "./browser": {
       "source": "./src/_exports/browser.ts",
       "default": "./dist/_exports/browser.js"
@@ -88,14 +92,6 @@
     "./ExitCodes": {
       "source": "./src/exitCodes.ts",
       "default": "./dist/exitCodes.js"
-    },
-    "./services/apiClient": {
-      "source": "./src/services/apiClient.ts",
-      "default": "./dist/services/apiClient.js"
-    },
-    "./services/cliUserConfig": {
-      "source": "./src/services/cliUserConfig.ts",
-      "default": "./dist/services/cliUserConfig.js"
     },
     "./package.json": "./package.json"
   },
