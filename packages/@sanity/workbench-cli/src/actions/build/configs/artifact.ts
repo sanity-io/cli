@@ -29,9 +29,9 @@ export function installationConfigArtifacts(
 }
 
 /**
- * Emits `export const config`: each field's serializable `{name, title, public}` plus its live `defineField`
- * value (the one thing the dev-server wire can't carry). `appType` stays off the module — the host assigns it
- * from the wire record.
+ * Emits `export const config`: each field's serializable `{name, title, public}`
+ * plus its live `defineField` value, the one thing the wire can't carry.
+ * `appType` stays off the module — the host assigns it from the wire record.
  */
 function mediaLibraryInstallationConfigSource(input: {
   config: ConfigArtifact

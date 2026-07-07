@@ -10,10 +10,8 @@ import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDepl
 
 interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
   /**
-   * Throws when the app declares nothing the build can expose — no entry, view,
-   * service, or installation config. A federated app with none would ship a
-   * remote with nothing to load, so deploy gates on this before any prompts or
-   * API calls.
+   * Throws when the app exposes nothing (no entry, view, service, or config) —
+   * the remote would have nothing to load. Gated before any prompt or API call.
    */
   assertDeployable(): void
   /**
