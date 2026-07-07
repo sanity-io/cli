@@ -45,10 +45,10 @@ export function deriveInterfaces(
 }
 
 /**
- * Mirrors what Brett stores. The fields' schema *values* can't serialize — the
- * workbench loads them from the federation module; `src` is a build-time input
- * that stays off the wire. `appType` is the discriminator that routes the config
- * to the singleton (no app id to key on).
+ * The fields' schema *values* can't serialize — the workbench loads them from
+ * the federation module. `src` stays on so the exposes-set id keys on it and a
+ * repoint rebuilds. `appType` routes the config to the singleton (no app id to
+ * key on).
  */
 export function deriveInstallationConfigs(app: CliConfig['app']): DevServerConfig[] {
   if (!isWorkbenchApp(app) || !app.installationConfig) return []
@@ -58,6 +58,7 @@ export function deriveInstallationConfigs(app: CliConfig['app']): DevServerConfi
       fields: app.installationConfig.fields.map((field) => ({
         name: field.name,
         public: field.public,
+        src: field.src,
         title: field.title,
       })),
       moduleName: app.name,

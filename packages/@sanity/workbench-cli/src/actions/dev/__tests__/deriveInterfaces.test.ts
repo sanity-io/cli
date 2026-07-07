@@ -96,7 +96,7 @@ describe('deriveInstallationConfigs', () => {
     ).toEqual([])
   })
 
-  test('forwards the serializable config on the wire (schema values load from the module)', () => {
+  test('forwards the serializable config on the wire, keeping `src` as each field entry', () => {
     const app = workbenchApp({
       installationConfig: {
         appType: 'media-library',
@@ -110,8 +110,8 @@ describe('deriveInstallationConfigs', () => {
       {
         appType: 'media-library',
         fields: [
-          {name: 'description', public: true, title: 'Description'},
-          {name: 'language', public: undefined, title: 'Language'},
+          {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+          {name: 'language', public: undefined, src: './src/language.ts', title: 'Language'},
         ],
         moduleName: 'test-app',
       },

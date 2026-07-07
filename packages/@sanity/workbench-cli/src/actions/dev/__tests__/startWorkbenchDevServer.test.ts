@@ -603,7 +603,9 @@ describe('startWorkbenchDevServer', () => {
 
       const installationConfig = {
         appType: 'media-library',
-        fields: [{name: 'description', public: true, title: 'Description'}],
+        fields: [
+          {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+        ],
       }
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
@@ -621,7 +623,16 @@ describe('startWorkbenchDevServer', () => {
         applications: [expect.objectContaining({id: 'app-1', type: 'studio'})],
         installationConfigs: [
           {
-            config: {fields: [{name: 'description', public: true, title: 'Description'}]},
+            config: {
+              fields: [
+                {
+                  name: 'description',
+                  public: true,
+                  src: './src/description.ts',
+                  title: 'Description',
+                },
+              ],
+            },
             moduleName: 'media-library',
             remoteURL: 'http://localhost:3337',
             type: 'media-library',

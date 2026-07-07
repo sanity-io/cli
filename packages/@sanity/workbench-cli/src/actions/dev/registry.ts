@@ -39,9 +39,9 @@ const devServerManifestSchema = z.object({
   host: z.string(),
   id: z.optional(z.string()),
   /**
-   * What Brett stores on deploy. The fields' schema *values* live in the
-   * federation module the workbench loads; `src` is a build-time input and stays
-   * off the wire. Lenient — the workbench is the authority.
+   * Field schema *values* load from the federation module; each field's `src`
+   * rides along so a repoint bumps the exposes-set id and forces a rebuild.
+   * Lenient — the workbench is the authority.
    */
   installationConfigs: z.optional(
     z.array(
@@ -49,7 +49,12 @@ const devServerManifestSchema = z.object({
         // Identifies the owning app when it has no app id (singletons).
         appType: z.optional(z.string()),
         fields: z.array(
-          z.object({name: z.string(), public: z.optional(z.boolean()), title: z.string()}),
+          z.object({
+            name: z.string(),
+            public: z.optional(z.boolean()),
+            src: z.string(),
+            title: z.string(),
+          }),
         ),
         // The app's `unstable_defineApp` name — the module-federation alias the
         // workbench loads this config's live values from.

@@ -7,18 +7,18 @@ interface ExposeSet {
 }
 
 /**
- * Order-independent id of an app's exposed-module set. Changes only when the
- * remote is rebuilt with new exposes; HMR swaps and reordering keep the same id.
+ * Order-independent id of an app's exposed-module set. Keys each exposed unit —
+ * an interface or a config field — by its type, name, and source file, so the
+ * id changes only on a rebuild-worthy edit (add, remove, rename, repoint);
+ * reordering and HMR content edits keep it stable.
  */
 export function exposesSetId({installationConfigs, interfaces}: ExposeSet): string {
   const keys = [
     ...(interfaces ?? []).map((iface) =>
       [iface.interface_type, iface.name, iface.entry_point].join('::'),
     ),
-    // The config module is generated at build time, so a changed field set (add
-    // or rename) needs a rebuild — key on each field, not just "a config exists".
     ...(installationConfigs ?? []).flatMap((config) =>
-      config.fields.map((field) => `config::${config.appType}::${field.name}`),
+      config.fields.map((field) => ['config', config.appType, field.name, field.src].join('::')),
     ),
   ]
   if (keys.length === 0) return ''
