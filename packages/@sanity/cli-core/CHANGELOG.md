@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.1](https://github.com/sanity-io/cli/compare/cli-core-v2.2.0...cli-core-v2.2.1)
+
+_2026-07-07_
+
+### Bug Fixes
+
+- **types:** export ConfigStore in both /config and /types cli-core export sub-paths ([#1447](https://github.com/sanity-io/cli/pull/1447)) ([eb54522](https://github.com/sanity-io/cli/commit/eb5452239dbf51c7a41f92e99359ca4843a8aa7d))
+
 ## [2.2.0](https://github.com/sanity-io/cli/compare/cli-core-v2.1.3...cli-core-v2.2.0)
 
 _2026-07-07_
