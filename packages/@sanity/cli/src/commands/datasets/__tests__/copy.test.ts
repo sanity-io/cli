@@ -1,14 +1,15 @@
-import {mocks, uxMocks} from '@sanity/cli-test/mocks'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import {spinnerText} from '@sanity/cli-test/mocks/cli-core/ux'
 import {of} from 'rxjs'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {CopyDatasetCommand} from '../copy.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
-vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  async () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockValidateDatasetName = vi.hoisted(() => vi.fn())
 const mockPromptForDataset = vi.hoisted(() => vi.fn())
@@ -219,7 +220,7 @@ describe('#dataset:copy', () => {
         expect.stringMatching(/job-123 completed/i),
       )
       // Should set text on spinner only for events that contained progress number values, ignoring reconnect events
-      expect(uxMocks.spinnerText).toHaveBeenCalledTimes(3)
+      expect(spinnerText).toHaveBeenCalledTimes(3)
     })
   })
 
