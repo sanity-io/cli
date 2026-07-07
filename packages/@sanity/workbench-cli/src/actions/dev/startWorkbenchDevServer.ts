@@ -6,7 +6,7 @@ import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from '
 import {z} from 'zod/mini'
 
 import {isWorkbenchApp} from '../../defineApp.js'
-import {createInterfacesTracker} from './interfaceSetId.js'
+import {createExposesTracker} from './exposesSetId.js'
 import {
   acquireWorkbenchLock,
   type DevServerManifest,
@@ -20,16 +20,35 @@ const devDebug = subdebug('dev')
 
 const noop = async () => {}
 
+// Every server is a local app except a config-only one — an installation config
+// with no interfaces (the media library). A server with both lands in both channels.
+const isLocalApp = (server: DevServerManifest): boolean => {
+  const configOnly = Boolean(server.installationConfigs?.length) && !server.interfaces?.length
+  return !configOnly
+}
+
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
-  applications: servers.map(({host, id, interfaces, manifest, port, projectId, type}) => ({
-    host,
-    id,
-    interfaces,
-    manifest,
-    port,
-    projectId,
-    type,
-  })),
+  applications: servers
+    .filter((server) => isLocalApp(server))
+    .map(({host, id, interfaces, manifest, port, projectId, type}) => ({
+      host,
+      id,
+      interfaces,
+      manifest,
+      port,
+      projectId,
+      type,
+    })),
+  installationConfigs: servers.flatMap(({host, installationConfigs, port}) =>
+    // Pass through the app-type-specific payload (`fields` for a media library)
+    // once the discriminator and transport coordinates are peeled off.
+    (installationConfigs ?? []).map(({appType, moduleName, ...config}) => ({
+      config,
+      moduleName,
+      remoteURL: `http://${host}:${port}`,
+      type: appType,
+    })),
+  ),
 })
 
 /**
@@ -46,7 +65,7 @@ function attachViteDevServerBridge(server: ViteDevServer): () => void {
     )
   })
 
-  const setTracker = createInterfacesTracker()
+  const setTracker = createExposesTracker()
   const registryWatcher = watchRegistry((servers) => {
     if (setTracker.hasChanged(servers)) {
       server.ws.send({type: 'full-reload'})

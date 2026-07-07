@@ -1,27 +1,17 @@
 import {z} from 'zod/mini'
 
-// The shared kernel of the module-federation extension contract: the supported
-// view/service types, the contract versions the helpers stamp, and the
-// declaration schemas an app author writes in `unstable_defineApp({views, services})`.
-//
-// Lives in `@sanity/workbench-cli` (alongside the vite plugin that consumes the
-// same contract) so there is a single source of truth. `zod/mini` is used
-// throughout workbench-cli to keep bundles small.
+// Shared module-federation extension contract: interface (view/service) and
+// installation-config declaration schemas, plus the versions the build stamps.
+// `zod/mini` keeps the bundle small.
 
-/**
- * Contract version stamped on every defined view — lets the host and the
- * generated artifact evolve the contract without breaking deployed views.
- * @internal
- */
+/** @internal */
 export const VIEW_CONTRACT_VERSION = 1
 
-/**
- * Contract version stamped on every defined service. Lets the workbench host
- * and the generated worker artifact evolve the service contract without
- * breaking already-deployed services; bumped only on a breaking change.
- * @internal
- */
+/** @internal */
 export const SERVICE_CONTRACT_VERSION = 1
+
+/** @internal */
+export const MEDIA_LIBRARY_INSTALLATION_CONFIG_CONTRACT_VERSION = 1
 
 /**
  * A view component. The return is opaque so the runtime helpers carry no React
@@ -30,45 +20,28 @@ export const SERVICE_CONTRACT_VERSION = 1
  */
 export type ViewComponent<TProps> = (props: TProps) => unknown
 
-/**
- * Props every view component receives, whatever its type. Per-type props
- * compose from this, so a prop added here reaches every view.
- * @public
- */
+/** @public */
 export interface ViewComponentBaseProps<TView> {
   view: TView
 }
 
 /**
- * Component slots each interface type exposes, in render order — the source of
- * truth for {@link InterfaceType} and for the build (the vite plugin expands a
- * view into one render artifact per component). Add a type by registering it here.
+ * Component slots each interface type exposes, in render order. Source of truth
+ * for {@link InterfaceType} and the build; add a type by registering it here.
  * @internal
  */
 export const VIEW_COMPONENTS = {
   panel: ['title', 'panel'],
 } as const satisfies Record<string, readonly string[]>
 
-/**
- * Every supported interface type — the first argument to `unstable_defineView`.
- * @public
- */
+/** @public */
 export type InterfaceType = keyof typeof VIEW_COMPONENTS
 
-/**
- * Every supported service type — the first argument to `unstable_defineService`.
- * Add a service type by adding its declaration schema below and registering it
- * here.
- * @public
- */
+/** @public */
 export type ServiceType = 'worker'
 
-/**
- * Fields every extension declaration shares — a view or a service. The shape is
- * identical (`name` + `src`); `kind` only tailors the validation message. Each
- * declaration adds its `type` discriminator on top.
- */
-function extensionDeclarationFields(kind: 'Service' | 'View') {
+// Shared `name` + `src`; `kind` only tailors the validation message.
+function extensionDeclarationFields(kind: 'Field' | 'Service' | 'View') {
   const pattern = /^[a-zA-Z0-9_-]+$/
   return {
     name: z.string().check(z.regex(pattern, `${kind} \`name\` must match ${pattern}`)),
@@ -76,29 +49,51 @@ function extensionDeclarationFields(kind: 'Service' | 'View') {
   }
 }
 
-/** What an author writes for a `panel` in `unstable_defineApp({views})`. */
 const PanelViewSchema = z.object({
   type: z.literal('panel'),
   ...extensionDeclarationFields('View'),
 })
 
-/**
- * The `{type, name, src}` an app declares for a view, discriminated by `type`.
- * Persisted to the application service on deploy; never part of the app manifest.
- * @internal
- */
+/** @internal */
 export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [PanelViewSchema])
 
-/** Declaration schema for a `worker` service — what a developer writes in `unstable_defineApp({services})`. */
 const WorkerServiceSchema = z.object({
   type: z.literal('worker'),
   ...extensionDeclarationFields('Service'),
 })
 
+/** @internal */
+export const ServiceDeclarationSchema = z.discriminatedUnion('type', [WorkerServiceSchema])
+
+const MediaLibraryFieldSchema = z.object({
+  ...extensionDeclarationFields('Field'),
+  public: z.optional(z.boolean()),
+  title: z.string(),
+})
+
 /**
- * A service declared on an app, discriminated by `type`. Metadata only; built
- * into a worker artifact and persisted to the application service on deploy,
- * never part of the app manifest.
+ * Stamped where the config crosses a boundary so the authoring model doesn't carry a constant discriminator.
  * @internal
  */
-export const ServiceDeclarationSchema = z.discriminatedUnion('type', [WorkerServiceSchema])
+export const INSTALLATION_CONFIG_TYPE = 'installation_config'
+
+// `appType` is stamped by `unstable_defineMediaLibrary`, never authored.
+const MediaLibraryInstallationConfigSchema = z.object({
+  appType: z.literal('media-library'),
+  fields: z
+    .array(MediaLibraryFieldSchema)
+    .check(
+      z.refine(
+        (fields) => new Set(fields.map((field) => field.name)).size === fields.length,
+        'Field `name` must be unique within a media library',
+      ),
+    ),
+})
+
+/**
+ * An app's optional installation config, keyed by `appType`; deploys as a versioned snapshot, not an interface.
+ * @internal
+ */
+export const InstallationConfigSchema = z.discriminatedUnion('appType', [
+  MediaLibraryInstallationConfigSchema,
+])

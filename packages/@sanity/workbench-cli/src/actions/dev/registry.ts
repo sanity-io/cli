@@ -36,6 +36,30 @@ const devServerManifestSchema = z.object({
   host: z.string(),
   id: z.optional(z.string()),
   /**
+   * Field schema *values* load from the federation module; each field's `src`
+   * rides along so a repoint bumps the exposes-set id and forces a rebuild.
+   * Lenient — the workbench is the authority.
+   */
+  installationConfigs: z.optional(
+    z.array(
+      z.object({
+        // Identifies the owning app when it has no app id (singletons).
+        appType: z.optional(z.string()),
+        fields: z.array(
+          z.object({
+            name: z.string(),
+            public: z.optional(z.boolean()),
+            src: z.string(),
+            title: z.string(),
+          }),
+        ),
+        // The app's `unstable_defineApp` name — the module-federation alias the
+        // workbench loads this config's live values from.
+        moduleName: z.optional(z.string()),
+      }),
+    ),
+  ),
+  /**
    * Interfaces the app exposes, mapped from the declared `views` (dock panels,
    * `interface_type: "panel"`) and `services` (background workers,
    * `interface_type: "worker"`). A service is just an interface, so both live

@@ -43,6 +43,8 @@ export interface DevServerOptions {
   schemaExtraction?: CliConfig['schemaExtraction']
   typegen?: CliConfig['typegen']
   vite?: UserViteConfig
+  /** The workbench app's bus identity (`__SANITY_APP_ID__`). */
+  workbenchAppId?: string
 }
 
 interface DevServer {
@@ -69,6 +71,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     schemaExtraction,
     typegen,
     vite: extendViteConfig,
+    workbenchAppId,
   } = options
 
   debug('Writing Sanity runtime files')
@@ -116,6 +119,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     reactCompiler,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
+    workbenchAppId,
   })
 
   // Opt into Vite's experimental bundled dev mode. Set before the user-config

@@ -1,5 +1,43 @@
 # Change Log
 
+## [7.6.0](https://github.com/sanity-io/cli/compare/cli-v7.5.0...cli-v7.6.0)
+
+_2026-07-07_
+
+### Features
+
+- **deploy:** add a `--dry-run` flag that reports whether a studio or app can be deployed, and the files a deploy would upload, without uploading or creating anything ([#1415](https://github.com/sanity-io/cli/pull/1415)) ([3848089](https://github.com/sanity-io/cli/commit/3848089387f2948ea948cb6c4d992e6aedbab09b))
+- **workbench:** persist a media library's installation config on `sanity deploy` ([#1441](https://github.com/sanity-io/cli/pull/1441)) ([4cf600f](https://github.com/sanity-io/cli/commit/4cf600ff0bb862146831d0a37f6de0d3195bf412))
+- **deploy:** name a new application or studio with `--title` (or `app.title` config for apps), enabling non-interactive coreApp creation ([#1436](https://github.com/sanity-io/cli/pull/1436)) ([aa4e106](https://github.com/sanity-io/cli/commit/aa4e10670bd5d8e88d229cde4f544d7cd1eaa1ac))
+- **cli:** add `unstable_bundledDev` opt-in for Vite's experimental bundled dev mode ([#1413](https://github.com/sanity-io/cli/pull/1413)) ([37d1831](https://github.com/sanity-io/cli/commit/37d1831f8062535fbdf558f726f4f273822647fc))
+
+  Set `unstable_bundledDev: true` in `sanity.cli.ts` to make `sanity dev` serve a bundled module graph (Vite's `experimental.bundledDev`) instead of individual ES modules. This can significantly speed up dev-server startup and full page reloads for large studios, while HMR stays instant. The regular unbundled dev server remains the default and is unchanged when the option is absent.
+
+  Requires `vite@^8.1.3` — earlier 8.1.x releases ship a Rolldown codegen bug that crashes the bundled studio on startup. The option is unstable and may change or be removed while the underlying Vite feature is experimental.
+
+- **workbench:** stamp the app's bus identity into its bundle ([#1438](https://github.com/sanity-io/cli/pull/1438)) ([9c7b6cb](https://github.com/sanity-io/cli/commit/9c7b6cb8ae5859a378e2af3c70731cc6a8cefc91))
+- **workbench:** add `unstable_defineMediaLibrary` ([#1423](https://github.com/sanity-io/cli/pull/1423)) ([2c7c00c](https://github.com/sanity-io/cli/commit/2c7c00c5f1d0136b95b085db840764a07612f345))
+
+  Declare the Sanity Media Library as a workbench app and define its installation config.
+
+### Bug Fixes
+
+- **init:** gate MCP setup on unattended mode rather than `--yes` alone, so a non-interactive `init` (including `--json`) configures MCP with defaults instead of blocking on its prompt ([#1421](https://github.com/sanity-io/cli/pull/1421)) ([a896651](https://github.com/sanity-io/cli/commit/a896651cf70513be4494a3bd5b6f13b2e33759c6))
+- **workbench:** move the typed `isWorkbenchApp` to `@sanity/workbench-cli`, derived from the schema so it can't drift. `@sanity/cli-core` keeps a boolean `isWorkbenchApp` for compatibility. ([#1429](https://github.com/sanity-io/cli/pull/1429)) ([263bbf9](https://github.com/sanity-io/cli/commit/263bbf917da5de55c65f4b4a7d3215d87ed87b49))
+- **deploy:** restructure core app deploy and extract shared deploy checks ([#1406](https://github.com/sanity-io/cli/pull/1406)) ([a414fca](https://github.com/sanity-io/cli/commit/a414fcaf4937e12ab468a40e9c02cac943c9e1d6))
+- **deploy:** restructure studio deploy on the shared deploy checks ([#1407](https://github.com/sanity-io/cli/pull/1407)) ([bb18d26](https://github.com/sanity-io/cli/commit/bb18d2647e149f8e545bf139f28c1cbb6dd8937d))
+- move internal build logic to cli-build package ([#1412](https://github.com/sanity-io/cli/pull/1412)) ([de6f30c](https://github.com/sanity-io/cli/commit/de6f30c9adcebecb6cdfd0510762ed1ca44d8fd1))
+- **workbench:** thread views/services as one `exposes` bundle through the ([#1424](https://github.com/sanity-io/cli/pull/1424)) ([bebd59b](https://github.com/sanity-io/cli/commit/bebd59b0002c52355efa41eea473b1e02b8b930c))
+  build/dev plumbing, so adding a declaration family no longer touches every hop
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 3.0.0
+    - @sanity/workbench-cli bumped to 1.2.0
+    - @sanity/cli-core bumped to 2.2.0
+
 ## [7.5.0](https://github.com/sanity-io/cli/compare/cli-v7.4.2...cli-v7.5.0)
 
 _2026-07-01_

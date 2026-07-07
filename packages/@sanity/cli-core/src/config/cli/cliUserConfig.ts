@@ -3,10 +3,10 @@ import {dirname, join as joinPath} from 'node:path'
 
 import {z} from 'zod/mini'
 
-import {debug} from '../_exports/debug.js'
-import {getSanityConfigDir} from '../util/getSanityConfigDir.js'
-import {readJsonFileSync} from '../util/readJsonFileSync.js'
-import {writeJsonFileSync} from '../util/writeJsonFileSync.js'
+import {debug} from '../../_exports/debug.js'
+import {getSanityConfigDir} from '../../util/getSanityConfigDir.js'
+import {readJsonFileSync} from '../../util/readJsonFileSync.js'
+import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedToken, setCachedToken} from './cliTokenCache.js'
 
 // Re-export so existing consumers don't break

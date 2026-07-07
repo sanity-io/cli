@@ -31,7 +31,7 @@ vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
-// Registry/lock I/O is mocked; the pure `createInterfacesTracker` runs for
+// Registry/lock I/O is mocked; the pure `createExposesTracker` runs for
 // real so the watcher's reload-vs-reconcile decision is exercised, not stubbed.
 vi.mock('../registry.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../registry.js')>()),
@@ -538,6 +538,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'coreApp',
           },
         ],
+        installationConfigs: [],
       })
     })
 
@@ -561,6 +562,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'studio',
           },
         ],
+        installationConfigs: [],
       })
     })
 
@@ -595,7 +597,86 @@ describe('startWorkbenchDevServer', () => {
             type: 'studio',
           }),
         ],
+        installationConfigs: [],
       })
+    })
+
+    test('routes a config-only server (no interfaces) to installationConfigs, not applications', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const installationConfig = {
+        appType: 'media-library',
+        fields: [
+          {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+        ],
+      }
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        {host: 'localhost', id: 'app-1', pid: 2, port: 3334, type: 'studio'},
+        {
+          host: 'localhost',
+          installationConfigs: [{...installationConfig, moduleName: 'media-library'}],
+          pid: 3,
+          port: 3337,
+          type: 'coreApp',
+        },
+      ])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [expect.objectContaining({id: 'app-1', type: 'studio'})],
+        installationConfigs: [
+          {
+            config: {
+              fields: [
+                {
+                  name: 'description',
+                  public: true,
+                  src: './src/description.ts',
+                  title: 'Description',
+                },
+              ],
+            },
+            moduleName: 'media-library',
+            remoteURL: 'http://localhost:3337',
+            type: 'media-library',
+          },
+        ],
+      })
+    })
+
+    test('a config server that also has interfaces lands in both channels', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        {
+          host: 'localhost',
+          id: 'app-1',
+          installationConfigs: [
+            {appType: 'media-library', fields: [], moduleName: 'media-library'},
+          ],
+          interfaces: [{entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}],
+          pid: 3,
+          port: 3337,
+          type: 'coreApp',
+        },
+      ])
+
+      const payload = mockServer.ws.send.mock.calls.at(-1)?.[1]
+      expect(payload.applications).toEqual([
+        expect.objectContaining({id: 'app-1', type: 'coreApp'}),
+      ])
+      expect(payload.installationConfigs).toEqual([
+        expect.objectContaining({moduleName: 'media-library', type: 'media-library'}),
+      ])
     })
 
     test('full-reloads the page when a running app gains or drops an interface', async () => {
@@ -684,6 +765,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'coreApp',
           },
         ],
+        installationConfigs: [],
       })
     })
 

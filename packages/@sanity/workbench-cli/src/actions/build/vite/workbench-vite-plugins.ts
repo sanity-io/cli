@@ -12,6 +12,7 @@ import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {federation} from './plugin.js'
+import {sanityAppId} from './plugins/plugin-sanity-app-id.js'
 
 interface WorkbenchViteOptions {
   /** Project root — read for the federation remote name, and the plugin workDir. */
@@ -22,6 +23,9 @@ interface WorkbenchViteOptions {
    * `relativeConfigLocation` is the studio's `sanity.config.*` (null when absent).
    */
   entries: {relativeConfigLocation: string | null; relativeEntry: string | null}
+
+  /** The app's bus identity, stamped into its modules for `@sanity/runtime`. */
+  appId?: string
 
   exposes?: WorkbenchExposes
   /** App (vs studio) build — selects the discriminated federation option shape. */
@@ -47,10 +51,10 @@ function requireStudioConfigPath(relativeConfigLocation: string | null): string 
 
 /** Build the Vite plugins for a workbench app's module-federation remote. */
 export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promise<PluginOption> {
-  const {cwd, entries, exposes, isApp} = options
+  const {appId, cwd, entries, exposes, isApp} = options
   const pkgJson = await readPackageJson(path.join(cwd, 'package.json'))
 
-  return federation({
+  const federationPlugin = federation({
     ...(isApp
       ? {
           // `null` relativeEntry (a branded app with no `entry`) → omit `appEntry`,
@@ -66,4 +70,6 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
     pkgJson,
     workDir: cwd,
   })
+
+  return appId === undefined ? federationPlugin : [federationPlugin, sanityAppId(appId)]
 }

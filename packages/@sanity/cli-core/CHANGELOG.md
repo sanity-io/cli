@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.2.0](https://github.com/sanity-io/cli/compare/cli-core-v2.1.3...cli-core-v2.2.0)
+
+_2026-07-07_
+
+### Features
+
+- **cli:** treat `--json` as unattended mode, so a command emitting machine-readable output never stops at a prompt a caller can't answer ([#1420](https://github.com/sanity-io/cli/pull/1420)) ([05f768b](https://github.com/sanity-io/cli/commit/05f768b998d6848f12c7bbeedb6b1fa5d0928486))
+- **workbench:** move the typed `isWorkbenchApp` to `@sanity/workbench-cli`, derived from the schema so it can't drift. `@sanity/cli-core` keeps a boolean `isWorkbenchApp` for compatibility. ([#1429](https://github.com/sanity-io/cli/pull/1429)) ([263bbf9](https://github.com/sanity-io/cli/commit/263bbf917da5de55c65f4b4a7d3215d87ed87b49))
+- **cli:** add `unstable_bundledDev` opt-in for Vite's experimental bundled dev mode ([#1413](https://github.com/sanity-io/cli/pull/1413)) ([37d1831](https://github.com/sanity-io/cli/commit/37d1831f8062535fbdf558f726f4f273822647fc))
+
+  Set `unstable_bundledDev: true` in `sanity.cli.ts` to make `sanity dev` serve a bundled module graph (Vite's `experimental.bundledDev`) instead of individual ES modules. This can significantly speed up dev-server startup and full page reloads for large studios, while HMR stays instant. The regular unbundled dev server remains the default and is unchanged when the option is absent.
+
+  Requires `vite@^8.1.3` — earlier 8.1.x releases ship a Rolldown codegen bug that crashes the bundled studio on startup. The option is unstable and may change or be removed while the underlying Vite feature is experimental.
+
+- **refactor:** granular cli-core exports ([#1439](https://github.com/sanity-io/cli/pull/1439)) ([da98c2c](https://github.com/sanity-io/cli/commit/da98c2c2e0c807df0c1adb51723835f8403d9f35))
+
+### Bug Fixes
+
+- **workbench:** add `unstable_defineMediaLibrary` ([#1423](https://github.com/sanity-io/cli/pull/1423)) ([2c7c00c](https://github.com/sanity-io/cli/commit/2c7c00c5f1d0136b95b085db840764a07612f345))
+
+  Declare the Sanity Media Library as a workbench app and define its installation config.
+
 ## [2.1.3](https://github.com/sanity-io/cli/compare/cli-core-v2.1.2...cli-core-v2.1.3)
 
 _2026-07-01_

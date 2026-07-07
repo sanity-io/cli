@@ -4,7 +4,12 @@ import {createGzip} from 'node:zlib'
 
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {spinner} from '@sanity/cli-core/ux'
-import {getWorkbench} from '@sanity/workbench-cli/deploy'
+import {
+  deployInstallationConfig,
+  getWorkbench,
+  resolveInstallationId,
+  summarizeInstallationConfig,
+} from '@sanity/workbench-cli/deploy'
 import {pack} from 'tar-fs'
 
 import {
@@ -50,6 +55,11 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
   const workbench = getWorkbench(cliConfig)
   const dryRun = !!flags['dry-run']
 
+  // A singleton (the Media Library) persists its config instead of hosting an
+  // application; anything with interfaces still ships one.
+  const deploySingletonInstallationConfig = workbench?.deploySingletonInstallationConfig ?? false
+  const deployApplication = !workbench || workbench.hasInterfaces
+
   // A federated app with no entry, view or service would ship a remote with
   // nothing to load — reported first so it fails before any prompt or API call.
   if (workbench) {
@@ -67,10 +77,14 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
 
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
-  const version = await checkPackageVersion(reporter, {
-    moduleName: '@sanity/sdk-react',
-    workDir,
-  })
+  // An application ships the SDK runtime; a media-library config stamps its
+  // `sanity` version instead.
+  let version: string | null = null
+  if (deployApplication) {
+    version = await checkPackageVersion(reporter, {moduleName: '@sanity/sdk-react', workDir})
+  } else if (deploySingletonInstallationConfig) {
+    version = await checkPackageVersion(reporter, {moduleName: 'sanity', workDir})
+  }
 
   reporter.report(
     organizationId
@@ -91,7 +105,7 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
       solution: 'Remove the --external flag — apps deploy to Sanity hosting',
       status: 'fail',
     })
-  } else {
+  } else if (deployApplication) {
     application = await resolveAppApplication(options, {dryRun, reporter})
   }
 
@@ -126,14 +140,51 @@ async function runAppDeployment(options: DeployAppOptions, reporter: CheckReport
     })
   }
 
+  // Resolve the installation in both modes so the report — dry-run and real —
+  // shows whether the config is deployable; a missing one fails the deploy here.
+  let installationId: string | undefined
+  const configAppType = workbench?.installationConfig?.appType
+  if (
+    deploySingletonInstallationConfig &&
+    organizationId &&
+    workbench?.installationConfig &&
+    configAppType
+  ) {
+    installationId = await resolveInstallationId({appType: configAppType, organizationId})
+    reporter.report(
+      installationId
+        ? {message: summarizeInstallationConfig(workbench.installationConfig), status: 'pass'}
+        : {
+            exitCode: exitCodes.USAGE_ERROR,
+            message: `No active "${configAppType}" installation for organization "${organizationId}"`,
+            solution: 'Install the Media Library for the organization before deploying its config',
+            status: 'fail',
+          },
+    )
+  }
+
   // Dry run stops here — everything below mutates.
   if (dryRun) return
+
+  if (installationId && version && configAppType) {
+    await deployInstallationConfig({
+      appType: configAppType,
+      installationId,
+      output,
+      sourceDir,
+      version,
+    })
+  }
+
+  // A config-only singleton has no application to ship.
+  if (!deployApplication) return
 
   // A real deploy has already exited if anything failed; landing here without a
   // resolved application or version means the deploy target was never resolved.
   if (!application || !version) return
 
   application = await syncApplicationTitle({application, manifest, output})
+
   await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
 
   logAppDeployed({application, cliConfig, output})

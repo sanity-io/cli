@@ -37,7 +37,13 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: app?.entry,
-    exposes: workbench ? {services: workbench.services, views: workbench.views} : undefined,
+    exposes: workbench
+      ? {
+          installationConfig: workbench.installationConfig,
+          services: workbench.services,
+          views: workbench.views,
+        }
+      : undefined,
     isWorkbenchApp: !!workbench,
     minify: flags.minify,
     outDir,
@@ -48,6 +54,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     stats: flags.stats,
     unattendedMode: flags.yes,
     vite: cliConfig.vite,
+    workbenchAppId: workbench?.name,
     workDir,
   })
 }

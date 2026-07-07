@@ -4,6 +4,12 @@ import {Command, Interfaces} from '@oclif/core'
 import {type CommandError} from '@oclif/core/interfaces'
 
 import {subdebug} from './_exports/debug.js'
+import {
+  getGlobalCliClient,
+  getProjectCliClient,
+  type GlobalCliClientOptions,
+  type ProjectCliClientOptions,
+} from './apiClient.js'
 import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
@@ -11,12 +17,6 @@ import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoo
 import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
 import {exitCodes} from './exitCodes.js'
-import {
-  getGlobalCliClient,
-  getProjectCliClient,
-  type GlobalCliClientOptions,
-  type ProjectCliClientOptions,
-} from './services/apiClient.js'
 import {getCliTelemetry, reportCliTraceError} from './telemetry/getCliTelemetry.js'
 import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'

@@ -1,7 +1,12 @@
 import {type CliConfig} from '@sanity/cli-core/types'
 import {describe, expect, test} from 'vitest'
 
-import {type DefineAppInput, unstable_defineApp} from '../../../defineApp.js'
+import {
+  type DefineAppInput,
+  type DefineMediaLibraryInput,
+  unstable_defineApp,
+  unstable_defineMediaLibrary,
+} from '../../../defineApp.js'
 import {getWorkbench} from '../getWorkbench.js'
 
 // Resolve a capability from a real branded app — the only way to a non-null
@@ -14,6 +19,15 @@ function workbench(overrides: Partial<DefineAppInput> = {}) {
     title: 'Test App',
     ...overrides,
   })
+  const resolved = getWorkbench({app} as CliConfig)
+  if (!resolved) throw new Error('expected a workbench app')
+  return resolved
+}
+
+// A media library resolves through the same brand, but declares installation
+// configs (via `fields`) instead of interfaces.
+function mediaLibrary(overrides: Partial<DefineMediaLibraryInput> = {}) {
+  const app = unstable_defineMediaLibrary({organizationId: 'org-id', ...overrides})
   const resolved = getWorkbench({app} as CliConfig)
   if (!resolved) throw new Error('expected a workbench app')
   return resolved
@@ -36,16 +50,31 @@ describe('getWorkbench', () => {
     expect(resolved.views).toHaveLength(1)
     expect(resolved.services).toHaveLength(1)
   })
+
+  test('exposes the installation config off a branded media library', () => {
+    const resolved = mediaLibrary({
+      fields: [
+        {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+      ],
+    })
+    expect(resolved.applicationType).toBe('media-library')
+    expect(resolved.installationConfig).toMatchObject({fields: [{name: 'description'}]})
+    // a media library declares no interfaces
+    expect(resolved.views).toHaveLength(0)
+    expect(resolved.services).toHaveLength(0)
+  })
 })
 
 describe('assertDeployable', () => {
   test('throws when the app declares no interfaces', () => {
-    expect(() => workbench().assertDeployable()).toThrow('declares no entry, views or services')
+    expect(() => workbench().assertDeployable()).toThrow(
+      'declares no entry, views, services or installation config',
+    )
   })
 
   test('throws when views and services are empty arrays', () => {
     expect(() => workbench({services: [], views: []}).assertDeployable()).toThrow(
-      'declares no entry, views or services',
+      'declares no entry, views, services or installation config',
     )
   })
 
@@ -67,5 +96,41 @@ describe('assertDeployable', () => {
         services: [{name: 'services/sync', src: './src/sync.ts', type: 'worker'}],
       }).assertDeployable(),
     ).not.toThrow()
+  })
+
+  test('passes when a media library declares a field', () => {
+    expect(() =>
+      mediaLibrary({
+        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+      }).assertDeployable(),
+    ).not.toThrow()
+  })
+
+  test('throws when a media library declares no fields', () => {
+    expect(() => mediaLibrary().assertDeployable()).toThrow(
+      'declares no entry, views, services or installation config',
+    )
+  })
+})
+
+describe('deploySingletonInstallationConfig / hasInterfaces', () => {
+  test('a media library with fields deploys its config and hosts no interfaces', () => {
+    const resolved = mediaLibrary({
+      fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+    })
+    expect(resolved.deploySingletonInstallationConfig).toBe(true)
+    expect(resolved.hasInterfaces).toBe(false)
+  })
+
+  test('a media library without fields carries no config to deploy', () => {
+    expect(mediaLibrary().deploySingletonInstallationConfig).toBe(false)
+  })
+
+  test('a non-singleton app never deploys a config, and reports its interfaces', () => {
+    const resolved = workbench({
+      views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}],
+    })
+    expect(resolved.deploySingletonInstallationConfig).toBe(false)
+    expect(resolved.hasInterfaces).toBe(true)
   })
 })

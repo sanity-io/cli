@@ -1,0 +1,25 @@
+{
+  "name": "media-library-fixture",
+  "version": "1.0.1",
+  "private": true,
+  "keywords": [
+    "sanity"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "build:fixture": "sanity build"
+  },
+  "dependencies": {
+    "@sanity/cli": "workspace:*",
+    "@sanity/sdk-react": "^2.13.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "sanity": "catalog:",
+    "styled-components": "^6.4.0"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

@@ -20,6 +20,26 @@ afterEach(() => {
 })
 
 describe('workbenchVitePlugins', () => {
+  test('appends the app-id define plugin when an appId is given', async () => {
+    const result = await workbenchVitePlugins({
+      appId: 'drop-desk',
+      cwd,
+      entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
+    })
+    expect(result).toEqual([
+      {name: 'sanity/federation'},
+      expect.objectContaining({name: 'sanity/workbench/app-id'}),
+    ])
+  })
+
+  test('returns only the federation plugin without an appId', async () => {
+    const result = await workbenchVitePlugins({
+      cwd,
+      entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
+    })
+    expect(result).toEqual({name: 'sanity/federation'})
+  })
+
   test('builds a studio remote from its sanity.config path', async () => {
     await workbenchVitePlugins({
       cwd,
@@ -76,6 +96,22 @@ describe('workbenchVitePlugins', () => {
     })
     expect(mockFederation).toHaveBeenCalledWith(
       expect.objectContaining({exposes: {services, views}}),
+    )
+  })
+
+  test('passes the installation config through to federation', async () => {
+    const installationConfig = {
+      appType: 'media-library' as const,
+      fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+    }
+    await workbenchVitePlugins({
+      cwd,
+      entries: {relativeConfigLocation: null, relativeEntry: null},
+      exposes: {installationConfig},
+      isApp: true,
+    })
+    expect(mockFederation).toHaveBeenCalledWith(
+      expect.objectContaining({exposes: {installationConfig}}),
     )
   })
 })

@@ -1449,8 +1449,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--external | --source-maps | --minify | --build]
-    [--schema-required] [--url <value>] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--dry-run] [--external | --source-maps | --minify | --build]
+    [--schema-required] [--title <value>] [--url <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -1459,10 +1459,13 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Build the studio before deploying (use --no-build to deploy existing `dist/` output)
+      --dry-run            Report what would be deployed without uploading or creating anything
       --external           Register an externally hosted studio
       --[no-]minify        Minify built JavaScript (use --no-minify to skip for faster builds)
       --schema-required    Fail if schema deployment fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
+      --title=<value>      Title for a newly created application or studio. For apps it also skips the interactive title
+                           prompt, enabling unattended creation
       --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
                            hostname (e.g. "my-studio" or "my-studio.sanity.studio")
       --verbose            Enable verbose logging

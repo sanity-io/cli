@@ -1,7 +1,7 @@
 import {Command, Flags} from '@oclif/core'
 import {afterEach, beforeEach, describe, expect, Mock, test, vi} from 'vitest'
 
-const {SanityCommand} = await import('../SanityCommand.js')
+import {SanityCommand} from '../SanityCommand.js'
 
 function createMockedRunCommand<T extends typeof Command>(mocks: {
   cliConfig?: Mock
@@ -94,7 +94,7 @@ describe('SanityCommand', () => {
       expect(id).toEqual('default-project')
     })
 
-    test('should invoke explictly-provided fallback function as return', async () => {
+    test('should invoke explictly-provided fallback function as return if nothing returned from cliConfig', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
           id = await this.getProjectId({
@@ -106,6 +106,54 @@ describe('SanityCommand', () => {
       })
       await cmdClass.run([])
       expect(id).toEqual('manhattan')
+    })
+
+    test('propagates non-NonInteractiveError from fallback', async () => {
+      expect.assertions(1)
+      const cmdClass = createMockedRunCommand({
+        run: async function () {
+          try {
+            await this.getProjectId({
+              async fallback() {
+                throw new Error('boom')
+              },
+            })
+            expect.fail('expected getProjectId to throw')
+          } catch (err) {
+            expect(err.message).toMatch('boom')
+          }
+        },
+      })
+      await cmdClass.run([])
+    })
+
+    test('does not call fallback when project ID is found from config', async () => {
+      const fallback = vi.fn(() => {
+        throw new Error('fallback should not have been called!')
+      })
+      const cmdClass = createMockedRunCommand({
+        cliConfig: vi.fn(() => ({api: {projectId: 'default-project'}})),
+        run: async function () {
+          id = await this.getProjectId({fallback})
+        },
+      })
+      await cmdClass.run([])
+      expect(id).toEqual('default-project')
+      expect(fallback).not.toHaveBeenCalled()
+    })
+
+    test('does not call fallback when --project-id flag is provided', async () => {
+      const fallback = vi.fn(() => {
+        throw new Error('fallback should not have been called!')
+      })
+      const cmdClass = createMockedRunCommand({
+        run: async function () {
+          id = await this.getProjectId({fallback})
+        },
+      })
+      await cmdClass.run(['--project-id', 'torment nexus'])
+      expect(id).toEqual('torment nexus')
+      expect(fallback).not.toHaveBeenCalled()
     })
 
     test('should throw if no project ID was resolved', async () => {

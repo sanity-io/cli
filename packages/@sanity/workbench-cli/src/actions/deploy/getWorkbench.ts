@@ -10,9 +10,8 @@ import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDepl
 
 interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
   /**
-   * Throws when the app declares nothing the build can expose — no entry, view
-   * or service. A federated app with none would ship a remote with nothing to
-   * load, so deploy gates on this before any prompts or API calls.
+   * Throws when the app exposes nothing (no entry, view, service, or config) —
+   * the remote would have nothing to load. Gated before any prompt or API call.
    */
   assertDeployable(): void
   /**
@@ -20,6 +19,14 @@ interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
    * Throws when a view declaration is malformed.
    */
   buildViewDeploymentPayload(applicationId: string): ViewDeploymentPayload
+  /**
+   * A singleton (the Media Library) that carries an installation config — deploy
+   * persists the config to the org's installation. Independent of the interfaces,
+   * which register regardless; non-singletons never carry a config.
+   */
+  deploySingletonInstallationConfig: boolean
+  /** Declares something to host as an application — an entry, view, or service. */
+  hasInterfaces: boolean
 }
 
 export function getWorkbench(
@@ -28,15 +35,18 @@ export function getWorkbench(
   const app = resolveWorkbenchApp(cliConfig)
   if (!app) return null
 
-  const {entry, services, views} = app
+  const {entry, installationConfig, isSingleton, services, views} = app
 
   return {
     ...app,
 
+    deploySingletonInstallationConfig: isSingleton && !!installationConfig,
+    hasInterfaces: !!entry || views.length > 0 || services.length > 0,
+
     assertDeployable() {
-      if (!entry && views.length === 0 && services.length === 0) {
+      if (!entry && views.length === 0 && services.length === 0 && !installationConfig) {
         throw new Error(
-          'Nothing to deploy: `unstable_defineApp` declares no entry, views or services. ' +
+          'Nothing to deploy: the app declares no entry, views, services or installation config. ' +
             'Add at least one to the app config.',
         )
       }

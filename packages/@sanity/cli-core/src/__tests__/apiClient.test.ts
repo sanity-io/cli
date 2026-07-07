@@ -1,4 +1,3 @@
-import {type SanityClient} from '@sanity/client'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGlobalCliClient, getProjectCliClient} from '../apiClient.js'
@@ -18,11 +17,11 @@ vi.mock('@sanity/client', () => ({
   },
 }))
 
-vi.mock('../cliUserConfig.js', () => ({
+vi.mock('../config/cli/cliUserConfig.js', () => ({
   getCliToken: mockGetCliToken,
 }))
 
-vi.mock('../../util/generateHelpUrl.js', () => ({
+vi.mock('../util/generateHelpUrl.js', () => ({
   generateHelpUrl: mockGenerateHelpUrl,
 }))
 
@@ -37,7 +36,7 @@ describe('getGlobalCliClient', () => {
   })
 
   test('uses provided token when supplied', async () => {
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
 
     await getGlobalCliClient({
       apiVersion: '2021-06-07',
@@ -53,7 +52,7 @@ describe('getGlobalCliClient', () => {
   })
 
   test('retrieves token from getCliToken when not provided', async () => {
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
 
     await getGlobalCliClient({
@@ -83,7 +82,7 @@ describe('getGlobalCliClient', () => {
 
   test('creates client with undefined token when requireUser=false and no token available', async () => {
     mockGetCliToken.mockResolvedValue(undefined)
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
 
     await getGlobalCliClient({apiVersion: '2021-06-07', requireUser: false})
 
@@ -92,7 +91,7 @@ describe('getGlobalCliClient', () => {
 
   test('creates client without token when unauthenticated is passed', async () => {
     mockGetCliToken.mockResolvedValue('stored-token')
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
 
     await getGlobalCliClient({apiVersion: '2021-06-07', unauthenticated: true})
 
@@ -101,7 +100,7 @@ describe('getGlobalCliClient', () => {
   })
 
   test('creates client with token when unauthenticated and token are passed', async () => {
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
 
     await getGlobalCliClient({
       apiVersion: '2021-06-07',
@@ -129,7 +128,7 @@ describe('getGlobalCliClient', () => {
   })
 
   test('uses staging apiHost when SANITY_INTERNAL_ENV=staging', async () => {
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
 
@@ -156,7 +155,7 @@ describe('getProjectCliClient', () => {
   })
 
   test('sets useProjectHostname=true instead of false', async () => {
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
 
     await getProjectCliClient({
@@ -172,7 +171,7 @@ describe('getProjectCliClient', () => {
   })
 
   test('accepts projectId and dataset in config', async () => {
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
 
     await getProjectCliClient({
@@ -205,7 +204,7 @@ describe('getProjectCliClient', () => {
 
   test('creates client with undefined token when requireUser=false and no token available', async () => {
     mockGetCliToken.mockResolvedValue(undefined)
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
 
     await getProjectCliClient({
       apiVersion: '2021-06-07',
@@ -217,7 +216,7 @@ describe('getProjectCliClient', () => {
   })
 
   test('uses staging apiHost when SANITY_INTERNAL_ENV=staging', async () => {
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
 
@@ -234,7 +233,7 @@ describe('getProjectCliClient', () => {
   })
 
   test('uses default apiHost when SANITY_INTERNAL_ENV=production', async () => {
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
     vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
 
@@ -265,7 +264,7 @@ describe('authErrors middleware', () => {
       }),
     }
     mockRequesterClone.mockReturnValue(mockRequester)
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
     mockGenerateHelpUrl.mockReturnValue('https://help.sanity.io/cli-errors')
 
@@ -297,7 +296,7 @@ describe('authErrors middleware', () => {
       }),
     }
     mockRequesterClone.mockReturnValue(mockRequester)
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
 
     await getGlobalCliClient({apiVersion: '2021-06-07'})
@@ -323,7 +322,7 @@ describe('authErrors middleware', () => {
       }),
     }
     mockRequesterClone.mockReturnValue(mockRequester)
-    mockCreateClient.mockResolvedValue({} as SanityClient)
+    mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
 
     await getGlobalCliClient({apiVersion: '2021-06-07'})
