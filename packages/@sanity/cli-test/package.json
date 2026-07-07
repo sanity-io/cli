@@ -33,6 +33,14 @@
       "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./mocks": {
+      "source": "./src/mocks/index.ts",
+      "default": "./dist/mocks/index.js"
+    },
+    "./paths": {
+      "source": "./src/utils/paths.ts",
+      "default": "./dist/utils/paths.js"
+    },
     "./vitest": {
       "source": "./src/vitest.ts",
       "default": "./dist/vitest.js"

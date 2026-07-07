@@ -1,5 +1,6 @@
 import {type Command} from '@oclif/core'
-import {type CliConfig, type ProjectRootResult, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {type CliConfig, type ProjectRootResult} from '@sanity/cli-core/types'
 
 import {convertToSystemPath} from '../utils/paths.js'
 import {createTestToken} from './createTestToken.js'
