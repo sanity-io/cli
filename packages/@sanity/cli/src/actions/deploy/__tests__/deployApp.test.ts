@@ -1,34 +1,20 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {describe, expect, test, vi} from 'vitest'
 
-import {type UserApplicationResolved} from '../../../services/userApplications.js'
 import {logAppDeployed} from '../deployApp.js'
 
 const mockOutput = () => ({log: vi.fn()}) as unknown as Output
-
-function application(overrides: Partial<UserApplicationResolved> = {}): UserApplicationResolved {
-  return {
-    appHost: 'app-host',
-    createdAt: '2024-01-01T00:00:00Z',
-    id: 'app-1',
-    organizationId: 'org-1',
-    projectId: null,
-    title: 'My App',
-    type: 'coreApp',
-    updatedAt: '2024-01-01T00:00:00Z',
-    urlType: 'internal',
-    ...overrides,
-  }
-}
 
 describe('logAppDeployed', () => {
   test("prints the dashboard URL from the deployed app's organization", () => {
     const output = mockOutput()
 
     logAppDeployed({
-      application: application(),
+      applicationId: 'app-1',
       cliConfig: {app: {organizationId: 'config-org'}, deployment: {appId: 'app-1'}} as CliConfig,
+      organizationId: 'org-1',
       output,
+      title: 'My App',
     })
 
     expect(output.log).toHaveBeenCalledWith(

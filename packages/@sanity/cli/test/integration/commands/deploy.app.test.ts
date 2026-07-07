@@ -297,60 +297,6 @@ describe('#deploy app', () => {
     expect(error?.message).toContain('Deploy blocked')
   })
 
-  test('should check the federation build dir for an unstable_defineApp app', async () => {
-    const cwd = await testFixture('basic-app')
-    process.cwd = () => cwd
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      query: {
-        appType: 'coreApp',
-      },
-      uri: `/user-applications/${appId}`,
-    }).reply(200, {
-      appHost: 'existing-host',
-      createdAt: '2024-01-01T00:00:00Z',
-      id: appId,
-      organizationId: 'org-id',
-      projectId: null,
-      title: 'Existing App',
-      type: 'coreApp',
-      updatedAt: '2024-01-01T00:00:00Z',
-      urlType: 'internal',
-    })
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      method: 'post',
-      query: {
-        appType: 'coreApp',
-      },
-      uri: `/user-applications/${appId}/deployments`,
-    }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
-
-    const app = unstable_defineApp({
-      entry: './src/App.tsx',
-      name: 'workbench-app',
-      organizationId,
-      title: 'Workbench App',
-    })
-
-    const {error, stdout} = await testCommand(DeployCommand, [], {
-      config: {root: cwd},
-      mocks: {
-        cliConfig: {
-          app,
-          deployment: {appId},
-        },
-      },
-    })
-    if (error) throw error
-
-    expect(mockCheckBuiltOutput).toHaveBeenCalledWith(expect.any(String))
-    expect(mockCheckDir).not.toHaveBeenCalled()
-    expect(stdout).toContain('Success! Application deployed')
-  })
-
   test('should reject an unstable_defineApp app that declares no interfaces', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd

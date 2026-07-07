@@ -1,15 +1,30 @@
+import {getApplication} from '@sanity/workbench-cli/deploy'
+
 import {
   getUserApplication,
   getUserApplications,
   type UserApplication,
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
+import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
+
+/** The application fields a deploy-target verdict carries for reporting. */
+interface DeployTargetApp {
+  appHost: string
+  id: string
+  title: string | null
+}
+
+/** A coreApp verdict also carries the organization, for the dashboard URL. */
+interface DeployTargetCoreApp extends DeployTargetApp {
+  organizationId: string
+}
 
 /**
  * The read-only outcome of resolving where a deploy would go.
  *
- * - `found` — the deploy targets this existing user application
+ * - `found` — the deploy targets this existing application
  * - `would-create` — nothing registered yet; a deploy would create it without prompting
  * - `needs-input` — config doesn't determine a target; a deploy would prompt
  *   (`existing` lists the applications a prompt would offer)
@@ -17,19 +32,23 @@ import {normalizeUrl, validateUrl} from './urlUtils.js'
  * - `blocked` — resolution requires config that's missing (projectId/organizationId)
  *
  * Transport errors (network, permissions) throw — they're not verdicts.
+ *
+ * The user-applications resolvers carry the full {@link UserApplication} (the
+ * real deploy needs it); the workbench resolvers and the report only need
+ * {@link DeployTargetApp}, so `App` defaults to that widened shape.
  */
-type CommonDeployTargetResolution<App extends UserApplication = UserApplication> =
+type CommonDeployTargetResolution<App = DeployTargetApp> =
   | {application: App; type: 'found'}
   | {existing: App[]; type: 'needs-input'}
   | {message: string; reason: 'app-not-found' | 'invalid-host'; type: 'invalid'}
   | {message: string; type: 'blocked'}
 
-export type StudioDeployTargetResolution =
-  | CommonDeployTargetResolution
+export type StudioDeployTargetResolution<App = DeployTargetApp> =
+  | CommonDeployTargetResolution<App>
   | {appHost: string; type: 'would-create'}
 
-export type AppDeployTargetResolution =
-  | CommonDeployTargetResolution<UserApplicationResolved>
+export type AppDeployTargetResolution<App = DeployTargetCoreApp> =
+  | CommonDeployTargetResolution<App>
   | {type: 'would-create'}
 
 /**
@@ -45,7 +64,7 @@ export async function resolveStudioDeployTarget(options: {
   projectId: string | undefined
   studioHost: string | undefined
   urlFlag: string | undefined
-}): Promise<StudioDeployTargetResolution> {
+}): Promise<StudioDeployTargetResolution<UserApplication>> {
   const {appId, isExternal, projectId, studioHost, urlFlag} = options
 
   // appId wins over host config (and undeploy resolves it the same way): a
@@ -112,7 +131,7 @@ export async function resolveStudioDeployTarget(options: {
 export async function resolveAppDeployTarget(options: {
   appId: string | undefined
   organizationId: string | undefined
-}): Promise<AppDeployTargetResolution> {
+}): Promise<AppDeployTargetResolution<UserApplicationResolved>> {
   const {appId, organizationId} = options
 
   if (appId) {
@@ -137,6 +156,54 @@ export async function resolveAppDeployTarget(options: {
   }
 
   return {type: 'would-create'}
+}
+
+/**
+ * The dry-run counterpart to a workbench app's create-on-deploy: a configured
+ * `appId` is looked up read-only, otherwise a coreApp would be created.
+ * @internal
+ */
+export async function resolveWorkbenchApp({
+  appId,
+}: {
+  appId: string | undefined
+}): Promise<AppDeployTargetResolution> {
+  return appId ? resolveAppById(appId) : {type: 'would-create'}
+}
+
+/**
+ * The studio counterpart to {@link resolveWorkbenchApp}: a configured
+ * `studioHost` would create that hostname, and without one a deploy would prompt.
+ *
+ * @internal
+ */
+export async function resolveWorkbenchStudio({
+  appId,
+  studioHost,
+}: {
+  appId: string | undefined
+  studioHost: string | undefined
+}): Promise<StudioDeployTargetResolution> {
+  if (appId) return resolveAppById(appId)
+  if (studioHost) return {appHost: studioHost, type: 'would-create'}
+  return {existing: [], type: 'needs-input'}
+}
+
+async function resolveAppById(
+  appId: string,
+): Promise<CommonDeployTargetResolution<DeployTargetCoreApp>> {
+  const application = await getApplication(appId)
+  return application
+    ? {
+        application: {
+          appHost: application.slug ?? '',
+          id: application.id,
+          organizationId: application.organizationId,
+          title: application.title,
+        },
+        type: 'found',
+      }
+    : {message: APP_ID_NOT_FOUND_IN_ORGANIZATION, reason: 'app-not-found', type: 'invalid'}
 }
 
 async function listStudioApplications(

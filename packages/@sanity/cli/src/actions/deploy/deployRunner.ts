@@ -2,6 +2,7 @@ import {format} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
+import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {
   type CheckReporter,
@@ -30,6 +31,10 @@ export interface DeployResult {
    */
   target: DeployTarget | null
 
+  /** Workbench views and services registered with the deploy. */
+  exposes?: DeployedExpose[]
+  /** Media-library installation config summary, when a singleton config deployed. */
+  installationConfig?: string
   /** Set when a media-library singleton deployed its installation config. */
   installationId?: string
 }
@@ -92,7 +97,10 @@ async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise
   await spec.run(options, reporter)
   const plan: DeploymentPlan = {
     checks: reporter.results,
+    exposes: reporter.results.find((check) => check.exposes)?.exposes ?? [],
     files: [],
+    installationConfig:
+      reporter.results.find((check) => check.installationConfig)?.installationConfig ?? null,
     target: reporter.results.find((check) => check.target)?.target ?? null,
     type: spec.type,
     version: reporter.results.find((check) => check.version)?.version ?? null,

@@ -5,7 +5,7 @@ import {
   createUserApplication as createUserApplicationRequest,
   type UserApplication,
 } from '../../../services/userApplications.js'
-import {createUserApplication} from '../createUserApplication.js'
+import {createUserApplication, generateAppSlug} from '../createUserApplication.js'
 
 vi.mock('../../../services/userApplications.js', () => ({
   createUserApplication: vi.fn(),
@@ -43,5 +43,17 @@ describe('createUserApplication', () => {
       }),
     )
     expect(result).toBe(app)
+  })
+})
+
+describe('generateAppSlug', () => {
+  test('is 12 chars, lowercase, and letter-first', () => {
+    for (let i = 0; i < 100; i++) {
+      expect(generateAppSlug()).toMatch(/^[a-z][a-z0-9]{11}$/)
+    }
+  })
+
+  test('is random across calls', () => {
+    expect(generateAppSlug()).not.toBe(generateAppSlug())
   })
 })

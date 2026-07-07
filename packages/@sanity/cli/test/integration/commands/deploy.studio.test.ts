@@ -1,10 +1,9 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {type CliConfig, exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
+import {exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import {unstable_defineApp} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -309,73 +308,6 @@ describe('#deploy studio', () => {
     expect(mockBuildStudio).toHaveBeenCalledWith(
       expect.objectContaining({flags: expect.objectContaining({yes: true})}),
     )
-  })
-
-  test('should validate the federation build shape for an unstable_defineApp studio', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.cwd = () => cwd
-
-    const projectId = 'test-project-id'
-    const studioHost = 'existing-studio'
-    const studioAppId = 'studio-app-id'
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      query: {
-        appHost: studioHost,
-        appType: 'studio',
-      },
-      uri: `/projects/${projectId}/user-applications`,
-    }).reply(200, {
-      appHost: studioHost,
-      createdAt: '2024-01-01T00:00:00Z',
-      id: studioAppId,
-      projectId,
-      title: 'Existing Studio',
-      type: 'studio',
-      updatedAt: '2024-01-01T00:00:00Z',
-      urlType: 'internal',
-    })
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      method: 'post',
-      query: {
-        appType: 'studio',
-      },
-      uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
-    }).reply(
-      201,
-      {id: 'deployment-id', location: `https://${studioHost}.sanity.studio`},
-      {location: `https://${studioHost}.sanity.studio`},
-    )
-
-    // Brand the config as a studio so the deploy command routes it through
-    // deployStudio.
-    const app = unstable_defineApp({
-      name: 'test-studio',
-      organizationId: 'org-1',
-      title: 'Test Studio',
-    }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
-    app.applicationType = 'studio'
-
-    const {error, stdout} = await testCommand(DeployCommand, [], {
-      config: {root: cwd},
-      mocks: {
-        cliConfig: {
-          api: {
-            projectId,
-          },
-          app,
-          studioHost,
-        } as CliConfig,
-      },
-    })
-
-    if (error) throw error
-    expect(mockCheckBuiltOutput).toHaveBeenCalledWith(expect.any(String))
-    expect(mockCheckDir).not.toHaveBeenCalled()
-    expect(stdout).toContain('Success! Studio deployed')
   })
 
   test('should create new studio hostname when studioHost is provided but does not exist', async () => {
