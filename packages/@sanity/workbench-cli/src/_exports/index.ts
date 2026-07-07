@@ -1,6 +1,13 @@
 export type {InterfaceType, ServiceType} from '../contract.js'
-export {isWorkbenchApp, unstable_defineApp} from '../defineApp.js'
-export type {DefineAppInput, DefineAppResult, DockGroup, WorkbenchApp} from '../defineApp.js'
+export {isWorkbenchApp, unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
+export type {
+  DefineAppInput,
+  DefineAppResult,
+  DefineMediaLibraryInput,
+  DockGroup,
+  MediaLibraryField,
+  WorkbenchApp,
+} from '../defineApp.js'
 export {unstable_defineService} from '../defineService.js'
 export type {
   DefinedService,

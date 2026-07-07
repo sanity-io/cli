@@ -1,6 +1,10 @@
 import {z} from 'zod/mini'
 
-import {InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
+import {
+  InstallationConfigSchema,
+  InterfaceDeclarationSchema,
+  ServiceDeclarationSchema,
+} from './contract.js'
 
 /** Allowed characters for an app `name`. */
 const APP_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
@@ -46,6 +50,13 @@ export const DefineAppInputSchema = z
     group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
+    /** Deployed as a versioned snapshot on the app's org installation, not the application service. */
+    installationConfig: z.optional(InstallationConfigSchema),
+    /**
+     * Sanity-owned app deployed once, installed per org; excluded from the public `DefineAppInput`.
+     * @internal
+     */
+    isSingleton: z.optional(z.boolean()),
     /** Unique app identifier — must match `APP_NAME_PATTERN`. */
     name: z.string().check(z.regex(APP_NAME_PATTERN, 'App `name` must match /^[a-zA-Z0-9_-]+$/')),
     /** Organization that owns the app — the workbench runs and deploys against it. */
@@ -100,11 +111,14 @@ export const DefineAppInputSchema = z
 
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
- * `applicationType` — that field is validated by the schema but is not part of
- * the public surface (Sanity-owned apps set it via `@ts-expect-error`).
+ * `applicationType` and `isSingleton` — validated by the schema but not part of
+ * the public surface (Sanity-owned apps set them via `@ts-expect-error`).
  * @public
  */
-export type DefineAppInput = Omit<z.output<typeof DefineAppInputSchema>, 'applicationType'>
+export type DefineAppInput = Omit<
+  z.output<typeof DefineAppInputSchema>,
+  'applicationType' | 'isSingleton'
+>
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy
@@ -154,4 +168,47 @@ export function unstable_defineApp(input: DefineAppInput): DefineAppResult {
     value: true,
     writable: false,
   }) as DefineAppResult
+}
+
+/**
+ * One custom field a media library exposes. `src` default-exports a `defineField(...)` schema type.
+ * @public
+ */
+export interface MediaLibraryField {
+  /** Unique within the media library. */
+  name: string
+  src: string
+  title: string
+
+  /** Readable outside the owning organization. */
+  public?: boolean
+}
+
+/**
+ * Sanity-owned singleton, so authors don't name or title the app — only `organizationId` is required.
+ * @public
+ */
+export interface DefineMediaLibraryInput {
+  /** Organization that owns the media library — the CLI runs and deploys against it. */
+  organizationId: string
+
+  fields?: MediaLibraryField[]
+}
+
+/**
+ * Declare the Sanity Media Library as a workbench app — a singleton whose `fields` become its installation config.
+ * @public
+ */
+export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): DefineAppResult {
+  return unstable_defineApp({
+    // @ts-expect-error -- `applicationType`/`isSingleton` are internal, excluded from `DefineAppInput`; Sanity-owned apps set them
+    applicationType: 'media-library',
+    installationConfig: input.fields?.length
+      ? {appType: 'media-library', fields: input.fields}
+      : undefined,
+    isSingleton: true,
+    name: 'media-library',
+    organizationId: input.organizationId,
+    title: 'Media Library',
+  })
 }

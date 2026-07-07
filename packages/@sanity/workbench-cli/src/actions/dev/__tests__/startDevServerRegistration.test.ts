@@ -13,7 +13,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
-// Only the registry write is mocked; `deriveInterfaces`/`trackInterfaceSet` are
+// Only the registry write is mocked; `deriveInterfaces`/`trackExposesSet` are
 // pure and run for real.
 vi.mock('../registry.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../registry.js')>()),
@@ -64,6 +64,17 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({host: 'localhost', port: 3334, type: 'studio'}),
     )
+  })
+
+  test('registers a media-library app as a coreApp', async () => {
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({applicationType: 'media-library', isSingleton: true}),
+      }),
+      isApp: true,
+    })
+
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
   })
 
   test('records the caller-resolved appId on the registry entry', async () => {
@@ -152,6 +163,7 @@ describe('startDevServerRegistration', () => {
     const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
     const params = {configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}
     await expect(extract(params)).resolves.toEqual({
+      installationConfigs: [],
       interfaces: [{entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'}],
       manifest,
     })

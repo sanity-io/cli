@@ -10,9 +10,8 @@ import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDepl
 
 interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
   /**
-   * Throws when the app declares nothing the build can expose — no entry, view
-   * or service. A federated app with none would ship a remote with nothing to
-   * load, so deploy gates on this before any prompts or API calls.
+   * Throws when the app exposes nothing (no entry, view, service, or config) —
+   * the remote would have nothing to load. Gated before any prompt or API call.
    */
   assertDeployable(): void
   /**
@@ -28,15 +27,15 @@ export function getWorkbench(
   const app = resolveWorkbenchApp(cliConfig)
   if (!app) return null
 
-  const {entry, services, views} = app
+  const {entry, installationConfig, services, views} = app
 
   return {
     ...app,
 
     assertDeployable() {
-      if (!entry && views.length === 0 && services.length === 0) {
+      if (!entry && views.length === 0 && services.length === 0 && !installationConfig) {
         throw new Error(
-          'Nothing to deploy: `unstable_defineApp` declares no entry, views or services. ' +
+          'Nothing to deploy: the app declares no entry, views, services or installation config. ' +
             'Add at least one to the app config.',
         )
       }

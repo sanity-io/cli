@@ -1,4 +1,5 @@
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
+import {installationConfigArtifacts} from './configs/artifact.js'
 import {serviceArtifacts} from './services/artifact.js'
 import {viewArtifacts} from './views/artifact.js'
 
@@ -61,5 +62,9 @@ export function artifactExposes(
  * mapping and the file writing read from one expansion.
  */
 export function workbenchArtifacts(exposes: WorkbenchExposes): GeneratedArtifact[] {
-  return [...viewArtifacts(exposes.views ?? []), ...serviceArtifacts(exposes.services ?? [])]
+  return [
+    ...viewArtifacts(exposes.views ?? []),
+    ...serviceArtifacts(exposes.services ?? []),
+    ...installationConfigArtifacts(exposes.installationConfig),
+  ]
 }
