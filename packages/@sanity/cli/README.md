@@ -1450,12 +1450,13 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 ```
 USAGE
   $ sanity deploy [SOURCEDIR] [--auto-updates] [--dry-run] [--external | --source-maps | --minify | --build]
-    [--schema-required] [--title <value>] [--url <value>] [--verbose] [-y]
+    [-j] [--schema-required] [--title <value>] [--url <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
 
 FLAGS
+  -j, --json               Output the result as JSON
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Build the studio before deploying (use --no-build to deploy existing `dist/` output)
