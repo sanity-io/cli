@@ -255,7 +255,7 @@ async function shipAppDeployment({
   spin.succeed()
 }
 
-function logAppDeployed({
+export function logAppDeployed({
   application,
   cliConfig,
   output,
@@ -264,9 +264,8 @@ function logAppDeployed({
   cliConfig: DeployAppOptions['cliConfig']
   output: DeployAppOptions['output']
 }): void {
-  const organizationId = cliConfig.app?.organizationId ?? application.organizationId ?? undefined
-  const deployedTo = organizationId
-    ? ` to ${styleText('cyan', getCoreAppUrl(organizationId, application.id))}`
+  const deployedTo = application.organizationId
+    ? ` to ${styleText('cyan', getCoreAppUrl(application.organizationId, application.id))}`
     : ''
   output.log(`\nSuccess! Application deployed${deployedTo}`)
 
