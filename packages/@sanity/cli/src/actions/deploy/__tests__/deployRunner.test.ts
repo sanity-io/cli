@@ -83,11 +83,9 @@ describe('runDeploy real deploy', () => {
   test('emits the deploy result as JSON, marked deployed', async () => {
     const output = mockOutput()
     const result = {
-      applicationId: 'app-1',
-      applicationTitle: 'My Studio',
       applicationType: 'studio' as const,
       applicationVersion: '3.99.0',
-      location: 'https://my-studio.sanity.studio',
+      target: {applicationId: 'app-1', title: 'My Studio', url: 'https://my-studio.sanity.studio'},
     }
     const spec: DeploySpec = {
       listFiles: async () => [],
@@ -99,5 +97,21 @@ describe('runDeploy real deploy', () => {
 
     const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
     expect(payload).toEqual({deployed: true, ...result})
+  })
+
+  test('a failed deploy writes no JSON — it errors on stderr and exits', async () => {
+    const output = mockOutput()
+    const spec: DeploySpec = {
+      listFiles: async () => [],
+      run: async () => {
+        throw new Error('boom')
+      },
+      type: 'studio',
+    }
+
+    await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
+
+    expect(output.log).not.toHaveBeenCalled()
+    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('boom'), {exit: 1})
   })
 })

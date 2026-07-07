@@ -7,6 +7,7 @@ import {
   type CheckReporter,
   createCollectingReporter,
   createFailFastReporter,
+  type DeployTarget,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {
@@ -20,14 +21,17 @@ import {type DeployAppOptions} from './types.js'
 
 /** What a real deploy produced — the payload `--json` reports. */
 export interface DeployResult {
-  applicationId: string
-  /** The deployed application's title; `null` when it has none. */
-  applicationTitle: string | null
   applicationType: 'coreApp' | 'studio'
   /** Installed framework version the deploy used (`sanity` or `@sanity/sdk-react`). */
   applicationVersion: string
-  /** Deployed studio URL; `null` for core apps (no hosted URL). */
-  location: string | null
+  /**
+   * The deployed application/studio, in the same shape the dry-run plan reports
+   * so the two modes can't drift; `null` for a config-only singleton deploy.
+   */
+  target: DeployTarget | null
+
+  /** Set when a media-library singleton deployed its installation config. */
+  installationId?: string
 }
 
 /**
@@ -77,6 +81,7 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
     const result = await spec.run(runOptions, createFailFastReporter(runOptions.output))
     if (json && result) output.log(JSON.stringify({deployed: true, ...result}, null, 2))
   } catch (error) {
+    // Failures signal via exit code and stderr, like every other command — no JSON on stdout.
     normalizeDeployError(error, output, spec.type)
   }
 }

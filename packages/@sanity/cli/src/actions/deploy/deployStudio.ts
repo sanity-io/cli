@@ -119,11 +119,9 @@ async function runStudioDeployment(
   })
 
   return {
-    applicationId: application.id,
-    applicationTitle: application.title,
     applicationType: 'studio',
     applicationVersion: version,
-    location,
+    target: {applicationId: application.id, title: application.title ?? null, url: location},
   }
 }
 

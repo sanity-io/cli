@@ -183,8 +183,13 @@ async function runAppDeployment(
     })
   }
 
-  // A config-only singleton has no application to ship.
-  if (!deployApplication) return
+  // A config-only singleton ships no application, only its installation config.
+  if (!deployApplication) {
+    if (installationId && version) {
+      return {applicationType: 'coreApp', applicationVersion: version, installationId, target: null}
+    }
+    return
+  }
 
   // A real deploy has already exited if anything failed; landing here without a
   // resolved application or version means the deploy target was never resolved.
@@ -197,11 +202,13 @@ async function runAppDeployment(
   logAppDeployed({application, cliConfig, output})
 
   return {
-    applicationId: application.id,
-    applicationTitle: application.title,
     applicationType: 'coreApp',
     applicationVersion: version,
-    location: null,
+    target: {
+      applicationId: application.id,
+      title: application.title ?? null,
+      url: getCoreAppUrl(application.organizationId, application.id),
+    },
   }
 }
 
