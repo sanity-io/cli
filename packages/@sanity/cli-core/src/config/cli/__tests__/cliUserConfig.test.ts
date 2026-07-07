@@ -2,8 +2,8 @@ import {mkdirSync} from 'node:fs'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {readJsonFileSync} from '../../util/readJsonFileSync'
-import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
+import {readJsonFileSync} from '../../../util/readJsonFileSync'
+import {writeJsonFileSync} from '../../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedToken, setCachedToken} from '../cliTokenCache.js'
 import {
   _internals,
@@ -15,8 +15,8 @@ import {
 
 // Mock out cache so we can control it
 vi.mock('../cliTokenCache.js')
-vi.mock('../../util/readJsonFileSync.js')
-vi.mock('../../util/writeJsonFileSync.js')
+vi.mock('../../../util/readJsonFileSync.js')
+vi.mock('../../../util/writeJsonFileSync.js')
 vi.mock('node:fs')
 
 const mockGetCliUserConfig = vi.spyOn(_internals, 'getCliUserConfig')
