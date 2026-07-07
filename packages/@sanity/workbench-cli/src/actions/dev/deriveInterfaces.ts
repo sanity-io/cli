@@ -45,6 +45,27 @@ export function deriveInterfaces(
 }
 
 /**
+ * The named source files a config's generated module is built from, dispatched
+ * per app type — the projection the exposes-set id keys on, so the generic HMR
+ * tracker owns none of the per-type shape. Throws on an app type it can't
+ * handle, so a new config family has to register its shape here.
+ */
+export function deriveInstallationConfigEntries(
+  config: DevServerConfig,
+): {name: string; src: string}[] {
+  switch (config.appType) {
+    case 'media-library': {
+      return config.fields.map((field) => ({name: field.name, src: field.src}))
+    }
+    default: {
+      throw new Error(
+        `Cannot derive entries for unknown installation config appType: ${config.appType}`,
+      )
+    }
+  }
+}
+
+/**
  * The fields' schema *values* can't serialize — the workbench loads them from
  * the federation module. `src` stays on so the exposes-set id keys on it and a
  * repoint rebuilds. `appType` routes the config to the singleton (no app id to

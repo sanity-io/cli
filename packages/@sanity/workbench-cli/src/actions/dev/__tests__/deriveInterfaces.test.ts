@@ -1,7 +1,11 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {deriveInstallationConfigs, deriveInterfaces} from '../deriveInterfaces.js'
+import {
+  deriveInstallationConfigEntries,
+  deriveInstallationConfigs,
+  deriveInterfaces,
+} from '../deriveInterfaces.js'
 import {workbenchApp} from './devTestHelpers.js'
 
 describe('deriveInterfaces', () => {
@@ -127,5 +131,32 @@ describe('deriveInstallationConfigs', () => {
       },
     })
     expect(deriveInstallationConfigs(app)[0]?.appType).toBe('media-library')
+  })
+})
+
+describe('deriveInstallationConfigEntries', () => {
+  test('projects each field to its name + src, dropping render-only metadata', () => {
+    expect(
+      deriveInstallationConfigEntries({
+        appType: 'media-library',
+        fields: [
+          {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+          {name: 'language', src: './src/language.ts', title: 'Language'},
+        ],
+      }),
+    ).toEqual([
+      {name: 'description', src: './src/description.ts'},
+      {name: 'language', src: './src/language.ts'},
+    ])
+  })
+
+  test('an empty field set yields no entries', () => {
+    expect(deriveInstallationConfigEntries({appType: 'media-library', fields: []})).toEqual([])
+  })
+
+  test('throws on an app type it cannot handle', () => {
+    expect(() => deriveInstallationConfigEntries({appType: 'core-app', fields: []})).toThrow(
+      /unknown installation config appType: core-app/i,
+    )
   })
 })

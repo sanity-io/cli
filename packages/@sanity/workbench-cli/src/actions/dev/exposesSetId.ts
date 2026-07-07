@@ -1,4 +1,8 @@
-import {type DevServerConfig, type DevServerInterface} from './deriveInterfaces.js'
+import {
+  deriveInstallationConfigEntries,
+  type DevServerConfig,
+  type DevServerInterface,
+} from './deriveInterfaces.js'
 import {type DevServerManifest} from './registry.js'
 
 interface ExposeSet {
@@ -7,19 +11,23 @@ interface ExposeSet {
 }
 
 /**
- * Order-independent id of an app's exposed-module set. Keys each exposed unit —
- * an interface or a config field — by its type, name, and source file, so the
- * id changes only on a rebuild-worthy edit (add, remove, rename, repoint);
- * reordering and HMR content edits keep it stable.
+ * Order-independent id of an app's exposed-module set. Keys each interface by
+ * its type, name, and source file, and each installation config by its module
+ * identity plus one key per entry (a named source file), so the id changes on
+ * any rebuild-worthy edit — add, remove, rename, repoint, or gaining/losing the
+ * config module — while reordering and HMR content edits keep it stable.
  */
 export function exposesSetId({installationConfigs, interfaces}: ExposeSet): string {
   const keys = [
     ...(interfaces ?? []).map((iface) =>
       [iface.interface_type, iface.name, iface.entry_point].join('::'),
     ),
-    ...(installationConfigs ?? []).flatMap((config) =>
-      config.fields.map((field) => ['config', config.appType, field.name, field.src].join('::')),
-    ),
+    ...(installationConfigs ?? []).flatMap((config) => [
+      ['config', config.appType].join('::'),
+      ...deriveInstallationConfigEntries(config).map((entry) =>
+        ['config', config.appType, entry.name, entry.src].join('::'),
+      ),
+    ]),
   ]
   if (keys.length === 0) return ''
   return keys.toSorted().join('|')

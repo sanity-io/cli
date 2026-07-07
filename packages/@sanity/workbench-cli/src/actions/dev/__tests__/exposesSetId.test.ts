@@ -14,7 +14,10 @@ const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => (
   interface_type: 'worker',
   name,
 })
-const installationConfig: DevServerConfig = {fields: [{name: 'd', src: './src/d.ts', title: 'D'}]}
+const installationConfig: DevServerConfig = {
+  appType: 'media-library',
+  fields: [{name: 'd', src: './src/d.ts', title: 'D'}],
+}
 const server = (
   id: string,
   port: number,
@@ -65,17 +68,27 @@ describe('exposesSetId', () => {
     )
   })
 
+  test('a zero-field config still toggles the id — its module is an expose on its own', () => {
+    const empty: DevServerConfig = {appType: 'media-library', fields: []}
+    expect(exposesSetId({interfaces: [panel('a')]})).not.toBe(
+      exposesSetId({installationConfigs: [empty], interfaces: [panel('a')]}),
+    )
+  })
+
   test('a config field add or rename changes the id (module is build-baked)', () => {
     const one: DevServerConfig = {
+      appType: 'media-library',
       fields: [{name: 'description', src: './src/d.ts', title: 'Description'}],
     }
     const added: DevServerConfig = {
+      appType: 'media-library',
       fields: [
         {name: 'description', src: './src/d.ts', title: 'Description'},
         {name: 'language', src: './src/l.ts', title: 'Language'},
       ],
     }
     const renamed: DevServerConfig = {
+      appType: 'media-library',
       fields: [{name: 'locale', src: './src/d.ts', title: 'Description'}],
     }
     expect(exposesSetId({installationConfigs: [one]})).not.toBe(
@@ -87,8 +100,14 @@ describe('exposesSetId', () => {
   })
 
   test('a config field pointed at a different file is a rebuild — the module reimports it', () => {
-    const before: DevServerConfig = {fields: [{name: 'x', src: './src/x.ts', title: 'X'}]}
-    const after: DevServerConfig = {fields: [{name: 'x', src: './src/y.ts', title: 'X'}]}
+    const before: DevServerConfig = {
+      appType: 'media-library',
+      fields: [{name: 'x', src: './src/x.ts', title: 'X'}],
+    }
+    const after: DevServerConfig = {
+      appType: 'media-library',
+      fields: [{name: 'x', src: './src/y.ts', title: 'X'}],
+    }
     expect(exposesSetId({installationConfigs: [before]})).not.toBe(
       exposesSetId({installationConfigs: [after]}),
     )
@@ -96,12 +115,14 @@ describe('exposesSetId', () => {
 
   test('reordering config fields is not a change', () => {
     const a: DevServerConfig = {
+      appType: 'media-library',
       fields: [
         {name: 'x', src: './src/x.ts', title: 'X'},
         {name: 'y', src: './src/y.ts', title: 'Y'},
       ],
     }
     const b: DevServerConfig = {
+      appType: 'media-library',
       fields: [
         {name: 'y', src: './src/y.ts', title: 'Y'},
         {name: 'x', src: './src/x.ts', title: 'X'},
@@ -111,8 +132,12 @@ describe('exposesSetId', () => {
   })
 
   test('a field title/public edit is not a rebuild — those ride the wire, not the module', () => {
-    const a: DevServerConfig = {fields: [{name: 'x', public: true, src: './src/x.ts', title: 'X'}]}
+    const a: DevServerConfig = {
+      appType: 'media-library',
+      fields: [{name: 'x', public: true, src: './src/x.ts', title: 'X'}],
+    }
     const b: DevServerConfig = {
+      appType: 'media-library',
       fields: [{name: 'x', public: false, src: './src/x.ts', title: 'Renamed'}],
     }
     expect(exposesSetId({installationConfigs: [a]})).toBe(exposesSetId({installationConfigs: [b]}))
