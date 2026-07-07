@@ -1,7 +1,7 @@
 import {format} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {getLocalPackageVersion, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 
 import {
   type CheckReporter,
@@ -38,8 +38,6 @@ export interface DeployResult {
 export interface DeploySpec {
   /** Files a real deploy would upload, listed only for the dry-run plan. */
   listFiles: (options: DeployAppOptions) => Promise<DeploymentFile[]>
-  /** The framework package whose installed version the deploy reports. */
-  packageName: string
   /** The step sequence; every step reports through `reporter`. */
   run: (options: DeployAppOptions, reporter: CheckReporter) => Promise<DeployResult | void>
   type: 'coreApp' | 'studio'
@@ -92,7 +90,7 @@ async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise
     files: [],
     target: reporter.results.find((check) => check.target)?.target ?? null,
     type: spec.type,
-    version: await getLocalPackageVersion(spec.packageName, options.projectRoot.directory),
+    version: reporter.results.find((check) => check.version)?.version ?? null,
   }
   // A blocked deploy uploads nothing, so only enumerate files for a deployable plan.
   if (isDeployable(plan)) plan.files = await spec.listFiles(options)

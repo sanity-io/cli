@@ -20,7 +20,6 @@ describe('runDeploy dry run', () => {
     const output = mockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [],
-      packageName: 'sanity',
       run: async (_options, reporter) =>
         reporter.report({exitCode: 2, message: 'boom', status: 'fail'}),
       type: 'studio',
@@ -36,7 +35,6 @@ describe('runDeploy dry run', () => {
     const listFiles = vi.fn(async () => [{path: 'dist/index.html', size: 10}])
     const spec: DeploySpec = {
       listFiles,
-      packageName: 'sanity',
       run: async (_options, reporter) =>
         reporter.report({exitCode: 2, message: 'boom', status: 'fail'}),
       type: 'studio',
@@ -52,7 +50,6 @@ describe('runDeploy dry run', () => {
     const output = mockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [{path: 'dist/index.html', size: 10}],
-      packageName: 'sanity',
       run: async (_options, reporter) => reporter.report({message: 'Project: p1', status: 'pass'}),
       type: 'studio',
     }
@@ -61,5 +58,46 @@ describe('runDeploy dry run', () => {
 
     expect(output.error).not.toHaveBeenCalled()
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('This studio can be deployed.'))
+  })
+
+  test('the JSON plan reports the version the run resolved, not a separate lookup', async () => {
+    const output = mockOutput()
+    const spec: DeploySpec = {
+      listFiles: async () => [],
+      run: async (_options, reporter) =>
+        reporter.report({message: 'Using sanity 9.9.9', status: 'pass', version: '9.9.9'}),
+      type: 'studio',
+    }
+
+    await runDeploy(
+      {...dryRunOptions(output), flags: {'dry-run': true, json: true}} as DeployAppOptions,
+      spec,
+    )
+
+    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
+    expect(payload.applicationVersion).toBe('9.9.9')
+  })
+})
+
+describe('runDeploy real deploy', () => {
+  test('emits the deploy result as JSON, marked deployed', async () => {
+    const output = mockOutput()
+    const result = {
+      applicationId: 'app-1',
+      applicationTitle: 'My Studio',
+      applicationType: 'studio' as const,
+      applicationVersion: '3.99.0',
+      location: 'https://my-studio.sanity.studio',
+    }
+    const spec: DeploySpec = {
+      listFiles: async () => [],
+      run: async () => result,
+      type: 'studio',
+    }
+
+    await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
+
+    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
+    expect(payload).toEqual({deployed: true, ...result})
   })
 })

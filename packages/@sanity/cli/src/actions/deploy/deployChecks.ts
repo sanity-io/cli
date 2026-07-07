@@ -47,6 +47,8 @@ export interface DeployCheck {
   solution?: string
   /** Set on the deploy-target check with the resolved target both reporters read. */
   target?: DeployTarget
+  /** Set on the package-version check with the version both reporters read. */
+  version?: string
 }
 
 /**
@@ -113,7 +115,7 @@ export async function checkPackageVersion(
   const version = await getLocalPackageVersion(moduleName, workDir)
   reporter.report(
     version
-      ? {message: `Using ${moduleName} ${version}`, status: 'pass'}
+      ? {message: `Using ${moduleName} ${version}`, status: 'pass', version}
       : {
           message: `Failed to find installed ${moduleName} version`,
           solution: `Install ${moduleName} in this project`,

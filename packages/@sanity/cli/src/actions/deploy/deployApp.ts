@@ -46,7 +46,6 @@ const APP_PACKAGE = '@sanity/sdk-react'
 export function deployApp(options: DeployAppOptions): Promise<void> {
   return runDeploy(options, {
     listFiles: ({projectRoot, sourceDir}) => listDeploymentFiles(sourceDir, projectRoot.directory),
-    packageName: APP_PACKAGE,
     run: runAppDeployment,
     type: 'coreApp',
   })

@@ -35,7 +35,6 @@ export function deployStudio(options: DeployAppOptions): Promise<void> {
   return runDeploy(options, {
     listFiles: ({flags, projectRoot, sourceDir}) =>
       flags.external ? Promise.resolve([]) : listDeploymentFiles(sourceDir, projectRoot.directory),
-    packageName: STUDIO_PACKAGE,
     run: runStudioDeployment,
     type: 'studio',
   })
