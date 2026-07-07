@@ -1,4 +1,8 @@
-export {type CliConfig, type TypeGenConfig} from '../config/cli/types/cliConfig.js'
+export {
+  type CliConfig,
+  type ConfigStore,
+  type TypeGenConfig,
+} from '../config/cli/types/cliConfig.js'
 export {type UserViteConfig} from '../config/cli/types/userViteConfig.js'
 export {type ApplicationType} from '../config/cli/workbenchApp.js'
 export {type ProjectRootResult} from '../config/util/recursivelyResolveProjectRoot.js'

@@ -8,6 +8,7 @@ import {getSanityConfigDir} from '../../util/getSanityConfigDir.js'
 import {readJsonFileSync} from '../../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedToken, setCachedToken} from './cliTokenCache.js'
+import {type ConfigStore} from './types/cliConfig.js'
 
 // Re-export so existing consumers don't break
 export {clearCliTokenCache} from './cliTokenCache.js'
@@ -95,22 +96,6 @@ export function getCliUserConfig(prop: 'authToken'): string | undefined {
   }
 
   return result.data
-}
-
-/**
- * A raw key-value store for CLI user configuration.
- * Unlike the typed `getCliUserConfig`/`setCliUserConfig`, this operates on
- * arbitrary keys without schema validation.
- *
- * @public
- */
-export interface ConfigStore {
-  /** Remove a key from the config file. */
-  delete: (key: string) => void
-  /** Read a value by key. Returns `undefined` if the key does not exist. */
-  get: (key: string) => unknown
-  /** Write a value by key, merging it into the existing config. */
-  set: (key: string, value: unknown) => void
 }
 
 /**
