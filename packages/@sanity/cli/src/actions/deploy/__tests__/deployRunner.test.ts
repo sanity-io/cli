@@ -59,4 +59,59 @@ describe('runDeploy dry run', () => {
     expect(output.error).not.toHaveBeenCalled()
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('This studio can be deployed.'))
   })
+
+  test('the JSON plan reports the version the run resolved, not a separate lookup', async () => {
+    const output = mockOutput()
+    const spec: DeploySpec = {
+      listFiles: async () => [],
+      run: async (_options, reporter) =>
+        reporter.report({message: 'Using sanity 9.9.9', status: 'pass', version: '9.9.9'}),
+      type: 'studio',
+    }
+
+    await runDeploy(
+      {...dryRunOptions(output), flags: {'dry-run': true, json: true}} as DeployAppOptions,
+      spec,
+    )
+
+    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
+    expect(payload.applicationVersion).toBe('9.9.9')
+  })
+})
+
+describe('runDeploy real deploy', () => {
+  test('emits the deploy result as JSON, marked deployed', async () => {
+    const output = mockOutput()
+    const result = {
+      applicationType: 'studio' as const,
+      applicationVersion: '3.99.0',
+      target: {applicationId: 'app-1', title: 'My Studio', url: 'https://my-studio.sanity.studio'},
+    }
+    const spec: DeploySpec = {
+      listFiles: async () => [],
+      run: async () => result,
+      type: 'studio',
+    }
+
+    await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
+
+    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
+    expect(payload).toEqual({deployed: true, ...result})
+  })
+
+  test('a failed deploy writes no JSON — it errors on stderr and exits', async () => {
+    const output = mockOutput()
+    const spec: DeploySpec = {
+      listFiles: async () => [],
+      run: async () => {
+        throw new Error('boom')
+      },
+      type: 'studio',
+    }
+
+    await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
+
+    expect(output.log).not.toHaveBeenCalled()
+    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('boom'), {exit: 1})
+  })
 })

@@ -9,6 +9,11 @@ export {
 } from '../config/cli/cliUserConfig.js'
 export {getCliConfig, getCliConfigUncached} from '../config/cli/getCliConfig.js'
 export {getCliConfigSync} from '../config/cli/getCliConfigSync.js'
+export {
+  type CliConfig,
+  type ConfigStore,
+  type TypeGenConfig,
+} from '../config/cli/types/cliConfig.js'
 export {isWorkbenchApp, parseWorkbenchCliConfig} from '../config/cli/workbenchApp.js'
 export {findProjectRoot} from '../config/findProjectRoot.js'
 export {findProjectRootSync} from '../config/findProjectRootSync.js'

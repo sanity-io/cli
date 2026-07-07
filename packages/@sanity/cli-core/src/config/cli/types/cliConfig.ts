@@ -163,3 +163,19 @@ export interface CliConfig {
   /** Exposes the default Vite configuration for custom apps and the Studio so it can be changed and extended. */
   vite?: UserViteConfig
 }
+
+/**
+ * A raw key-value store for CLI user configuration.
+ * Unlike the typed `getCliUserConfig`/`setCliUserConfig`, this operates on
+ * arbitrary keys without schema validation.
+ *
+ * @public
+ */
+export interface ConfigStore {
+  /** Remove a key from the config file. */
+  delete: (key: string) => void
+  /** Read a value by key. Returns `undefined` if the key does not exist. */
+  get: (key: string) => unknown
+  /** Write a value by key, merging it into the existing config. */
+  set: (key: string, value: unknown) => void
+}

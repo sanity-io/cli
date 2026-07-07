@@ -1,10 +1,10 @@
 import {styleText} from 'node:util'
 
-import {ux} from '@oclif/core/ux'
 import {SchemaDeploy, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {subdebug} from '@sanity/cli-core/debug'
 import {studioWorkerTask} from '@sanity/cli-core/tasks'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
+import {type Output} from '@sanity/cli-core/types'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 
@@ -30,6 +30,7 @@ const debug = subdebug('deployStudioSchemasAndManifests')
  */
 export async function deployStudioSchemasAndManifests(
   options: DeployStudioSchemasAndManifestsWorkerData,
+  output: Output,
 ): Promise<StudioManifest | null> {
   const {configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir} = options
 
@@ -72,7 +73,7 @@ export async function deployStudioSchemasAndManifests(
     }
 
     trace.complete()
-    ux.stdout(
+    output.log(
       `${styleText('gray', '↳ List deployed schemas with:')} ${styleText('cyan', 'sanity schema list')}`,
     )
     return result.studioManifest

@@ -104,7 +104,7 @@ export async function extractCoreAppManifest(
     }
 
     if (!icon && !app.title) {
-      spin.succeed('Manifest creation skipped: no icon or title found in app configuration')
+      spin.info('Manifest creation skipped: no icon or title found in app configuration')
       return undefined
     }
 
