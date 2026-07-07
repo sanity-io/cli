@@ -2,6 +2,7 @@
 
 export {
   clearCliTokenCache,
+  type ConfigStore,
   getCliToken,
   getCliUserConfig,
   getUserConfig,
