@@ -1,6 +1,6 @@
 import {type CliConfig} from '@sanity/cli-core'
 
-import {isWorkbenchApp} from '../../defineApp.js'
+import {isWorkbenchApp, readInstallationConfig} from '../../defineApp.js'
 import {type DevServerManifest} from './registry.js'
 
 /** One forwarded interface record on the dev-server registry entry. */
@@ -72,11 +72,13 @@ export function deriveInstallationConfigEntries(
  * key on).
  */
 export function deriveInstallationConfigs(app: CliConfig['app']): DevServerConfig[] {
-  if (!isWorkbenchApp(app) || !app.installationConfig) return []
+  if (!isWorkbenchApp(app)) return []
+  const installationConfig = readInstallationConfig(app)
+  if (!installationConfig) return []
   return [
     {
-      appType: app.installationConfig.appType,
-      fields: app.installationConfig.fields.map((field) => ({
+      appType: installationConfig.appType,
+      fields: installationConfig.fields.map((field) => ({
         name: field.name,
         public: field.public,
         src: field.src,

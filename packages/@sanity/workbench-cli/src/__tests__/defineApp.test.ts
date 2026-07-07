@@ -6,6 +6,7 @@ import {
   type DefineAppResult,
   type DockGroup,
   isWorkbenchApp,
+  readInstallationConfig,
   unstable_defineApp,
   type WorkbenchApp,
 } from '../defineApp.js'
@@ -205,6 +206,20 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     })
   })
 
+  test('rejects an installation config on a non-singleton app', () => {
+    const result = DefineAppInputSchema.safeParse({
+      installationConfig: {
+        appType: 'media-library',
+        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+      },
+      name: 'media-library',
+      organizationId: 'org-1',
+      title: 'Media Library',
+    })
+    expect(result.success).toBe(false)
+    expect(result.error?.issues.some((issue) => /singleton/.test(issue.message))).toBe(true)
+  })
+
   test('rejects an installation config without fields', () => {
     expect(
       DefineAppInputSchema.safeParse({
@@ -278,7 +293,30 @@ describe('type surface', () => {
     expectTypeOf<DefineAppResult['priority']>().toEqualTypeOf<number | undefined>()
   })
 
-  test('does not expose the internal applicationType', () => {
+  test('does not expose the internal applicationType, isSingleton, or installationConfig', () => {
     expectTypeOf<DefineAppResult>().not.toHaveProperty('applicationType')
+    expectTypeOf<DefineAppResult>().not.toHaveProperty('isSingleton')
+    expectTypeOf<DefineAppResult>().not.toHaveProperty('installationConfig')
+  })
+})
+
+describe('readInstallationConfig', () => {
+  const config = {
+    appType: 'media-library',
+    fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+  }
+
+  test('returns the config for a singleton', () => {
+    const app = {installationConfig: config, isSingleton: true} as unknown as WorkbenchApp
+    expect(readInstallationConfig(app)).toBe(config)
+  })
+
+  test('returns undefined when the app declares none', () => {
+    expect(readInstallationConfig({isSingleton: true} as unknown as WorkbenchApp)).toBeUndefined()
+  })
+
+  test('throws when a non-singleton declares a config', () => {
+    const app = {installationConfig: config} as unknown as WorkbenchApp
+    expect(() => readInstallationConfig(app)).toThrow(/only supported for singleton apps/)
   })
 })

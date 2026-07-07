@@ -109,6 +109,7 @@ describe('deriveInstallationConfigs', () => {
           {name: 'language', src: './src/language.ts', title: 'Language'},
         ],
       },
+      isSingleton: true,
     })
     expect(deriveInstallationConfigs(app)).toEqual([
       {
@@ -129,8 +130,19 @@ describe('deriveInstallationConfigs', () => {
         appType: 'media-library',
         fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
       },
+      isSingleton: true,
     })
     expect(deriveInstallationConfigs(app)[0]?.appType).toBe('media-library')
+  })
+
+  test('rejects an installation config on a non-singleton app', () => {
+    const app = workbenchApp({
+      installationConfig: {
+        appType: 'media-library',
+        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+      },
+    })
+    expect(() => deriveInstallationConfigs(app)).toThrow(/only supported for singleton apps/)
   })
 })
 

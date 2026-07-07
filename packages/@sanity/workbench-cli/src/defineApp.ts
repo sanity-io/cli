@@ -50,7 +50,12 @@ export const DefineAppInputSchema = z
     group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
-    /** Deployed as a versioned snapshot on the app's org installation, not the application service. */
+    /**
+     * Deployed as a versioned snapshot on the app's org installation, not the
+     * application service. Singletons only. Internal, so excluded from the public
+     * `DefineAppInput` and set via `@ts-expect-error` like `applicationType`.
+     * @internal
+     */
     installationConfig: z.optional(InstallationConfigSchema),
     /**
      * Sanity-owned app deployed once, installed per org; excluded from the public `DefineAppInput`.
@@ -108,16 +113,26 @@ export const DefineAppInputSchema = z
       path: ['entry'],
     }),
   )
+  .check(
+    // An installation config belongs to a Sanity-owned singleton (the Media
+    // Library). A non-singleton declaring one is rejected — see
+    // {@link readInstallationConfig} for the runtime guard.
+    z.refine((input) => !(input.installationConfig && !input.isSingleton), {
+      error: '`installationConfig` is only supported for singleton apps',
+      path: ['installationConfig'],
+    }),
+  )
 
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
- * `applicationType` and `isSingleton` — validated by the schema but not part of
- * the public surface (Sanity-owned apps set them via `@ts-expect-error`).
+ * `applicationType`, `isSingleton`, and `installationConfig` — validated by the
+ * schema but not part of the public surface (Sanity-owned apps set them via
+ * `@ts-expect-error`).
  * @public
  */
 export type DefineAppInput = Omit<
   z.output<typeof DefineAppInputSchema>,
-  'applicationType' | 'isSingleton'
+  'applicationType' | 'installationConfig' | 'isSingleton'
 >
 
 /**
@@ -152,6 +167,22 @@ export type WorkbenchApp = DefineAppResult & z.output<typeof DefineAppInputSchem
  */
 export function isWorkbenchApp(app: unknown): app is WorkbenchApp {
   return typeof app === 'object' && app !== null && WORKBENCH_APP in app
+}
+
+/**
+ * The app's installation config, or `undefined` when it declares none. Throws
+ * when a non-singleton declares one — configs belong to Sanity-owned singletons,
+ * so build/dev/deploy all read it through here to reject the combination
+ * consistently.
+ * @internal
+ */
+export function readInstallationConfig(
+  app: WorkbenchApp,
+): WorkbenchApp['installationConfig'] | undefined {
+  if (app.installationConfig && !app.isSingleton) {
+    throw new Error('`installationConfig` is only supported for singleton apps')
+  }
+  return app.installationConfig
 }
 
 /**
@@ -201,7 +232,7 @@ export interface DefineMediaLibraryInput {
  */
 export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): DefineAppResult {
   return unstable_defineApp({
-    // @ts-expect-error -- `applicationType`/`isSingleton` are internal, excluded from `DefineAppInput`; Sanity-owned apps set them
+    // @ts-expect-error -- `applicationType`/`isSingleton`/`installationConfig` are internal, excluded from `DefineAppInput`; Sanity-owned apps set them
     applicationType: 'media-library',
     installationConfig: input.fields?.length
       ? {appType: 'media-library', fields: input.fields}
