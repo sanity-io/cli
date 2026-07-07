@@ -26,9 +26,10 @@ const fsMock = vi.hoisted(() => {
     module: {
       existsSync: (p: string) => files.has(p) || dirs.has(p),
       mkdirSync: (p: string) => dirs.add(p),
+      // `path.join` yields backslash separators on Windows, so match on either.
       readdirSync: (p: string) =>
         [...files.keys()]
-          .filter((f) => f.slice(0, f.lastIndexOf('/')) === p)
+          .filter((f) => f.slice(0, Math.max(f.lastIndexOf('/'), f.lastIndexOf('\\'))) === p)
           .map((f) => f.slice(p.length + 1)),
       readFileSync: (p: string) => {
         if (!files.has(p)) throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})

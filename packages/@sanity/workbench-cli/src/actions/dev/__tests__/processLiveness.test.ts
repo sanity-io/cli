@@ -10,14 +10,21 @@ const mockExecSync = vi.hoisted(() => vi.fn())
 
 vi.mock('node:child_process', () => ({execSync: mockExecSync}))
 
-/** Swap `process.platform` for the duration of a callback. */
-function withPlatform(platform: NodeJS.Platform, fn: () => void) {
+/** Force `process.platform`; returns a restore fn. Both branches are exercised
+ * regardless of the host OS (so the "unix" cases still run on Windows CI). */
+function setPlatform(platform: NodeJS.Platform): () => void {
   const original = process.platform
   Object.defineProperty(process, 'platform', {configurable: true, value: platform})
+  return () => Object.defineProperty(process, 'platform', {configurable: true, value: original})
+}
+
+/** Swap `process.platform` for the duration of a callback. */
+function withPlatform(platform: NodeJS.Platform, fn: () => void) {
+  const restore = setPlatform(platform)
   try {
     fn()
   } finally {
-    Object.defineProperty(process, 'platform', {configurable: true, value: original})
+    restore()
   }
 }
 
@@ -35,6 +42,12 @@ describe('processLiveness', () => {
   })
 
   describe('getProcessStartTime (unix)', () => {
+    let restorePlatform: () => void
+    beforeEach(() => {
+      restorePlatform = setPlatform('linux')
+    })
+    afterEach(() => restorePlatform())
+
     test('shells out to `ps -o lstart=` and parses the reported date', () => {
       const start = new Date('2026-04-17T11:38:10.000Z')
       mockExecSync.mockReturnValue(start.toString())
