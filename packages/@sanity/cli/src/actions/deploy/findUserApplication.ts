@@ -1,7 +1,7 @@
 /**
  * Finds (or creates) the user application a deploy targets — the interactive
- * adapter that turns the resolveDeployTarget verdicts into prompts, creation,
- * and exits. Dry runs consume the same verdicts read-only (see deployChecks).
+ * side that turns the resolveDeployTarget verdicts into prompts, creation,
+ * and exits. Dry runs consume the same verdicts read-only (see checks.ts).
  */
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
@@ -14,12 +14,7 @@ import {
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {
-  createFailFastReporter,
-  describeAppTarget,
-  describeAppTargetError,
-  describeStudioTarget,
-} from './deployChecks.js'
+import {describeAppTarget, describeAppTargetError, describeStudioTarget, enforce} from './checks.js'
 import {deployDebug} from './deployDebug.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from './resolveDeployTarget.js'
 
@@ -72,7 +67,7 @@ export async function findUserApplication(
     output.error(resolution.message, {exit: 1})
     return null
   }
-  createFailFastReporter(output).report(describeAppTarget(resolution))
+  enforce(output, describeAppTarget(resolution).check)
   return null
 }
 
@@ -152,7 +147,7 @@ export async function findUserApplicationForStudio(
     output.error(resolution.message, {exit: 1})
     return null
   }
-  createFailFastReporter(output).report(describeStudioTarget(resolution, {isExternal}))
+  enforce(output, describeStudioTarget(resolution, {isExternal}).check)
   return null
 }
 

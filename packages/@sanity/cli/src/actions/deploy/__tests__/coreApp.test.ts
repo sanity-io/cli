@@ -1,7 +1,7 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {describe, expect, test, vi} from 'vitest'
 
-import {logAppDeployed} from '../deployApp.js'
+import {logAppDeployed} from '../coreApp.js'
 
 const mockOutput = () => ({log: vi.fn()}) as unknown as Output
 

@@ -1,11 +1,16 @@
 import {styleText} from 'node:util'
 
-import {SchemaDeploy, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
+import {
+  formatSchemaValidation,
+  SchemaDeploy,
+  SchemaExtractionError,
+} from '@sanity/cli-build/_internal/extract'
 import {getCliTelemetry, type Output, studioWorkerTask, subdebug} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 
-import {type DeployStudioSchemasAndManifestsWorkerData} from './types.js'
+import {deployDebug} from './deployDebug.js'
+import {type DeployAppOptions, type DeployStudioSchemasAndManifestsWorkerData} from './types.js'
 
 type DeployStudioSchemasAndManifestsWorkerMessage =
   | {
@@ -25,7 +30,7 @@ const debug = subdebug('deployStudioSchemasAndManifests')
  * 2. Deploys the schemas to /schemas endpoint
  * 3. Creates a studio manifest, uploads it to user application and lexicon
  */
-export async function deployStudioSchemasAndManifests(
+async function deployStudioSchemasAndManifests(
   options: DeployStudioSchemasAndManifestsWorkerData,
   output: Output,
 ): Promise<StudioManifest | null> {
@@ -64,7 +69,6 @@ export async function deployStudioSchemasAndManifests(
 
     debug('Result %o', result)
 
-    // If the schema is required, we throw an error
     if (result.type === 'error') {
       throw new SchemaExtractionError(result.error, result.validation)
     }
@@ -78,4 +82,42 @@ export async function deployStudioSchemasAndManifests(
     trace.error(err)
     throw err
   }
+}
+
+/** The deploy-facing wrapper: extracts and uploads schema + manifest, exiting the deploy on failure. */
+export async function uploadStudioSchema(
+  options: DeployAppOptions,
+  {isExternal}: {isExternal: boolean},
+): Promise<StudioManifest | null> {
+  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+
+  let studioManifest: StudioManifest | null = null
+  try {
+    studioManifest = await deployStudioSchemasAndManifests(
+      {
+        configPath: projectRoot.path,
+        isExternal,
+        outPath: `${sourceDir}/static`,
+        projectId: cliConfig.api?.projectId ?? '',
+        schemaRequired: flags['schema-required'],
+        verbose: flags.verbose,
+        workDir: projectRoot.directory,
+      },
+      output,
+    )
+  } catch (error) {
+    deployDebug('Error deploying studio schemas and manifests', error)
+    if (error instanceof SchemaExtractionError) {
+      output.error(formatSchemaValidation(error.validation || []), {exit: 1})
+    }
+    output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
+  }
+
+  if (!studioManifest) {
+    output.error('Failed to generate studio manifest. Please check your schemas and manifests.', {
+      exit: 1,
+    })
+  }
+
+  return studioManifest
 }

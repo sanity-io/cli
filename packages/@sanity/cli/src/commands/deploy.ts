@@ -1,12 +1,14 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {isWorkbenchApp, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
-import {deployApp} from '../actions/deploy/deployApp.js'
+import {coreAppAdapter} from '../actions/deploy/coreApp.js'
 import {deployDebug} from '../actions/deploy/deployDebug.js'
-import {deployStudio} from '../actions/deploy/deployStudio.js'
+import {runDeploy} from '../actions/deploy/runDeploy.js'
+import {studioAdapter} from '../actions/deploy/studio.js'
+import {workbenchAppAdapter, workbenchStudioAdapter} from '../actions/deploy/workbench.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
 
@@ -137,24 +139,21 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     // Force yes downstream: build/app resolution otherwise prompts for prerelease/version choices
     const deployFlags = this.isUnattended() || flags['dry-run'] ? {...flags, yes: true} : flags
 
-    if (isApp) {
-      deployDebug('Deploying app')
-      await deployApp({
-        cliConfig,
-        flags: deployFlags,
-        output: this.output,
-        projectRoot,
-        sourceDir,
-      })
-    } else {
-      deployDebug('Deploying studio')
-      await deployStudio({
-        cliConfig,
-        flags: deployFlags,
-        output: this.output,
-        projectRoot,
-        sourceDir,
-      })
-    }
+    // A workbench app follows the same deploy procedure but ships elsewhere,
+    // so it swaps in its own adapter.
+    const workbench = isWorkbenchApp(cliConfig?.app)
+    const adapter = isApp
+      ? workbench
+        ? workbenchAppAdapter
+        : coreAppAdapter
+      : workbench
+        ? workbenchStudioAdapter
+        : studioAdapter
+
+    deployDebug(`Deploying with the ${workbench ? 'workbench ' : ''}${adapter.type} adapter`)
+    await runDeploy(
+      {cliConfig, flags: deployFlags, output: this.output, projectRoot, sourceDir},
+      adapter,
+    )
   }
 }
