@@ -43,7 +43,9 @@ export const spinnerSucceed: Mock = vi.fn()
 /** @internal */
 export const spinner: Mock = vi.fn(() => {
   const mockSpin = {
+    clear: vi.fn(),
     fail: vi.fn(),
+    info: vi.fn(),
     render: vi.fn(),
     start: spinnerStart,
     succeed: spinnerSucceed,
