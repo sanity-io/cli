@@ -18,10 +18,10 @@ const devDebug = subdebug('dev')
 
 const noop = async () => {}
 
-// Every server is a local app except a config-only one — an installation config
+// Every server is a local app except a config-only one — an config
 // with no interfaces (the media library). A server with both lands in both channels.
 const isLocalApp = (server: DevServerManifest): boolean => {
-  const configOnly = Boolean(server.installationConfigs?.length) && !server.interfaces?.length
+  const configOnly = Boolean(server.configs?.length) && !server.interfaces?.length
   return !configOnly
 }
 
@@ -37,10 +37,10 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
       projectId,
       type,
     })),
-  installationConfigs: servers.flatMap(({host, installationConfigs, port}) =>
+  configs: servers.flatMap(({configs, host, port}) =>
     // Pass through the app-type-specific payload (`fields` for a media library)
     // once the discriminator and transport coordinates are peeled off.
-    (installationConfigs ?? []).map(({appType, moduleName, ...config}) => ({
+    (configs ?? []).map(({appType, moduleName, ...config}) => ({
       config,
       moduleName,
       remoteURL: `http://${host}:${port}`,

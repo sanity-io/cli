@@ -1,29 +1,24 @@
-import {
-  INSTALLATION_CONFIG_TYPE,
-  MEDIA_LIBRARY_INSTALLATION_CONFIG_CONTRACT_VERSION,
-} from '../../../contract.js'
+import {INSTALLATION_CONFIG_TYPE, MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../../contract.js'
 import {type GeneratedArtifact} from '../artifact.js'
 
 const CONFIGS_DIR_NAME = 'configs'
 
 /**
- * The installation config to generate a module for.
+ * The config to generate a module for.
  * @internal
  */
 export interface ConfigArtifact {
   fields: {name: string; public?: boolean; src: string; title: string}[]
 }
 
-/** Expand the installation config into one federation module aggregating all fields, so the host imports one live config value. */
-export function installationConfigArtifacts(
-  config: ConfigArtifact | undefined,
-): GeneratedArtifact[] {
+/** Expand the config into one federation module aggregating all fields, so the host imports one live config value. */
+export function configArtifacts(config: ConfigArtifact | undefined): GeneratedArtifact[] {
   if (!config) return []
   return [
     {
       expose: `./${CONFIGS_DIR_NAME}/${INSTALLATION_CONFIG_TYPE}`,
       path: `${CONFIGS_DIR_NAME}/${INSTALLATION_CONFIG_TYPE}.js`,
-      source: ({resolveImport}) => mediaLibraryInstallationConfigSource({config, resolveImport}),
+      source: ({resolveImport}) => mediaLibraryConfigSource({config, resolveImport}),
     },
   ]
 }
@@ -33,7 +28,7 @@ export function installationConfigArtifacts(
  * plus its live `defineField` value, the one thing the wire can't carry.
  * `appType` stays off the module — the host assigns it from the wire record.
  */
-function mediaLibraryInstallationConfigSource(input: {
+function mediaLibraryConfigSource(input: {
   config: ConfigArtifact
   resolveImport: (src: string) => string
 }): string {
@@ -54,7 +49,7 @@ function mediaLibraryInstallationConfigSource(input: {
 ${imports}
 
 export const type = ${JSON.stringify(INSTALLATION_CONFIG_TYPE)}
-export const version = ${MEDIA_LIBRARY_INSTALLATION_CONFIG_CONTRACT_VERSION}
+export const version = ${MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION}
 export const config = {
   fields: [
 ${entries}

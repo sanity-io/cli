@@ -1,30 +1,30 @@
 import {
-  deriveInstallationConfigEntries,
+  deriveConfigEntries,
   type DevServerConfig,
   type DevServerInterface,
 } from './deriveInterfaces.js'
 import {type DevServerManifest} from './registry.js'
 
 interface ExposeSet {
-  installationConfigs?: readonly DevServerConfig[] | undefined
+  configs?: readonly DevServerConfig[] | undefined
   interfaces?: readonly DevServerInterface[] | undefined
 }
 
 /**
  * Order-independent id of an app's exposed-module set. Keys each interface by
- * its type, name, and source file, and each installation config by its module
+ * its type, name, and source file, and each config by its module
  * identity plus one key per entry (a named source file), so the id changes on
  * any rebuild-worthy edit — add, remove, rename, repoint, or gaining/losing the
  * config module — while reordering and HMR content edits keep it stable.
  */
-export function exposesSetId({installationConfigs, interfaces}: ExposeSet): string {
+export function exposesSetId({configs, interfaces}: ExposeSet): string {
   const keys = [
     ...(interfaces ?? []).map((iface) =>
       [iface.interface_type, iface.name, iface.entry_point].join('::'),
     ),
-    ...(installationConfigs ?? []).flatMap((config) => [
+    ...(configs ?? []).flatMap((config) => [
       ['config', config.appType].join('::'),
-      ...deriveInstallationConfigEntries(config).map((entry) =>
+      ...deriveConfigEntries(config).map((entry) =>
         ['config', config.appType, entry.name, entry.src].join('::'),
       ),
     ]),
@@ -54,7 +54,7 @@ const serverKey = (server: DevServerManifest): string =>
   `${server.id ?? ''}@${server.host ?? ''}:${server.port}`
 
 const serverExposesId = (server: DevServerManifest): string =>
-  exposesSetId({installationConfigs: server.installationConfigs, interfaces: server.interfaces})
+  exposesSetId({configs: server.configs, interfaces: server.interfaces})
 
 /**
  * Multi-app counterpart to {@link trackExposesSet}: true when a *known* app's

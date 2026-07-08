@@ -531,7 +531,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'coreApp',
           },
         ],
-        installationConfigs: [],
+        configs: [],
       })
     })
 
@@ -555,7 +555,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'studio',
           },
         ],
-        installationConfigs: [],
+        configs: [],
       })
     })
 
@@ -590,18 +590,18 @@ describe('startWorkbenchDevServer', () => {
             type: 'studio',
           }),
         ],
-        installationConfigs: [],
+        configs: [],
       })
     })
 
-    test('routes a config-only server (no interfaces) to installationConfigs, not applications', async () => {
+    test('routes a config-only server (no interfaces) to configs, not applications', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
-      const installationConfig = {
+      const config = {
         appType: 'media-library',
         fields: [
           {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
@@ -611,8 +611,8 @@ describe('startWorkbenchDevServer', () => {
       watchCallback([
         {host: 'localhost', id: 'app-1', pid: 2, port: 3334, type: 'studio'},
         {
+          configs: [{...config, moduleName: 'media-library'}],
           host: 'localhost',
-          installationConfigs: [{...installationConfig, moduleName: 'media-library'}],
           pid: 3,
           port: 3337,
           type: 'coreApp',
@@ -621,7 +621,7 @@ describe('startWorkbenchDevServer', () => {
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [expect.objectContaining({id: 'app-1', type: 'studio'})],
-        installationConfigs: [
+        configs: [
           {
             config: {
               fields: [
@@ -651,11 +651,9 @@ describe('startWorkbenchDevServer', () => {
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
         {
+          configs: [{appType: 'media-library', fields: [], moduleName: 'media-library'}],
           host: 'localhost',
           id: 'app-1',
-          installationConfigs: [
-            {appType: 'media-library', fields: [], moduleName: 'media-library'},
-          ],
           interfaces: [{entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}],
           pid: 3,
           port: 3337,
@@ -667,7 +665,7 @@ describe('startWorkbenchDevServer', () => {
       expect(payload.applications).toEqual([
         expect.objectContaining({id: 'app-1', type: 'coreApp'}),
       ])
-      expect(payload.installationConfigs).toEqual([
+      expect(payload.configs).toEqual([
         expect.objectContaining({moduleName: 'media-library', type: 'media-library'}),
       ])
     })
@@ -758,7 +756,7 @@ describe('startWorkbenchDevServer', () => {
             type: 'coreApp',
           },
         ],
-        installationConfigs: [],
+        configs: [],
       })
     })
 

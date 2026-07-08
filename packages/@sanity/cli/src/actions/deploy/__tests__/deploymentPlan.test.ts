@@ -58,9 +58,9 @@ describe('listDeploymentFiles', () => {
 
 const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): DeploymentPlan => ({
   checks,
+  config: null,
   exposes: [],
   files,
-  installationConfig: null,
   target: null,
   type: 'studio',
   version: '3.99.0',
@@ -79,7 +79,7 @@ describe('deploymentPlanToJson', () => {
       ),
     )
 
-    // No `exposes`/`installationConfig` keys — a plain (non-workbench) plan omits them.
+    // No `exposes`/`config` keys — a plain (non-workbench) plan omits them.
     expect(json).toEqual({
       applicationType: 'studio',
       applicationVersion: '3.99.0',
@@ -100,9 +100,9 @@ describe('deploymentPlanToJson', () => {
     }
     const json = deploymentPlanToJson({
       checks: [],
+      config: null,
       exposes: [],
       files: [],
-      installationConfig: null,
       target,
       type: 'studio',
       version: null,
@@ -122,15 +122,15 @@ describe('deploymentPlanToJson', () => {
     )
   })
 
-  test('surfaces the registered exposes and installation-config summary', () => {
+  test('surfaces the registered exposes and config summary', () => {
     const plan = studioPlan([{message: 'ok', status: 'pass'}])
     plan.exposes = [{name: 'edit', title: 'Edit', type: 'panel'}]
-    plan.installationConfig = 'Media Library fields:\n  Title (title)'
+    plan.config = 'Media Library fields:\n  Title (title)'
 
     const json = deploymentPlanToJson(plan)
 
     expect(json.exposes).toEqual([{name: 'edit', title: 'Edit', type: 'panel'}])
-    expect(json.installationConfig).toBe('Media Library fields:\n  Title (title)')
+    expect(json.config).toBe('Media Library fields:\n  Title (title)')
   })
 
   test('surfaces isSingleton only when the app sets it explicitly', () => {
@@ -244,9 +244,9 @@ describe('renderDeploymentPlan', () => {
     renderDeploymentPlan(
       {
         checks: [],
+        config: null,
         exposes: [],
         files: [],
-        installationConfig: null,
         target: null,
         type: 'coreApp',
         version: '1.0.0',

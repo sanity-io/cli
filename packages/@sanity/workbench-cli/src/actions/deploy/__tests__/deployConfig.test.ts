@@ -3,11 +3,7 @@ import {Readable} from 'node:stream'
 import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {
-  deployInstallationConfig,
-  resolveInstallationId,
-  summarizeInstallationConfig,
-} from '../deployInstallationConfig.js'
+import {deployConfig, resolveInstallationId, summarizeConfig} from '../deployConfig.js'
 
 const mockGetGlobalCliClient = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())
@@ -71,7 +67,7 @@ describe('resolveInstallationId', () => {
   })
 })
 
-describe('deployInstallationConfig', () => {
+describe('deployConfig', () => {
   beforeEach(() => mockGetGlobalCliClient.mockResolvedValue({request: mockRequest}))
   afterEach(() => {
     vi.clearAllMocks()
@@ -81,7 +77,7 @@ describe('deployInstallationConfig', () => {
   test('POSTs the tarball to the installation as a session-token multipart upload', async () => {
     stubBrett([])
 
-    await deployInstallationConfig({
+    await deployConfig({
       appType: 'media-library',
       installationId: 'inst_ml',
       output,
@@ -98,10 +94,10 @@ describe('deployInstallationConfig', () => {
   })
 })
 
-describe('summarizeInstallationConfig', () => {
+describe('summarizeConfig', () => {
   test('lists a media library config as a heading with title/name per field', () => {
     expect(
-      summarizeInstallationConfig({
+      summarizeConfig({
         appType: 'media-library',
         fields: [
           {name: 'title', title: 'Title'},
@@ -112,7 +108,7 @@ describe('summarizeInstallationConfig', () => {
   })
 
   test('throws for an unhandled app type', () => {
-    expect(() => summarizeInstallationConfig({appType: 'canvas', fields: []})).toThrow(
+    expect(() => summarizeConfig({appType: 'canvas', fields: []})).toThrow(
       /unknown app type: canvas/,
     )
   })

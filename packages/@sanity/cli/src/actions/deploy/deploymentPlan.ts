@@ -18,11 +18,11 @@ export interface DeploymentFile {
 /** What a `--dry-run` deploy would do: the real deploy sequence with every mutation gated off. */
 export interface DeploymentPlan {
   checks: DeployCheck[]
+  /** Media-library config summary; `null` unless a config deploys. */
+  config: string | null
   /** Workbench views and services registered with the deploy. */
   exposes: DeployedExpose[]
   files: DeploymentFile[]
-  /** Media-library installation config summary; `null` unless a config deploys. */
-  installationConfig: string | null
   /** The resolved deploy target; `null` when the checks can't determine one. */
   target: DeployTarget | null
   type: 'coreApp' | 'studio'
@@ -84,10 +84,10 @@ function totalBytes(files: DeploymentFile[]): number {
 export function deploymentPlanToJson(plan: DeploymentPlan): {
   applicationType: DeploymentPlan['type']
   applicationVersion: string | null
+  config?: string
   errors: Record<string, string | null>
   exposes?: DeployedExpose[]
   files: DeploymentFile[]
-  installationConfig?: string
   isDeployable: boolean
   isSingleton?: boolean
   target: DeployTarget | null
@@ -101,7 +101,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
     else if (check.status === 'warn') warnings.push(check.message)
   }
 
-  // `exposes`, `installationConfig` and `isSingleton` are workbench-only; plain
+  // `exposes`, `config` and `isSingleton` are workbench-only; plain
   // apps (and apps that don't set the flag) omit them.
   return {
     applicationType: plan.type,
@@ -109,7 +109,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
     errors,
     ...(plan.exposes.length > 0 ? {exposes: plan.exposes} : {}),
     files: plan.files,
-    ...(plan.installationConfig ? {installationConfig: plan.installationConfig} : {}),
+    ...(plan.config ? {config: plan.config} : {}),
     isDeployable: isDeployable(plan),
     ...(plan.isSingleton === undefined ? {} : {isSingleton: plan.isSingleton}),
     target: plan.target,

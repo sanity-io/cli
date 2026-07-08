@@ -1,5 +1,5 @@
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
-import {installationConfigArtifacts} from './configs/artifact.js'
+import {configArtifacts} from './configs/artifact.js'
 import {serviceArtifacts} from './services/artifact.js'
 import {viewArtifacts} from './views/artifact.js'
 
@@ -65,6 +65,6 @@ export function workbenchArtifacts(exposes: WorkbenchExposes): GeneratedArtifact
   return [
     ...viewArtifacts(exposes.views ?? []),
     ...serviceArtifacts(exposes.services ?? []),
-    ...installationConfigArtifacts(exposes.installationConfig),
+    ...configArtifacts(exposes.config),
   ]
 }

@@ -32,11 +32,11 @@ export interface DeployResult {
    */
   target: DeployTarget | null
 
+  /** Media-library config summary, when a singleton config deployed. */
+  config?: string
   /** Workbench views and services registered with the deploy. */
   exposes?: DeployedExpose[]
-  /** Media-library installation config summary, when a singleton config deployed. */
-  installationConfig?: string
-  /** Set when a media-library singleton deployed its installation config. */
+  /** Set when a media-library singleton deployed its config. */
   installationId?: string
   /** The app's explicit `isSingleton` flag; omitted when the app doesn't set it. */
   isSingleton?: boolean
@@ -106,10 +106,9 @@ async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise
   await spec.run(options, reporter)
   const plan: DeploymentPlan = {
     checks: reporter.results,
+    config: reporter.results.find((check) => check.config)?.config ?? null,
     exposes: reporter.results.find((check) => check.exposes)?.exposes ?? [],
     files: [],
-    installationConfig:
-      reporter.results.find((check) => check.installationConfig)?.installationConfig ?? null,
     isSingleton: reporter.results.find((check) => check.isSingleton !== undefined)?.isSingleton,
     target: reporter.results.find((check) => check.target)?.target ?? null,
     type: spec.type,

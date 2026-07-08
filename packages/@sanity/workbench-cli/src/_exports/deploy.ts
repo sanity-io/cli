@@ -6,10 +6,10 @@ export {
 } from '../actions/deploy/buildExposes.js'
 export {checkBuiltOutput} from '../actions/deploy/checkBuiltOutput.js'
 export {
-  deployInstallationConfig,
+  deployConfig,
   resolveInstallationId,
-  summarizeInstallationConfig,
-} from '../actions/deploy/deployInstallationConfig.js'
+  summarizeConfig,
+} from '../actions/deploy/deployConfig.js'
 export {
   type Application,
   type BrettWorkspace,

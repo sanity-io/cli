@@ -39,7 +39,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     entry: app?.entry,
     exposes: workbench
       ? {
-          installationConfig: workbench.installationConfig,
+          config: workbench.config,
           services: workbench.services,
           views: workbench.views,
         }
