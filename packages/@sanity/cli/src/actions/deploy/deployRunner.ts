@@ -3,6 +3,7 @@ import {format} from 'node:util'
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
 
+import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {
   type CheckReporter,
   createCollectingReporter,
@@ -55,6 +56,7 @@ export interface DeploySpec {
 export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
   const {output} = options
   const json = !!options.flags.json
+  const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only
   // the final JSON.stringify writes to stdout. Spinners are already on stderr.
@@ -72,17 +74,22 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
   try {
     if (options.flags['dry-run']) {
       const plan = await collectPlan(runOptions, spec)
-      if (json) output.log(JSON.stringify(deploymentPlanToJson(plan), null, 2))
+      if (json) emitJson(deploymentPlanToJson(plan))
       else renderDeploymentPlan(plan, output)
       exitIfBlocked(plan, output)
       return
     }
 
     const result = await spec.run(runOptions, createFailFastReporter(runOptions.output))
-    if (json && result) output.log(JSON.stringify({deployed: true, ...result}, null, 2))
+    if (json && result) emitJson({deployed: true, ...result})
   } catch (error) {
-    // Failures signal via exit code and stderr, like every other command — no JSON on stdout.
-    normalizeDeployError(error, output, spec.type)
+    const failure = normalizeFailure(error, spec.type)
+    // A blocked dry run reaches this catch too (its exit throws) and already
+    // printed its plan, so only a real deploy adds the {deployed: false} envelope.
+    if (json && !options.flags['dry-run']) {
+      emitJson({deployed: false, error: {message: failure.message}})
+    }
+    output.error(failure.message, {exit: failure.exit})
   }
 }
 
@@ -109,16 +116,22 @@ function exitIfBlocked(plan: DeploymentPlan, output: Output): void {
   output.error('Deploy blocked by failing checks.', {exit: failed?.exitCode ?? 1})
 }
 
-function normalizeDeployError(error: unknown, output: Output, type: 'coreApp' | 'studio'): void {
-  const noun = type === 'coreApp' ? 'application' : 'studio'
-
+/** The one failure diagnosis both the stderr message and the `--json` envelope read. */
+function normalizeFailure(
+  error: unknown,
+  type: 'coreApp' | 'studio',
+): {exit: number; message: string} {
   // Ctrl+C on an interactive prompt isn't a real failure
   if (error instanceof Error && error.name === 'ExitPromptError') {
-    output.error('Deployment cancelled by user', {exit: 1})
-    return
+    return {exit: 1, message: 'Deployment cancelled by user'}
   }
-  // A failed check already carries its own message and exit code; rethrow untouched
-  if (error instanceof CLIError) throw error
-  deployDebug(`Error deploying ${noun}`, error)
-  output.error(`Error deploying ${noun}: ${error}`, {exit: 1})
+  // A failed check already carries its own message and exit code
+  if (error instanceof CLIError) {
+    return {exit: error.oclif?.exit ?? 1, message: error.message}
+  }
+  deployDebug(`Error deploying ${type === 'coreApp' ? 'application' : 'studio'}`, error)
+  return {
+    exit: 1,
+    message: `Error deploying ${type === 'coreApp' ? 'application' : 'studio'}: ${getErrorMessage(error)}`,
+  }
 }
