@@ -1,5 +1,6 @@
 import {type Output} from '@sanity/cli-core/types'
-import {createMockOutput, packageManagerMocks} from '@sanity/cli-test/mocks'
+import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-test/mocks/cli-core/package-manager'
+import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {coerce} from 'semver'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -9,7 +10,7 @@ vi.mock('semver', {spy: true})
 
 vi.mock(
   import('@sanity/cli-core/package-manager'),
-  async () => (await import('@sanity/cli-test/mocks')).packageManagerMocks,
+  () => import('@sanity/cli-test/mocks/cli-core/package-manager')
 )
 
 /**
@@ -21,7 +22,7 @@ function setupMocks(opts: {
   devDependencies?: Record<string, string>
   localVersions?: Record<string, string | null>
 }) {
-  packageManagerMocks.readPackageJson.mockResolvedValue({
+  readPackageJson.mockResolvedValue({
     dependencies: opts.dependencies ?? {},
     devDependencies: opts.devDependencies ?? {},
     name: 'test-project',
@@ -29,7 +30,7 @@ function setupMocks(opts: {
   })
 
   if (opts.localVersions) {
-    packageManagerMocks.getLocalPackageVersion.mockImplementation((name: string) => {
+   getLocalPackageVersion.mockImplementation((name: string) => {
       const version = opts.localVersions?.[name]
       return Promise.resolve(version ?? null)
     })
@@ -349,7 +350,7 @@ describe('checkStudioDependencyVersions', () => {
   describe('edge cases', () => {
     test('should handle readPackageJson throwing an error', async () => {
       mockOutput = createMockOutput()
-      packageManagerMocks.readPackageJson.mockRejectedValue(
+      readPackageJson.mockRejectedValue(
         new Error('Failed to read package.json'),
       )
 
@@ -360,7 +361,7 @@ describe('checkStudioDependencyVersions', () => {
 
     test('should handle packages with no dependencies property', async () => {
       mockOutput = createMockOutput()
-      packageManagerMocks.readPackageJson.mockResolvedValue({
+      readPackageJson.mockResolvedValue({
         name: 'test-project',
         version: '1.0.0',
       })
@@ -382,12 +383,12 @@ describe('checkStudioDependencyVersions', () => {
 
     test('should handle semver.coerce returning null', async () => {
       mockOutput = createMockOutput()
-      packageManagerMocks.readPackageJson.mockResolvedValue({
+      readPackageJson.mockResolvedValue({
         dependencies: {react: 'invalid-version'},
         name: 'test-project',
         version: '1.0.0',
       })
-      packageManagerMocks.getLocalPackageVersion.mockResolvedValue(null)
+      getLocalPackageVersion.mockResolvedValue(null)
 
       // Mock coerce to return null for any input
       vi.mocked(coerce).mockReturnValue(null)

@@ -39,9 +39,10 @@ export function createMockOutput(): Output {
 }
 
 /**
+ * A mocked SanityCommand, for use in mocking out the `@sanity/cli-core/SanityCommand` module's command class.
  * @internal
  */
-export class MockedSanityCommand extends Command implements SanityCommandInterface {
+export class SanityCommand extends Command implements SanityCommandInterface {
   args = {}
   flags = {}
   output: Output = mocks.SanityCmdOutput

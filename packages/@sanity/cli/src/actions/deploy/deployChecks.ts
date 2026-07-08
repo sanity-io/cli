@@ -270,7 +270,11 @@ export function describeAppTarget(
     // Without --title, creating an app needs a prompt no unattended run can answer
     case 'would-create': {
       if (title) {
-        return {message: `Would create a new application "${title}"`, status: 'pass'}
+        return {
+          message: `Would create a new application "${title}"`,
+          status: 'pass',
+          target: {applicationId: null, title, url: null},
+        }
       }
       return {
         exitCode: exitCodes.USAGE_ERROR,
@@ -358,7 +362,9 @@ export function describeStudioTarget(
           ? `Would register external studio at ${resolution.appHost}${titled}`
           : `Would create studio hostname ${url}${titled} (name availability is checked on deploy)`,
         status: 'pass',
-        target: {applicationId: null, title: null, url},
+        // `title || null`, not `?? null`, so target.title tracks the same
+        // truthiness the message's `titled` suffix uses (an empty title is no title)
+        target: {applicationId: null, title: title || null, url},
       }
     }
   }

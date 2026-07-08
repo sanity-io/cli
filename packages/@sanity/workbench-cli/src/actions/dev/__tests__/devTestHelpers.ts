@@ -1,9 +1,31 @@
+import {EventEmitter} from 'node:events'
+
 import {type CliConfig, type Output} from '@sanity/cli-core/types'
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import {vi} from 'vitest'
 
 import {unstable_defineApp} from '../../../defineApp.js'
 import {type StartWorkbenchOptions} from '../startWorkbenchDevServer.js'
+
+/**
+ * Stand-in for node's `fs.FSWatcher` that lets a test drive change events by
+ * hand instead of touching the filesystem. Wire it into a mocked `fs.watch`
+ * and call `emitChange` to fire the listener.
+ */
+// eslint-disable-next-line unicorn/prefer-event-target -- mirrors node's FSWatcher which extends EventEmitter
+export class FakeFsWatcher extends EventEmitter {
+  public closed = false
+  public handler: ((event: string, filename: string | null) => void) | undefined
+
+  close() {
+    this.closed = true
+  }
+
+  emitChange(filename: string | null) {
+    if (this.closed) return
+    this.handler?.('change', filename)
+  }
+}
 
 /** A CliConfig `app` from a branded `unstable_defineApp(...)` — the workbench opt-in. */
 export function workbenchApp(overrides: Record<string, unknown> = {}): CliConfig['app'] {

@@ -1,4 +1,4 @@
-import {createMockOutput} from '@sanity/cli-test/mocks'
+import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {checkRequiredDependencies} from '../checkRequiredDependencies'
