@@ -2,6 +2,7 @@
 export * from './constants.js'
 export * from './createMockHttpServer.js'
 export * from './createMockSpinner.js'
+export * from './createMockWatcher.js'
 export * from './createTestToken.js'
 export * from './mockTelemetry.js'
 export * from './snapshotSerializer.js'
