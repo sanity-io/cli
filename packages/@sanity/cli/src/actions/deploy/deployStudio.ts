@@ -6,6 +6,7 @@ import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
+  type BrettWorkspace,
   buildExposes,
   deployStudio as deployWorkbenchStudio,
   getWorkbench,
@@ -166,6 +167,7 @@ async function runStudioDeployment(
       studioHost: cliConfig.studioHost,
       title: appTitle,
       version,
+      workspaces: toWorkspaces(studioManifest),
     })
     logWorkbenchStudioDeployed({applicationId, cliConfig, output})
     return {
@@ -353,6 +355,18 @@ export default defineCliConfig({
   output.log(`\n${example}`)
 
   return location
+}
+
+function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
+  return (manifest?.workspaces ?? []).map((workspace) => ({
+    basePath: workspace.basePath,
+    dataset: workspace.dataset,
+    icon: workspace.icon,
+    name: workspace.name,
+    projectId: workspace.projectId,
+    subtitle: workspace.subtitle,
+    title: workspace.title,
+  }))
 }
 
 /** Renders the workbench studio's deploy result; the appId hint shows only when none is configured. */

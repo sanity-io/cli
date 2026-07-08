@@ -12,6 +12,7 @@ export {
 } from '../actions/deploy/deployInstallationConfig.js'
 export {
   type Application,
+  type BrettWorkspace,
   deployCoreApp,
   deployStudio,
   getApplication,
