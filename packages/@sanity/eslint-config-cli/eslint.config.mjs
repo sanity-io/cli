@@ -1,6 +1,9 @@
 import eslint from '@eslint/js'
 import prettier from 'eslint-config-prettier'
-import {createTypeScriptImportResolver} from 'eslint-import-resolver-typescript'
+import {
+  createTypeScriptImportResolver,
+  defaultConditionNames,
+} from 'eslint-import-resolver-typescript'
 import {importX} from 'eslint-plugin-import-x'
 import nodePlugin from 'eslint-plugin-n'
 import {configs as perfectionistConfigs} from 'eslint-plugin-perfectionist'
@@ -249,7 +252,11 @@ export default defineConfig(
       ],
     },
     settings: {
-      'import-x/resolver-next': [createTypeScriptImportResolver()],
+      'import-x/resolver-next': [
+        createTypeScriptImportResolver({
+          conditionNames: ['source', ...defaultConditionNames],
+        }),
+      ],
     },
   },
   {
