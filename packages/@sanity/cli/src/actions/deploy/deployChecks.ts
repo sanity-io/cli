@@ -360,7 +360,9 @@ export function describeStudioTarget(
           ? `Would register external studio at ${resolution.appHost}${titled}`
           : `Would create studio hostname ${url}${titled} (name availability is checked on deploy)`,
         status: 'pass',
-        target: {applicationId: null, title: null, url},
+        // `title || null`, not `?? null`, so target.title tracks the same
+        // truthiness the message's `titled` suffix uses (an empty title is no title)
+        target: {applicationId: null, title: title || null, url},
       }
     }
   }
