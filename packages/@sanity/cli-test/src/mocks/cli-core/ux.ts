@@ -62,3 +62,5 @@ export const spinnerPromise: Mock = vi.fn()
 export const getTimer: Mock = vi
   .fn()
   .mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()})
+/** @internal */
+export class Separator {}
