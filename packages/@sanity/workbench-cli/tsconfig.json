@@ -3,10 +3,6 @@
   "include": ["./src"],
   "compilerOptions": {
     "rootDir": ".",
-    "jsx": "react-jsx",
-    "paths": {
-      "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/_exports/index.ts"],
-      "@sanity/cli-core/*": ["./node_modules/@sanity/cli-core/src/_exports/*"]
-    }
+    "jsx": "react-jsx"
   }
 }

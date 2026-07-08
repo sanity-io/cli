@@ -9,6 +9,8 @@
     "target": "ES2023",
     "module": "Preserve",
     "moduleDetection": "force",
+    // Together with module: preserve, this tells TS to resolve `exports` and `imports` by looking up the provided fields in `pacckage.json`
+    "customConditions": ["source"],
     "allowSyntheticDefaultImports": true,
     "jsx": "preserve",
     // If a package that emits code forgets to specify the outDir then the default behavior of tsc is to colocate .d.ts files,
