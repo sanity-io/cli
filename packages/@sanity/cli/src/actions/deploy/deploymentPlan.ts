@@ -4,9 +4,10 @@ import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core/types'
 import {logSymbols} from '@sanity/cli-core/ux'
+import {type DeployedExpose, summarizeExposes} from '@sanity/workbench-cli/deploy'
 
 import {pluralize} from '../../util/pluralize.js'
-import {type DeployCheck, type DeployTarget} from './deployChecks.js'
+import {type CheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
 
 export interface DeploymentFile {
   /** Path relative to the project root, POSIX-style. */
@@ -17,7 +18,11 @@ export interface DeploymentFile {
 /** What a `--dry-run` deploy would do: the real deploy sequence with every mutation gated off. */
 export interface DeploymentPlan {
   checks: DeployCheck[]
+  /** Workbench views and services registered with the deploy. */
+  exposes: DeployedExpose[]
   files: DeploymentFile[]
+  /** Media-library installation config summary; `null` unless a config deploys. */
+  installationConfig: string | null
   /** The resolved deploy target; `null` when the checks can't determine one. */
   target: DeployTarget | null
   type: 'coreApp' | 'studio'
@@ -77,7 +82,9 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
   applicationType: DeploymentPlan['type']
   applicationVersion: string | null
   errors: Record<string, string | null>
+  exposes?: DeployedExpose[]
   files: DeploymentFile[]
+  installationConfig?: string
   isDeployable: boolean
   target: DeployTarget | null
   totalBytes: number
@@ -90,16 +97,35 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
     else if (check.status === 'warn') warnings.push(check.message)
   }
 
+  // `exposes` and `installationConfig` are workbench-only; plain apps omit them.
   return {
     applicationType: plan.type,
     applicationVersion: plan.version,
     errors,
+    ...(plan.exposes.length > 0 ? {exposes: plan.exposes} : {}),
     files: plan.files,
+    ...(plan.installationConfig ? {installationConfig: plan.installationConfig} : {}),
     isDeployable: isDeployable(plan),
     target: plan.target,
     totalBytes: totalBytes(plan.files),
     warnings,
   }
+}
+
+/**
+ * Reports an app's exposes as pass checks and returns them structured for the
+ * `--json` payload. The structured list rides on the first check so a dry run's
+ * collector can read it back.
+ */
+export function reportExposes(
+  reporter: CheckReporter,
+  app: Parameters<typeof summarizeExposes>[0],
+): DeployedExpose[] {
+  const {exposes, lines} = summarizeExposes(app)
+  for (const [index, message] of lines.entries()) {
+    reporter.report({exposes: index === 0 ? exposes : undefined, message, status: 'pass'})
+  }
+  return exposes
 }
 
 export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void {

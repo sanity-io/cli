@@ -13,9 +13,10 @@
       "@sanity/cli-core/ExitCodes": ["./node_modules/@sanity/cli-core/src/exitCodes.ts"],
       "@sanity/cli-core/SanityCommand": ["./node_modules/@sanity/cli-core/src/SanityCommand.ts"],
       "@sanity/cli-test": ["./node_modules/@sanity/cli-test/src/index.ts"],
-      "@sanity/cli-test/vitest": ["./node_modules/@sanity/cli-test/src/vitest.ts"],
-      "@sanity/cli-test/mocks/cli-core/*": ["./node_modules/@sanity/cli-test/src/mocks/cli-core/*"],
+      "@sanity/cli-test/mocks/*": ["./node_modules/@sanity/cli-test/src/mocks/*"],
       "@sanity/cli-test/paths": ["./node_modules/@sanity/cli-test/src/utils/paths.ts"],
+      "@sanity/cli-test/test/*": ["./node_modules/@sanity/cli-test/src/test/*"],
+      "@sanity/cli-test/vitest": ["./node_modules/@sanity/cli-test/src/vitest.ts"],
       "@sanity/workbench-cli": ["./node_modules/@sanity/workbench-cli/src/_exports/index.ts"],
       "@sanity/workbench-cli/*": ["./node_modules/@sanity/workbench-cli/src/_exports/*"]
     }

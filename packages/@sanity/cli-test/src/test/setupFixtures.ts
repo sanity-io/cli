@@ -3,7 +3,6 @@ import {readFile, rm, writeFile} from 'node:fs/promises'
 import {basename, join} from 'node:path'
 import {promisify} from 'node:util'
 
-import ora from 'ora'
 import {glob} from 'tinyglobby'
 import {type TestProject} from 'vitest/node'
 
@@ -101,12 +100,7 @@ interface FixtureDetails {
  */
 export async function setup(_: TestProject, options: SetupTestFixturesOptions = {}): Promise<void> {
   const {additionalFixtures, ignoreWorkspace, tempDir} = options
-
-  const spinner = ora({
-    // Without this, the watch mode input is discarded
-    discardStdin: false,
-    text: 'Initializing test environment...',
-  }).start()
+  console.log('Initializing test environment...')
 
   try {
     const fixturesDir = getFixturesPath()
@@ -130,7 +124,7 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
       if (additionalFixturePaths.length > 0) {
         allFixturePaths.push(...additionalFixturePaths)
       } else {
-        spinner.warn(
+        console.warn(
           `No additional fixtures found, check the glob pattern: ${additionalFixtures.join(', ')}`,
         )
       }
@@ -161,7 +155,7 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
         )
       } catch (error) {
         const execError = error as {message: string; stderr?: string; stdout?: string}
-        spinner.fail('Failed to install dependencies')
+        console.error('Failed to install dependencies')
         console.error(execError.stderr || execError.stdout || execError.message)
         throw new Error(
           `Error installing dependencies in ${toPath}: ${execError.stderr || execError.stdout || execError.message}`,
@@ -170,9 +164,9 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
       }
     }
 
-    spinner.succeed('Test environment initialized')
+    console.log('Test environment initialized')
   } catch (error) {
-    spinner.fail('Failed to initialize test environment')
+    console.error('Failed to initialize test environment')
     throw error
   }
 }

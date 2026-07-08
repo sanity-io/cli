@@ -5,13 +5,14 @@ import {join} from 'node:path'
 import {type Output} from '@sanity/cli-core/types'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type DeployCheck} from '../deployChecks.js'
+import {createCollectingReporter, type DeployCheck} from '../deployChecks.js'
 import {
   type DeploymentFile,
   type DeploymentPlan,
   deploymentPlanToJson,
   listDeploymentFiles,
   renderDeploymentPlan,
+  reportExposes,
 } from '../deploymentPlan.js'
 
 vi.mock(import('node:fs/promises'), async (importOriginal) => ({
@@ -57,7 +58,9 @@ describe('listDeploymentFiles', () => {
 
 const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): DeploymentPlan => ({
   checks,
+  exposes: [],
   files,
+  installationConfig: null,
   target: null,
   type: 'studio',
   version: '3.99.0',
@@ -76,6 +79,7 @@ describe('deploymentPlanToJson', () => {
       ),
     )
 
+    // No `exposes`/`installationConfig` keys — a plain (non-workbench) plan omits them.
     expect(json).toEqual({
       applicationType: 'studio',
       applicationVersion: '3.99.0',
@@ -96,7 +100,9 @@ describe('deploymentPlanToJson', () => {
     }
     const json = deploymentPlanToJson({
       checks: [],
+      exposes: [],
       files: [],
+      installationConfig: null,
       target,
       type: 'studio',
       version: null,
@@ -114,6 +120,42 @@ describe('deploymentPlanToJson', () => {
     expect(deploymentPlanToJson(studioPlan([{message: 'ok', status: 'pass'}])).isDeployable).toBe(
       true,
     )
+  })
+
+  test('surfaces the registered exposes and installation-config summary', () => {
+    const plan = studioPlan([{message: 'ok', status: 'pass'}])
+    plan.exposes = [{name: 'edit', title: 'Edit', type: 'panel'}]
+    plan.installationConfig = 'Media Library fields:\n  Title (title)'
+
+    const json = deploymentPlanToJson(plan)
+
+    expect(json.exposes).toEqual([{name: 'edit', title: 'Edit', type: 'panel'}])
+    expect(json.installationConfig).toBe('Media Library fields:\n  Title (title)')
+  })
+})
+
+describe('reportExposes', () => {
+  test('reports views and services and returns them structured', () => {
+    const reporter = createCollectingReporter()
+
+    const exposes = reportExposes(reporter, {
+      services: [{name: 'sync', src: './sync.ts', type: 'worker'}],
+      views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
+    })
+
+    expect(exposes).toEqual([
+      {name: 'edit', title: 'Edit', type: 'panel'},
+      {name: 'sync', title: 'sync', type: 'worker'},
+    ])
+    expect(reporter.results.every((check) => check.status === 'pass')).toBe(true)
+    // The structured list rides on the first check so a dry run's collector reads it back.
+    expect(reporter.results[0].exposes).toEqual(exposes)
+  })
+
+  test('reports nothing and returns empty without views or services', () => {
+    const reporter = createCollectingReporter()
+    expect(reportExposes(reporter, {})).toEqual([])
+    expect(reporter.results).toEqual([])
   })
 })
 
@@ -187,7 +229,15 @@ describe('renderDeploymentPlan', () => {
 
   test('labels a core app deploy as an application', () => {
     renderDeploymentPlan(
-      {checks: [], files: [], target: null, type: 'coreApp', version: '1.0.0'},
+      {
+        checks: [],
+        exposes: [],
+        files: [],
+        installationConfig: null,
+        target: null,
+        type: 'coreApp',
+        version: '1.0.0',
+      },
       output,
     )
 

@@ -49,9 +49,15 @@ function extensionDeclarationFields(kind: 'Field' | 'Service' | 'View') {
   }
 }
 
+// Every interface (view, service) shares `name` + `src` + an optional display
+// `title` that defaults to `name` on deploy.
+function interfaceDeclarationFields(kind: 'Service' | 'View') {
+  return {...extensionDeclarationFields(kind), title: z.optional(z.string())}
+}
+
 const PanelViewSchema = z.object({
   type: z.literal('panel'),
-  ...extensionDeclarationFields('View'),
+  ...interfaceDeclarationFields('View'),
 })
 
 /** @internal */
@@ -59,7 +65,7 @@ export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [PanelVie
 
 const WorkerServiceSchema = z.object({
   type: z.literal('worker'),
-  ...extensionDeclarationFields('Service'),
+  ...interfaceDeclarationFields('Service'),
 })
 
 /** @internal */

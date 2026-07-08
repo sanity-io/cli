@@ -1,5 +1,6 @@
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type CliConfig, type Output} from '@sanity/cli-core/types'
+import {type Application, getApplication} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -18,13 +19,22 @@ import {
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from '../resolveDeployTarget.js'
 import {type DeployFlags} from '../types.js'
 
-vi.mock('../resolveDeployTarget.js', () => ({
+// The user-applications resolvers are stubbed; the workbench resolvers stay real
+// and exercise the mocked getApplication.
+vi.mock('../resolveDeployTarget.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   resolveAppDeployTarget: vi.fn(),
   resolveStudioDeployTarget: vi.fn(),
 }))
 
+vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  getApplication: vi.fn(),
+}))
+
 const mockResolveStudio = vi.mocked(resolveStudioDeployTarget)
 const mockResolveApp = vi.mocked(resolveAppDeployTarget)
+const mockGetApplication = vi.mocked(getApplication)
 
 const mockOutput = () => ({error: vi.fn(), warn: vi.fn()}) as unknown as Output
 
@@ -354,6 +364,97 @@ describe('checkAppTarget', () => {
 
     expect(reporter.results[0]?.status).toBe('fail')
     expect(reporter.results[0]?.message).toContain('don’t have permission')
+  })
+})
+
+function workbenchApp(overrides: Partial<Application> = {}): Application {
+  return {
+    id: 'app-1',
+    organizationId: 'org-1',
+    slug: 'app',
+    title: 'My App',
+    type: 'coreApp',
+    ...overrides,
+  }
+}
+
+describe('checkAppTarget (workbench backend)', () => {
+  test('existing appId → pass check for the resolved application', async () => {
+    mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
+    const reporter = createCollectingReporter()
+
+    await checkAppTarget(reporter, {appId: 'app-1', isWorkbenchApp: true, title: 'ignored'})
+
+    expect(reporter.results[0]).toMatchObject({status: 'pass'})
+    expect(reporter.results[0]?.message).toContain('Deploys to existing application "Drop Desk"')
+  })
+
+  test('unknown appId → fail check pointing to deployment.appId', async () => {
+    mockGetApplication.mockResolvedValue(null)
+    const reporter = createCollectingReporter()
+
+    await checkAppTarget(reporter, {appId: 'nope', isWorkbenchApp: true, title: 'ignored'})
+
+    expect(reporter.results[0]?.status).toBe('fail')
+    expect(reporter.results[0]?.solution).toContain('deployment.appId')
+  })
+
+  test('no appId → pass check for the application that would be created', async () => {
+    const reporter = createCollectingReporter()
+
+    await checkAppTarget(reporter, {appId: undefined, isWorkbenchApp: true, title: 'New App'})
+
+    expect(reporter.results[0]).toMatchObject({status: 'pass'})
+    expect(reporter.results[0]?.message).toContain('Would create a new application "New App"')
+    expect(mockGetApplication).not.toHaveBeenCalled()
+  })
+})
+
+describe('checkStudioTarget (workbench backend)', () => {
+  test('existing appId → pass check for the resolved studio, returns its target', async () => {
+    mockGetApplication.mockResolvedValue(workbenchApp({slug: 'my-studio', type: 'studio'}))
+    const reporter = createCollectingReporter()
+
+    const target = await checkStudioTarget(reporter, {
+      appId: 'app-1',
+      isWorkbenchApp: true,
+      studioHost: undefined,
+    })
+
+    expect(reporter.results[0]).toMatchObject({status: 'pass'})
+    expect(reporter.results[0]?.message).toContain(
+      'Deploys to existing studio https://my-studio.sanity.studio',
+    )
+    expect(target?.url).toBe('https://my-studio.sanity.studio')
+  })
+
+  test('no appId with a studioHost → pass check for the studio that would be created', async () => {
+    const reporter = createCollectingReporter()
+
+    await checkStudioTarget(reporter, {
+      appId: undefined,
+      isWorkbenchApp: true,
+      studioHost: 'my-studio',
+      title: 'New Studio',
+    })
+
+    expect(reporter.results[0]).toMatchObject({status: 'pass'})
+    expect(reporter.results[0]?.message).toContain('Would create studio hostname')
+    expect(reporter.results[0]?.message).toContain('titled "New Studio"')
+    expect(mockGetApplication).not.toHaveBeenCalled()
+  })
+
+  test('no appId and no studioHost → usage-error fail check', async () => {
+    const reporter = createCollectingReporter()
+
+    await checkStudioTarget(reporter, {
+      appId: undefined,
+      isWorkbenchApp: true,
+      studioHost: undefined,
+    })
+
+    expect(reporter.results[0]).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
+    expect(reporter.results[0]?.solution).toContain('studioHost')
   })
 })
 

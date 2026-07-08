@@ -11,6 +11,15 @@ import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
+
+// appHosts have some restrictions (no uppercase, must start with a letter)
+export function generateAppSlug(): string {
+  const firstChar = customAlphabet(LETTERS, 1)()
+  const rest = customAlphabet(`${LETTERS}0123456789`, 11)()
+  return `${firstChar}${rest}`
+}
+
 // TODO: replace with `Promise.withResolvers()` once it lands in node 22
 function promiseWithResolvers<T>() {
   let resolve!: (t: T) => void
@@ -95,17 +104,9 @@ export async function createUserApplication(
   return tryCreateApp(resolvedTitle, organizationId)
 }
 
-// appHosts have some restrictions (no uppercase, must start with a letter)
-const generateId = () => {
-  const letters = 'abcdefghijklmnopqrstuvwxyz'
-  const firstChar = customAlphabet(letters, 1)()
-  const rest = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 11)()
-  return `${firstChar}${rest}`
-}
-
 const tryCreateApp = async (title: string, organizationId: string) => {
   // we will likely prepend this with an org ID or other parameter in the future
-  const appHost = generateId()
+  const appHost = generateAppSlug()
 
   const spin = spinner('Creating application').start()
 

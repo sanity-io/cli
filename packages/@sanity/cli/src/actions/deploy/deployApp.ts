@@ -5,7 +5,9 @@ import {createGzip} from 'node:zlib'
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {spinner} from '@sanity/cli-core/ux'
 import {
+  buildExposes,
   deployInstallationConfig,
+  deployCoreApp as deployWorkbenchCoreApp,
   getWorkbench,
   resolveInstallationId,
   summarizeInstallationConfig,
@@ -24,7 +26,7 @@ import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildApp} from '../build/buildApp.js'
 import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
-import {createUserApplication} from './createUserApplication.js'
+import {createUserApplication, generateAppSlug} from './createUserApplication.js'
 import {
   checkAppId,
   checkAppTarget,
@@ -35,7 +37,7 @@ import {
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {listDeploymentFiles} from './deploymentPlan.js'
+import {listDeploymentFiles, reportExposes} from './deploymentPlan.js'
 import {type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
@@ -63,9 +65,13 @@ async function runAppDeployment(
   const dryRun = !!flags['dry-run']
 
   // A singleton (the Media Library) persists its config instead of hosting an
-  // application; anything with interfaces still ships one.
+  // application; anything that exposes a view or service still ships one.
   const deploySingletonInstallationConfig = workbench?.deploySingletonInstallationConfig ?? false
   const deployApplication = !workbench || workbench.hasInterfaces
+
+  const appTitle = workbench
+    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.name
+    : ''
 
   // A federated app with no entry, view or service would ship a remote with
   // nothing to load — reported first so it fails before any prompt or API call.
@@ -112,6 +118,13 @@ async function runAppDeployment(
       solution: 'Remove the --external flag — apps deploy to Sanity hosting',
       status: 'fail',
     })
+  } else if (deployApplication && workbench) {
+    // Both modes, so a bad appId fails before the build rather than at the POST.
+    await checkAppTarget(reporter, {
+      appId: getAppId(cliConfig),
+      isWorkbenchApp: true,
+      title: appTitle,
+    })
   } else if (deployApplication) {
     application = await resolveAppApplication(options, {dryRun, reporter})
   }
@@ -150,6 +163,7 @@ async function runAppDeployment(
   // Resolve the installation in both modes so the report — dry-run and real —
   // shows whether the config is deployable; a missing one fails the deploy here.
   let installationId: string | undefined
+  let installationConfig: string | undefined
   const configAppType = workbench?.installationConfig?.appType
   if (
     deploySingletonInstallationConfig &&
@@ -158,9 +172,10 @@ async function runAppDeployment(
     configAppType
   ) {
     installationId = await resolveInstallationId({appType: configAppType, organizationId})
+    installationConfig = summarizeInstallationConfig(workbench.installationConfig)
     reporter.report(
       installationId
-        ? {message: summarizeInstallationConfig(workbench.installationConfig), status: 'pass'}
+        ? {installationConfig, message: installationConfig, status: 'pass'}
         : {
             exitCode: exitCodes.USAGE_ERROR,
             message: `No active "${configAppType}" installation for organization "${organizationId}"`,
@@ -169,6 +184,9 @@ async function runAppDeployment(
           },
     )
   }
+
+  // Report the exposes deploying with the application, both modes.
+  const exposes = deployApplication && workbench ? reportExposes(reporter, workbench) : []
 
   // Dry run stops here — everything below mutates.
   if (dryRun) return
@@ -186,21 +204,59 @@ async function runAppDeployment(
   // A config-only singleton ships no application, only its installation config.
   if (!deployApplication) {
     if (installationId && version) {
-      return {applicationType: 'coreApp', applicationVersion: version, installationId, target: null}
+      return {
+        applicationType: 'coreApp',
+        applicationVersion: version,
+        ...(installationConfig ? {installationConfig} : {}),
+        installationId,
+        target: null,
+      }
     }
     return
   }
 
+  // A real deploy already exited on a version-resolution failure; this narrows the type.
+  if (!version) return
+
+  // Workbench apps deploy to Brett; plain coreApps use user-applications.
+  if (workbench && organizationId) {
+    const {applicationId} = await deployWorkbenchCoreApp({
+      appId: getAppId(cliConfig),
+      interfaces: buildExposes(workbench, {
+        appName: workbench.name,
+        appTitle,
+        exposesAppView: workbench.entry !== undefined,
+        version,
+      }),
+      isAutoUpdating,
+      organizationId,
+      slug: generateAppSlug(),
+      sourceDir,
+      title: appTitle,
+      version,
+    })
+    logAppDeployed({applicationId, cliConfig, organizationId, output, title: appTitle})
+    return {
+      applicationType: 'coreApp',
+      applicationVersion: version,
+      ...(exposes.length > 0 ? {exposes} : {}),
+      target: {applicationId, title: appTitle, url: getCoreAppUrl(organizationId, applicationId)},
+    }
+  }
+
   // A real deploy has already exited if anything failed; landing here without a
-  // resolved application or version means the deploy target was never resolved.
-  if (!application || !version) return
+  // resolved application means the deploy target was never resolved.
+  if (!application) return
 
   application = await syncApplicationTitle({application, manifest, output})
-
   await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
-
-  logAppDeployed({application, cliConfig, output})
-
+  logAppDeployed({
+    applicationId: application.id,
+    cliConfig,
+    organizationId: application.organizationId,
+    output,
+    title: application.title,
+  })
   return {
     applicationType: 'coreApp',
     applicationVersion: version,
@@ -318,16 +374,20 @@ async function shipAppDeployment({
 }
 
 export function logAppDeployed({
-  application,
+  applicationId,
   cliConfig,
+  organizationId,
   output,
+  title,
 }: {
-  application: UserApplicationResolved
+  applicationId: string
   cliConfig: DeployAppOptions['cliConfig']
+  organizationId: string
   output: DeployAppOptions['output']
+  title: string | null
 }): void {
-  const url = getCoreAppUrl(application.organizationId, application.id)
-  const named = application.title ? ` — "${application.title}"` : ''
+  const url = getCoreAppUrl(organizationId, applicationId)
+  const named = title ? ` — "${title}"` : ''
   output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}${named}`)
 
   if (getAppId(cliConfig)) return
@@ -346,7 +406,7 @@ ${styleText(
 ${styleText(
   ['bold', 'green'],
   `deployment: {
-  appId: '${application.id}',
+  appId: '${applicationId}',
 }\n`,
 )}`)
 }
