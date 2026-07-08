@@ -96,6 +96,25 @@ describe('createApplication', () => {
     expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
     expect(fields.map(([name]) => name)).toContain('tarball')
     expect(fields.map(([name]) => name)).not.toContain('config')
+    // isSingleton is opt-in; a regular create omits it.
+    expect(fields.map(([name]) => name)).not.toContain('isSingleton')
+  })
+
+  test('flags a singleton create when isSingleton is set', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_1'})
+
+    await createApplication({
+      interfaces,
+      isSingleton: true,
+      organizationId: 'org-1',
+      slug: 'dashboard',
+      tarball: tarball(),
+      title: 'Dashboard',
+      type: 'coreApp',
+      version: '1.0.0',
+    })
+
+    expect(appendedFields()).toContainEqual(['isSingleton', 'true'])
   })
 
   test('sends studio config as a JSON part for a studio create', async () => {
@@ -144,6 +163,7 @@ describe('createDeployment', () => {
 const coreAppOptions = {
   interfaces,
   isAutoUpdating: false,
+  isSingleton: false,
   organizationId: 'org-1',
   slug: 'abc123',
   sourceDir: '/tmp/build/app',
@@ -175,6 +195,14 @@ describe('deployCoreApp', () => {
       uri: '/applications',
     })
     expect(appendedFields()).toContainEqual(['slug', 'abc123'])
+  })
+
+  test('forwards isSingleton when creating a singleton core app', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_new'})
+
+    await deployCoreApp({...coreAppOptions, appId: undefined, isSingleton: true})
+
+    expect(appendedFields()).toContainEqual(['isSingleton', 'true'])
   })
 })
 
