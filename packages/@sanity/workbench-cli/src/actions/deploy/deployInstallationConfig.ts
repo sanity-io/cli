@@ -7,8 +7,7 @@ import {getGlobalCliClient, type Output, subdebug} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {pack} from 'tar-fs'
 
-// Brett's app-registry endpoints live behind the experimental `vX` version.
-const INSTALLATIONS_API_VERSION = 'vX'
+import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
 const debug = subdebug('deploy')
 
@@ -80,7 +79,7 @@ export async function deployInstallationConfig(options: {
   })
 
   const client = await getGlobalCliClient({
-    apiVersion: INSTALLATIONS_API_VERSION,
+    apiVersion: APP_WORKBENCH_API_VERSION,
     requireUser: true,
   })
   await client.request({
@@ -100,7 +99,7 @@ async function resolveSingletonInstallationId(
   slug: string,
 ): Promise<string | undefined> {
   const client = await getGlobalCliClient({
-    apiVersion: INSTALLATIONS_API_VERSION,
+    apiVersion: APP_WORKBENCH_API_VERSION,
     requireUser: true,
   })
   // `limit=none` returns every installation in one response, no pagination.

@@ -1,6 +1,6 @@
 import {type CliConfig, exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
+import {checkBuiltOutput, type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
 import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
@@ -16,6 +16,8 @@ import {
   type AppDeployTargetResolution,
   resolveAppDeployTarget,
   resolveStudioDeployTarget,
+  resolveWorkbenchApp,
+  resolveWorkbenchStudio,
   type StudioDeployTargetResolution,
 } from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
@@ -43,6 +45,10 @@ export interface DeployCheck {
 
   /** Exit code a real deploy uses when this check fails; defaults to 1 */
   exitCode?: number
+  /** Set on the exposes check with the workbench exposes both reporters read. */
+  exposes?: DeployedExpose[]
+  /** Set on the installation-config check with its summary both reporters read. */
+  installationConfig?: string
   /** Actionable fix, shown under a failing or warning check */
   solution?: string
   /** Set on the deploy-target check with the resolved target both reporters read. */
@@ -291,21 +297,43 @@ export function describeAppTargetError(err: unknown, organizationId: string | un
     : `Failed to resolve deploy target: ${getErrorMessage(err)}`
 }
 
+/**
+ * Reports the app deploy target as a check and returns the resolved target;
+ * `isWorkbenchApp` selects the backend. Both modes run it — a real deploy uses
+ * it to reject a bad `appId` before building.
+ */
 export async function checkAppTarget(
   reporter: CheckReporter,
-  {
-    appId,
-    organizationId,
-    title,
-  }: {appId: string | undefined; organizationId: string | undefined; title?: string},
-): Promise<void> {
-  await runStep(
+  options:
+    | {appId: string | undefined; isWorkbenchApp: true; title?: string}
+    | {
+        appId: string | undefined
+        isWorkbenchApp?: false
+        organizationId: string | undefined
+        title?: string
+      },
+): Promise<DeployTarget | null> {
+  const {title} = options
+  if (options.isWorkbenchApp) {
+    const {appId} = options
+    return runStep(reporter, 'target', async () => {
+      const check = describeAppTarget(await resolveWorkbenchApp({appId}), {title})
+      reporter.report(check)
+      return check.target ?? null
+    })
+  }
+
+  const {appId, organizationId} = options
+  return runStep(
     reporter,
     'target',
-    async () =>
-      reporter.report(
-        describeAppTarget(await resolveAppDeployTarget({appId, organizationId}), {title}),
-      ),
+    async () => {
+      const check = describeAppTarget(await resolveAppDeployTarget({appId, organizationId}), {
+        title,
+      })
+      reporter.report(check)
+      return check.target ?? null
+    },
     (err) => describeAppTargetError(err, organizationId),
   )
 }
@@ -368,27 +396,46 @@ export function describeStudioTarget(
   }
 }
 
+/**
+ * Reports the studio deploy target as a check and returns the resolved target;
+ * `isWorkbenchApp` selects the backend. Both modes run it — a real deploy uses
+ * the returned target to reject a bad `appId` before building and to report the
+ * studio URL from the resolved slug.
+ */
 export async function checkStudioTarget(
   reporter: CheckReporter,
-  options: {
-    appId: string | undefined
-    isExternal: boolean
-    projectId: string | undefined
-    studioHost: string | undefined
-    title: string | undefined
-    urlFlag: string | undefined
-  },
-): Promise<void> {
-  await runStep(
+  options:
+    | {
+        appId: string | undefined
+        isExternal: boolean
+        isWorkbenchApp?: false
+        projectId: string | undefined
+        studioHost: string | undefined
+        title: string | undefined
+        urlFlag: string | undefined
+      }
+    | {
+        appId: string | undefined
+        isWorkbenchApp: true
+        studioHost: string | undefined
+        title?: string
+      },
+): Promise<DeployTarget | null> {
+  const {title} = options
+  const resolve = options.isWorkbenchApp
+    ? resolveWorkbenchStudio({appId: options.appId, studioHost: options.studioHost})
+    : resolveStudioDeployTarget(options)
+  // Workbench studios always deploy to Sanity hosting, never an external URL.
+  const isExternal = options.isWorkbenchApp ? false : options.isExternal
+
+  return runStep(
     reporter,
     'target',
-    async () =>
-      reporter.report(
-        describeStudioTarget(await resolveStudioDeployTarget(options), {
-          isExternal: options.isExternal,
-          title: options.title,
-        }),
-      ),
+    async () => {
+      const check = describeStudioTarget(await resolve, {isExternal, title})
+      reporter.report(check)
+      return check.target ?? null
+    },
     (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,
   )
 }
