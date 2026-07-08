@@ -22,9 +22,7 @@ vi.mock('@rolldown/plugin-babel', () => ({
   default: vi.fn(() => ({name: 'babel-plugin'})),
 }))
 
-vi.mock('@sanity/cli-core/config', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
-}))
+vi.mock('@sanity/cli-core/config', () => import('@sanity/cli-test/mocks/cli-core/config'))
 
 vi.mock('@sanity/cli-core/telemetry', () => ({
   getCliTelemetry: vi.fn(),
@@ -423,7 +421,6 @@ describe('#getViteConfig', () => {
     expect(mockExtractSchemaPlugin).toHaveBeenCalledWith(
       expect.objectContaining({
         additionalPatterns: ['custom/**/*.ts'],
-        configPath: '/mock/config/path',
         enforceRequiredFields: true,
         outputPath: 'custom-schema.json',
         workDir: mockTestCwd,

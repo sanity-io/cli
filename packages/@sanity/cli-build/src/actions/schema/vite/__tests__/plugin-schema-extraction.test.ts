@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import {CLITelemetryStore} from '@sanity/cli-core/types'
 import {createMockHttpServer, createMockWatcher} from '@sanity/cli-test'
-import {SchemaValidationProblemGroup} from 'sanity'
+import {type SchemaValidationProblemGroup} from 'sanity'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {SchemaExtractionError} from '../../utils/SchemaExtractionError.js'
@@ -10,6 +10,7 @@ import {sanitySchemaExtractionPlugin} from '../plugin-schema-extraction.js'
 
 const mockRunSchemaExtraction = vi.hoisted(() => vi.fn())
 
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 vi.mock('../../runSchemaExtraction.js', async () => ({
   runSchemaExtraction: mockRunSchemaExtraction,
 }))

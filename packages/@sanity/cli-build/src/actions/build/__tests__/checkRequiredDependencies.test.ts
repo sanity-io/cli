@@ -1,17 +1,18 @@
+import {
+  getLocalPackageVersion as mockGetLocalPackageVersion,
+  readPackageJson as mockReadPackageJson,
+} from '@sanity/cli-test/mocks/cli-core/package-manager'
 import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {checkRequiredDependencies} from '../checkRequiredDependencies'
 
-const mockReadPackageJson = vi.hoisted(() => vi.fn())
-const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
-
 vi.mock('semver', {spy: true})
 
-vi.mock(import('@sanity/cli-core/package-manager'), () => ({
-  getLocalPackageVersion: mockGetLocalPackageVersion,
-  readPackageJson: mockReadPackageJson,
-}))
+vi.mock(
+  '@sanity/cli-core/package-manager',
+  () => import('@sanity/cli-test/mocks/cli-core/package-manager'),
+)
 
 describe('#checkRequiredDependencies', () => {
   const workDir = '/tmp/test-studio'
