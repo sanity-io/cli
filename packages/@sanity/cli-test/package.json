@@ -75,7 +75,7 @@
     },
     "./test/createTestClient": {
       "source": "./src/test/createTestClient.ts",
-      "default": "./dist/test/createTestToken.js"
+      "default": "./dist/test/createTestClient.js"
     },
     "./test/mockApi": {
       "source": "./src/test/mockApi.ts",
