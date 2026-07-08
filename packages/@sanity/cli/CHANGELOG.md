@@ -1,5 +1,15 @@
 # Change Log
 
+## [7.7.1](https://github.com/sanity-io/cli/compare/cli-v7.7.0...cli-v7.7.1)
+
+_2026-07-08_
+
+### Bug Fixes
+
+- **deploy:** carry the pending app's title in a dry-run plan's JSON target ([#1450](https://github.com/sanity-io/cli/pull/1450)) ([f4f6869](https://github.com/sanity-io/cli/commit/f4f6869674d6fc3c613df306fc76ab2418e8b3ea))
+- **deploy:** report a failed `deploy --json` as a `{deployed: false}` JSON envelope ([#1449](https://github.com/sanity-io/cli/pull/1449)) ([ab64bab](https://github.com/sanity-io/cli/commit/ab64babbef675995dbda7248fcdb4e9d5327455a))
+- **deploy:** carry the studio title in a dry-run plan's JSON target ([#1451](https://github.com/sanity-io/cli/pull/1451)) ([0fd77e0](https://github.com/sanity-io/cli/commit/0fd77e0d702d71c11a7ec168090fe7f26a1a3708))
+
 ## [7.7.0](https://github.com/sanity-io/cli/compare/cli-v7.6.0...cli-v7.7.0)
 
 _2026-07-07_
