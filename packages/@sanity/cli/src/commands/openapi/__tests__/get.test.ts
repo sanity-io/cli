@@ -1,14 +1,14 @@
-import {mocks} from '@sanity/cli-test/mocks'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {GetOpenApiCommand} from '../get.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
 vi.mock('open')
 
 const mockYamlSpec = `

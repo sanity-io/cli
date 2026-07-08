@@ -3,33 +3,36 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-import {apiClientMocks, mocks} from '@sanity/cli-test/mocks'
+import * as apiClientMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {watch as chokidarWatch} from 'chokidar'
-import {execa, execaSync} from 'execa'
 import json5 from 'json5'
 import {afterEach, beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 
 import {CreateDocumentCommand} from '../create.js'
+
+const mockExeca = vi.hoisted(() => vi.fn())
+const mockExecaSync = vi.hoisted(() => vi.fn())
 
 vi.mock('node:fs/promises')
 vi.mock('node:os')
 vi.mock('chokidar', () => ({
   watch: vi.fn(),
 }))
-vi.mock('execa')
+vi.mock('execa', () => ({
+  execa: mockExeca,
+  execaSync: mockExecaSync,
+}))
 vi.mock('json5')
 vi.mock('node:crypto')
 vi.mock('@sanity/client', () => ({}))
 const mockGetProjectCliClient = apiClientMocks.getProjectCliClient
 
 vi.mock(
-  '@sanity/cli-core/apiClient',
-  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
 )
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
+vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
 vi.mock('../../../prompts/promptForProject.js', () => ({
   promptForProject: vi.fn(),
 }))
@@ -37,8 +40,6 @@ vi.mock('../../../prompts/promptForProject.js', () => ({
 const mockFs = vi.mocked(fs)
 const mockOs = vi.mocked(os)
 const mockChokidarWatch = vi.mocked(chokidarWatch)
-const mockExeca = vi.mocked(execa)
-const mockExecaSync = vi.mocked(execaSync)
 const mockJson5 = vi.mocked(json5)
 const mockRandomUUID = vi.mocked(randomUUID)
 
@@ -803,11 +804,11 @@ describe('#documents:create', () => {
 
         // Trigger the change handler during execa (while still inside stdout capture)
         // The watcher is set up before execa is called, so changeHandler will be defined
-        mockExeca.mockImplementation((async () => {
+        mockExeca.mockImplementation(async () => {
           expect(changeHandler!).toBeDefined()
           await changeHandler!()
           return {}
-        }) as unknown as typeof execa)
+        })
 
         await CreateDocumentCommand.run(['--watch'])
 

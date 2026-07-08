@@ -1,15 +1,15 @@
 import {getStudioConfig} from '@sanity/cli-core/config'
-import {mocks} from '@sanity/cli-test/mocks'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import open from 'open'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ManageCommand} from '../manage.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
-vi.mock('@sanity/cli-core/config', async () => (await import('@sanity/cli-test/mocks')).configMocks)
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/config', () => import('@sanity/cli-test/mocks/cli-core/config'))
 vi.mock('open', () => ({default: vi.fn()}))
 
 describe('#manage', () => {

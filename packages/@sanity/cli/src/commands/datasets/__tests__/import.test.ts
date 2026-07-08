@@ -1,20 +1,18 @@
 import {Readable} from 'node:stream'
 
-import {apiClientMocks, mocks} from '@sanity/cli-test/mocks'
+import * as apiClientMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {NEW_DATASET_VALUE} from '../../../prompts/promptForDataset.js'
 import {ImportDatasetCommand} from '../import.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
 vi.mock(
-  '@sanity/cli-core/apiClient',
-  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
 )
-vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
 
 const mockGetProjectCliClient = apiClientMocks.getProjectCliClient.mockResolvedValue({})
 const mockPromptForDataset = vi.hoisted(() => vi.fn())

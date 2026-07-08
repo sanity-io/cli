@@ -1,12 +1,12 @@
-import {mocks} from '@sanity/cli-test/mocks'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {Enable} from '../enable.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
 
 const mockSetConsent = vi.hoisted(() => vi.fn())
 const mockLearnMore = vi.hoisted(() => vi.fn())

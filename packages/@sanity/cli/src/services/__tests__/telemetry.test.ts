@@ -1,5 +1,6 @@
 import {getUserConfig} from '@sanity/cli-core/config'
-import {apiClientMocks, cliUserConfigMocks} from '@sanity/cli-test/mocks'
+import * as apiClientMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
+import * as cliUserConfigMocks from '@sanity/cli-test/mocks/cli-core/config'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -19,14 +20,8 @@ function createInMemoryConfigStore() {
   }
 }
 
-vi.mock(
-  '@sanity/cli-core/apiClient',
-  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
-)
-vi.mock(
-  '@sanity/cli-core/config',
-  async () => (await import('@sanity/cli-test/mocks')).cliUserConfigMocks,
-)
+vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
+vi.mock('@sanity/cli-core/config', () => import('@sanity/cli-test/mocks/cli-core/config'))
 
 const testConfigStore = createInMemoryConfigStore()
 const mockGetCliToken = cliUserConfigMocks.getCliToken

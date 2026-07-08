@@ -4,10 +4,10 @@ import {describe, expect, test, vi} from 'vitest'
 import {workbenchApp} from '../../actions/dev/__tests__/testHelpers.js'
 import {DevCommand, shouldWarnDashboardFlagIgnored} from '../dev.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
 
 vi.mock(import('../../actions/dev/devAction.js'), () => ({
   devAction: vi.fn(),

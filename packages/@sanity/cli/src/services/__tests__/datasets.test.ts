@@ -1,4 +1,4 @@
-import {apiClientMocks} from '@sanity/cli-test/mocks'
+import * as apiClientMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -49,10 +49,7 @@ vi.mock('eventsource', () => {
   }
 })
 
-vi.mock(
-  import('@sanity/cli-core/apiClient'),
-  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
-)
+vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
 
 const mockClient = {
   config: vi.fn(),

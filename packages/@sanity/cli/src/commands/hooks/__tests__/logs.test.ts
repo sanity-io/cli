@@ -1,5 +1,5 @@
-import {mocks, uxMocks} from '@sanity/cli-test/mocks'
-import {cleanAll, pendingMocks} from 'nock'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {type DeliveryAttempt, type Hook} from '../../../actions/hook/types.js'
@@ -9,11 +9,11 @@ const mockedGetHooks = vi.hoisted(() => vi.fn())
 const mockedGetHookAttempts = vi.hoisted(() => vi.fn())
 const mockedGetHookMessages = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
-vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 vi.mock('../../../services/hooks.js', () => ({
   getHookAttemptsForProject: mockedGetHookAttempts,
   getHookMessagesForProject: mockedGetHookMessages,
@@ -33,9 +33,6 @@ const TEST_HOOK = {
 describe('#hook:logs', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('displays error when problem retrieving hooks', async () => {

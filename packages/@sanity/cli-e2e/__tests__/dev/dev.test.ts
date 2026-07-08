@@ -1,4 +1,4 @@
-import {testFixture} from '@sanity/cli-test'
+import {testFixture} from '@sanity/cli-test/test/util'
 import {describe, expect, test} from 'vitest'
 
 import {runCli} from '../../helpers/runCli.js'

@@ -1,13 +1,13 @@
-import {mocks} from '@sanity/cli-test/mocks'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {DoctorCommand} from '../doctor.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
-vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockDoctorChecks = vi.hoisted(() => ({cli: vi.fn()})) // coupled to actions/doctor/checks/index.js
 const mockKnownChecks = vi.hoisted(() => Object.keys(mockDoctorChecks))
