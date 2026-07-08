@@ -30,13 +30,23 @@ export const select: Mock = vi.fn()
  * @internal
  */
 export const spinnerText: Mock = vi.fn()
+/**
+ * Spy for asserting on spinner start.
+ * @internal
+ */
+export const spinnerStart: Mock = vi.fn().mockReturnThis()
+/**
+ * Spy for asserting on spinner succeed.
+ * @internal
+ */
+export const spinnerSucceed: Mock = vi.fn()
 /** @internal */
 export const spinner: Mock = vi.fn(() => {
   const mockSpin = {
     fail: vi.fn(),
     render: vi.fn(),
-    start: vi.fn().mockReturnThis(),
-    succeed: vi.fn(),
+    start: spinnerStart,
+    succeed: spinnerSucceed,
   }
   Object.defineProperty(mockSpin, 'text', {
     configurable: true,

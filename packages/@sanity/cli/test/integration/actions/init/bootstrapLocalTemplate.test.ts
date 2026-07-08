@@ -3,17 +3,10 @@ import {tmpdir} from 'node:os'
 import path from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
-import {createMockSpinner} from '@sanity/cli-test'
+import {spinner, spinnerStart, spinnerSucceed} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {resolveLatestVersions} from '../../../../src/util/resolveLatestVersions.js'
-
-const mockedSpinnerStart = vi.fn().mockReturnThis()
-const mockedSpinnerSucceed = vi.fn().mockReturnThis()
-const mockedSpinner = createMockSpinner({
-  start: mockedSpinnerStart,
-  succeed: mockedSpinnerSucceed,
-})
 
 vi.mock('../../../../src/util/resolveLatestVersions.js', () => ({
   resolveLatestVersions: vi.fn().mockImplementation(async (deps: Record<string, string>) => {
@@ -27,9 +20,7 @@ vi.mock('../../../../src/actions/init/updateInitialTemplateMetadata.js', () => (
   updateInitialTemplateMetadata: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@sanity/cli-core/ux', async () => ({
-  spinner: mockedSpinner,
-}))
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const {bootstrapLocalTemplate} =
   await import('../../../../src/actions/init/bootstrapLocalTemplate.js')
@@ -69,9 +60,10 @@ describe('bootstrapLocalTemplate (app templates)', () => {
       },
     })
 
-    expect(mockedSpinner).toHaveBeenCalledWith('Bootstrapping files from template')
-    expect(mockedSpinnerStart).toHaveBeenCalledTimes(3)
-    expect(mockedSpinnerSucceed).toHaveBeenCalledTimes(3)
+    expect(spinner).toHaveBeenCalledWith('Bootstrapping files from template')
+
+    expect(spinnerStart).toHaveBeenCalledTimes(3)
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     const appTsx = await readFile(path.join(tmp, 'src', 'App.tsx'), 'utf8')
     expect(appTsx).toContain(`projectId: 'abc123'`)
@@ -97,7 +89,7 @@ describe('bootstrapLocalTemplate (app templates)', () => {
       },
     })
 
-    expect(mockedSpinnerSucceed).toHaveBeenCalledTimes(3)
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     const appTsx = await readFile(path.join(tmp, 'src', 'App.tsx'), 'utf8')
     expect(appTsx).toContain(`projectId: ''`)
@@ -134,7 +126,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
       },
     })
 
-    expect(mockedSpinnerSucceed).toHaveBeenCalledTimes(3)
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     expect(resolveLatestVersions).toHaveBeenCalledOnce()
     const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
@@ -161,7 +153,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
       },
     })
 
-    expect(mockedSpinnerSucceed).toHaveBeenCalledTimes(3)
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     expect(resolveLatestVersions).toHaveBeenCalledOnce()
     const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
@@ -185,7 +177,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
       },
     })
 
-    expect(mockedSpinnerSucceed).toHaveBeenCalledTimes(3)
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     expect(resolveLatestVersions).toHaveBeenCalledOnce()
     const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
@@ -209,7 +201,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
       },
     })
 
-    expect(mockedSpinnerSucceed).toHaveBeenCalledTimes(3)
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
     expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
@@ -238,7 +230,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
       },
     })
 
-    expect(mockedSpinnerSucceed).toHaveBeenCalledTimes(3)
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
     expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
@@ -267,7 +259,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
       },
     })
 
-    expect(mockedSpinnerSucceed).toHaveBeenCalledTimes(3)
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
     expect(cliConfig).not.toContain('unstable_defineApp')
