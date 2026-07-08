@@ -163,6 +163,7 @@ describe('checkStudioTarget', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Would create studio hostname')
+    expect(reporter.results[0]?.target?.title).toBeNull()
   })
 
   test('would-create with a title → pass check names the title', async () => {
@@ -173,6 +174,22 @@ describe('checkStudioTarget', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('titled "My Studio"')
+    // The JSON target echoes the requested title, matching the human message
+    expect(reporter.results[0]?.target).toEqual({
+      applicationId: null,
+      title: 'My Studio',
+      url: 'https://new-studio.sanity.studio',
+    })
+  })
+
+  test('would-create with an empty title → target.title null, like the message', async () => {
+    mockResolveStudio.mockResolvedValue({appHost: 'new-studio', type: 'would-create'})
+    const reporter = createCollectingReporter()
+
+    await checkStudioTarget(reporter, {...studioArgs, title: ''})
+
+    expect(reporter.results[0]?.message).not.toContain('titled')
+    expect(reporter.results[0]?.target?.title).toBeNull()
   })
 
   test('external would-create → pass check', async () => {
