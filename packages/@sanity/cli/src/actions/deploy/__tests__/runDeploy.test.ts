@@ -1,64 +1,16 @@
-import {type Dirent, type Stats} from 'node:fs'
-import {readdir, stat} from 'node:fs/promises'
-import {join} from 'node:path'
-
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
-import {beforeEach, describe, expect, test, vi} from 'vitest'
-
-import {type DeployCheck} from '../checks.js'
 import {
   type DeployAdapter,
+  type DeployAppOptions,
+  type DeployCheck,
   type DeploymentFile,
   type DeploymentPlan,
-  deploymentPlanToJson,
-  listDeploymentFiles,
   newPlan,
-  renderDeploymentPlan,
-  runDeploy,
-} from '../runDeploy.js'
-import {type DeployAppOptions} from '../types.js'
+} from '@sanity/cli-core/deploy'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-vi.mock(import('node:fs/promises'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  readdir: vi.fn(),
-  stat: vi.fn(),
-}))
-
-const mockReaddir = vi.mocked(readdir)
-const mockStat = vi.mocked(stat)
-
-// Minimal Dirent stand-in: listDeploymentFiles only reads `name` and `isDirectory()`.
-const dirent = (name: string, isDirectory: boolean): Dirent =>
-  ({isDirectory: () => isDirectory, name}) as Dirent
-
-describe('listDeploymentFiles', () => {
-  beforeEach(() => vi.clearAllMocks())
-
-  test('lists nested files as sorted paths with sizes, relative to fromDir', async () => {
-    mockReaddir.mockImplementation((async (dir: string) => {
-      if (dir.endsWith(join('dist', 'assets'))) return [dirent('app.js', false)]
-      if (dir.endsWith('dist')) return [dirent('index.html', false), dirent('assets', true)]
-      return []
-    }) as unknown as typeof readdir)
-    mockStat.mockImplementation(
-      (async (file: string) =>
-        ({size: file.endsWith('app.js') ? 3 : 1}) as Stats) as unknown as typeof stat,
-    )
-
-    const files = await listDeploymentFiles(join('/root', 'dist'), '/root')
-
-    expect(files).toEqual([
-      {path: 'dist/assets/app.js', size: 3},
-      {path: 'dist/index.html', size: 1},
-    ])
-  })
-
-  test('returns an empty list when the directory is missing', async () => {
-    mockReaddir.mockRejectedValue(new Error('ENOENT'))
-    expect(await listDeploymentFiles(join('/root', 'missing'), '/root')).toEqual([])
-  })
-})
+import {deploymentPlanToJson, renderDeploymentPlan, runDeploy} from '../runDeploy.js'
 
 const studioPlan = (
   checks: DeployCheck[],
@@ -215,11 +167,15 @@ const dryRunOptions = (output: Output): DeployAppOptions =>
     sourceDir: '/root/dist',
   }) as unknown as DeployAppOptions
 
+/** A stub studio adapter whose slots report nothing and upload nothing. */
 const studioAdapter = (
   overrides: Partial<DeployAdapter<'studio'>> = {},
 ): DeployAdapter<'studio'> => ({
+  acquireTarget: async (_options, state) => state,
+  check: async () => ({checks: [], state: {uploadsFiles: false, version: '3.99.0'}}),
+  checkOutput: async (_options, state) => ({checks: [], state}),
   deploy: async () => undefined,
-  plan: async () => newPlan({checks: [], target: null, type: 'studio', version: null}),
+  describeTarget: async () => null,
   type: 'studio',
   ...overrides,
 })
@@ -228,7 +184,10 @@ describe('runDeploy dry run', () => {
   test('exits with the first failing check exit code, like a real deploy', async () => {
     const output = mockOutput()
     const adapter = studioAdapter({
-      plan: async () => studioPlan([{exitCode: 2, message: 'boom', status: 'fail'}]),
+      check: async () => ({
+        checks: [{exitCode: 2, message: 'boom', status: 'fail'}],
+        state: {uploadsFiles: false, version: null},
+      }),
     })
 
     await runDeploy(dryRunOptions(output), adapter)
@@ -239,11 +198,10 @@ describe('runDeploy dry run', () => {
   test('a deployable dry run renders the plan without erroring', async () => {
     const output = mockOutput()
     const adapter = studioAdapter({
-      plan: async () =>
-        studioPlan(
-          [{message: 'Project: p1', status: 'pass'}],
-          [{path: 'dist/index.html', size: 10}],
-        ),
+      check: async () => ({
+        checks: [{message: 'Project: p1', status: 'pass'}],
+        state: {uploadsFiles: false, version: '3.99.0'},
+      }),
     })
 
     await runDeploy(dryRunOptions(output), adapter)
@@ -252,16 +210,13 @@ describe('runDeploy dry run', () => {
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('This studio can be deployed.'))
   })
 
-  test('the JSON plan reports the version the plan resolved', async () => {
+  test('the JSON plan reports the version the checks resolved', async () => {
     const output = mockOutput()
     const adapter = studioAdapter({
-      plan: async () =>
-        newPlan({
-          checks: [{message: 'Using sanity 9.9.9', status: 'pass'}],
-          target: null,
-          type: 'studio',
-          version: '9.9.9',
-        }),
+      check: async () => ({
+        checks: [{message: 'Using sanity 9.9.9', status: 'pass'}],
+        state: {uploadsFiles: false, version: '9.9.9'},
+      }),
     })
 
     await runDeploy(
@@ -273,13 +228,15 @@ describe('runDeploy dry run', () => {
     expect(payload.applicationVersion).toBe('9.9.9')
   })
 
-  test('never calls deploy', async () => {
+  test('never acquires a target or deploys', async () => {
     const output = mockOutput()
+    const acquireTarget = vi.fn()
     const deploy = vi.fn()
-    const adapter = studioAdapter({deploy})
+    const adapter = studioAdapter({acquireTarget, deploy})
 
     await runDeploy(dryRunOptions(output), adapter)
 
+    expect(acquireTarget).not.toHaveBeenCalled()
     expect(deploy).not.toHaveBeenCalled()
   })
 
@@ -290,7 +247,10 @@ describe('runDeploy dry run', () => {
       throw new CLIError('blocked')
     })
     const adapter = studioAdapter({
-      plan: async () => studioPlan([{exitCode: 2, message: 'boom', status: 'fail'}]),
+      check: async () => ({
+        checks: [{exitCode: 2, message: 'boom', status: 'fail'}],
+        state: {uploadsFiles: false, version: null},
+      }),
     })
 
     await expect(
@@ -307,19 +267,61 @@ describe('runDeploy dry run', () => {
 })
 
 describe('runDeploy real deploy', () => {
-  test('emits the deploy result as JSON, marked deployed', async () => {
+  test('runs the slots in order and emits the deploy result as JSON, marked deployed', async () => {
     const output = mockOutput()
+    const order: string[] = []
     const result = {
       applicationType: 'studio' as const,
       applicationVersion: '3.99.0',
       target: {applicationId: 'app-1', title: 'My Studio', url: 'https://my-studio.sanity.studio'},
     }
-    const adapter = studioAdapter({deploy: async () => result})
+    const adapter = studioAdapter({
+      acquireTarget: async (_options, state) => {
+        order.push('acquire')
+        return state
+      },
+      check: async () => {
+        order.push('check')
+        return {checks: [], state: {uploadsFiles: false, version: '3.99.0'}}
+      },
+      checkOutput: async (_options, state) => {
+        order.push('output')
+        return {checks: [], state}
+      },
+      deploy: async () => {
+        order.push('deploy')
+        return result
+      },
+    })
 
     await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, adapter)
 
+    expect(order).toEqual(['check', 'acquire', 'output', 'deploy'])
     const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
     expect(payload).toEqual({deployed: true, ...result})
+  })
+
+  test('a failing check aborts before the target is acquired', async () => {
+    const output = mockOutput()
+    vi.mocked(output.error).mockImplementation(() => {
+      throw new CLIError('boom')
+    })
+    const acquireTarget = vi.fn()
+    const adapter = studioAdapter({
+      acquireTarget,
+      check: async () => ({
+        checks: [{message: 'boom', status: 'fail'}],
+        state: {uploadsFiles: false, version: null},
+      }),
+    })
+
+    // The mocked output.error throws on the catch-path re-report too, so the run rejects.
+    await expect(
+      runDeploy({...dryRunOptions(output), flags: {}} as DeployAppOptions, adapter),
+    ).rejects.toThrow('boom')
+
+    expect(acquireTarget).not.toHaveBeenCalled()
+    expect(output.error).toHaveBeenCalledWith('boom', {exit: 1})
   })
 
   test('a failed deploy emits a {deployed: false} envelope and still errors on stderr', async () => {

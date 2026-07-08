@@ -1,8 +1,8 @@
 import {styleText} from 'node:util'
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type DeployFlags} from '@sanity/cli-core/deploy'
 
-import {type DeployFlags} from '../deploy/types.js'
 import {type DevFlags} from '../dev/types.js'
 import {type BuildFlags} from './types.js'
 

@@ -1,39 +1,22 @@
-import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
-import {type Application, getApplication} from '@sanity/workbench-cli/deploy'
+import {type CliConfig, exitCodes} from '@sanity/cli-core'
+import {type DeployFlags} from '@sanity/cli-core/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   type UserApplication,
   type UserApplicationResolved,
 } from '../../../services/userApplications.js'
-import {
-  checkAppIdConfig,
-  checkAppTarget,
-  checkAutoUpdates,
-  checkStudioTarget,
-  enforce,
-} from '../checks.js'
+import {checkAppIdConfig, checkAppTarget, checkAutoUpdates, checkStudioTarget} from '../checks.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from '../resolveDeployTarget.js'
-import {type DeployFlags} from '../types.js'
 
-// The user-applications resolvers are stubbed; the workbench resolvers stay real
-// and exercise the mocked getApplication.
 vi.mock('../resolveDeployTarget.js', async (importOriginal) => ({
   ...(await importOriginal()),
   resolveAppDeployTarget: vi.fn(),
   resolveStudioDeployTarget: vi.fn(),
 }))
 
-vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  getApplication: vi.fn(),
-}))
-
 const mockResolveStudio = vi.mocked(resolveStudioDeployTarget)
 const mockResolveApp = vi.mocked(resolveAppDeployTarget)
-const mockGetApplication = vi.mocked(getApplication)
-
-const mockOutput = () => ({error: vi.fn(), warn: vi.fn()}) as unknown as Output
 
 function application(overrides: Partial<UserApplication> = {}): UserApplication {
   return {
@@ -51,47 +34,6 @@ function application(overrides: Partial<UserApplication> = {}): UserApplication 
 }
 
 beforeEach(() => vi.clearAllMocks())
-
-describe('enforce', () => {
-  test('a fail exits with its exit code', () => {
-    const output = mockOutput()
-    enforce(output, {exitCode: 2, message: 'boom', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom', {exit: 2})
-  })
-
-  test('a fail without an exit code defaults to 1', () => {
-    const output = mockOutput()
-    enforce(output, {message: 'boom', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom', {exit: 1})
-  })
-
-  test('a warn prints and does not exit', () => {
-    const output = mockOutput()
-    enforce(output, {message: 'heads up', status: 'warn'})
-    expect(output.warn).toHaveBeenCalledWith('heads up')
-    expect(output.error).not.toHaveBeenCalled()
-  })
-
-  test('pass and skip are silent', () => {
-    const output = mockOutput()
-    enforce(output, {message: 'good', status: 'pass'})
-    enforce(output, {message: 'skipped', status: 'skip'})
-    expect(output.error).not.toHaveBeenCalled()
-    expect(output.warn).not.toHaveBeenCalled()
-  })
-
-  test('a fail appends its solution to the message', () => {
-    const output = mockOutput()
-    enforce(output, {message: 'boom', solution: 'do X', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom: do X', {exit: 1})
-  })
-
-  test('a warn appends its solution to the message', () => {
-    const output = mockOutput()
-    enforce(output, {message: 'heads up', solution: 'do Y', status: 'warn'})
-    expect(output.warn).toHaveBeenCalledWith('heads up: do Y')
-  })
-})
 
 const studioArgs = {
   appId: undefined,
@@ -300,90 +242,6 @@ describe('checkAppTarget', () => {
 
     expect(check.status).toBe('fail')
     expect(check.message).toContain('don’t have permission')
-  })
-})
-
-function workbenchApp(overrides: Partial<Application> = {}): Application {
-  return {
-    id: 'app-1',
-    organizationId: 'org-1',
-    slug: 'app',
-    title: 'My App',
-    type: 'coreApp',
-    ...overrides,
-  }
-}
-
-describe('checkAppTarget (workbench backend)', () => {
-  test('existing appId → pass check for the resolved application', async () => {
-    mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
-
-    const {check} = await checkAppTarget({appId: 'app-1', isWorkbenchApp: true, title: 'ignored'})
-
-    expect(check).toMatchObject({status: 'pass'})
-    expect(check.message).toContain('Deploys to existing application "Drop Desk"')
-  })
-
-  test('unknown appId → fail check pointing to deployment.appId', async () => {
-    mockGetApplication.mockResolvedValue(null)
-
-    const {check} = await checkAppTarget({appId: 'nope', isWorkbenchApp: true, title: 'ignored'})
-
-    expect(check.status).toBe('fail')
-    expect(check.solution).toContain('deployment.appId')
-  })
-
-  test('no appId → pass check for the application that would be created', async () => {
-    const {check} = await checkAppTarget({
-      appId: undefined,
-      isWorkbenchApp: true,
-      title: 'New App',
-    })
-
-    expect(check).toMatchObject({status: 'pass'})
-    expect(check.message).toContain('Would create a new application "New App"')
-    expect(mockGetApplication).not.toHaveBeenCalled()
-  })
-})
-
-describe('checkStudioTarget (workbench backend)', () => {
-  test('existing appId → pass check for the resolved studio, returns its target', async () => {
-    mockGetApplication.mockResolvedValue(workbenchApp({slug: 'my-studio', type: 'studio'}))
-
-    const {check, target} = await checkStudioTarget({
-      appId: 'app-1',
-      isWorkbenchApp: true,
-      studioHost: undefined,
-    })
-
-    expect(check).toMatchObject({status: 'pass'})
-    expect(check.message).toContain('Deploys to existing studio https://my-studio.sanity.studio')
-    expect(target?.url).toBe('https://my-studio.sanity.studio')
-  })
-
-  test('no appId with a studioHost → pass check for the studio that would be created', async () => {
-    const {check} = await checkStudioTarget({
-      appId: undefined,
-      isWorkbenchApp: true,
-      studioHost: 'my-studio',
-      title: 'New Studio',
-    })
-
-    expect(check).toMatchObject({status: 'pass'})
-    expect(check.message).toContain('Would create studio hostname')
-    expect(check.message).toContain('titled "New Studio"')
-    expect(mockGetApplication).not.toHaveBeenCalled()
-  })
-
-  test('no appId and no studioHost → usage-error fail check', async () => {
-    const {check} = await checkStudioTarget({
-      appId: undefined,
-      isWorkbenchApp: true,
-      studioHost: undefined,
-    })
-
-    expect(check).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
-    expect(check.solution).toContain('studioHost')
   })
 })
 

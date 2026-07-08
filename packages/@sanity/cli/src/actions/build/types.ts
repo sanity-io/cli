@@ -1,7 +1,7 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type DeployFlags} from '@sanity/cli-core/deploy'
 
 import {BuildCommand} from '../../commands/build.js'
-import {type DeployFlags} from '../deploy/types.js'
 
 export type BuildFlags = BuildCommand['flags']
 

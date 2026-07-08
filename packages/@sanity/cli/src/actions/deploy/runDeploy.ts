@@ -1,86 +1,26 @@
-// The deploy engine: an adapter supplies the two flows (read-only `plan`,
-// mutating `deploy`) and runDeploy picks one from the flags and handles all
-// `--dry-run`/`--json` mode concerns, so adapters never branch on mode.
+// The command-facing entry: picks the flow from the flags (`--dry-run` plans
+// read-only, otherwise the adapter deploys for real) and owns all `--json`
+// concerns. The flows themselves live in @sanity/cli-core/deploy.
 
-import {readdir, stat} from 'node:fs/promises'
-import {join, relative, sep} from 'node:path'
 import {format, styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {getErrorMessage, type Output} from '@sanity/cli-core'
+import {
+  type DeployAdapter,
+  type DeployAppOptions,
+  type DeployCheck,
+  type DeployedApplicationType,
+  type DeploymentPlan,
+  executeDeploy,
+  isDeployable,
+  planDeploy,
+} from '@sanity/cli-core/deploy'
 import {logSymbols} from '@sanity/cli-core/ux'
-import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {pluralize} from '../../util/pluralize.js'
-import {type DeployCheck, type DeployTarget} from './checks.js'
 import {deployDebug} from './deployDebug.js'
-import {type DeployAppOptions} from './types.js'
 
-export type DeployedApplicationType = 'coreApp' | 'studio'
-
-/**
- * One kind of deploy — plain studio, plain app, workbench studio, workbench
- * app — as the two flows the command can run. The generic ties an adapter's
- * plans and results to its application type.
- */
-export interface DeployAdapter<T extends DeployedApplicationType = DeployedApplicationType> {
-  /** Prompts, creates, builds, and uploads; the first failing check prints and exits. */
-  deploy(options: DeployAppOptions): Promise<DeployResult<T> | undefined>
-  /** Runs every check a deploy enforces (including the build) without prompting or mutating anything remote. */
-  plan(options: DeployAppOptions): Promise<DeploymentPlan<T>>
-  readonly type: T
-}
-
-/** What a real deploy produced — the payload `--json` reports. */
-export interface DeployResult<T extends DeployedApplicationType = DeployedApplicationType> {
-  applicationType: T
-  /** Installed framework version the deploy used (`sanity` or `@sanity/sdk-react`). */
-  applicationVersion: string
-  /** Same shape as the dry-run plan's target; `null` for a config-only singleton deploy. */
-  target: DeployTarget | null
-
-  /** Workbench views and services registered with the deploy. */
-  exposes?: DeployedExpose[]
-  /** Media-library installation config summary, when a singleton config deployed. */
-  installationConfig?: string
-  /** Set when a media-library singleton deployed its installation config. */
-  installationId?: string
-}
-
-/** What a `--dry-run` deploy would do: the real deploy sequence with every mutation gated off. */
-export interface DeploymentPlan<T extends DeployedApplicationType = DeployedApplicationType> {
-  checks: DeployCheck[]
-  exposes: DeployedExpose[]
-  files: DeploymentFile[]
-  installationConfig: string | null
-  target: DeployTarget | null
-  type: T
-  version: string | null
-}
-
-export interface DeploymentFile {
-  /** Path relative to the project root, POSIX-style. */
-  path: string
-  size: number
-}
-
-export function newPlan<T extends DeployedApplicationType>(
-  parts: Partial<DeploymentPlan<T>> &
-    Pick<DeploymentPlan<T>, 'checks' | 'target' | 'type' | 'version'>,
-): DeploymentPlan<T> {
-  return {exposes: [], files: [], installationConfig: null, ...parts}
-}
-
-export function isDeployable(plan: DeploymentPlan): boolean {
-  return plan.checks.every((check) => check.status !== 'fail')
-}
-
-/**
- * Runs a deploy in the mode the flags select: `--dry-run` plans read-only and
- * renders the report, otherwise the adapter deploys for real. `--json` emits
- * the same information as machine-readable JSON on stdout.
- */
 export async function runDeploy(options: DeployAppOptions, adapter: DeployAdapter): Promise<void> {
   const {output} = options
   const json = !!options.flags.json
@@ -101,14 +41,14 @@ export async function runDeploy(options: DeployAppOptions, adapter: DeployAdapte
 
   try {
     if (options.flags['dry-run']) {
-      const plan = await adapter.plan(runOptions)
+      const plan = await planDeploy(adapter, runOptions)
       if (json) emitJson(deploymentPlanToJson(plan))
       else renderDeploymentPlan(plan, output)
       exitIfBlocked(plan, output)
       return
     }
 
-    const result = await adapter.deploy(runOptions)
+    const result = await executeDeploy(adapter, runOptions)
     if (json && result) emitJson({deployed: true, ...result})
   } catch (error) {
     const failure = normalizeFailure(error, adapter.type)
@@ -150,41 +90,6 @@ function deployLabel(type: DeployedApplicationType): string {
 }
 
 /**
- * Lists the files a deploy would pack from `sourceDir`, as paths relative to
- * `fromDir`. A missing directory yields an empty list rather than throwing.
- */
-export async function listDeploymentFiles(
-  sourceDir: string,
-  fromDir: string,
-): Promise<DeploymentFile[]> {
-  const walk = async (dir: string): Promise<string[]> => {
-    let entries
-    try {
-      entries = await readdir(dir, {withFileTypes: true})
-    } catch {
-      return []
-    }
-    const nested = await Promise.all(
-      entries.map((entry) => {
-        const full = join(dir, entry.name)
-        return entry.isDirectory() ? walk(full) : Promise.resolve([full])
-      }),
-    )
-    return nested.flat()
-  }
-
-  const absolute = await walk(sourceDir)
-  const files = await Promise.all(
-    absolute.map(async (file) => ({
-      // Deploy paths are POSIX-style regardless of the host OS (Windows gives `\`).
-      path: relative(fromDir, file).split(sep).join('/'),
-      size: (await stat(file)).size,
-    })),
-  )
-  return files.toSorted((a, b) => a.path.localeCompare(b.path))
-}
-
-/**
  * A problem-focused, machine-readable projection of the plan: blocking problems
  * mapped to their fix, warnings as messages. Derived from the same checks the
  * human report renders (its pass/skip lines are informational and omitted here).
@@ -193,11 +98,11 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
   applicationType: DeploymentPlan['type']
   applicationVersion: string | null
   errors: Record<string, string | null>
-  exposes?: DeployedExpose[]
-  files: DeploymentFile[]
+  exposes?: DeploymentPlan['exposes']
+  files: DeploymentPlan['files']
   installationConfig?: string
   isDeployable: boolean
-  target: DeployTarget | null
+  target: DeploymentPlan['target']
   totalBytes: number
   warnings: string[]
 } {
@@ -218,7 +123,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
     ...(plan.installationConfig ? {installationConfig: plan.installationConfig} : {}),
     isDeployable: isDeployable(plan),
     target: plan.target,
-    totalBytes: totalBytes(plan.files),
+    totalBytes: totalBytes(plan),
     warnings,
   }
 }
@@ -249,7 +154,7 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   // A blocked deploy uploads nothing, so only list files for a deployable plan.
   if (isDeployable(plan) && plan.files.length > 0) {
     output.log(
-      `\nFiles to deploy (${plan.files.length} ${pluralize('file', plan.files.length)}, ${formatMB(totalBytes(plan.files))}):`,
+      `\nFiles to deploy (${plan.files.length} ${pluralize('file', plan.files.length)}, ${formatMB(totalBytes(plan))}):`,
     )
     for (const file of plan.files) {
       output.log(`  ${file.path} (${formatMB(file.size)})`)
@@ -267,8 +172,8 @@ function renderIssues(output: Output, title: string, checks: DeployCheck[]): voi
   }
 }
 
-function totalBytes(files: DeploymentFile[]): number {
-  return files.reduce((sum, file) => sum + file.size, 0)
+function totalBytes(plan: DeploymentPlan): number {
+  return plan.files.reduce((sum, file) => sum + file.size, 0)
 }
 
 function formatMB(bytes: number): string {

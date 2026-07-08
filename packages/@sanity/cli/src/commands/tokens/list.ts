@@ -1,11 +1,10 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
 import {type Token} from '../../actions/tokens/types.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getTokens} from '../../services/tokens.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listTokenDebug = subdebug('tokens:list')

@@ -16,7 +16,7 @@ const mockDirIsEmptyOrNonExistent = vi.hoisted(() => vi.fn())
 vi.mock('../../actions/deploy/runDeploy.js', () => ({runDeploy: mockRunDeploy}))
 vi.mock('../../actions/deploy/coreApp.js', () => ({coreAppAdapter: {type: 'coreApp'}}))
 vi.mock('../../actions/deploy/studio.js', () => ({studioAdapter: {type: 'studio'}}))
-vi.mock('../../actions/deploy/workbench.js', () => ({
+vi.mock('../../actions/deploy/workbenchAdapters.js', () => ({
   workbenchAppAdapter: {type: 'coreApp', workbench: true},
   workbenchStudioAdapter: {type: 'studio', workbench: true},
 }))

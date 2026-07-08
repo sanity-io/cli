@@ -6,11 +6,12 @@ import {
   SchemaExtractionError,
 } from '@sanity/cli-build/_internal/extract'
 import {getCliTelemetry, type Output, studioWorkerTask, subdebug} from '@sanity/cli-core'
+import {type DeployAppOptions} from '@sanity/cli-core/deploy'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 
 import {deployDebug} from './deployDebug.js'
-import {type DeployAppOptions, type DeployStudioSchemasAndManifestsWorkerData} from './types.js'
+import {type DeployStudioSchemasAndManifestsWorkerData} from './types.js'
 
 type DeployStudioSchemasAndManifestsWorkerMessage =
   | {

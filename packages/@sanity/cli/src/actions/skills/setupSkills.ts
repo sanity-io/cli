@@ -1,11 +1,10 @@
 import {fileURLToPath} from 'node:url'
 import {styleText} from 'node:util'
 
-import {type Output, subdebug} from '@sanity/cli-core'
+import {getErrorMessage, type Output, subdebug, toError} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 
-import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
 import {
   getSkillsCliAgentDisplayNameById,
   getSkillsCliAgentSkillsDir,

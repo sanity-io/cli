@@ -8,7 +8,7 @@ import {coreAppAdapter} from '../actions/deploy/coreApp.js'
 import {deployDebug} from '../actions/deploy/deployDebug.js'
 import {runDeploy} from '../actions/deploy/runDeploy.js'
 import {studioAdapter} from '../actions/deploy/studio.js'
-import {workbenchAppAdapter, workbenchStudioAdapter} from '../actions/deploy/workbench.js'
+import {workbenchAppAdapter, workbenchStudioAdapter} from '../actions/deploy/workbenchAdapters.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
 

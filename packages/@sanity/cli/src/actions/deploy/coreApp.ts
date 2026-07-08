@@ -5,6 +5,17 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
+import {getErrorMessage} from '@sanity/cli-core'
+import {
+  checkOrganizationId,
+  type DeployAdapter,
+  type DeployAppOptions,
+  type DeployCheck,
+  type DeployResult,
+  type DeployState,
+  getCoreAppUrl,
+  type TargetCheck,
+} from '@sanity/cli-core/deploy'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -15,7 +26,6 @@ import {
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
 import {
@@ -23,146 +33,69 @@ import {
   checkAppIdConfig,
   checkAppTarget,
   checkAutoUpdates,
-  checkOrganizationId,
   checkOutputDir,
   checkPackageVersion,
-  type DeployCheck,
-  enforce,
   externalAppNotSupported,
 } from './checks.js'
 import {createUserApplication} from './createUserApplication.js'
 import {deployDebug} from './deployDebug.js'
 import {findUserApplication} from './findUserApplication.js'
-import {
-  type DeployAdapter,
-  type DeploymentPlan,
-  type DeployResult,
-  isDeployable,
-  listDeploymentFiles,
-  newPlan,
-} from './runDeploy.js'
-import {type DeployAppOptions} from './types.js'
-import {getCoreAppUrl} from './urlUtils.js'
 
 const APP_PACKAGE = '@sanity/sdk-react'
 
-export const coreAppAdapter: DeployAdapter<'coreApp'> = {
+interface CoreAppState extends DeployState {
+  application: UserApplicationResolved | null
+  autoUpdatesEnabled: boolean
+}
+
+export const coreAppAdapter: DeployAdapter<'coreApp', CoreAppState> = {
+  acquireTarget,
+  check,
+  checkOutput,
   deploy,
-  plan,
+  describeTarget,
   type: 'coreApp',
 }
 
-async function plan(options: DeployAppOptions): Promise<DeploymentPlan<'coreApp'>> {
-  const {cliConfig, flags, projectRoot, sourceDir} = options
-  const workDir = projectRoot.directory
-  const organizationId = cliConfig.app?.organizationId
+async function check(
+  options: DeployAppOptions,
+): Promise<{checks: DeployCheck[]; state: CoreAppState}> {
+  const {cliConfig, flags, projectRoot} = options
   const checks: DeployCheck[] = []
 
   const autoUpdates = checkAutoUpdates({cliConfig, flags})
   checks.push(...autoUpdates.checks)
 
-  const pkg = await checkPackageVersion({moduleName: APP_PACKAGE, workDir})
-  checks.push(pkg.check, checkOrganizationId(organizationId))
+  const pkg = await checkPackageVersion({moduleName: APP_PACKAGE, workDir: projectRoot.directory})
+  checks.push(pkg.check, checkOrganizationId(cliConfig.app?.organizationId))
 
   const appIdConfig = checkAppIdConfig(cliConfig)
   if (appIdConfig) checks.push(appIdConfig)
 
-  let target = null
-  if (flags.external) {
-    checks.push(externalAppNotSupported)
-  } else {
-    const resolved = await checkAppTarget({
-      appId: getAppId(cliConfig),
-      organizationId,
-      title: appTitle(options),
-    })
-    checks.push(resolved.check)
-    target = resolved.target
-  }
-
-  checks.push(await checkAppBuild(options, {autoUpdatesEnabled: autoUpdates.enabled}))
-
-  const outputDir = await checkOutputDir({isWorkbenchApp: false, sourceDir})
-  if (outputDir) checks.push(outputDir)
-
-  const result = newPlan({checks, target, type: 'coreApp', version: pkg.version})
-  if (isDeployable(result)) {
-    result.files = await listDeploymentFiles(sourceDir, workDir)
-  }
-  return result
-}
-
-async function deploy(options: DeployAppOptions): Promise<DeployResult<'coreApp'> | undefined> {
-  const {cliConfig, flags, output, projectRoot, sourceDir} = options
-  const workDir = projectRoot.directory
-  const organizationId = cliConfig.app?.organizationId
-
-  const autoUpdates = checkAutoUpdates({cliConfig, flags})
-  for (const check of autoUpdates.checks) enforce(output, check)
-
-  const pkg = await checkPackageVersion({moduleName: APP_PACKAGE, workDir})
-  enforce(output, pkg.check)
-  if (!pkg.version) return
-
-  enforce(output, checkOrganizationId(organizationId))
-
-  const appIdConfig = checkAppIdConfig(cliConfig)
-  if (appIdConfig) enforce(output, appIdConfig)
-
-  if (flags.external) enforce(output, externalAppNotSupported)
-
-  const application = await resolveApplication(options)
-  if (!application) return
-
-  enforce(output, await checkAppBuild(options, {autoUpdatesEnabled: autoUpdates.enabled}))
-
-  const outputDir = await checkOutputDir({isWorkbenchApp: false, sourceDir})
-  if (outputDir) enforce(output, outputDir)
-
-  // Manifests aren't strictly essential, so a failure warns and continues
-  let manifest: CoreAppManifest | undefined
-  try {
-    manifest = await extractCoreAppManifest({workDir})
-  } catch (err) {
-    deployDebug('Error extracting app manifest', err)
-    output.warn(`Error extracting app manifest: ${getErrorMessage(err)}`)
-  }
-
-  const titled = await syncApplicationTitle({application, manifest, output})
-  await ship({
-    application: titled,
-    isAutoUpdating: autoUpdates.enabled,
-    manifest,
-    sourceDir,
-    version: pkg.version,
-  })
-  logAppDeployed({
-    applicationId: titled.id,
-    cliConfig,
-    organizationId: titled.organizationId,
-    output,
-    title: titled.title,
-  })
+  if (flags.external) checks.push(externalAppNotSupported)
 
   return {
-    applicationType: 'coreApp',
-    applicationVersion: pkg.version,
-    target: {
-      applicationId: titled.id,
-      title: titled.title ?? null,
-      url: getCoreAppUrl(titled.organizationId, titled.id),
-    },
+    checks,
+    state: {application: null, autoUpdatesEnabled: autoUpdates.enabled, version: pkg.version},
   }
 }
 
-function appTitle({cliConfig, flags}: DeployAppOptions): string | undefined {
-  return flags.title?.trim() || cliConfig.app?.title?.trim() || undefined
+function describeTarget(options: DeployAppOptions): Promise<TargetCheck | null> {
+  const {cliConfig, flags} = options
+  // The --external fail already reported; there is no target to describe.
+  if (flags.external) return Promise.resolve(null)
+  return checkAppTarget({
+    appId: getAppId(cliConfig),
+    organizationId: cliConfig.app?.organizationId,
+    title: appTitle(options),
+  })
 }
 
 /** Finds the application the deploy targets, creating one when none is configured. */
-async function resolveApplication(
+async function acquireTarget(
   options: DeployAppOptions,
-): Promise<UserApplicationResolved | null> {
+  state: CoreAppState,
+): Promise<CoreAppState> {
   const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''
   const title = appTitle(options)
@@ -182,7 +115,69 @@ async function resolveApplication(
     deployDebug('User application created', application)
   }
 
-  return application
+  return {...state, application}
+}
+
+async function checkOutput(
+  options: DeployAppOptions,
+  state: CoreAppState,
+): Promise<{checks: DeployCheck[]; state: CoreAppState}> {
+  const checks: DeployCheck[] = [
+    await checkAppBuild(options, {autoUpdatesEnabled: state.autoUpdatesEnabled}),
+  ]
+
+  const outputDir = await checkOutputDir(options.sourceDir)
+  if (outputDir) checks.push(outputDir)
+
+  return {checks, state}
+}
+
+async function deploy(
+  options: DeployAppOptions,
+  state: CoreAppState,
+): Promise<DeployResult<'coreApp'> | undefined> {
+  const {cliConfig, output, projectRoot, sourceDir} = options
+  const {application, version} = state
+  if (!application || !version) return
+
+  // Manifests aren't strictly essential, so a failure warns and continues
+  let manifest: CoreAppManifest | undefined
+  try {
+    manifest = await extractCoreAppManifest({workDir: projectRoot.directory})
+  } catch (err) {
+    deployDebug('Error extracting app manifest', err)
+    output.warn(`Error extracting app manifest: ${getErrorMessage(err)}`)
+  }
+
+  const titled = await syncApplicationTitle({application, manifest, output})
+  await ship({
+    application: titled,
+    isAutoUpdating: state.autoUpdatesEnabled,
+    manifest,
+    sourceDir,
+    version,
+  })
+  logAppDeployed({
+    applicationId: titled.id,
+    cliConfig,
+    organizationId: titled.organizationId,
+    output,
+    title: titled.title,
+  })
+
+  return {
+    applicationType: 'coreApp',
+    applicationVersion: version,
+    target: {
+      applicationId: titled.id,
+      title: titled.title ?? null,
+      url: getCoreAppUrl(titled.organizationId, titled.id),
+    },
+  }
+}
+
+function appTitle({cliConfig, flags}: DeployAppOptions): string | undefined {
+  return flags.title?.trim() || cliConfig.app?.title?.trim() || undefined
 }
 
 /** Syncs the application title from the manifest when it has changed. */

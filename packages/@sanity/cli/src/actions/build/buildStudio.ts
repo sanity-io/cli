@@ -58,7 +58,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
     sourceMap: Boolean(flags['source-maps']),
-    stats: flags.stats,
+    stats: 'stats' in flags ? flags.stats : false,
     unattendedMode: Boolean(flags.yes),
     upgradePackages: upgradePkgs,
     vite: cliConfig.vite,

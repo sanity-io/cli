@@ -1,10 +1,9 @@
 import {readFile} from 'node:fs/promises'
 import {relative, resolve} from 'node:path'
 
-import {doImport, getCliConfigUncached} from '@sanity/cli-core'
+import {doImport, getCliConfigUncached, getErrorMessage} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {type sanitizeIcon as sanitizeIconFn} from './sanitizeIcon.js'
 import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
 

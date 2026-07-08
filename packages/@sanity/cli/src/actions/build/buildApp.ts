@@ -51,7 +51,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     schemaExtraction: cliConfig?.schemaExtraction,
     sourceMap: Boolean(flags['source-maps']),
-    stats: flags.stats,
+    stats: 'stats' in flags ? flags.stats : false,
     unattendedMode: flags.yes,
     vite: cliConfig.vite,
     workbenchAppId: workbench?.name,

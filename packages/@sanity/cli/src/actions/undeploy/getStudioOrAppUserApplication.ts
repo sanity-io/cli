@@ -1,9 +1,9 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {NO_PROJECT_ID} from '@sanity/cli-core/deploy'
 
 import {getUserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 interface GetStudioOrAppUserApplicationOptions {
   cliConfig: CliConfig

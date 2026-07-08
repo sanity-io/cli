@@ -49,6 +49,10 @@
       "source": "./src/_exports/debug.ts",
       "default": "./dist/_exports/debug.js"
     },
+    "./deploy": {
+      "source": "./src/_exports/deploy.ts",
+      "default": "./dist/_exports/deploy.js"
+    },
     "./errors": {
       "source": "./src/_exports/errors.ts",
       "default": "./dist/_exports/errors.js"

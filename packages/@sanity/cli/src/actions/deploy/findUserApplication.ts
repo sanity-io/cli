@@ -4,7 +4,8 @@
  * and exits. Dry runs consume the same verdicts read-only (see checks.ts).
  */
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, getErrorMessage, type Output} from '@sanity/cli-core'
+import {describeAppTarget, describeStudioTarget, enforce} from '@sanity/cli-core/deploy'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
 import {
@@ -13,8 +14,7 @@ import {
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {describeAppTarget, describeAppTargetError, describeStudioTarget, enforce} from './checks.js'
+import {describeAppTargetError} from './checks.js'
 import {deployDebug} from './deployDebug.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from './resolveDeployTarget.js'
 

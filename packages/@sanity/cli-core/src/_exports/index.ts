@@ -55,6 +55,7 @@ export {
 export {type Output, type RequireProps, type SanityOrgUser} from '../types.js'
 export {doImport} from '../util/doImport.js'
 export {mockBrowserEnvironment} from '../util/environment/mockBrowserEnvironment.js'
+export {getErrorMessage, toError} from '../util/getErrorMessage.js'
 export {getLocalPackageDir, getLocalPackageVersion} from '../util/getLocalPackageVersion.js'
 export {getSanityConfigDir, getSanityDataDir} from '../util/getSanityConfigDir.js'
 export {getSanityEnvVar} from '../util/getSanityEnvVar.js'

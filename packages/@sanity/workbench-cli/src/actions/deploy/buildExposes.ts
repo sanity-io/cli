@@ -1,3 +1,5 @@
+import {type DeployedExpose} from '@sanity/cli-core/deploy'
+
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 
 /**
@@ -49,13 +51,6 @@ export function buildExposes(
   for (const view of exposes.views ?? []) records.push(toRecord('views', view))
   for (const service of exposes.services ?? []) records.push(toRecord('services', service))
   return records
-}
-
-/** A view or service as the deploy report and `--json` output surface it. */
-export interface DeployedExpose {
-  name: string
-  title: string
-  type: string
 }
 
 function summarizeExposeGroup(heading: string, items: readonly DeployedExpose[]): string {

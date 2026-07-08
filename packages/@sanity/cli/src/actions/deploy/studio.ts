@@ -5,6 +5,15 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
+import {
+  checkProjectId,
+  type DeployAdapter,
+  type DeployAppOptions,
+  type DeployCheck,
+  type DeployResult,
+  type DeployState,
+  type TargetCheck,
+} from '@sanity/cli-core/deploy'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
@@ -15,118 +24,71 @@ import {
   checkAutoUpdates,
   checkOutputDir,
   checkPackageVersion,
-  checkProjectId,
   checkStudioBuild,
   checkStudioTarget,
-  type DeployCheck,
-  enforce,
 } from './checks.js'
 import {createStudioUserApplication} from './createUserApplication.js'
 import {deployDebug} from './deployDebug.js'
 import {uploadStudioSchema} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplication.js'
-import {
-  type DeployAdapter,
-  type DeploymentPlan,
-  type DeployResult,
-  isDeployable,
-  listDeploymentFiles,
-  newPlan,
-} from './runDeploy.js'
-import {type DeployAppOptions} from './types.js'
 
 const STUDIO_PACKAGE = 'sanity'
 
-export const studioAdapter: DeployAdapter<'studio'> = {
+interface StudioState extends DeployState {
+  application: UserApplication | null
+  autoUpdatesEnabled: boolean
+}
+
+export const studioAdapter: DeployAdapter<'studio', StudioState> = {
+  acquireTarget,
+  check,
+  checkOutput,
   deploy,
-  plan,
+  describeTarget,
   type: 'studio',
 }
 
-async function plan(options: DeployAppOptions): Promise<DeploymentPlan<'studio'>> {
-  const {cliConfig, flags, projectRoot, sourceDir} = options
-  const workDir = projectRoot.directory
-  const isExternal = !!flags.external
+async function check(
+  options: DeployAppOptions,
+): Promise<{checks: DeployCheck[]; state: StudioState}> {
+  const {cliConfig, flags, projectRoot} = options
   const checks: DeployCheck[] = []
 
   const autoUpdates = checkAutoUpdates({cliConfig, flags})
   checks.push(...autoUpdates.checks)
 
-  const pkg = await checkPackageVersion({moduleName: STUDIO_PACKAGE, workDir})
+  const pkg = await checkPackageVersion({
+    moduleName: STUDIO_PACKAGE,
+    workDir: projectRoot.directory,
+  })
   checks.push(pkg.check, checkProjectId(cliConfig.api?.projectId))
 
-  const resolved = await checkStudioTarget({
+  return {
+    checks,
+    state: {
+      application: null,
+      autoUpdatesEnabled: autoUpdates.enabled,
+      // An external studio hosts its own files, so there is nothing to upload.
+      uploadsFiles: !flags.external,
+      version: pkg.version,
+    },
+  }
+}
+
+function describeTarget(options: DeployAppOptions): Promise<TargetCheck | null> {
+  const {cliConfig, flags} = options
+  return checkStudioTarget({
     appId: getAppId(cliConfig),
-    isExternal,
+    isExternal: !!flags.external,
     projectId: cliConfig.api?.projectId,
     studioHost: cliConfig.studioHost,
     title: flags.title?.trim() || undefined,
     urlFlag: flags.url,
   })
-  checks.push(
-    resolved.check,
-    await checkStudioBuild(options, {autoUpdatesEnabled: autoUpdates.enabled, isExternal}),
-  )
-
-  if (!isExternal) {
-    const outputDir = await checkOutputDir({isWorkbenchApp: false, sourceDir})
-    if (outputDir) checks.push(outputDir)
-  }
-
-  const result = newPlan({checks, target: resolved.target, type: 'studio', version: pkg.version})
-  // An external studio hosts its own files, so there is nothing to upload.
-  if (!isExternal && isDeployable(result)) {
-    result.files = await listDeploymentFiles(sourceDir, workDir)
-  }
-  return result
-}
-
-async function deploy(options: DeployAppOptions): Promise<DeployResult<'studio'> | undefined> {
-  const {cliConfig, flags, output, projectRoot, sourceDir} = options
-  const workDir = projectRoot.directory
-  const isExternal = !!flags.external
-
-  const autoUpdates = checkAutoUpdates({cliConfig, flags})
-  for (const check of autoUpdates.checks) enforce(output, check)
-
-  const pkg = await checkPackageVersion({moduleName: STUDIO_PACKAGE, workDir})
-  enforce(output, pkg.check)
-  if (!pkg.version) return
-
-  enforce(output, checkProjectId(cliConfig.api?.projectId))
-
-  const application = await resolveApplication(options)
-  if (!application) return
-
-  enforce(
-    output,
-    await checkStudioBuild(options, {autoUpdatesEnabled: autoUpdates.enabled, isExternal}),
-  )
-
-  if (!isExternal) {
-    const outputDir = await checkOutputDir({isWorkbenchApp: false, sourceDir})
-    if (outputDir) enforce(output, outputDir)
-  }
-
-  const studioManifest = await uploadStudioSchema(options, {isExternal})
-  const location = await ship({
-    application,
-    isAutoUpdating: autoUpdates.enabled,
-    isExternal,
-    options,
-    studioManifest,
-    version: pkg.version,
-  })
-
-  return {
-    applicationType: 'studio',
-    applicationVersion: pkg.version,
-    target: {applicationId: application.id, title: application.title ?? null, url: location},
-  }
 }
 
 /** Finds the application the deploy targets, registering a studio host (prompting if needed) when none exists. */
-async function resolveApplication(options: DeployAppOptions): Promise<UserApplication | null> {
+async function acquireTarget(options: DeployAppOptions, state: StudioState): Promise<StudioState> {
   const {cliConfig, flags, output} = options
   const isExternal = !!flags.external
   const projectId = cliConfig.api?.projectId ?? ''
@@ -162,7 +124,49 @@ async function resolveApplication(options: DeployAppOptions): Promise<UserApplic
   }
 
   deployDebug('Found user application', application)
-  return application
+  return {...state, application}
+}
+
+async function checkOutput(
+  options: DeployAppOptions,
+  state: StudioState,
+): Promise<{checks: DeployCheck[]; state: StudioState}> {
+  const isExternal = !!options.flags.external
+  const checks: DeployCheck[] = [
+    await checkStudioBuild(options, {autoUpdatesEnabled: state.autoUpdatesEnabled, isExternal}),
+  ]
+
+  if (!isExternal) {
+    const outputDir = await checkOutputDir(options.sourceDir)
+    if (outputDir) checks.push(outputDir)
+  }
+
+  return {checks, state}
+}
+
+async function deploy(
+  options: DeployAppOptions,
+  state: StudioState,
+): Promise<DeployResult<'studio'> | undefined> {
+  const isExternal = !!options.flags.external
+  const {application, version} = state
+  if (!application || !version) return
+
+  const studioManifest = await uploadStudioSchema(options, {isExternal})
+  const location = await ship({
+    application,
+    isAutoUpdating: state.autoUpdatesEnabled,
+    isExternal,
+    options,
+    studioManifest,
+    version,
+  })
+
+  return {
+    applicationType: 'studio',
+    applicationVersion: version,
+    target: {applicationId: application.id, title: application.title ?? null, url: location},
+  }
 }
 
 async function ship({

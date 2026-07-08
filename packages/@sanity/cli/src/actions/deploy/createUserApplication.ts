@@ -1,4 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
+import {NO_ORGANIZATION_ID} from '@sanity/cli-core/deploy'
 import {input, spinner} from '@sanity/cli-core/ux'
 import {customAlphabet} from 'nanoid'
 
@@ -7,7 +8,6 @@ import {
   type UserApplication,
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
-import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 

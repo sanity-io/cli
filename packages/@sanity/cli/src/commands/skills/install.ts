@@ -1,8 +1,7 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage, SanityCommand, subdebug, toError} from '@sanity/cli-core'
 
 import {configureSkills} from '../../actions/skills/configureSkills.js'
 import {SkillsInstallTrace} from '../../telemetry/skills.telemetry.js'
-import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
 
 const debug = subdebug('skills:install')
 
