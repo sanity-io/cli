@@ -1,5 +1,8 @@
 import {type Output} from '@sanity/cli-core/types'
-import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-test/mocks/cli-core/package-manager'
+import {
+  getLocalPackageVersion,
+  readPackageJson,
+} from '@sanity/cli-test/mocks/cli-core/package-manager'
 import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {coerce} from 'semver'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -10,7 +13,7 @@ vi.mock('semver', {spy: true})
 
 vi.mock(
   import('@sanity/cli-core/package-manager'),
-  () => import('@sanity/cli-test/mocks/cli-core/package-manager')
+  () => import('@sanity/cli-test/mocks/cli-core/package-manager'),
 )
 
 /**
@@ -30,7 +33,7 @@ function setupMocks(opts: {
   })
 
   if (opts.localVersions) {
-   getLocalPackageVersion.mockImplementation((name: string) => {
+    getLocalPackageVersion.mockImplementation((name: string) => {
       const version = opts.localVersions?.[name]
       return Promise.resolve(version ?? null)
     })
@@ -350,9 +353,7 @@ describe('checkStudioDependencyVersions', () => {
   describe('edge cases', () => {
     test('should handle readPackageJson throwing an error', async () => {
       mockOutput = createMockOutput()
-      readPackageJson.mockRejectedValue(
-        new Error('Failed to read package.json'),
-      )
+      readPackageJson.mockRejectedValue(new Error('Failed to read package.json'))
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'Failed to read package.json',
