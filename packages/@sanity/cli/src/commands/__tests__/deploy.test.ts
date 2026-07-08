@@ -1,12 +1,13 @@
-import {mocks} from '@sanity/cli-test/mocks'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {DeployCommand} from '../deploy.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockDeployApp = vi.hoisted(() => vi.fn())
 const mockDeployStudio = vi.hoisted(() => vi.fn())
@@ -49,12 +50,12 @@ describe('#deploy', () => {
 
   test('logs the build target for a custom output directory', async () => {
     await DeployCommand.run(['output'])
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Building to'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Building to'))
   })
 
   test('keeps stdout clean for the JSON payload — no build-target line with --json', async () => {
     await DeployCommand.run(['output', '--json'])
-    expect(mocks.SanityCmdOutputLog).not.toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
       expect.stringContaining('Building to'),
     )
   })

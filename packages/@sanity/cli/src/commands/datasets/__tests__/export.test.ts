@@ -1,21 +1,19 @@
 import fs from 'node:fs/promises'
 
 import {type CliConfig} from '@sanity/cli-core/types'
-import {mocks, uxMocks} from '@sanity/cli-test/mocks'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {exportDataset, type ExportResult} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DatasetExportCommand} from '../export.js'
 
-vi.mock('@sanity/cli-core/SanityCommand', async () => {
-  const actual = await import('@sanity/cli-test/mocks')
-  return {SanityCommand: actual.MockedSanityCommand}
-})
 vi.mock(
-  '@sanity/cli-core/apiClient',
-  async () => (await import('@sanity/cli-test/mocks')).apiClientMocks,
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
 )
-vi.mock('@sanity/cli-core/ux', async () => (await import('@sanity/cli-test/mocks')).uxMocks)
+vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 vi.mock('@sanity/client', () => ({}))
 vi.mock('@sanity/export', () => ({
   exportDataset: vi.fn().mockResolvedValue(undefined),

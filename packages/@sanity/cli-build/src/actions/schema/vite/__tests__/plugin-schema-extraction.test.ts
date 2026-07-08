@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {CLITelemetryStore} from '@sanity/cli-core/types'
-import {createMockHttpServer, createMockWatcher} from '@sanity/cli-test'
+import {createMockHttpServer, createMockWatcher} from '@sanity/cli-test/test/util'
 import {type SchemaValidationProblemGroup} from 'sanity'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
