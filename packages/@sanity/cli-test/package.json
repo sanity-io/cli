@@ -82,8 +82,8 @@
       "default": "./dist/test/mockApi.js"
     },
     "./test/oclif": {
-      "source": "./src/test/testCommand.ts",
-      "default": "./dist/test/testCommand.js"
+      "source": "./src/test/oclif.ts",
+      "default": "./dist/test/oclif.js"
     },
     "./test/setupFixtures": {
       "source": "./src/test/setupFixtures.ts",
