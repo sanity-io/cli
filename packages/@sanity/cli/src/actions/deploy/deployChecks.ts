@@ -268,7 +268,11 @@ export function describeAppTarget(
     // Without --title, creating an app needs a prompt no unattended run can answer
     case 'would-create': {
       if (title) {
-        return {message: `Would create a new application "${title}"`, status: 'pass'}
+        return {
+          message: `Would create a new application "${title}"`,
+          status: 'pass',
+          target: {applicationId: null, title, url: null},
+        }
       }
       return {
         exitCode: exitCodes.USAGE_ERROR,

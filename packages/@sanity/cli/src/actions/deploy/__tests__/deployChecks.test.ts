@@ -297,6 +297,8 @@ describe('checkAppTarget', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Would create a new application "My App"')
+    // The JSON target carries the pending title; id and URL come on creation
+    expect(reporter.results[0]?.target).toEqual({applicationId: null, title: 'My App', url: null})
   })
 
   test('needs-input → fail check (would prompt)', async () => {
