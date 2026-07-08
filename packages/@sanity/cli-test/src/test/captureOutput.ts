@@ -1,6 +1,7 @@
 import {type Errors} from '@oclif/core'
 import ansis from 'ansis'
 
+/** @public */
 export interface CaptureOptions {
   /**
    * Whether to print the output to the console
@@ -13,6 +14,7 @@ export interface CaptureOptions {
   testNodeEnv?: string
 }
 
+/** @public */
 export interface CaptureResult<T = unknown> {
   stderr: string
   stdout: string
@@ -27,7 +29,7 @@ export interface CaptureResult<T = unknown> {
  * @param fn - The function to capture the output of
  * @param opts - The options for the capture
  * @returns The result of the command
- * @internal
+ * @public
  *
  * Credits to oclif for the original implementation:
  * https://github.com/oclif/test/blob/2a5407e6fc80d388043d10f6b7b8eaa586483015/src/index.ts

@@ -1,3 +1,5 @@
+// DO NOT ADD NEW EXPORTS HERE!
+// Instead, add them to the relevant granular export files laid out in package.json exports.
 export * from './test/constants.js'
 export * from './test/createMockHttpServer.js'
 export {createMockSpinner} from './test/createMockSpinner.js'

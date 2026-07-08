@@ -73,6 +73,26 @@
       "source": "./src/utils/paths.ts",
       "default": "./dist/utils/paths.js"
     },
+    "./test/createTestClient": {
+      "source": "./src/test/createTestClient.ts",
+      "default": "./dist/test/createTestClient.js"
+    },
+    "./test/mockApi": {
+      "source": "./src/test/mockApi.ts",
+      "default": "./dist/test/mockApi.js"
+    },
+    "./test/oclif": {
+      "source": "./src/test/oclif.ts",
+      "default": "./dist/test/oclif.js"
+    },
+    "./test/setupFixtures": {
+      "source": "./src/test/setupFixtures.ts",
+      "default": "./dist/test/setupFixtures.js"
+    },
+    "./test/util": {
+      "source": "./src/test/util.ts",
+      "default": "./dist/test/util.js"
+    },
     "./vitest": {
       "source": "./src/vitest.ts",
       "default": "./dist/vitest.js"
@@ -104,7 +124,6 @@
     "ansis": "^4.2.0",
     "esbuild": "^0.28.1",
     "nock": "catalog:",
-    "ora": "catalog:",
     "tinyglobby": "catalog:"
   },
   "devDependencies": {

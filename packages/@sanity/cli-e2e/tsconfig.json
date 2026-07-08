@@ -6,6 +6,8 @@
     "paths": {
       "@sanity/cli-test": ["./node_modules/@sanity/cli-test/src/index.ts"],
       "@sanity/cli-test/vitest": ["./node_modules/@sanity/cli-test/src/vitest.ts"],
+      "@sanity/cli-test/mocks/*": ["./node_modules/@sanity/cli-test/src/mocks/*"],
+      "@sanity/cli-test/test/*": ["./node_modules/@sanity/cli-test/src/test/*"],
       "@sanity/cli-build/*": ["./node_modules/@sanity/cli-build/src/_exports/*"],
       "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/_exports/index.ts"]
     }
