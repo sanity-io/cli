@@ -1,5 +1,6 @@
 import {join} from 'node:path'
 
+import * as configMocks from '@sanity/cli-test/mocks/cli-core/config'
 import {convertToSystemPath} from '@sanity/cli-test/paths'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -66,6 +67,16 @@ vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
+vi.mock('@sanity/workbench-cli/build', () => ({
+  workbenchVitePlugins: mockWorkbenchVitePlugins.mockResolvedValue({
+    name: 'sanity/federation',
+  }),
+}))
+
+vi.mock('../vite/plugin-sanity-vendor-named-exports.js', () => ({
+  createVendorNamedExportsPlugin: vi.fn(() => ({name: 'sanity-vendor-named-exporters'})),
+}))
+
 vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
   sanitySchemaExtractionPlugin: mockExtractSchemaPlugin,
 }))
@@ -83,7 +94,7 @@ function getEnvironmentVariables() {
 }
 
 describe('#getViteConfig', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     mockWorkbenchVitePlugins.mockResolvedValue({
       name: 'sanity/federation',
     })
@@ -95,6 +106,7 @@ describe('#getViteConfig', () => {
     mockNormalizeBasePaths.mockImplementation((path: string) =>
       `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/'),
     )
+    configMocks.findProjectRoot.mockResolvedValue({path: '/some/path'})
   })
 
   afterEach(() => {

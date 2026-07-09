@@ -1,6 +1,7 @@
 import {defineConfig} from 'vitest/config'
 
 export default defineConfig({
+  resolve: {tsconfigPaths: true},
   test: {
     coverage: {
       exclude: [
@@ -12,8 +13,9 @@ export default defineConfig({
       ],
       provider: 'istanbul',
     },
+    disableConsoleIntercept: true, // helps oclif test helpers
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'test/integration/**'],
     globals: false,
     name: '@sanity/cli-build/unit',
   },

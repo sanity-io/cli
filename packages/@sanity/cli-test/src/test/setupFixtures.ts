@@ -101,6 +101,8 @@ interface FixtureDetails {
 export async function setup(_: TestProject, options: SetupTestFixturesOptions = {}): Promise<void> {
   const {additionalFixtures, ignoreWorkspace, tempDir} = options
   console.log('Initializing test environment...')
+  const timerLabel = 'Test environment initialization'
+  console.time(timerLabel)
 
   try {
     const fixturesDir = getFixturesPath()
@@ -163,11 +165,11 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
         )
       }
     }
-
-    console.log('Test environment initialized')
   } catch (error) {
-    console.error('Failed to initialize test environment')
+    console.error('Failed to initialize test environment!')
     throw error
+  } finally {
+    console.timeEnd(timerLabel)
   }
 }
 
