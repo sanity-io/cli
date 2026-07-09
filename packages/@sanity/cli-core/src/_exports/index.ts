@@ -79,7 +79,7 @@ export {
 export {safeStructuredClone} from '../util/safeStructuredClone.js'
 export {colorizeJson} from '../ux/colorizeJson.js'
 export {getTimer} from '../ux/timer.js'
-export {debug, subdebug} from './debug.js'
+export {debug, enableDebug, subdebug} from './debug.js'
 export {
   type CoreAppManifest,
   coreAppManifestSchema,

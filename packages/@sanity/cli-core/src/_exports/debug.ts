@@ -15,3 +15,13 @@ export const debug = debugIt('sanity:cli')
  * @returns The extended `debug` instance
  */
 export const subdebug = (namespace: string) => debug.extend(namespace)
+
+/**
+ * Runtime equivalent of `DEBUG=sanity*`, for a `--debug` flag. Uses `sanity*`
+ * (not `sanity:cli*`) so `@sanity/client` request logs show too, and keeps any
+ * namespaces already enabled via `DEBUG`.
+ * @internal
+ */
+export function enableDebug(): void {
+  debugIt.enable([debugIt.disable(), 'sanity*'].filter(Boolean).join(','))
+}

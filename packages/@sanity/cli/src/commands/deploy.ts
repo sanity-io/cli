@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {enableDebug, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deployApp} from '../actions/deploy/deployApp.js'
@@ -50,6 +50,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       default: true,
       description:
         'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
+    }),
+    debug: Flags.boolean({
+      default: false,
+      description: 'Print debug logging (HTTP requests, resolution steps); like DEBUG=sanity*',
     }),
     'dry-run': Flags.boolean({
       default: false,
@@ -100,6 +104,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeployCommand)
+
+    if (flags.debug) enableDebug()
 
     const cliConfig = await this.getCliConfig()
     const projectRoot = await this.getProjectRoot()
