@@ -1,7 +1,7 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
-import {deriveInstallationConfigs, deriveInterfaces} from './deriveInterfaces.js'
+import {deriveConfigs, deriveInterfaces} from './deriveInterfaces.js'
 import {trackExposesSet} from './exposesSetId.js'
 import {type DevServerManifest, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
@@ -65,12 +65,12 @@ export async function startDevServerRegistration(
   // Forwarded alongside (not inside) the manifest so the workbench renders local
   // panels/workers and reads the configs without a deploy.
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
-  const installationConfigs = deriveInstallationConfigs(cliConfig.app)
+  const configs = deriveConfigs(cliConfig.app)
 
   const registration = registerDevServer({
+    configs,
     host: appHost,
     id: appId,
-    installationConfigs,
     interfaces,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
@@ -78,7 +78,7 @@ export async function startDevServerRegistration(
     workDir,
   })
 
-  const exposesSet = trackExposesSet({installationConfigs, interfaces})
+  const exposesSet = trackExposesSet({configs, interfaces})
 
   const watcher = await startDevManifestWatcher({
     // Re-derive every pass (don't omit): the registry patch is a shallow merge,
@@ -86,7 +86,7 @@ export async function startDevServerRegistration(
     extract: async (params) => {
       const app = (await getCliConfigUncached(params.workDir)).app
       return {
-        installationConfigs: deriveInstallationConfigs(app),
+        configs: deriveConfigs(app),
         interfaces: deriveInterfaces(app, {isApp}),
         manifest: await extractManifest(params),
       }
@@ -98,7 +98,7 @@ export async function startDevServerRegistration(
     update: async (patch) => {
       if (
         !exposesSet.changed({
-          installationConfigs: patch.installationConfigs,
+          configs: patch.configs,
           interfaces: patch.interfaces,
         })
       ) {
@@ -110,7 +110,7 @@ export async function startDevServerRegistration(
       const rebuiltServer = await onInterfaceSetChange?.()
       // Commit only after a successful rebuild, so a thrown one retries next pass.
       exposesSet.commit({
-        installationConfigs: patch.installationConfigs,
+        configs: patch.configs,
         interfaces: patch.interfaces,
       })
       // The recreated server can bind a different port (non-strict ports).

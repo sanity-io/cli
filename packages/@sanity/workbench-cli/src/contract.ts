@@ -1,7 +1,7 @@
 import {z} from 'zod/mini'
 
 // Shared module-federation extension contract: interface (view/service) and
-// installation-config declaration schemas, plus the versions the build stamps.
+// config declaration schemas, plus the versions the build stamps.
 // `zod/mini` keeps the bundle small.
 
 /** @internal */
@@ -11,7 +11,7 @@ export const VIEW_CONTRACT_VERSION = 1
 export const SERVICE_CONTRACT_VERSION = 1
 
 /** @internal */
-export const MEDIA_LIBRARY_INSTALLATION_CONFIG_CONTRACT_VERSION = 1
+export const MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION = 1
 
 /**
  * A view component. The return is opaque so the runtime helpers carry no React
@@ -84,7 +84,7 @@ const MediaLibraryFieldSchema = z.object({
 export const INSTALLATION_CONFIG_TYPE = 'installation_config'
 
 // `appType` is stamped by `unstable_defineMediaLibrary`, never authored.
-const MediaLibraryInstallationConfigSchema = z.object({
+const MediaLibraryConfigSchema = z.object({
   appType: z.literal('media-library'),
   fields: z
     .array(MediaLibraryFieldSchema)
@@ -97,9 +97,7 @@ const MediaLibraryInstallationConfigSchema = z.object({
 })
 
 /**
- * An app's optional installation config, keyed by `appType`; deploys as a versioned snapshot, not an interface.
+ * An app's optional config, keyed by `appType`; deploys as a versioned snapshot, not an interface.
  * @internal
  */
-export const InstallationConfigSchema = z.discriminatedUnion('appType', [
-  MediaLibraryInstallationConfigSchema,
-])
+export const ConfigSchema = z.discriminatedUnion('appType', [MediaLibraryConfigSchema])

@@ -23,8 +23,8 @@ describe('resolveWorkbenchApp', () => {
 
     expect(resolveWorkbenchApp(config)).toEqual({
       applicationType: undefined,
+      config: undefined,
       entry: undefined,
-      installationConfig: undefined,
       isSingleton: undefined,
       name: 'my-app',
       services: [],
@@ -52,7 +52,7 @@ describe('resolveWorkbenchApp', () => {
     })
   })
 
-  test('resolves a media library singleton and its installation config', () => {
+  test('resolves a media library singleton and its config', () => {
     const config = asConfig(
       unstable_defineMediaLibrary({
         fields: [{name: 'rights', src: './src/rights.ts', title: 'Rights'}],
@@ -65,17 +65,17 @@ describe('resolveWorkbenchApp', () => {
       isSingleton: true,
       name: 'media-library',
     })
-    expect(resolved!.installationConfig).toEqual({
+    expect(resolved!.config).toEqual({
       appType: 'media-library',
       fields: [{name: 'rights', src: './src/rights.ts', title: 'Rights'}],
     })
   })
 
-  test('throws when a non-singleton declares an installation config', () => {
+  test('throws when a non-singleton declares an config', () => {
     const config = asConfig(
       unstable_defineApp({
-        // @ts-expect-error -- installationConfig is internal; forcing the invalid combination
-        installationConfig: {appType: 'media-library', fields: []},
+        // @ts-expect-error -- config is internal; forcing the invalid combination
+        config: {appType: 'media-library', fields: []},
         name: 'my-app',
         organizationId: 'org-123',
         title: 'My App',
@@ -83,7 +83,7 @@ describe('resolveWorkbenchApp', () => {
     )
 
     expect(() => resolveWorkbenchApp(config)).toThrow(
-      '`installationConfig` is only supported for singleton apps',
+      '`config` is only supported for singleton apps',
     )
   })
 })

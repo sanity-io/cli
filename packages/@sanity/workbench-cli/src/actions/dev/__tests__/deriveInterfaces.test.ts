@@ -1,11 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {
-  deriveInstallationConfigEntries,
-  deriveInstallationConfigs,
-  deriveInterfaces,
-} from '../deriveInterfaces.js'
+import {deriveConfigEntries, deriveConfigs, deriveInterfaces} from '../deriveInterfaces.js'
 import {workbenchApp} from './devTestHelpers.js'
 
 describe('deriveInterfaces', () => {
@@ -57,15 +53,15 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('does not put the installation config in the interface set', () => {
+  test('does not put the config in the interface set', () => {
     const app = workbenchApp({
-      installationConfig: {
+      config: {
         appType: 'media-library',
         fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
       },
       views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
     })
-    // only the panel — the config rides deriveInstallationConfigs, not interfaces
+    // only the panel — the config rides deriveConfigs, not interfaces
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
     ])
@@ -86,23 +82,21 @@ describe('deriveInterfaces', () => {
   })
 })
 
-describe('deriveInstallationConfigs', () => {
+describe('deriveConfigs', () => {
   test('returns [] for a non-branded app', () => {
-    expect(deriveInstallationConfigs({title: 'Plain'} as CliConfig['app'])).toEqual([])
-    expect(deriveInstallationConfigs(undefined)).toEqual([])
+    expect(deriveConfigs({title: 'Plain'} as CliConfig['app'])).toEqual([])
+    expect(deriveConfigs(undefined)).toEqual([])
   })
 
-  test('[] for an app with no installation config', () => {
+  test('[] for an app with no config', () => {
     expect(
-      deriveInstallationConfigs(
-        workbenchApp({views: [{name: 'feed', src: './f.tsx', type: 'panel'}]}),
-      ),
+      deriveConfigs(workbenchApp({views: [{name: 'feed', src: './f.tsx', type: 'panel'}]})),
     ).toEqual([])
   })
 
   test('forwards the serializable config on the wire, keeping `src` as each field entry', () => {
     const app = workbenchApp({
-      installationConfig: {
+      config: {
         appType: 'media-library',
         fields: [
           {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
@@ -111,7 +105,7 @@ describe('deriveInstallationConfigs', () => {
       },
       isSingleton: true,
     })
-    expect(deriveInstallationConfigs(app)).toEqual([
+    expect(deriveConfigs(app)).toEqual([
       {
         appType: 'media-library',
         fields: [
@@ -126,30 +120,30 @@ describe('deriveInstallationConfigs', () => {
   test("forwards the config's appType discriminator (assigns the singleton, no app id)", () => {
     const app = workbenchApp({
       applicationType: 'media-library',
-      installationConfig: {
+      config: {
         appType: 'media-library',
         fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
       },
       isSingleton: true,
     })
-    expect(deriveInstallationConfigs(app)[0]?.appType).toBe('media-library')
+    expect(deriveConfigs(app)[0]?.appType).toBe('media-library')
   })
 
-  test('rejects an installation config on a non-singleton app', () => {
+  test('rejects an config on a non-singleton app', () => {
     const app = workbenchApp({
-      installationConfig: {
+      config: {
         appType: 'media-library',
         fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
       },
     })
-    expect(() => deriveInstallationConfigs(app)).toThrow(/only supported for singleton apps/)
+    expect(() => deriveConfigs(app)).toThrow(/only supported for singleton apps/)
   })
 })
 
-describe('deriveInstallationConfigEntries', () => {
+describe('deriveConfigEntries', () => {
   test('projects each field to its name + src, dropping render-only metadata', () => {
     expect(
-      deriveInstallationConfigEntries({
+      deriveConfigEntries({
         appType: 'media-library',
         fields: [
           {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
@@ -163,12 +157,12 @@ describe('deriveInstallationConfigEntries', () => {
   })
 
   test('an empty field set yields no entries', () => {
-    expect(deriveInstallationConfigEntries({appType: 'media-library', fields: []})).toEqual([])
+    expect(deriveConfigEntries({appType: 'media-library', fields: []})).toEqual([])
   })
 
   test('throws on an app type it cannot handle', () => {
-    expect(() => deriveInstallationConfigEntries({appType: 'core-app', fields: []})).toThrow(
-      /unknown installation config appType: core-app/i,
+    expect(() => deriveConfigEntries({appType: 'core-app', fields: []})).toThrow(
+      /unknown config appType: core-app/i,
     )
   })
 })

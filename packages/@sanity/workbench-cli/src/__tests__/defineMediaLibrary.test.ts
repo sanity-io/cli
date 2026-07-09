@@ -12,7 +12,7 @@ import {
 const WORKBENCH_APP = Symbol.for('sanity.workbench.defineApp')
 
 // The public result type hides the fields a media library stamps
-// (installationConfig, applicationType); narrow past it via the runtime guard.
+// (config, applicationType); narrow past it via the runtime guard.
 function mediaLibrary(input: DefineMediaLibraryInput): WorkbenchApp {
   const app = unstable_defineMediaLibrary(input)
   if (!isWorkbenchApp(app)) throw new Error('expected a workbench app')
@@ -33,7 +33,7 @@ describe('unstable_defineMediaLibrary', () => {
     expect(app.name).toBe('media-library')
   })
 
-  test('collects all fields into one installation config', () => {
+  test('collects all fields into one config', () => {
     const app = mediaLibrary({
       fields: [
         {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
@@ -41,7 +41,7 @@ describe('unstable_defineMediaLibrary', () => {
       ],
       organizationId: 'org-1',
     })
-    expect(app.installationConfig).toEqual({
+    expect(app.config).toEqual({
       appType: 'media-library',
       fields: [
         {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
@@ -52,7 +52,7 @@ describe('unstable_defineMediaLibrary', () => {
 
   test('declares no config when no fields are given', () => {
     const app = mediaLibrary({organizationId: 'org-1'})
-    expect(app.installationConfig).toBeUndefined()
+    expect(app.config).toBeUndefined()
   })
 
   test('leaves the brand non-enumerable so it does not leak into config spreads', () => {

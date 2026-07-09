@@ -99,19 +99,17 @@ describe('workbenchVitePlugins', () => {
     )
   })
 
-  test('passes the installation config through to federation', async () => {
-    const installationConfig = {
+  test('passes the config through to federation', async () => {
+    const config = {
       appType: 'media-library' as const,
       fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
     }
     await workbenchVitePlugins({
       cwd,
       entries: {relativeConfigLocation: null, relativeEntry: null},
-      exposes: {installationConfig},
+      exposes: {config},
       isApp: true,
     })
-    expect(mockFederation).toHaveBeenCalledWith(
-      expect.objectContaining({exposes: {installationConfig}}),
-    )
+    expect(mockFederation).toHaveBeenCalledWith(expect.objectContaining({exposes: {config}}))
   })
 })

@@ -51,14 +51,14 @@ describe('getWorkbench', () => {
     expect(resolved.services).toHaveLength(1)
   })
 
-  test('exposes the installation config off a branded media library', () => {
+  test('exposes the config off a branded media library', () => {
     const resolved = mediaLibrary({
       fields: [
         {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
       ],
     })
     expect(resolved.applicationType).toBe('media-library')
-    expect(resolved.installationConfig).toMatchObject({fields: [{name: 'description'}]})
+    expect(resolved.config).toMatchObject({fields: [{name: 'description'}]})
     // a media library declares no interfaces
     expect(resolved.views).toHaveLength(0)
     expect(resolved.services).toHaveLength(0)
@@ -68,13 +68,13 @@ describe('getWorkbench', () => {
 describe('assertDeployable', () => {
   test('throws when the app declares no interfaces', () => {
     expect(() => workbench().assertDeployable()).toThrow(
-      'declares no entry, views, services or installation config',
+      'declares no entry, views, services or config',
     )
   })
 
   test('throws when views and services are empty arrays', () => {
     expect(() => workbench({services: [], views: []}).assertDeployable()).toThrow(
-      'declares no entry, views, services or installation config',
+      'declares no entry, views, services or config',
     )
   })
 
@@ -108,29 +108,29 @@ describe('assertDeployable', () => {
 
   test('throws when a media library declares no fields', () => {
     expect(() => mediaLibrary().assertDeployable()).toThrow(
-      'declares no entry, views, services or installation config',
+      'declares no entry, views, services or config',
     )
   })
 })
 
-describe('deploySingletonInstallationConfig / hasInterfaces', () => {
+describe('deploySingletonConfig / hasInterfaces', () => {
   test('a media library with fields deploys its config and hosts no interfaces', () => {
     const resolved = mediaLibrary({
       fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
     })
-    expect(resolved.deploySingletonInstallationConfig).toBe(true)
+    expect(resolved.deploySingletonConfig).toBe(true)
     expect(resolved.hasInterfaces).toBe(false)
   })
 
   test('a media library without fields carries no config to deploy', () => {
-    expect(mediaLibrary().deploySingletonInstallationConfig).toBe(false)
+    expect(mediaLibrary().deploySingletonConfig).toBe(false)
   })
 
   test('a non-singleton app never deploys a config, and reports its interfaces', () => {
     const resolved = workbench({
       views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}],
     })
-    expect(resolved.deploySingletonInstallationConfig).toBe(false)
+    expect(resolved.deploySingletonConfig).toBe(false)
     expect(resolved.hasInterfaces).toBe(true)
   })
 })

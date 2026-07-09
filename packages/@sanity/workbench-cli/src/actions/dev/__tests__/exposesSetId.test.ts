@@ -14,7 +14,7 @@ const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => (
   interface_type: 'worker',
   name,
 })
-const installationConfig: DevServerConfig = {
+const config: DevServerConfig = {
   appType: 'media-library',
   fields: [{name: 'd', src: './src/d.ts', title: 'D'}],
 }
@@ -24,9 +24,9 @@ const server = (
   interfaces: DevServerInterface[],
   config?: DevServerConfig,
 ): DevServerManifest => ({
+  configs: config ? [config] : undefined,
   host: 'localhost',
   id,
-  installationConfigs: config ? [config] : undefined,
   interfaces,
   pid: 1,
   port,
@@ -61,17 +61,17 @@ describe('exposesSetId', () => {
     )
   })
 
-  test('the installation config toggles the id (its module is a new expose)', () => {
+  test('the config toggles the id (its module is a new expose)', () => {
     // adding the config changes the expose set → rebuild
     expect(exposesSetId({interfaces: [panel('a')]})).not.toBe(
-      exposesSetId({installationConfigs: [installationConfig], interfaces: [panel('a')]}),
+      exposesSetId({configs: [config], interfaces: [panel('a')]}),
     )
   })
 
   test('a zero-field config still toggles the id — its module is an expose on its own', () => {
     const empty: DevServerConfig = {appType: 'media-library', fields: []}
     expect(exposesSetId({interfaces: [panel('a')]})).not.toBe(
-      exposesSetId({installationConfigs: [empty], interfaces: [panel('a')]}),
+      exposesSetId({configs: [empty], interfaces: [panel('a')]}),
     )
   })
 
@@ -91,12 +91,8 @@ describe('exposesSetId', () => {
       appType: 'media-library',
       fields: [{name: 'locale', src: './src/d.ts', title: 'Description'}],
     }
-    expect(exposesSetId({installationConfigs: [one]})).not.toBe(
-      exposesSetId({installationConfigs: [added]}),
-    )
-    expect(exposesSetId({installationConfigs: [one]})).not.toBe(
-      exposesSetId({installationConfigs: [renamed]}),
-    )
+    expect(exposesSetId({configs: [one]})).not.toBe(exposesSetId({configs: [added]}))
+    expect(exposesSetId({configs: [one]})).not.toBe(exposesSetId({configs: [renamed]}))
   })
 
   test('a config field pointed at a different file is a rebuild — the module reimports it', () => {
@@ -108,9 +104,7 @@ describe('exposesSetId', () => {
       appType: 'media-library',
       fields: [{name: 'x', src: './src/y.ts', title: 'X'}],
     }
-    expect(exposesSetId({installationConfigs: [before]})).not.toBe(
-      exposesSetId({installationConfigs: [after]}),
-    )
+    expect(exposesSetId({configs: [before]})).not.toBe(exposesSetId({configs: [after]}))
   })
 
   test('reordering config fields is not a change', () => {
@@ -128,7 +122,7 @@ describe('exposesSetId', () => {
         {name: 'x', src: './src/x.ts', title: 'X'},
       ],
     }
-    expect(exposesSetId({installationConfigs: [a]})).toBe(exposesSetId({installationConfigs: [b]}))
+    expect(exposesSetId({configs: [a]})).toBe(exposesSetId({configs: [b]}))
   })
 
   test('a field title/public edit is not a rebuild — those ride the wire, not the module', () => {
@@ -140,7 +134,7 @@ describe('exposesSetId', () => {
       appType: 'media-library',
       fields: [{name: 'x', public: false, src: './src/x.ts', title: 'Renamed'}],
     }
-    expect(exposesSetId({installationConfigs: [a]})).toBe(exposesSetId({installationConfigs: [b]}))
+    expect(exposesSetId({configs: [a]})).toBe(exposesSetId({configs: [b]}))
   })
 
   // The id is what both detection sites compare against their last-seen value;
@@ -177,11 +171,9 @@ describe('trackExposesSet', () => {
     expect(set.changed({interfaces: [panel('a')]})).toBe(true) // removed — a new change off the committed set
   })
 
-  test('the installation config appearing is a change off the seeded set', () => {
+  test('the config appearing is a change off the seeded set', () => {
     const set = trackExposesSet({interfaces: [panel('a')]})
-    expect(set.changed({installationConfigs: [installationConfig], interfaces: [panel('a')]})).toBe(
-      true,
-    )
+    expect(set.changed({configs: [config], interfaces: [panel('a')]})).toBe(true)
   })
 
   test('treats undefined and empty as the same set', () => {
@@ -201,10 +193,10 @@ describe('createExposesTracker', () => {
     expect(tracker.hasChanged([server('a', 1, [panel('x'), panel('y')])])).toBe(true)
   })
 
-  test('a known app that gains an installation config signals a rebuild', () => {
+  test('a known app that gains an config signals a rebuild', () => {
     const tracker = createExposesTracker()
     tracker.hasChanged([server('a', 1, [panel('x')])])
-    expect(tracker.hasChanged([server('a', 1, [panel('x')], installationConfig)])).toBe(true)
+    expect(tracker.hasChanged([server('a', 1, [panel('x')], config)])).toBe(true)
   })
 
   test('a newly appearing app is not a rebuild — it reconciles softly', () => {

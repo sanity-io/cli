@@ -6,12 +6,7 @@
 
 import {type CliConfig} from '@sanity/cli-core'
 
-import {
-  type DefineAppInput,
-  isWorkbenchApp,
-  readInstallationConfig,
-  type WorkbenchApp,
-} from './defineApp.js'
+import {type DefineAppInput, isWorkbenchApp, readConfig, type WorkbenchApp} from './defineApp.js'
 
 /**
  * Bundled so adding a declaration family touches this type and the artifact
@@ -19,7 +14,7 @@ import {
  * @internal
  */
 export interface WorkbenchExposes {
-  installationConfig?: WorkbenchApp['installationConfig']
+  config?: WorkbenchApp['config']
   services?: DefineAppInput['services']
   views?: DefineAppInput['views']
 }
@@ -36,10 +31,10 @@ export interface ResolvedWorkbenchApp {
 
   /** Resolved app kind — `studio` or one of the SDK app types. */
   readonly applicationType?: string
+  /** Deploys on its own path, separate from the interfaces. */
+  readonly config?: WorkbenchApp['config']
   /** SDK app-view entrypoint, when declared. */
   readonly entry?: string
-  /** Deploys on its own path, separate from the interfaces. */
-  readonly installationConfig?: WorkbenchApp['installationConfig']
   /** Explicit singleton flag (a Sanity-owned app); `undefined` when the app doesn't set it. */
   readonly isSingleton?: boolean
 }
@@ -56,8 +51,8 @@ export function resolveWorkbenchApp(
 
   return {
     applicationType: app.applicationType,
+    config: readConfig(app),
     entry: app.entry,
-    installationConfig: readInstallationConfig(app),
     isSingleton: app.isSingleton,
     name: app.name,
     services: app.services ?? [],
