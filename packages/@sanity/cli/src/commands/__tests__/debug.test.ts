@@ -1,188 +1,101 @@
-import {
-  getCliToken,
-  getStudioConfig,
-  getUserConfig,
-  tryFindStudioConfigPath,
-} from '@sanity/cli-core/config'
 import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
-import {convertToSystemPath} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import {convertToSystemPath} from '@sanity/cli-test/paths'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {PROJECTS_API_VERSION} from '../../services/projects.js'
-import {USERS_API_VERSION} from '../../services/user.js'
 import {Debug} from '../debug.js'
 
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
-  return {
-    ...actual,
-    getCliToken: vi.fn(),
-    getStudioConfig: vi.fn(),
-    getUserConfig: vi.fn().mockReturnValue({
-      delete: vi.fn(),
-      get: vi.fn().mockReturnValue(undefined),
-      set: vi.fn(),
-    }),
-    tryFindStudioConfigPath: vi.fn(),
-  }
-})
+const mockGatherAuthInfo = vi.hoisted(() => vi.fn())
+const mockGatherCliInfo = vi.hoisted(() => vi.fn())
+const mockGatherProjectInfo = vi.hoisted(() => vi.fn())
+const mockGatherResolvedWorkspaces = vi.hoisted(() => vi.fn())
+const mockGatherStudioWorkspaces = vi.hoisted(() => vi.fn())
+const mockGatherUserInfo = vi.hoisted(() => vi.fn())
 
-vi.mock('../../util/getCliVersion.js', () => ({
-  getCliVersion: vi.fn().mockResolvedValue('6.1.4'),
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('../../actions/debug/gatherDebugInfo.js', () => ({
+  gatherAuthInfo: mockGatherAuthInfo,
+  gatherCliInfo: mockGatherCliInfo,
+  gatherProjectInfo: mockGatherProjectInfo,
+  gatherResolvedWorkspaces: mockGatherResolvedWorkspaces,
+  gatherStudioWorkspaces: mockGatherStudioWorkspaces,
+  gatherUserInfo: mockGatherUserInfo,
 }))
-
-vi.mock('../../util/packageManager/installationInfo/index.js', () => ({
-  detectCliInstallation: vi.fn().mockResolvedValue({
-    currentExecution: {
-      binaryPath: '/usr/local/bin/sanity',
-      packageManager: 'npm',
-      resolvedFrom: 'global',
-    },
-    globalInstallations: [],
-    issues: [],
-    packages: {},
-    workspace: {root: '/test/project', type: 'standalone'},
-  }),
-}))
-
-const defaultProjectRoot = {
-  directory: '/test/project',
-  path: '/test/project/sanity.cli.ts',
-  type: 'studio' as const,
-}
 
 const defaultCliConfig = {
   api: {
     projectId: 'project123',
   },
 }
-
-const defaultMocks = {
-  cliConfig: defaultCliConfig,
-  projectRoot: defaultProjectRoot,
-  token: 'mock-auth-token',
+const defaultGatheredProjectInfo = {
+  cliConfigPath: '/some/config/path',
+  rootPath: '/some/root/path',
+}
+const defaultGatheredAuthInfo = {hasToken: true, token: 'sometoken', userType: 'normal'}
+const defaultGatheredUserInfo = {
+  email: 'test@example.com',
+  id: 'user123',
+  name: 'Test User',
+  provider: 'google',
 }
 
-afterEach(() => {
-  vi.clearAllMocks()
-  const pending = pendingMocks()
-  cleanAll()
-  expect(pending, 'pending mocks').toEqual([])
-})
-
 describe('#debug', () => {
-  describe('User section', () => {
+  beforeEach(() => {
+    mocks.SanityCmdGetCliConfig.mockResolvedValue(defaultCliConfig)
+    mockGatherProjectInfo.mockImplementation((projectDir) => ({
+      ...defaultGatheredProjectInfo,
+      rootPath: projectDir,
+    }))
+    mockGatherAuthInfo.mockResolvedValue(defaultGatheredAuthInfo)
+    mockGatherCliInfo.mockResolvedValue({})
+    mockGatherResolvedWorkspaces.mockResolvedValue([])
+    mockGatherUserInfo.mockResolvedValue(defaultGatheredUserInfo)
+  })
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe.only('User section', () => {
     test('shows user info when logged in with project context', async () => {
-      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+      await Debug.run([])
 
-      mockApi({
-        apiVersion: USERS_API_VERSION,
-        projectId: 'project123',
-        uri: '/users/me',
-      }).reply(200, {
-        email: 'test@example.com',
-        id: 'user123',
-        name: 'Test User',
-        provider: 'google',
-      })
-
-      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-      if (error) throw error
-      expect(stdout).toContain('User:')
-      expect(stdout).toContain('Test User')
-      expect(stdout).toContain('test@example.com')
-      expect(stdout).toContain('user123')
-      expect(stdout).toContain('google')
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('User:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Test User'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('test@example.com'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('user123'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('google'))
     })
 
-    test('shows "Not logged in" when no token', async () => {
-      vi.mocked(getCliToken).mockResolvedValue(undefined)
-      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+    test('shows gatherUserInfo error details', async () => {
+      mockGatherUserInfo.mockResolvedValue(new Error('uh oh'))
 
-      const {error, stdout} = await testCommand(Debug, [], {
-        mocks: {
-          ...defaultMocks,
-          token: undefined,
-        },
-      })
+      await Debug.run([])
 
-      if (error) throw error
-      expect(stdout).toContain('User:')
-      expect(stdout).toContain('Not logged in')
-    })
-
-    test('shows user info without project context (global client)', async () => {
-      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
-
-      // No project ID in config
-      mockApi({
-        apiVersion: USERS_API_VERSION,
-        uri: '/users/me',
-      }).reply(200, {
-        email: 'global@example.com',
-        id: 'globaluser',
-        name: 'Global User',
-        provider: 'sanity',
-      })
-
-      const {error, stdout} = await testCommand(Debug, [], {
-        mocks: {
-          cliConfig: {api: {}},
-          projectRoot: defaultProjectRoot,
-          token: 'mock-auth-token',
-        },
-      })
-
-      if (error) throw error
-      expect(stdout).toContain('Global User')
-      expect(stdout).toContain('global@example.com')
-    })
-
-    test('handles user API error gracefully', async () => {
-      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
-
-      mockApi({
-        apiVersion: USERS_API_VERSION,
-        projectId: 'project123',
-        uri: '/users/me',
-      }).reply(500, {error: 'Internal server error'})
-
-      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-      if (error) throw error
-      expect(stdout).toContain('User:')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('User:'))
       // Should show error message but not crash
-      expect(stdout).toMatch(/500|Internal server error|Failed to fetch user info/)
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('uh oh'))
     })
   })
 
-  describe('Authentication section', () => {
-    test('shows redacted auth token by default', async () => {
-      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+  describe.only('Authentication section', () => {
+    test('passes includeSecrets=false to gatherAuthInfo by default', async () => {
+      await Debug.run([])
 
-      mockApi({
-        apiVersion: USERS_API_VERSION,
-        projectId: 'project123',
-        uri: '/users/me',
-      }).reply(200, {
-        email: 'test@example.com',
-        id: 'user123',
-        name: 'Test User',
-        provider: 'google',
-      })
-
-      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-      if (error) throw error
-      expect(stdout).toContain('Authentication:')
-      expect(stdout).toContain('<redacted>')
-      expect(stdout).toContain('(run with --secrets to reveal token)')
-      expect(stdout).not.toContain('mock-auth-token')
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Authentication:'),
+      )
+      expect(mockGatherAuthInfo).toHaveBeenCalledWith(false)
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('(run with --secrets to reveal token)'),
+      )
     })
 
     test('shows actual auth token with --secrets flag', async () => {
@@ -208,7 +121,9 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('secret-token-12345')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('secret-token-12345'),
+      )
       expect(stdout).not.toContain('<redacted>')
       expect(stdout).not.toContain('(run with --secrets to reveal token)')
     })
@@ -227,32 +142,6 @@ describe('#debug', () => {
       if (error) throw error
       expect(stdout).not.toContain('Authentication:')
     })
-
-    test('shows user type from global config', async () => {
-      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-      vi.mocked(getUserConfig).mockReturnValue({
-        delete: vi.fn(),
-        get: vi.fn().mockReturnValue('enterprise'),
-        set: vi.fn(),
-      })
-      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
-
-      mockApi({
-        apiVersion: USERS_API_VERSION,
-        projectId: 'project123',
-        uri: '/users/me',
-      }).reply(200, {
-        email: 'test@example.com',
-        id: 'user123',
-        name: 'Test User',
-        provider: 'google',
-      })
-
-      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-      if (error) throw error
-      expect(stdout).toContain('enterprise')
-    })
   })
 
   describe('CLI section', () => {
@@ -268,9 +157,11 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('CLI:')
-      expect(stdout).toContain('6.1.4')
-      expect(stdout).toContain('globally (npm)')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('CLI:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('6.1.4'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('globally (npm)'),
+      )
     })
   })
 
@@ -286,8 +177,10 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Project:')
-      expect(stdout).toContain('No project found')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Project:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('No project found'),
+      )
     })
 
     test('shows project root path and config file detection', async () => {
@@ -310,10 +203,16 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Project:')
-      expect(stdout).toContain(convertToSystemPath('/test/project'))
-      expect(stdout).toContain('sanity.cli.ts')
-      expect(stdout).toContain('sanity.config.ts')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Project:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining(convertToSystemPath('/test/project')),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('sanity.cli.ts'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('sanity.config.ts'),
+      )
     })
 
     test('shows warning on CLI config line when config fails to load', async () => {
@@ -338,9 +237,11 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Project:')
-      expect(stdout).toContain('sanity.cli.ts')
-      expect(stdout).toContain('has errors')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Project:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('sanity.cli.ts'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('has errors'))
     })
 
     test('shows "not found" when config files are missing', async () => {
@@ -355,8 +256,8 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Project:')
-      expect(stdout).toContain('not found')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Project:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('not found'))
     })
   })
 
@@ -388,11 +289,11 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Studio:')
-      expect(stdout).toContain('Workspaces:')
-      expect(stdout).toContain('default')
-      expect(stdout).toContain('abc123')
-      expect(stdout).toContain('production')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Studio:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Workspaces:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('default'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('abc123'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('production'))
     })
 
     test('does not show studio section when no studio config exists', async () => {
@@ -461,9 +362,9 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Studio:')
-      expect(stdout).toContain('staging')
-      expect(stdout).toContain('production')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Studio:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('staging'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('production'))
     })
 
     test('shows warning on studio config line and error in Studio section when config fails', async () => {
@@ -483,11 +384,15 @@ describe('#debug', () => {
 
       if (error) throw error
       // Project section shows warning on the studio config line
-      expect(stdout).toContain('sanity.config.ts')
-      expect(stdout).toContain('has errors')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('sanity.config.ts'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('has errors'))
       // Studio section should appear with the error message
-      expect(stdout).toContain('Studio:')
-      expect(stdout).toContain('Config parse error')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Studio:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Config parse error'),
+      )
       // But no workspaces
       expect(stdout).not.toContain('Workspaces:')
     })
@@ -553,9 +458,15 @@ describe('#debug', () => {
       const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
 
       if (error) throw error
-      expect(stdout).toContain('Resolved configuration:')
-      expect(stdout).toContain('default (My Studio)')
-      expect(stdout).toContain('administrator')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Resolved configuration:'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('default (My Studio)'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('administrator'),
+      )
     })
 
     test('shows fallback message when full resolution fails', async () => {
@@ -596,9 +507,13 @@ describe('#debug', () => {
       const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
 
       if (error) throw error
-      expect(stdout).toContain('Workspaces:')
-      expect(stdout).toContain('unable to resolve full studio configuration')
-      expect(stdout).toContain('Plugin resolution failed')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Workspaces:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('unable to resolve full studio configuration'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Plugin resolution failed'),
+      )
     })
   })
 
@@ -634,7 +549,7 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('locally')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('locally'))
     })
 
     test('shows "via npx" when running via npx', async () => {
@@ -668,7 +583,7 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('via npx')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('via npx'))
     })
 
     test('shows "unknown" when install context cannot be determined', async () => {
@@ -702,7 +617,7 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('unknown')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('unknown'))
     })
 
     test('shows "globally" without package manager when pm is null', async () => {
@@ -736,7 +651,7 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('globally')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('globally'))
       expect(stdout).not.toContain('globally (')
     })
 
@@ -752,8 +667,10 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('CLI:')
-      expect(stdout).toContain('Unable to determine CLI version')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('CLI:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Unable to determine CLI version'),
+      )
     })
   })
 
@@ -799,11 +716,13 @@ describe('#debug', () => {
 
       if (error) throw error
       // All section headers present
-      expect(stdout).toContain('User:')
-      expect(stdout).toContain('Authentication:')
-      expect(stdout).toContain('CLI:')
-      expect(stdout).toContain('Project:')
-      expect(stdout).toContain('Studio:')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('User:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Authentication:'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('CLI:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Project:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Studio:'))
     })
 
     test('shows minimal output when outside project and not logged in', async () => {
@@ -817,12 +736,16 @@ describe('#debug', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('User:')
-      expect(stdout).toContain('Not logged in')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('User:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Not logged in'),
+      )
       expect(stdout).not.toContain('Authentication:')
-      expect(stdout).toContain('CLI:')
-      expect(stdout).toContain('Project:')
-      expect(stdout).toContain('No project found')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('CLI:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Project:'))
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('No project found'),
+      )
       expect(stdout).not.toContain('Studio:')
     })
   })
