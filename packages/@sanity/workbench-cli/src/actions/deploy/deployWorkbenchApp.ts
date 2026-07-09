@@ -20,6 +20,18 @@ export interface Application {
   type: ApplicationType
 }
 
+/** A studio workspace as Brett stores it. */
+export interface BrettWorkspace {
+  dataset: string
+  projectId: string
+
+  basePath?: string
+  icon?: string
+  name?: string
+  subtitle?: string
+  title?: string
+}
+
 export async function getApplication(applicationId: string): Promise<Application | null> {
   const client = await getGlobalCliClient({
     apiVersion: APP_WORKBENCH_API_VERSION,
@@ -44,9 +56,20 @@ export async function createApplication(options: {
   title: string
   type: ApplicationType
   version: string
+  workspaces?: readonly BrettWorkspace[]
 }): Promise<Application> {
-  const {interfaces, isSingleton, organizationId, projectId, slug, tarball, title, type, version} =
-    options
+  const {
+    interfaces,
+    isSingleton,
+    organizationId,
+    projectId,
+    slug,
+    tarball,
+    title,
+    type,
+    version,
+    workspaces,
+  } = options
   const formData = new FormData()
   formData.append('type', type)
   formData.append('title', title)
@@ -55,7 +78,7 @@ export async function createApplication(options: {
   if (isSingleton !== undefined) formData.append('isSingleton', String(isSingleton))
   // Studio config is set once, at create — it's immutable on redeploy.
   if (projectId) appendJson(formData, 'config', {studio: {projectId}})
-  appendDeploymentParts(formData, {interfaces, tarball, version})
+  appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
   return request(`/applications`, formData)
 }
 
@@ -66,11 +89,12 @@ export async function createDeployment(options: {
   isAutoUpdating: boolean
   tarball: Gzip
   version: string
+  workspaces?: readonly BrettWorkspace[]
 }): Promise<{id: string}> {
-  const {applicationId, interfaces, isAutoUpdating, tarball, version} = options
+  const {applicationId, interfaces, isAutoUpdating, tarball, version, workspaces} = options
   const formData = new FormData()
   formData.append('isAutoUpdating', isAutoUpdating.toString())
-  appendDeploymentParts(formData, {interfaces, tarball, version})
+  appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
   return request(`/applications/${applicationId}/deployments`, formData)
 }
 
@@ -80,10 +104,18 @@ function appendDeploymentParts(
     interfaces,
     tarball,
     version,
-  }: {interfaces: readonly BrettInterface[]; tarball: Gzip; version: string},
+    workspaces,
+  }: {
+    interfaces: readonly BrettInterface[]
+    tarball: Gzip
+    version: string
+    workspaces?: readonly BrettWorkspace[]
+  },
 ): void {
   formData.append('version', version)
   appendJson(formData, 'interfaces', interfaces)
+  // Studio-only — the server rejects a workspaces part on non-studio types.
+  if (workspaces?.length) appendJson(formData, 'workspaces', workspaces)
   formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
 }
 
@@ -178,6 +210,7 @@ export async function deployStudio(options: {
   studioHost: string | undefined
   title: string
   version: string
+  workspaces: readonly BrettWorkspace[]
 }): Promise<{applicationId: string}> {
   const {
     appId,
@@ -190,13 +223,21 @@ export async function deployStudio(options: {
     studioHost,
     title,
     version,
+    workspaces,
   } = options
   const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
 
   const spin = spinner('Deploying to sanity.studio').start()
   try {
     if (appId) {
-      await createDeployment({applicationId: appId, interfaces, isAutoUpdating, tarball, version})
+      await createDeployment({
+        applicationId: appId,
+        interfaces,
+        isAutoUpdating,
+        tarball,
+        version,
+        workspaces,
+      })
       spin.succeed()
       return {applicationId: appId}
     }
@@ -218,6 +259,7 @@ export async function deployStudio(options: {
       title,
       type: 'studio',
       version,
+      workspaces,
     })
     spin.succeed()
     return {applicationId: application.id}

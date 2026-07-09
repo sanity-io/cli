@@ -7,6 +7,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type BrettInterface} from '../buildExposes.js'
 import {
+  type BrettWorkspace,
   createApplication,
   createDeployment,
   deployCoreApp,
@@ -31,6 +32,9 @@ const output = {error: vi.fn(), log: vi.fn()} as unknown as Output
 const tarball = () => Readable.from(['remote']) as unknown as Gzip
 const interfaces: BrettInterface[] = [
   {moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
+]
+const workspaces: BrettWorkspace[] = [
+  {basePath: '/', dataset: 'production', name: 'default', projectId: 'proj-1', title: 'Default'},
 ]
 
 /** The (name, value) pairs a call appended to its FormData. */
@@ -96,6 +100,7 @@ describe('createApplication', () => {
     expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
     expect(fields.map(([name]) => name)).toContain('tarball')
     expect(fields.map(([name]) => name)).not.toContain('config')
+    expect(fields.map(([name]) => name)).not.toContain('workspaces')
     // isSingleton is opt-in; a regular create omits it.
     expect(fields.map(([name]) => name)).not.toContain('isSingleton')
   })
@@ -117,7 +122,7 @@ describe('createApplication', () => {
     expect(appendedFields()).toContainEqual(['isSingleton', 'true'])
   })
 
-  test('sends studio config as a JSON part for a studio create', async () => {
+  test('sends studio config and workspaces as JSON parts for a studio create', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 
     await createApplication({
@@ -129,11 +134,13 @@ describe('createApplication', () => {
       title: 'My Studio',
       type: 'studio',
       version: '3.0.0',
+      workspaces,
     })
 
     const fields = appendedFields()
     expect(fields).toContainEqual(['type', 'studio'])
     expect(fields).toContainEqual(['config', JSON.stringify({studio: {projectId: 'proj-1'}})])
+    expect(fields).toContainEqual(['workspaces', JSON.stringify(workspaces)])
   })
 })
 
@@ -157,6 +164,22 @@ describe('createDeployment', () => {
     expect(fields).toContainEqual(['isAutoUpdating', 'true'])
     expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
     expect(fields.map(([name]) => name)).not.toContain('config')
+    expect(fields.map(([name]) => name)).not.toContain('workspaces')
+  })
+
+  test('includes workspaces as a JSON part when provided', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
+
+    await createDeployment({
+      applicationId: 'app_1',
+      interfaces,
+      isAutoUpdating: false,
+      tarball: tarball(),
+      version: '3.0.1',
+      workspaces,
+    })
+
+    expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
   })
 })
 
@@ -215,6 +238,7 @@ const studioOptions = {
   sourceDir: '/tmp/build/studio',
   title: 'My Studio',
   version: '3.0.0',
+  workspaces,
 }
 
 describe('deployStudio', () => {
@@ -228,6 +252,7 @@ describe('deployStudio', () => {
       method: 'POST',
       uri: '/applications/app_1/deployments',
     })
+    expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
   })
 
   test('creates a studio at studioHost when no appId is set', async () => {
@@ -241,6 +266,7 @@ describe('deployStudio', () => {
       uri: '/applications',
     })
     expect(appendedFields()).toContainEqual(['slug', 'my-studio'])
+    expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
   })
 
   test('fails without deploying when no appId and no studioHost are set', async () => {
