@@ -1,27 +1,35 @@
 import {Command} from '@oclif/core'
-import {type Output, type SanityCommandInterface} from '@sanity/cli-core/types'
+import {type Output, ProjectRootResult, type SanityCommandInterface} from '@sanity/cli-core/types'
 import {Mock, vi} from 'vitest'
 
 interface MockCollection {
+  DefaultProjectRoot: ProjectRootResult
   OclifCmdExit: Mock<Command['exit']>
   SanityCmdGetCliConfig: Mock
   SanityCmdGetProjectId: Mock
-  SanityCmdGetProjectRoot: Mock
+  SanityCmdGetProjectRoot: Mock<() => ProjectRootResult>
   SanityCmdIsUnattended: Mock
   SanityCmdOutput: Output
   SanityCmdResolveIsInteractive: Mock
+}
+
+const DefaultProjectRoot = {
+  directory: '/some/path/to/cli-test/mocks',
+  path: '/some/path/to/cli-test/mocks/sanity.studio.ts',
+  type: 'studio' as const,
 }
 
 /**
  * @internal
  */
 export const mocks: MockCollection = {
+  DefaultProjectRoot,
   // Mock OCLIF Command methods
   OclifCmdExit: vi.fn((_code?: number) => undefined as never),
   // Mock SanityCommand methods
   SanityCmdGetCliConfig: vi.fn(),
   SanityCmdGetProjectId: vi.fn(() => 'cli-test-mock-project-id'),
-  SanityCmdGetProjectRoot: vi.fn(() => '/some/path/to/cli-test/mocks'),
+  SanityCmdGetProjectRoot: vi.fn(() => DefaultProjectRoot),
   SanityCmdIsUnattended: vi.fn(),
   SanityCmdOutput: createMockOutput(),
   SanityCmdResolveIsInteractive: vi.fn(),
