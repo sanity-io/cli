@@ -12,10 +12,10 @@ export default defineConfig({
     },
     environment: 'node',
     globals: false,
-    globalSetup: ['test/workerBuild.ts', '@sanity/cli-test/vitest'],
+    globalSetup: ['../cli/test/workerBuild.ts', '@sanity/cli-test/vitest'],
     include: ['test/integration/**/*.test.ts'],
     name: '@sanity/cli-build/integration',
-    setupFiles: ['test/setup.ts'],
-    snapshotSerializers: ['test/snapshotSerializer.ts'],
+    setupFiles: ['../cli/test/setup.ts'],
+    snapshotSerializers: ['../cli/test/snapshotSerializer.ts'],
   },
 })
