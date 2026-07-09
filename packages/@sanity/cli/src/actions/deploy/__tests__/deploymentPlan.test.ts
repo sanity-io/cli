@@ -94,6 +94,7 @@ describe('deploymentPlanToJson', () => {
 
   test('passes the resolved target through to the JSON', () => {
     const target = {
+      action: 'update' as const,
       applicationId: 'app-1',
       title: 'My Studio',
       url: 'https://my-studio.sanity.studio',

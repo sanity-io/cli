@@ -90,7 +90,7 @@ interface FindUserApplicationForStudioOptions {
 
 export async function findUserApplicationForStudio(
   options: FindUserApplicationForStudioOptions,
-): Promise<UserApplication | null> {
+): Promise<{application: UserApplication | null; created: boolean}> {
   const {
     appId,
     isExternal,
@@ -118,31 +118,37 @@ export async function findUserApplicationForStudio(
     spin.fail()
     deployDebug('Error finding user application', error)
     output.error(`Failed to resolve deploy target: ${getErrorMessage(error)}`, {exit: 1})
-    return null
+    return {application: null, created: false}
   }
 
   if (resolution.type === 'found') {
     spin.succeed()
-    return resolution.application
+    return {application: resolution.application, created: false}
   }
 
-  // The configured host isn't registered yet — a deploy registers it without prompting
+  // The configured host isn't registered yet — a deploy registers it without
+  // prompting, so this returns a newly created studio.
   if (resolution.type === 'would-create') {
     spin.succeed()
-    return createFromConfiguredHost({
+    const application = await createFromConfiguredHost({
       appHost: resolution.appHost,
       output,
       projectId,
       title,
       urlType,
     })
+    return {application, created: application !== null}
   }
 
   if (resolution.type === 'needs-input' && !unattended) {
     spin.succeed()
     // Nothing to select from — the caller prompts for a brand new host
-    if (resolution.existing.length === 0) return null
-    return promptForExistingStudio({existing: resolution.existing, urlType})
+    if (resolution.existing.length === 0) return {application: null, created: false}
+    // A selected existing studio is an update; "new" returns null and the caller registers it.
+    return {
+      application: await promptForExistingStudio({existing: resolution.existing, urlType}),
+      created: false,
+    }
   }
 
   spin.fail()
@@ -150,10 +156,10 @@ export async function findUserApplicationForStudio(
   // needs an explicit exit here
   if (resolution.type === 'blocked') {
     output.error(resolution.message, {exit: 1})
-    return null
+    return {application: null, created: false}
   }
   createFailFastReporter(output).report(describeStudioTarget(resolution, {isExternal}))
-  return null
+  return {application: null, created: false}
 }
 
 /**

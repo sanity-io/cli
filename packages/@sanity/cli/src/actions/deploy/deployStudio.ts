@@ -58,6 +58,7 @@ async function runStudioDeployment(
   const isWorkbenchApp = workbench !== null
   const projectId = cliConfig.api?.projectId
   const organizationId = cliConfig.app?.organizationId
+  const appId = getAppId(cliConfig)
   const dryRun = !!flags['dry-run']
 
   // A federated app deploys through Sanity's build/hosting pipeline, which
@@ -95,6 +96,7 @@ async function runStudioDeployment(
   // Workbench studios deploy to Brett (which needs the org); plain studios
   // resolve/create on user-applications, unchanged.
   let application: UserApplication | null = null
+  let studioCreated = false
   let studioTarget: DeployTarget | null = null
   if (workbench && !isExternal) {
     reporter.report(
@@ -109,13 +111,16 @@ async function runStudioDeployment(
     // Both modes, so a bad appId fails before the build; its resolved URL feeds
     // the deploy result.
     studioTarget = await checkStudioTarget(reporter, {
-      appId: getAppId(cliConfig),
+      appId,
       isWorkbenchApp: true,
       studioHost: cliConfig.studioHost,
       title: appTitle,
     })
   } else {
-    application = await resolveStudioApplication(options, {dryRun, reporter})
+    ;({application, created: studioCreated} = await resolveStudioApplication(options, {
+      dryRun,
+      reporter,
+    }))
   }
 
   await checkBuild(reporter, {
@@ -152,7 +157,7 @@ async function runStudioDeployment(
   // Workbench studios deploy to Brett; plain studios use user-applications.
   if (workbench && !isExternal && organizationId) {
     const {applicationId} = await deployWorkbenchStudio({
-      appId: getAppId(cliConfig),
+      appId,
       interfaces: buildExposes(workbench, {
         appName: workbench.name,
         appTitle,
@@ -174,7 +179,12 @@ async function runStudioDeployment(
       applicationType: 'studio',
       applicationVersion: version,
       ...(exposes.length > 0 ? {exposes} : {}),
-      target: {applicationId, title: appTitle, url: studioTarget?.url ?? null},
+      target: {
+        action: appId ? 'update' : 'create',
+        applicationId,
+        title: appTitle,
+        url: studioTarget?.url ?? null,
+      },
     }
   }
 
@@ -191,7 +201,12 @@ async function runStudioDeployment(
   return {
     applicationType: 'studio',
     applicationVersion: version,
-    target: {applicationId: application.id, title: application.title ?? null, url: location},
+    target: {
+      action: studioCreated ? 'create' : 'update',
+      applicationId: application.id,
+      title: application.title ?? null,
+      url: location,
+    },
   }
 }
 
@@ -202,27 +217,29 @@ async function runStudioDeployment(
 async function resolveStudioApplication(
   options: DeployAppOptions,
   {dryRun, reporter}: {dryRun: boolean; reporter: CheckReporter},
-): Promise<UserApplication | null> {
+): Promise<{application: UserApplication | null; created: boolean}> {
   const {cliConfig, flags, output} = options
   const isExternal = !!flags.external
+  const appId = getAppId(cliConfig)
   // Sets the title on a newly registered studio; blank falls back to undefined
   const title = flags.title?.trim() || undefined
 
   if (dryRun) {
     await checkStudioTarget(reporter, {
-      appId: getAppId(cliConfig),
+      appId,
       isExternal,
       projectId: cliConfig.api?.projectId,
       studioHost: cliConfig.studioHost,
       title,
       urlFlag: flags.url,
     })
-    return null
+    return {application: null, created: false}
   }
 
   const projectId = cliConfig.api?.projectId ?? ''
-  let application = await findUserApplicationForStudio({
-    appId: getAppId(cliConfig),
+  // `created` is true when a configured-but-unregistered host was just registered.
+  const {application, created} = await findUserApplicationForStudio({
+    appId,
     isExternal,
     output,
     projectId,
@@ -242,16 +259,17 @@ async function resolveStudioApplication(
       output.log('you will need one. Please enter the subdomain you want to use.')
     }
 
-    application = await createStudioUserApplication({
+    const registered = await createStudioUserApplication({
       projectId,
       title,
       urlType: isExternal ? 'external' : 'internal',
     })
-    deployDebug('Created user application', application)
+    deployDebug('Created user application', registered)
+    return {application: registered, created: true}
   }
 
   deployDebug('Found user application', application)
-  return application
+  return {application, created}
 }
 
 /** Extracts the studio schema and manifest and uploads them to the schema store. */

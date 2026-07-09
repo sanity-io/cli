@@ -61,6 +61,7 @@ async function runAppDeployment(
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
   const organizationId = cliConfig.app?.organizationId
+  const appId = getAppId(cliConfig)
   const workbench = getWorkbench(cliConfig)
   const dryRun = !!flags['dry-run']
 
@@ -112,6 +113,7 @@ async function runAppDeployment(
   checkAppId(reporter, {cliConfig})
 
   let application: UserApplicationResolved | null = null
+  let appCreated = false
   if (flags.external) {
     reporter.report({
       message: EXTERNAL_APP_NOT_SUPPORTED,
@@ -121,13 +123,13 @@ async function runAppDeployment(
   } else if (deployApplication && workbench) {
     // Both modes, so a bad appId fails before the build rather than at the POST.
     await checkAppTarget(reporter, {
-      appId: getAppId(cliConfig),
+      appId,
       isWorkbenchApp: true,
       slug: workbench.slug,
       title: appTitle,
     })
   } else if (deployApplication) {
-    application = await resolveAppApplication(options, {dryRun, reporter})
+    ;({application, created: appCreated} = await resolveAppApplication(options, {dryRun, reporter}))
   }
 
   await checkBuild(reporter, {
@@ -243,13 +245,21 @@ async function runAppDeployment(
       title: appTitle,
       version,
     })
-    logAppDeployed({applicationId, cliConfig, organizationId, output, title: appTitle})
+    logAppDeployed({
+      applicationId,
+      cliConfig,
+      created: !appId,
+      organizationId,
+      output,
+      title: appTitle,
+    })
     return {
       applicationType: 'coreApp',
       applicationVersion: version,
       ...(exposes.length > 0 ? {exposes} : {}),
       ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
       target: {
+        action: appId ? 'update' : 'create',
         applicationId,
         // A redeploy ignores the slug, so only a create reports the one it used.
         ...(appId ? {} : {slug}),
@@ -268,6 +278,7 @@ async function runAppDeployment(
   logAppDeployed({
     applicationId: application.id,
     cliConfig,
+    created: appCreated,
     organizationId: application.organizationId,
     output,
     title: application.title,
@@ -276,6 +287,7 @@ async function runAppDeployment(
     applicationType: 'coreApp',
     applicationVersion: version,
     target: {
+      action: appCreated ? 'create' : 'update',
       applicationId: application.id,
       title: application.title ?? null,
       url: getCoreAppUrl(application.organizationId, application.id),
@@ -290,7 +302,7 @@ async function runAppDeployment(
 async function resolveAppApplication(
   options: DeployAppOptions,
   {dryRun, reporter}: {dryRun: boolean; reporter: CheckReporter},
-): Promise<UserApplicationResolved | null> {
+): Promise<{application: UserApplicationResolved | null; created: boolean}> {
   const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''
   // Create name from --title or `app.title` config; blank falls back to the prompt
@@ -298,7 +310,7 @@ async function resolveAppApplication(
 
   if (dryRun) {
     await checkAppTarget(reporter, {appId: getAppId(cliConfig), organizationId, title})
-    return null
+    return {application: null, created: false}
   }
 
   let application = await findUserApplication({
@@ -314,9 +326,10 @@ async function resolveAppApplication(
     deployDebug('No user application found. Creating a new one')
     application = await createUserApplication(organizationId, title)
     deployDebug('User application created', application)
+    return {application, created: true}
   }
 
-  return application
+  return {application, created: false}
 }
 
 /** Syncs the application title from the manifest when it has changed. */
@@ -391,12 +404,14 @@ async function shipAppDeployment({
 export function logAppDeployed({
   applicationId,
   cliConfig,
+  created,
   organizationId,
   output,
   title,
 }: {
   applicationId: string
   cliConfig: DeployAppOptions['cliConfig']
+  created: boolean
   organizationId: string
   output: DeployAppOptions['output']
   title: string | null
@@ -404,10 +419,19 @@ export function logAppDeployed({
   const url = getCoreAppUrl(organizationId, applicationId)
   const named = title ? ` — "${title}"` : ''
   output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}${named}`)
+  output.log(created ? 'Created a new application.' : 'Updated the existing application.')
 
   if (getAppId(cliConfig)) return
 
   output.log(`\n════ ${styleText('bold', 'Next step:')} ════`)
+  if (created) {
+    output.log(
+      styleText(
+        'yellow',
+        '\nDeploying again without `deployment.appId` creates another new application.',
+      ),
+    )
+  }
   output.log(
     styleText('bold', '\nAdd the deployment.appId to your sanity.cli.js or sanity.cli.ts file:'),
   )
