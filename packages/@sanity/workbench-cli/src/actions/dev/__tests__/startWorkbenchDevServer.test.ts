@@ -623,6 +623,7 @@ describe('startWorkbenchDevServer', () => {
         applications: [expect.objectContaining({id: 'app-1', type: 'studio'})],
         configs: [
           {
+            appType: 'media-library',
             config: {
               fields: [
                 {
@@ -635,7 +636,6 @@ describe('startWorkbenchDevServer', () => {
             },
             moduleName: 'media-library',
             remoteURL: 'http://localhost:3337',
-            type: 'media-library',
           },
         ],
       })
@@ -666,7 +666,7 @@ describe('startWorkbenchDevServer', () => {
         expect.objectContaining({id: 'app-1', type: 'coreApp'}),
       ])
       expect(payload.configs).toEqual([
-        expect.objectContaining({moduleName: 'media-library', type: 'media-library'}),
+        expect.objectContaining({appType: 'media-library', moduleName: 'media-library'}),
       ])
     })
 

@@ -38,13 +38,14 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
       type,
     })),
   configs: servers.flatMap(({configs, host, port}) =>
-    // Pass through the app-type-specific payload (`fields` for a media library)
-    // once the discriminator and transport coordinates are peeled off.
+    // The registry stores the config flat; the workbench wire shape nests the
+    // type-specific payload (`fields` for a media library) under `config`, keyed
+    // by the `appType` discriminator.
     (configs ?? []).map(({appType, moduleName, ...config}) => ({
+      appType,
       config,
       moduleName,
       remoteURL: `http://${host}:${port}`,
-      type: appType,
     })),
   ),
 })
