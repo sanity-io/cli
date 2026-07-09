@@ -6,6 +6,7 @@ import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import size from 'lodash-es/size.js'
 import sortBy from 'lodash-es/sortBy.js'
 
+import {getManageUrl} from '../../actions/projects/getManageUrl.js'
 import {listProjects} from '../../services/projects.js'
 
 const sortFields = ['id', 'members', 'name', 'url', 'created']
@@ -47,7 +48,7 @@ export class List extends SanityCommand<typeof List> {
       const projects = await listProjects()
       const ordered = sortBy(
         projects.map(({createdAt, displayName, id, members = []}) => {
-          const manage = `https://www.sanity.io/manage/project/${id}`
+          const manage = getManageUrl(id)
           return [id, members.length, displayName, manage, createdAt].map(String)
         }),
         [sortFields.indexOf(sort)],

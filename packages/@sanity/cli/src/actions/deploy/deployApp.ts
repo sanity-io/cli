@@ -6,11 +6,11 @@ import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   buildExposes,
-  deployInstallationConfig,
+  deployConfig,
   deployCoreApp as deployWorkbenchCoreApp,
   getWorkbench,
   resolveInstallationId,
-  summarizeInstallationConfig,
+  summarizeConfig,
 } from '@sanity/workbench-cli/deploy'
 import {pack} from 'tar-fs'
 
@@ -66,7 +66,7 @@ async function runAppDeployment(
 
   // A singleton (the Media Library) persists its config instead of hosting an
   // application; anything that exposes a view or service still ships one.
-  const deploySingletonInstallationConfig = workbench?.deploySingletonInstallationConfig ?? false
+  const deploySingletonConfig = workbench?.deploySingletonConfig ?? false
   const deployApplication = !workbench || workbench.hasInterfaces
 
   const appTitle = workbench
@@ -95,7 +95,7 @@ async function runAppDeployment(
   let version: string | null = null
   if (deployApplication) {
     version = await checkPackageVersion(reporter, {moduleName: APP_PACKAGE, workDir})
-  } else if (deploySingletonInstallationConfig) {
+  } else if (deploySingletonConfig) {
     version = await checkPackageVersion(reporter, {moduleName: 'sanity', workDir})
   }
 
@@ -163,19 +163,14 @@ async function runAppDeployment(
   // Resolve the installation in both modes so the report — dry-run and real —
   // shows whether the config is deployable; a missing one fails the deploy here.
   let installationId: string | undefined
-  let installationConfig: string | undefined
-  const configAppType = workbench?.installationConfig?.appType
-  if (
-    deploySingletonInstallationConfig &&
-    organizationId &&
-    workbench?.installationConfig &&
-    configAppType
-  ) {
+  let config: string | undefined
+  const configAppType = workbench?.config?.appType
+  if (deploySingletonConfig && organizationId && workbench?.config && configAppType) {
     installationId = await resolveInstallationId({appType: configAppType, organizationId})
-    installationConfig = summarizeInstallationConfig(workbench.installationConfig)
+    config = summarizeConfig(workbench.config)
     reporter.report(
       installationId
-        ? {installationConfig, message: installationConfig, status: 'pass'}
+        ? {config, message: config, status: 'pass'}
         : {
             exitCode: exitCodes.USAGE_ERROR,
             message: `No active "${configAppType}" installation for organization "${organizationId}"`,
@@ -188,11 +183,20 @@ async function runAppDeployment(
   // Report the exposes deploying with the application, both modes.
   const exposes = deployApplication && workbench ? reportExposes(reporter, workbench) : []
 
+  // Surface the app's explicit singleton flag when set, both modes.
+  if (deployApplication && workbench?.isSingleton !== undefined) {
+    reporter.report({
+      isSingleton: workbench.isSingleton,
+      message: `Singleton: ${workbench.isSingleton}`,
+      status: 'pass',
+    })
+  }
+
   // Dry run stops here — everything below mutates.
   if (dryRun) return
 
   if (installationId && version && configAppType) {
-    await deployInstallationConfig({
+    await deployConfig({
       appType: configAppType,
       installationId,
       output,
@@ -201,13 +205,13 @@ async function runAppDeployment(
     })
   }
 
-  // A config-only singleton ships no application, only its installation config.
+  // A config-only singleton ships no application, only its config.
   if (!deployApplication) {
     if (installationId && version) {
       return {
         applicationType: 'coreApp',
         applicationVersion: version,
-        ...(installationConfig ? {installationConfig} : {}),
+        ...(config ? {config} : {}),
         installationId,
         target: null,
       }
@@ -229,6 +233,7 @@ async function runAppDeployment(
         version,
       }),
       isAutoUpdating,
+      isSingleton: workbench.isSingleton,
       organizationId,
       slug: generateAppSlug(),
       sourceDir,
@@ -240,6 +245,7 @@ async function runAppDeployment(
       applicationType: 'coreApp',
       applicationVersion: version,
       ...(exposes.length > 0 ? {exposes} : {}),
+      ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
       target: {applicationId, title: appTitle, url: getCoreAppUrl(organizationId, applicationId)},
     }
   }

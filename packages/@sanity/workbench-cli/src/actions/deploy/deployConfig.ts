@@ -31,7 +31,7 @@ export async function resolveInstallationId(options: {
       return resolveSingletonInstallationId(options.organizationId, 'media-library')
     }
     default: {
-      throw new Error(`Cannot create installation config for unknown app type: ${options.appType}`)
+      throw new Error(`Cannot create config for unknown app type: ${options.appType}`)
     }
   }
 }
@@ -41,7 +41,7 @@ export async function resolveInstallationId(options: {
  * one of potentially many shapes.
  * @internal
  */
-export function summarizeInstallationConfig(config: {
+export function summarizeConfig(config: {
   appType: string
   fields: {name: string; title: string}[]
 }): string {
@@ -51,7 +51,7 @@ export function summarizeInstallationConfig(config: {
       return `Media library fields:\n${items}`
     }
     default: {
-      throw new Error(`Cannot create installation config for unknown app type: ${config.appType}`)
+      throw new Error(`Cannot create config for unknown app type: ${config.appType}`)
     }
   }
 }
@@ -62,7 +62,7 @@ export function summarizeInstallationConfig(config: {
  * reaches this mutating step.
  * @internal
  */
-export async function deployInstallationConfig(options: {
+export async function deployConfig(options: {
   appType: string
   installationId: string
   output: Output
@@ -89,8 +89,8 @@ export async function deployInstallationConfig(options: {
     uri: `/installations/${installationId}/configs`,
   })
 
-  debug('Deployed installation config for app type: %s', appType)
-  output.log(`\n🚀 ${styleText('bold', 'Success!')} Installation config deployed`)
+  debug('Deployed config for app type: %s', appType)
+  output.log(`\n🚀 ${styleText('bold', 'Success!')} Config deployed`)
 }
 
 /** The org's active singleton installation, matched on its slug. */

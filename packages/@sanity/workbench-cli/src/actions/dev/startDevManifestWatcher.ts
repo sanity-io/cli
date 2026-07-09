@@ -27,7 +27,7 @@ interface ManifestPatch<T> {
   manifestUpdatedAt: string
 
   /** Same re-derive-don't-omit contract as `interfaces`. */
-  installationConfigs?: DevServerConfig[] | undefined
+  configs?: DevServerConfig[] | undefined
   /**
    * Workbench interfaces (views/services/app view) re-derived from the config
    * on each change, so editing `views`/`services`/`entry` in `sanity.cli.ts`
@@ -103,10 +103,10 @@ export async function startDevManifestWatcher<T>({
     }
     running = true
     try {
-      const {installationConfigs, interfaces, manifest} = await extract({configPath, workDir})
+      const {configs, interfaces, manifest} = await extract({configPath, workDir})
       if (closed) return
       await update({
-        installationConfigs,
+        configs,
         interfaces,
         manifest,
         manifestUpdatedAt: new Date().toISOString(),

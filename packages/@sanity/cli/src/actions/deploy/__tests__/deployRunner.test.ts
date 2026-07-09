@@ -159,4 +159,33 @@ describe('runDeploy real deploy', () => {
     expect(output.log).not.toHaveBeenCalled()
     expect(output.error).toHaveBeenCalledWith(expect.stringContaining('boom'), {exit: 1})
   })
+
+  test('surfaces the server message on a rejected deploy, not a raw error dump', async () => {
+    const output = mockOutput()
+    const err = Object.assign(new Error('HTTP 403'), {
+      response: {
+        body: {message: 'You are not allowed to deploy this application as a singleton'},
+        headers: {},
+        method: 'POST',
+        statusCode: 403,
+        statusMessage: null,
+        url: 'https://api.sanity.io/vX/applications',
+      },
+      statusCode: 403,
+    })
+    const spec: DeploySpec = {
+      listFiles: async () => [],
+      run: async () => {
+        throw err
+      },
+      type: 'coreApp',
+    }
+
+    await runDeploy({...dryRunOptions(output), flags: {}} as DeployAppOptions, spec)
+
+    expect(output.error).toHaveBeenCalledWith(
+      'Error deploying application: You are not allowed to deploy this application as a singleton',
+      {exit: 1},
+    )
+  })
 })

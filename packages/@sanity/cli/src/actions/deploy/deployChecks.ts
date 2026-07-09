@@ -45,12 +45,14 @@ export interface DeployCheck {
   message: string
   status: DeployCheckStatus
 
+  /** Set on the config check with its summary both reporters read. */
+  config?: string
   /** Exit code a real deploy uses when this check fails; defaults to 1 */
   exitCode?: number
   /** Set on the exposes check with the workbench exposes both reporters read. */
   exposes?: DeployedExpose[]
-  /** Set on the installation-config check with its summary both reporters read. */
-  installationConfig?: string
+  /** Set on the singleton check when the app declares the flag explicitly. */
+  isSingleton?: boolean
   /** Actionable fix, shown under a failing or warning check */
   solution?: string
   /** Set on the deploy-target check with the resolved target both reporters read. */

@@ -20,11 +20,11 @@ interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
    */
   buildViewDeploymentPayload(applicationId: string): ViewDeploymentPayload
   /**
-   * A singleton (the Media Library) that carries an installation config — deploy
+   * A singleton (the Media Library) that carries an config — deploy
    * persists the config to the org's installation. Independent of the interfaces,
    * which register regardless; non-singletons never carry a config.
    */
-  deploySingletonInstallationConfig: boolean
+  deploySingletonConfig: boolean
   /** Declares something to host as an application — an entry, view, or service. */
   hasInterfaces: boolean
 }
@@ -35,18 +35,18 @@ export function getWorkbench(
   const app = resolveWorkbenchApp(cliConfig)
   if (!app) return null
 
-  const {entry, installationConfig, isSingleton, services, views} = app
+  const {config, entry, isSingleton, services, views} = app
 
   return {
     ...app,
 
-    deploySingletonInstallationConfig: isSingleton && !!installationConfig,
+    deploySingletonConfig: !!isSingleton && !!config,
     hasInterfaces: !!entry || views.length > 0 || services.length > 0,
 
     assertDeployable() {
-      if (!entry && views.length === 0 && services.length === 0 && !installationConfig) {
+      if (!entry && views.length === 0 && services.length === 0 && !config) {
         throw new Error(
-          'Nothing to deploy: the app declares no entry, views, services or installation config. ' +
+          'Nothing to deploy: the app declares no entry, views, services or config. ' +
             'Add at least one to the app config.',
         )
       }
