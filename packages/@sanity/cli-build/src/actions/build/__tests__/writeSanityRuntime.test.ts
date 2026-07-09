@@ -45,7 +45,7 @@ describe('resolveEntries', () => {
       isWorkbenchApp: false,
       runtimeDir: runtimeDir,
     })
-    expect(result.relativeEntry).toEqual(path.join('..', 'src', 'App'))
+    expect(result.relativeEntry).toEqual(path.join('..', 'src', 'App').replaceAll('\\', '/'))
     const entry = path.join('src', 'customAppEntry')
     result = await resolveEntries({
       cwd,
@@ -53,7 +53,7 @@ describe('resolveEntries', () => {
       isWorkbenchApp: true,
       runtimeDir: runtimeDir,
     })
-    expect(result.relativeEntry).toEqual(path.join('..', entry))
+    expect(result.relativeEntry).toEqual(path.join('..', entry).replaceAll('\\', '/'))
   })
   test('should return truthy tryFindStudioConfigPath result as relativeConfigLocation when isApp=false', async () => {
     configMocks.tryFindStudioConfigPath.mockResolvedValue(studioConfigPath)
@@ -62,7 +62,9 @@ describe('resolveEntries', () => {
       isApp: false,
       runtimeDir: runtimeDir,
     })
-    expect(result.relativeConfigLocation).toEqual(path.join('..', studioConfigSubPath))
+    expect(result.relativeConfigLocation).toEqual(
+      path.join('..', studioConfigSubPath).replaceAll('\\', '/'),
+    )
   })
 })
 
