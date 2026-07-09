@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {tryFindStudioConfigPath} from '@sanity/cli-core'
+import {tryFindStudioConfigPath} from '@sanity/cli-core/config'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 
 import {buildDebug} from './buildDebug.js'

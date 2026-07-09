@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
-import {isInteractive, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
+import {isInteractive} from '@sanity/cli-core/util'
 import {select} from '@sanity/cli-core/ux'
 
 import {type UnresolvedPrerelease} from '../../util/compareDependencyVersions.js'

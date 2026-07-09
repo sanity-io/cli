@@ -1,7 +1,7 @@
 import {existsSync, statSync} from 'node:fs'
 import {extname, join, resolve} from 'node:path'
 
-import {type ProjectRootResult} from '@sanity/cli-core'
+import {type ProjectRootResult} from '@sanity/cli-core/types'
 
 export interface ExtractOptions {
   configPath: string

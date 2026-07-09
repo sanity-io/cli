@@ -4,13 +4,9 @@ import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript'
 
 const mockIsStaging = vi.hoisted(() => vi.fn<() => boolean>())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    isStaging: mockIsStaging,
-  }
-})
+vi.mock(import('@sanity/cli-core/util'), () => ({
+  isStaging: mockIsStaging,
+}))
 
 const sampleHtml = '<html><head><script src="app.js"></script></head><body></body></html>'
 

@@ -1,77 +1,56 @@
-import {type Output} from '@sanity/cli-core'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {type Output} from '@sanity/cli-core/types'
+import {
+  getLocalPackageVersion,
+  readPackageJson,
+} from '@sanity/cli-test/mocks/cli-core/package-manager'
+import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import {coerce} from 'semver'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {checkStudioDependencyVersions} from '../checkStudioDependencyVersions.js'
 
-const mockReadPackageJson = vi.hoisted(() => vi.fn())
-const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
-const mockCoerce = vi.hoisted(() => vi.fn())
-const originalCoerce = vi.hoisted(() => ({fn: null as typeof import('semver').coerce | null}))
+vi.mock('semver', {spy: true})
 
-vi.mock('semver', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('semver')>()
-  originalCoerce.fn = actual.coerce
-  mockCoerce.mockImplementation((...args: Parameters<typeof actual.coerce>) =>
-    actual.coerce(...args),
-  )
-  return {...actual, coerce: (...args: Parameters<typeof actual.coerce>) => mockCoerce(...args)}
-})
+vi.mock(
+  import('@sanity/cli-core/package-manager'),
+  () => import('@sanity/cli-test/mocks/cli-core/package-manager'),
+)
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getLocalPackageVersion: mockGetLocalPackageVersion,
-    readPackageJson: mockReadPackageJson,
+/**
+ * Helper to set up the project package.json mock and local package version mocks.
+ * Only needs the project package.json (one call) and getLocalPackageVersion per package.
+ */
+function setupMocks(opts: {
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+  localVersions?: Record<string, string | null>
+}) {
+  readPackageJson.mockResolvedValue({
+    dependencies: opts.dependencies ?? {},
+    devDependencies: opts.devDependencies ?? {},
+    name: 'test-project',
+    version: '1.0.0',
+  })
+
+  if (opts.localVersions) {
+    getLocalPackageVersion.mockImplementation((name: string) => {
+      const version = opts.localVersions?.[name]
+      return Promise.resolve(version ?? null)
+    })
   }
-})
+}
 
 describe('checkStudioDependencyVersions', () => {
   const workDir = '/test/work/dir'
   let mockOutput: Output
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-    mockCoerce.mockImplementation((v: string) => originalCoerce.fn!(v))
-  })
-
-  function createMockOutput(): Output {
-    return {
-      error: vi.fn().mockImplementation((_: Error | string, options?: {exit?: number}) => {
-        if (options?.exit) {
-          throw new Error('process.exit called')
-        }
-      }),
-      log: vi.fn(),
-      warn: vi.fn(),
-    } as unknown as Output
-  }
-
-  /**
-   * Helper to set up the project package.json mock and local package version mocks.
-   * Only needs the project package.json (one call) and getLocalPackageVersion per package.
-   */
-  function setupMocks(opts: {
-    dependencies?: Record<string, string>
-    devDependencies?: Record<string, string>
-    localVersions?: Record<string, string | null>
-  }) {
+  beforeEach(() => {
     mockOutput = createMockOutput()
-
-    mockReadPackageJson.mockResolvedValue({
-      dependencies: opts.dependencies ?? {},
-      devDependencies: opts.devDependencies ?? {},
-      name: 'test-project',
-      version: '1.0.0',
-    })
-
-    if (opts.localVersions) {
-      mockGetLocalPackageVersion.mockImplementation((name: string) => {
-        const version = opts.localVersions?.[name]
-        return Promise.resolve(version ?? null)
-      })
-    }
-  }
+  })
+  afterEach(() => {
+    // Use restore instead of reset to not clear out semver coerce mock that has a default implementation of executing
+    vi.restoreAllMocks()
+  })
 
   describe('when no dependencies are installed', () => {
     test('should not warn or error when no tracked packages are installed', async () => {
@@ -130,9 +109,7 @@ describe('checkStudioDependencyVersions', () => {
         localVersions: {react: '16.14.0'},
       })
 
-      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
-        'process.exit called',
-      )
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(
@@ -156,9 +133,7 @@ describe('checkStudioDependencyVersions', () => {
         localVersions: {react: '18.2.0'},
       })
 
-      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
-        'process.exit called',
-      )
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(
@@ -255,9 +230,7 @@ describe('checkStudioDependencyVersions', () => {
         },
       })
 
-      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
-        'process.exit called',
-      )
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
       // Should warn about untested versions
       expect(mockOutput.warn).toHaveBeenCalledWith(
@@ -274,10 +247,11 @@ describe('checkStudioDependencyVersions', () => {
 
   describe('helper functions', () => {
     test('should handle invalid version ranges in upgrade instructions', async () => {
+      const actualSemver = await vi.importActual<typeof import('semver')>('semver')
       // Test the edge case where semver.coerce returns null in getUpgradeInstructions,
       // falling back to {version: ''}
       let coerceCallCount = 0
-      mockCoerce.mockImplementation((version: string) => {
+      vi.mocked(coerce).mockImplementation((version) => {
         coerceCallCount++
         // Return null for the version range strings in getUpgradeInstructions
         if (
@@ -288,7 +262,7 @@ describe('checkStudioDependencyVersions', () => {
         ) {
           return null
         }
-        return originalCoerce.fn!(version)
+        return actualSemver.coerce(version)
       })
 
       setupMocks({
@@ -296,15 +270,14 @@ describe('checkStudioDependencyVersions', () => {
         localVersions: {react: '16.14.0'},
       })
 
-      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
-        'process.exit called',
-      )
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
       // Should still generate instructions even with invalid version range
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('To upgrade, run either:'),
         {exit: 1},
       )
+      vi.mocked(coerce).mockReset()
     })
 
     test('should generate correct upgrade instructions', async () => {
@@ -313,9 +286,7 @@ describe('checkStudioDependencyVersions', () => {
         localVersions: {react: '16.14.0'},
       })
 
-      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
-        'process.exit called',
-      )
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('npm install "react@^19.2.2"'),
@@ -366,9 +337,7 @@ describe('checkStudioDependencyVersions', () => {
         },
       })
 
-      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
-        'process.exit called',
-      )
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react (installed: 16.14.0, want: ^19.2.2)'),
@@ -384,7 +353,7 @@ describe('checkStudioDependencyVersions', () => {
   describe('edge cases', () => {
     test('should handle readPackageJson throwing an error', async () => {
       mockOutput = createMockOutput()
-      mockReadPackageJson.mockRejectedValue(new Error('Failed to read package.json'))
+      readPackageJson.mockRejectedValue(new Error('Failed to read package.json'))
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'Failed to read package.json',
@@ -393,7 +362,7 @@ describe('checkStudioDependencyVersions', () => {
 
     test('should handle packages with no dependencies property', async () => {
       mockOutput = createMockOutput()
-      mockReadPackageJson.mockResolvedValue({
+      readPackageJson.mockResolvedValue({
         name: 'test-project',
         version: '1.0.0',
       })
@@ -415,20 +384,21 @@ describe('checkStudioDependencyVersions', () => {
 
     test('should handle semver.coerce returning null', async () => {
       mockOutput = createMockOutput()
-      mockReadPackageJson.mockResolvedValue({
+      readPackageJson.mockResolvedValue({
         dependencies: {react: 'invalid-version'},
         name: 'test-project',
         version: '1.0.0',
       })
-      mockGetLocalPackageVersion.mockResolvedValue(null)
+      getLocalPackageVersion.mockResolvedValue(null)
 
       // Mock coerce to return null for any input
-      mockCoerce.mockReturnValue(null)
+      vi.mocked(coerce).mockReturnValue(null)
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
       expect(mockOutput.warn).not.toHaveBeenCalled()
       expect(mockOutput.error).not.toHaveBeenCalled()
+      vi.mocked(coerce).mockReset()
     })
 
     test('should handle @sanity/ui v3 package correctly', async () => {
@@ -451,6 +421,7 @@ describe('checkStudioDependencyVersions', () => {
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
+      expect(mockOutput.error).not.toHaveBeenCalled()
       expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining(
           'The following package versions have been deprecated and should be upgraded:',
@@ -462,7 +433,6 @@ describe('checkStudioDependencyVersions', () => {
       expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('Support for these will be removed in a future release!'),
       )
-      expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle styled-components package correctly', async () => {

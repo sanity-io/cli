@@ -1,11 +1,7 @@
 import path from 'node:path'
 
-import {
-  getLocalPackageVersion,
-  type Output,
-  type PackageJson,
-  readPackageJson,
-} from '@sanity/cli-core'
+import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core/package-manager'
+import {type Output, type PackageJson} from '@sanity/cli-core/types'
 import {oneline} from 'oneline'
 import {minVersion, satisfies, type SemVer} from 'semver'
 

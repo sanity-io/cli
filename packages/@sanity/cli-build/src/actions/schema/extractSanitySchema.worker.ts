@@ -1,6 +1,6 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {getStudioWorkspaces, getWorkspace} from '@sanity/cli-core'
+import {getStudioWorkspaces, getWorkspace} from '@sanity/cli-core/config'
 import {extractSchema} from '@sanity/schema/_internal'
 
 import {extractSchemaWorkerData} from './types.js'

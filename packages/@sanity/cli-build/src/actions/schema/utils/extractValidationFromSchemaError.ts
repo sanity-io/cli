@@ -1,4 +1,4 @@
-import {resolveLocalPackage} from '@sanity/cli-core'
+import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 
 /**
