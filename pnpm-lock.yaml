@@ -974,9 +974,6 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.5.0(jiti@2.7.0)
-      jsdom:
-        specifier: 'catalog:'
-        version: 29.1.1(@noble/hashes@2.2.0)
       magic-string:
         specifier: ^0.30.21
         version: 0.30.21

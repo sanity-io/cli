@@ -101,7 +101,6 @@
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
-    "jsdom": "catalog:",
     "magic-string": "^0.30.21",
     "publint": "catalog:",
     "sanity": "catalog:",
