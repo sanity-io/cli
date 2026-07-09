@@ -83,7 +83,9 @@ describe('addTimestampedImportMapScriptToHtml', () => {
 
   test('handles html string with no <head>', () => {
     // Make second call to querySelector return falsy, triggering lack-of-head-el conditional
-    mockQuerySelector.mockReturnThis().mockReturnValueOnce(null as unknown as typeof fakeDom)
+    mockQuerySelector
+      .mockReturnValueOnce(fakeDom)
+      .mockReturnValueOnce(null as unknown as typeof fakeDom)
     addTimestampedImportMapScriptToHtml('<html><body></body></html>', importMap)
 
     expect(mockInsert).toHaveBeenCalledWith(
