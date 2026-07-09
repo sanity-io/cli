@@ -91,7 +91,6 @@
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/debug": "catalog:",
-    "@types/jsdom": "catalog:",
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
     "@types/picomatch": "^4.0.3",

@@ -1,4 +1,4 @@
-import {describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {addTimestampedImportMapScriptToHtml} from '../addTimestampImportMapScriptToHtml.js'
 
@@ -21,6 +21,9 @@ const importMap = {
 }
 
 describe('addTimestampedImportMapScriptToHtml', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
   test('does not modify html when no importMap is provided', () => {
     addTimestampedImportMapScriptToHtml(baseHtml)
     expect(mockAppend).not.toHaveBeenCalled()
@@ -67,6 +70,7 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     mockQuerySelector.mockReturnValueOnce(null as unknown as typeof fakeDom)
     addTimestampedImportMapScriptToHtml('<head></head><body></body>', importMap)
 
+    expect(mockAppend).toHaveBeenCalled()
     expect(mockInsert).toHaveBeenCalledWith(
       'beforeend',
       expect.stringContaining('<script type="application/json" id="__imports">'),
@@ -88,6 +92,7 @@ describe('addTimestampedImportMapScriptToHtml', () => {
       .mockReturnValueOnce(null as unknown as typeof fakeDom)
     addTimestampedImportMapScriptToHtml('<html><body></body></html>', importMap)
 
+    expect(mockInsert).toHaveBeenCalledWith('afterbegin', '<head></head>')
     expect(mockInsert).toHaveBeenCalledWith(
       'beforeend',
       expect.stringContaining('<script type="application/json" id="__imports">'),

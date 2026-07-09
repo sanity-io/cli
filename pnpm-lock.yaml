@@ -944,9 +944,6 @@ importers:
       '@types/debug':
         specifier: 'catalog:'
         version: 4.1.13
-      '@types/jsdom':
-        specifier: 'catalog:'
-        version: 28.0.3
       '@types/lodash-es':
         specifier: 'catalog:'
         version: 4.17.12
