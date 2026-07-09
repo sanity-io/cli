@@ -49,6 +49,8 @@ export interface DeployCheck {
   exposes?: DeployedExpose[]
   /** Set on the installation-config check with its summary both reporters read. */
   installationConfig?: string
+  /** Set on the singleton check when the app declares the flag explicitly. */
+  isSingleton?: boolean
   /** Actionable fix, shown under a failing or warning check */
   solution?: string
   /** Set on the deploy-target check with the resolved target both reporters read. */

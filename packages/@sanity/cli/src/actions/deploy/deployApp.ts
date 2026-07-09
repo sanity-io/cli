@@ -188,6 +188,15 @@ async function runAppDeployment(
   // Report the exposes deploying with the application, both modes.
   const exposes = deployApplication && workbench ? reportExposes(reporter, workbench) : []
 
+  // Surface the app's explicit singleton flag when set, both modes.
+  if (deployApplication && workbench?.isSingleton !== undefined) {
+    reporter.report({
+      isSingleton: workbench.isSingleton,
+      message: `Singleton: ${workbench.isSingleton}`,
+      status: 'pass',
+    })
+  }
+
   // Dry run stops here — everything below mutates.
   if (dryRun) return
 
@@ -229,6 +238,7 @@ async function runAppDeployment(
         version,
       }),
       isAutoUpdating,
+      isSingleton: workbench.isSingleton,
       organizationId,
       slug: generateAppSlug(),
       sourceDir,
@@ -240,6 +250,7 @@ async function runAppDeployment(
       applicationType: 'coreApp',
       applicationVersion: version,
       ...(exposes.length > 0 ? {exposes} : {}),
+      ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
       target: {applicationId, title: appTitle, url: getCoreAppUrl(organizationId, applicationId)},
     }
   }

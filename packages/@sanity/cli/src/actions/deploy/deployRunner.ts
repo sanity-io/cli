@@ -38,6 +38,8 @@ export interface DeployResult {
   installationConfig?: string
   /** Set when a media-library singleton deployed its installation config. */
   installationId?: string
+  /** The app's explicit `isSingleton` flag; omitted when the app doesn't set it. */
+  isSingleton?: boolean
 }
 
 /**
@@ -108,6 +110,7 @@ async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise
     files: [],
     installationConfig:
       reporter.results.find((check) => check.installationConfig)?.installationConfig ?? null,
+    isSingleton: reporter.results.find((check) => check.isSingleton !== undefined)?.isSingleton,
     target: reporter.results.find((check) => check.target)?.target ?? null,
     type: spec.type,
     version: reporter.results.find((check) => check.version)?.version ?? null,

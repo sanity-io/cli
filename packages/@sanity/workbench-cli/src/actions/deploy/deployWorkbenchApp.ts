@@ -36,6 +36,7 @@ export async function getApplication(applicationId: string): Promise<Application
 /** Create an application and its first deployment in one call. */
 export async function createApplication(options: {
   interfaces: readonly BrettInterface[]
+  isSingleton?: boolean
   organizationId: string
   projectId?: string
   slug: string
@@ -44,12 +45,14 @@ export async function createApplication(options: {
   type: ApplicationType
   version: string
 }): Promise<Application> {
-  const {interfaces, organizationId, projectId, slug, tarball, title, type, version} = options
+  const {interfaces, isSingleton, organizationId, projectId, slug, tarball, title, type, version} =
+    options
   const formData = new FormData()
   formData.append('type', type)
   formData.append('title', title)
   formData.append('organizationId', organizationId)
   formData.append('slug', slug)
+  if (isSingleton !== undefined) formData.append('isSingleton', String(isSingleton))
   // Studio config is set once, at create — it's immutable on redeploy.
   if (projectId) appendJson(formData, 'config', {studio: {projectId}})
   appendDeploymentParts(formData, {interfaces, tarball, version})
@@ -112,14 +115,24 @@ export async function deployCoreApp(options: {
   appId: string | undefined
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
+  isSingleton?: boolean
   organizationId: string
   slug: string
   sourceDir: string
   title: string
   version: string
 }): Promise<{applicationId: string}> {
-  const {appId, interfaces, isAutoUpdating, organizationId, slug, sourceDir, title, version} =
-    options
+  const {
+    appId,
+    interfaces,
+    isAutoUpdating,
+    isSingleton,
+    organizationId,
+    slug,
+    sourceDir,
+    title,
+    version,
+  } = options
   const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
 
   const spin = spinner('Deploying...').start()
@@ -132,6 +145,7 @@ export async function deployCoreApp(options: {
 
     const {id} = await createApplication({
       interfaces,
+      isSingleton,
       organizationId,
       slug,
       tarball,

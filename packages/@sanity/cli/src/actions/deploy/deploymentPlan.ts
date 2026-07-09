@@ -28,6 +28,9 @@ export interface DeploymentPlan {
   type: 'coreApp' | 'studio'
   /** Installed framework version the deploy would use; `null` when not found. */
   version: string | null
+
+  /** The app's explicit `isSingleton` flag; `undefined` when the app doesn't set it. */
+  isSingleton?: boolean
 }
 
 /**
@@ -86,6 +89,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
   files: DeploymentFile[]
   installationConfig?: string
   isDeployable: boolean
+  isSingleton?: boolean
   target: DeployTarget | null
   totalBytes: number
   warnings: string[]
@@ -97,7 +101,8 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
     else if (check.status === 'warn') warnings.push(check.message)
   }
 
-  // `exposes` and `installationConfig` are workbench-only; plain apps omit them.
+  // `exposes`, `installationConfig` and `isSingleton` are workbench-only; plain
+  // apps (and apps that don't set the flag) omit them.
   return {
     applicationType: plan.type,
     applicationVersion: plan.version,
@@ -106,6 +111,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
     files: plan.files,
     ...(plan.installationConfig ? {installationConfig: plan.installationConfig} : {}),
     isDeployable: isDeployable(plan),
+    ...(plan.isSingleton === undefined ? {} : {isSingleton: plan.isSingleton}),
     target: plan.target,
     totalBytes: totalBytes(plan.files),
     warnings,
