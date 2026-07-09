@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises'
+import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {tryFindStudioConfigPath} from '@sanity/cli-core/config'
@@ -40,7 +40,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
   const runtimeDir = path.join(cwd, '.sanity', 'runtime')
 
   buildDebug('Making runtime directory')
-  await fs.mkdir(runtimeDir, {recursive: true})
+  await mkdir(runtimeDir, {recursive: true})
 
   async function renderAndWriteDocument() {
     buildDebug('Rendering document template')
@@ -61,7 +61,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
     )
 
     buildDebug('Writing index.html to runtime directory')
-    await fs.writeFile(path.join(runtimeDir, 'index.html'), indexHtml)
+    await writeFile(path.join(runtimeDir, 'index.html'), indexHtml)
   }
 
   let watcher: FSWatcher | undefined
@@ -91,7 +91,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
     reactStrictMode,
     relativeConfigLocation,
   })
-  await fs.writeFile(path.join(runtimeDir, 'app.js'), appJsContent)
+  await writeFile(path.join(runtimeDir, 'app.js'), appJsContent)
 
   return {
     entries: {

@@ -49,8 +49,8 @@ vi.mock(import('../resolveVendorBuildConfig.js'), () => ({
   resolveVendorBuildConfig: vi.fn(),
 }))
 
-vi.mock(import('../buildDebug'), () => ({
-  buildDebug: vi.fn() as unknown as (typeof import('../buildDebug'))['buildDebug'],
+vi.mock('../buildDebug', () => ({
+  buildDebug: vi.fn(),
 }))
 
 vi.mock(import('../getEnvironmentVariables.js'), () => ({
