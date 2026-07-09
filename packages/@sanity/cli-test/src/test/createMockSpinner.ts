@@ -5,6 +5,7 @@ import {Mock, vi} from 'vitest'
  * Creates a mock spinner function to avoid writing output to stdout.
  * @param overrides - Pass any mocks or stubs for test expectations
  * @internal
+ * @deprecated Use mocks/cli-core/ux/spinner instead
  */
 export function createMockSpinner(
   overrides?: Partial<SpinnerInstance>,

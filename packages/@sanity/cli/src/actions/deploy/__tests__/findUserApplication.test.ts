@@ -14,19 +14,7 @@ vi.mock('../../../services/userApplications.js', () => ({
   createUserApplication: vi.fn(),
 }))
 
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
-  const {createMockSpinner} = await import('@sanity/cli-test')
-  return {
-    ...(await importOriginal<typeof import('@sanity/cli-core/ux')>()),
-    spinner: createMockSpinner({
-      clear: vi.fn().mockReturnThis(),
-      fail: vi.fn().mockReturnThis(),
-      info: vi.fn().mockReturnThis(),
-      start: vi.fn().mockReturnThis(),
-      succeed: vi.fn().mockReturnThis(),
-    }),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockResolveApp = vi.mocked(resolveAppDeployTarget)
 const mockResolveStudio = vi.mocked(resolveStudioDeployTarget)
