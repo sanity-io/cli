@@ -22,28 +22,27 @@ const FLAGS = {
 
 // Mock heavy dependencies to isolate appId warning logic
 // Paths are relative to the test file location (__tests__/)
-vi.mock('../../../util/warnAboutMissingAppId.js', () => ({
+vi.mock(import('../../../util/warnAboutMissingAppId.js'), () => ({
   warnAboutMissingAppId: mockWarnAboutMissingAppId,
 }))
 
-vi.mock('../../../util/appId.js', () => ({
+vi.mock(import('../../../util/appId.js'), () => ({
   getAppId: mockGetAppId,
 }))
 
-vi.mock('../../../util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
-}))
-
-vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
+  const actual = await importOriginal()
   return {
     ...actual,
     buildStudio: mockBuildStudio,
+    compareDependencyVersions: vi
+      .fn()
+      .mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
   }
 })
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const actual = await importOriginal()
   return {
     ...actual,
     getCliTelemetry: vi.fn().mockReturnValue({
@@ -55,12 +54,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: vi.fn(),
-  logSymbols: {info: 'i', warning: '!'},
-  select: vi.fn(),
-  spinner: vi.fn(() => ({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()})),
-}))
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 // Import after mocks are set up
 const {buildStudio} = await import('../buildStudio.js')

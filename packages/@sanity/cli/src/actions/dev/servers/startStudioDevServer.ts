@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {
   checkRequiredDependencies,
   checkStudioDependencyVersions,
+  compareDependencyVersions,
 } from '@sanity/cli-build/_internal/build'
 import {getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
@@ -13,7 +14,6 @@ import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
 import {getProjectById} from '../../../services/projects.js'
 import {getAppId} from '../../../util/appId.js'
-import {compareDependencyVersions} from '../../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../../util/packageManager/upgradePackages.js'
 import {shouldAutoUpdate} from '../../build/shouldAutoUpdate.js'

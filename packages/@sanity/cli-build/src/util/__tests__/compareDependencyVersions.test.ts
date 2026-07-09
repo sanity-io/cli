@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {compareDependencyVersions} from '../compareDependencyVersions'
+import {compareDependencyVersions} from '../compareDependencyVersions.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())

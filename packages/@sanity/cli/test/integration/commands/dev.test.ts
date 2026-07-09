@@ -3,14 +3,16 @@ import {createServer} from 'node:http'
 import {platform} from 'node:os'
 import {join} from 'node:path'
 
-import {checkRequiredDependencies} from '@sanity/cli-build/_internal/build'
+import {
+  checkRequiredDependencies,
+  compareDependencyVersions,
+} from '@sanity/cli-build/_internal/build'
 import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DevCommand} from '../../../src/commands/dev.js'
-import {compareDependencyVersions} from '../../../src/util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../../src/util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../../src/util/packageManager/upgradePackages.js'
 import {closeServer, tryCloseServer} from '../../testUtils.js'
@@ -20,39 +22,30 @@ const mockGetDashboardAppURL = vi.hoisted(() =>
   vi.fn().mockResolvedValue('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340'),
 )
 
-vi.mock('../../../src/actions/dev/servers/getDashboardAppUrl.js', () => ({
+vi.mock(import('../../../src/actions/dev/servers/getDashboardAppUrl.js'), () => ({
   getDashboardAppURL: mockGetDashboardAppURL,
 }))
 
-vi.mock('../../../src/util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
-}))
-
-vi.mock('../../../src/server/vite/plugin-typegen.js', () => ({
+vi.mock(import('../../../src/server/vite/plugin-typegen.js'), () => ({
   sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
     name: 'sanity/typegen',
   }),
 }))
 
-vi.mock('@sanity/cli-build/_internal/build', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-build/_internal/build')>(
-    '@sanity/cli-build/_internal/build',
-  )
+vi.mock(import('@sanity/cli-build/_internal/build'), async () => {
+  const actual = await vi.importActual('@sanity/cli-build/_internal/build')
   return {
     ...actual,
     checkRequiredDependencies: vi.fn().mockResolvedValue({
       installedSanityVersion: '3.0.0',
     }),
+    compareDependencyVersions: vi
+      .fn()
+      .mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    confirm: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('../../../src/util/packageManager/upgradePackages.js')
 vi.mock('../../../src/util/packageManager/packageManagerChoice.js')

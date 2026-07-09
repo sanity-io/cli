@@ -42,12 +42,10 @@ vi.mock('../getDashboardAppUrl.js', () => ({
 vi.mock('@sanity/cli-build/_internal/build', () => ({
   checkRequiredDependencies: mockCheckRequiredDependencies,
   checkStudioDependencyVersions: mockCheckStudioDependencyVersions,
+  compareDependencyVersions: mockCompareDependencyVersions,
 }))
 vi.mock('../../../build/shouldAutoUpdate.js', () => ({
   shouldAutoUpdate: mockShouldAutoUpdate,
-}))
-vi.mock('../../../../util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: mockCompareDependencyVersions,
 }))
 vi.mock('../../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
