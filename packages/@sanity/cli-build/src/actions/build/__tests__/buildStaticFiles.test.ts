@@ -136,7 +136,7 @@ describe('buildStaticFiles', () => {
   })
   describe('isWorkbenchapp=false', () => {
     test('should run a vite build, write favicons and return chunk stats', async () => {
-      const basePath = '/'
+      const basePath = path.sep
       const staticOutputPath = path.join(outputDir, 'static')
       const faviconBasePath = path.join(basePath, 'static')
       mockBuild.mockResolvedValue({
