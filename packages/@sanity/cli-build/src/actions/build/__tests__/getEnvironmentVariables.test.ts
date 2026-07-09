@@ -5,6 +5,8 @@ import {
   getStudioEnvironmentVariables,
 } from '../getEnvironmentVariables.js'
 
+vi.mock('vite', () => ({loadEnv: vi.fn()}))
+
 describe('#getStudioEnvironmentVariables', () => {
   beforeEach(() => {
     // Set a controlled process.env with both prefixed and non-prefixed vars
