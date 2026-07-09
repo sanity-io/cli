@@ -16,7 +16,8 @@ vi.mock('chokidar', () => ({
   })),
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
+// TODO: this mocks out a transitive dependency of cli-build by way of cli-core. no good very bad. we should replace these with unit tests
+vi.mock('@sanity/cli-core/tasks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {...actual, studioWorkerTask: mockStudioWorkerTask}
 })
@@ -70,11 +71,8 @@ describe('extractSchemaWatcher', () => {
       watchPatterns: ['**/*.ts'],
     })
 
+    expect(output.error).not.toHaveBeenCalled()
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Test validation error'))
-    expect(output.error).not.toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({exit: 1}),
-    )
     expect(watcher).toBeDefined()
   })
 
