@@ -26,8 +26,6 @@ export interface WorkbenchExposes {
 
 /** @public */
 export interface ResolvedWorkbenchApp {
-  /** A Sanity-owned singleton (e.g. the Media Library) — deploys its config, not an application. */
-  readonly isSingleton: boolean
   /** The app's unique `name` from `unstable_defineApp`. */
   readonly name: string
   /** Background worker services the app declares. */
@@ -42,6 +40,8 @@ export interface ResolvedWorkbenchApp {
   readonly entry?: string
   /** Deploys on its own path, separate from the interfaces. */
   readonly installationConfig?: WorkbenchApp['installationConfig']
+  /** Explicit singleton flag (a Sanity-owned app); `undefined` when the app doesn't set it. */
+  readonly isSingleton?: boolean
 }
 
 /**
@@ -58,7 +58,7 @@ export function resolveWorkbenchApp(
     applicationType: app.applicationType,
     entry: app.entry,
     installationConfig: readInstallationConfig(app),
-    isSingleton: app.isSingleton ?? false,
+    isSingleton: app.isSingleton,
     name: app.name,
     services: app.services ?? [],
     views: app.views ?? [],

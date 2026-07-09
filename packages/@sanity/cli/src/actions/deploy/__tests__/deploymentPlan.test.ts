@@ -132,6 +132,19 @@ describe('deploymentPlanToJson', () => {
     expect(json.exposes).toEqual([{name: 'edit', title: 'Edit', type: 'panel'}])
     expect(json.installationConfig).toBe('Media Library fields:\n  Title (title)')
   })
+
+  test('surfaces isSingleton only when the app sets it explicitly', () => {
+    const unset = deploymentPlanToJson(studioPlan([]))
+    expect(unset).not.toHaveProperty('isSingleton')
+
+    const explicitFalse = studioPlan([])
+    explicitFalse.isSingleton = false
+    expect(deploymentPlanToJson(explicitFalse).isSingleton).toBe(false)
+
+    const explicitTrue = studioPlan([])
+    explicitTrue.isSingleton = true
+    expect(deploymentPlanToJson(explicitTrue).isSingleton).toBe(true)
+  })
 })
 
 describe('reportExposes', () => {

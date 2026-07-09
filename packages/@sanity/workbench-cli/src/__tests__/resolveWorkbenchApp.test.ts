@@ -25,7 +25,7 @@ describe('resolveWorkbenchApp', () => {
       applicationType: undefined,
       entry: undefined,
       installationConfig: undefined,
-      isSingleton: false,
+      isSingleton: undefined,
       name: 'my-app',
       services: [],
       views: [],

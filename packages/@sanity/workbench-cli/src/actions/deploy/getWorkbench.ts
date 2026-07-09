@@ -40,7 +40,7 @@ export function getWorkbench(
   return {
     ...app,
 
-    deploySingletonInstallationConfig: isSingleton && !!installationConfig,
+    deploySingletonInstallationConfig: !!isSingleton && !!installationConfig,
     hasInterfaces: !!entry || views.length > 0 || services.length > 0,
 
     assertDeployable() {

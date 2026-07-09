@@ -1176,9 +1176,6 @@ importers:
       nock:
         specifier: 'catalog:'
         version: 14.0.15
-      ora:
-        specifier: 'catalog:'
-        version: 9.4.0
       tinyglobby:
         specifier: 'catalog:'
         version: 0.2.17

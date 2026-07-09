@@ -1,11 +1,11 @@
 import {type SpinnerInstance} from '@sanity/cli-core/ux'
-import {type PersistOptions} from 'ora'
 import {Mock, vi} from 'vitest'
 
 /**
  * Creates a mock spinner function to avoid writing output to stdout.
  * @param overrides - Pass any mocks or stubs for test expectations
  * @internal
+ * @deprecated Use mocks/cli-core/ux/spinner instead
  */
 export function createMockSpinner(
   overrides?: Partial<SpinnerInstance>,
@@ -42,7 +42,7 @@ export function createMockSpinner(
       stop: function (): SpinnerInstance {
         throw new Error('Function not implemented.')
       },
-      stopAndPersist: function (_options?: PersistOptions): SpinnerInstance {
+      stopAndPersist: function (_options?: any): SpinnerInstance {
         throw new Error('Function not implemented.')
       },
       succeed: function (_text?: string): SpinnerInstance {
