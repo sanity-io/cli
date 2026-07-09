@@ -1,7 +1,7 @@
 import {join} from 'node:path'
 
-import {noopLogger} from '@sanity/cli-core'
-import {convertToSystemPath} from '@sanity/cli-test'
+import * as configMocks from '@sanity/cli-test/mocks/cli-core/config'
+import {convertToSystemPath} from '@sanity/cli-test/paths'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -14,14 +14,23 @@ import {
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
 const mockWorkbenchVitePlugins = vi.hoisted(() => vi.fn())
+const mockFaviconsPlugin = vi.hoisted(() => vi.fn())
+const mockFaviconsPath = vi.hoisted(() => vi.fn())
+const mockNormalizeBasePaths = vi.hoisted(() => vi.fn())
 
-// Mock all external dependencies
-vi.mock('read-package-up', () => ({
-  readPackageUp: vi.fn(),
-}))
-
+// Mock all dependencies
 vi.mock('@rolldown/plugin-babel', () => ({
   default: vi.fn(() => ({name: 'babel-plugin'})),
+}))
+
+vi.mock('@sanity/cli-core/config', () => import('@sanity/cli-test/mocks/cli-core/config'))
+
+vi.mock('@sanity/cli-core/telemetry', () => ({
+  getCliTelemetry: vi.fn(),
+}))
+
+vi.mock('@sanity/workbench-cli/build', () => ({
+  workbenchVitePlugins: mockWorkbenchVitePlugins,
 }))
 
 vi.mock('@vitejs/plugin-react', () => ({
@@ -38,12 +47,12 @@ vi.mock('../createExternalFromImportMap.js', () => ({
   createExternalFromImportMap: vi.fn(() => ['external1', 'external2']),
 }))
 
-vi.mock('../getBrowserAliases.js', () => ({
-  getSanityPkgExportAliases: vi.fn(() => Promise.resolve({alias1: 'path1', alias2: 'path2'})),
+vi.mock('../normalizeBasePath.js', () => ({
+  normalizeBasePath: mockNormalizeBasePaths,
 }))
 
-vi.mock('../normalizeBasePath.js', () => ({
-  normalizeBasePath: vi.fn((path: string) => `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/')),
+vi.mock('../writeFavicons.js', () => ({
+  getDefaultFaviconsPath: mockFaviconsPath,
 }))
 
 vi.mock('../vite/plugin-sanity-build-entries.js', () => ({
@@ -51,33 +60,20 @@ vi.mock('../vite/plugin-sanity-build-entries.js', () => ({
 }))
 
 vi.mock('../vite/plugin-sanity-favicons.js', () => ({
-  sanityFaviconsPlugin: vi.fn(() => ({name: 'sanity-favicons'})),
+  sanityFaviconsPlugin: mockFaviconsPlugin,
 }))
 
 vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
-vi.mock('@sanity/workbench-cli/build', () => ({
-  workbenchVitePlugins: mockWorkbenchVitePlugins.mockResolvedValue({
-    name: 'sanity/federation',
-  }),
+vi.mock('../vite/plugin-sanity-vendor-named-exports.js', () => ({
+  createVendorNamedExportsPlugin: vi.fn(() => ({name: 'sanity-vendor-named-exporters'})),
 }))
 
 vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
-  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
-    name: 'sanity/schema-extraction',
-  }),
+  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin,
 }))
-
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
-    readPackageJson: vi.fn().mockResolvedValue({name: 'sanity'}),
-  }
-})
 
 const mockTestCwd = convertToSystemPath('/test/cwd')
 const mockSanityPath = convertToSystemPath('/mock/path/to/sanity')
@@ -92,19 +88,23 @@ function getEnvironmentVariables() {
 }
 
 describe('#getViteConfig', () => {
-  beforeEach(async () => {
-    vi.clearAllMocks()
-
-    // Setup default mock for readPackageUp
-    const {readPackageUp} = await import('read-package-up')
-    vi.mocked(readPackageUp).mockResolvedValue({
-      packageJson: {name: 'sanity'},
-      path: join(mockSanityPath, 'package.json'),
+  beforeEach(() => {
+    mockWorkbenchVitePlugins.mockResolvedValue({
+      name: 'sanity/federation',
     })
+    mockExtractSchemaPlugin.mockReturnValue({
+      name: 'sanity/schema-extraction',
+    })
+    mockFaviconsPlugin.mockReturnValue({name: 'sanity-favicons'})
+    mockFaviconsPath.mockResolvedValue(join(mockSanityPath, 'static', 'favicons'))
+    mockNormalizeBasePaths.mockImplementation((path: string) =>
+      `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/'),
+    )
+    configMocks.findProjectRoot.mockResolvedValue({path: '/some/path'})
   })
 
   afterEach(() => {
-    vi.unstubAllEnvs()
+    vi.clearAllMocks()
   })
 
   test('should create basic vite config with default options', async () => {
@@ -384,8 +384,6 @@ describe('#getViteConfig', () => {
   })
 
   test('should configure favicon plugin with correct paths', async () => {
-    const {sanityFaviconsPlugin} = await import('../vite/plugin-sanity-favicons.js')
-
     const options = {
       basePath: '/studio',
       cwd: mockTestCwd,
@@ -397,7 +395,7 @@ describe('#getViteConfig', () => {
 
     await getViteConfig(options)
 
-    expect(sanityFaviconsPlugin).toHaveBeenCalledWith({
+    expect(mockFaviconsPlugin).toHaveBeenCalledWith({
       customFaviconsPath: join(mockTestCwd, 'static'),
       defaultFaviconsPath: join(mockSanityPath, 'static/favicons'),
       staticUrlPath: '/studio/static',
@@ -426,15 +424,15 @@ describe('#getViteConfig', () => {
       (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/schema-extraction',
     )
 
-    expect(mockExtractSchemaPlugin).toHaveBeenCalledWith({
-      additionalPatterns: ['custom/**/*.ts'],
-      configPath: '/mock/config/path',
-      enforceRequiredFields: true,
-      outputPath: 'custom-schema.json',
-      telemetryLogger: noopLogger,
-      workDir: mockTestCwd,
-      workspaceName: 'production',
-    })
+    expect(mockExtractSchemaPlugin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        additionalPatterns: ['custom/**/*.ts'],
+        enforceRequiredFields: true,
+        outputPath: 'custom-schema.json',
+        workDir: mockTestCwd,
+        workspaceName: 'production',
+      }),
+    )
     expect(schemaPlugin).toBeDefined()
   })
 

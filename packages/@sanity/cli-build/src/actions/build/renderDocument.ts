@@ -1,5 +1,5 @@
 import {ux} from '@oclif/core'
-import {tsxWorkerTask} from '@sanity/cli-core'
+import {tsxWorkerTask} from '@sanity/cli-core/tasks'
 
 import {buildDebug} from './buildDebug.js'
 

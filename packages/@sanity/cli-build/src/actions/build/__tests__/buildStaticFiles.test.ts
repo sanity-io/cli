@@ -1,4 +1,5 @@
-import {convertToSystemPath} from '@sanity/cli-test'
+import path from 'node:path'
+
 import {type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -14,6 +15,8 @@ const mockExtendViteConfigWithUserConfig = vi.hoisted(() => vi.fn())
 const mockFinalizeViteConfig = vi.hoisted(() => vi.fn())
 const mockWriteSanityRuntime = vi.hoisted(() => vi.fn())
 const mockResolveEntries = vi.hoisted(() => vi.fn())
+const mockCopyDir = vi.hoisted(() => vi.fn())
+const mockWriteFavicons = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
   build: mockBuild,
@@ -21,7 +24,7 @@ vi.mock('vite', () => ({
 }))
 
 vi.mock('../../../util/copyDir.js', () => ({
-  copyDir: vi.fn().mockResolvedValue(undefined),
+  copyDir: mockCopyDir,
 }))
 
 vi.mock('../buildDebug.js', () => ({
@@ -35,7 +38,7 @@ vi.mock('../getViteConfig.js', () => ({
 }))
 
 vi.mock('../writeFavicons.js', () => ({
-  writeFavicons: vi.fn().mockResolvedValue(undefined),
+  writeFavicons: mockWriteFavicons,
 }))
 
 vi.mock('../writeSanityRuntime.js', () => ({
@@ -43,12 +46,12 @@ vi.mock('../writeSanityRuntime.js', () => ({
   writeSanityRuntime: mockWriteSanityRuntime,
 }))
 
-const cwd = convertToSystemPath('/test/cwd')
-const outputDir = convertToSystemPath('/test/cwd/dist')
+const cwd = '/test/cwd'
+const outputDir = '/test/cwd/dist'
+const defaultViteConfig: InlineConfig = {plugins: [{name: 'sanity-default'}], root: cwd}
 
 describe('buildStaticFiles', () => {
   beforeEach(() => {
-    const defaultViteConfig: InlineConfig = {plugins: [{name: 'sanity-default'}], root: cwd}
     mockGetViteConfig.mockResolvedValue(defaultViteConfig)
     mockExtendViteConfigWithUserConfig.mockImplementation(async (_env, base, user) =>
       typeof user === 'function' ? user(base, _env) : {...base, ...user},
@@ -67,7 +70,7 @@ describe('buildStaticFiles', () => {
     vi.clearAllMocks()
   })
 
-  describe('federation enabled', () => {
+  describe('federation enabled / isWorkbenchApp=true', () => {
     test('applies user vite config so custom plugins run during build', async () => {
       const userPlugin = {name: 'vanilla-extract-plugin'}
       const userVite = vi.fn((config: InlineConfig) => ({
@@ -129,6 +132,46 @@ describe('buildStaticFiles', () => {
       expect(mockGetViteConfig).toHaveBeenCalledWith(
         expect.objectContaining({isWorkbenchApp: true, schemaExtraction}),
       )
+    })
+  })
+  describe('isWorkbenchapp=false', () => {
+    test('should run a vite build, write favicons and return chunk stats', async () => {
+      const basePath = '/' // this is OS-agnostic, even on windows :shrug:
+      const staticOutputPath = path.join(outputDir, 'static')
+      const faviconBasePath = '/static'
+      mockBuild.mockResolvedValue({
+        output: [
+          {
+            modules: {
+              'first/path': {renderedLength: 420},
+              'second/path': {renderedLength: 69},
+            },
+            name: 'chonkiboi',
+            type: 'chunk',
+          },
+          {type: 'notchunk'},
+        ],
+      })
+
+      const {chunks} = await buildStaticFiles({
+        basePath,
+        cwd,
+        isWorkbenchApp: false,
+        outputDir,
+        schemaExtraction: {enabled: true},
+      })
+
+      expect(mockCopyDir).toHaveBeenCalledWith(path.join(cwd, 'static'), staticOutputPath)
+      expect(mockWriteFavicons).toHaveBeenCalledWith(faviconBasePath, staticOutputPath)
+      expect(mockBuild).toHaveBeenCalledWith(defaultViteConfig)
+      // Should ignore non-chunk types
+      expect(chunks).toHaveLength(1)
+      expect(chunks[0].name).toEqual('chonkiboi')
+      expect(chunks[0].modules).toHaveLength(2)
+      expect(chunks[0].modules[0].name).toEqual('first/path')
+      expect(chunks[0].modules[0].renderedLength).toEqual(420)
+      expect(chunks[0].modules[1].name).toEqual('second/path')
+      expect(chunks[0].modules[1].renderedLength).toEqual(69)
     })
   })
 })

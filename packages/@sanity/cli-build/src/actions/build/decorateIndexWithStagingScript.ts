@@ -1,4 +1,4 @@
-import {isStaging} from '@sanity/cli-core'
+import {isStaging} from '@sanity/cli-core/util'
 
 /**
  * Decorates the given HTML template with a script tag that sets

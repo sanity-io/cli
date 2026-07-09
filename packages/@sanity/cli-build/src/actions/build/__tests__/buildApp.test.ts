@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp, type BuildOptions} from '../buildApp.js'
@@ -39,6 +39,7 @@ const mockGetAppEnvironmentVariables = vi.hoisted(() => vi.fn().mockReturnValue(
 const mockedIsInteractive = vi.hoisted(() => vi.fn(() => true))
 const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
 const mockedGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockedResolveWorkbenchApp = vi.hoisted(() => vi.fn())
 
 vi.mock(import('../buildStaticFiles.js'), () => ({
   buildStaticFiles: mockedBuildStaticFiles,
@@ -48,21 +49,29 @@ vi.mock(import('../resolveVendorBuildConfig.js'), () => ({
   resolveVendorBuildConfig: vi.fn(),
 }))
 
+vi.mock(import('../buildDebug'), () => ({
+  buildDebug: vi.fn() as unknown as (typeof import('../buildDebug'))['buildDebug'],
+}))
+
 vi.mock(import('../getEnvironmentVariables.js'), () => ({
   getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
 }))
 
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
-  const original = await importOriginal()
-  return {
-    ...original,
-    getLocalPackageVersion: mockedGetLocalPackageVersion,
-    isInteractive: mockedIsInteractive,
-  }
-})
+vi.mock(import('../getAutoUpdatesImportMap'), () => ({
+  getAutoUpdatesCssUrls: vi.fn(),
+  getAutoUpdatesImportMap: vi.fn(),
+}))
+
+vi.mock(import('@sanity/cli-core/package-manager'), () => ({
+  getLocalPackageVersion: mockedGetLocalPackageVersion,
+}))
+
+vi.mock(import('@sanity/cli-core/util'), () => ({
+  isInteractive: mockedIsInteractive,
+}))
 
 vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
+  const original = await importOriginal()
   mockedSpinner.mockImplementation(original.spinner)
   return {
     ...original,
@@ -87,6 +96,7 @@ describe('#buildApp', () => {
     mockedConfirm.mockResolvedValue(true)
     mockedSelect.mockResolvedValue('disable-auto-updates')
     mockedGetLocalPackageVersion.mockResolvedValue('1.0.0')
+    mockedResolveWorkbenchApp.mockReturnValue({})
   })
 
   afterEach(() => {

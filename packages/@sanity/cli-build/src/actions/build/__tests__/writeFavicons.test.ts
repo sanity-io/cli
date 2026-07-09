@@ -1,6 +1,6 @@
 import {join} from 'node:path'
 
-import {convertToSystemPath} from '@sanity/cli-test'
+import {convertToSystemPath} from '@sanity/cli-test/paths'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getDefaultFaviconsPath, writeFavicons} from '../writeFavicons'

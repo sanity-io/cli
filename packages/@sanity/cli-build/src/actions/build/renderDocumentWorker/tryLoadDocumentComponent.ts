@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-import {doImport} from '@sanity/cli-core'
+import {doImport} from '@sanity/cli-core/util'
 
 import {buildDebug} from '../buildDebug.js'
 import {getPossibleDocumentComponentLocations} from '../getPossibleDocumentComponentLocations.js'

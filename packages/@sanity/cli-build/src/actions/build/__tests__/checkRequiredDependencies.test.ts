@@ -1,28 +1,22 @@
-import {type Output} from '@sanity/cli-core'
+import {
+  getLocalPackageVersion as mockGetLocalPackageVersion,
+  readPackageJson as mockReadPackageJson,
+} from '@sanity/cli-test/mocks/cli-core/package-manager'
+import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {checkRequiredDependencies} from '../checkRequiredDependencies'
 
-const mockReadPackageJson = vi.hoisted(() => vi.fn())
-const mockedGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+vi.mock('semver', {spy: true})
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getLocalPackageVersion: mockedGetLocalPackageVersion,
-    readPackageJson: mockReadPackageJson,
-  }
-})
+vi.mock(
+  '@sanity/cli-core/package-manager',
+  () => import('@sanity/cli-test/mocks/cli-core/package-manager'),
+)
 
 describe('#checkRequiredDependencies', () => {
   const workDir = '/tmp/test-studio'
-  const mockOutput = {
-    error: vi.fn(),
-    log: vi.fn(),
-    print: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
+  const mockOutput = createMockOutput()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -45,7 +39,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+    mockGetLocalPackageVersion.mockImplementation(async (module: string) => {
       if (module === 'sanity') {
         return null
       }
@@ -71,7 +65,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+    mockGetLocalPackageVersion.mockImplementation(async (module: string) => {
       if (module === 'sanity') {
         return '3.0.0'
       }
@@ -98,7 +92,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockResolvedValue('3.0.0') // for sanity
+    mockGetLocalPackageVersion.mockResolvedValue('3.0.0') // for sanity
 
     const result = await checkRequiredDependencies({
       isApp: false,
@@ -122,7 +116,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockResolvedValue('6.1.15')
+    mockGetLocalPackageVersion.mockResolvedValue('6.1.15')
 
     await checkRequiredDependencies({
       isApp: false,
@@ -144,7 +138,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockResolvedValue('6.1.15')
+    mockGetLocalPackageVersion.mockResolvedValue('6.1.15')
 
     await checkRequiredDependencies({
       isApp: false,
@@ -162,7 +156,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+    mockGetLocalPackageVersion.mockImplementation(async (module: string) => {
       if (module === 'styled-components') {
         return null
       }
@@ -189,7 +183,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+    mockGetLocalPackageVersion.mockImplementation(async (module: string) => {
       if (module === 'styled-components') {
         return '5.3.6'
       }
@@ -216,7 +210,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+    mockGetLocalPackageVersion.mockImplementation(async (module: string) => {
       if (module === 'sanity') return '3.2.0'
       if (module === 'styled-components') return '6.1.15'
       return null
@@ -240,7 +234,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+    mockGetLocalPackageVersion.mockImplementation(async (module: string) => {
       if (module === 'sanity') return '3.2.0'
       if (module === 'styled-components') return '6.1.15'
       return null
@@ -264,7 +258,7 @@ describe('#checkRequiredDependencies', () => {
       name: 'test-studio',
       version: '1.0.0',
     })
-    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+    mockGetLocalPackageVersion.mockImplementation(async (module: string) => {
       if (module === 'sanity') return '3.2.0'
       if (module === 'styled-components') return '5.3.6'
       return null
@@ -292,7 +286,7 @@ describe('#checkRequiredDependencies', () => {
       version: '1.0.0',
     })
 
-    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+    mockGetLocalPackageVersion.mockImplementation(async (module: string) => {
       if (module === 'sanity') return '3.2.0'
       if (module === 'styled-components') return '6.1.15'
       return null

@@ -1,12 +1,9 @@
 import path from 'node:path'
 
 import babel from '@rolldown/plugin-babel'
-import {
-  type CliConfig,
-  findProjectRoot,
-  getCliTelemetry,
-  type UserViteConfig,
-} from '@sanity/cli-core'
+import {findProjectRoot} from '@sanity/cli-core/config'
+import {getCliTelemetry} from '@sanity/cli-core/telemetry'
+import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {type WorkbenchExposes, workbenchVitePlugins} from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
