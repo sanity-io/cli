@@ -37,6 +37,12 @@ export interface DeployTarget {
   title: string | null
   /** Where the deployed studio/app is reachable; `null` when it can't be resolved yet. */
   url: string | null
+
+  /**
+   * Slug the deploy creates the application at. Omitted on redeploys, and in a
+   * dry run when no slug is configured (it's generated on deploy).
+   */
+  slug?: string
 }
 
 export interface DeployCheck {
@@ -242,7 +248,7 @@ export async function verifyOutputDir({
  */
 export function describeAppTarget(
   resolution: AppDeployTargetResolution,
-  {title}: {title?: string} = {},
+  {slug, title}: {slug?: string; title?: string} = {},
 ): DeployCheck {
   switch (resolution.type) {
     case 'blocked': {
@@ -277,9 +283,9 @@ export function describeAppTarget(
     case 'would-create': {
       if (title) {
         return {
-          message: `Would create a new application "${title}"`,
+          message: `Would create a new application "${title}"${slug ? ` with slug "${slug}"` : ''}`,
           status: 'pass',
-          target: {applicationId: null, title, url: null},
+          target: {applicationId: null, ...(slug ? {slug} : {}), title, url: null},
         }
       }
       return {
@@ -307,7 +313,7 @@ export function describeAppTargetError(err: unknown, organizationId: string | un
 export async function checkAppTarget(
   reporter: CheckReporter,
   options:
-    | {appId: string | undefined; isWorkbenchApp: true; title?: string}
+    | {appId: string | undefined; isWorkbenchApp: true; slug?: string; title?: string}
     | {
         appId: string | undefined
         isWorkbenchApp?: false
@@ -317,9 +323,9 @@ export async function checkAppTarget(
 ): Promise<DeployTarget | null> {
   const {title} = options
   if (options.isWorkbenchApp) {
-    const {appId} = options
+    const {appId, slug} = options
     return runStep(reporter, 'target', async () => {
-      const check = describeAppTarget(await resolveWorkbenchApp({appId}), {title})
+      const check = describeAppTarget(await resolveWorkbenchApp({appId}), {slug, title})
       reporter.report(check)
       return check.target ?? null
     })

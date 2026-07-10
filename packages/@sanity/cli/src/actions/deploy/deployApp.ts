@@ -123,6 +123,7 @@ async function runAppDeployment(
     await checkAppTarget(reporter, {
       appId: getAppId(cliConfig),
       isWorkbenchApp: true,
+      slug: workbench.slug,
       title: appTitle,
     })
   } else if (deployApplication) {
@@ -224,8 +225,10 @@ async function runAppDeployment(
 
   // Workbench apps deploy to Brett; plain coreApps use user-applications.
   if (workbench && organizationId) {
+    const appId = getAppId(cliConfig)
+    const slug = workbench.slug ?? generateAppSlug()
     const {applicationId} = await deployWorkbenchCoreApp({
-      appId: getAppId(cliConfig),
+      appId,
       interfaces: buildExposes(workbench, {
         appName: workbench.name,
         appTitle,
@@ -235,7 +238,7 @@ async function runAppDeployment(
       isAutoUpdating,
       isSingleton: workbench.isSingleton,
       organizationId,
-      slug: generateAppSlug(),
+      slug,
       sourceDir,
       title: appTitle,
       version,
@@ -246,7 +249,13 @@ async function runAppDeployment(
       applicationVersion: version,
       ...(exposes.length > 0 ? {exposes} : {}),
       ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
-      target: {applicationId, title: appTitle, url: getCoreAppUrl(organizationId, applicationId)},
+      target: {
+        applicationId,
+        // A redeploy ignores the slug, so only a create reports the one it used.
+        ...(appId ? {} : {slug}),
+        title: appTitle,
+        url: getCoreAppUrl(organizationId, applicationId),
+      },
     }
   }
 
