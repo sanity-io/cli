@@ -1,8 +1,10 @@
-import {buildApp as internalBuildApp} from '@sanity/cli-build/_internal/build'
+import {
+  compareDependencyVersions,
+  buildApp as internalBuildApp,
+} from '@sanity/cli-build/_internal/build'
 import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
-import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {determineBasePath} from './determineBasePath.js'
 import {type BuildOptions} from './types.js'

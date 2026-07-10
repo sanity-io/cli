@@ -1,9 +1,9 @@
+import {mockRequest} from '@sanity/cli-test/mocks/cli-core/request'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {compareDependencyVersions} from '../compareDependencyVersions'
+import {compareDependencyVersions} from '../compareDependencyVersions.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
-const mockRequest = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockGetModuleUrl = vi.hoisted(() => vi.fn())
 
@@ -17,6 +17,8 @@ vi.mock('@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap', () 
   getModuleUrl: mockGetModuleUrl,
 }))
 
+vi.mock('@sanity/cli-core/request', async () => import('@sanity/cli-test/mocks/cli-core/request'))
+
 const autoUpdatePackages = [
   {name: 'sanity', version: '1.0.0'},
   {name: '@sanity/vision', version: '1.0.0'},
@@ -26,18 +28,6 @@ const appAutoUpdatePackages = [
   {name: '@sanity/sdk-react', version: '1.0.0'},
   {name: '@sanity/sdk', version: '1.0.0'},
 ]
-
-/** Helper to call compareDependencyVersions with the mock requester injected */
-function compare(
-  packages: {name: string; version: string}[],
-  workDir: string,
-  options: {appId?: string} = {},
-) {
-  return compareDependencyVersions(packages, workDir, {
-    ...options,
-    requester: mockRequest as never,
-  })
-}
 
 describe('compareDependencyVersions', () => {
   beforeEach(() => {
@@ -60,7 +50,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(autoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([])
       expect(result.unresolvedPrerelease).toEqual([])
@@ -83,7 +73,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(autoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([
         {
@@ -110,7 +100,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(autoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([
         {
@@ -143,7 +133,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(autoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([
         {
@@ -171,7 +161,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(autoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(mockReadPackageJson).toHaveBeenCalledTimes(1)
 
@@ -208,7 +198,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(appAutoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([])
       expect(result.unresolvedPrerelease).toEqual([])
@@ -231,7 +221,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(appAutoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([
         {
@@ -258,7 +248,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(appAutoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([
         {
@@ -291,7 +281,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(appAutoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([
         {
@@ -324,7 +314,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(appAutoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(mockReadPackageJson).toHaveBeenCalledTimes(1)
 
@@ -353,9 +343,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
-        /Failed to fetch remote version for .+: getaddrinfo ENOTFOUND/,
-      )
+      await expect(
+        compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
+      ).rejects.toThrow(/Failed to fetch remote version for .+: getaddrinfo ENOTFOUND/)
     })
 
     it("should throw when response is missing the 'x-resolved-version' header", async () => {
@@ -370,9 +360,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
-        "Missing 'x-resolved-version' header",
-      )
+      await expect(
+        compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
+      ).rejects.toThrow("Missing 'x-resolved-version' header")
     })
 
     it('should throw when response has an unexpected HTTP status code', async () => {
@@ -388,9 +378,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
-        'Unexpected HTTP response: 500 Internal Server Error',
-      )
+      await expect(
+        compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
+      ).rejects.toThrow('Unexpected HTTP response: 500 Internal Server Error')
     })
   })
 
@@ -411,7 +401,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(autoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       // Only sanity should be checked, @sanity/vision should be skipped entirely
       expect(mockRequest).toHaveBeenCalledTimes(1)
@@ -435,7 +425,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(autoUpdatePackages, '/test/workdir')
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result.mismatched).toEqual([
         {
@@ -462,9 +452,53 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
-        'Failed to parse installed version for sanity',
-      )
+      await expect(
+        compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
+      ).rejects.toThrow('Failed to parse installed version for sanity')
+    })
+  })
+
+  describe('module URL selection', () => {
+    it('should use the default module endpoint when no appId is provided', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      await compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir')
+
+      const url = mockRequest.mock.calls[0][0].url as string
+      expect(url).toContain('/v1/modules/sanity/default/')
+      expect(url).not.toContain('/by-app/')
+    })
+
+    it('should use the app-specific module endpoint when appId is provided', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      await compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir', {
+        appId: 'my-app-id',
+      })
+
+      const url = mockRequest.mock.calls[0][0].url as string
+      expect(url).toContain('/v1/modules/by-app/my-app-id/')
+      expect(url).not.toContain('/default/')
     })
   })
 
@@ -482,7 +516,10 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare([{name: 'sanity', version: '5.11.1-alpha.14'}], '/test/workdir')
+      const result = await compareDependencyVersions(
+        [{name: 'sanity', version: '5.11.1-alpha.14'}],
+        '/test/workdir',
+      )
 
       expect(result.mismatched).toEqual([])
       expect(result.unresolvedPrerelease).toEqual([{pkg: 'sanity', version: '5.11.1-alpha.14'}])
@@ -501,9 +538,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
-        'Failed to resolve remote version for sanity@3.40.0: package not found',
-      )
+      await expect(
+        compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
+      ).rejects.toThrow('Failed to resolve remote version for sanity@3.40.0: package not found')
     })
 
     it('should correctly split resolvable and prerelease packages', async () => {
@@ -531,7 +568,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(
+      const result = await compareDependencyVersions(
         [
           {name: 'sanity', version: '5.11.1-alpha.14'},
           {name: '@sanity/vision', version: '3.40.0'},
@@ -565,7 +602,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(
+      const result = await compareDependencyVersions(
         [
           {name: 'sanity', version: '5.11.1-alpha.14'},
           {name: '@sanity/vision', version: '5.11.1-beta.1'},

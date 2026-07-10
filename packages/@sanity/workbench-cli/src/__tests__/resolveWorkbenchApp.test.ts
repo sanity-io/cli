@@ -32,13 +32,14 @@ describe('resolveWorkbenchApp', () => {
     })
   })
 
-  test('passes through declared views, services, and entry', () => {
+  test('passes through declared views, services, entry, and slug', () => {
     const config = asConfig(
       unstable_defineApp({
         entry: './src/App.tsx',
         name: 'my-app',
         organizationId: 'org-123',
         services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
+        slug: 'my-app-host',
         title: 'My App',
         views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
       }),
@@ -48,6 +49,7 @@ describe('resolveWorkbenchApp', () => {
     expect(resolved).toMatchObject({
       entry: './src/App.tsx',
       services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
+      slug: 'my-app-host',
       views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
     })
   })

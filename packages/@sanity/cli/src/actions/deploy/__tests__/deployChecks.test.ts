@@ -408,6 +408,27 @@ describe('checkAppTarget (workbench backend)', () => {
     expect(reporter.results[0]?.message).toContain('Would create a new application "New App"')
     expect(mockGetApplication).not.toHaveBeenCalled()
   })
+
+  test('no appId with a configured slug → check and target name the slug', async () => {
+    const reporter = createCollectingReporter()
+
+    await checkAppTarget(reporter, {
+      appId: undefined,
+      isWorkbenchApp: true,
+      slug: 'drop-desk',
+      title: 'New App',
+    })
+
+    expect(reporter.results[0]?.message).toContain(
+      'Would create a new application "New App" with slug "drop-desk"',
+    )
+    expect(reporter.results[0]?.target).toEqual({
+      applicationId: null,
+      slug: 'drop-desk',
+      title: 'New App',
+      url: null,
+    })
+  })
 })
 
 describe('checkStudioTarget (workbench backend)', () => {

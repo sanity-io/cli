@@ -16,6 +16,7 @@ import {dirIsEmptyOrNonExistent} from '../../../src/util/dirIsEmptyOrNonExistent
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
+const mockDeployCoreApp = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -33,11 +34,10 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// `getWorkbench`/`assertDeployable` stay real — pure config the no-interfaces
-// test exercises; only the fs-touching `checkBuiltOutput` is stubbed.
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   checkBuiltOutput: mockCheckBuiltOutput,
+  deployCoreApp: mockDeployCoreApp,
 }))
 
 vi.mock(
@@ -323,6 +323,87 @@ describe('#deploy app', () => {
     // fails before any directory check or API call
     expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
     expect(mockCheckDir).not.toHaveBeenCalled()
+  })
+
+  test('creates a workbench app at the configured slug and reports it in --json', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockDeployCoreApp.mockResolvedValue({applicationId: 'app_new'})
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--json'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    if (error) throw error
+    expect(mockDeployCoreApp).toHaveBeenCalledWith(
+      expect.objectContaining({slug: 'drop-desk-host'}),
+    )
+    const result = JSON.parse(stdout)
+    expect(result.deployed).toBe(true)
+    expect(result.target).toMatchObject({applicationId: 'app_new', slug: 'drop-desk-host'})
+  })
+
+  test('a dry run surfaces the configured slug in the report and --json target', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--dry-run', '--json'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    if (error) throw error
+    const plan = JSON.parse(stdout)
+    expect(plan.isDeployable).toBe(true)
+    expect(plan.target).toEqual({
+      applicationId: null,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+      url: null,
+    })
+    expect(mockDeployCoreApp).not.toHaveBeenCalled()
+  })
+
+  test('creates a workbench app at a generated slug when none is set', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockDeployCoreApp.mockResolvedValue({applicationId: 'app_new'})
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    if (error) throw error
+    expect(mockDeployCoreApp).toHaveBeenCalledWith(
+      expect.objectContaining({slug: expect.stringMatching(/^[a-z][a-z0-9]{11}$/)}),
+    )
   })
 
   test('should PATCH user-application when manifest title differs from existing app title', async () => {

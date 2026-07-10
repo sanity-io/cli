@@ -23,33 +23,24 @@ const FLAGS = {
 
 // Mock heavy dependencies to isolate appId warning logic
 // Paths are relative to the test file location (__tests__/)
-vi.mock('../../../util/warnAboutMissingAppId.js', () => ({
+vi.mock(import('../../../util/warnAboutMissingAppId.js'), () => ({
   warnAboutMissingAppId: mockWarnAboutMissingAppId,
 }))
 
-vi.mock('../../../util/appId.js', () => ({
+vi.mock(import('../../../util/appId.js'), () => ({
   getAppId: mockGetAppId,
 }))
 
-vi.mock('../../../util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
-}))
-
-vi.mock('@sanity/cli-build/_internal/build', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
+  const actual = await importOriginal()
   return {
     ...actual,
     buildStudio: mockBuildStudio,
+    compareDependencyVersions: vi
+      .fn()
+      .mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
   }
 })
-
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: vi.fn(),
-  getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
-  logSymbols: {info: 'i', warning: '!'},
-  select: vi.fn(),
-  spinner: vi.fn(() => ({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()})),
-}))
 
 function createMockOutput(): Output {
   return {

@@ -37,6 +37,8 @@ export interface ResolvedWorkbenchApp {
   readonly entry?: string
   /** Explicit singleton flag (a Sanity-owned app); `undefined` when the app doesn't set it. */
   readonly isSingleton?: boolean
+  /** Hostname the application is created at on first deploy. */
+  readonly slug?: string
 }
 
 /**
@@ -56,6 +58,7 @@ export function resolveWorkbenchApp(
     isSingleton: app.isSingleton,
     name: app.name,
     services: app.services ?? [],
+    slug: app.slug,
     views: app.views ?? [],
   }
 }

@@ -261,6 +261,16 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(result.error?.issues[0]?.path).toEqual(['entry'])
   })
 
+  test('accepts `slug` for an SDK app', () => {
+    const parsed = DefineAppInputSchema.parse({
+      name: 'drop-desk',
+      organizationId: 'org-1',
+      slug: 'drop-desk',
+      title: 'Drop',
+    })
+    expect(parsed.slug).toBe('drop-desk')
+  })
+
   test('accepts `entry` for an SDK app (no applicationType / coreApp)', () => {
     expect(
       DefineAppInputSchema.safeParse({

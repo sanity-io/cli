@@ -144,7 +144,7 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   // Only pass/skip here; problems and warnings render below with their fixes.
   for (const check of plan.checks) {
     if (check.status === 'pass' || check.status === 'skip') {
-      output.log(`  ${statusIcon(check.status)} ${check.message}`)
+      output.log(nestLines(`  ${statusIcon(check.status)} ${check.message}`))
     }
   }
 
@@ -168,13 +168,19 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   }
 }
 
+// Continuation lines of multi-line messages (expose and config summaries)
+// indent past the icon so their items nest under the heading.
+function nestLines(text: string): string {
+  return text.replaceAll('\n', '\n    ')
+}
+
 function renderIssues(output: Output, title: string, checks: DeployCheck[]): void {
   if (checks.length === 0) return
 
   output.log(`\n${title}`)
   for (const check of checks) {
     const fix = check.solution ? `: ${check.solution}` : ''
-    output.log(`  ${statusIcon(check.status)} ${check.message}${fix}`)
+    output.log(nestLines(`  ${statusIcon(check.status)} ${check.message}${fix}`))
   }
 }
 

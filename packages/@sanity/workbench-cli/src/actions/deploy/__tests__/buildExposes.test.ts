@@ -73,10 +73,13 @@ describe('summarizeExposes', () => {
     })
 
     expect(exposes).toEqual([
-      {name: 'feed', title: 'Feed', type: 'panel'},
-      {name: 'sync', title: 'sync', type: 'worker'},
+      {name: 'feed', src: './src/feed.tsx', title: 'Feed', type: 'panel'},
+      {name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'},
     ])
-    expect(lines).toEqual(['Views:\n  Feed (feed)', 'Services:\n  sync (sync)'])
+    expect(lines).toEqual([
+      'Views:\n  Feed (feed): ./src/feed.tsx',
+      'Services:\n  sync: ./src/sync.ts',
+    ])
   })
 
   test('is empty when nothing is exposed', () => {
