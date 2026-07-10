@@ -28,6 +28,7 @@ const indexHtmlTemplate = `\
   </head>
   <body>
     <div id="workbench"></div>
+    <script>globalThis.__SANITY_STAGING__ = %SANITY_WORKBENCH_STAGING%</script>
     <script type="module" src="./workbench.js"></script>
   </body>
 </html>
@@ -59,7 +60,14 @@ export async function writeWorkbenchRuntime(options: {
 
   const prefetchHints = buildPrefetchHints(remoteUrl)
 
-  const indexHtml = indexHtmlTemplate.replace(/%SANITY_WORKBENCH_PREFETCH_HINTS%/, prefetchHints)
+  // The runtime flag builds get via decorateIndexWithStagingScript — a vite
+  // `define` never reaches pre-bundled dependencies like the SDK.
+  const indexHtml = indexHtmlTemplate
+    .replace(/%SANITY_WORKBENCH_PREFETCH_HINTS%/, prefetchHints)
+    .replace(
+      /%SANITY_WORKBENCH_STAGING%/,
+      JSON.stringify(process.env.SANITY_INTERNAL_ENV === 'staging'),
+    )
 
   devDebug('Making workbench runtime directory')
   await fs.mkdir(workbenchDir, {recursive: true})
