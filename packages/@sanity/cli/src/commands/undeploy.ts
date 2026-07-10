@@ -5,7 +5,7 @@ import {
   createAppUndeployAdapter,
   createStudioUndeployAdapter,
 } from '../actions/undeploy/adapters.js'
-import {runUndeploy} from '../actions/undeploy/undeployRunner.js'
+import {runUndeploy} from '../actions/undeploy/runUndeploy.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 
 export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {

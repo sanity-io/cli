@@ -41,10 +41,6 @@
       "source": "./src/_exports/browser.ts",
       "default": "./dist/_exports/browser.js"
     },
-    "./checks": {
-      "source": "./src/_exports/checks.ts",
-      "default": "./dist/_exports/checks.js"
-    },
     "./config": {
       "source": "./src/_exports/config.ts",
       "default": "./dist/_exports/config.js"

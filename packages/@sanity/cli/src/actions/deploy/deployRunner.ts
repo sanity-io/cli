@@ -2,10 +2,10 @@ import {format} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
-import {createCollectingReporter, createFailFastReporter} from '@sanity/cli-core/checks'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
+import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
 import {type CheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {

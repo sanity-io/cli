@@ -3,9 +3,9 @@ import {join, relative, sep} from 'node:path'
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
-import {checkStatusIcon, nestLines, renderIssues} from '@sanity/cli-core/checks'
 import {type DeployedExpose, summarizeExposes} from '@sanity/workbench-cli/deploy'
 
+import {checkStatusIcon, nestLines, renderIssues} from '../../util/checks.js'
 import {pluralize} from '../../util/pluralize.js'
 import {type CheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
 

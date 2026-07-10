@@ -1,10 +1,10 @@
 import {type CliConfig, exitCodes, getLocalPackageVersion} from '@sanity/cli-core'
-import {type Check, type CheckReporter as CheckReporterFor, runStep} from '@sanity/cli-core/checks'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput, type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
+import {type Check, type CheckReporter as CheckReporterFor, runStep} from '../../util/checks.js'
 import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {
   getAutoUpdateIssueMessage,

@@ -1,7 +1,6 @@
-import {getErrorMessage} from '../errors/getErrorMessage.js'
-import {type Output} from '../types.js'
-import {logSymbols} from '../ux/logSymbols.js'
-import {debug as cliDebug} from './debug.js'
+import {debug as cliDebug, type Output} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
+import {logSymbols} from '@sanity/cli-core/ux'
 
 export type CheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
 

@@ -132,7 +132,7 @@ describe('#undeploy', () => {
       },
     })
 
-    expect(stdout).toContain('No application ID or studio host provided')
+    expect(stdout).toContain('No studio hostname configured')
     expect(stdout).toContain('Nothing to undeploy')
   })
 
@@ -146,7 +146,7 @@ describe('#undeploy', () => {
       },
     })
 
-    expect(stdout).toContain('No application ID provided')
+    expect(stdout).toContain('No `deployment.appId` configured')
     expect(stdout).toContain('Nothing to undeploy')
   })
 
@@ -443,7 +443,7 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Dry run — no changes made.')
-    expect(stdout).toContain('No application ID or studio host provided')
+    expect(stdout).toContain('No studio hostname configured')
     expect(stdout).toContain('Nothing to undeploy.')
   })
 

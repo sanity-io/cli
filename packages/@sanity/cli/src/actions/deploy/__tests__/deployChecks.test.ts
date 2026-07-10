@@ -1,5 +1,4 @@
 import {type CliConfig, exitCodes} from '@sanity/cli-core'
-import {createCollectingReporter} from '@sanity/cli-core/checks'
 import {type Application, getApplication} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -7,6 +6,7 @@ import {
   type UserApplication,
   type UserApplicationResolved,
 } from '../../../services/userApplications.js'
+import {createCollectingReporter} from '../../../util/checks.js'
 import {
   checkAppId,
   checkAppTarget,

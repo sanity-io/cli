@@ -8,7 +8,7 @@ import {
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {getCoreAppUrl} from '../deploy/urlUtils.js'
-import {type UndeployAdapter, type UndeployTarget} from './types.js'
+import {type UndeployAdapter, type UndeployTarget} from './runUndeploy.js'
 
 export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter {
   return {
@@ -16,8 +16,8 @@ export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter 
       const appId = getAppId(cliConfig)
       if (!appId) {
         return {
-          message: 'No application ID provided',
-          solution: 'Set `deployment.appId` in sanity.cli.js or sanity.cli.ts',
+          message: 'No `deployment.appId` configured',
+          solution: 'Add `deployment.appId` to sanity.cli.ts',
           type: 'none',
         }
       }
@@ -30,7 +30,7 @@ export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter 
       return {target: toUndeployTarget(application, 'coreApp'), type: 'found'}
     },
     type: 'coreApp',
-    undeploy: ({applicationId}) => deleteUserApplication({applicationId, appType: 'coreApp'}),
+    undeploy: ({id}) => deleteUserApplication({applicationId: id, appType: 'coreApp'}),
   }
 }
 
@@ -41,8 +41,8 @@ export function createStudioUndeployAdapter(cliConfig: CliConfig): UndeployAdapt
       const studioHost = cliConfig.studioHost
       if (!appId && !studioHost) {
         return {
-          message: 'No application ID or studio host provided',
-          solution: 'Set `deployment.appId` in sanity.cli.js or sanity.cli.ts',
+          message: 'No studio hostname configured',
+          solution: 'Set `studioHost` in sanity.cli.ts',
           type: 'none',
         }
       }
@@ -67,13 +67,13 @@ export function createStudioUndeployAdapter(cliConfig: CliConfig): UndeployAdapt
       return {target: toUndeployTarget(application, 'studio'), type: 'found'}
     },
     type: 'studio',
-    undeploy: ({applicationId}) => deleteUserApplication({applicationId, appType: 'studio'}),
+    undeploy: ({id}) => deleteUserApplication({applicationId: id, appType: 'studio'}),
   }
 }
 
 function toUndeployTarget(
   application: UserApplication,
-  applicationType: UndeployTarget['applicationType'],
+  type: UndeployTarget['type'],
 ): UndeployTarget {
   return {
     activeDeployment: application.activeDeployment
@@ -84,21 +84,21 @@ function toUndeployTarget(
         }
       : null,
     appHost: application.appHost ?? null,
-    applicationId: application.id,
-    applicationType,
     createdAt: application.createdAt ?? null,
+    id: application.id,
     organizationId: application.organizationId ?? null,
     projectId: application.projectId ?? null,
     title: application.title ?? null,
-    url: resolveTargetUrl(application, applicationType),
+    type,
+    url: resolveTargetUrl(application, type),
   }
 }
 
 function resolveTargetUrl(
   application: UserApplication,
-  applicationType: UndeployTarget['applicationType'],
+  type: UndeployTarget['type'],
 ): string | null {
-  if (applicationType === 'coreApp') {
+  if (type === 'coreApp') {
     return application.organizationId
       ? getCoreAppUrl(application.organizationId, application.id)
       : null

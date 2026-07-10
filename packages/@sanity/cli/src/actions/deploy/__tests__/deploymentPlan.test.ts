@@ -3,9 +3,9 @@ import {readdir, stat} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
-import {createCollectingReporter} from '@sanity/cli-core/checks'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {createCollectingReporter} from '../../../util/checks.js'
 import {type DeployCheck} from '../deployChecks.js'
 import {
   type DeploymentFile,

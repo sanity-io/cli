@@ -1,3 +1,4 @@
+import {type Output} from '@sanity/cli-core'
 import {describe, expect, test, vi} from 'vitest'
 
 import {
@@ -6,8 +7,7 @@ import {
   createFailFastReporter,
   renderIssues,
   runStep,
-} from '../_exports/checks.js'
-import {type Output} from '../types.js'
+} from '../checks.js'
 
 const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
 

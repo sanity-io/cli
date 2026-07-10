@@ -35,7 +35,7 @@ beforeEach(() => vi.clearAllMocks())
 describe('createAppUndeployAdapter', () => {
   test('no appId configured → nothing to undeploy, with the fix', async () => {
     const resolution = await createAppUndeployAdapter({app: {}} as CliConfig).resolveTarget()
-    expect(resolution).toMatchObject({message: 'No application ID provided', type: 'none'})
+    expect(resolution).toMatchObject({message: 'No `deployment.appId` configured', type: 'none'})
   })
 
   test('unknown appId → nothing to undeploy', async () => {
@@ -82,10 +82,10 @@ describe('createAppUndeployAdapter', () => {
         deployedBy: 'gustav@sanity.io',
         version: '2.0.0',
       },
-      applicationId: 'core-1',
-      applicationType: 'coreApp',
+      id: 'core-1',
       organizationId: 'org-1',
       title: 'My App',
+      type: 'coreApp',
       url: expect.stringContaining('/@org-1/application/core-1'),
     })
   })
@@ -120,7 +120,7 @@ describe('createStudioUndeployAdapter', () => {
       api: {projectId: 'test'},
     } as CliConfig).resolveTarget()
     expect(resolution).toMatchObject({
-      message: 'No application ID or studio host provided',
+      message: 'No studio hostname configured',
       type: 'none',
     })
   })
@@ -152,8 +152,8 @@ describe('createStudioUndeployAdapter', () => {
 
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
       appHost: 'my-studio',
-      applicationId: 'app-1',
-      applicationType: 'studio',
+      id: 'app-1',
+      type: 'studio',
       url: 'https://my-studio.sanity.studio',
     })
   })
