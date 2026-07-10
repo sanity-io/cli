@@ -54,12 +54,15 @@ export function buildExposes(
 /** A view or service as the deploy report and `--json` output surface it. */
 export interface DeployedExpose {
   name: string
+  src: string
   title: string
   type: string
 }
 
 function summarizeExposeGroup(heading: string, items: readonly DeployedExpose[]): string {
-  return `${heading}:\n${items.map((item) => `  ${item.title} (${item.name})`).join('\n')}`
+  const label = (item: DeployedExpose) =>
+    item.title === item.name ? item.name : `${item.title} (${item.name})`
+  return `${heading}:\n${items.map((item) => `  ${label(item)}: ${item.src}`).join('\n')}`
 }
 
 /**
@@ -71,8 +74,14 @@ export function summarizeExposes({services, views}: WorkbenchExposes): {
   exposes: DeployedExpose[]
   lines: string[]
 } {
-  const toExpose = (decl: {name: string; title?: string; type: string}): DeployedExpose => ({
+  const toExpose = (decl: {
+    name: string
+    src: string
+    title?: string
+    type: string
+  }): DeployedExpose => ({
     name: decl.name,
+    src: decl.src,
     title: decl.title ?? decl.name,
     type: decl.type,
   })
