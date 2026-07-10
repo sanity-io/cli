@@ -60,6 +60,9 @@ const devServerManifestSchema = z.object({
         // The app's `unstable_defineApp` name — the module-federation alias the
         // workbench loads this config's live values from.
         moduleName: z.optional(z.string()),
+        // Config contract version the generated module exports, so the
+        // workbench knows what it can resolve before loading the module.
+        version: z.number(),
       }),
     ),
   ),
@@ -76,7 +79,16 @@ const devServerManifestSchema = z.object({
    * interface shape.
    */
   interfaces: z.optional(
-    z.array(z.object({entry_point: z.string(), interface_type: z.string(), name: z.string()})),
+    z.array(
+      z.object({
+        entry_point: z.string(),
+        interface_type: z.string(),
+        name: z.string(),
+        // Contract version the interface's generated module exports; the app
+        // view has no versioned contract and carries none.
+        version: z.optional(z.number()),
+      }),
+    ),
   ),
   /**
    * Inlined manifest — either a {@link StudioManifest} or {@link CoreAppManifest},

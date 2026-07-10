@@ -13,7 +13,7 @@ describe('deriveInterfaces', () => {
   test('maps views to panel interfaces', () => {
     const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
+      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed', version: 1},
     ])
   })
 
@@ -22,7 +22,7 @@ describe('deriveInterfaces', () => {
       services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry_point: './src/service.ts', interface_type: 'worker', name: 'unread'},
+      {entry_point: './src/service.ts', interface_type: 'worker', name: 'unread', version: 1},
     ])
   })
 
@@ -47,8 +47,8 @@ describe('deriveInterfaces', () => {
       views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
-      {entry_point: './src/service.ts', interface_type: 'worker', name: 'unread'},
+      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed', version: 1},
+      {entry_point: './src/service.ts', interface_type: 'worker', name: 'unread', version: 1},
       {entry_point: './src/App.tsx', interface_type: 'app', name: 'my-app'},
     ])
   })
@@ -63,7 +63,7 @@ describe('deriveInterfaces', () => {
     })
     // only the panel — the config rides deriveConfigs, not interfaces
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
+      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed', version: 1},
     ])
   })
 
@@ -77,7 +77,7 @@ describe('deriveInterfaces', () => {
   test('a studio without entry still derives its panels/workers', () => {
     const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
     expect(deriveInterfaces(app, {isApp: false})).toEqual([
-      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'},
+      {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed', version: 1},
     ])
   })
 })
@@ -114,6 +114,7 @@ describe('deriveConfigs', () => {
         ],
         id: expect.any(String),
         moduleName: 'test-app',
+        version: 1,
       },
     ])
   })
@@ -165,6 +166,7 @@ describe('deriveConfigEntries', () => {
           {name: 'language', src: './src/language.ts', title: 'Language'},
         ],
         id: 'cfg-hash',
+        version: 1,
       }),
     ).toEqual([
       {name: 'description', src: './src/description.ts'},
@@ -173,12 +175,14 @@ describe('deriveConfigEntries', () => {
   })
 
   test('an empty field set yields no entries', () => {
-    expect(deriveConfigEntries({appType: 'media-library', fields: [], id: 'cfg-hash'})).toEqual([])
+    expect(
+      deriveConfigEntries({appType: 'media-library', fields: [], id: 'cfg-hash', version: 1}),
+    ).toEqual([])
   })
 
   test('throws on an app type it cannot handle', () => {
-    expect(() => deriveConfigEntries({appType: 'core-app', fields: [], id: 'cfg-hash'})).toThrow(
-      /unknown config appType: core-app/i,
-    )
+    expect(() =>
+      deriveConfigEntries({appType: 'core-app', fields: [], id: 'cfg-hash', version: 1}),
+    ).toThrow(/unknown config appType: core-app/i)
   })
 })
