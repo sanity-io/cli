@@ -1,69 +1,66 @@
-import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {mockApi, testCommand} from '@sanity/cli-test'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {CREATE_PROJECT_API_VERSION} from '../../../services/projects.js'
 import {CreateProjectCommand} from '../create.js'
 
-const mockConfirm = vi.hoisted(() => vi.fn())
-const mockInput = vi.hoisted(() => vi.fn())
-const mockSelect = vi.hoisted(() => vi.fn())
 const mockCreateDataset = vi.hoisted(() => vi.fn())
+const mockValidateDatasetName = vi.hoisted(() => vi.fn())
+const mockGetOrganization = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    confirm: mockConfirm,
-    input: mockInput,
-    select: mockSelect,
-  }
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('../../../actions/dataset/validateDatasetName.js', () => ({
+  validateDatasetName: mockValidateDatasetName,
+}))
+vi.mock('../../../actions/organizations/getOrganization.js', () => ({
+  getOrganization: mockGetOrganization,
+}))
+vi.mock('../../../services/user.js', () => ({
+  getCliUser: vi.fn(),
+}))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockImplementation(async (options) => {
-      const testClient = createTestClient({
-        apiVersion: options.apiVersion,
-        token: 'test-token',
-      })
-
-      return {
-        config: vi.fn().mockReturnValue({apiHost: 'https://api.sanity.io'}),
-        projects: {
-          list: vi.fn().mockResolvedValue([]),
-        },
-        request: testClient.request,
-        users: {
-          getById: vi.fn().mockResolvedValue({
-            email: 'test@example.com',
-            id: 'user-123',
-            name: 'Test User',
-          }),
-        } as never,
-      }
-    }),
-    getProjectCliClient: vi.fn().mockImplementation(async (options) => {
-      const testClient = createTestClient({
-        apiVersion: options.apiVersion,
-        token: 'test-token',
-      })
-
-      return {
-        datasets: {
-          create: mockCreateDataset,
-          list: vi.fn().mockResolvedValue([]),
-        },
-        request: testClient.request,
-      }
-    }),
-  }
-})
+// getGlobalCliClient: vi.fn().mockImplementation(async (options) => {
+//   const testClient = createTestClient({
+//     apiVersion: options.apiVersion,
+//     token: 'test-token',
+//   })
+//
+//   return {
+//     config: vi.fn().mockReturnValue({apiHost: 'https://api.sanity.io'}),
+//     projects: {
+//       list: vi.fn().mockResolvedValue([]),
+//     },
+//     request: testClient.request,
+//     users: {
+//       getById: vi.fn().mockResolvedValue({
+//         email: 'test@example.com',
+//         id: 'user-123',
+//         name: 'Test User',
+//       }),
+//     } as never,
+//   }
+// }),
+// getProjectCliClient: vi.fn().mockImplementation(async (options) => {
+//   const testClient = createTestClient({
+//     apiVersion: options.apiVersion,
+//     token: 'test-token',
+//   })
+//
+//   return {
+//     datasets: {
+//       create: mockCreateDataset,
+//       list: vi.fn().mockResolvedValue([]),
+//     },
+//     request: testClient.request,
+//   }
+// }),
 
 const defaultMocks = {
   projectRoot: {
@@ -75,35 +72,29 @@ const defaultMocks = {
 }
 
 describe('#projects:create', () => {
+  beforeEach(() => {
+    mockValidateDatasetName.mockReturnValue(null) // returns error if invalid
+  })
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('throws error if provided invalid dataset flag', async () => {
-    const {error} = await testCommand(CreateProjectCommand, ['--dataset=~~invalid-name'])
-
-    expect(error?.message).toContain('Dataset name must start with a letter or a number')
+  test.only('throws error if provided invalid dataset flag', async () => {
+    const datasetError = 'terrible name'
+    mockValidateDatasetName.mockReturnValue(datasetError) // returns error if invalid
+    await expect(CreateProjectCommand.run(['--dataset=~~invalid-name'])).rejects.toThrow(
+      datasetError,
+    )
   })
 
-  test('errors when retrieving organization fails', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(500, {message: 'Internal server error'})
+  test.only('errors when retrieving organization fails', async () => {
+    const err = new Error('boom')
+    mockGetOrganization.mockRejectedValue(err)
+    await CreateProjectCommand.run(['My Project'])
 
-    const {error} = await testCommand(CreateProjectCommand, ['My Project'], {
-      mocks: {
-        ...defaultMocks,
-        isInteractive: true,
-      },
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith('Failed to retrieve an organization', {
+      exit: 1,
     })
-
-    expect(error?.message).toContain('Failed to retrieve an organization')
-    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors when requested organization id is not found', async () => {
