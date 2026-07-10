@@ -48,6 +48,7 @@ export const spinner: Mock = vi.fn(() => {
     info: vi.fn(),
     render: vi.fn(),
     start: spinnerStart,
+    stop: vi.fn(),
     succeed: spinnerSucceed,
   }
   Object.defineProperty(mockSpin, 'text', {
