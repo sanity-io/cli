@@ -29,8 +29,6 @@ const defaultRequester = createRequester({
 interface CompareDependencyVersionsOptions {
   /** When provided, uses the app-specific module endpoint instead of the default endpoint. */
   appId?: string
-  /** Optional requester for dependency injection (primarily for testing). */
-  requester?: typeof defaultRequester
 }
 
 /**
@@ -58,7 +56,7 @@ interface CompareDependencyVersionsOptions {
 export async function compareDependencyVersions(
   packages: {name: string; version: string}[],
   workDir: string,
-  {appId, requester = defaultRequester}: CompareDependencyVersionsOptions = {},
+  {appId}: CompareDependencyVersionsOptions = {},
 ): Promise<CompareDependencyVersionsResult> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
     skipSchemaValidation: true,
@@ -74,7 +72,7 @@ export async function compareDependencyVersions(
       continue
     }
 
-    const resolvedVersion = await getRemoteResolvedVersion(getModuleUrl(pkg, {appId}), requester)
+    const resolvedVersion = await getRemoteResolvedVersion(getModuleUrl(pkg, {appId}))
 
     if (resolvedVersion === null) {
       if (prerelease(pkg.version)) {
@@ -108,13 +106,10 @@ export async function compareDependencyVersions(
   return {mismatched, unresolvedPrerelease}
 }
 
-async function getRemoteResolvedVersion(
-  url: string,
-  request: typeof defaultRequester,
-): Promise<string | null> {
+async function getRemoteResolvedVersion(url: string): Promise<string | null> {
   let response
   try {
-    response = await request({
+    response = await defaultRequester({
       maxRedirects: 0,
       method: 'HEAD',
       url,

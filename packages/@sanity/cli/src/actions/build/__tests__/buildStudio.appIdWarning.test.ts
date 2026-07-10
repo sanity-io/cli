@@ -3,7 +3,6 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
-const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockBuildStudio = vi.hoisted(() =>
   vi.fn().mockImplementation((options) => {
     options.checkAppId()
@@ -40,21 +39,6 @@ vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
       .mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
   }
 })
-
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    getCliTelemetry: vi.fn().mockReturnValue({
-      trace: vi.fn().mockReturnValue({complete: vi.fn(), log: vi.fn(), start: vi.fn()}),
-    }),
-    getLocalPackageVersion: mockGetLocalPackageVersion,
-    getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
-    isInteractive: vi.fn().mockReturnValue(false),
-  }
-})
-
-vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 // Import after mocks are set up
 const {buildStudio} = await import('../buildStudio.js')

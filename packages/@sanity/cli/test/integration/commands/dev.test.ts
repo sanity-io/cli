@@ -8,8 +8,8 @@ import {
   compareDependencyVersions,
 } from '@sanity/cli-build/_internal/build'
 import {getProjectCliClient} from '@sanity/cli-core'
-import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testFixture} from '@sanity/cli-test'
+import {confirm as mockConfirm, spinner as mockSpinner} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DevCommand} from '../../../src/commands/dev.js'
@@ -61,7 +61,6 @@ vi.mock('@sanity/cli-core', async () => {
 
 const mockCheckRequiredDependencies = vi.mocked(checkRequiredDependencies)
 const mockCompareDependencyVersions = vi.mocked(compareDependencyVersions)
-const mockConfirm = vi.mocked(confirm)
 const mockUpgradePackages = vi.mocked(upgradePackages)
 const mockGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
@@ -77,7 +76,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
-      const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5333'], {
+      const {error, result, stdout} = await testCommand(DevCommand, ['--port', '5333'], {
         config: {root: cwd},
         mocks: {isInteractive: true},
       })
@@ -85,7 +84,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       if (error) throw error
       expect(stdout).toContain('Dev server started on port 5333')
       expect(stdout).toContain('View your app in the Sanity dashboard here:')
-      expect(stderr).toContain('Checking configuration files')
+      expect(mockSpinner).toHaveBeenCalledWith('Checking configuration files...')
       await tryCloseServer(result)
 
       expect(mockTypegenPlugin).not.toHaveBeenCalled()
@@ -109,7 +108,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       )
       await writeFile(configPath, modifiedConfig)
 
-      const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5333'], {
+      const {error, result, stdout} = await testCommand(DevCommand, ['--port', '5333'], {
         config: {root: cwd},
         mocks: {isInteractive: true},
       })
@@ -117,7 +116,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       if (error) throw error
       expect(stdout).toContain('Dev server started on port 5333')
       expect(stdout).toContain('View your app in the Sanity dashboard here:')
-      expect(stderr).toContain('Checking configuration files')
+      expect(mockSpinner).toHaveBeenCalledWith('Checking configuration files...')
       await tryCloseServer(result)
 
       expect(mockTypegenPlugin).toHaveBeenCalledWith({
@@ -222,7 +221,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
-      const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5335'], {
+      const {error, result, stdout} = await testCommand(DevCommand, ['--port', '5335'], {
         config: {root: cwd},
         mocks: {isInteractive: true},
       })
@@ -233,7 +232,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       expect(stdout).toMatch(/vite@\d+\.\d+/)
       expect(stdout).toContain('ready in')
       expect(stdout).toContain('ms and running at http://localhost:5335')
-      expect(stderr).toContain('Checking configuration files')
+      expect(mockSpinner).toHaveBeenCalledWith('Checking configuration files...')
 
       await tryCloseServer(result)
     })
@@ -277,7 +276,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         },
       } as never)
 
-      const {error, result, stderr, stdout} = await testCommand(
+      const {error, result, stdout} = await testCommand(
         DevCommand,
         ['--load-in-dashboard', '--port', '5340'],
         {
@@ -290,7 +289,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       expect(stdout).toContain('Dev server started on port 5340')
       expect(stdout).toContain('View your studio in the Sanity dashboard here:')
       expect(stdout).toContain('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340')
-      expect(stderr).toContain('Checking configuration files')
+      expect(mockSpinner).toHaveBeenCalledWith('Checking configuration files...')
 
       await tryCloseServer(result)
     })
@@ -357,7 +356,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       })
       mockConfirm.mockResolvedValueOnce(false) // User declines upgrade
 
-      const {error, result, stderr, stdout} = await testCommand(
+      const {error, result, stdout} = await testCommand(
         DevCommand,
         ['--auto-updates', '--port', '5346'],
         {
@@ -368,7 +367,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       if (error) throw error
       // Check that the server started successfully with auto-updates flag
       expect(stdout).toMatch(/running at http:\/\/localhost:5346/)
-      expect(stderr).toContain('Checking configuration files')
+      expect(mockSpinner).toHaveBeenCalledWith('Checking configuration files...')
       await tryCloseServer(result)
     })
 
@@ -394,7 +393,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         mostOptimal: 'npm',
       })
 
-      const {error, result, stderr, stdout} = await testCommand(
+      const {error, result, stdout} = await testCommand(
         DevCommand,
         ['--auto-updates', '--port', '5348'],
         {
@@ -405,7 +404,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
 
       if (error) throw error
       expect(stdout).toMatch(/running at http:\/\/localhost:5348/)
-      expect(stderr).toContain('Checking configuration files')
+      expect(mockSpinner).toHaveBeenCalledWith('Checking configuration files...')
 
       expect(mockUpgradePackages).toHaveBeenCalledWith(
         {

@@ -40,21 +40,6 @@ vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
   }
 })
 
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    getCliTelemetry: vi.fn().mockReturnValue({
-      trace: vi.fn().mockReturnValue({complete: vi.fn(), log: vi.fn(), start: vi.fn()}),
-    }),
-    getLocalPackageVersion: vi.fn().mockResolvedValue('1.0.0'),
-    getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
-    isInteractive: vi.fn().mockReturnValue(false),
-  }
-})
-
-vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
-
 // Import after mocks are set up
 const {buildApp} = await import('../buildApp.js')
 
