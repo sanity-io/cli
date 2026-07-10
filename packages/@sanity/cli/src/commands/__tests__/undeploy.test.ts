@@ -1,5 +1,6 @@
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
+import {unstable_defineApp, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -561,6 +562,110 @@ describe('#undeploy', () => {
     expect(confirm).not.toHaveBeenCalled()
     const payload = JSON.parse(stdout)
     expect(payload.undeployed).toBe(true)
+  })
+
+  test('workbench app dry run resolves the Brett application', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      uri: '/applications/wb-app-1',
+    }).reply(200, {
+      id: 'wb-app-1',
+      organizationId: 'org-1',
+      slug: 'my-app-x1',
+      title: 'My App',
+      type: 'coreApp',
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineApp({
+            entry: './src/App.tsx',
+            name: 'my-app',
+            organizationId: 'org-1',
+            title: 'My App',
+          }),
+          deployment: {appId: 'wb-app-1'},
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Undeploys application "My App" (wb-app-1)')
+    expect(stdout).toContain('This application can be undeployed.')
+  })
+
+  test('workbench app undeploys through the applications API', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      uri: '/applications/wb-app-1',
+    }).reply(200, {
+      id: 'wb-app-1',
+      organizationId: 'org-1',
+      slug: 'my-app-x1',
+      title: 'My App',
+      type: 'coreApp',
+    })
+
+    mockApi({
+      apiVersion: 'vX',
+      method: 'delete',
+      uri: '/applications/wb-app-1',
+    }).reply(200, {deleted: true})
+
+    const {stdout} = await testCommand(UndeployCommand, ['--json', '--yes'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineApp({
+            entry: './src/App.tsx',
+            name: 'my-app',
+            organizationId: 'org-1',
+            title: 'My App',
+          }),
+          deployment: {appId: 'wb-app-1'},
+        },
+        token: 'test-token',
+      },
+    })
+
+    const payload = JSON.parse(stdout)
+    expect(payload.undeployed).toBe(true)
+    expect(payload.application).toMatchObject({deletes: 'application', id: 'wb-app-1'})
+  })
+
+  test('media library dry run reports the installation config', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none', organizationId: 'org-1'},
+      uri: '/installations',
+    }).reply(200, {
+      data: [{application: {slug: 'media-library'}, id: 'inst-1'}],
+    })
+
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none'},
+      uri: '/installations/inst-1/configs',
+    }).reply(200, {
+      data: [{createdAt: '2024-01-01T00:00:00Z', id: 'cfg-1', version: '1.0.0'}],
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineMediaLibrary({
+            fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
+            organizationId: 'org-1',
+          }),
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Undeploys the installation config')
+    expect(stdout).toContain('Config snapshots to delete: 1')
+    expect(stdout).toContain('Alt text (alt)')
+    expect(stdout).toContain('This installation config can be undeployed.')
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {

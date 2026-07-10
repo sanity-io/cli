@@ -1,15 +1,15 @@
 import {type Output} from '@sanity/cli-core'
+import {type UndeployAdapter, type UndeployTarget} from '@sanity/cli-core/undeploy'
 import {confirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {runUndeploy, type UndeployAdapter, type UndeployOptions} from '../runUndeploy.js'
+import {runUndeploy, type UndeployOptions} from '../runUndeploy.js'
 import {
   canUndeploy,
   describeUndeployTarget,
   renderUndeployPlan,
   type UndeployPlan,
   undeployPlanToJson,
-  type UndeployTarget,
 } from '../undeployPlan.js'
 
 vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
@@ -24,7 +24,7 @@ function target(overrides: Partial<UndeployTarget> = {}): UndeployTarget {
     activeDeployment: null,
     appHost: 'my-studio',
     createdAt: null,
-    id: 'app-1',
+    deletes: 'application',
     organizationId: null,
     projectId: 'project-1',
     title: null,
@@ -430,5 +430,28 @@ describe('renderUndeployPlan', () => {
     expect(logged.some((line) => line.includes('Application can not be undeployed.'))).toBe(true)
     expect(logged.some((line) => line.includes('Problems to fix:'))).toBe(true)
     expect(logged.some((line) => line.includes('boom: do X'))).toBe(true)
+  })
+})
+
+describe('renderUndeployPlan target summary', () => {
+  test('renders adapter-authored summary lines, splitting multi-line entries', () => {
+    const output = mockOutput()
+    renderUndeployPlan(
+      {
+        checks: [],
+        reason: null,
+        target: target({summary: ['Views:\n  Insights (insights)', 'Singleton: true']}),
+        type: 'studio',
+      },
+      output,
+    )
+
+    const logged = vi
+      .mocked(output.log)
+      .mock.calls.map((call) => String(call[0]))
+      .join('\n')
+    expect(logged).toContain('Views:')
+    expect(logged).toContain('Insights (insights)')
+    expect(logged).toContain('Singleton: true')
   })
 })

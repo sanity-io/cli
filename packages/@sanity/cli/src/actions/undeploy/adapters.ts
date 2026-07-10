@@ -1,4 +1,6 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {type UndeployAdapter, type UndeployTarget} from '@sanity/cli-core/undeploy'
+import {getCoreAppUrl} from '@sanity/cli-core/util'
 
 import {
   deleteUserApplication,
@@ -7,9 +9,6 @@ import {
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
-import {getCoreAppUrl} from '../deploy/urlUtils.js'
-import {type UndeployAdapter} from './runUndeploy.js'
-import {type UndeployTarget} from './undeployPlan.js'
 
 export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter {
   return {
@@ -31,7 +30,7 @@ export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter 
       return {target: toUndeployTarget(application, 'coreApp'), type: 'found'}
     },
     type: 'coreApp',
-    undeploy: ({id}) => deleteUserApplication({applicationId: id, appType: 'coreApp'}),
+    undeploy: ({id}) => deleteUserApplication({applicationId: id!, appType: 'coreApp'}),
   }
 }
 
@@ -68,7 +67,7 @@ export function createStudioUndeployAdapter(cliConfig: CliConfig): UndeployAdapt
       return {target: toUndeployTarget(application, 'studio'), type: 'found'}
     },
     type: 'studio',
-    undeploy: ({id}) => deleteUserApplication({applicationId: id, appType: 'studio'}),
+    undeploy: ({id}) => deleteUserApplication({applicationId: id!, appType: 'studio'}),
   }
 }
 
@@ -86,7 +85,7 @@ function toUndeployTarget(
       : null,
     appHost: application.appHost ?? null,
     createdAt: application.createdAt ?? null,
-    id: application.id,
+    deletes: 'application',
     organizationId: application.organizationId ?? null,
     projectId: application.projectId ?? null,
     title: application.title ?? null,

@@ -39,6 +39,10 @@
       "source": "./src/_exports/init.ts",
       "default": "./dist/_exports/init.js"
     },
+    "./undeploy": {
+      "source": "./src/_exports/undeploy.ts",
+      "default": "./dist/_exports/undeploy.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

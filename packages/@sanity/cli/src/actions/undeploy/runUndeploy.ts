@@ -3,6 +3,11 @@ import {styleText} from 'node:util'
 import {CLIError} from '@oclif/core/errors'
 import {type Output, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {
+  type UndeployAdapter,
+  type UndeployTarget,
+  type UndeployTargetResolution,
+} from '@sanity/cli-core/undeploy'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 
 import {type UndeployCommand} from '../../commands/undeploy.js'
@@ -17,8 +22,6 @@ import {
   renderUndeployPlan,
   type UndeployPlan,
   undeployPlanToJson,
-  type UndeployTarget,
-  type UndeployTargetResolution,
 } from './undeployPlan.js'
 
 const undeployDebug = subdebug('undeploy')
@@ -28,19 +31,6 @@ type UndeployFlags = UndeployCommand['flags']
 export interface UndeployOptions {
   flags: UndeployFlags
   output: Output
-}
-
-/**
- * The parts of an undeploy that differ per application backend. The shared
- * sequence — mode selection, target reporting, confirmation, error handling —
- * lives in `runUndeploy`; adapters only resolve and delete.
- */
-export interface UndeployAdapter {
-  /** Resolves what an undeploy would delete; read-only. */
-  resolveTarget(): Promise<UndeployTargetResolution>
-  type: 'coreApp' | 'studio'
-  /** Deletes the target — the only mutating step, never run on a dry run. */
-  undeploy(target: UndeployTarget): Promise<void>
 }
 
 /** What a real undeploy produced — the payload `--json` reports. */
@@ -134,7 +124,7 @@ async function undeployApp(
   }
   spin.succeed()
 
-  printUndeployScheduled(target, output)
+  printUndeployed(target, output)
   return {application: target, undeployed: true}
 }
 
@@ -167,22 +157,39 @@ async function resolveTarget(
 }
 
 function confirmUndeployMessage(target: UndeployTarget): string {
+  if (target.deletes === 'config') {
+    return `This will delete the deployed config for ${styleText(
+      'yellow',
+      target.title ?? 'this app',
+    )}. The installation itself stays installed.
+Are you ${styleText('red', 'sure')} you want to undeploy?`
+  }
+
   if (target.type === 'coreApp') {
     return `This will undeploy the following application:
 
     Title: ${styleText('yellow', target.title || '(untitled application)')}
-    ID:    ${styleText('yellow', target.id)}
+    ID:    ${styleText('yellow', target.id ?? '(unknown)')}
 
 The application will no longer be available for any of your users if you proceed.
 
 Are you ${styleText('red', 'sure')} you want to undeploy?`
   }
 
-  return `This will undeploy ${styleText('yellow', target.url ?? target.id)} and make it unavailable for your users.
+  return `This will undeploy ${styleText('yellow', target.url ?? target.id ?? 'this studio')} and make it unavailable for your users.
 Are you ${styleText('red', 'sure')} you want to undeploy?`
 }
 
-function printUndeployScheduled(target: UndeployTarget, output: Output): void {
+function printUndeployed(target: UndeployTarget, output: Output): void {
+  if (target.deletes === 'config') {
+    // Verified server behavior: the config drops out of history immediately, but
+    // applications already resolving it keep working until its content is purged.
+    output.log(
+      `\n${styleText('bold', 'Config deleted.')} Applications still resolving it keep working until the content is purged.`,
+    )
+    return
+  }
+
   if (target.type === 'coreApp') {
     output.log(
       `\n${styleText('bold', '⏱️ Application undeploy scheduled.')} It might be a few minutes until ${

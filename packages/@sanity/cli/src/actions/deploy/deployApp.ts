@@ -4,6 +4,7 @@ import {createGzip} from 'node:zlib'
 
 import {exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   buildExposes,
@@ -41,7 +42,6 @@ import {listDeploymentFiles, reportExposes} from './deploymentPlan.js'
 import {type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
-import {getCoreAppUrl} from './urlUtils.js'
 
 const APP_PACKAGE = '@sanity/sdk-react'
 
