@@ -26,6 +26,7 @@ describe('writeWorkbenchRuntime', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('creates the workbench directory, writes both entry files, and returns the dir', async () => {
@@ -67,6 +68,21 @@ describe('writeWorkbenchRuntime', () => {
     expect(html).toContain('<meta charset="UTF-8" />')
     expect(html).toContain('<div id="workbench">')
     expect(html).toContain('<script type="module" src="./workbench.js">')
+  })
+
+  describe('staging runtime flag', () => {
+    test.each([
+      ['staging', true],
+      ['production', false],
+      [undefined, false],
+    ])('with SANITY_INTERNAL_ENV=%s the shell sets the flag to %s', async (env, expected) => {
+      vi.stubEnv('SANITY_INTERNAL_ENV', env)
+
+      await writeWorkbenchRuntime({cwd: CWD, reactStrictMode: false})
+
+      const html = written('index.html')
+      expect(html).toContain(`<script>globalThis.__SANITY_STAGING__ = ${expected}</script>`)
+    })
   })
 
   describe('prefetch hints', () => {
