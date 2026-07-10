@@ -25,6 +25,7 @@ function target(overrides: Partial<UndeployTarget> = {}): UndeployTarget {
     appHost: 'my-studio',
     createdAt: null,
     deletes: 'application',
+    id: 'app-1',
     organizationId: null,
     projectId: 'project-1',
     title: null,

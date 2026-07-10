@@ -75,7 +75,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
       workbench: workbenchApp(),
     }).resolveTarget()
 
-    expect(resolution).toMatchObject({message: 'No application ID provided', type: 'none'})
+    expect(resolution).toMatchObject({message: 'No `deployment.appId` configured', type: 'none'})
     expect(mockRequest).not.toHaveBeenCalled()
   })
 

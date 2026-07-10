@@ -86,6 +86,7 @@ function toUndeployTarget(
     appHost: application.appHost ?? null,
     createdAt: application.createdAt ?? null,
     deletes: 'application',
+    id: application.id,
     organizationId: application.organizationId ?? null,
     projectId: application.projectId ?? null,
     title: application.title ?? null,

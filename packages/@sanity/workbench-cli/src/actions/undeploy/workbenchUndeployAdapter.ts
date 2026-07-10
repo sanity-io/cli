@@ -80,8 +80,8 @@ async function resolveApplicationTarget({
 }): Promise<UndeployTargetResolution<WorkbenchUndeployTarget>> {
   if (!appId) {
     return {
-      message: 'No application ID provided',
-      solution: 'Set `deployment.appId` in sanity.cli.js or sanity.cli.ts',
+      message: 'No `deployment.appId` configured',
+      solution: 'Add `deployment.appId` to sanity.cli.ts',
       type: 'none',
     }
   }
