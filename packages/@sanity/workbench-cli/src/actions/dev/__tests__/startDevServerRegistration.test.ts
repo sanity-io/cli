@@ -164,7 +164,9 @@ describe('startDevServerRegistration', () => {
     const params = {configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}
     await expect(extract(params)).resolves.toEqual({
       configs: [],
-      interfaces: [{entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed'}],
+      interfaces: [
+        {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed', version: 1},
+      ],
       manifest,
     })
     expect(mockExtractManifest).toHaveBeenCalledWith(params)

@@ -611,7 +611,7 @@ describe('startWorkbenchDevServer', () => {
       watchCallback([
         {host: 'localhost', id: 'app-1', pid: 2, port: 3334, type: 'studio'},
         {
-          configs: [{...config, id: 'cfg-hash', moduleName: 'media-library'}],
+          configs: [{...config, id: 'cfg-hash', moduleName: 'media-library', version: 1}],
           host: 'localhost',
           pid: 3,
           port: 3337,
@@ -637,6 +637,7 @@ describe('startWorkbenchDevServer', () => {
             id: 'cfg-hash',
             moduleName: 'media-library',
             remoteURL: 'http://localhost:3337',
+            version: 1,
           },
         ],
       })

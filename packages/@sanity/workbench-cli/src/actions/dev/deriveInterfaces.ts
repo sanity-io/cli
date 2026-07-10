@@ -2,6 +2,11 @@ import {hash} from 'node:crypto'
 
 import {type CliConfig} from '@sanity/cli-core'
 
+import {
+  MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
+  SERVICE_CONTRACT_VERSION,
+  VIEW_CONTRACT_VERSION,
+} from '../../contract.js'
 import {isWorkbenchApp, readConfig} from '../../defineApp.js'
 import {type DevServerManifest} from './registry.js'
 
@@ -17,7 +22,9 @@ export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
  * navigable `app` view (`entry_point` is the raw `src`, not a resolved URL).
  * `undefined` for a non-branded app; a studio that declares `entry` is rejected
  * (studio app views are not implemented yet). The config is not an
- * interface — see {@link deriveConfigs}.
+ * interface — see {@link deriveConfigs}. `version` is the contract version the
+ * interface's generated module exports, known before the module runs; the app
+ * view has no versioned contract, so it carries none.
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
@@ -34,11 +41,13 @@ export function deriveInterfaces(
       entry_point: view.src,
       interface_type: view.type,
       name: view.name,
+      version: VIEW_CONTRACT_VERSION,
     })) ?? []),
     ...(app.services?.map((service) => ({
       entry_point: service.src,
       interface_type: service.type,
       name: service.name,
+      version: SERVICE_CONTRACT_VERSION,
     })) ?? []),
     ...(app.entry === undefined
       ? []
@@ -69,7 +78,8 @@ export function deriveConfigEntries(config: DevServerConfig): {name: string; src
  * repoint rebuilds. `appType` routes the config to the singleton (no app id to
  * key on). `id` is a content hash of the entry — it fills the
  * installation-config id slot deployed apps get from the applications API,
- * and the workbench keys change detection on it.
+ * and the workbench keys change detection on it. `version` is the config
+ * contract version the generated module exports, known before the module runs.
  */
 export function deriveConfigs(app: CliConfig['app']): DevServerConfig[] {
   if (!isWorkbenchApp(app)) return []
@@ -84,6 +94,7 @@ export function deriveConfigs(app: CliConfig['app']): DevServerConfig[] {
       title: field.title,
     })),
     moduleName: app.name,
+    version: MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
   }
   return [{...entry, id: hash('sha1', JSON.stringify(entry))}]
 }

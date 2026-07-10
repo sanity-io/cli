@@ -18,6 +18,7 @@ const mlConfig = (fields: DevServerConfig['fields']): DevServerConfig => ({
   appType: 'media-library',
   fields,
   id: 'cfg-hash',
+  version: 1,
 })
 const config = mlConfig([{name: 'd', src: './src/d.ts', title: 'D'}])
 const server = (
