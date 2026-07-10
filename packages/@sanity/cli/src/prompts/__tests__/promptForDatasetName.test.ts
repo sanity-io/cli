@@ -32,7 +32,7 @@ describe('promptForDatasetName', () => {
       })
       promptForDatasetName({}, ['robin'])
     })
-    test('should prevent duplicate dataset names', () => {
+    test('should prevent invalid dataset names', () => {
       expect.assertions(1)
       const err = 'laughable name'
       mockValidate.mockReturnValue(err)
