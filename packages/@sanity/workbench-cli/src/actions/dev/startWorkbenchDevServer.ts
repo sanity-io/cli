@@ -43,9 +43,10 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
     // The registry stores the config flat; the workbench wire shape nests the
     // type-specific payload (`fields` for a media library) under `config`, keyed
     // by the `appType` discriminator.
-    (configs ?? []).map(({appType, moduleName, ...config}) => ({
+    (configs ?? []).map(({appType, id, moduleName, ...config}) => ({
       appType,
       config,
+      id,
       moduleName,
       remoteURL: `http://${host}:${port}`,
     })),

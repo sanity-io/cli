@@ -51,6 +51,9 @@ const devServerManifestSchema = z.object({
             title: z.string(),
           }),
         ),
+        // Content hash of the config — the workbench's change-detection key
+        // (see deriveConfigs).
+        id: z.string(),
         // The app's `unstable_defineApp` name — the module-federation alias the
         // workbench loads this config's live values from.
         moduleName: z.optional(z.string()),
