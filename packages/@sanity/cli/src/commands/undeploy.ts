@@ -20,12 +20,21 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
       command: '<%= config.bin %> <%= command.id %> --dry-run',
       description: 'Report what would be undeployed without deleting anything',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --json --yes',
+      description: 'Undeploy without prompting and report the result as JSON',
+    },
   ]
 
   static override flags = {
     'dry-run': Flags.boolean({
       default: false,
       description: 'Report what would be undeployed without deleting anything',
+    }),
+    json: Flags.boolean({
+      char: 'j',
+      default: false,
+      description: 'Output the result as JSON',
     }),
     yes: Flags.boolean({
       char: 'y',
