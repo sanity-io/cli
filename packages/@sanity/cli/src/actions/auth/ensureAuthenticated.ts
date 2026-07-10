@@ -4,11 +4,11 @@ import {
   type Output,
   type SanityOrgUser,
 } from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
 import {LoginError} from '../../errors/LoginError.js'
 import {getCliUser} from '../../services/user.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {login} from './login/login.js'
 
 /**

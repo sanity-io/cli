@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {exitCodes} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   buildExposes,
@@ -22,7 +23,6 @@ import {
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildApp} from '../build/buildApp.js'
 import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'

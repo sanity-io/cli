@@ -1,10 +1,11 @@
-import {type CliConfig, exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, getLocalPackageVersion} from '@sanity/cli-core'
+import {type Check, type CheckReporter as CheckReporterFor, runStep} from '@sanity/cli-core/checks'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput, type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
 import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {
   getAutoUpdateIssueMessage,
   getAutoUpdateMigrationHint,
@@ -22,8 +23,6 @@ import {
 } from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
 import {getCoreAppUrl} from './urlUtils.js'
-
-type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
 
 /**
  * Where a deploy resolves to, computed once from the deploy-target verdict. The
@@ -47,82 +46,20 @@ export interface DeployTarget {
   slug?: string
 }
 
-export interface DeployCheck {
-  message: string
-  status: DeployCheckStatus
-
+export interface DeployCheck extends Check {
   /** Set on the config check with its summary both reporters read. */
   config?: string
-  /** Exit code a real deploy uses when this check fails; defaults to 1 */
-  exitCode?: number
   /** Set on the exposes check with the workbench exposes both reporters read. */
   exposes?: DeployedExpose[]
   /** Set on the singleton check when the app declares the flag explicitly. */
   isSingleton?: boolean
-  /** Actionable fix, shown under a failing or warning check */
-  solution?: string
   /** Set on the deploy-target check with the resolved target both reporters read. */
   target?: DeployTarget
   /** Set on the package-version check with the version both reporters read. */
   version?: string
 }
 
-/**
- * Where deploy steps send their check outcomes — and the only place the deploy
- * mode lives. A real deploy fails fast: a `fail` prints and exits immediately,
- * which aborts the sequence. A dry run collects every outcome and never exits.
- * Steps just call `report`; they never know which mode is running.
- */
-export interface CheckReporter {
-  report(check: DeployCheck): void
-}
-
-export function createFailFastReporter(output: Output): CheckReporter {
-  return {
-    report(check) {
-      // Fixes surface in both modes: appended after the message here, and in the
-      // dry-run report, so the problem and its fix never drift apart.
-      const text = check.solution ? `${check.message}: ${check.solution}` : check.message
-      if (check.status === 'fail') {
-        output.error(text, {exit: check.exitCode ?? 1})
-      } else if (check.status === 'warn') {
-        output.warn(text)
-      }
-    },
-  }
-}
-
-export function createCollectingReporter(): CheckReporter & {results: DeployCheck[]} {
-  const results: DeployCheck[] = []
-  return {
-    report(check) {
-      results.push(check)
-    },
-    results,
-  }
-}
-
-/**
- * Runs a fallible step and turns a throw into a `fail` check. In a real deploy
- * that fail exits (aborting the run); in a dry run it's recorded and `null`
- * comes back so the caller can skip the rest of the step. `name` labels the
- * step in debug logs.
- */
-export async function runStep<T>(
-  reporter: CheckReporter,
-  name: string,
-  work: () => Promise<T>,
-  formatError: (err: unknown) => string = getErrorMessage,
-  solution?: string,
-): Promise<T | null> {
-  try {
-    return await work()
-  } catch (err) {
-    deployDebug(`${name} step failed`, err)
-    reporter.report({message: formatError(err), solution, status: 'fail'})
-    return null
-  }
-}
+export type CheckReporter = CheckReporterFor<DeployCheck>
 
 export async function checkPackageVersion(
   reporter: CheckReporter,
@@ -202,16 +139,16 @@ export async function checkBuild(
     return
   }
 
-  await runStep(
-    reporter,
-    'build',
-    async () => {
+  await runStep(reporter, {
+    debug: deployDebug,
+    formatError: (err) => `Build failed: ${getErrorMessage(err)}`,
+    name: 'build',
+    solution: 'Fix the build error above, then retry',
+    work: async () => {
       await build()
       reporter.report({message: successMessage, status: 'pass'})
     },
-    (err) => `Build failed: ${getErrorMessage(err)}`,
-    'Fix the build error above, then retry',
-  )
+  })
 }
 
 /**
@@ -337,26 +274,30 @@ export async function checkAppTarget(
   const {title} = options
   if (options.isWorkbenchApp) {
     const {appId, slug} = options
-    return runStep(reporter, 'target', async () => {
-      const check = describeAppTarget(await resolveWorkbenchApp({appId}), {slug, title})
-      reporter.report(check)
-      return check.target ?? null
+    return runStep(reporter, {
+      debug: deployDebug,
+      name: 'target',
+      work: async () => {
+        const check = describeAppTarget(await resolveWorkbenchApp({appId}), {slug, title})
+        reporter.report(check)
+        return check.target ?? null
+      },
     })
   }
 
   const {appId, organizationId} = options
-  return runStep(
-    reporter,
-    'target',
-    async () => {
+  return runStep(reporter, {
+    debug: deployDebug,
+    formatError: (err) => describeAppTargetError(err, organizationId),
+    name: 'target',
+    work: async () => {
       const check = describeAppTarget(await resolveAppDeployTarget({appId, organizationId}), {
         title,
       })
       reporter.report(check)
       return check.target ?? null
     },
-    (err) => describeAppTargetError(err, organizationId),
-  )
+  })
 }
 
 /** Same contract as {@link describeAppTarget}, for the studio verdicts. */
@@ -450,14 +391,14 @@ export async function checkStudioTarget(
   // Workbench studios always deploy to Sanity hosting, never an external URL.
   const isExternal = options.isWorkbenchApp ? false : options.isExternal
 
-  return runStep(
-    reporter,
-    'target',
-    async () => {
+  return runStep(reporter, {
+    debug: deployDebug,
+    formatError: (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,
+    name: 'target',
+    work: async () => {
       const check = describeStudioTarget(await resolve, {isExternal, title})
       reporter.report(check)
       return check.target ?? null
     },
-    (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,
-  )
+  })
 }

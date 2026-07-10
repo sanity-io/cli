@@ -2,15 +2,11 @@ import {format} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
+import {createCollectingReporter, createFailFastReporter} from '@sanity/cli-core/checks'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
-import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {
-  type CheckReporter,
-  createCollectingReporter,
-  createFailFastReporter,
-  type DeployTarget,
-} from './deployChecks.js'
+import {type CheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {
   type DeploymentFile,
@@ -102,7 +98,7 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
 
 /** Runs the step sequence read-only and gathers the plan a dry run reports. */
 async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise<DeploymentPlan> {
-  const reporter = createCollectingReporter()
+  const reporter = createCollectingReporter<DeployCheck>()
   await spec.run(options, reporter)
   const plan: DeploymentPlan = {
     checks: reporter.results,

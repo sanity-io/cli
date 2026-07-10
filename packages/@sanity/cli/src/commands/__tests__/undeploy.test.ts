@@ -371,6 +371,104 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Studio undeploy scheduled')
   })
 
+  test('dry run reports the studio without deleting it', async () => {
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      query: {appHost: 'my-host', appType: 'studio'},
+      uri: '/projects/test/user-applications',
+    }).reply(200, {
+      activeDeployment: {
+        deployedAt: '2024-01-02T00:00:00Z',
+        deployedBy: 'gustav@sanity.io',
+        version: '3.99.0',
+      },
+      appHost: 'my-host',
+      id: 'app-id',
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {
+          api: {projectId: 'test'},
+          studioHost: 'my-host',
+        },
+        token: 'test-token',
+      },
+    })
+
+    // No DELETE mock is registered: the afterEach pending-mocks assertion
+    // proves a dry run never calls it.
+    expect(confirm).not.toHaveBeenCalled()
+    expect(stdout).toContain('Dry run — no changes made.')
+    expect(stdout).toContain('Undeploys studio https://my-host.sanity.studio')
+    expect(stdout).toContain('This studio can be undeployed.')
+    expect(stdout).toContain('version 3.99.0')
+  })
+
+  test('dry run reports the application without deleting it', async () => {
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      query: {appType: 'coreApp'},
+      uri: '/user-applications/core-id',
+    }).reply(200, {
+      appHost: 'core-host',
+      id: 'core-id',
+      organizationId: 'org-id',
+      title: 'core-app',
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {
+          app: {},
+          deployment: {appId: 'core-id'},
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Dry run — no changes made.')
+    expect(stdout).toContain('Undeploys application "core-app" (core-id)')
+    expect(stdout).toContain('This application can be undeployed.')
+  })
+
+  test('dry run with nothing to undeploy exits cleanly', async () => {
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {
+          api: {projectId: 'test'},
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Dry run — no changes made.')
+    expect(stdout).toContain('No application ID or studio host provided')
+    expect(stdout).toContain('Nothing to undeploy.')
+  })
+
+  test('dry run exits non-zero when the target cannot be resolved', async () => {
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      query: {appHost: 'my-host', appType: 'studio'},
+      uri: '/projects/test/user-applications',
+    }).reply(500, {message: 'Generic error'})
+
+    const {error, stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {
+          api: {projectId: 'test'},
+          studioHost: 'my-host',
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain("This studio can't be undeployed.")
+    expect(stdout).toContain('Generic error')
+    expect(error?.message).toContain('Undeploy blocked by failing checks.')
+  })
+
   test('handles error when deployment.appId does not exist for the org', async () => {
     mockApi({
       apiVersion: 'v2024-08-01',

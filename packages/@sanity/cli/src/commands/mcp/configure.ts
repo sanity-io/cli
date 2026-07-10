@@ -1,10 +1,10 @@
 import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage, toError} from '@sanity/cli-core/errors'
 
 import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
 import {setupMCP} from '../../actions/mcp/setupMCP.js'
 import {LoginError} from '../../errors/LoginError.js'
 import {MCPConfigureTrace} from '../../telemetry/mcp.telemetry.js'
-import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
 
 const debug = subdebug('mcp:configure')
 

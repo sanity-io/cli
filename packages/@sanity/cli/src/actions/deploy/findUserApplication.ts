@@ -5,6 +5,8 @@
  */
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {createFailFastReporter} from '@sanity/cli-core/checks'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
 import {
@@ -13,13 +15,7 @@ import {
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {
-  createFailFastReporter,
-  describeAppTarget,
-  describeAppTargetError,
-  describeStudioTarget,
-} from './deployChecks.js'
+import {describeAppTarget, describeAppTargetError, describeStudioTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from './resolveDeployTarget.js'
 
