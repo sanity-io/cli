@@ -1,9 +1,9 @@
 import path from 'node:path'
 
-import {getModuleUrl} from '@sanity/cli-build/_internal/actions/build/getAutoUpdatesImportMap'
 import {
   type CompareDependencyVersions,
   type CompareDependencyVersionsResult,
+  getModuleUrl,
   type UnresolvedPrerelease,
 } from '@sanity/cli-build/_internal/build'
 import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core/package-manager'

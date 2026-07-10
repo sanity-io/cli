@@ -14,8 +14,11 @@ import {promptForDefaultConfig} from '../../prompts/promptForDefaultConfig.js'
 import {promptForProjectName} from '../../prompts/promptForProjectName.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
-import {OrganizationCreateResponse, ProjectOrganization} from '../../services/organizations.js'
-import {createProject, CreateProjectResult} from '../../services/projects.js'
+import {
+  type OrganizationCreateResponse,
+  type ProjectOrganization,
+} from '../../services/organizations.js'
+import {createProject, type CreateProjectResult} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
 
 const debug = subdebug('projects:create')
