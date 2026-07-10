@@ -2,10 +2,9 @@ import {mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 
+import {compareDependencyVersions} from '@sanity/cli-build/_internal/build'
 import {gt, valid} from 'semver'
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
-
-import {compareDependencyVersions} from '../../../src/util/compareDependencyVersions.js'
 
 describe('compareDependencyVersions (integration)', {timeout: 30_000}, () => {
   let workDir: string

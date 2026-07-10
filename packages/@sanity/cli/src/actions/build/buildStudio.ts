@@ -1,8 +1,10 @@
-import {buildStudio as internalBuildStudio} from '@sanity/cli-build/_internal/build'
+import {
+  compareDependencyVersions,
+  buildStudio as internalBuildStudio,
+} from '@sanity/cli-build/_internal/build'
 import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
-import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'

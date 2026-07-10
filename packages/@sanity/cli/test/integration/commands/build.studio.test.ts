@@ -14,16 +14,24 @@ const mockedCompareDependencyVersions = vi.hoisted(() => vi.fn())
 const mockedUpgradePackages = vi.hoisted(() => vi.fn())
 const mockedIsInteractive = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
+  const original = await importOriginal()
+  return {
+    ...original,
+    compareDependencyVersions: mockedCompareDependencyVersions,
+  }
+})
+
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const original = await importOriginal()
   return {
     ...original,
     isInteractive: mockedIsInteractive,
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
+vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
+  const original = await importOriginal()
   return {
     ...original,
     confirm: mockedConfirm,
@@ -31,11 +39,7 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   }
 })
 
-vi.mock('../../../src/util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: mockedCompareDependencyVersions,
-}))
-
-vi.mock('../../../src/util/packageManager/upgradePackages.js', () => ({
+vi.mock(import('../../../src/util/packageManager/upgradePackages.js'), () => ({
   upgradePackages: mockedUpgradePackages,
 }))
 
