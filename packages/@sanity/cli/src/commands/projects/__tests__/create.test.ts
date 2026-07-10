@@ -12,6 +12,8 @@ const mockGetProjectFeatures = vi.hoisted(() => vi.fn())
 const mockListDatasets = vi.hoisted(() => vi.fn())
 const mockGetManageUrl = vi.hoisted(() => vi.fn())
 const mockPromptForProjectName = vi.hoisted(() => vi.fn())
+const mockPromptForDefaultConfig = vi.hoisted(() => vi.fn())
+const mockPromptForDatasetName = vi.hoisted(() => vi.fn())
 
 vi.mock(
   '@sanity/cli-core/SanityCommand',
@@ -31,10 +33,10 @@ vi.mock('../../../actions/projects/getManageUrl.js', () => ({
   getManageUrl: mockGetManageUrl,
 }))
 vi.mock('../../../prompts/promptForDatasetName.js', () => ({
-  promptForDatasetName: vi.fn(),
+  promptForDatasetName: mockPromptForDatasetName,
 }))
 vi.mock('../../../prompts/promptForDefaultConfig.js', () => ({
-  promptForDefaultConfig: vi.fn(),
+  promptForDefaultConfig: mockPromptForDefaultConfig,
 }))
 vi.mock('../../../prompts/promptForProjectName.js', () => ({
   promptForProjectName: mockPromptForProjectName,
@@ -64,6 +66,7 @@ const mockManageUrl = 'sanity.lol'
 
 describe('#projects:create', () => {
   beforeEach(() => {
+    mocks.SanityCmdIsUnattended.mockReturnValue(false)
     mockValidateDatasetName.mockReturnValue(null) // returns error if invalid
     mockGetOrganization.mockResolvedValue(mockOrg)
     mockCreateProject.mockResolvedValue(mockProject)
@@ -127,65 +130,70 @@ describe('#projects:create', () => {
     )
   })
 
-  test('creates project with dataset in unattended mode when dataset name provided as flag', async () => {
-    mockCreateDataset.mockResolvedValue({
-      aclMode: 'private',
-      datasetName: 'staging',
+  describe('in unattended mode', () => {
+    beforeEach(() => {
+      mocks.SanityCmdIsUnattended.mockReturnValue(true)
+    })
+    test('creates project with dataset in unattended mode when dataset name provided as flag', async () => {
+      mockCreateDataset.mockResolvedValue({
+        aclMode: 'private',
+        datasetName: 'staging',
+      })
+
+      await CreateProjectCommand.run([
+        '--yes',
+        '--dataset=staging',
+        '--dataset-visibility=private',
+        '--organization=org-1',
+      ])
+
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Project created successfully'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining(mockProject.displayName),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining(mockProject.projectId),
+      )
+      expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringMatching(/Dataset: staging/i),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringMatching(mockManageUrl))
     })
 
-    await CreateProjectCommand.run([
-      '--yes',
-      '--dataset=staging',
-      '--dataset-visibility=private',
-      '--organization=org-1',
-    ])
+    test('creates project without dataset in unattended mode if no dataset name provided as flag', async () => {
+      mockCreateDataset.mockResolvedValue({
+        aclMode: 'private',
+        datasetName: 'staging',
+      })
 
-    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
-      expect.stringContaining('Project created successfully'),
-    )
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
-      expect.stringContaining(mockProject.displayName),
-    )
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
-      expect.stringContaining(mockProject.projectId),
-    )
-    expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
-      expect.stringMatching(/Dataset: staging/i),
-    )
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringMatching(mockManageUrl))
-  })
+      await CreateProjectCommand.run(['--yes', '--organization=org-1'])
 
-  test('creates project without dataset in unattended mode if no dataset name provided as flag', async () => {
-    mockCreateDataset.mockResolvedValue({
-      aclMode: 'private',
-      datasetName: 'staging',
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Project created successfully'),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining(mockProject.displayName),
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining(mockProject.projectId),
+      )
+      expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(expect.stringMatching(/Dataset:/i))
     })
-
-    await CreateProjectCommand.run(['--yes', '--organization=org-1'])
-
-    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
-      expect.stringContaining('Project created successfully'),
-    )
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
-      expect.stringContaining(mockProject.displayName),
-    )
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
-      expect.stringContaining(mockProject.projectId),
-    )
-    expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
-    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(expect.stringMatching(/Dataset:/i))
   })
 
   test('creates project with dataset when user confirms and chooses default config', async () => {
     mockCreateDataset.mockResolvedValue({
       aclMode: 'private',
-      datasetName: 'staging',
+      datasetName: 'production',
     })
     uxMocks.confirm.mockResolvedValue(true) // Would you like to create a dataset?
-    uxMocks.confirm.mockResolvedValue(true) // Use default config?
+    mockPromptForDefaultConfig.mockResolvedValue(true) // sets dataset name to production
 
     await CreateProjectCommand.run(['New Project'])
 
@@ -200,8 +208,37 @@ describe('#projects:create', () => {
       expect.stringContaining(mockProject.projectId),
     )
     expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
-    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
-      expect.stringMatching(/Dataset: staging/i),
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringMatching(/Dataset:/i))
+    expect(mockCreateDataset).toHaveBeenCalledWith(
+      expect.objectContaining({datasetName: 'production'}),
+    )
+  })
+
+  test('creates project with dataset when user confirms but chooses not default config and is prompted for dataset name', async () => {
+    mockCreateDataset.mockResolvedValue({
+      aclMode: 'private',
+      datasetName: 'staging',
+    })
+    uxMocks.confirm.mockResolvedValue(true) // Would you like to create a dataset?
+    mockPromptForDefaultConfig.mockResolvedValue(false)
+    mockPromptForDatasetName.mockResolvedValue('staging')
+
+    await CreateProjectCommand.run(['New Project'])
+
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Project created successfully'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.displayName),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.projectId),
+    )
+    expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringMatching(/Dataset:/i))
+    expect(mockCreateDataset).toHaveBeenCalledWith(
+      expect.objectContaining({datasetName: 'staging'}),
     )
   })
 
