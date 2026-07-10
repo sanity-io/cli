@@ -17,10 +17,15 @@ const mockWriteSanityRuntime = vi.hoisted(() => vi.fn())
 const mockResolveEntries = vi.hoisted(() => vi.fn())
 const mockCopyDir = vi.hoisted(() => vi.fn())
 const mockWriteFavicons = vi.hoisted(() => vi.fn())
+const mockBuildWorkbenchHost = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
   build: mockBuild,
   createBuilder: mockCreateBuilder,
+}))
+
+vi.mock('@sanity/workbench-cli/build', () => ({
+  buildWorkbenchHost: mockBuildWorkbenchHost,
 }))
 
 vi.mock('../../../util/copyDir.js', () => ({
@@ -82,6 +87,7 @@ describe('buildStaticFiles', () => {
         basePath: '/',
         cwd,
         isWorkbenchApp: true,
+        organizationId: 'org-123',
         outputDir,
         vite: userVite,
       })
@@ -109,11 +115,44 @@ describe('buildStaticFiles', () => {
         basePath: '/',
         cwd,
         isWorkbenchApp: true,
+        organizationId: 'org-123',
         outputDir,
       })
 
       expect(mockWriteSanityRuntime).not.toHaveBeenCalled()
       expect(mockBuild).not.toHaveBeenCalled()
+    })
+
+    test('bundles the host shell into the output dir after the federation build', async () => {
+      await buildStaticFiles({
+        basePath: '/',
+        cwd,
+        isWorkbenchApp: true,
+        organizationId: 'org-123',
+        outputDir,
+      })
+
+      expect(mockBuildWorkbenchHost).toHaveBeenCalledWith({
+        basePath: '/',
+        cwd,
+        minify: true,
+        organizationId: 'org-123',
+        outputDir,
+        sourceMap: false,
+      })
+      // The federation env empties the output dir when it builds, so the host
+      // shell must land after it.
+      expect(mockBuildApp.mock.invocationCallOrder[0]).toBeLessThan(
+        mockBuildWorkbenchHost.mock.invocationCallOrder[0],
+      )
+    })
+
+    test('throws without an organizationId — the host shell needs one', async () => {
+      await expect(
+        buildStaticFiles({basePath: '/', cwd, isWorkbenchApp: true, outputDir}),
+      ).rejects.toThrow('Workbench requires an organization ID')
+
+      expect(mockBuildWorkbenchHost).not.toHaveBeenCalled()
     })
 
     test('threads schemaExtraction through so a federated studio still extracts its schema', async () => {
@@ -123,6 +162,7 @@ describe('buildStaticFiles', () => {
         basePath: '/',
         cwd,
         isWorkbenchApp: true,
+        organizationId: 'org-123',
         outputDir,
         schemaExtraction,
       })

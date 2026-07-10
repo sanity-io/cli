@@ -23,6 +23,8 @@ export interface WorkbenchExposes {
 export interface ResolvedWorkbenchApp {
   /** The app's unique `name` from `unstable_defineApp`. */
   readonly name: string
+  /** The owning organization's ID from `unstable_defineApp`. */
+  readonly organizationId: string
   /** Background worker services the app declares. */
   readonly services: NonNullable<DefineAppInput['services']>
 
@@ -57,6 +59,7 @@ export function resolveWorkbenchApp(
     entry: app.entry,
     isSingleton: app.isSingleton,
     name: app.name,
+    organizationId: app.organizationId,
     services: app.services ?? [],
     slug: app.slug,
     views: app.views ?? [],

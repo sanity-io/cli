@@ -3,9 +3,9 @@ import {join} from 'node:path'
 
 /**
  * Throws unless `sourceDir` is a directory holding a federation build.
- * Workbench builds emit a module-federation remote instead of a static SPA,
- * so the usual `index.html` contract doesn't apply — `mf-manifest.json` is the
- * marker that `sanity build` produced a federation build.
+ * Workbench builds emit a module-federation remote plus the host shell, so
+ * `mf-manifest.json` — not `index.html` — is the marker that `sanity build`
+ * produced a federation build.
  */
 export async function checkBuiltOutput(sourceDir: string): Promise<void> {
   try {

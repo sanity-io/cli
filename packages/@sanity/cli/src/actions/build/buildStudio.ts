@@ -55,6 +55,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     isApp: determineIsApp(cliConfig),
     isWorkbenchApp: !!workbench,
     minify: Boolean(flags.minify),
+    organizationId: workbench?.organizationId,
     outDir,
     output,
     reactCompiler: cliConfig.reactCompiler,

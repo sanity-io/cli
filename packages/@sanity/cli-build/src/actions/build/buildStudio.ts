@@ -53,6 +53,9 @@ export interface BuildOptions {
 
   exposes?: WorkbenchExposes
 
+  /** The workbench app's owning organization — required to bundle the host shell. */
+  organizationId?: string
+
   /** The workbench app's bus identity (`__SANITY_APP_ID__`). */
   workbenchAppId?: string
 }
@@ -248,6 +251,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       exposes,
       isWorkbenchApp: options.isWorkbenchApp,
       minify,
+      organizationId: options.organizationId,
       outputDir,
       reactCompiler,
       schemaExtraction,

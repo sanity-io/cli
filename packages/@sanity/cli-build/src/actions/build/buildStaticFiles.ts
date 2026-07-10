@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
-import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
+import {buildWorkbenchHost, type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
 
@@ -39,6 +39,8 @@ interface StaticBuildOptions {
   /** Workbench app (opted in via `unstable_defineApp`) — drives the federation build. */
   isWorkbenchApp?: boolean
   minify?: boolean
+  /** The workbench app's owning organization — required to bundle the host shell. */
+  organizationId?: string
   profile?: boolean
   reactCompiler?: ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
@@ -66,6 +68,7 @@ export async function buildStaticFiles(
     isApp,
     isWorkbenchApp,
     minify = true,
+    organizationId,
     outputDir,
     reactCompiler,
     schemaExtraction,
@@ -120,6 +123,18 @@ export async function buildStaticFiles(
     const builder = await createBuilder(viteConfig)
     await builder.buildApp()
     buildDebug('Bundling complete')
+
+    if (!organizationId) {
+      throw new Error(
+        'Workbench requires an organization ID. Pass "organizationId" to unstable_defineApp() in sanity.cli.ts.',
+      )
+    }
+    // The remote alone isn't servable — bundle the host shell (index.html +
+    // renderWorkbench) so hosting has an entry point at the app's slug.
+    buildDebug('Bundling workbench host shell')
+    await buildWorkbenchHost({basePath, cwd, minify, organizationId, outputDir, sourceMap})
+    buildDebug('Host shell bundling complete')
+
     // TODO: add stats here
     return {chunks: []}
   }

@@ -48,6 +48,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       : undefined,
     isWorkbenchApp: !!workbench,
     minify: flags.minify,
+    organizationId: workbench?.organizationId,
     outDir,
     output,
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,

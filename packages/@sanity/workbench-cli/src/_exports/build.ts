@@ -4,5 +4,6 @@
 // deploy-time guards, so it takes the bare `resolveWorkbenchApp` — the guarded
 // view (`getWorkbench`) is the deploy entry's export.
 
+export {buildWorkbenchHost} from '../actions/build/buildWorkbenchHost.js'
 export {workbenchVitePlugins} from '../actions/build/vite/workbench-vite-plugins.js'
 export {resolveWorkbenchApp, type WorkbenchExposes} from '../resolveWorkbenchApp.js'
