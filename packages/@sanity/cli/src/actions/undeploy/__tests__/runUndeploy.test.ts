@@ -193,8 +193,7 @@ describe('runUndeploy --json', () => {
     expect(logged).toHaveLength(1)
     const payload = JSON.parse(logged[0]!)
     expect(payload.canUndeploy).toBe(true)
-    expect(payload.target.applicationId).toBe('app-1')
-    expect(payload.applicationType).toBe('studio')
+    expect(payload.application.id).toBe('app-1')
   })
 
   test('a real run emits an {undeployed: true} envelope with the target', async () => {
@@ -203,17 +202,18 @@ describe('runUndeploy --json', () => {
 
     const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
     expect(payload.undeployed).toBe(true)
-    expect(payload.target.applicationId).toBe('app-1')
+    expect(payload.application.id).toBe('app-1')
   })
 
-  test('a real run without --yes is a usage error, never an implicit consent', async () => {
+  test('a real run without --yes proceeds unattended, never prompting', async () => {
     const output = mockOutput()
     const undeploy = vi.fn()
     await runUndeploy(options(output, {json: true}), adapter({undeploy}))
 
-    expect(undeploy).not.toHaveBeenCalled()
     expect(confirm).not.toHaveBeenCalled()
-    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('Pass --yes'), {exit: 2})
+    expect(undeploy).toHaveBeenCalled()
+    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
+    expect(payload.undeployed).toBe(true)
   })
 
   test('nothing to undeploy emits {undeployed: false} with the reason', async () => {
@@ -320,11 +320,10 @@ describe('undeployPlanToJson', () => {
     })
 
     expect(json).toEqual({
-      applicationType: 'studio',
+      application: target(),
       canUndeploy: false,
       errors: {boom: 'do X'},
       reason: null,
-      target: target(),
       warnings: ['heads up'],
     })
   })
@@ -340,13 +339,13 @@ describe('undeployPlanToJson', () => {
     expect(json.canUndeploy).toBe(false)
     expect(json.errors).toEqual({})
     expect(json.reason).toBe('No application ID provided')
-    expect(json.target).toBeNull()
+    expect(json.application).toBeNull()
   })
 
   test('an undeployable plan reports the full target', () => {
     const json = undeployPlanToJson({checks: [], reason: null, target: target(), type: 'studio'})
     expect(json.canUndeploy).toBe(true)
-    expect(json.target).toEqual(target())
+    expect(json.application).toEqual(target())
   })
 })
 

@@ -1,7 +1,7 @@
 import {format, styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {exitCodes, type Output, subdebug} from '@sanity/cli-core'
+import {type Output, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 
@@ -44,7 +44,7 @@ export interface UndeployAdapter {
 
 /** What a real undeploy produced — the payload `--json` reports. */
 type UndeployResult =
-  | {applicationType: 'coreApp' | 'studio'; target: UndeployTarget; undeployed: true}
+  | {application: UndeployTarget; undeployed: true}
   | {reason: string; undeployed: false}
 
 /**
@@ -123,15 +123,9 @@ async function undeployApp(
   }
 
   const {target} = resolution
-  if (!flags.yes) {
-    // Deleting is destructive, so --json never implies consent the way it does
-    // for deploy — an unattended undeploy must pass --yes explicitly.
-    if (flags.json) {
-      output.error('Cannot confirm the undeploy with --json. Pass --yes (-y) to run unattended.', {
-        exit: exitCodes.USAGE_ERROR,
-      })
-      return undefined
-    }
+  // --json runs unattended: confirmation prompts are for humans, and machine
+  // callers preview with --dry-run.
+  if (!flags.yes && !flags.json) {
     const shouldUndeploy = await confirm({
       default: false,
       message: confirmUndeployMessage(target),
@@ -151,7 +145,7 @@ async function undeployApp(
   spin.succeed()
 
   printUndeployScheduled(target, output)
-  return {applicationType: target.applicationType, target, undeployed: true}
+  return {application: target, undeployed: true}
 }
 
 /**

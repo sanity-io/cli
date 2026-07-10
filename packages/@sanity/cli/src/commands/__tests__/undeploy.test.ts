@@ -489,9 +489,8 @@ describe('#undeploy', () => {
 
     const payload = JSON.parse(stdout)
     expect(payload.canUndeploy).toBe(true)
-    expect(payload.applicationType).toBe('studio')
-    expect(payload.target).toMatchObject({
-      applicationId: 'app-id',
+    expect(payload.application).toMatchObject({
+      id: 'app-id',
       url: 'https://my-host.sanity.studio',
     })
   })
@@ -525,10 +524,10 @@ describe('#undeploy', () => {
 
     const payload = JSON.parse(stdout)
     expect(payload.undeployed).toBe(true)
-    expect(payload.target.applicationId).toBe('app-id')
+    expect(payload.application.id).toBe('app-id')
   })
 
-  test('--json without --yes refuses to undeploy', async () => {
+  test('--json without --yes undeploys unattended, never prompting', async () => {
     mockApi({
       apiVersion: 'v2024-08-01',
       query: {appHost: 'my-host', appType: 'studio'},
@@ -538,7 +537,14 @@ describe('#undeploy', () => {
       id: 'app-id',
     })
 
-    const {error, stdout} = await testCommand(UndeployCommand, ['--json'], {
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
+      query: {appType: 'studio'},
+      uri: '/user-applications/app-id',
+    }).reply(200)
+
+    const {stdout} = await testCommand(UndeployCommand, ['--json'], {
       mocks: {
         cliConfig: {
           api: {projectId: 'test'},
@@ -549,9 +555,8 @@ describe('#undeploy', () => {
     })
 
     expect(confirm).not.toHaveBeenCalled()
-    expect(error?.message).toContain('Pass --yes')
     const payload = JSON.parse(stdout)
-    expect(payload.undeployed).toBe(false)
+    expect(payload.undeployed).toBe(true)
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {

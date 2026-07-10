@@ -49,11 +49,10 @@ export function canUndeploy(plan: UndeployPlan): boolean {
  * report renders, so the two can't drift.
  */
 export function undeployPlanToJson(plan: UndeployPlan): {
-  applicationType: UndeployPlan['type']
+  application: UndeployTarget | null
   canUndeploy: boolean
   errors: Record<string, string | null>
   reason: string | null
-  target: UndeployTarget | null
   warnings: string[]
 } {
   const errors: Record<string, string | null> = {}
@@ -64,11 +63,10 @@ export function undeployPlanToJson(plan: UndeployPlan): {
   }
 
   return {
-    applicationType: plan.type,
+    application: plan.target,
     canUndeploy: canUndeploy(plan),
     errors,
     reason: plan.reason,
-    target: plan.target,
     warnings,
   }
 }
