@@ -15,6 +15,5 @@ export default defineConfig({
     globals: false,
     name: '@sanity/cli/unit',
     setupFiles: ['test/setup.ts'],
-    snapshotSerializers: ['test/snapshotSerializer.ts'],
   },
 })
