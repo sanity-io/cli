@@ -10,17 +10,10 @@ const mockWatch = vi.hoisted(() => vi.fn())
 const mockRenderDocument = vi.hoisted(() => vi.fn())
 const mockWriteFile = vi.hoisted(() => vi.fn())
 
-vi.mock(import('node:fs/promises'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    default: {
-      ...actual.default,
-      mkdir: vi.fn(),
-      writeFile: mockWriteFile,
-    },
-  }
-})
+vi.mock('node:fs/promises', () => ({
+  mkdir: vi.fn(),
+  writeFile: mockWriteFile,
+}))
 vi.mock('@sanity/cli-core/config', () => import('@sanity/cli-test/mocks/cli-core/config'))
 vi.mock('chokidar', () => ({watch: mockWatch}))
 vi.mock('../renderDocument.js', () => ({renderDocument: mockRenderDocument}))
