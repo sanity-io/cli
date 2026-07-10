@@ -1,3 +1,5 @@
+import {hash} from 'node:crypto'
+
 import {type CliConfig} from '@sanity/cli-core'
 
 import {isWorkbenchApp, readConfig} from '../../defineApp.js'
@@ -65,22 +67,23 @@ export function deriveConfigEntries(config: DevServerConfig): {name: string; src
  * The fields' schema *values* can't serialize — the workbench loads them from
  * the federation module. `src` stays on so the exposes-set id keys on it and a
  * repoint rebuilds. `appType` routes the config to the singleton (no app id to
- * key on).
+ * key on). `id` is a content hash of the entry — it fills the
+ * installation-config id slot deployed apps get from the applications API,
+ * and the workbench keys change detection on it.
  */
 export function deriveConfigs(app: CliConfig['app']): DevServerConfig[] {
   if (!isWorkbenchApp(app)) return []
   const config = readConfig(app)
   if (!config) return []
-  return [
-    {
-      appType: config.appType,
-      fields: config.fields.map((field) => ({
-        name: field.name,
-        public: field.public,
-        src: field.src,
-        title: field.title,
-      })),
-      moduleName: app.name,
-    },
-  ]
+  const entry = {
+    appType: config.appType,
+    fields: config.fields.map((field) => ({
+      name: field.name,
+      public: field.public,
+      src: field.src,
+      title: field.title,
+    })),
+    moduleName: app.name,
+  }
+  return [{...entry, id: hash('sha1', JSON.stringify(entry))}]
 }

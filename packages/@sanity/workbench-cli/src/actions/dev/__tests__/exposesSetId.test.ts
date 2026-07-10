@@ -14,10 +14,12 @@ const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => (
   interface_type: 'worker',
   name,
 })
-const config: DevServerConfig = {
+const mlConfig = (fields: DevServerConfig['fields']): DevServerConfig => ({
   appType: 'media-library',
-  fields: [{name: 'd', src: './src/d.ts', title: 'D'}],
-}
+  fields,
+  id: 'cfg-hash',
+})
+const config = mlConfig([{name: 'd', src: './src/d.ts', title: 'D'}])
 const server = (
   id: string,
   port: number,
@@ -69,71 +71,43 @@ describe('exposesSetId', () => {
   })
 
   test('a zero-field config still toggles the id — its module is an expose on its own', () => {
-    const empty: DevServerConfig = {appType: 'media-library', fields: []}
     expect(exposesSetId({interfaces: [panel('a')]})).not.toBe(
-      exposesSetId({configs: [empty], interfaces: [panel('a')]}),
+      exposesSetId({configs: [mlConfig([])], interfaces: [panel('a')]}),
     )
   })
 
   test('a config field add or rename changes the id (module is build-baked)', () => {
-    const one: DevServerConfig = {
-      appType: 'media-library',
-      fields: [{name: 'description', src: './src/d.ts', title: 'Description'}],
-    }
-    const added: DevServerConfig = {
-      appType: 'media-library',
-      fields: [
-        {name: 'description', src: './src/d.ts', title: 'Description'},
-        {name: 'language', src: './src/l.ts', title: 'Language'},
-      ],
-    }
-    const renamed: DevServerConfig = {
-      appType: 'media-library',
-      fields: [{name: 'locale', src: './src/d.ts', title: 'Description'}],
-    }
+    const one = mlConfig([{name: 'description', src: './src/d.ts', title: 'Description'}])
+    const added = mlConfig([
+      {name: 'description', src: './src/d.ts', title: 'Description'},
+      {name: 'language', src: './src/l.ts', title: 'Language'},
+    ])
+    const renamed = mlConfig([{name: 'locale', src: './src/d.ts', title: 'Description'}])
     expect(exposesSetId({configs: [one]})).not.toBe(exposesSetId({configs: [added]}))
     expect(exposesSetId({configs: [one]})).not.toBe(exposesSetId({configs: [renamed]}))
   })
 
   test('a config field pointed at a different file is a rebuild — the module reimports it', () => {
-    const before: DevServerConfig = {
-      appType: 'media-library',
-      fields: [{name: 'x', src: './src/x.ts', title: 'X'}],
-    }
-    const after: DevServerConfig = {
-      appType: 'media-library',
-      fields: [{name: 'x', src: './src/y.ts', title: 'X'}],
-    }
+    const before = mlConfig([{name: 'x', src: './src/x.ts', title: 'X'}])
+    const after = mlConfig([{name: 'x', src: './src/y.ts', title: 'X'}])
     expect(exposesSetId({configs: [before]})).not.toBe(exposesSetId({configs: [after]}))
   })
 
   test('reordering config fields is not a change', () => {
-    const a: DevServerConfig = {
-      appType: 'media-library',
-      fields: [
-        {name: 'x', src: './src/x.ts', title: 'X'},
-        {name: 'y', src: './src/y.ts', title: 'Y'},
-      ],
-    }
-    const b: DevServerConfig = {
-      appType: 'media-library',
-      fields: [
-        {name: 'y', src: './src/y.ts', title: 'Y'},
-        {name: 'x', src: './src/x.ts', title: 'X'},
-      ],
-    }
+    const a = mlConfig([
+      {name: 'x', src: './src/x.ts', title: 'X'},
+      {name: 'y', src: './src/y.ts', title: 'Y'},
+    ])
+    const b = mlConfig([
+      {name: 'y', src: './src/y.ts', title: 'Y'},
+      {name: 'x', src: './src/x.ts', title: 'X'},
+    ])
     expect(exposesSetId({configs: [a]})).toBe(exposesSetId({configs: [b]}))
   })
 
   test('a field title/public edit is not a rebuild — those ride the wire, not the module', () => {
-    const a: DevServerConfig = {
-      appType: 'media-library',
-      fields: [{name: 'x', public: true, src: './src/x.ts', title: 'X'}],
-    }
-    const b: DevServerConfig = {
-      appType: 'media-library',
-      fields: [{name: 'x', public: false, src: './src/x.ts', title: 'Renamed'}],
-    }
+    const a = mlConfig([{name: 'x', public: true, src: './src/x.ts', title: 'X'}])
+    const b = mlConfig([{name: 'x', public: false, src: './src/x.ts', title: 'Renamed'}])
     expect(exposesSetId({configs: [a]})).toBe(exposesSetId({configs: [b]}))
   })
 

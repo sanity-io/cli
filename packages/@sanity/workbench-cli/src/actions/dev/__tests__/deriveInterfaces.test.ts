@@ -112,9 +112,24 @@ describe('deriveConfigs', () => {
           {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
           {name: 'language', public: undefined, src: './src/language.ts', title: 'Language'},
         ],
+        id: expect.any(String),
         moduleName: 'test-app',
       },
     ])
+  })
+
+  test('id is stable for the same config and changes when the config changes', () => {
+    const config = {
+      appType: 'media-library' as const,
+      fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+    }
+    const app = workbenchApp({config, isSingleton: true})
+    const edited = workbenchApp({
+      config: {...config, fields: [{...config.fields[0]!, title: 'Edited'}]},
+      isSingleton: true,
+    })
+    expect(deriveConfigs(app)[0]?.id).toBe(deriveConfigs(app)[0]?.id)
+    expect(deriveConfigs(edited)[0]?.id).not.toBe(deriveConfigs(app)[0]?.id)
   })
 
   test("forwards the config's appType discriminator (assigns the singleton, no app id)", () => {
@@ -149,6 +164,7 @@ describe('deriveConfigEntries', () => {
           {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
           {name: 'language', src: './src/language.ts', title: 'Language'},
         ],
+        id: 'cfg-hash',
       }),
     ).toEqual([
       {name: 'description', src: './src/description.ts'},
@@ -157,11 +173,11 @@ describe('deriveConfigEntries', () => {
   })
 
   test('an empty field set yields no entries', () => {
-    expect(deriveConfigEntries({appType: 'media-library', fields: []})).toEqual([])
+    expect(deriveConfigEntries({appType: 'media-library', fields: [], id: 'cfg-hash'})).toEqual([])
   })
 
   test('throws on an app type it cannot handle', () => {
-    expect(() => deriveConfigEntries({appType: 'core-app', fields: []})).toThrow(
+    expect(() => deriveConfigEntries({appType: 'core-app', fields: [], id: 'cfg-hash'})).toThrow(
       /unknown config appType: core-app/i,
     )
   })
