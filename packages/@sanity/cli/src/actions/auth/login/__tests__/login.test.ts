@@ -2,11 +2,6 @@ import {getCliToken, setCliUserConfig} from '@sanity/cli-core/config'
 import open from 'open'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {startServerForTokenCallback} from '../../authServer.js'
-import {getProvider} from '../getProvider.js'
-import {login} from '../login.js'
-import {validateToken} from '../validateToken.js'
-
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
