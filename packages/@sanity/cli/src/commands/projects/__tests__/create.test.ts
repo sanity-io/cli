@@ -261,7 +261,7 @@ describe('#projects:create', () => {
       expect.stringContaining(mockProject.projectId),
     )
     expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
-      expect.stringMatching(/Dataset: staging/i),
+      expect.stringMatching(/Dataset: production/i),
     )
   })
 
