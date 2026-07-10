@@ -4,7 +4,7 @@
  *
  * @public
  */
-export type {PackageJson, ReadPackageJsonOptions} from '@sanity/cli-core'
+export type {PackageJson, ReadPackageJsonOptions} from '@sanity/cli-core/types'
 
 /**
  * @public

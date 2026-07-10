@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 
 export function resolveReactStrictMode(cliConfig?: CliConfig): boolean | undefined {
   if (process.env.SANITY_STUDIO_REACT_STRICT_MODE) {

@@ -1,7 +1,8 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {extractValidationFromSchemaError} from '@sanity/cli-build/_internal/extract'
-import {getStudioWorkspaces, subdebug} from '@sanity/cli-core'
+import {getStudioWorkspaces} from '@sanity/cli-core/config'
+import {subdebug} from '@sanity/cli-core/debug'
 
 import {extractWorkspaceManifest} from './extractWorkspaceManifest.js'
 import {extractManifestWorkerData} from './types.js'

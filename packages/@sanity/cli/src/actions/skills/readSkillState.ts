@@ -1,4 +1,4 @@
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 import {execa} from 'execa'
 
 import {

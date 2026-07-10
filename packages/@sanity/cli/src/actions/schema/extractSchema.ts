@@ -6,7 +6,8 @@ import {
   SchemaExtractedTrace,
   SchemaExtractionError,
 } from '@sanity/cli-build/_internal/extract'
-import {getCliTelemetry, type Output} from '@sanity/cli-core'
+import {getCliTelemetry} from '@sanity/cli-core/telemetry'
+import {type Output} from '@sanity/cli-core/types'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {schemasExtractDebug} from './utils/debug.js'

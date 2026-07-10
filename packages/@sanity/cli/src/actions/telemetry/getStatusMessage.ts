@@ -1,4 +1,4 @@
-import {type ConsentInformation} from '@sanity/cli-core'
+import {type ConsentInformation} from '@sanity/cli-core/types'
 
 import {getStatusDisplay} from './getStatusDisplay.js'
 

@@ -1,4 +1,4 @@
-import {type CliConfig, type Output, type ProjectRootResult} from '@sanity/cli-core'
+import {type CliConfig, type Output, type ProjectRootResult} from '@sanity/cli-core/types'
 import {z} from 'zod/mini'
 
 import {DeployCommand} from '../../commands/deploy.js'

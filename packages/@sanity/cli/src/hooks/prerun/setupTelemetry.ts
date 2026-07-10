@@ -2,13 +2,10 @@ import {spawn} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
 import {type Hook} from '@oclif/core'
-import {
-  type CliConfig,
-  debug,
-  findProjectRoot,
-  getCliConfig,
-  setCliTelemetry,
-} from '@sanity/cli-core'
+import {findProjectRoot, getCliConfig} from '@sanity/cli-core/config'
+import {debug} from '@sanity/cli-core/debug'
+import {setCliTelemetry} from '@sanity/cli-core/telemetry'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {createSessionId} from '@sanity/telemetry'
 
 import {resolveConsent} from '../../actions/telemetry/resolveConsent.js'

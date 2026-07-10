@@ -1,7 +1,8 @@
 import {fileURLToPath} from 'node:url'
 import {styleText} from 'node:util'
 
-import {type Output, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type Output} from '@sanity/cli-core/types'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {execa} from 'execa'
 

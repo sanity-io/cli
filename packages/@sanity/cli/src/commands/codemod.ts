@@ -3,7 +3,8 @@ import {existsSync} from 'node:fs'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {codemods} from '../actions/codemods/index.js'
 import {type CodeMod} from '../actions/codemods/types.js'

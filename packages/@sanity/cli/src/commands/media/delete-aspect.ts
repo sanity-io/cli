@@ -1,7 +1,8 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {promptForProject} from '../../prompts/promptForProject.js'

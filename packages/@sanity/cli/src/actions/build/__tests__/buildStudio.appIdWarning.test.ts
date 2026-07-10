@@ -1,5 +1,7 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {afterEach, describe, expect, test, vi} from 'vitest'
+
+import {buildStudio} from '../buildStudio.js'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
@@ -39,9 +41,6 @@ vi.mock(import('@sanity/cli-build/_internal/build'), async (importOriginal) => {
       .mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
   }
 })
-
-// Import after mocks are set up
-const {buildStudio} = await import('../buildStudio.js')
 
 function createMockOutput(): Output {
   return {

@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
-import {type Output, studioWorkerTask} from '@sanity/cli-core'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
+import {type Output} from '@sanity/cli-core/types'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {Table} from 'console-table-printer'
 import {type Workspace} from 'sanity'

@@ -67,6 +67,12 @@ vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
+vi.mock('@sanity/workbench-cli/build', () => ({
+  workbenchVitePlugins: mockWorkbenchVitePlugins.mockResolvedValue({
+    name: 'sanity/federation',
+  }),
+}))
+
 vi.mock('../vite/plugin-sanity-vendor-named-exports.js', () => ({
   createVendorNamedExportsPlugin: vi.fn(() => ({name: 'sanity-vendor-named-exporters'})),
 }))

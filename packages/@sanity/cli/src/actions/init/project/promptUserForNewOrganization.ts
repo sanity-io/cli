@@ -1,4 +1,4 @@
-import {type SanityOrgUser} from '@sanity/cli-core'
+import {type SanityOrgUser} from '@sanity/cli-core/types'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {promptForOrganizationName} from '../../../prompts/promptForOrganizationName.js'

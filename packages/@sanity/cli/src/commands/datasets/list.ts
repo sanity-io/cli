@@ -1,4 +1,5 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasetAliases, listDatasets} from '../../services/datasets.js'
@@ -45,22 +46,22 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
     if (datasets.status === 'rejected') {
       const err = datasets.reason as Error
       listDatasetDebug(`Error listing datasets for project ${projectId}`, err)
-      this.error(`Dataset list retrieval failed: ${err.message}`, {exit: 1})
+      return this.output.error(`Dataset list retrieval failed: ${err.message}`, {exit: 1})
     }
 
     const datasetList = datasets.value
     if (datasetList.length === 0) {
-      this.log('No datasets found for this project.')
+      this.output.log('No datasets found for this project.')
     } else {
       for (const dataset of datasetList) {
-        this.log(dataset.name)
+        this.output.log(dataset.name)
       }
     }
 
     if (aliases.status === 'fulfilled' && aliases.value.length > 0) {
       for (const alias of aliases.value) {
         const targetDataset = alias.datasetName || '<unlinked>'
-        this.log(`~${alias.name} -> ${targetDataset}`)
+        this.output.log(`~${alias.name} -> ${targetDataset}`)
       }
     } else if (aliases.status === 'rejected') {
       listDatasetDebug(`Warning: Could not fetch aliases for project ${projectId}`, aliases.reason)

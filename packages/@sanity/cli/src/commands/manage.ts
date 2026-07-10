@@ -1,5 +1,6 @@
 import {type FlagInput} from '@oclif/core/interfaces'
-import {getStudioConfig, SanityCommand} from '@sanity/cli-core'
+import {getStudioConfig} from '@sanity/cli-core/config'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import open from 'open'
 
 import {getManageUrl} from '../actions/projects/getManageUrl.js'
@@ -26,7 +27,7 @@ export class ManageCommand extends SanityCommand<typeof ManageCommand> {
 
     const url = getManageUrl(projectId)
 
-    this.log(`Opening ${url}`)
+    this.output.log(`Opening ${url}`)
     await open(url)
   }
 }

@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockOutput, DEV_FLAGS as FLAGS} from '../../__tests__/testHelpers.js'

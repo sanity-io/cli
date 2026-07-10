@@ -1,6 +1,8 @@
 import {resolve} from 'node:path'
 
-import {type CliConfig, getCliConfig, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {getCliConfig} from '@sanity/cli-core/config'
+import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 

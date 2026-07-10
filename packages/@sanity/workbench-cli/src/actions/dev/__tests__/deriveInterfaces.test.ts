@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {describe, expect, test} from 'vitest'
 
 import {deriveConfigEntries, deriveConfigs, deriveInterfaces} from '../deriveInterfaces.js'

@@ -7,7 +7,7 @@ import {
   runSchemaExtraction,
   SchemaExtractionError,
 } from '@sanity/cli-build/_internal/extract'
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {spinner} from '@sanity/cli-core/ux'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 import debounce from 'lodash-es/debounce.js'

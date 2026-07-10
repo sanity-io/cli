@@ -1,4 +1,5 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {configureSkills} from '../../actions/skills/configureSkills.js'
 import {SkillsInstallTrace} from '../../telemetry/skills.telemetry.js'

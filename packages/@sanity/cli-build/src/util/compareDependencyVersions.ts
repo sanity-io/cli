@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core'
+import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core/package-manager'
 import {createRequester} from '@sanity/cli-core/request'
 import {coerce, eq, prerelease, parse as semverParse} from 'semver'
 

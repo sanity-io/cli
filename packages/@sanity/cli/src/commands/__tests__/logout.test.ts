@@ -1,4 +1,4 @@
-import {getCliToken, setCliUserConfig} from '@sanity/cli-core'
+import {getCliToken, setCliUserConfig} from '@sanity/cli-core/config'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'

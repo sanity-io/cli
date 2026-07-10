@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 
 import {
   ALLOWED_PACKAGE_MANAGERS,

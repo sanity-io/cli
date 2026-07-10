@@ -1,5 +1,5 @@
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {studioWorkerTask} from '@sanity/cli-core'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type Workspace} from 'sanity'
 

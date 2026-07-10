@@ -1,7 +1,9 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
+import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'

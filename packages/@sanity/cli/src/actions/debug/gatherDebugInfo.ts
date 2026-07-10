@@ -6,7 +6,7 @@ import {
   getStudioConfig,
   getUserConfig,
   tryFindStudioConfigPath,
-} from '@sanity/cli-core'
+} from '@sanity/cli-core/config'
 
 import {getProjectById} from '../../services/projects.js'
 import {getCliUser, getProjectUser} from '../../services/user.js'

@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {getUserGrants, GRANTS_API_VERSION} from '../grants.js'

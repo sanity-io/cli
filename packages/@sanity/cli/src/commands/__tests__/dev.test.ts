@@ -1,27 +1,17 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {describe, expect, test, vi} from 'vitest'
 
-import {createMockSanityCommand} from '../../../test/mockSanityCommand.js'
 import {workbenchApp} from '../../actions/dev/__tests__/testHelpers.js'
+import {DevCommand, shouldWarnDashboardFlagIgnored} from '../dev.js'
 
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand} = createMockSanityCommand()
-
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    SanityCommand: MockedSanityCommand,
-  }
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
 
 vi.mock(import('../../actions/dev/devAction.js'), () => ({
   devAction: vi.fn(),
 }))
-
-// Finally, import the module under test: dev command
-const {DevCommand, shouldWarnDashboardFlagIgnored} = await import('../dev.js')
 
 describe('#dev', () => {
   test('shows an error for invalid flags', async () => {

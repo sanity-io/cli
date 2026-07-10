@@ -1,4 +1,6 @@
-import {type ConsentInformation, getCliToken, isCi} from '@sanity/cli-core'
+import {getCliToken} from '@sanity/cli-core/config'
+import {type ConsentInformation} from '@sanity/cli-core/types'
+import {isCi} from '@sanity/cli-core/util'
 
 import {
   fetchTelemetryConsent,

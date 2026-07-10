@@ -1,14 +1,12 @@
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
+import {Status} from '../status.js'
 
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks: cmdMocks} = createMockSanityCommand()
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, SanityCommand: MockedSanityCommand}
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
 
 // Third: mock telemetry status command imports
 const mockResolveConsent = vi.hoisted(() => vi.fn())
@@ -22,9 +20,6 @@ vi.mock('../../../actions/telemetry/getLearnMoreMessage.js', () => ({
   getLearnMoreMessage: mockLearnMore,
 }))
 vi.mock('../../../actions/telemetry/getStatusMessage.js', () => ({getStatusMessage: mockStatusMsg}))
-
-// Finally, import the module under test: telemetry status command
-const {Status} = await import('../status.js')
 
 describe('telemetry enable command', () => {
   beforeEach(() => {
@@ -46,8 +41,8 @@ describe('telemetry enable command', () => {
     await Status.run([])
     expect(mockStatusMsg).toHaveBeenCalledWith(consentInfo)
     expect(mockLearnMore).toHaveBeenCalledWith(consentInfo.status)
-    expect(cmdMocks.SanityCmdOutputLog).toHaveBeenCalledWith(statusMsg)
-    expect(cmdMocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining(learnMoreMsg))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(statusMsg)
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining(learnMoreMsg))
   })
   test('rejects invalid flags', async () => {
     await expect(Status.run(['--poop'])).rejects.toThrow('Nonexistent flag')

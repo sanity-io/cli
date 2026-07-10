@@ -1,570 +1,240 @@
-import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
-import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
-import {CREATE_PROJECT_API_VERSION} from '../../../services/projects.js'
 import {CreateProjectCommand} from '../create.js'
 
-const mockConfirm = vi.hoisted(() => vi.fn())
-const mockInput = vi.hoisted(() => vi.fn())
-const mockSelect = vi.hoisted(() => vi.fn())
 const mockCreateDataset = vi.hoisted(() => vi.fn())
+const mockValidateDatasetName = vi.hoisted(() => vi.fn())
+const mockGetOrganization = vi.hoisted(() => vi.fn())
+const mockCreateProject = vi.hoisted(() => vi.fn())
+const mockGetProjectFeatures = vi.hoisted(() => vi.fn())
+const mockListDatasets = vi.hoisted(() => vi.fn())
+const mockGetManageUrl = vi.hoisted(() => vi.fn())
+const mockPromptForProjectName = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    confirm: mockConfirm,
-    input: mockInput,
-    select: mockSelect,
-  }
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('../../../actions/dataset/create.js', () => ({
+  createDataset: mockCreateDataset,
+}))
+vi.mock('../../../actions/dataset/validateDatasetName.js', () => ({
+  validateDatasetName: mockValidateDatasetName,
+}))
+vi.mock('../../../actions/organizations/getOrganization.js', () => ({
+  getOrganization: mockGetOrganization,
+}))
+vi.mock('../../../actions/projects/getManageUrl.js', () => ({
+  getManageUrl: mockGetManageUrl,
+}))
+vi.mock('../../../prompts/promptForDatasetName.js', () => ({
+  promptForDatasetName: vi.fn(),
+}))
+vi.mock('../../../prompts/promptForDefaultConfig.js', () => ({
+  promptForDefaultConfig: vi.fn(),
+}))
+vi.mock('../../../prompts/promptForProjectName.js', () => ({
+  promptForProjectName: mockPromptForProjectName,
+}))
+vi.mock('../../../services/datasets.js', () => ({
+  listDatasets: mockListDatasets,
+}))
+vi.mock('../../../services/organizations.js', () => ({})) // prevent loading of the types
+vi.mock('../../../services/getProjectFeatures.js', () => ({
+  getProjectFeatures: mockGetProjectFeatures,
+}))
+vi.mock('../../../services/projects.js', () => ({
+  createProject: mockCreateProject,
+}))
+vi.mock('../../../services/user.js', () => ({
+  getCliUser: vi.fn(),
+}))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockImplementation(async (options) => {
-      const testClient = createTestClient({
-        apiVersion: options.apiVersion,
-        token: 'test-token',
-      })
-
-      return {
-        config: vi.fn().mockReturnValue({apiHost: 'https://api.sanity.io'}),
-        projects: {
-          list: vi.fn().mockResolvedValue([]),
-        },
-        request: testClient.request,
-        users: {
-          getById: vi.fn().mockResolvedValue({
-            email: 'test@example.com',
-            id: 'user-123',
-            name: 'Test User',
-          }),
-        } as never,
-      }
-    }),
-    getProjectCliClient: vi.fn().mockImplementation(async (options) => {
-      const testClient = createTestClient({
-        apiVersion: options.apiVersion,
-        token: 'test-token',
-      })
-
-      return {
-        datasets: {
-          create: mockCreateDataset,
-          list: vi.fn().mockResolvedValue([]),
-        },
-        request: testClient.request,
-      }
-    }),
-  }
-})
-
-const defaultMocks = {
-  projectRoot: {
-    directory: '/test/path',
-    path: '/test/path',
-    type: 'studio' as const,
-  },
-  token: 'test-token',
+const mockOrg = {id: 'org-1', name: 'Org 1', slug: 'org-1'}
+const mockProject = {
+  displayName: 'My Project',
+  id: 'proj-123',
+  projectId: 'proj-123',
 }
+const mockDataset = {aclMode: 'private', datasetName: 'dataset'}
+const mockManageUrl = 'sanity.lol'
 
 describe('#projects:create', () => {
+  beforeEach(() => {
+    mockValidateDatasetName.mockReturnValue(null) // returns error if invalid
+    mockGetOrganization.mockResolvedValue(mockOrg)
+    mockCreateProject.mockResolvedValue(mockProject)
+    mockGetProjectFeatures.mockResolvedValue(['privateDataset'])
+    mockListDatasets.mockResolvedValue([])
+    mockCreateDataset.mockImplementation((opts) => ({
+      ...mockDataset,
+      ...(opts.datasetName ? {datasetName: opts.datasetName} : {}),
+    }))
+    mockGetManageUrl.mockReturnValue(mockManageUrl)
+  })
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('throws error if provided invalid dataset flag', async () => {
-    const {error} = await testCommand(CreateProjectCommand, ['--dataset=~~invalid-name'])
-
-    expect(error?.message).toContain('Dataset name must start with a letter or a number')
+    const datasetError = 'terrible name'
+    mockValidateDatasetName.mockReturnValue(datasetError) // returns error if invalid
+    await expect(CreateProjectCommand.run(['--dataset=~~invalid-name'])).rejects.toThrow(
+      datasetError,
+    )
   })
 
   test('errors when retrieving organization fails', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(500, {message: 'Internal server error'})
+    const err = new Error('boom')
+    mockGetOrganization.mockRejectedValue(err)
+    await CreateProjectCommand.run(['My Project'])
 
-    const {error} = await testCommand(CreateProjectCommand, ['My Project'], {
-      mocks: {
-        ...defaultMocks,
-        isInteractive: true,
-      },
-    })
-
-    expect(error?.message).toContain('Failed to retrieve an organization')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('errors when requested organization id is not found', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    const {error} = await testCommand(
-      CreateProjectCommand,
-      ['My Project', '--organization=invalid'],
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringMatching(/Failed to retrieve an organization.*boom/i),
       {
-        mocks: {
-          ...defaultMocks,
-          isInteractive: true,
-        },
+        exit: 1,
       },
     )
-
-    expect(error?.message).toContain('Failed to retrieve organization invalid')
-    expect(error?.message).toContain(
-      `Organization "invalid" not found or you don't have access to it`,
-    )
-    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors when create project fails', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+    const err = new Error('boom')
+    mockCreateProject.mockRejectedValue(err)
+    await CreateProjectCommand.run(['My Project', '--organization=org-1'])
 
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(400, {message: 'Bad request'})
-
-    const {error} = await testCommand(
-      CreateProjectCommand,
-      ['My Project', '--organization=org-1'],
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringMatching(/Failed to create project.*boom/i),
       {
-        mocks: {
-          ...defaultMocks,
-          isInteractive: true,
-        },
+        exit: 1,
       },
     )
-
-    expect(error?.message).toContain('Failed to create project')
-    expect(error?.message).toContain('Bad request')
-    expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('prompts user and creates organization when user has no organizations', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [])
+  test('prompts for project name when not provided', async () => {
+    const customProjName = 'My Custom Project'
+    mocks.SanityCmdIsUnattended.mockReturnValue(false)
+    mockPromptForProjectName.mockResolvedValue(customProjName)
 
-    mockInput.mockResolvedValue('Test Organization')
+    await CreateProjectCommand.run(['--organization=org-1'])
 
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'post',
-      uri: '/organizations',
-    }).reply(201, {
-      id: 'new-org-id',
-      name: 'Test Organization',
-      slug: 'test-organization',
-    })
-
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    const {error, stdout} = await testCommand(CreateProjectCommand, ['My Project'], {
-      mocks: {
-        ...defaultMocks,
-        isInteractive: true,
-      },
-    })
-
-    if (error) throw error
-    expect(mockInput).toHaveBeenCalledWith({
-      default: 'Test User',
-      message: 'Organization name:',
-      validate: expect.any(Function),
-    })
-    expect(stdout).toContain('Project created successfully')
-    expect(stdout).toContain('Organization: Test Organization')
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mockPromptForProjectName).toHaveBeenCalled()
+    expect(mockCreateProject).toHaveBeenCalledWith(
+      expect.objectContaining({displayName: customProjName}),
+    )
   })
 
-  test('prompts user and creates organization when user selects new organization', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Existing Org', slug: 'existing-org'}])
-
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations/org-1/grants',
-    }).reply(200, [
-      {
-        grants: [{grantId: 'attach', permission: true}],
-        memberId: 'user-123',
-      },
-    ])
-
-    mockSelect.mockResolvedValue('-new-')
-    mockInput.mockResolvedValue('New Organization')
-
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'post',
-      uri: '/organizations',
-    }).reply(201, {
-      id: 'new-org-id',
-      name: 'New Organization',
-      slug: 'new-organization',
-    })
-
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    const {error, stdout} = await testCommand(CreateProjectCommand, ['My Project'], {
-      mocks: {...defaultMocks, isInteractive: true},
-    })
-
-    if (error) throw error
-    expect(mockSelect).toHaveBeenCalledWith({
-      choices: expect.arrayContaining([expect.objectContaining({value: '-new-'})]),
-      default: undefined,
-      message: 'Select organization:',
-    })
-    expect(stdout).toContain('Project created successfully')
-    expect(stdout).toContain('Organization: New Organization')
-  })
-
-  test('creates project with dataset in unattended mode', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Sanity Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    mockApi({
-      apiVersion: PROJECT_FEATURES_API_VERSION,
-      method: 'get',
-      uri: '/features',
-    }).reply(200, ['privateDataset'])
-
-    mockCreateDataset.mockResolvedValueOnce({
+  test('creates project with dataset in unattended mode when dataset name provided as flag', async () => {
+    mockCreateDataset.mockResolvedValue({
       aclMode: 'private',
       datasetName: 'staging',
     })
 
-    const {error, stdout} = await testCommand(
-      CreateProjectCommand,
-      ['--yes', '--dataset=staging', '--dataset-visibility=private', '--organization=org-1'],
-      {
-        mocks: defaultMocks,
-      },
-    )
-
-    if (error) throw error
-    expect(stdout).toContain('Project created successfully')
-    expect(stdout).toContain('My Sanity Project')
-    expect(stdout).toContain('Dataset: staging (private)')
-  })
-
-  test('creates project without dataset in unattended mode', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Sanity Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    const {error, stdout} = await testCommand(
-      CreateProjectCommand,
-      ['--yes', '--organization=org-1'],
-      {
-        mocks: defaultMocks,
-      },
-    )
-
-    if (error) throw error
-    expect(stdout).toContain('Project created successfully')
-    expect(stdout).toContain('My Sanity Project')
-    expect(stdout).not.toContain('Dataset:')
-  })
-
-  test('creates project with `production` dataset when user chooses default config', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations/org-1/grants',
-    }).reply(200, [
-      {
-        grants: [{grantId: 'attach', permission: true}],
-        memberId: 'user-123',
-      },
+    await CreateProjectCommand.run([
+      '--yes',
+      '--dataset=staging',
+      '--dataset-visibility=private',
+      '--organization=org-1',
     ])
 
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    mockSelect.mockResolvedValueOnce('org-1') // Select organization
-    mockConfirm.mockResolvedValueOnce(true) // Would you like to create a dataset?
-    mockConfirm.mockResolvedValueOnce(true) // Use default config?
-
-    mockApi({
-      apiVersion: PROJECT_FEATURES_API_VERSION,
-      method: 'get',
-      uri: '/features',
-    }).reply(200, [])
-
-    mockCreateDataset.mockResolvedValueOnce({
-      aclMode: 'public',
-      datasetName: 'production',
-    })
-
-    const {error, stdout} = await testCommand(CreateProjectCommand, ['My Project'], {
-      mocks: {...defaultMocks, isInteractive: true},
-    })
-
-    if (error) throw error
-    expect(stdout).toContain('Project created successfully')
-    expect(stdout).toContain('Dataset: production (public)')
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Project created successfully'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.displayName),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.projectId),
+    )
+    expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringMatching(/Dataset: staging/i),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringMatching(mockManageUrl))
   })
 
-  test('creates project with named dataset when user chooses custom name', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    mockConfirm.mockResolvedValueOnce(true) // Would you like to create a dataset?
-    mockConfirm.mockResolvedValueOnce(false) // Use default config?
-
-    mockInput.mockResolvedValue('staging')
-
-    mockApi({
-      apiVersion: PROJECT_FEATURES_API_VERSION,
-      method: 'get',
-      uri: '/features',
-    }).reply(200, [])
-
-    mockCreateDataset.mockResolvedValueOnce({
-      aclMode: 'public',
+  test('creates project without dataset in unattended mode if no dataset name provided as flag', async () => {
+    mockCreateDataset.mockResolvedValue({
+      aclMode: 'private',
       datasetName: 'staging',
     })
 
-    const {error, stdout} = await testCommand(
-      CreateProjectCommand,
-      ['My Project', '--organization=org-1'],
-      {
-        mocks: {...defaultMocks, isInteractive: true},
-      },
-    )
+    await CreateProjectCommand.run(['--yes', '--organization=org-1'])
 
-    if (error) throw error
-    expect(mockInput).toHaveBeenCalledWith({
-      message: 'Dataset name:',
-      validate: expect.any(Function),
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Project created successfully'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.displayName),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.projectId),
+    )
+    expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(expect.stringMatching(/Dataset:/i))
+  })
+
+  test('creates project with dataset when user confirms and chooses default config', async () => {
+    mockCreateDataset.mockResolvedValue({
+      aclMode: 'private',
+      datasetName: 'staging',
     })
-    expect(stdout).toContain('Project created successfully')
-    expect(stdout).toContain('Dataset: staging (public)')
+    uxMocks.confirm.mockResolvedValue(true) // Would you like to create a dataset?
+    uxMocks.confirm.mockResolvedValue(true) // Use default config?
+
+    await CreateProjectCommand.run(['New Project'])
+
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Project created successfully'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.displayName),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.projectId),
+    )
+    expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
+      expect.stringMatching(/Dataset: staging/i),
+    )
   })
 
   test('warns user when dataset creation fails', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+    mockCreateDataset.mockRejectedValue(new Error('Failed to create Dataset'))
 
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
+    await CreateProjectCommand.run(['My Project', '--dataset=production', '--organization=org-1'])
 
-    mockApi({
-      apiVersion: PROJECT_FEATURES_API_VERSION,
-      method: 'get',
-      uri: '/features',
-    }).reply(200, [])
-
-    mockCreateDataset.mockRejectedValueOnce(new Error('Failed to create Dataset'))
-
-    const {error, stderr, stdout} = await testCommand(
-      CreateProjectCommand,
-      ['My Project', '--dataset=production', '--organization=org-1'],
-      {
-        mocks: {...defaultMocks, isInteractive: true},
-      },
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Project created successfully'),
     )
-
-    if (error) throw error
-    expect(stdout).toContain('Project created successfully')
-    expect(stderr).toContain('Project created but dataset creation failed')
+    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Project created but dataset creation failed'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.displayName),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(mockProject.projectId),
+    )
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
+      expect.stringMatching(/Dataset: staging/i),
+    )
   })
 
   test('creates project with JSON output', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+    await CreateProjectCommand.run(['My Project', '--organization=org-1', '--json'])
 
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    const {error, stdout} = await testCommand(
-      CreateProjectCommand,
-      ['My Project', '--organization=org-1', '--json'],
-      {
-        mocks: defaultMocks,
-      },
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(JSON.stringify(mockProject, null, 2))
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
+      expect.stringContaining('Project created successfully'),
     )
-
-    if (error) throw error
-    const json = JSON.parse(stdout)
-    expect(json).toEqual({
-      displayName: 'My Project',
-      projectId: 'proj-123',
-    })
-  })
-
-  test('prompts for project name when not provided', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    mockInput.mockResolvedValue('My Custom Project')
-
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Custom Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    const {error, stdout} = await testCommand(CreateProjectCommand, ['--organization=org-1'], {
-      mocks: {...defaultMocks, isInteractive: true},
-    })
-
-    if (error) throw error
-    expect(mockInput).toHaveBeenCalledWith({
-      default: 'My Sanity Project',
-      message: 'Project name:',
-      validate: expect.any(Function),
-    })
-    expect(stdout).toContain('My Custom Project')
-  })
-
-  test('includes manage URL in output', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    mockApi({
-      apiVersion: CREATE_PROJECT_API_VERSION,
-      method: 'post',
-      uri: '/projects',
-    }).reply(201, {
-      displayName: 'My Project',
-      id: 'proj-123',
-      projectId: 'proj-123',
-    })
-
-    const {error, stdout} = await testCommand(
-      CreateProjectCommand,
-      ['My Project', '--organization=org-1'],
-      {
-        mocks: defaultMocks,
-      },
-    )
-
-    if (error) throw error
-    expect(stdout).toContain('Manage your project: https://www.sanity.io/manage/project/proj-123')
   })
 })

@@ -1,4 +1,6 @@
-import {isInteractive, NonInteractiveError, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {NonInteractiveError} from '@sanity/cli-core/errors'
+import {isInteractive} from '@sanity/cli-core/util'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
 import {getUserGrants} from '../services/grants.js'

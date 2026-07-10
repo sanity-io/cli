@@ -1,4 +1,4 @@
-import {NonInteractiveError} from '@sanity/cli-core'
+import {NonInteractiveError} from '@sanity/cli-core/errors'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'

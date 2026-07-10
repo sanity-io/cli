@@ -1,9 +1,15 @@
-import {testCommand} from '@sanity/cli-test'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {GetOpenApiCommand} from '../get.js'
+
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('open')
 
 const mockYamlSpec = `
 openapi: 3.0.0
@@ -45,9 +51,9 @@ describe('#openapi:get', () => {
       .query({format: 'yaml'})
       .reply(200, mockYamlSpec, {'Content-Type': 'text/yaml'})
 
-    const {stdout} = await testCommand(GetOpenApiCommand, ['query'])
+    await GetOpenApiCommand.run(['query'])
 
-    expect(stdout).toContain(mockYamlSpec)
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining(mockYamlSpec))
   })
 
   test('gets JSON spec with --format=json', async () => {
@@ -56,9 +62,9 @@ describe('#openapi:get', () => {
       .query({format: 'json'})
       .reply(200, mockJsonSpec, {'Content-Type': 'application/json'})
 
-    const {stdout} = await testCommand(GetOpenApiCommand, ['query', '--format=json'])
+    await GetOpenApiCommand.run(['query', '--format=json'])
 
-    expect(stdout).toContain(mockJsonSpec)
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining(mockJsonSpec))
   })
 
   test('gets YAML spec with explicit --format=yaml', async () => {
@@ -67,15 +73,17 @@ describe('#openapi:get', () => {
       .query({format: 'yaml'})
       .reply(200, mockYamlSpec, {'Content-Type': 'text/yaml'})
 
-    const {stdout} = await testCommand(GetOpenApiCommand, ['query', '--format=yaml'])
+    await GetOpenApiCommand.run(['query', '--format=yaml'])
 
-    expect(stdout).toContain(mockYamlSpec)
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining(mockYamlSpec))
   })
 
   test('opens web browser with --web flag', async () => {
-    const {stdout} = await testCommand(GetOpenApiCommand, ['query', '--web'])
+    await GetOpenApiCommand.run(['query', '--web'])
 
-    expect(stdout).toContain('Opening https://www.sanity.io/docs/http-reference/query')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Opening https://www.sanity.io/docs/http-reference/query'),
+    )
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/docs/http-reference/query')
   })
 
@@ -85,11 +93,12 @@ describe('#openapi:get', () => {
       .query({format: 'yaml'})
       .reply(404, 'Not Found')
 
-    const {error} = await testCommand(GetOpenApiCommand, ['nonexistent'])
+    await GetOpenApiCommand.run(['nonexistent'])
 
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('OpenAPI specification not found. nonexistent')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      'OpenAPI specification not found. nonexistent',
+      {exit: 1},
+    )
   })
 
   test('handles server error', async () => {
@@ -98,13 +107,12 @@ describe('#openapi:get', () => {
       .query({format: 'yaml'})
       .reply(500, 'Server Error')
 
-    const {error} = await testCommand(GetOpenApiCommand, ['query'])
+    await GetOpenApiCommand.run(['query'])
 
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain(
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       'The OpenAPI service is currently unavailable. Please try again later.',
+      {exit: 1},
     )
-    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles network error', async () => {
@@ -113,22 +121,21 @@ describe('#openapi:get', () => {
       .query({format: 'yaml'})
       .replyWithError('Network error')
 
-    const {error} = await testCommand(GetOpenApiCommand, ['query'])
+    await GetOpenApiCommand.run(['query'])
 
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain(
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       'The OpenAPI service is currently unavailable. Please try again later.',
+      {exit: 1},
     )
-    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('requires slug argument', async () => {
-    const {error} = await testCommand(GetOpenApiCommand, [])
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Missing 1 required arg')
-    expect(error?.message).toContain('slug')
-    expect(error?.oclif?.exit).toBe(2)
+    await expect(GetOpenApiCommand.run([])).rejects.toThrow(
+      /Missing 1 required arg/i,
+      // expect.objectContaining({
+      //   message: expect.stringContaining('Missing required 1 arg'),
+      // }),
+    )
   })
 
   test('handles different slug formats', async () => {
@@ -137,15 +144,17 @@ describe('#openapi:get', () => {
       .query({format: 'yaml'})
       .reply(200, mockYamlSpec, {'Content-Type': 'text/yaml'})
 
-    const {stdout} = await testCommand(GetOpenApiCommand, ['admin-api'])
+    await GetOpenApiCommand.run(['admin-api'])
 
-    expect(stdout).toContain(mockYamlSpec)
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining(mockYamlSpec))
   })
 
   test('combines --web with slug in URL', async () => {
-    const {stdout} = await testCommand(GetOpenApiCommand, ['admin-api', '--web'])
+    await GetOpenApiCommand.run(['admin-api', '--web'])
 
-    expect(stdout).toContain('Opening https://www.sanity.io/docs/http-reference/admin-api')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Opening https://www.sanity.io/docs/http-reference/admin-api'),
+    )
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/docs/http-reference/admin-api')
   })
 })

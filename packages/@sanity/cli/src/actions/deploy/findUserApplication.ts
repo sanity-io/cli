@@ -4,7 +4,7 @@
  * and exits. Dry runs consume the same verdicts read-only (see deployChecks).
  */
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
 import {

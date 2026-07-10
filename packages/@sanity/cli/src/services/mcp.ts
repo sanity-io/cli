@@ -1,4 +1,5 @@
-import {getGlobalCliClient, subdebug} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
+import {subdebug} from '@sanity/cli-core/debug'
 import {isHttpError} from '@sanity/client'
 
 const MCP_API_VERSION = '2025-12-09'

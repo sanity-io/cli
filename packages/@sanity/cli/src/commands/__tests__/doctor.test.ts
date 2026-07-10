@@ -1,18 +1,16 @@
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockSanityCommand} from '../../../test/mockSanityCommand.js'
+import {DoctorCommand} from '../doctor.js'
 
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, SanityCommand: MockedSanityCommand}
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
-// Third: mock doctor command imports
-const mockDoctorChecks = {cli: vi.fn()} // coupled to actions/doctor/checks/index.js
-const mockKnownChecks = Object.keys(mockDoctorChecks)
+const mockDoctorChecks = vi.hoisted(() => ({cli: vi.fn()})) // coupled to actions/doctor/checks/index.js
+const mockKnownChecks = vi.hoisted(() => Object.keys(mockDoctorChecks))
 const mockRunDoctorChecks = vi.hoisted(() => vi.fn())
 vi.mock('../../actions/doctor/checks/index.js', () => ({
   doctorChecks: mockDoctorChecks,
@@ -21,9 +19,6 @@ vi.mock('../../actions/doctor/checks/index.js', () => ({
 vi.mock('../../actions/doctor/runDoctorChecks.js', () => ({
   runDoctorChecks: mockRunDoctorChecks,
 }))
-
-// Finally, import the module under test: doctor command
-const {DoctorCommand} = await import('../doctor.js')
 
 describe('doctor command', () => {
   beforeEach(() => {
@@ -43,12 +38,12 @@ describe('doctor command', () => {
 
     await DoctorCommand.run()
 
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Running diag'))
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Running diag'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
       expect.stringContaining(passingCheck.title),
     )
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Summary:'))
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Summary:'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
       expect.stringContaining(String(checkResults.summary.passed)),
     )
   })
@@ -60,7 +55,7 @@ describe('doctor command', () => {
 
     await DoctorCommand.run(['--json'])
 
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
       expect.stringContaining(JSON.stringify(checkResults, null, 2)),
     )
   })

@@ -40,6 +40,10 @@
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
     },
+    "./_internal/util": {
+      "source": "./src/_exports/_internal/util.ts",
+      "default": "./dist/_exports/_internal/util.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

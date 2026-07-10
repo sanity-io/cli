@@ -3,11 +3,8 @@ import {createServer} from 'node:http'
 import {platform} from 'node:os'
 import {join} from 'node:path'
 
-import {
-  checkRequiredDependencies,
-  compareDependencyVersions,
-} from '@sanity/cli-build/_internal/build'
-import {getProjectCliClient} from '@sanity/cli-core'
+import {checkRequiredDependencies} from '@sanity/cli-build/_internal/build'
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {confirm as mockConfirm, spinner as mockSpinner} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'

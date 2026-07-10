@@ -1,4 +1,4 @@
-import {type SanityOrgUser} from '@sanity/cli-core'
+import {type SanityOrgUser} from '@sanity/cli-core/types'
 import {input} from '@sanity/cli-core/ux'
 
 import {validateOrganizationName} from '../actions/organizations/validateOrganizationName.js'

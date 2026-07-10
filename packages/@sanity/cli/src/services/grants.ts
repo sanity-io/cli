@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 
 import {type UserGrantsResponse} from '../types/grants.js'
 

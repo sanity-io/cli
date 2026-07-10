@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {getCliToken, subdebug} from '@sanity/cli-core'
+import {getCliToken} from '@sanity/cli-core/config'
+import {subdebug} from '@sanity/cli-core/debug'
 
 import {getCliUser} from '../services/user.js'
 import {getGitRemoteOriginUrl, getGitUserInfo} from './gitConfig.js'

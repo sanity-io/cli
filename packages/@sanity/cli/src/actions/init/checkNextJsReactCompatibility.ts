@@ -1,4 +1,5 @@
-import {Output, readPackageJson} from '@sanity/cli-core'
+import {readPackageJson} from '@sanity/cli-core/package-manager'
+import {type Output} from '@sanity/cli-core/types'
 import {coerce} from 'semver'
 
 import {VersionedFramework} from './types.js'

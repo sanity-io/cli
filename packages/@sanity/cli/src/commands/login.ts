@@ -2,7 +2,7 @@ import {text} from 'node:stream/consumers'
 
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {login} from '../actions/auth/login/login.js'
 
@@ -67,7 +67,7 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
     const {'sso-provider': ssoProvider, 'with-token': withToken, ...loginFlags} = flags
 
     try {
-      const token = withToken ? await readTokenFromStdin() : undefined
+      const token = withToken ? await readTokenFromStdin(this.isUnattended()) : undefined
 
       await login({
         ...loginFlags,
@@ -76,16 +76,16 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
         telemetry: this.telemetry,
         token,
       })
-      this.log('Login successful')
+      this.output.log('Login successful')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Login failed: ${message}`, {exit: 1})
+      return this.output.error(`Login failed: ${message}`, {exit: 1})
     }
   }
 }
 
-async function readTokenFromStdin(): Promise<string> {
-  if (process.stdin.isTTY) {
+async function readTokenFromStdin(isUnattended: boolean): Promise<string> {
+  if (isUnattended) {
     throw new Error(
       'Token is required on standard input. Run `sanity login --with-token < token.txt`.',
     )

@@ -1,7 +1,10 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {type CliConfig, ProjectRootNotFoundError, SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {spinner} from '@sanity/cli-core/ux'
 import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 

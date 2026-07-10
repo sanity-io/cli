@@ -1,4 +1,4 @@
-import {Output} from '@sanity/cli-core'
+import {Output} from '@sanity/cli-core/types'
 
 import {bootstrapLocalTemplate} from './bootstrapLocalTemplate.js'
 import {bootstrapRemoteTemplate} from './bootstrapRemoteTemplate.js'

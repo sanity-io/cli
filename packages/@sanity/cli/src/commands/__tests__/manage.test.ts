@@ -1,45 +1,37 @@
-import {getStudioConfig} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
+import {getStudioConfig} from '@sanity/cli-core/config'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import open from 'open'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ManageCommand} from '../manage.js'
 
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
-  return {
-    ...actual,
-    getStudioConfig: vi.fn(),
-  }
-})
-
-const defaultMocks = {
-  cliConfig: {},
-  projectRoot: {
-    directory: '/test/path',
-    path: '/test/path/sanity.config.ts',
-    type: 'studio' as const,
-  },
-}
-
-afterEach(() => {
-  vi.clearAllMocks()
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/config', () => import('@sanity/cli-test/mocks/cli-core/config'))
+vi.mock('open', () => ({default: vi.fn()}))
 
 describe('#manage', () => {
+  beforeEach(() => {
+    mocks.SanityCmdGetCliConfig.mockResolvedValue({})
+    mocks.SanityCmdGetProjectRoot.mockResolvedValue({})
+  })
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   test('open link to project management interface if cli config has projectId', async () => {
-    const {stdout} = await testCommand(ManageCommand, [], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {
-          api: {
-            projectId: 'test-project-id',
-          },
-        },
+    mocks.SanityCmdGetCliConfig.mockResolvedValue({
+      api: {
+        projectId: 'test-project-id',
       },
     })
+    await ManageCommand.run([])
 
-    expect(stdout).toContain('Opening https://www.sanity.io/manage/project/test-project-id')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Opening https://www.sanity.io/manage/project/test-project-id'),
+    )
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/project/test-project-id')
   })
@@ -56,9 +48,11 @@ describe('#manage', () => {
       unstable_sources: [],
     })
 
-    const {stdout} = await testCommand(ManageCommand, [], {mocks: defaultMocks})
+    await ManageCommand.run([])
 
-    expect(stdout).toContain('Opening https://www.sanity.io/manage/project/test-project-id')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Opening https://www.sanity.io/manage/project/test-project-id'),
+    )
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/project/test-project-id')
   })
@@ -81,9 +75,11 @@ describe('#manage', () => {
       },
     ])
 
-    const {stdout} = await testCommand(ManageCommand, [], {mocks: defaultMocks})
+    await ManageCommand.run([])
 
-    expect(stdout).toContain('Opening https://www.sanity.io/manage/')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Opening https://www.sanity.io/manage/'),
+    )
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/')
   })
@@ -91,9 +87,11 @@ describe('#manage', () => {
   test('opens root manage page if no projectId is found', async () => {
     vi.mocked(getStudioConfig).mockResolvedValueOnce({} as never)
 
-    const {stdout} = await testCommand(ManageCommand, [], {mocks: defaultMocks})
+    await ManageCommand.run([])
 
-    expect(stdout).toContain('Opening https://www.sanity.io/manage/')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Opening https://www.sanity.io/manage/'),
+    )
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/')
   })

@@ -1,6 +1,7 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {doImport, isStudioConfig} from '@sanity/cli-core'
+import {isStudioConfig} from '@sanity/cli-core/config'
+import {doImport} from '@sanity/cli-core/util'
 
 import {
   resolveGraphQLApiMetadata,

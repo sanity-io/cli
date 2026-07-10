@@ -1,6 +1,6 @@
 import {Args, Command, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {initAction} from '../actions/init/initAction.js'
 import {InitError} from '../actions/init/initError.js'

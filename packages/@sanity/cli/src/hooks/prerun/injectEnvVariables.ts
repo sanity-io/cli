@@ -2,7 +2,9 @@ import {styleText} from 'node:util'
 
 import {type Hook} from '@oclif/core'
 import {warn} from '@oclif/core/ux'
-import {debug, findProjectRoot, type ProjectRootResult} from '@sanity/cli-core'
+import {findProjectRoot} from '@sanity/cli-core/config'
+import {debug} from '@sanity/cli-core/debug'
+import {type ProjectRootResult} from '@sanity/cli-core/types'
 import {loadEnv} from 'vite'
 
 import {getSanityEnv} from '../../util/getSanityEnv.js'

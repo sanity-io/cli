@@ -1,42 +1,40 @@
 import {Readable} from 'node:stream'
 
+import * as apiClientMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
 import {NEW_DATASET_VALUE} from '../../../prompts/promptForDataset.js'
+import {ImportDatasetCommand} from '../import.js'
 
-// First: create the mocks and mocked SanityCommand class
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
-const mockGetProjectCliClient = vi.hoisted(() => vi.fn().mockResolvedValue({}))
-// Second: install the mock on cli-core
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getProjectCliClient: mockGetProjectCliClient,
-    SanityCommand: MockedSanityCommand,
-  }
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
 
-// Third: mock dataset import command imports
+const mockGetProjectCliClient = apiClientMocks.getProjectCliClient.mockResolvedValue({})
 const mockPromptForDataset = vi.hoisted(() => vi.fn())
 const mockPromptForDatasetName = vi.hoisted(() => vi.fn())
+const mockPromptForProject = vi.hoisted(() => vi.fn())
 const mockListDatasets = vi.hoisted(() => vi.fn())
 const mockCreateDataset = vi.hoisted(() => vi.fn())
 const mockSanityImport = vi.hoisted(() => vi.fn())
 const mockCreateReadStream = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../prompts/promptForDataset.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../prompts/promptForDataset.js')>()
-  return {
-    ...actual,
-    promptForDataset: mockPromptForDataset,
-  }
-})
+vi.mock('../../../prompts/promptForDataset.js', () => ({
+  NEW_DATASET_VALUE: '-NEW-',
+  promptForDataset: mockPromptForDataset,
+}))
 
 vi.mock('../../../prompts/promptForDatasetName.js', () => ({
   promptForDatasetName: mockPromptForDatasetName,
+}))
+
+vi.mock('../../../prompts/promptForProject.js', () => ({
+  promptForProject: mockPromptForProject,
 }))
 
 vi.mock('../../../services/datasets.js', () => ({
@@ -64,9 +62,6 @@ vi.mock('node:fs', async (importOriginal) => {
   }
 })
 
-// Finally, import the module under test: dataset import command
-const {ImportDatasetCommand} = await import('../import.js')
-
 const TEST_DATASET_NAME = 'test-dataset'
 const TEST_PROJECT_ID = '1337newb'
 const BASE_FLAGS = ['test-source.ndjson', '--dataset', TEST_DATASET_NAME, '--token', 'test-token']
@@ -93,7 +88,7 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(BASE_FLAGS)
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Done! Imported'),
         sanityImportObj.numDocs,
         TEST_DATASET_NAME,
@@ -125,7 +120,7 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(['https://example.com/data.ndjson', ...BASE_FLAGS.slice(1)])
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Done! Imported'),
         sanityImportObj.numDocs,
         TEST_DATASET_NAME,
@@ -139,7 +134,7 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(['-', ...BASE_FLAGS.slice(1)])
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Done! Imported'),
         sanityImportObj.numDocs,
         TEST_DATASET_NAME,
@@ -166,7 +161,7 @@ describe('#dataset:import', () => {
       expect(mockGetProjectCliClient).toHaveBeenCalledWith(
         expect.objectContaining({dataset: 'positional-dataset'}),
       )
-      expect(mocks.SanityCmdOutputWarn).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining(
           'Positional dataset argument is deprecated. Use the --dataset flag instead',
         ),
@@ -186,7 +181,7 @@ describe('#dataset:import', () => {
       expect(mockGetProjectCliClient).toHaveBeenCalledWith(
         expect.objectContaining({dataset: 'flag-dataset'}),
       )
-      expect(mocks.SanityCmdOutputWarn).not.toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalledWith(
         expect.stringContaining(
           'Positional dataset argument is deprecated. Use the --dataset flag instead',
         ),
@@ -208,7 +203,7 @@ describe('#dataset:import', () => {
         allowCreation: true,
         datasets: [{name: 'production'}, {name: 'staging'}],
       })
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Done! Imported'),
         sanityImportObj.numDocs,
         selectedDataset,
@@ -232,7 +227,7 @@ describe('#dataset:import', () => {
         datasetName: newDatasetName,
         projectId: TEST_PROJECT_ID,
       })
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Done! Imported'),
         sanityImportObj.numDocs,
         newDatasetName,
@@ -246,7 +241,7 @@ describe('#dataset:import', () => {
       await ImportDatasetCommand.run(['test-source.ndjson', '--token', 'test-token'])
 
       expect(mockListDatasets).not.toHaveBeenCalled()
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('Missing dataset'),
         {exit: 1},
       )
@@ -262,7 +257,7 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(['test-source.ndjson', '--token', 'test-token'])
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(`Failed to create dataset ${newDatasetName}`),
         {exit: 1},
       )
@@ -274,7 +269,7 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(BASE_FLAGS)
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(expect.stringContaining(err), {
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(expect.stringContaining(err), {
         exit: 1,
       })
     })
@@ -291,7 +286,7 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(BASE_FLAGS)
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(expect.stringContaining(err), {
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(expect.stringContaining(err), {
         exit: 1,
       })
       // Verify clearInterval was called to clean up the spinInterval
@@ -307,7 +302,7 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(BASE_FLAGS)
 
-      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(err.message),
         {
           exit: 1,
@@ -412,7 +407,7 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(BASE_FLAGS)
 
-      expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Done! Imported'),
         20,
         expect.any(String),
@@ -438,13 +433,13 @@ describe('#dataset:import', () => {
 
       await ImportDatasetCommand.run(BASE_FLAGS)
 
-      expect(mocks.SanityCmdOutputWarn).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('Failed to import the following asset'),
       )
-      expect(mocks.SanityCmdOutputWarn).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('https://example.com/img.png'),
       )
-      expect(mocks.SanityCmdOutputWarn).toHaveBeenCalledWith(
+      expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('https://example.com/doc.pdf'),
       )
     })

@@ -1,5 +1,6 @@
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'

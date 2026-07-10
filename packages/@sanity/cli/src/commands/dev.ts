@@ -1,7 +1,8 @@
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {type CliConfig, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {devAction} from '../actions/dev/devAction.js'

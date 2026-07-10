@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {describe, expect, test, vi} from 'vitest'
 
 import {type DeploySpec, runDeploy} from '../deployRunner.js'

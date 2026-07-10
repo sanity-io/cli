@@ -1,6 +1,7 @@
 import path from 'node:path'
 
-import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
+import {getSanityEnvVar} from '@sanity/cli-core/util'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 

@@ -1,4 +1,4 @@
-import {type TelemetryUserProperties} from '@sanity/cli-core'
+import {type TelemetryUserProperties} from '@sanity/cli-core/types'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {type InitStepResult} from '../../../telemetry/init.telemetry.js'

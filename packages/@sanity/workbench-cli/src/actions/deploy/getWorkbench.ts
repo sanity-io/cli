@@ -3,7 +3,7 @@
 // `getWorkbench(config)` once and either gets `null` (plain project — normal
 // deploy) or an object it asks to validate the app before shipping.
 
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 
 import {type ResolvedWorkbenchApp, resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDeployment.js'

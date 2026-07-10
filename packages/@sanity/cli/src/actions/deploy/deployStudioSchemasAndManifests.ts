@@ -1,7 +1,10 @@
 import {styleText} from 'node:util'
 
 import {SchemaDeploy, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {getCliTelemetry, type Output, studioWorkerTask, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
+import {getCliTelemetry} from '@sanity/cli-core/telemetry'
+import {type Output} from '@sanity/cli-core/types'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 

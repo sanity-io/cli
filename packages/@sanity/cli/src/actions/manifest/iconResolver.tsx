@@ -1,4 +1,4 @@
-import {resolveLocalPackage} from '@sanity/cli-core'
+import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
 
 import {manifestDebug} from './debug.js'
 import {resolveSchemaIcon, type SchemaIconProps} from './resolveSchemaIcon.js'

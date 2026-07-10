@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {spinner} from '@sanity/cli-core/ux'
 import {execa, type Options} from 'execa'
 

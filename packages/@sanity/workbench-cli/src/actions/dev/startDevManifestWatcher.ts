@@ -1,7 +1,9 @@
 import {watch} from 'node:fs'
 import {basename, dirname} from 'node:path'
 
-import {findProjectRoot, type Output, subdebug} from '@sanity/cli-core'
+import {findProjectRoot} from '@sanity/cli-core/config'
+import {subdebug} from '@sanity/cli-core/debug'
+import {type Output} from '@sanity/cli-core/types'
 
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {type DevServerConfig, type DevServerInterface} from './deriveInterfaces.js'

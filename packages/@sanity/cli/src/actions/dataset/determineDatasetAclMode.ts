@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {type DatasetAclMode} from '@sanity/client'
 
 import {promptForDatasetAclMode} from '../../prompts/promptForDatasetAclMode.js'

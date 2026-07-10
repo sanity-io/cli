@@ -1,4 +1,5 @@
-import {debug, getGlobalCliClient, getProjectCliClient} from '@sanity/cli-core'
+import {getGlobalCliClient, getProjectCliClient} from '@sanity/cli-core/apiClient'
+import {debug} from '@sanity/cli-core/debug'
 import {SanityProject} from '@sanity/client'
 
 import {type Invite, type Role} from '../actions/users/types.js'

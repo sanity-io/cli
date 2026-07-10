@@ -1,5 +1,6 @@
 import {CLIError} from '@oclif/core/errors'
-import {isInteractive, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
+import {isInteractive} from '@sanity/cli-core/util'
 import {confirm} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 

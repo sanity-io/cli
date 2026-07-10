@@ -9,7 +9,7 @@ vi.mock('../plugin.js', () => ({
   federation: mockFederation,
 }))
 
-vi.mock('@sanity/cli-core', () => ({
+vi.mock('@sanity/cli-core/package-manager', () => ({
   readPackageJson: mockReadPackageJson,
 }))
 

@@ -1,4 +1,4 @@
-import {type CLITelemetryStore, type Output} from '@sanity/cli-core'
+import {type CLITelemetryStore, type Output} from '@sanity/cli-core/types'
 import {type Framework} from '@vercel/frameworks'
 
 import {type GenerateConfigOptions} from './createStudioConfig.js'

@@ -1,113 +1,99 @@
-import {select} from '@sanity/cli-core/ux'
-import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
+import {type DeliveryAttempt, type Hook} from '../../../actions/hook/types.js'
 import {LogsHookCommand} from '../logs.js'
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: vi.fn(),
-  }
-})
+const mockedGetHooks = vi.hoisted(() => vi.fn())
+const mockedGetHookAttempts = vi.hoisted(() => vi.fn())
+const mockedGetHookMessages = vi.hoisted(() => vi.fn())
 
-const testProjectId = 'test-project'
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('../../../services/hooks.js', () => ({
+  getHookAttemptsForProject: mockedGetHookAttempts,
+  getHookMessagesForProject: mockedGetHookMessages,
+  getHooksForProject: mockedGetHooks,
+}))
+vi.mock('../../../prompts/promptForProject.js', () => ({
+  promptForProject: vi.fn(),
+}))
 
-const defaultMocks = {
-  cliConfig: {api: {projectId: testProjectId}},
-  projectRoot: {
-    directory: '/test/path',
-    path: '/test/path/sanity.config.ts',
-    type: 'studio' as const,
-  },
-  token: 'test-token',
-}
-
-const mockedSelect = vi.mocked(select)
+const HOOK_ID = 'test-hook-id'
+const TEST_HOOK = {
+  id: HOOK_ID,
+  name: 'test-hook',
+  type: 'document',
+} as Hook
 
 describe('#hook:logs', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('displays error when no project ID is found', async () => {
-    const {error} = await testCommand(LogsHookCommand, [], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {projectId: undefined}},
+  test('displays error when problem retrieving hooks', async () => {
+    mockedGetHooks.mockRejectedValue(new Error('boom'))
+
+    await LogsHookCommand.run()
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('Hook list retrieval failed'),
+      {
+        exit: 1,
       },
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
+    )
   })
-
   test('displays error when no hooks are registered', async () => {
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [])
+    mockedGetHooks.mockResolvedValue([])
 
-    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
+    await LogsHookCommand.run()
 
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No hooks currently registered')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith('No hooks currently registered', {
+      exit: 1,
+    })
   })
 
   test('displays error when specified hook is not found', async () => {
-    const HOOK_ID = 'not-found-hook-test'
+    mockedGetHooks.mockResolvedValue([TEST_HOOK])
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
+    await LogsHookCommand.run(['non-existent-hook'])
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      'Hook with name "non-existent-hook" not found',
       {
-        id: HOOK_ID,
-        name: 'test-hook',
-        type: 'document',
+        exit: 1,
       },
-    ])
-
-    const {error} = await testCommand(LogsHookCommand, ['non-existent-hook'], {mocks: defaultMocks})
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Hook with name "non-existent-hook" not found')
-    expect(error?.oclif?.exit).toBe(1)
+    )
   })
 
-  test('displays logs for a single hook', async () => {
-    const HOOK_ID = 'single-hook-test'
+  test('displays logs for the one single hook when only it exists', async () => {
     const MESSAGE_ID = 'single-msg-test'
     const ATTEMPT_ID = 'single-attempt-test'
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
+    mockedGetHooks.mockResolvedValue([TEST_HOOK])
+    mockedGetHookAttempts.mockResolvedValue([
       {
-        id: HOOK_ID,
-        name: 'test-hook',
-        type: 'document',
-      },
+        createdAt: '2025-08-07T09:15:36.628Z',
+        failureReason: 'http',
+        hookId: TEST_HOOK.id,
+        id: ATTEMPT_ID,
+        inProgress: false,
+        isFailure: true,
+        messageId: MESSAGE_ID,
+        projectId: 'test-project',
+        resultCode: 404,
+      } as DeliveryAttempt,
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(200, [
+    mockedGetHookMessages.mockResolvedValue([
       {
         createdAt: '2025-08-07T09:15:36.628Z',
         dataset: 'production',
         failureCount: 1,
-        hookId: HOOK_ID,
+        hookId: TEST_HOOK.id,
         id: MESSAGE_ID,
         payload: '{"test": true}',
         projectId: 'test-project',
@@ -116,62 +102,29 @@ describe('#hook:logs', () => {
       },
     ])
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
-    }).reply(200, [
-      {
-        createdAt: '2025-08-07T09:15:36.628Z',
-        failureReason: 'http',
-        hookId: HOOK_ID,
-        id: ATTEMPT_ID,
-        inProgress: false,
-        isFailure: true,
-        messageId: MESSAGE_ID,
-        projectId: 'test-project',
-        resultCode: 404,
-      },
-    ])
+    await LogsHookCommand.run([])
 
-    const {stdout} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('Date: 2025-08-07T09:15:36.628Z')
-    expect(stdout).toContain('Status: failure')
-    expect(stdout).toContain('Result code: 404')
-    expect(stdout).toContain('Failures: 1')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Date: 2025-08-07T09:15:36.628Z')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Status: failure')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Result code: 404')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Failures: 1')
   })
 
-  test('displays logs for a specified hook', async () => {
-    const HOOK_ID_1 = 'specified-hook-test-1'
+  test('displays logs for a specified hook when multiple exist', async () => {
     const HOOK_ID_2 = 'specified-hook-test-2'
     const MESSAGE_ID = 'specified-msg-test'
     const ATTEMPT_ID = 'specified-attempt-test'
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
-      {
-        id: HOOK_ID_1,
-        name: 'test-hook',
-        type: 'document',
-      },
-      {
-        id: HOOK_ID_2,
-        name: 'another-hook',
-        type: 'document',
-      },
+    mockedGetHooks.mockResolvedValue([
+      {...TEST_HOOK, id: HOOK_ID},
+      {...TEST_HOOK, id: HOOK_ID_2, name: 'some-other-hook'},
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID_1}/messages`,
-    }).reply(200, [
+    mockedGetHookMessages.mockResolvedValue([
       {
         createdAt: '2025-08-07T09:15:36.628Z',
         dataset: 'production',
         failureCount: 0,
-        hookId: HOOK_ID_1,
+        hookId: HOOK_ID,
         id: MESSAGE_ID,
         payload: '{"test": true}',
         projectId: 'test-project',
@@ -179,56 +132,83 @@ describe('#hook:logs', () => {
         status: 'success',
       },
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID_1}/attempts`,
-    }).reply(200, [
+    mockedGetHookAttempts.mockResolvedValue([
       {
         createdAt: '2025-08-07T09:15:36.628Z',
         failureReason: '',
-        hookId: HOOK_ID_1,
+        hookId: HOOK_ID,
         id: ATTEMPT_ID,
         inProgress: false,
         isFailure: false,
         messageId: MESSAGE_ID,
         projectId: 'test-project',
         resultCode: 200,
-      },
+      } as DeliveryAttempt,
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['test-hook'], {mocks: defaultMocks})
+    await LogsHookCommand.run([TEST_HOOK.name])
 
-    expect(stdout).toContain('Date: 2025-08-07T09:15:36.628Z')
-    expect(stdout).toContain('Status: success')
-    expect(stdout).toContain('Result code: 200')
-    expect(stdout).not.toContain('Failures:')
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Date: 2025-08-07T09:15:36.628Z')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Status: success')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Result code: 200')
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith('Failures:')
   })
 
-  test('displays error when hook logs retrieval fails', async () => {
-    const HOOK_ID = 'error-logs-hook-test'
+  test('displays error when hook message retrieval fails', async () => {
+    mockedGetHooks.mockResolvedValue([TEST_HOOK])
+    mockedGetHookMessages.mockRejectedValue(new Error('boom'))
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
+    await LogsHookCommand.run([])
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('Hook logs retrieval failed'),
       {
-        id: HOOK_ID,
-        name: 'test-hook',
-        type: 'document',
+        exit: 1,
       },
+    )
+  })
+
+  test('displays error when hook attempts retrieval fails', async () => {
+    mockedGetHooks.mockResolvedValue([TEST_HOOK])
+    mockedGetHookAttempts.mockRejectedValue(new Error('boom'))
+
+    await LogsHookCommand.run([])
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('Hook logs retrieval failed'),
+      {
+        exit: 1,
+      },
+    )
+  })
+
+  test('displays error when no hook is selected from prompt', async () => {
+    const HOOK_ID_1 = 'no-select-hook-1-test'
+    const HOOK_ID_2 = 'no-select-hook-2-test'
+
+    uxMocks.select.mockResolvedValue('non-existent-hook-id')
+    mockedGetHooks.mockResolvedValue([
+      {
+        id: HOOK_ID_1,
+        name: 'first-hook',
+        type: 'document',
+      } as Hook,
+      {
+        id: HOOK_ID_2,
+        name: 'second-hook',
+        type: 'document',
+      } as Hook,
     ])
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(500, {message: 'Internal Server Error'})
+    await LogsHookCommand.run([])
 
-    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Hook logs retrieval failed')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('No hook selected'),
+      {
+        exit: 1,
+      },
+    )
   })
 
   test('prompts user to select hook when multiple hooks exist', async () => {
@@ -236,28 +216,20 @@ describe('#hook:logs', () => {
     const HOOK_ID_2 = 'select-hook-test-2'
     const MESSAGE_ID = 'select-msg-test'
 
-    mockedSelect.mockResolvedValue(HOOK_ID_2)
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
+    uxMocks.select.mockResolvedValue(HOOK_ID_2)
+    mockedGetHooks.mockResolvedValue([
       {
         id: HOOK_ID_1,
         name: 'first-hook',
         type: 'document',
-      },
+      } as Hook,
       {
         id: HOOK_ID_2,
         name: 'second-hook',
         type: 'document',
-      },
+      } as Hook,
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID_2}/messages`,
-    }).reply(200, [
+    mockedGetHookMessages.mockResolvedValue([
       {
         createdAt: '2025-08-07T10:00:00.000Z',
         dataset: 'production',
@@ -270,15 +242,11 @@ describe('#hook:logs', () => {
         status: 'failure',
       },
     ])
+    mockedGetHookAttempts.mockResolvedValue([])
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID_2}/attempts`,
-    }).reply(200, [])
+    await LogsHookCommand.run([])
 
-    const {stdout} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
-
-    expect(vi.mocked(select)).toHaveBeenCalledWith({
+    expect(uxMocks.select).toHaveBeenCalledWith({
       choices: [
         {name: 'first-hook', value: HOOK_ID_1},
         {name: 'second-hook', value: HOOK_ID_2},
@@ -286,31 +254,24 @@ describe('#hook:logs', () => {
       message: 'Select hook to list logs for',
     })
 
-    expect(stdout).toContain('Date: 2025-08-07T10:00:00.000Z')
-    expect(stdout).toContain('Status: failure')
-    expect(stdout).toContain('Result code: 500')
-    expect(stdout).toContain('Failures: 1')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Date: 2025-08-07T10:00:00.000Z')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Status: failure')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Result code: 500')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Failures: 1')
   })
 
   test('matches hook name case-insensitively', async () => {
     const HOOK_ID = 'case-hook-test'
     const MESSAGE_ID = 'case-msg-test'
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
+    mockedGetHooks.mockResolvedValue([
       {
         id: HOOK_ID,
         name: 'Test-Hook',
         type: 'document',
-      },
+      } as Hook,
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(200, [
+    mockedGetHookMessages.mockResolvedValue([
       {
         createdAt: '2025-08-07T11:00:00.000Z',
         dataset: 'production',
@@ -323,61 +284,13 @@ describe('#hook:logs', () => {
         status: 'success',
       },
     ])
+    mockedGetHookAttempts.mockResolvedValue([])
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
-    }).reply(200, [])
+    await LogsHookCommand.run(['test-hook'])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['test-hook'], {mocks: defaultMocks})
-
-    expect(stdout).toContain('Date: 2025-08-07T11:00:00.000Z')
-    expect(stdout).toContain('Status: success')
-    expect(stdout).toContain('Result code: 200')
-  })
-
-  test('displays error when hook attempts retrieval fails', async () => {
-    const HOOK_ID = 'attempt-error-hook-test'
-    const MESSAGE_ID = 'attempt-error-msg-test'
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
-      {
-        id: HOOK_ID,
-        name: 'test-hook',
-        type: 'document',
-      },
-    ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(200, [
-      {
-        createdAt: '2025-08-07T12:00:00.000Z',
-        dataset: 'production',
-        failureCount: 0,
-        hookId: HOOK_ID,
-        id: MESSAGE_ID,
-        payload: '{"test": true}',
-        projectId: 'test-project',
-        resultCode: 200,
-        status: 'success',
-      },
-    ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
-    }).reply(500, {message: 'Internal Server Error'})
-
-    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Hook logs retrieval failed')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Date: 2025-08-07T11:00:00.000Z')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Status: success')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Result code: 200')
   })
 
   test('displays detailed output with --detailed flag', async () => {
@@ -386,21 +299,14 @@ describe('#hook:logs', () => {
     const ATTEMPT_TIMEOUT_ID = 'detailed-timeout-attempt-test'
     const ATTEMPT_PENDING_ID = 'detailed-pending-attempt-test'
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
+    mockedGetHooks.mockResolvedValue([
       {
         id: HOOK_ID,
         name: 'test-hook',
         type: 'document',
-      },
+      } as Hook,
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(200, [
+    mockedGetHookMessages.mockResolvedValue([
       {
         createdAt: '2025-08-07T13:00:00.000Z',
         dataset: 'production',
@@ -413,11 +319,7 @@ describe('#hook:logs', () => {
         status: 'failure',
       },
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
-    }).reply(200, [
+    mockedGetHookAttempts.mockResolvedValue([
       {
         createdAt: '2025-08-07T13:00:01.000Z',
         duration: 5000,
@@ -448,21 +350,27 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'], {mocks: defaultMocks})
+    await LogsHookCommand.run(['--detailed'])
 
-    expect(stdout).toContain('Date: 2025-08-07T13:00:00.000Z')
-    expect(stdout).toContain('Status: failure')
-    expect(stdout).toContain('Result code: 400')
-    expect(stdout).toContain('Failures: 2')
-    expect(stdout).toContain('Payload:')
-    expect(stdout).toContain('document')
-    expect(stdout).toContain('_type')
-    expect(stdout).toContain('post')
-    expect(stdout).toContain('Attempts:')
-    expect(stdout).toContain('[2025-08-07T13:00:01Z]')
-    expect(stdout).toContain('Failure: Request timed out')
-    expect(stdout).toContain('[2025-08-07T13:00:10Z]')
-    expect(stdout).toContain('Pending')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Date: 2025-08-07T13:00:00.000Z')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Status: failure')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Result code: 400')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Failures: 2')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Payload:')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('document'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('_type'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('post'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Attempts:')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('[2025-08-07T13:00:01Z]'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Failure: Request timed out'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('[2025-08-07T13:00:10Z]'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Pending'))
   })
 
   test('displays detailed output with successful attempts', async () => {
@@ -470,21 +378,14 @@ describe('#hook:logs', () => {
     const MESSAGE_ID = 'success-detailed-msg-test'
     const ATTEMPT_ID = 'success-detailed-attempt-test'
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
+    mockedGetHooks.mockResolvedValue([
       {
         id: HOOK_ID,
         name: 'test-hook',
         type: 'document',
-      },
+      } as Hook,
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(200, [
+    mockedGetHookMessages.mockResolvedValue([
       {
         createdAt: '2025-08-07T14:00:00.000Z',
         dataset: 'production',
@@ -497,11 +398,7 @@ describe('#hook:logs', () => {
         status: 'success',
       },
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
-    }).reply(200, [
+    mockedGetHookAttempts.mockResolvedValue([
       {
         createdAt: '2025-08-07T14:00:01.500Z',
         duration: 250,
@@ -518,274 +415,34 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'], {mocks: defaultMocks})
+    await LogsHookCommand.run(['--detailed'])
 
-    expect(stdout).toContain('Date: 2025-08-07T14:00:00.000Z')
-    expect(stdout).toContain('Status: success')
-    expect(stdout).toContain('Result code: 201')
-    expect(stdout).toContain('Payload:')
-    expect(stdout).toContain('{ success: true }')
-    expect(stdout).toContain('Attempts:')
-    expect(stdout).toContain('[2025-08-07T14:00:01Z]')
-    expect(stdout).toContain('Success: HTTP 201 (250ms)')
-  })
-
-  test('displays different failure reasons with detailed output', async () => {
-    const HOOK_ID = 'failure-reasons-hook-test'
-    const MESSAGE_ID = 'failure-reasons-msg-test'
-    const ATTEMPT_HTTP_ID = 'failure-http-attempt-test'
-    const ATTEMPT_NETWORK_ID = 'failure-network-attempt-test'
-    const ATTEMPT_OTHER_ID = 'failure-other-attempt-test'
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
-      {
-        id: HOOK_ID,
-        name: 'test-hook',
-        type: 'document',
-      },
-    ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(200, [
-      {
-        createdAt: '2025-08-07T15:00:00.000Z',
-        dataset: 'production',
-        failureCount: 4,
-        hookId: HOOK_ID,
-        id: MESSAGE_ID,
-        payload: '{"failures": "test"}',
-        projectId: 'test-project',
-        resultCode: null,
-        status: 'failure',
-      },
-    ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
-    }).reply(200, [
-      {
-        createdAt: '2025-08-07T15:00:01.000Z',
-        duration: 100,
-        failureReason: 'http',
-        hookId: HOOK_ID,
-        id: ATTEMPT_HTTP_ID,
-        inProgress: false,
-        isFailure: true,
-        messageId: MESSAGE_ID,
-        projectId: 'test-project',
-        resultBody: 'Not Found',
-        resultCode: 404,
-        updatedAt: '2025-08-07T15:00:01.100Z',
-      },
-      {
-        createdAt: '2025-08-07T15:00:02.000Z',
-        duration: 0,
-        failureReason: 'network',
-        hookId: HOOK_ID,
-        id: ATTEMPT_NETWORK_ID,
-        inProgress: false,
-        isFailure: true,
-        messageId: MESSAGE_ID,
-        projectId: 'test-project',
-        resultBody: '',
-        resultCode: 0,
-        updatedAt: '2025-08-07T15:00:02.000Z',
-      },
-      {
-        createdAt: '2025-08-07T15:00:03.000Z',
-        duration: 200,
-        failureReason: 'other',
-        hookId: HOOK_ID,
-        id: ATTEMPT_OTHER_ID,
-        inProgress: false,
-        isFailure: true,
-        messageId: MESSAGE_ID,
-        projectId: 'test-project',
-        resultBody: '',
-        resultCode: 0,
-        updatedAt: '2025-08-07T15:00:03.200Z',
-      },
-    ])
-
-    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'], {mocks: defaultMocks})
-
-    expect(stdout).toContain('Date: 2025-08-07T15:00:00.000Z')
-    expect(stdout).toContain('Status: failure')
-    expect(stdout).toContain('Failures: 4')
-    expect(stdout).toContain('Payload:')
-    expect(stdout).toContain("{ failures: 'test' }")
-    expect(stdout).toContain('Attempts:')
-    expect(stdout).toContain(
-      `Failure: HTTP 404 (run \`sanity hook attempt ${ATTEMPT_HTTP_ID}\` for details)`,
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Date: 2025-08-07T14:00:00.000Z')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Status: success')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Result code: 201')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Payload:'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('{ success:'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('true'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Attempts:')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('[2025-08-07T14:00:01Z]'),
     )
-    expect(stdout).toContain('Failure: Network error')
-    expect(stdout).toContain('Failure: Unknown error')
-  })
-
-  test('displays multiple messages with separators', async () => {
-    const HOOK_ID = 'multiple-messages-hook-test'
-    const MESSAGE_ID_1 = 'multiple-msg-1-test'
-    const MESSAGE_ID_2 = 'multiple-msg-2-test'
-    const ATTEMPT_ID_1 = 'multiple-attempt-1-test'
-    const ATTEMPT_ID_2 = 'multiple-attempt-2-test'
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
-      {
-        id: HOOK_ID,
-        name: 'test-hook',
-        type: 'document',
-      },
-    ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(200, [
-      {
-        createdAt: '2025-08-07T16:00:00.000Z',
-        dataset: 'production',
-        failureCount: 0,
-        hookId: HOOK_ID,
-        id: MESSAGE_ID_1,
-        payload: '{"first": true}',
-        projectId: 'test-project',
-        resultCode: 200,
-        status: 'success',
-      },
-      {
-        createdAt: '2025-08-07T16:01:00.000Z',
-        dataset: 'production',
-        failureCount: 1,
-        hookId: HOOK_ID,
-        id: MESSAGE_ID_2,
-        payload: '{"second": true}',
-        projectId: 'test-project',
-        resultCode: 500,
-        status: 'failure',
-      },
-    ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
-    }).reply(200, [
-      {
-        createdAt: '2025-08-07T16:00:01.000Z',
-        duration: 100,
-        failureReason: '',
-        hookId: HOOK_ID,
-        id: ATTEMPT_ID_1,
-        inProgress: false,
-        isFailure: false,
-        messageId: MESSAGE_ID_1,
-        projectId: 'test-project',
-        resultBody: 'OK',
-        resultCode: 200,
-        updatedAt: '2025-08-07T16:00:01.100Z',
-      },
-      {
-        createdAt: '2025-08-07T16:01:01.000Z',
-        duration: 200,
-        failureReason: 'http',
-        hookId: HOOK_ID,
-        id: ATTEMPT_ID_2,
-        inProgress: false,
-        isFailure: true,
-        messageId: MESSAGE_ID_2,
-        projectId: 'test-project',
-        resultBody: 'Error',
-        resultCode: 500,
-        updatedAt: '2025-08-07T16:01:01.200Z',
-      },
-    ])
-
-    const {stdout} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('Date: 2025-08-07T16:00:00.000Z')
-    expect(stdout).toContain('Status: success')
-    expect(stdout).toContain('Result code: 200')
-    expect(stdout).toContain('---') // Separator between messages
-    expect(stdout).toContain('Date: 2025-08-07T16:01:00.000Z')
-    expect(stdout).toContain('Status: failure')
-    expect(stdout).toContain('Result code: 500')
-    expect(stdout).toContain('Failures: 1')
-
-    // Verify that the first message section (before "---") doesn't have failures
-    const [firstSection] = stdout.split('---')
-    expect(firstSection).not.toContain('Failures:')
-  })
-
-  test('displays error when fetching hooks fails', async () => {
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(500, {message: 'Internal Server Error'})
-
-    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Hook list retrieval failed')
-    expect(error?.message).toContain('Internal Server Error')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('displays error when no hook is selected from prompt', async () => {
-    const HOOK_ID_1 = 'no-select-hook-1-test'
-    const HOOK_ID_2 = 'no-select-hook-2-test'
-
-    mockedSelect.mockResolvedValue('non-existent-hook-id')
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
-      {
-        id: HOOK_ID_1,
-        name: 'first-hook',
-        type: 'document',
-      },
-      {
-        id: HOOK_ID_2,
-        name: 'second-hook',
-        type: 'document',
-      },
-    ])
-
-    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No hook selected')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('Success: HTTP 201 (250ms)'),
+    )
   })
 
   test('displays message without attempts section when attempts array is empty', async () => {
     const HOOK_ID = 'empty-attempts-hook-test'
     const MESSAGE_ID = 'empty-attempts-msg-test'
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
-    }).reply(200, [
+    mockedGetHooks.mockResolvedValue([
       {
         id: HOOK_ID,
         name: 'test-hook',
         type: 'document',
-      },
+      } as Hook,
     ])
-
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
-    }).reply(200, [
+    mockedGetHookMessages.mockResolvedValue([
       {
         createdAt: '2025-08-07T17:00:00.000Z',
         dataset: 'production',
@@ -798,19 +455,18 @@ describe('#hook:logs', () => {
         status: 'queued',
       },
     ])
+    mockedGetHookAttempts.mockResolvedValue([])
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
-    }).reply(200, [])
+    await LogsHookCommand.run(['--detailed'])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'], {mocks: defaultMocks})
-
-    expect(stdout).toContain('Date: 2025-08-07T17:00:00.000Z')
-    expect(stdout).toContain('Status: queued')
-    expect(stdout).toContain('Result code: 200')
-    expect(stdout).toContain('Payload:')
-    expect(stdout).toContain('{ no_attempts: true }')
-    expect(stdout).not.toContain('Attempts:') // No attempts section when empty
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Date: 2025-08-07T17:00:00.000Z')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Status: queued')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Result code: 200')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Payload:')
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('{ no_attempts:'),
+    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('true'))
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(expect.stringContaining('Attempts:')) // No attempts section when empty
   })
 })

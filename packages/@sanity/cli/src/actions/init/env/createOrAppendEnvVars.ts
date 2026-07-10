@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 
 import {VersionedFramework} from '../types.js'
 import {writeEnvVarsToFile} from './writeEnvVarsToFile.js'

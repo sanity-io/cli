@@ -9,8 +9,7 @@ import {workbenchCliConfig} from './devTestHelpers.js'
 
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+vi.mock('@sanity/cli-core/config', () => ({
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
 

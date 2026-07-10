@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 
 const devDebug = subdebug('dev')
 

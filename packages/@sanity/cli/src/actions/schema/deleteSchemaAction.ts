@@ -1,7 +1,8 @@
 import {styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {type Output, studioWorkerTask} from '@sanity/cli-core'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
+import {type Output} from '@sanity/cli-core/types'
 import {type Workspace} from 'sanity'
 
 import {deleteSchema} from '../../services/schemas.js'

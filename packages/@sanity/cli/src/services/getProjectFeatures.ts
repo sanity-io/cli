@@ -1,4 +1,4 @@
-import {getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 
 export const PROJECT_FEATURES_API_VERSION = 'v2025-09-16'
 

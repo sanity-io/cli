@@ -1,4 +1,4 @@
-import {type ConfigStore} from '@sanity/cli-core'
+import {type ConfigStore} from '@sanity/cli-core/config'
 
 interface ExpiringConfigValue {
   updatedAt: number

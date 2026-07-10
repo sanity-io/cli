@@ -1,4 +1,4 @@
-import {getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient} from '@sanity/cli-core/apiClient'
 
 import {
   type DeployResponse,

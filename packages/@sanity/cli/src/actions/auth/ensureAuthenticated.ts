@@ -1,9 +1,5 @@
-import {
-  type CLITelemetryStore,
-  getCliToken,
-  type Output,
-  type SanityOrgUser,
-} from '@sanity/cli-core'
+import {getCliToken} from '@sanity/cli-core/config'
+import {type CLITelemetryStore, type Output, type SanityOrgUser} from '@sanity/cli-core/types'
 import {isHttpError} from '@sanity/client'
 
 import {LoginError} from '../../errors/LoginError.js'

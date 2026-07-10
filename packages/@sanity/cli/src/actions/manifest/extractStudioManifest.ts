@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
-import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
+import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/util'
 
 import {extractManifest} from './extractManifest.js'
 import {type StudioManifest} from './types.js'

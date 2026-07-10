@@ -1,4 +1,4 @@
-import {type TelemetryUserProperties} from '@sanity/cli-core'
+import {type TelemetryUserProperties} from '@sanity/cli-core/types'
 import {confirm} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 import {type TelemetryTrace} from '@sanity/telemetry'

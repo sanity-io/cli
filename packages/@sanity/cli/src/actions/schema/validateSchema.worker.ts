@@ -1,6 +1,7 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {findStudioConfigPath, getStudioWorkspaces, getWorkspace} from '@sanity/cli-core'
+import {findStudioConfigPath, getStudioWorkspaces} from '@sanity/cli-core/config'
+import {getWorkspace} from '@sanity/cli-core/util'
 import {
   type EncodableObject,
   type EncodableValue,

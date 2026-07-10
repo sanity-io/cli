@@ -4,7 +4,7 @@ export {defineCliConfig} from '../config/defineCliConfig.js'
 export type {CliApiConfig} from '../types.js'
 export {type CliClientOptions, getCliClient} from '../util/cliClient.js'
 export {loadEnv} from '../util/loadEnv.js'
-export type {CliConfig, UserViteConfig} from '@sanity/cli-core'
+export type {CliConfig, UserViteConfig} from '@sanity/cli-core/types'
 
 export {
   type DefineAppInput,

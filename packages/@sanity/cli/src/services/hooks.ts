@@ -1,4 +1,4 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 
 import {HOOK_API_VERSION} from '../actions/hook/constants.js'
 import {type DeliveryAttempt, type Hook, type HookMessage} from '../actions/hook/types.js'

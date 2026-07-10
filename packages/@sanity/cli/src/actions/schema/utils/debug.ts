@@ -1,4 +1,4 @@
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 
 export const schemasDeployDebug = subdebug('schemas:deploy')
 export const schemasListDebug = subdebug('schemas:list')

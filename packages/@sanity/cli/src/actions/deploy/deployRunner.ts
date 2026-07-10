@@ -1,7 +1,7 @@
 import {format} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core/types'
 import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {getErrorMessage} from '../../util/getErrorMessage.js'

@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {readPackageJson} from '@sanity/cli-core'
+import {readPackageJson} from '@sanity/cli-core/package-manager'
 import {spinner} from '@sanity/cli-core/ux'
 import promiseProps from 'promise-props-recursive'
 import {compare, minVersion} from 'semver'

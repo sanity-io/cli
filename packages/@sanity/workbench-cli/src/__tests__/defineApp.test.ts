@@ -1,4 +1,4 @@
-import {type ApplicationType} from '@sanity/cli-core'
+import {type ApplicationType} from '@sanity/cli-core/types'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {

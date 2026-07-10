@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {exportDataset} from '@sanity/export'

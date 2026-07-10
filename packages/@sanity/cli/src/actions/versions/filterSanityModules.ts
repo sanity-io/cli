@@ -1,4 +1,4 @@
-import {type PackageJson} from '@sanity/cli-core'
+import {type PackageJson} from '@sanity/cli-core/types'
 
 /**
  * Filter the sanity modules from the package.json.

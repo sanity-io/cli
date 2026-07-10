@@ -2,7 +2,7 @@ import {
   resolveLocalPackage,
   resolveLocalPackageFrom,
   resolveLocalPackagePath,
-} from '@sanity/cli-core'
+} from '@sanity/cli-core/package-manager'
 import {type ComponentType, isValidElement, type ReactNode} from 'react'
 import {isValidElementType} from 'react-is'
 

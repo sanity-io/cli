@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {buildApp} from '../actions/build/buildApp.js'
 import {buildStudio} from '../actions/build/buildStudio.js'

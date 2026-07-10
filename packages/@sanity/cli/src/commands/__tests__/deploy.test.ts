@@ -1,12 +1,13 @@
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockSanityCommand} from '../../../test/mockSanityCommand.js'
+import {DeployCommand} from '../deploy.js'
 
-const {MockedSanityCommand, mocks} = createMockSanityCommand()
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, SanityCommand: MockedSanityCommand}
-})
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockDeployApp = vi.hoisted(() => vi.fn())
 const mockDeployStudio = vi.hoisted(() => vi.fn())
@@ -19,8 +20,6 @@ vi.mock('../../util/determineIsApp.js', () => ({determineIsApp: mockDetermineIsA
 vi.mock('../../util/dirIsEmptyOrNonExistent.js', () => ({
   dirIsEmptyOrNonExistent: mockDirIsEmptyOrNonExistent,
 }))
-
-const {DeployCommand} = await import('../deploy.js')
 
 describe('#deploy', () => {
   beforeEach(() => {
@@ -51,12 +50,12 @@ describe('#deploy', () => {
 
   test('logs the build target for a custom output directory', async () => {
     await DeployCommand.run(['output'])
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('Building to'))
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringContaining('Building to'))
   })
 
   test('keeps stdout clean for the JSON payload — no build-target line with --json', async () => {
     await DeployCommand.run(['output', '--json'])
-    expect(mocks.SanityCmdOutputLog).not.toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
       expect.stringContaining('Building to'),
     )
   })

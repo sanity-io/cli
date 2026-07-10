@@ -1,4 +1,5 @@
-import {type CliConfig, getSanityEnvVar} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core/types'
+import {getSanityEnvVar} from '@sanity/cli-core/util'
 
 import {determineIsApp} from './determineIsApp.js'
 import {ensureTrailingSlash} from './ensureTrailingSlash.js'

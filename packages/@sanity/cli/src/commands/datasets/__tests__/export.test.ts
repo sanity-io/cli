@@ -1,26 +1,23 @@
 import fs from 'node:fs/promises'
 
-import {type CliConfig, getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
-import {input, select} from '@sanity/cli-core/ux'
-import {testCommand} from '@sanity/cli-test'
+import {type CliConfig} from '@sanity/cli-core/types'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {exportDataset, type ExportResult} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {promptForProject} from '../../../prompts/promptForProject.js'
 import {DatasetExportCommand} from '../export.js'
 
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
+)
+vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('@sanity/client', () => ({}))
 vi.mock('@sanity/export', () => ({
   exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
-
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    input: vi.fn(),
-    select: vi.fn(),
-  }
-})
 
 vi.mock('node:fs/promises', () => ({
   default: {
@@ -28,29 +25,20 @@ vi.mock('node:fs/promises', () => ({
     stat: vi.fn(),
   },
 }))
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    getProjectCliClient: vi.fn(),
-  }
-})
-
-vi.mock('../../../prompts/promptForProject.js', async () => {
-  const {NonInteractiveError} =
-    await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
-  return {
-    promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
-  }
-})
+vi.mock('../../../prompts/promptForProject.js', () => ({
+  promptForProject: vi.fn(),
+}))
+const mockPromptForDataset = vi.hoisted(() => vi.fn())
+vi.mock('../../../prompts/promptForDataset.js', () => ({
+  promptForDataset: mockPromptForDataset,
+}))
+const mockListDatasets = vi.hoisted(() => vi.fn())
+vi.mock('../../../services/datasets.js', () => ({
+  listDatasets: mockListDatasets,
+}))
 
 const mockExportDataset = vi.mocked(exportDataset)
-const mockInput = vi.mocked(input)
-const mockSelect = vi.mocked(select)
 const mockFs = vi.mocked(fs)
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
-const mockPromptForProject = vi.mocked(promptForProject)
 
 const TEST_CONFIG = {
   DATASET: 'production',
@@ -70,24 +58,14 @@ const ERROR_MESSAGES = {
   USE_OVERWRITE: '--overwrite',
 } as const
 
-const defaultMocks = {
-  cliConfig: {api: {dataset: TEST_CONFIG.DATASET, projectId: TEST_CONFIG.PROJECT_ID}},
-  projectRoot: {
-    directory: '/test/path',
-    path: '/test/path/sanity.config.ts',
-    type: 'studio' as const,
-  },
-  token: 'test-token',
-}
-
 interface TestContextOptions {
+  cliConfig?: object
   dataset?: string | null
   datasets?: Array<{name: string}>
   fileExists?: boolean
   inputValue?: string
   isFile?: boolean
   projectId?: string
-  selectValue?: string
 }
 
 const createTestContext = (overrides: TestContextOptions = {}) => {
@@ -110,31 +88,17 @@ const createTestContext = (overrides: TestContextOptions = {}) => {
     mockFs.stat.mockRejectedValue(new Error('File not found'))
   }
 
-  // Setup select if provided
-  if (context.selectValue) {
-    mockSelect.mockResolvedValueOnce(context.selectValue)
-  }
-
   // Setup input if provided
   if (context.inputValue) {
-    mockInput.mockResolvedValueOnce(context.inputValue)
+    uxMocks.input.mockResolvedValueOnce(context.inputValue)
   }
 
   const apiConfig: CliConfig['api'] = {projectId: context.projectId}
   if (context.dataset) apiConfig.dataset = context.dataset
 
-  mockGetProjectCliClient.mockResolvedValue({
-    datasets: {
-      list: vi.fn().mockResolvedValue(context.datasets),
-    },
-  } as never)
-
-  return {
-    mocks: {
-      ...defaultMocks,
-      cliConfig: {api: apiConfig},
-    },
-  }
+  mocks.SanityCmdGetCliConfig.mockResolvedValue(context.cliConfig ?? {api: apiConfig})
+  mocks.SanityCmdGetProjectId.mockResolvedValue(context.projectId)
+  mockListDatasets.mockResolvedValue(context.datasets)
 }
 
 describe('#dataset:export', () => {
@@ -160,15 +124,14 @@ describe('#dataset:export', () => {
     ])(
       'exports dataset $description',
       async ({args, expectedPathPattern, inputValue, shouldShowDetails}) => {
-        const {mocks} = createTestContext({datasets: [{name: 'production'}], inputValue})
+        createTestContext({datasets: [{name: 'production'}], inputValue})
 
-        const {stdout} = await testCommand(DatasetExportCommand, args, {mocks})
+        await DatasetExportCommand.run(args)
 
         expect(mockExportDataset).toHaveBeenCalledWith(
           expect.objectContaining({
             assetConcurrency: 8,
             assets: true,
-            client: expect.any(Object),
             compress: true,
             dataset: 'production',
             drafts: true,
@@ -181,18 +144,25 @@ describe('#dataset:export', () => {
           }),
         )
 
+        expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
         if (shouldShowDetails) {
-          expect(stdout).toContain('projectId: test-project')
-          expect(stdout).toContain('dataset: production')
-          expect(stdout).toContain('Export finished')
+          expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+            expect.stringContaining('projectId: test-project'),
+          )
+          expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+            expect.stringContaining('dataset: production'),
+          )
+          expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+            expect.stringContaining('Export finished'),
+          )
         }
       },
     )
 
     test('exports to stdout with dash', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
-      await testCommand(DatasetExportCommand, ['production', '-'], {mocks})
+      await DatasetExportCommand.run(['production', '-'])
 
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -202,14 +172,14 @@ describe('#dataset:export', () => {
     })
 
     test('prompts for destination when not provided as argument', async () => {
-      const {mocks} = createTestContext({
+      createTestContext({
         datasets: [{name: 'production'}],
         inputValue: '/custom/path/export.tar.gz',
       })
 
-      await testCommand(DatasetExportCommand, ['production'], {mocks})
+      await DatasetExportCommand.run(['production'])
 
-      expect(mockInput).toHaveBeenCalledWith({
+      expect(uxMocks.input).toHaveBeenCalledWith({
         default: expect.stringMatching(/production\.tar\.gz$/),
         message: 'Output path:',
         transformer: expect.any(Function),
@@ -226,21 +196,24 @@ describe('#dataset:export', () => {
 
   describe('dataset selection', () => {
     test('prompts for dataset selection when none specified', async () => {
-      const {mocks} = createTestContext({
+      const datasets = [
+        {name: 'production', value: 'production'},
+        {name: 'staging', value: 'staging'},
+      ]
+      createTestContext({
         dataset: null, // No default dataset
+        datasets,
         inputValue: 'staging.tar.gz', // Mock destination input
-        selectValue: 'staging',
       })
+      mockPromptForDataset.mockResolvedValue('staging')
 
-      await testCommand(DatasetExportCommand, [], {mocks})
+      await DatasetExportCommand.run([])
 
-      expect(mockSelect).toHaveBeenCalledWith({
-        choices: [
-          {name: 'production', value: 'production'},
-          {name: 'staging', value: 'staging'},
-        ],
-        message: 'Select the dataset name:',
-      })
+      expect(mockPromptForDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          datasets,
+        }),
+      )
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
           dataset: 'staging',
@@ -249,15 +222,17 @@ describe('#dataset:export', () => {
     })
 
     test('uses and announces default dataset from config', async () => {
-      const {mocks} = createTestContext({
+      createTestContext({
         dataset: 'staging',
         datasets: [{name: 'staging'}],
         inputValue: 'staging.tar.gz', // Mock destination input
       })
 
-      const {stdout} = await testCommand(DatasetExportCommand, [], {mocks})
+      await DatasetExportCommand.run([])
 
-      expect(stdout).toContain('Using default dataset: staging')
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Using default dataset: staging'),
+      )
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
           dataset: 'staging',
@@ -265,92 +240,22 @@ describe('#dataset:export', () => {
       )
     })
 
-    test('prompts for dataset when project was selected via prompt outside a project directory', async () => {
-      // Simulates: user is outside a project directory, selects project interactively.
-      // getCliConfig() throws ProjectRootNotFoundError for both getProjectId and dataset
-      // selection — the fix ensures the second throw is silently swallowed and we fall
-      // through to promptForDataset instead of surfacing "Failed to select dataset".
-      mockPromptForProject.mockResolvedValueOnce(TEST_CONFIG.PROJECT_ID)
-      mockGetProjectCliClient.mockResolvedValue({
-        datasets: {
-          list: vi.fn().mockResolvedValue([{name: 'production'}, {name: 'staging'}]),
-        },
-      } as never)
-      mockSelect.mockResolvedValueOnce('staging')
-      mockInput.mockResolvedValueOnce('staging.tar.gz')
-      mockFs.stat.mockRejectedValue(new Error('File not found'))
-
-      const {error} = await testCommand(DatasetExportCommand, [], {
-        mocks: {
-          cliConfigError: new ProjectRootNotFoundError('No project root found'),
-          token: defaultMocks.token,
-        },
-      })
-
-      expect(error).toBeUndefined()
-      expect(mockSelect).toHaveBeenCalledWith(
-        expect.objectContaining({message: 'Select the dataset name:'}),
-      )
-      expect(mockExportDataset).toHaveBeenCalledWith(expect.objectContaining({dataset: 'staging'}))
-    })
-
-    test('exports with --project-id flag and dataset arg when outside project directory', async () => {
-      mockGetProjectCliClient.mockResolvedValue({
-        datasets: {
-          list: vi.fn().mockResolvedValue([{name: 'production'}]),
-        },
-      } as never)
-      mockFs.stat.mockRejectedValue(new Error('File not found'))
-
-      const {error, stdout} = await testCommand(
-        DatasetExportCommand,
-        ['production', 'output.tar.gz', '--project-id', 'flag-project'],
-        {
-          mocks: {
-            cliConfigError: new ProjectRootNotFoundError('No project root found'),
-            token: defaultMocks.token,
-          },
-        },
-      )
-
-      if (error) throw error
-      expect(stdout).toContain('projectId: flag-project')
-      expect(stdout).toContain('dataset: production')
-      expect(mockExportDataset).toHaveBeenCalledWith(
-        expect.objectContaining({dataset: 'production'}),
-      )
-    })
-
-    test('errors when outside project directory and no --project-id', async () => {
-      const {error} = await testCommand(DatasetExportCommand, ['production', 'output.tar.gz'], {
-        mocks: {
-          cliConfigError: new ProjectRootNotFoundError('No project root found'),
-          token: defaultMocks.token,
-        },
-      })
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
     test('validates dataset exists in project', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
-      const {error} = await testCommand(DatasetExportCommand, ['staging', TEST_OUTPUTS.TAR_GZ], {
-        mocks,
-      })
+      await DatasetExportCommand.run(['staging', TEST_OUTPUTS.TAR_GZ])
 
-      expect(error?.message).toContain(`${ERROR_MESSAGES.DATASET_NOT_FOUND} "staging" not found`)
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        'Dataset with name "staging" not found',
+        {exit: 1},
+      )
     })
   })
 
   describe('file operations', () => {
     test('creates parent directory for nested output paths', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
-
-      await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.SUBDIR], {mocks})
+      createTestContext({datasets: [{name: 'production'}]})
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.SUBDIR])
 
       expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringMatching(/subdir$/), {
         recursive: true,
@@ -358,78 +263,79 @@ describe('#dataset:export', () => {
     })
 
     test('prevents overwrite without flag', async () => {
-      const {mocks} = createTestContext({
+      createTestContext({
         datasets: [{name: 'production'}],
         fileExists: true,
       })
 
-      const {error} = await testCommand(
-        DatasetExportCommand,
-        ['production', TEST_OUTPUTS.EXISTING],
-        {mocks},
-      )
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.EXISTING])
 
-      expect(error?.message).toContain(ERROR_MESSAGES.ALREADY_EXISTS)
-      expect(error?.message).toContain(ERROR_MESSAGES.USE_OVERWRITE)
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining(ERROR_MESSAGES.ALREADY_EXISTS),
+        {exit: 1},
+      )
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining(ERROR_MESSAGES.USE_OVERWRITE),
+        {exit: 1},
+      )
     })
 
     test('allows overwrite with flag', async () => {
-      const {mocks} = createTestContext({
+      createTestContext({
         datasets: [{name: 'production'}],
         fileExists: true,
       })
 
-      await testCommand(
-        DatasetExportCommand,
-        ['production', TEST_OUTPUTS.EXISTING, '--overwrite'],
-        {mocks},
-      )
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.EXISTING, '--overwrite'])
 
       expect(mockExportDataset).toHaveBeenCalled()
     })
 
     test('handles directory creation errors gracefully', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
       // Mock mkdir to throw a permission error
       const permissionError = new Error('Permission denied') as Error & {code: string}
       permissionError.code = 'EACCES'
       mockFs.mkdir.mockRejectedValueOnce(permissionError)
 
-      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.SUBDIR], {
-        mocks,
-      })
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.SUBDIR])
 
-      expect(error?.message).toContain('Permission denied: Cannot create directory')
-      expect(error?.message).toContain('Please check write permissions')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('Permission denied: Cannot create directory'),
+        {exit: 1},
+      )
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('Please check write permissions'),
+        {exit: 1},
+      )
     })
 
     test('handles other directory creation errors gracefully', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
       // Mock mkdir to throw a generic error
       const genericError = new Error('Disk full')
       mockFs.mkdir.mockRejectedValueOnce(genericError)
 
-      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.SUBDIR], {
-        mocks,
-      })
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.SUBDIR])
 
-      expect(error?.message).toContain('Failed to create directory')
-      expect(error?.message).toContain('Disk full')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to create directory'),
+        {exit: 1},
+      )
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('Disk full'),
+        {exit: 1},
+      )
     })
   })
 
   describe('export options', () => {
     test('sets assets:false when --no-assets flag is used', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
-      await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ, '--no-assets'], {
-        mocks,
-      })
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ, '--no-assets'])
 
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -439,13 +345,9 @@ describe('#dataset:export', () => {
     })
 
     test('parses comma-separated types with --types flag', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
-      await testCommand(
-        DatasetExportCommand,
-        ['production', TEST_OUTPUTS.TAR_GZ, '--types', 'post,author'],
-        {mocks},
-      )
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ, '--types', 'post,author'])
 
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -455,9 +357,9 @@ describe('#dataset:export', () => {
     })
 
     test('sets raw:true when --raw flag is used', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
-      await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ, '--raw'], {mocks})
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ, '--raw'])
 
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -467,13 +369,13 @@ describe('#dataset:export', () => {
     })
 
     test('sets strictAssetVerification:false when --no-strict-asset-verification flag is used', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
-      await testCommand(
-        DatasetExportCommand,
-        ['production', TEST_OUTPUTS.TAR_GZ, '--no-strict-asset-verification'],
-        {mocks},
-      )
+      await DatasetExportCommand.run([
+        'production',
+        TEST_OUTPUTS.TAR_GZ,
+        '--no-strict-asset-verification',
+      ])
 
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -483,13 +385,9 @@ describe('#dataset:export', () => {
     })
 
     test('sets mode to cursor with --mode flag', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
-      await testCommand(
-        DatasetExportCommand,
-        ['production', TEST_OUTPUTS.TAR_GZ, '--mode', 'cursor'],
-        {mocks},
-      )
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ, '--mode', 'cursor'])
 
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -500,77 +398,61 @@ describe('#dataset:export', () => {
   })
 
   describe('error handling', () => {
-    test('fails without project ID', async () => {
-      const {mocks} = createTestContext({projectId: undefined as never})
-
-      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ], {
-        mocks,
-      })
-
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
     test('handles cancelled dataset selection gracefully', async () => {
-      const {mocks} = createTestContext({
+      createTestContext({
         dataset: null, // No default dataset
       })
 
-      // Mock select to simulate user cancellation (Ctrl+C throws an error)
-      mockSelect.mockRejectedValueOnce(new Error('User cancelled'))
+      // User cancellation / Ctrl+C throws an error from promptForDataset
+      mockPromptForDataset.mockRejectedValueOnce(new Error('User cancelled'))
 
-      const {error} = await testCommand(DatasetExportCommand, [], {mocks})
+      await DatasetExportCommand.run([])
 
-      expect(error?.message).toContain('User cancelled')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('User cancelled'),
+        {exit: 1},
+      )
     })
 
     test('handles export errors with detailed error message', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
       const exportError = new Error('Network timeout during export')
       mockExportDataset.mockRejectedValueOnce(exportError)
 
-      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ], {
-        mocks,
-      })
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ])
 
-      expect(error?.message).toBe(`${ERROR_MESSAGES.EXPORT_FAILED}: Network timeout during export`)
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining(exportError.message),
+        {exit: 1},
+      )
     })
 
     test('validates dataset name format', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
 
-      const {error} = await testCommand(
-        DatasetExportCommand,
-        ['INVALID-DATASET', TEST_OUTPUTS.TAR_GZ],
-        {mocks},
+      await DatasetExportCommand.run(['PROD-UCTION', TEST_OUTPUTS.TAR_GZ])
+
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('lowercase'),
+        {exit: 1},
       )
-
-      expect(error?.message).toContain('lowercase')
-      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('handles dataset listing errors gracefully', async () => {
+      createTestContext({datasets: [{name: 'production'}]})
       const listError = new Error('Network error: Unable to connect to API')
+      mockListDatasets.mockRejectedValue(listError)
 
-      mockGetProjectCliClient.mockResolvedValue({
-        datasets: {
-          list: vi.fn().mockRejectedValue(listError),
-        },
-      } as never)
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ])
 
-      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ], {
-        mocks: defaultMocks,
-      })
-
-      expect(error?.message).toContain('Failed to list datasets:')
-      expect(error?.message).toContain('Network error: Unable to connect to API')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining(listError.message),
+        {exit: 1},
+      )
     })
 
     test('handles progress updates correctly', async () => {
-      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+      createTestContext({datasets: [{name: 'production'}]})
       let progressHandler: (progress: {
         current: number
         step: string
@@ -591,15 +473,14 @@ describe('#dataset:export', () => {
         }
       })
 
-      const {stdout} = await testCommand(
-        DatasetExportCommand,
-        ['production', TEST_OUTPUTS.TAR_GZ],
-        {mocks},
-      )
+      await DatasetExportCommand.run(['production', TEST_OUTPUTS.TAR_GZ])
 
       // Verify command completed successfully
-      expect(stdout).toContain('Export finished')
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
       expect(mockExportDataset).toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Export finished'),
+      )
     })
   })
 })

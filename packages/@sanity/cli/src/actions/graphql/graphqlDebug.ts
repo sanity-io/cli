@@ -1,3 +1,3 @@
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 
 export const graphqlDebug = subdebug('graphql')

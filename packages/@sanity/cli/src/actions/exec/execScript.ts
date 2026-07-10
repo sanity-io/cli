@@ -2,7 +2,7 @@ import {spawn} from 'node:child_process'
 import path from 'node:path'
 
 import {CLIError} from '@oclif/core/errors'
-import {getCliToken} from '@sanity/cli-core'
+import {getCliToken} from '@sanity/cli-core/config'
 
 interface ExecScriptOptions {
   extraArguments: string[]

@@ -1,7 +1,8 @@
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {type PackageJson, readPackageJson} from '@sanity/cli-core'
+import {readPackageJson} from '@sanity/cli-core/package-manager'
+import {type PackageJson} from '@sanity/cli-core/types'
 import {packageDirectory} from 'package-directory'
 
 /**

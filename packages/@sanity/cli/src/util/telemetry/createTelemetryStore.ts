@@ -6,7 +6,7 @@ import {
   type CLITelemetryStore,
   type ConsentInformation,
   type TelemetryUserProperties,
-} from '@sanity/cli-core'
+} from '@sanity/cli-core/types'
 import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {generateTelemetryFilePath} from './generateTelemetryFilePath.js'

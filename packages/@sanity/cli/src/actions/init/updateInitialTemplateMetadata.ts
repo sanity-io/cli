@@ -1,4 +1,4 @@
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 
 import {updateProjectInitalTemplate} from '../../services/projects.js'
 

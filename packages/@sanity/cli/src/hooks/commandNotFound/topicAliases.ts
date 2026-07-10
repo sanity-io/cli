@@ -14,7 +14,7 @@
  */
 
 import {type Hook, toStandardizedId} from '@oclif/core'
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 
 import {topicAliases} from '../../topicAliases.js'
 

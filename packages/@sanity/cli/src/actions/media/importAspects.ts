@@ -1,7 +1,7 @@
 import {access, readdir} from 'node:fs/promises'
 import path from 'node:path'
 
-import {importModule} from '@sanity/cli-core'
+import {importModule} from '@sanity/cli-core/util'
 import {validateMediaLibraryAssetAspect} from '@sanity/schema/_internal'
 import {
   isAssetAspect,

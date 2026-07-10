@@ -1,4 +1,5 @@
-import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
+import {getCliConfigUncached} from '@sanity/cli-core/config'
+import {type CliConfig, type Output} from '@sanity/cli-core/types'
 import {type ViteDevServer} from 'vite'
 
 import {deriveConfigs, deriveInterfaces} from './deriveInterfaces.js'
