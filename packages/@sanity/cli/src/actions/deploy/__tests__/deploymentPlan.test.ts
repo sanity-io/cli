@@ -124,12 +124,12 @@ describe('deploymentPlanToJson', () => {
 
   test('surfaces the registered exposes and config summary', () => {
     const plan = studioPlan([{message: 'ok', status: 'pass'}])
-    plan.exposes = [{name: 'edit', title: 'Edit', type: 'panel'}]
+    plan.exposes = [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}]
     plan.config = 'Media Library fields:\n  Title (title)'
 
     const json = deploymentPlanToJson(plan)
 
-    expect(json.exposes).toEqual([{name: 'edit', title: 'Edit', type: 'panel'}])
+    expect(json.exposes).toEqual([{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}])
     expect(json.config).toBe('Media Library fields:\n  Title (title)')
   })
 
@@ -157,8 +157,8 @@ describe('reportExposes', () => {
     })
 
     expect(exposes).toEqual([
-      {name: 'edit', title: 'Edit', type: 'panel'},
-      {name: 'sync', title: 'sync', type: 'worker'},
+      {name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'},
+      {name: 'sync', src: './sync.ts', title: 'sync', type: 'worker'},
     ])
     expect(reporter.results.every((check) => check.status === 'pass')).toBe(true)
     // The structured list rides on the first check so a dry run's collector reads it back.
@@ -223,6 +223,22 @@ describe('renderDeploymentPlan', () => {
     )
 
     expect(lines.join('\n')).not.toContain('Files to deploy')
+  })
+
+  test('nests multi-line check messages under their heading', () => {
+    renderDeploymentPlan(
+      studioPlan([
+        {message: 'Views:\n  Feed (feed): ./src/feed.tsx', status: 'pass'},
+        {message: 'Services:\n  sync: ./src/sync.ts', status: 'pass'},
+        {message: 'Media library fields:\n  Author (author)', status: 'pass'},
+      ]),
+      output,
+    )
+
+    const text = lines.join('\n')
+    expect(text).toContain('Views:\n      Feed (feed): ./src/feed.tsx')
+    expect(text).toContain('Services:\n      sync: ./src/sync.ts')
+    expect(text).toContain('Media library fields:\n      Author (author)')
   })
 
   test('surfaces warnings in their own section', () => {
