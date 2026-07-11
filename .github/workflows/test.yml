@@ -74,7 +74,7 @@ jobs:
         run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
 
       - name: Restore Vitest cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: node_modules/.vite/vitest
           key: vitest-cache-unit-${{ matrix.os }}-node${{ matrix.node-version }}-${{ github.run_id }}
@@ -132,7 +132,7 @@ jobs:
 
       - name: Save coverage baseline to cache
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: coverage/baseline
           key: coverage-main-${{ github.sha }}
@@ -140,7 +140,7 @@ jobs:
       # The exact key won't match on PRs (PR SHA ≠ main SHA); restore-keys picks up the latest main entry.
       - name: Restore main branch coverage baseline
         if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: coverage/baseline
           key: coverage-main-${{ github.sha }}
@@ -207,7 +207,7 @@ jobs:
         run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
 
       - name: Restore Vitest cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: node_modules/.vite/vitest
           key: vitest-cache-integration-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-${{ github.run_id }}
