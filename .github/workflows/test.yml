@@ -155,8 +155,46 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node packages/@repo/coverage-delta/src/coverage-delta.ts
 
-  integration-test:
+  build-workers:
     needs: [changes]
+    if: needs.changes.outputs.should_run == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-8core]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          # Fixed at Node 22 since workers target node22 and output is identical
+          # across Node versions — no need to build more than once per OS.
+          node-version: 22
+
+      - name: Restore worker build cache
+        id: cache-workers
+        uses: actions/cache@v5
+        with:
+          path: packages/**/*.worker.js
+          key: worker-build-${{ runner.os }}-${{ hashFiles('packages/**/*.worker.ts') }}
+
+      - name: Build workers
+        if: steps.cache-workers.outputs.cache-hit != 'true'
+        run: pnpm build:workers
+
+      - name: Upload worker artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: worker-build-${{ runner.os }}-${{ github.run_id }}
+          path: packages/**/*.worker.js
+          retention-days: 1
+          if-no-files-found: error
+
+  integration-test:
+    needs: [changes, build-workers]
     if: needs.changes.outputs.should_run == 'true'
     runs-on: ${{ matrix.os }}
     env:
@@ -205,6 +243,12 @@ jobs:
         if: github.run_attempt > 1
         shell: bash
         run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
+
+      - name: Download pre-built worker artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: worker-build-${{ runner.os }}-${{ github.run_id }}
+          path: .
 
       - name: Restore Vitest cache
         uses: actions/cache@v5

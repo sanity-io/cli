@@ -4,7 +4,7 @@
  * This builds the worker TS files into JS files using esbuild bundling.
  * All internal dependencies are bundled inline, while npm packages remain external.
  */
-import {unlink} from 'node:fs/promises'
+import {access, unlink} from 'node:fs/promises'
 
 import {build, type BuildContext, type BuildOptions, context} from 'esbuild'
 
@@ -42,7 +42,6 @@ function esbuildOptions(filePath: string, outputFile: string): BuildOptions {
  * Bundle a single worker file with esbuild.
  *
  * @param filePath - The worker file path to bundle
- * @param external - Array of package names to keep external
  * @returns The output file path
  */
 async function bundleWorkerFile(filePath: string): Promise<string> {
@@ -55,22 +54,41 @@ async function bundleWorkerFile(filePath: string): Promise<string> {
 }
 
 /**
- * Bundle all worker files with esbuild (non-watch mode).
+ * Bundle all worker files with esbuild in parallel (non-watch mode).
  *
  * @param filePaths - Array of worker file paths to bundle
  */
 async function setupBundling(filePaths: string[]) {
   console.log(`Found ${filePaths.length} worker files to bundle`)
 
-  for (const workerFile of filePaths) {
-    try {
-      await bundleWorkerFile(workerFile)
-      console.log(`✓ Bundled ${workerFile}`)
-    } catch (error) {
-      console.error(`✗ Failed to bundle ${workerFile}:`, error)
-      throw error
-    }
-  }
+  await Promise.all(
+    filePaths.map(async (workerFile) => {
+      try {
+        await bundleWorkerFile(workerFile)
+        console.log(`✓ Bundled ${workerFile}`)
+      } catch (error) {
+        console.error(`✗ Failed to bundle ${workerFile}:`, error)
+        throw error
+      }
+    }),
+  )
+}
+
+/**
+ * Check whether all pre-built output files already exist on disk.
+ *
+ * @param outputFiles - Array of output file paths to check
+ * @returns True if every file exists, false otherwise
+ */
+async function checkAllPreBuilt(outputFiles: string[]): Promise<boolean> {
+  const results = await Promise.all(
+    outputFiles.map((f) =>
+      access(f)
+        .then(() => true)
+        .catch(() => false),
+    ),
+  )
+  return results.every(Boolean)
 }
 
 /**
@@ -93,6 +111,37 @@ async function setupWatchMode(files: string[]) {
 }
 
 /**
+ * Build all worker files with esbuild (always bundling, never watch mode).
+ *
+ * In CI environments, if all output `.js` files already exist (e.g. restored from a
+ * GitHub Actions artifact), bundling is skipped entirely to save time.
+ *
+ * @public
+ *
+ * @param filePaths - The paths to the worker `.ts` files to build
+ * @returns A promise that resolves when all workers are built or confirmed pre-built
+ * @throws If any worker file cannot be bundled
+ */
+export async function buildWorkerFiles(filePaths: string[]): Promise<void> {
+  // In CI, skip bundling when all output files already exist (pre-built artifacts)
+  if (process.env.CI === 'true') {
+    const outputFiles = filePaths.map((f) => f.replace(/\.ts$/, '.js'))
+    const allPreBuilt = await checkAllPreBuilt(outputFiles)
+    if (allPreBuilt) {
+      console.log(
+        `All ${filePaths.length} worker files are pre-built, skipping bundling`,
+      )
+      for (const outputFile of outputFiles) {
+        compiledFiles.add(outputFile)
+      }
+      return
+    }
+  }
+
+  await setupBundling(filePaths)
+}
+
+/**
  * Setup function to build the worker files with esbuild.
  *
  * Bundles the worker files with esbuild and sets up watch mode if in watch mode.
@@ -111,7 +160,7 @@ export async function setupWorkerBuild(filePaths: string[]) {
     (process.env.VITEST_WATCH === 'true' || !process.argv.includes('run')) &&
     process.env.CI !== 'true'
 
-  await (isWatchMode ? setupWatchMode(filePaths) : setupBundling(filePaths))
+  await (isWatchMode ? setupWatchMode(filePaths) : buildWorkerFiles(filePaths))
 }
 
 /**

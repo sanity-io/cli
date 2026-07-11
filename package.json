@@ -21,6 +21,7 @@
   "scripts": {
     "build": "turbo run build build:types",
     "build:cli": "turbo run build build:types --filter=./packages/**",
+    "build:workers": "pnpm --filter @sanity/cli-test run build:workers",
     "changeset": "changeset",
     "check": "npm run check:format && npm run check:lint && npm run check:types && npm run check:deps",
     "check:deps": "knip",

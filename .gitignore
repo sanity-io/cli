@@ -48,6 +48,8 @@ yarn-error.log*
 .eslintcache
 coverage/
 .vitest-reports/
+# Worker files compiled by vitestWorker.ts (generated, not committed)
+packages/**/*.worker.js
 
 # Claude
 .claude/*

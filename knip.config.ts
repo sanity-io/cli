@@ -98,7 +98,7 @@ const baseConfig = {
       project: ['helpers/**/*.{js,ts}', '__tests__/**/*.{js,ts}'],
     },
     'packages/@sanity/cli-test': {
-      entry: ['package.config.ts'],
+      entry: ['package.config.ts', 'scripts/**/*.ts'],
       project,
     },
     'packages/@sanity/workbench-cli': {

@@ -107,6 +107,7 @@
     "build": "pnpm run build:js && pnpm run copy:fixtures",
     "build:js": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
+    "build:workers": "tsx scripts/build-workers.ts",
     "check:types": "tsc --noEmit",
     "clean": "rimraf dist fixtures",
     "copy:fixtures": "tsx scripts/copy-fixtures.ts",

@@ -19,4 +19,4 @@
 export {setup, teardown} from './test/setupFixtures.js'
 export {snapshotSerializer} from './test/snapshotSerializer.js'
 
-export {setupWorkerBuild, teardownWorkerBuild} from './vitestWorker.js'
+export {buildWorkerFiles, setupWorkerBuild, teardownWorkerBuild} from './vitestWorker.js'
