@@ -128,9 +128,7 @@ export async function buildWorkerFiles(filePaths: string[]): Promise<void> {
     const outputFiles = filePaths.map((f) => f.replace(/\.ts$/, '.js'))
     const allPreBuilt = await checkAllPreBuilt(outputFiles)
     if (allPreBuilt) {
-      console.log(
-        `All ${filePaths.length} worker files are pre-built, skipping bundling`,
-      )
+      console.log(`All ${filePaths.length} worker files are pre-built, skipping bundling`)
       for (const outputFile of outputFiles) {
         compiledFiles.add(outputFile)
       }
