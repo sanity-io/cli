@@ -1,5 +1,5 @@
 import {type Output} from '@sanity/cli-core'
-import {confirm} from '@sanity/cli-core/ux'
+import {confirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -13,10 +13,7 @@ import {
   type UndeployTarget,
 } from '../runUndeploy.js'
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {...actual, confirm: vi.fn()}
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
 
