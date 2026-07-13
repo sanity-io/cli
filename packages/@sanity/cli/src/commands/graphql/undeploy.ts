@@ -121,13 +121,19 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       this.error(
         'Dataset is required. Specify it with --dataset or configure it in your project.',
         {
-          exit: 1,
+          exit: 2,
         },
       )
     }
 
     // Confirm deletion unless --force is used
     if (!force) {
+      if (this.isUnattended()) {
+        this.error('GraphQL API undeploy requires confirmation. Pass --force to continue.', {
+          exit: 2,
+        })
+      }
+
       const confirmMessage =
         tag === 'default'
           ? `Are you absolutely sure you want to delete the current GraphQL API connected to the "${dataset}" dataset in project ${projectId}?`
@@ -140,13 +146,12 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
         })
 
         if (!confirmed) {
-          this.log('Operation cancelled')
-          return
+          this.error('Operation cancelled', {exit: 3})
         }
       } catch (error) {
         const err = error instanceof Error ? error : new Error(`${error}`)
         undeployGraphqlDebug('User cancelled', err)
-        this.error('Operation cancelled', {exit: 1})
+        this.error('Operation cancelled', {exit: 3})
       }
     }
 

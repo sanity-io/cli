@@ -16,6 +16,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {dataset: 'production', projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -141,9 +142,19 @@ describe('graphql undeploy', () => {
 
   test('cancels deletion when user declines confirmation', async () => {
     mockConfirm.mockResolvedValue(false)
-    const {stdout} = await testCommand(Undeploy, [], {mocks: defaultMocks})
-    expect(stdout).toBe('Operation cancelled\n')
+    const {error} = await testCommand(Undeploy, [], {mocks: defaultMocks})
+    expect(error?.oclif?.exit).toBe(3)
     expect(pendingMocks()).toHaveLength(0) // No API call should be made
+  })
+
+  test('requires --force before prompting in unattended mode', async () => {
+    const {error} = await testCommand(Undeploy, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toContain('Pass --force to continue')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockConfirm).not.toHaveBeenCalled()
   })
 
   test('successfully undeploys with --api flag', async () => {
@@ -267,7 +278,7 @@ describe('graphql undeploy', () => {
     expect(error?.message).toContain(
       'Dataset is required. Specify it with --dataset or configure it in your project.',
     )
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('handles API deletion error', async () => {
@@ -285,7 +296,7 @@ describe('graphql undeploy', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('GraphQL API deletion failed')
     expect(error?.message).toContain('GraphQL API not found')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(3)
   })
 
   test('handles user cancelling confirmation prompt', async () => {
@@ -326,7 +337,7 @@ describe('graphql undeploy', () => {
       const {error, stdout} = await testCommand(
         Undeploy,
         ['--project-id', 'flag-project', '--dataset', 'staging'],
-        {mocks: noProjectRootMocks},
+        {mocks: {...noProjectRootMocks, isInteractive: true}},
       )
 
       if (error) throw error
@@ -340,7 +351,7 @@ describe('graphql undeploy', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Dataset is required')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.oclif?.exit).toBe(2)
     })
   })
 })

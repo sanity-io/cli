@@ -1,3 +1,5 @@
+import {access} from 'node:fs/promises'
+
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
@@ -33,6 +35,9 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     'enforce-required-fields': Flags.boolean({
       description: 'Makes the schema generated treat fields marked as required as non-optional',
     }),
+    force: Flags.boolean({
+      description: 'Overwrite an existing schema file',
+    }),
     format: Flags.string({
       default: 'groq-type-nodes',
       description: 'Output format (currently only groq-type-nodes)',
@@ -67,6 +72,17 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
       projectRoot,
       schemaExtraction,
     })
+
+    const outputExists = await access(extractOptions.outputPath).then(
+      () => true,
+      () => false,
+    )
+    if (outputExists && !flags.force) {
+      this.error(
+        `Schema file already exists at "${extractOptions.outputPath}". Pass \`--force\` to overwrite it.`,
+        {exit: 2},
+      )
+    }
 
     if (flags.watch) {
       return watchExtractSchema({

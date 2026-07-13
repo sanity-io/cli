@@ -216,11 +216,12 @@ describe('#graphql:deploy schema errors', () => {
       mockConfirm.mockResolvedValue(false)
 
       const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--tag', 'custom'], {
-        mocks: multiApiMocks,
+        mocks: {...multiApiMocks, isInteractive: true},
       })
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Operation cancelled')
+      expect(error?.oclif?.exit).toBe(3)
       expect(stderr).toContain('--tag')
       expect(stderr).toContain('for ALL APIs')
     })

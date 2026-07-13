@@ -55,7 +55,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
       description: 'The name of the workspace to deploy a schema for',
       helpValue: '<name>',
       parse: async (input) => {
-        if (!input) throw new CLIError('workspace argument cannot be empty if specified', {exit: 1})
+        if (!input) throw new CLIError('workspace argument cannot be empty if specified', {exit: 2})
         return input
       },
     }),

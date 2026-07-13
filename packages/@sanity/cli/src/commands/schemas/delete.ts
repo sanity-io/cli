@@ -1,6 +1,7 @@
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
@@ -52,17 +53,40 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       default: false,
       description: 'Enable verbose logging',
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      default: false,
+      description: 'Delete schemas without prompting for confirmation',
+    }),
   }
 
   static override hiddenAliases: string[] = ['schema:delete']
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeleteSchemaCommand)
-    const {dataset} = flags
+    const {dataset, yes} = flags
 
     deleteSchemaDebug('Running schema delete with flags: %O', flags)
 
     const ids = parseIds(flags.ids)
+
+    if (!yes && this.isUnattended()) {
+      this.error(
+        'Schema deletion requires confirmation. Re-run with --yes to delete the schemas.',
+        {
+          exit: 2,
+        },
+      )
+    }
+
+    if (!yes) {
+      const confirmed = await confirm({
+        default: false,
+        message: `Delete ${ids.length} schema${ids.length === 1 ? '' : 's'}?`,
+      })
+
+      if (!confirmed) this.exit(3)
+    }
 
     try {
       const workDir = await this.getProjectRoot()

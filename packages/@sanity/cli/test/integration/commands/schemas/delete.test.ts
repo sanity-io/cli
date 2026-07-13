@@ -5,6 +5,13 @@ import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import {DeleteSchemaCommand} from '../../../../src/commands/schemas/delete.js'
 import {SCHEMA_API_VERSION} from '../../../../src/services/schemas.js'
 
+const mockConfirm = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core/ux', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core/ux')>()),
+  confirm: mockConfirm,
+}))
+
 const schemaIds = ['_.schemas.production', '_.schemas.staging']
 
 describe('#schema:delete', {timeout: 60 * 1000}, () => {
@@ -18,6 +25,25 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('requires explicit confirmation in unattended mode', async () => {
+    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.production'], {
+      mocks: {isInteractive: false},
+    })
+
+    expect(error?.message).toContain('Re-run with --yes')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
+  test('exits with user-abort when interactive confirmation is declined', async () => {
+    mockConfirm.mockResolvedValue(false)
+    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.production'], {
+      mocks: {isInteractive: true},
+    })
+
+    expect(error?.oclif?.exit).toBe(3)
   })
 
   test('successfully deletes a single schema', async () => {
@@ -41,6 +67,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
     }).reply(200, {deleted: true})
 
     const {error, stdout} = await testCommand(DeleteSchemaCommand, [
+      '--yes',
       '--ids',
       '_.schemas.production',
     ])
@@ -72,6 +99,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
     }
 
     const {error, stdout} = await testCommand(DeleteSchemaCommand, [
+      '--yes',
       '--ids',
       '_.schemas.production,_.schemas.staging',
     ])
@@ -92,6 +120,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
     }).reply(200, {deleted: true})
 
     const {error, stdout} = await testCommand(DeleteSchemaCommand, [
+      '--yes',
       '--ids',
       '_.schemas.production',
       '--dataset',
@@ -106,16 +135,20 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
     {desc: 'no project ID is found', projectId: undefined},
     {desc: 'project ID is empty string', projectId: ''},
   ])('throws an error if $desc', async ({projectId: testProjectId}) => {
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.production'], {
-      mocks: {cliConfig: {api: {dataset: 'test', projectId: testProjectId}}},
-    })
+    const {error} = await testCommand(
+      DeleteSchemaCommand,
+      ['--yes', '--ids', '_.schemas.production'],
+      {
+        mocks: {cliConfig: {api: {dataset: 'test', projectId: testProjectId}}},
+      },
+    )
 
     expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws an error if ids is an empty string', async () => {
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids'])
+    const {error} = await testCommand(DeleteSchemaCommand, ['--yes', '--ids'])
 
     expect(error?.message).toContain('Flag --ids expects a value')
     expect(error?.oclif?.exit).toBe(2)
@@ -168,7 +201,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
       ids: ' , , ',
     },
   ])('throws error when $desc', async ({expectedError, ids}) => {
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', ids])
+    const {error} = await testCommand(DeleteSchemaCommand, ['--yes', '--ids', ids])
 
     expect(error?.message).toContain(expectedError)
     expect(error?.oclif?.exit).toBe(2)
@@ -176,6 +209,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
 
   test('throws error when dataset flag is not provided a value', async () => {
     const {error} = await testCommand(DeleteSchemaCommand, [
+      '--yes',
       '--ids',
       '_.schemas.production',
       '--dataset',
@@ -195,7 +229,11 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
       uri: `/projects/${projectId}/datasets/staging/schemas/_.schemas.nonexistent`,
     }).reply(200, [])
 
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.nonexistent'])
+    const {error} = await testCommand(DeleteSchemaCommand, [
+      '--yes',
+      '--ids',
+      '_.schemas.nonexistent',
+    ])
 
     expect(error?.message).toContain('Deleted 0/1 schemas')
     expect(error?.message).toContain('not found')
@@ -231,6 +269,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
     }).reply(200, [])
 
     const {error} = await testCommand(DeleteSchemaCommand, [
+      '--yes',
       '--ids',
       '_.schemas.production,_.schemas.nonexistent',
     ])
@@ -263,7 +302,11 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
       error: 'Delete failed',
     })
 
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.production'])
+    const {error} = await testCommand(DeleteSchemaCommand, [
+      '--yes',
+      '--ids',
+      '_.schemas.production',
+    ])
 
     expect(error?.message).toContain('Failed to delete ids')
     expect(error?.oclif?.exit).toBe(1)
@@ -294,6 +337,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
     })
 
     const {error, stderr} = await testCommand(DeleteSchemaCommand, [
+      '--yes',
       '--ids',
       '_.schemas.production',
       '--verbose',

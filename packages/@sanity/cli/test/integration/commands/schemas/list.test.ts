@@ -214,6 +214,28 @@ describe('#schema:list', {timeout: 60 * 1000}, () => {
     expect(stdout).toContain('↳ Failed to fetch schema from "test":\n  Bad request')
   })
 
+  test('writes JSON diagnostics to stderr without corrupting stdout', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: `/projects/${projectId}/datasets/test/schemas`,
+    }).reply(400, {error: 'Bad request'})
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: `/projects/${projectId}/datasets/staging/schemas`,
+    }).reply(200, [
+      {
+        _createdAt: '2025-05-28T18:49:44Z',
+        _id: '_.schemas.staging',
+        workspace: {name: 'staging'},
+      },
+    ])
+
+    const {stderr, stdout} = await testCommand(ListSchemaCommand, ['--json'])
+
+    expect(JSON.parse(stdout)).toEqual([expect.objectContaining({_id: '_.schemas.staging'})])
+    expect(stderr).toContain('Failed to fetch schema from "test"')
+  })
+
   test('prints warning if schema request fails due to permissions', async () => {
     mockApi({
       apiVersion: SCHEMA_API_VERSION,

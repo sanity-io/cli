@@ -61,17 +61,16 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ListSchemaCommand)
+    const errors: string[] = []
+    const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
+    if (errors.length > 0) {
+      this.error(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`, {
+        exit: 2,
+      })
+    }
 
     try {
       const projectRoot = await this.getProjectRoot()
-
-      const errors: string[] = []
-      const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
-      if (errors.length > 0) {
-        this.error(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`, {
-          exit: 1,
-        })
-      }
 
       await listSchemas({
         configPath: projectRoot.path,

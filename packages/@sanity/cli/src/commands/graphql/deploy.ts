@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {isInteractive, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import get from 'lodash-es/get.js'
 
@@ -148,13 +148,20 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
       if (flags.force) {
         this.warn(`--force specified, continuing...`)
+      } else if (this.isUnattended()) {
+        this.error(
+          'Flag overrides for multiple APIs require confirmation. Pass --force to continue.',
+          {
+            exit: 2,
+          },
+        )
       } else {
         const confirmed = await confirm({
           default: false,
           message: 'Continue with flag overrides for all APIs?',
         })
         if (!confirmed) {
-          this.error('Operation cancelled', {exit: 1})
+          this.error('Operation cancelled', {exit: 3})
         }
       }
     }
@@ -219,7 +226,10 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
       if (!dataset) {
         spin.fail()
-        this.error(`No dataset specified for API at index ${index}`, {exit: 1})
+        this.error(
+          `Dataset is required for API at index ${index}. Pass --dataset <name> or configure a dataset for the API.`,
+          {exit: 2},
+        )
       }
 
       // Handle extraction errors early (computed in worker), before network calls and prompts.
@@ -267,6 +277,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         index,
         output: this.output,
         specifiedGeneration,
+        unattended: this.isUnattended(),
       })
 
       if (!generation) {
@@ -325,12 +336,12 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
           continue
         }
 
-        if (!isInteractive()) {
+        if (this.isUnattended()) {
           spin.fail()
           this.renderBreakingChanges(valid)
           this.error(
             'Dangerous changes found - falling back. Re-run the command with the `--force` flag to force deployment.',
-            {exit: 1},
+            {exit: 2},
           )
         }
 
@@ -343,7 +354,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
         if (!shouldDeploy) {
           spin.fail()
-          continue
+          this.error('Operation cancelled', {exit: 3})
         }
 
         spin.succeed()
@@ -508,7 +519,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     }
 
     // If no API is deployed, default to true if non-interactive
-    if (!isInteractive()) {
+    if (this.isUnattended()) {
       return true
     }
 
