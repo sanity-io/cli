@@ -123,6 +123,10 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
 
     if (dataset) {
       assertDatasetExists(datasets, dataset, this.output)
+    } else if (this.isUnattended()) {
+      this.error('Dataset is required in unattended mode. Pass the dataset name as an argument.', {
+        exit: 2,
+      })
     } else {
       dataset = await promptForDataset({allowCreation: false, datasets})
     }
@@ -220,7 +224,10 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     docOutStream.end()
     await finished(docOutStream)
 
-    progressSpinner.set({step: `Archiving files into a tarball...`, update: true})
+    progressSpinner.set({
+      step: `Archiving files into a tarball...`,
+      update: true,
+    })
     try {
       await archiveDir(tmpOutDir, outFilePath, (processedBytes: number) => {
         progressSpinner.update({
@@ -251,6 +258,12 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       return path.resolve(this.flags.out)
     }
 
+    if (this.isUnattended()) {
+      this.error('Output path is required in unattended mode. Pass it with --out <path>.', {
+        exit: 2,
+      })
+    }
+
     const workDir = process.cwd()
     const inputResult = await input({
       default: path.join(workDir, defaultOutFileName),
@@ -268,6 +281,11 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       this.error(err, {exit: 1})
     }
 
+    if (!this.flags['backup-id'] && this.isUnattended()) {
+      this.error('Backup ID is required in unattended mode. Pass it with --backup-id <id>.', {
+        exit: 2,
+      })
+    }
     const backupId = String(
       this.flags['backup-id'] || (await this.promptForBackupId(projectId, datasetName)),
     )
@@ -276,7 +294,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       'concurrency' in this.flags &&
       (this.flags.concurrency < 1 || this.flags.concurrency > MAX_DOWNLOAD_CONCURRENCY)
     ) {
-      this.error(`concurrency should be in 1 to ${MAX_DOWNLOAD_CONCURRENCY} range`, {exit: 1})
+      this.error(`concurrency should be in 1 to ${MAX_DOWNLOAD_CONCURRENCY} range`, {exit: 2})
     }
 
     const defaultOutFileName = `${datasetName}-backup-${backupId}.tar.gz`
@@ -293,6 +311,9 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     )
     // If the file already exists, ask for confirmation if it should be overwritten.
     if (!this.flags.overwrite && exists) {
+      if (this.isUnattended()) {
+        this.error(`File "${out}" already exists. Pass --overwrite to replace it.`, {exit: 2})
+      }
       const shouldOverwrite = await confirm({
         default: false,
         message: `File "${out}" already exists, would you like to overwrite it?`,
@@ -300,7 +321,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
 
       // If the user does not want to overwrite the file, cancel the operation.
       if (!shouldOverwrite) {
-        this.error('Operation cancelled.', {exit: 1})
+        this.error('Operation cancelled.', {exit: 3})
       }
     }
 

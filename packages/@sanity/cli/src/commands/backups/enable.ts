@@ -76,6 +76,10 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
 
     if (dataset) {
       assertDatasetExists(datasets, dataset, this.output)
+    } else if (this.isUnattended()) {
+      this.error('Dataset is required in unattended mode. Pass the dataset name as an argument.', {
+        exit: 2,
+      })
     } else {
       dataset = await promptForDataset({allowCreation: true, datasets})
 
@@ -93,7 +97,9 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           enableBackupDebug(`Failed to create dataset ${newDatasetName}: ${message}`, error)
-          this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {exit: 1})
+          this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {
+            exit: 1,
+          })
         }
       }
     }

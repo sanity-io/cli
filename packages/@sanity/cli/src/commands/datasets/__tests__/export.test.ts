@@ -72,6 +72,7 @@ const ERROR_MESSAGES = {
 
 const defaultMocks = {
   cliConfig: {api: {dataset: TEST_CONFIG.DATASET, projectId: TEST_CONFIG.PROJECT_ID}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -283,6 +284,7 @@ describe('#dataset:export', () => {
       const {error} = await testCommand(DatasetExportCommand, [], {
         mocks: {
           cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          isInteractive: true,
           token: defaultMocks.token,
         },
       })
@@ -371,7 +373,7 @@ describe('#dataset:export', () => {
 
       expect(error?.message).toContain(ERROR_MESSAGES.ALREADY_EXISTS)
       expect(error?.message).toContain(ERROR_MESSAGES.USE_OVERWRITE)
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.oclif?.exit).toBe(2)
     })
 
     test('allows overwrite with flag', async () => {
@@ -548,7 +550,7 @@ describe('#dataset:export', () => {
       )
 
       expect(error?.message).toContain('lowercase')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.oclif?.exit).toBe(2)
     })
 
     test('handles dataset listing errors gracefully', async () => {

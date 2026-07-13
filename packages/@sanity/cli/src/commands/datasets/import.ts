@@ -44,10 +44,14 @@ async function getUriStream(uri: string): Promise<NodeJS.ReadableStream> {
   })
 
   try {
-    const response = (await request({stream: true, url: uri})) as {body: NodeJS.ReadableStream}
+    const response = (await request({stream: true, url: uri})) as {
+      body: NodeJS.ReadableStream
+    }
     return response.body
   } catch (err) {
-    throw new Error(`Error fetching source:\n${(err as Error).message}`, {cause: err})
+    throw new Error(`Error fetching source:\n${(err as Error).message}`, {
+      cause: err,
+    })
   }
 }
 
@@ -203,7 +207,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       if (this.isUnattended()) {
         return this.output.error(
           'Missing dataset. Use the --dataset flag to specify a dataset: --dataset <name>',
-          {exit: 1},
+          {exit: 2},
         )
       }
 
@@ -267,7 +271,9 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       const {numDocs, warnings} = await sanityImport(stream, importOptions)
 
       if (this.stepStart) {
-        const timeSpent = prettyMs(Date.now() - this.stepStart, {secondsDecimalDigits: 2})
+        const timeSpent = prettyMs(Date.now() - this.stepStart, {
+          secondsDecimalDigits: 2,
+        })
         if (this.currentProgress) {
           if (this.spinInterval) {
             clearInterval(this.spinInterval)
@@ -295,7 +301,9 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
             `Import failed due to unicode replacement characters in the data.\n${(err as Error).message}\n\nIf you are certain you want to proceed with the import despite potentially corrupt data, re-run the import with the \`--allow-replacement-characters\` flag set.`,
             {exit: 1},
           )
-        : this.output.error((err as Error).stack || (err as Error).message, {exit: 1})
+        : this.output.error((err as Error).stack || (err as Error).message, {
+            exit: 1,
+          })
     }
   }
 
@@ -315,7 +323,9 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
 
     if (sameStep) {
       if (this.stepStart) {
-        const timeSpent = prettyMs(Date.now() - this.stepStart, {secondsDecimalDigits: 2})
+        const timeSpent = prettyMs(Date.now() - this.stepStart, {
+          secondsDecimalDigits: 2,
+        })
         if (this.currentProgress) {
           this.currentProgress.text = `${percent}${opts.step} (${timeSpent})`
           this.currentProgress.render()

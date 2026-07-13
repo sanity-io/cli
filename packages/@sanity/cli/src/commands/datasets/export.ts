@@ -146,6 +146,9 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
           dataset = defaultDataset
           this.log(`Using default dataset: ${dataset}`)
         } else {
+          if (this.isUnattended()) {
+            this.error('Dataset name is required. Pass it as the first argument.', {exit: 2})
+          }
           dataset = await promptForDataset({allowCreation: false, datasets})
         }
       } catch (error) {
@@ -159,7 +162,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     // Validate dataset name
     const dsError = validateDatasetName(dataset)
     if (dsError) {
-      this.error(dsError, {exit: 1})
+      this.error(dsError, {exit: 2})
     }
 
     // Verify existence of dataset before trying to export from it
@@ -182,7 +185,9 @@ dataset: ${dataset.padEnd(46)}`,
     // Determine output path
     let destinationPath = targetDestination
     if (!destinationPath) {
-      destinationPath = await this.promptForDestination({dataset})
+      destinationPath = this.isUnattended()
+        ? path.join(process.cwd(), `${dataset}.tar.gz`)
+        : await this.promptForDestination({dataset})
     }
 
     const outputPath = await this.getOutputPath(destinationPath, dataset, flags)
@@ -292,7 +297,7 @@ dataset: ${dataset.padEnd(46)}`,
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
       this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
-        exit: 1,
+        exit: 2,
       })
     }
 

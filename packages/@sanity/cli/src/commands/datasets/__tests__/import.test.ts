@@ -248,7 +248,7 @@ describe('#dataset:import', () => {
       expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringContaining('Missing dataset'),
-        {exit: 1},
+        {exit: 2},
       )
     })
 

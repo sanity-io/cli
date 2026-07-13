@@ -51,6 +51,7 @@ vi.mock('../../../prompts/promptForProject.js', async () => {
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -116,13 +117,24 @@ describe('#dataset:create', () => {
     expect(stdout).toContain('Dataset created successfully')
   })
 
+  test('requires a dataset name in unattended mode', async () => {
+    const {error} = await testCommand(CreateDatasetCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Dataset name is required. Pass it as an argument.')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockCreateDataset).not.toHaveBeenCalled()
+  })
+
   test('errors when dataset name is invalid', async () => {
     const {error} = await testCommand(CreateDatasetCommand, ['Invalid-Dataset-Name'], {
       mocks: defaultMocks,
     })
 
     expect(error?.message).toContain('must be all lowercase')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('errors when dataset already exists', async () => {

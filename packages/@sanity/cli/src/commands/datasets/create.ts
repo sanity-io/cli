@@ -80,9 +80,14 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     if (datasetName) {
       const nameError = validateDatasetName(datasetName)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        this.error(nameError, {exit: 2})
       }
     } else {
+      if (this.isUnattended()) {
+        this.error('Dataset name is required. Pass it as an argument.', {
+          exit: 2,
+        })
+      }
       datasetName = await promptForDatasetName()
     }
 
@@ -114,6 +119,7 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
         datasetName,
         embeddings: flags.embeddings,
         embeddingsProjection: flags['embeddings-projection'],
+        isUnattended: this.isUnattended(),
         output: this.output,
         projectFeatures,
         projectId,

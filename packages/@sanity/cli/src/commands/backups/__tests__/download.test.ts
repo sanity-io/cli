@@ -50,6 +50,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -238,7 +239,7 @@ describe('#backup:download', () => {
       })
 
       expect(error?.message).toContain('Operation cancelled.')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.oclif?.exit).toBe(3)
     })
 
     test.each([
@@ -248,7 +249,13 @@ describe('#backup:download', () => {
           const name = 'doc1.json'
           const type = 'document'
           mockBackupAPI({
-            files: [{name, type, url: `https://api.sanity.io/${BACKUP_API_VERSION}/${name}`}],
+            files: [
+              {
+                name,
+                type,
+                url: `https://api.sanity.io/${BACKUP_API_VERSION}/${name}`,
+              },
+            ],
           })
           nock('https://api.sanity.io').get(`/${BACKUP_API_VERSION}/${name}`).reply(500, {
             message: 'Internal Server Error',
@@ -261,7 +268,13 @@ describe('#backup:download', () => {
           const name = 'image1.jpg'
           const type = 'asset'
           mockBackupAPI({
-            files: [{name, type, url: `https://api.sanity.io/${BACKUP_API_VERSION}/${name}`}],
+            files: [
+              {
+                name,
+                type,
+                url: `https://api.sanity.io/${BACKUP_API_VERSION}/${name}`,
+              },
+            ],
           })
           nock('https://api.sanity.io').get(`/${BACKUP_API_VERSION}/${name}`).reply(500, {
             message: 'Internal Server Error',
@@ -366,7 +379,9 @@ describe('#backup:download', () => {
         .get(`/${BACKUP_API_VERSION}/doc1`)
         .reply(200, '{"_id":"doc1","title":"Document 1"}')
         .get(`/${BACKUP_API_VERSION}/image1`)
-        .reply(200, Buffer.from('fake-image-data'), {'content-type': 'image/jpeg'})
+        .reply(200, Buffer.from('fake-image-data'), {
+          'content-type': 'image/jpeg',
+        })
         .get(`/${BACKUP_API_VERSION}/file1`)
         .reply(200, Buffer.from('fake-file-data'))
 

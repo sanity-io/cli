@@ -61,12 +61,15 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
 
     const dsError = validateDatasetName(datasetName)
     if (dsError) {
-      this.error(dsError, {exit: 1})
+      this.error(dsError, {exit: 2})
     }
 
     if (force) {
       this.warn(`'--force' used: skipping confirmation, deleting dataset "${datasetName}"`)
     } else {
+      if (this.isUnattended()) {
+        this.error('Dataset deletion requires confirmation. Re-run with --force.', {exit: 2})
+      }
       try {
         const project = await getProjectById(projectId)
         this.log(
@@ -81,20 +84,14 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
         this.error(`Project retrieval failed: ${err.message}`, {exit: 1})
       }
 
-      try {
-        await input({
-          message:
-            'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
-          validate: (input) => {
-            const trimmed = input.trim()
-            return trimmed === datasetName || 'Incorrect dataset name. Ctrl + C to cancel delete.'
-          },
-        })
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(`${error}`)
-        deleteDatasetDebug(`User cancelled`, err)
-        this.error(`User cancelled`, {exit: 1})
-      }
+      await input({
+        message:
+          'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
+        validate: (input) => {
+          const trimmed = input.trim()
+          return trimmed === datasetName || 'Incorrect dataset name. Ctrl + C to cancel delete.'
+        },
+      })
     }
 
     try {

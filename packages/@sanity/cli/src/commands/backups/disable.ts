@@ -73,6 +73,10 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
 
     if (dataset) {
       assertDatasetExists(datasets, dataset, this.output)
+    } else if (this.isUnattended()) {
+      this.error('Dataset is required in unattended mode. Pass the dataset name as an argument.', {
+        exit: 2,
+      })
     } else {
       dataset = await this.promptForDataset(datasets)
     }
