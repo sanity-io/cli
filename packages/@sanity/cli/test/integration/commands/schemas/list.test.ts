@@ -162,7 +162,7 @@ describe('#schema:list', {timeout: 60 * 1000}, () => {
     const {error} = await testCommand(ListSchemaCommand, ['--id', id])
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('throws an error if no schemas are found', async () => {

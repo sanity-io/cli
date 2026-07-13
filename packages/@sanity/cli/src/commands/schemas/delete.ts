@@ -1,6 +1,6 @@
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
@@ -85,7 +85,9 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
         message: `Delete ${ids.length} schema${ids.length === 1 ? '' : 's'}?`,
       })
 
-      if (!confirmed) this.exit(3)
+      if (!confirmed) {
+        this.error('Schema deletion cancelled', {exit: exitCodes.USER_ABORT})
+      }
     }
 
     try {

@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
@@ -20,7 +20,7 @@ export async function resolveApiGeneration({
   index: number
   output: Output
   specifiedGeneration?: string
-  unattended?: boolean
+  unattended: boolean
 }): Promise<string | undefined> {
   // a) If no API is currently deployed:
   //    use the specificed one from config, or use whichever generation is the latest
@@ -43,7 +43,7 @@ export async function resolveApiGeneration({
       throw new CLIError(
         oneline`
         Specified generation (${specifiedGeneration}) for API at index ${index} differs from the one currently deployed (${currentGeneration}).
-        Re-run the command with \`--force\` to force deployment.
+        Pass --force to continue.
       `,
         {exit: 2},
       )
@@ -61,7 +61,7 @@ export async function resolveApiGeneration({
       }))
 
     if (!confirmDeploy) {
-      throw new CLIError('Operation cancelled', {exit: 3})
+      throw new CLIError('GraphQL deployment cancelled', {exit: exitCodes.USER_ABORT})
     }
 
     return specifiedGeneration

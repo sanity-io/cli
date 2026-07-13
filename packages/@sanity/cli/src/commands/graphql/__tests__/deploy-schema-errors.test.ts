@@ -220,7 +220,7 @@ describe('#graphql:deploy schema errors', () => {
       })
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Operation cancelled')
+      expect(error?.message).toContain('GraphQL deployment cancelled')
       expect(error?.oclif?.exit).toBe(3)
       expect(stderr).toContain('--tag')
       expect(stderr).toContain('for ALL APIs')

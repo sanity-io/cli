@@ -43,6 +43,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
       mocks: {isInteractive: true},
     })
 
+    expect(error?.message).toBe('Schema deletion cancelled')
     expect(error?.oclif?.exit).toBe(3)
   })
 

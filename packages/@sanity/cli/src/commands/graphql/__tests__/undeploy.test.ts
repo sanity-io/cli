@@ -61,8 +61,7 @@ describe('graphql undeploy', () => {
 
     expect(mockConfirm).toHaveBeenCalledWith({
       default: false,
-      message:
-        'Are you absolutely sure you want to delete the current GraphQL API connected to the "production" dataset in project test-project?',
+      message: 'Delete the GraphQL API for dataset "production" in project test-project?',
     })
     expect(stdout).toBe('GraphQL API deleted\n')
   })
@@ -82,7 +81,7 @@ describe('graphql undeploy', () => {
     expect(mockConfirm).toHaveBeenCalledWith({
       default: false,
       message:
-        'Are you absolutely sure you want to delete the GraphQL API connected to the "production" dataset in project test-project, tagged "beta"?',
+        'Delete the GraphQL API for dataset "production" in project test-project with tag "beta"?',
     })
     expect(stdout).toBe('GraphQL API deleted\n')
   })
@@ -122,7 +121,7 @@ describe('graphql undeploy', () => {
     expect(mockConfirm).toHaveBeenCalledWith({
       default: false,
       message:
-        'Are you absolutely sure you want to delete the GraphQL API connected to the "staging" dataset in project custom-project, tagged "experimental"?',
+        'Delete the GraphQL API for dataset "staging" in project custom-project with tag "experimental"?',
     })
   })
 
@@ -143,6 +142,7 @@ describe('graphql undeploy', () => {
   test('cancels deletion when user declines confirmation', async () => {
     mockConfirm.mockResolvedValue(false)
     const {error} = await testCommand(Undeploy, [], {mocks: defaultMocks})
+    expect(error?.message).toBe('GraphQL API undeploy cancelled')
     expect(error?.oclif?.exit).toBe(3)
     expect(pendingMocks()).toHaveLength(0) // No API call should be made
   })
@@ -296,7 +296,7 @@ describe('graphql undeploy', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('GraphQL API deletion failed')
     expect(error?.message).toContain('GraphQL API not found')
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles user cancelling confirmation prompt', async () => {
@@ -305,8 +305,8 @@ describe('graphql undeploy', () => {
     const {error} = await testCommand(Undeploy, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toBe('Operation cancelled')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toBe('GraphQL API undeploy cancelled')
+    expect(error?.oclif?.exit).toBe(3)
   })
 
   test('propagates errors from getGraphQLAPIs when using --api flag', async () => {

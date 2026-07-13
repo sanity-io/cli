@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import get from 'lodash-es/get.js'
 
@@ -161,7 +161,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
           message: 'Continue with flag overrides for all APIs?',
         })
         if (!confirmed) {
-          this.error('Operation cancelled', {exit: 3})
+          this.error('GraphQL deployment cancelled', {exit: exitCodes.USER_ABORT})
         }
       }
     }
@@ -340,7 +340,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
           spin.fail()
           this.renderBreakingChanges(valid)
           this.error(
-            'Dangerous changes found - falling back. Re-run the command with the `--force` flag to force deployment.',
+            'GraphQL deployment requires confirmation because the schema contains dangerous changes. Pass --force to continue.',
             {exit: 2},
           )
         }
@@ -354,7 +354,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
         if (!shouldDeploy) {
           spin.fail()
-          this.error('Operation cancelled', {exit: 3})
+          this.error('GraphQL deployment cancelled', {exit: exitCodes.USER_ABORT})
         }
 
         spin.succeed()

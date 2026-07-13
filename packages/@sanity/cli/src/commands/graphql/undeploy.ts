@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
@@ -136,22 +136,23 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
       const confirmMessage =
         tag === 'default'
-          ? `Are you absolutely sure you want to delete the current GraphQL API connected to the "${dataset}" dataset in project ${projectId}?`
-          : `Are you absolutely sure you want to delete the GraphQL API connected to the "${dataset}" dataset in project ${projectId}, tagged "${tag}"?`
+          ? `Delete the GraphQL API for dataset "${dataset}" in project ${projectId}?`
+          : `Delete the GraphQL API for dataset "${dataset}" in project ${projectId} with tag "${tag}"?`
 
+      let confirmed: boolean
       try {
-        const confirmed = await confirm({
+        confirmed = await confirm({
           default: false,
           message: confirmMessage,
         })
-
-        if (!confirmed) {
-          this.error('Operation cancelled', {exit: 3})
-        }
       } catch (error) {
         const err = error instanceof Error ? error : new Error(`${error}`)
         undeployGraphqlDebug('User cancelled', err)
-        this.error('Operation cancelled', {exit: 3})
+        this.error('GraphQL API undeploy cancelled', {exit: exitCodes.USER_ABORT})
+      }
+
+      if (!confirmed) {
+        this.error('GraphQL API undeploy cancelled', {exit: exitCodes.USER_ABORT})
       }
     }
 
