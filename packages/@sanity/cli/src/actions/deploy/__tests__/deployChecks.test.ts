@@ -332,7 +332,7 @@ describe('checkAppTarget (workbench backend)', () => {
   })
 
   test('no appId with a configured slug → check and target name the slug', async () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {
       appId: undefined,
