@@ -24,7 +24,7 @@ vi.mock('@sanity/cli-core/ux', () => ({
   spinner: () => ({start: () => ({clear: vi.fn(), fail: vi.fn(), succeed: vi.fn()})}),
 }))
 
-vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
+vi.mock('modern-tar/fs', () => ({packTar: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
 const output = {error: vi.fn(), log: vi.fn()} as unknown as Output

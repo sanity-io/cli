@@ -1,11 +1,11 @@
-import {basename, dirname} from 'node:path'
+import {basename} from 'node:path'
 import {PassThrough} from 'node:stream'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {exitCodes, getGlobalCliClient, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import FormData from 'form-data'
-import {pack} from 'tar-fs'
+import {packTar} from 'modern-tar/fs'
 
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 import {type BrettInterface} from './buildExposes.js'
@@ -165,7 +165,9 @@ export async function deployCoreApp(options: {
     title,
     version,
   } = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = packTar([
+    {source: sourceDir, target: basename(sourceDir), type: 'directory'},
+  ]).pipe(createGzip())
 
   const spin = spinner('Deploying...').start()
   try {
@@ -225,7 +227,9 @@ export async function deployStudio(options: {
     version,
     workspaces,
   } = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = packTar([
+    {source: sourceDir, target: basename(sourceDir), type: 'directory'},
+  ]).pipe(createGzip())
 
   const spin = spinner('Deploying to sanity.studio').start()
   try {

@@ -1,11 +1,12 @@
 import {access, readFile, writeFile} from 'node:fs/promises'
-import {join, posix, sep} from 'node:path'
+import {join, posix} from 'node:path'
 import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
+import {createGunzip} from 'node:zlib'
 
 import {readPackageJson, subdebug} from '@sanity/cli-core'
 import {ENV_TEMPLATE_FILES, REQUIRED_ENV_VAR} from '@sanity/template-validator'
-import {x} from 'tar'
+import {unpackTar} from 'modern-tar/fs'
 
 const debug = subdebug('remoteTemplate')
 
@@ -170,15 +171,19 @@ export async function downloadAndExtractRepo(
   bearerToken?: string,
 ): Promise<void> {
   let rootPath: string | null = null
+  const strip = filePath ? filePath.split('/').length + 1 : 1
   await pipeline(
     await downloadTarStream(
       `https://codeload.github.com/${username}/${name}/tar.gz/${branch}`,
       bearerToken,
     ),
-    x({
-      cwd: root,
-      filter: (p: string) => {
-        const posixPath = p.split(sep).join(posix.sep)
+    createGunzip(),
+    unpackTar(root, {
+      // modern-tar applies its `strip` option before `filter`, but this filter
+      // needs the unstripped path — so strip manually in `map` instead; entries
+      // whose mapped name becomes empty are dropped by modern-tar.
+      filter: (header) => {
+        const posixPath = header.name
         if (rootPath === null) {
           const pathSegments = posixPath.split(posix.sep)
           rootPath = pathSegments.length > 0 ? pathSegments[0] : null
@@ -188,7 +193,10 @@ export async function downloadAndExtractRepo(
         }
         return posixPath.startsWith(`${rootPath}${filePath ? `/${filePath}/` : '/'}`)
       },
-      strip: filePath ? filePath.split('/').length + 1 : 1,
+      map: (header) => ({
+        ...header,
+        name: header.name.split(posix.sep).filter(Boolean).slice(strip).join(posix.sep),
+      }),
     }),
   )
 }

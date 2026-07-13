@@ -49,8 +49,8 @@ vi.mock('../../../src/util/dirIsEmptyOrNonExistent.js', () => ({
   dirIsEmptyOrNonExistent: vi.fn(() => true),
 }))
 
-vi.mock('tar-fs', () => ({
-  pack: vi.fn(() => {
+vi.mock('modern-tar/fs', () => ({
+  packTar: vi.fn(() => {
     return {
       pipe: vi.fn(),
     }

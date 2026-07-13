@@ -1,4 +1,4 @@
-import {basename, dirname} from 'node:path'
+import {basename} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
@@ -11,8 +11,8 @@ import {
   deployStudio as deployWorkbenchStudio,
   getWorkbench,
 } from '@sanity/workbench-cli/deploy'
+import {packTar} from 'modern-tar/fs'
 import {type StudioManifest} from 'sanity'
-import {pack} from 'tar-fs'
 
 import {createDeployment, type UserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
@@ -329,7 +329,9 @@ async function shipStudioDeployment({
 
   let tarball: Gzip | undefined
   if (!isExternal) {
-    tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+    tarball = packTar([{source: sourceDir, target: basename(sourceDir), type: 'directory'}]).pipe(
+      createGzip(),
+    )
   }
 
   const spin = spinner(isExternal ? 'Registering studio' : 'Deploying to sanity.studio').start()
