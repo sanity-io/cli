@@ -48,6 +48,7 @@ describe('#dataset:embeddings:status', () => {
   afterEach(() => {
     const pending = pendingMocks()
     cleanAll()
+    vi.clearAllMocks()
     vi.restoreAllMocks()
     expect(pending, 'pending mocks').toEqual([])
   })
@@ -99,6 +100,17 @@ describe('#dataset:embeddings:status', () => {
 
     expect(mockSelect).toHaveBeenCalled()
     expect(stdout).toContain('Dataset:    staging')
+  })
+
+  test('should require a dataset without prompting in unattended mode', async () => {
+    const {error} = await testCommand(DatasetEmbeddingsStatusCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Dataset name is required. Pass it as an argument.')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockListDatasets).not.toHaveBeenCalled()
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('should surface API errors from settings call', async () => {

@@ -54,6 +54,18 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
     const {args, flags} = await this.parse(UnlinkAliasCommand)
     const {force} = flags
 
+    if (!args.aliasName && this.isUnattended()) {
+      this.error('Dataset alias name is required. Pass it as an argument.', {exit: 2})
+    }
+
+    if (args.aliasName) {
+      const {apiName} = processAliasName(args.aliasName)
+      const nameError = validateDatasetAliasName(apiName)
+      if (nameError) {
+        this.error(nameError, {exit: 2})
+      }
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -63,9 +75,6 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
           ],
         }),
     })
-    if (!args.aliasName && this.isUnattended()) {
-      this.error('Dataset alias name is required. Pass it as an argument.', {exit: 2})
-    }
 
     try {
       const aliasNameInput = args.aliasName || (await promptForDatasetAliasName())
@@ -73,7 +82,7 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
 
       const nameError = validateDatasetAliasName(apiName)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        this.error(nameError, {exit: 2})
       }
 
       const aliases = await listAliases(projectId)

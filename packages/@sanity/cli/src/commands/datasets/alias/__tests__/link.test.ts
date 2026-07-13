@@ -35,6 +35,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -102,6 +103,39 @@ describe('#dataset:alias:link', () => {
     expect(stdout).toContain('Dataset alias ~staging linked to production successfully')
   })
 
+  test('requires --force instead of prompting to relink in unattended mode', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'development'}] as never)
+
+    mockApi({
+      apiVersion: DATASET_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: `/aliases`,
+    }).reply(200, [{datasetName: 'development', name: 'staging'}])
+
+    const {error} = await testCommand(LinkAliasCommand, ['staging', 'production'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(
+      'Relinking a dataset alias requires confirmation. Re-run with --force.',
+    )
+    expect(error?.oclif?.exit).toBe(2)
+  })
+
+  test.each([
+    [[], 'Dataset alias name is required. Pass it as the first argument.'],
+    [['staging'], 'Target dataset is required. Pass it as the second argument.'],
+  ])('requires all arguments in unattended mode: %j', async (args, expectedError) => {
+    const {error} = await testCommand(LinkAliasCommand, args, {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(expectedError)
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockListDatasets).not.toHaveBeenCalled()
+  })
+
   test('links unlinked alias without requiring confirmation', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
 
@@ -138,7 +172,7 @@ describe('#dataset:alias:link', () => {
     const {error} = await testCommand(LinkAliasCommand, [alias, dataset], {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('fails when no project ID', async () => {

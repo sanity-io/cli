@@ -31,6 +31,10 @@ export async function resolveDataset({
   output,
   projectId,
 }: ResolveDatasetOptions): Promise<ResolveDatasetResult> {
+  if (!dataset && isUnattended) {
+    output.error('Dataset name is required. Pass it as an argument.', {exit: 2})
+  }
+
   const datasets = await listDatasets(projectId)
 
   if (datasets.length === 0) {
@@ -40,7 +44,6 @@ export async function resolveDataset({
   if (dataset) {
     assertDatasetExists(datasets, dataset, output)
   } else {
-    if (isUnattended) output.error('Dataset name is required. Pass it as an argument.', {exit: 2})
     dataset = await promptForDataset({datasets})
   }
 

@@ -48,6 +48,7 @@ describe('#dataset:embeddings:disable', () => {
   afterEach(() => {
     const pending = pendingMocks()
     cleanAll()
+    vi.clearAllMocks()
     vi.restoreAllMocks()
     expect(pending, 'pending mocks').toEqual([])
   })
@@ -74,6 +75,17 @@ describe('#dataset:embeddings:disable', () => {
 
     expect(mockSelect).toHaveBeenCalled()
     expect(stdout).toContain('Disabled embeddings for dataset production')
+  })
+
+  test('should require a dataset without prompting in unattended mode', async () => {
+    const {error} = await testCommand(DatasetEmbeddingsDisableCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Dataset name is required. Pass it as an argument.')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockListDatasets).not.toHaveBeenCalled()
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('should surface API errors from disable call', async () => {

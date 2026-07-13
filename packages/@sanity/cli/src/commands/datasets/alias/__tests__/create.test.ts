@@ -1,3 +1,4 @@
+import {select} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -34,8 +35,17 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    select: vi.fn(),
+  }
+})
+
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -43,6 +53,8 @@ const defaultMocks = {
   },
   token: testToken,
 }
+
+const mockSelect = vi.mocked(select)
 
 describe('#dataset:alias:create', () => {
   afterEach(() => {
@@ -115,6 +127,51 @@ describe('#dataset:alias:create', () => {
     const {stdout} = await testCommand(CreateAliasCommand, ['test-alias'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Dataset alias ~test-alias created successfully')
+  })
+
+  test('creates an unlinked alias without prompting in unattended mode', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'} as never])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: `/features`,
+    }).reply(200, ['advancedDatasetManagement'])
+
+    mockApi({
+      apiVersion: DATASET_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: `/aliases`,
+    }).reply(200, [])
+
+    mockApi({
+      apiVersion: DATASET_API_VERSION,
+      method: 'put',
+      projectId: testProjectId,
+      uri: `/aliases/test-alias`,
+    }).reply(200, {aliasName: 'test-alias', datasetName: null})
+
+    const {stdout} = await testCommand(CreateAliasCommand, ['test-alias'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(stdout).toContain('Dataset alias ~test-alias created successfully')
+    expect(mockSelect).not.toHaveBeenCalled()
+  })
+
+  test('requires an alias name in unattended mode', async () => {
+    const {error} = await testCommand(CreateAliasCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(
+      'Dataset alias name is required. Pass it as the first argument.',
+    )
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockListDatasets).not.toHaveBeenCalled()
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('fails when alias already exists', async () => {
@@ -234,18 +291,9 @@ describe('#dataset:alias:create', () => {
     ['a', 'production', 'Alias name must be at least two characters long'],
     ['test-alias', 'Invalid Dataset', 'Dataset name must be all lowercase characters'],
   ])('fails with invalid input: alias=%s, dataset=%s', async (alias, dataset, expectedError) => {
-    mockListDatasets.mockResolvedValue([{name: 'production'} as never])
-
-    mockApi({
-      apiVersion: PROJECT_FEATURES_API_VERSION,
-      method: 'get',
-      projectId: testProjectId,
-      uri: `/features`,
-    }).reply(200, ['advancedDatasetManagement'])
-
     const {error} = await testCommand(CreateAliasCommand, [alias, dataset], {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 })

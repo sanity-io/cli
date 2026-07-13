@@ -59,6 +59,24 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
   public async run(): Promise<void> {
     const {args} = await this.parse(CreateAliasCommand)
 
+    if (!args.aliasName && this.isUnattended()) {
+      this.error('Dataset alias name is required. Pass it as the first argument.', {exit: 2})
+    }
+
+    if (args.aliasName) {
+      const nameError = validateDatasetAliasName(args.aliasName)
+      if (nameError) {
+        this.error(nameError, {exit: 2})
+      }
+    }
+
+    if (args.targetDataset) {
+      const datasetErr = validateDatasetName(args.targetDataset)
+      if (datasetErr) {
+        this.error(datasetErr, {exit: 2})
+      }
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -81,23 +99,6 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       this.error('This project cannot create a dataset alias - see https://www.sanity.io/pricing', {
         exit: 1,
       })
-    }
-
-    if (args.aliasName) {
-      const nameError = validateDatasetAliasName(args.aliasName)
-      if (nameError) {
-        this.error(nameError, {exit: 1})
-      }
-    }
-
-    if (args.targetDataset) {
-      const datasetErr = validateDatasetName(args.targetDataset)
-      if (datasetErr) {
-        this.error(datasetErr, {exit: 1})
-      }
-    }
-    if (!args.aliasName && this.isUnattended()) {
-      this.error('Dataset alias name is required. Pass it as the first argument.', {exit: 2})
     }
 
     try {
@@ -123,7 +124,8 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       }
 
       const targetDataset =
-        args.targetDataset || (datasets.length > 0 ? await selectDataset(datasets) : null)
+        args.targetDataset ||
+        (!this.isUnattended() && datasets.length > 0 ? await selectDataset(datasets) : null)
 
       if (targetDataset && !datasets.includes(targetDataset)) {
         this.error(

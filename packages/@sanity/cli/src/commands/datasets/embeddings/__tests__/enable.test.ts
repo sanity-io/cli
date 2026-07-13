@@ -56,6 +56,7 @@ describe('#dataset:embeddings:enable', () => {
   afterEach(() => {
     const pending = pendingMocks()
     cleanAll()
+    vi.clearAllMocks()
     vi.restoreAllMocks()
     expect(pending, 'pending mocks').toEqual([])
   })
@@ -99,6 +100,17 @@ describe('#dataset:embeddings:enable', () => {
 
     expect(mockSelect).toHaveBeenCalled()
     expect(stdout).toContain('Embeddings enabled for dataset staging')
+  })
+
+  test('should require a dataset without prompting in unattended mode', async () => {
+    const {error} = await testCommand(DatasetEmbeddingsEnableCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Dataset name is required. Pass it as an argument.')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockListDatasets).not.toHaveBeenCalled()
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('--wait should poll until status is ready', async () => {

@@ -49,6 +49,13 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
     const {args, flags} = await this.parse(DeleteAliasCommand)
     const {force} = flags
 
+    const {apiName, displayName} = processAliasName(args.aliasName)
+
+    const nameError = validateDatasetAliasName(apiName)
+    if (nameError) {
+      this.error(nameError, {exit: 2})
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -58,13 +65,6 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
           ],
         }),
     })
-
-    const {apiName, displayName} = processAliasName(args.aliasName)
-
-    const nameError = validateDatasetAliasName(apiName)
-    if (nameError) {
-      this.error(nameError, {exit: 1})
-    }
 
     try {
       const aliases = await listAliases(projectId)

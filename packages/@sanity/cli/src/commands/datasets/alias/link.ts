@@ -65,6 +65,28 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
     const {args, flags} = await this.parse(LinkAliasCommand)
     const {force} = flags
 
+    if (this.isUnattended() && !args.aliasName) {
+      this.error('Dataset alias name is required. Pass it as the first argument.', {exit: 2})
+    }
+    if (this.isUnattended() && !args.targetDataset) {
+      this.error('Target dataset is required. Pass it as the second argument.', {exit: 2})
+    }
+
+    if (args.aliasName) {
+      const {apiName} = processAliasName(args.aliasName)
+      const nameError = validateDatasetAliasName(apiName)
+      if (nameError) {
+        this.error(nameError, {exit: 2})
+      }
+    }
+
+    if (args.targetDataset) {
+      const datasetErr = validateDatasetName(args.targetDataset)
+      if (datasetErr) {
+        this.error(datasetErr, {exit: 2})
+      }
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -74,27 +96,6 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
           ],
         }),
     })
-
-    if (args.aliasName) {
-      const {apiName} = processAliasName(args.aliasName)
-      const nameError = validateDatasetAliasName(apiName)
-      if (nameError) {
-        this.error(nameError, {exit: 1})
-      }
-    }
-
-    if (args.targetDataset) {
-      const datasetErr = validateDatasetName(args.targetDataset)
-      if (datasetErr) {
-        this.error(datasetErr, {exit: 1})
-      }
-    }
-    if (this.isUnattended() && !args.aliasName) {
-      this.error('Dataset alias name is required. Pass it as the first argument.', {exit: 2})
-    }
-    if (this.isUnattended() && !args.targetDataset) {
-      this.error('Target dataset is required. Pass it as the second argument.', {exit: 2})
-    }
 
     try {
       const [datasetsResponse, aliases] = await Promise.all([

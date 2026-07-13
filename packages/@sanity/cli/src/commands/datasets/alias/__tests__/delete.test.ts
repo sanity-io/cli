@@ -23,6 +23,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -91,6 +92,24 @@ describe('#dataset:alias:delete', () => {
 
     expect(stderr).toContain("'--force' used: skipping confirmation")
     expect(stdout).toContain('Dataset alias deleted successfully')
+    expect(mockInput).not.toHaveBeenCalled()
+  })
+
+  test('requires --force instead of prompting in unattended mode', async () => {
+    mockApi({
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
+
+    const {error} = await testCommand(DeleteAliasCommand, ['test-alias'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(
+      'Dataset alias deletion requires confirmation. Re-run with --force.',
+    )
+    expect(error?.oclif?.exit).toBe(2)
     expect(mockInput).not.toHaveBeenCalled()
   })
 
@@ -172,7 +191,7 @@ describe('#dataset:alias:delete', () => {
     })
 
     expect(error?.message).toContain('Alias name must be at least two characters long')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('fails when no project ID available', async () => {
