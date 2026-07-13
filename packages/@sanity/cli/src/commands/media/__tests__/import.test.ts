@@ -33,6 +33,7 @@ const defaultMocks = {
   cliConfig: {
     api: {projectId: '1234'} as CliConfig['api'],
   },
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -118,6 +119,25 @@ describe('#media:import', () => {
     expect(error?.message).toContain('Failed to select media library')
     expect(error?.message).toContain('User cancelled selection')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('requires a media library ID in unattended mode', async () => {
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
+    })
+
+    const {error} = await testCommand(MediaImportCommand, ['test-source'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('show console error when the media library id flag is not valid', async () => {

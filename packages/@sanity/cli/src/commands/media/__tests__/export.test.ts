@@ -59,6 +59,7 @@ const defaultMocks = {
   cliConfig: {
     api: {projectId: TEST_CONFIG.PROJECT_ID} as CliConfig['api'],
   },
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -276,7 +277,7 @@ describe('#media:export', () => {
 
     expect(error?.message).toContain(ERROR_MESSAGES.ALREADY_EXISTS)
     expect(error?.message).toContain(ERROR_MESSAGES.USE_OVERWRITE)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('should overwrite file when overwrite flag is provided', async () => {
@@ -306,6 +307,54 @@ describe('#media:export', () => {
 
     expect(stderr).toBe('')
     expect(stdout).toContain('Export finished')
+  })
+
+  test('requires a media library ID in unattended mode', async () => {
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: TEST_CONFIG.MEDIA_LIBRARY_ID, organizationId: 'org-1', status: 'active'}],
+    })
+
+    createTestToken('test-token')
+    const ctx = createTestContext()
+    const {error} = await testCommand(MediaExportCommand, [TEST_OUTPUTS.TAR_GZ], {
+      mocks: {...ctx.mocks, isInteractive: false},
+    })
+
+    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockSelect).not.toHaveBeenCalled()
+  })
+
+  test('uses the default destination in unattended mode', async () => {
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: TEST_CONFIG.MEDIA_LIBRARY_ID, organizationId: 'org-1', status: 'active'}],
+    })
+
+    createTestToken('test-token')
+    const ctx = createTestContext()
+    const {error} = await testCommand(
+      MediaExportCommand,
+      ['--media-library-id', TEST_CONFIG.MEDIA_LIBRARY_ID],
+      {mocks: {...ctx.mocks, isInteractive: false}},
+    )
+
+    expect(error).toBeUndefined()
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockExportDataset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outputPath: expect.stringContaining(`${TEST_CONFIG.MEDIA_LIBRARY_ID}-export.tar.gz`),
+      }),
+    )
   })
 
   test('should use directory and append default filename', async () => {

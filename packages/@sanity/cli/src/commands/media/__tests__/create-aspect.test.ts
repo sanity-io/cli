@@ -109,6 +109,21 @@ describe('#media:create-aspect', () => {
     )
   })
 
+  test('defaults the aspect name from the title in unattended mode', async () => {
+    mockAccess.mockRejectedValue(new Error('ENOENT'))
+
+    const {error} = await testCommand(MediaCreateAspectCommand, ['--title', 'Product Details'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error).toBeUndefined()
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('productDetails.ts'),
+      expect.stringContaining("name: 'productDetails'"),
+    )
+  })
+
   test('requires a title in unattended mode', async () => {
     const {error} = await testCommand(MediaCreateAspectCommand, [], {
       mocks: {...defaultMocks, isInteractive: false},

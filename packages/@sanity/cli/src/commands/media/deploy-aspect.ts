@@ -89,15 +89,16 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
 
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
+    if (!mediaLibraryIdFlag && this.isUnattended()) {
+      this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
+        exit: 2,
+      })
+    }
+
     try {
       // Determine target media library
       let mediaLibraryId = mediaLibraryIdFlag
       if (!mediaLibraryId) {
-        if (this.isUnattended()) {
-          this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
-            exit: 2,
-          })
-        }
         mediaLibraryId = await selectMediaLibrary(projectId)
       }
 
