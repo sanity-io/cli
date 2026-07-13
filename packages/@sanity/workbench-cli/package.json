@@ -57,7 +57,7 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@module-federation/vite": "1.16.11",
+    "@module-federation/vite": "1.16.14",
     "@sanity/cli-core": "workspace:^",
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",
