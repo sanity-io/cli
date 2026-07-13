@@ -60,13 +60,13 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
     if (!all && !aspectName) {
       this.error(
         'Specify an aspect name, or use the `--all` option to deploy all aspect definitions.',
-        {exit: 1},
+        {exit: 2},
       )
     }
 
     // Validation: cannot provide both aspect name and --all flag
     if (all && aspectName) {
-      this.error('Specified both an aspect name and `--all`.', {exit: 1})
+      this.error('Specify an aspect name or `--all`, but not both.', {exit: 2})
     }
 
     let cliConfig: CliConfig
@@ -93,6 +93,11 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       // Determine target media library
       let mediaLibraryId = mediaLibraryIdFlag
       if (!mediaLibraryId) {
+        if (this.isUnattended()) {
+          this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
+            exit: 2,
+          })
+        }
         mediaLibraryId = await selectMediaLibrary(projectId)
       }
 

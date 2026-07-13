@@ -81,6 +81,11 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
 
     let mediaLibraryId = flags['media-library-id']
     if (!mediaLibraryId) {
+      if (this.isUnattended()) {
+        this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
+          exit: 2,
+        })
+      }
       try {
         mediaLibraryId = await promptForMediaLibrary({mediaLibraries})
       } catch (error) {

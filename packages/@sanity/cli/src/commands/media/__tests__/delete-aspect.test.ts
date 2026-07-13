@@ -24,6 +24,7 @@ const defaultMocks = {
       projectId: 'test-project-id',
     },
   },
+  isInteractive: true,
   projectRoot: {
     directory: '/test/project',
     path: '/test/project/sanity.config.ts',
@@ -153,12 +154,31 @@ describe('#media:delete-aspect', () => {
     mockSelect.mockResolvedValue('test-library-id')
     mockConfirm.mockResolvedValue(false)
 
-    const {stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
+    const {error, stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
       mocks: defaultMocks,
     })
 
     expect(mockConfirm).toHaveBeenCalled()
     expect(stdout).toContain('Operation cancelled')
+    expect(error?.oclif?.exit).toBe(3)
+  })
+
+  test('requires the media library ID and confirmation in unattended mode', async () => {
+    const missingLibrary = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+    expect(missingLibrary.error?.message).toContain('--media-library-id <id>')
+    expect(missingLibrary.error?.oclif?.exit).toBe(2)
+
+    const missingConfirmation = await testCommand(
+      MediaDeleteAspectCommand,
+      ['myAspect', '--media-library-id', 'test-library-id'],
+      {mocks: {...defaultMocks, isInteractive: false}},
+    )
+    expect(missingConfirmation.error?.message).toContain('--yes')
+    expect(missingConfirmation.error?.oclif?.exit).toBe(2)
+    expect(mockSelect).not.toHaveBeenCalled()
+    expect(mockConfirm).not.toHaveBeenCalled()
   })
 
   test('should use --media-library-id flag when provided', async () => {

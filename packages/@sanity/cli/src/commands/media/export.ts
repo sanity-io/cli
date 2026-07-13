@@ -94,6 +94,11 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
 
     let mediaLibraryId = flags['media-library-id']
     if (!mediaLibraryId) {
+      if (this.isUnattended()) {
+        this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
+          exit: 2,
+        })
+      }
       try {
         mediaLibraryId = await promptForMediaLibrary({mediaLibraries})
       } catch (error) {
@@ -125,7 +130,9 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
 
     let destinationPath = targetDestination
     if (!destinationPath) {
-      destinationPath = await this.promptForDestination({mediaLibraryId})
+      destinationPath = this.isUnattended()
+        ? path.join(process.cwd(), `${mediaLibraryId}-export.tar.gz`)
+        : await this.promptForDestination({mediaLibraryId})
     }
 
     const outputPath = await this.getOutputPath(destinationPath, mediaLibraryId, flags)
@@ -217,7 +224,7 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
       this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
-        exit: 1,
+        exit: 2,
       })
     }
 
