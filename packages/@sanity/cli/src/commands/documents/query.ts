@@ -9,7 +9,10 @@ const queryDocumentDebug = subdebug('documents:query')
 
 export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentCommand> {
   static override args = {
-    query: Args.string({description: 'GROQ query to run against the dataset', required: true}),
+    query: Args.string({
+      description: 'GROQ query to run against the dataset',
+      required: true,
+    }),
   }
 
   static override description = 'Query for documents'
@@ -47,7 +50,10 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       description: `API version to use (defaults to ${DOCUMENTS_API_VERSION})`,
       env: 'SANITY_CLI_QUERY_API_VERSION',
     }),
-    pretty: Flags.boolean({default: false, description: 'Colorize JSON output'}),
+    pretty: Flags.boolean({
+      default: false,
+      description: 'Colorize JSON output',
+    }),
     project: Flags.string({
       deprecated: {to: 'project-id'},
       description: 'Project ID to query',

@@ -18,11 +18,18 @@ const defaultMocks = {
 }
 
 const mockFetch = vi.hoisted(() => vi.fn())
-const mockGetProjectCliClient = vi.hoisted(() => vi.fn().mockResolvedValue({fetch: mockFetch}))
+const mockGetProjectCliClient = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({
+    fetch: mockFetch,
+  }),
+)
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
-  return {...actual, getProjectCliClient: mockGetProjectCliClient}
+  return {
+    ...actual,
+    getProjectCliClient: mockGetProjectCliClient,
+  }
 })
 
 describe('#documents:query', () => {
@@ -33,8 +40,16 @@ describe('#documents:query', () => {
 
   test('executes query successfully with basic options', async () => {
     const mockResults = [
-      {_id: 'movie1', _type: 'movie', title: 'The Matrix'},
-      {_id: 'movie2', _type: 'movie', title: 'Inception'},
+      {
+        _id: 'movie1',
+        _type: 'movie',
+        title: 'The Matrix',
+      },
+      {
+        _id: 'movie2',
+        _type: 'movie',
+        title: 'Inception',
+      },
     ]
 
     mockFetch.mockResolvedValue(mockResults)
@@ -57,7 +72,9 @@ describe('#documents:query', () => {
     vi.stubEnv('FORCE_COLOR', '1')
 
     const {stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]', '--pretty'], {
-      capture: {stripAnsi: false},
+      capture: {
+        stripAnsi: false,
+      },
       mocks: defaultMocks,
     })
 
@@ -77,7 +94,9 @@ describe('#documents:query', () => {
     const {stdout} = await testCommand(
       QueryDocumentCommand,
       ['*[_type == "movie"]', '--dataset', overrideDataset],
-      {mocks: defaultMocks},
+      {
+        mocks: defaultMocks,
+      },
     )
 
     expect(stdout).toContain('"_id": "test"')
@@ -92,7 +111,9 @@ describe('#documents:query', () => {
     const {stdout} = await testCommand(
       QueryDocumentCommand,
       ['*[_type == "movie"]', '--anonymous'],
-      {mocks: defaultMocks},
+      {
+        mocks: defaultMocks,
+      },
     )
 
     expect(stdout).toContain('"_id": "test"')
@@ -108,7 +129,9 @@ describe('#documents:query', () => {
     const {stdout} = await testCommand(
       QueryDocumentCommand,
       ['*[_type == "movie"]', '--api-version', customApiVersion],
-      {mocks: defaultMocks},
+      {
+        mocks: defaultMocks,
+      },
     )
 
     expect(stdout).toContain('"_id": "test"')
@@ -130,7 +153,10 @@ describe('#documents:query', () => {
 
   test('fails when no dataset is configured or provided', async () => {
     const {error} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
-      mocks: {...defaultMocks, cliConfig: {api: {projectId: testProjectId}}},
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: testProjectId}},
+      },
     })
 
     expect(error).toBeInstanceOf(Error)
@@ -201,7 +227,9 @@ describe('#documents:query', () => {
       const {error, stdout} = await testCommand(
         QueryDocumentCommand,
         ['*[_type == "post"]', '--project-id', 'flag-project', '--dataset', 'staging'],
-        {mocks: noProjectRootMocks},
+        {
+          mocks: noProjectRootMocks,
+        },
       )
 
       if (error) throw error
@@ -217,7 +245,9 @@ describe('#documents:query', () => {
       const {error} = await testCommand(
         QueryDocumentCommand,
         ['*[_type == "post"]', '--project-id', 'flag-project'],
-        {mocks: noProjectRootMocks},
+        {
+          mocks: noProjectRootMocks,
+        },
       )
 
       expect(error).toBeInstanceOf(Error)

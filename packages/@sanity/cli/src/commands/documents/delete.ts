@@ -9,8 +9,14 @@ const deleteDocumentDebug = subdebug('documents:delete')
 
 export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCommand> {
   static override args = {
-    id: Args.string({description: 'Document ID to delete', required: true}),
-    ids: Args.string({description: 'Additional document IDs to delete', required: false}),
+    id: Args.string({
+      description: 'Document ID to delete',
+      required: true,
+    }),
+    ids: Args.string({
+      description: 'Additional document IDs to delete',
+      required: false,
+    }),
   }
 
   static override description = "Delete one or more documents from the project's configured dataset"
@@ -98,7 +104,9 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
       if (notFound.length > 0) {
         this.error(
           `${notFound.length === 1 ? 'Document' : 'Documents'} not found: ${notFound.join(', ')}`,
-          {exit: 1},
+          {
+            exit: 1,
+          },
         )
       }
     } catch (error) {
@@ -106,7 +114,9 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
       deleteDocumentDebug(`Error deleting documents ${ids.join(', ')}`, err)
       this.error(
         `Failed to delete ${ids.length} ${ids.length === 1 ? 'document' : 'documents'}: ${err.message}`,
-        {exit: 1},
+        {
+          exit: 1,
+        },
       )
     }
   }

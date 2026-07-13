@@ -19,12 +19,17 @@ const defaultMocks = {
 
 const mockGetDocument = vi.hoisted(() => vi.fn())
 const mockGetProjectCliClient = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({getDocument: mockGetDocument}),
+  vi.fn().mockResolvedValue({
+    getDocument: mockGetDocument,
+  }),
 )
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
-  return {...actual, getProjectCliClient: mockGetProjectCliClient}
+  return {
+    ...actual,
+    getProjectCliClient: mockGetProjectCliClient,
+  }
 })
 
 describe('#documents:get', () => {
@@ -43,7 +48,9 @@ describe('#documents:get', () => {
 
     mockGetDocument.mockResolvedValue(mockDoc)
 
-    const {stdout} = await testCommand(GetDocumentCommand, ['test-doc'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(GetDocumentCommand, ['test-doc'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('"_id": "test-doc"')
     expect(stdout).toContain('"title": "Test Post"')
@@ -51,7 +58,11 @@ describe('#documents:get', () => {
   })
 
   test('displays colorized output when --pretty flag is used', async () => {
-    const mockDoc = {_id: 'test-doc', _type: 'post', title: 'Test Post'}
+    const mockDoc = {
+      _id: 'test-doc',
+      _type: 'post',
+      title: 'Test Post',
+    }
 
     mockGetDocument.mockResolvedValue(mockDoc)
 
@@ -59,7 +70,9 @@ describe('#documents:get', () => {
     vi.stubEnv('FORCE_COLOR', '1')
 
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--pretty'], {
-      capture: {stripAnsi: false},
+      capture: {
+        stripAnsi: false,
+      },
       mocks: defaultMocks,
     })
 
@@ -76,7 +89,11 @@ describe('#documents:get', () => {
   })
 
   test('uses custom dataset when --dataset flag is provided', async () => {
-    const mockDoc = {_id: 'test-doc', _type: 'post', title: 'Test Post'}
+    const mockDoc = {
+      _id: 'test-doc',
+      _type: 'post',
+      title: 'Test Post',
+    }
 
     mockGetDocument.mockResolvedValue(mockDoc)
 
@@ -104,7 +121,10 @@ describe('#documents:get', () => {
 
   test('throws error when no project ID is configured', async () => {
     const {error} = await testCommand(GetDocumentCommand, ['test-doc'], {
-      mocks: {...defaultMocks, cliConfig: {api: {dataset: 'production', projectId: undefined}}},
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {dataset: 'production', projectId: undefined}},
+      },
     })
 
     expect(error).toBeInstanceOf(Error)
@@ -114,7 +134,10 @@ describe('#documents:get', () => {
 
   test('throws error when no dataset is configured and none provided', async () => {
     const {error} = await testCommand(GetDocumentCommand, ['test-doc'], {
-      mocks: {...defaultMocks, cliConfig: {api: {dataset: undefined, projectId: testProjectId}}},
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {dataset: undefined, projectId: testProjectId}},
+      },
     })
 
     expect(error).toBeInstanceOf(Error)
@@ -125,7 +148,9 @@ describe('#documents:get', () => {
   test('handles client errors gracefully', async () => {
     mockGetDocument.mockRejectedValue(new Error('Network error'))
 
-    const {error} = await testCommand(GetDocumentCommand, ['test-doc'], {mocks: defaultMocks})
+    const {error} = await testCommand(GetDocumentCommand, ['test-doc'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch document')
@@ -134,7 +159,9 @@ describe('#documents:get', () => {
   })
 
   test('requires document ID argument', async () => {
-    const {error} = await testCommand(GetDocumentCommand, [], {mocks: defaultMocks})
+    const {error} = await testCommand(GetDocumentCommand, [], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing 1 required arg')
@@ -148,7 +175,11 @@ describe('#documents:get', () => {
     }
 
     test('works with --project-id and --dataset flags when there is no project root', async () => {
-      const mockDoc = {_id: 'test-doc', _type: 'post', title: 'Test Post'}
+      const mockDoc = {
+        _id: 'test-doc',
+        _type: 'post',
+        title: 'Test Post',
+      }
 
       mockGetDocument.mockResolvedValue(mockDoc)
 
@@ -187,7 +218,11 @@ describe('#documents:get', () => {
     })
 
     test('--project-id flag overrides CLI config projectId', async () => {
-      const mockDoc = {_id: 'test-doc', _type: 'post', title: 'Test Post'}
+      const mockDoc = {
+        _id: 'test-doc',
+        _type: 'post',
+        title: 'Test Post',
+      }
 
       mockGetDocument.mockResolvedValue(mockDoc)
 

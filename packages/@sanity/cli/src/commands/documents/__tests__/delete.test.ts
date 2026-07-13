@@ -19,12 +19,17 @@ const defaultMocks = {
 
 const mockTransaction = vi.hoisted(() => vi.fn())
 const mockGetProjectCliClient = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({transaction: mockTransaction}),
+  vi.fn().mockResolvedValue({
+    transaction: mockTransaction,
+  }),
 )
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
-  return {...actual, getProjectCliClient: mockGetProjectCliClient}
+  return {
+    ...actual,
+    getProjectCliClient: mockGetProjectCliClient,
+  }
 })
 
 describe('#documents:delete', () => {
@@ -34,11 +39,18 @@ describe('#documents:delete', () => {
 
   test('deletes a single document successfully', async () => {
     const mockDelete = vi.fn()
-    const mockCommit = vi.fn().mockResolvedValue({results: [{id: 'test-doc', operation: 'delete'}]})
+    const mockCommit = vi.fn().mockResolvedValue({
+      results: [{id: 'test-doc', operation: 'delete'}],
+    })
 
-    mockTransaction.mockReturnValue({commit: mockCommit, delete: mockDelete})
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
-    const {stdout} = await testCommand(DeleteDocumentCommand, ['test-doc'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Deleted 1 document')
     expect(mockDelete).toHaveBeenCalledWith('test-doc')
@@ -55,7 +67,10 @@ describe('#documents:delete', () => {
       ],
     })
 
-    mockTransaction.mockReturnValue({commit: mockCommit, delete: mockDelete})
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {stdout} = await testCommand(DeleteDocumentCommand, ['doc1', 'doc2', 'doc3'], {
       mocks: defaultMocks,
@@ -70,8 +85,13 @@ describe('#documents:delete', () => {
 
   test('handles documents not found', async () => {
     const mockDelete = vi.fn()
-    const mockCommit = vi.fn().mockResolvedValue({results: [{id: 'doc1', operation: 'delete'}]})
-    mockTransaction.mockReturnValue({commit: mockCommit, delete: mockDelete})
+    const mockCommit = vi.fn().mockResolvedValue({
+      results: [{id: 'doc1', operation: 'delete'}],
+    })
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {error} = await testCommand(DeleteDocumentCommand, ['doc1', 'nonexistent-doc'], {
       mocks: defaultMocks,
@@ -86,8 +106,13 @@ describe('#documents:delete', () => {
 
   test('uses custom dataset when --dataset flag is provided', async () => {
     const mockDelete = vi.fn()
-    const mockCommit = vi.fn().mockResolvedValue({results: [{id: 'test-doc', operation: 'delete'}]})
-    mockTransaction.mockReturnValue({commit: mockCommit, delete: mockDelete})
+    const mockCommit = vi.fn().mockResolvedValue({
+      results: [{id: 'test-doc', operation: 'delete'}],
+    })
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     await testCommand(DeleteDocumentCommand, ['test-doc', '--dataset', 'staging'], {
       mocks: defaultMocks,
@@ -96,13 +121,19 @@ describe('#documents:delete', () => {
     expect(mockDelete).toHaveBeenCalledWith('test-doc')
     // Verify that the projectApiClient was called with the staging dataset
     expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({dataset: 'staging', projectId: testProjectId}),
+      expect.objectContaining({
+        dataset: 'staging',
+        projectId: testProjectId,
+      }),
     )
   })
 
   test('throws error when no dataset is configured and none provided', async () => {
     const {error} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
-      mocks: {...defaultMocks, cliConfig: {api: {dataset: undefined, projectId: testProjectId}}},
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {dataset: undefined, projectId: testProjectId}},
+      },
     })
 
     expect(error).toBeInstanceOf(Error)
@@ -113,9 +144,14 @@ describe('#documents:delete', () => {
   test('handles transaction errors gracefully', async () => {
     const mockDelete = vi.fn()
     const mockCommit = vi.fn().mockRejectedValue(new Error('Transaction failed'))
-    mockTransaction.mockReturnValue({commit: mockCommit, delete: mockDelete})
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
-    const {error} = await testCommand(DeleteDocumentCommand, ['test-doc'], {mocks: defaultMocks})
+    const {error} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to delete 1 document: Transaction failed')
@@ -132,10 +168,17 @@ describe('#documents:delete', () => {
 
   test('shows singular message when deleting one document', async () => {
     const mockDelete = vi.fn()
-    const mockCommit = vi.fn().mockResolvedValue({results: [{id: 'test-doc', operation: 'delete'}]})
-    mockTransaction.mockReturnValue({commit: mockCommit, delete: mockDelete})
+    const mockCommit = vi.fn().mockResolvedValue({
+      results: [{id: 'test-doc', operation: 'delete'}],
+    })
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
-    const {stdout} = await testCommand(DeleteDocumentCommand, ['test-doc'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Deleted 1 document')
     expect(stdout).not.toContain('documents')
@@ -149,7 +192,10 @@ describe('#documents:delete', () => {
         {id: 'doc2', operation: 'delete'},
       ],
     })
-    mockTransaction.mockReturnValue({commit: mockCommit, delete: mockDelete})
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {stdout} = await testCommand(DeleteDocumentCommand, ['doc1', 'doc2'], {
       mocks: defaultMocks,
@@ -166,10 +212,13 @@ describe('#documents:delete', () => {
 
     test('works with --project-id and --dataset flags when no project root', async () => {
       const mockDelete = vi.fn()
-      const mockCommit = vi
-        .fn()
-        .mockResolvedValue({results: [{id: 'test-doc', operation: 'delete'}]})
-      mockTransaction.mockReturnValue({commit: mockCommit, delete: mockDelete})
+      const mockCommit = vi.fn().mockResolvedValue({
+        results: [{id: 'test-doc', operation: 'delete'}],
+      })
+      mockTransaction.mockReturnValue({
+        commit: mockCommit,
+        delete: mockDelete,
+      })
 
       const {error, stdout} = await testCommand(
         DeleteDocumentCommand,
@@ -182,7 +231,10 @@ describe('#documents:delete', () => {
       expect(mockDelete).toHaveBeenCalledWith('test-doc')
       expect(mockCommit).toHaveBeenCalled()
       expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-        expect.objectContaining({dataset: 'ext-dataset', projectId: 'ext-project'}),
+        expect.objectContaining({
+          dataset: 'ext-dataset',
+          projectId: 'ext-project',
+        }),
       )
     })
 

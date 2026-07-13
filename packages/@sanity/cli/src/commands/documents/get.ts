@@ -9,7 +9,10 @@ const getDocumentDebug = subdebug('documents:get')
 
 export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand> {
   static override args = {
-    documentId: Args.string({description: 'Document ID to retrieve', required: true}),
+    documentId: Args.string({
+      description: 'Document ID to retrieve',
+      required: true,
+    }),
   }
 
   static override description = 'Get and print a document by ID'
@@ -34,9 +37,15 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
   ]
 
   static override flags = {
-    ...getProjectIdFlag({description: 'Project ID to get document from', semantics: 'override'}),
+    ...getProjectIdFlag({
+      description: 'Project ID to get document from',
+      semantics: 'override',
+    }),
     ...getDatasetFlag({description: 'Dataset to get document from', semantics: 'override'}),
-    pretty: Flags.boolean({default: false, description: 'Colorize JSON output'}),
+    pretty: Flags.boolean({
+      default: false,
+      description: 'Colorize JSON output',
+    }),
   }
 
   static override hiddenAliases: string[] = ['document:get']

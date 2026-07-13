@@ -3,7 +3,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {type CliConfig, ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
 import {type Level} from '../../actions/documents/types.js'
@@ -120,13 +120,17 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       try {
         stat = await fs.promises.stat(filePath)
       } catch {
-        this.error(`File not found: ${file}. Provide an existing .ndjson file or tarball.`, {
-          exit: 2,
-        })
+        this.error(
+          `File not found: ${file}. Pass an existing .ndjson file or tarball to --file.`,
+          {exit: 2},
+        )
       }
 
       if (!stat.isFile()) {
-        this.error(`Invalid --file value: ${file}. Provide an .ndjson file or tarball.`, {exit: 2})
+        this.error(
+          `Invalid --file path: ${file} is not a file. Pass an .ndjson file or tarball.`,
+          {exit: 2},
+        )
       }
 
       ndjsonFilePath = filePath
@@ -166,7 +170,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       })
 
       if (!confirmed) {
-        this.error('Validation cancelled', {exit: 3})
+        this.error('Validation cancelled', {exit: exitCodes.USER_ABORT})
       }
     }
 

@@ -12,16 +12,25 @@ const INVALID_DOCS_PATH = resolve(
   '../../../__fixtures__/invalid-documents.ndjson',
 )
 
-const mocks = vi.hoisted(() => ({confirm: vi.fn(), getGlobalCliClient: vi.fn()}))
+const mocks = vi.hoisted(() => ({
+  confirm: vi.fn(),
+  getGlobalCliClient: vi.fn(),
+}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, getGlobalCliClient: mocks.getGlobalCliClient}
+  return {
+    ...actual,
+    getGlobalCliClient: mocks.getGlobalCliClient,
+  }
 })
 
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
-  return {...actual, confirm: mocks.confirm}
+  return {
+    ...actual,
+    confirm: mocks.confirm,
+  }
 })
 
 function setupMocksFromConfig(cliConfig: CliConfig) {
@@ -37,7 +46,10 @@ function setupMocksFromConfig(cliConfig: CliConfig) {
 const defaultMocks = {
   cliConfig: {api: {dataset: 'test-dataset', projectId: 'test-project'}},
   globalApiClient: {
-    config: vi.fn(() => ({dataset: 'test-dataset', projectId: 'test-project'})),
+    config: vi.fn(() => ({
+      dataset: 'test-dataset',
+      projectId: 'test-project',
+    })),
   } as never,
   projectRoot: {
     directory: '/test/path',
@@ -69,7 +81,9 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       expectedError: 'Expected an integer but received: xyz',
     },
   ])('throws error for $description', async ({args, expectedError}) => {
-    const {error} = await testCommand(ValidateDocumentsCommand, args, {mocks: defaultMocks})
+    const {error} = await testCommand(ValidateDocumentsCommand, args, {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain(expectedError)
     expect(error?.oclif?.exit).toBe(2)
@@ -156,7 +170,20 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         'ndjson',
       ])
 
-      expect(error?.message).toContain('Invalid --file value: .')
+      expect(error?.message).toContain('Invalid --file path: . is not a file')
+      expect(error?.oclif?.exit).toBe(2)
+      expect(mocks.confirm).not.toHaveBeenCalled()
+    })
+
+    test('errors when --file does not exist', async () => {
+      const {error} = await testCommand(ValidateDocumentsCommand, [
+        '--file',
+        'missing-documents.ndjson',
+        '--format',
+        'ndjson',
+      ])
+
+      expect(error?.message).toContain('File not found: missing-documents.ndjson')
       expect(error?.oclif?.exit).toBe(2)
       expect(mocks.confirm).not.toHaveBeenCalled()
     })

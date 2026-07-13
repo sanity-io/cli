@@ -113,6 +113,7 @@ describe('#docs:read', () => {
       expect(result.error.message).toContain(
         'Invalid path or URL. Expected a Sanity docs path or URL.',
       )
+      expect(result.error.oclif.exit).toBe(2)
     }
   })
 
@@ -121,6 +122,7 @@ describe('#docs:read', () => {
     expect(result.error.message).toContain(
       'Invalid path or URL. Expected a Sanity docs path or URL.',
     )
+    expect(result.error.oclif.exit).toBe(2)
   })
 
   test('handles API errors', async () => {

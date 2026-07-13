@@ -24,7 +24,10 @@ const createDocumentDebug = subdebug('documents:create')
 
 export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCommand> {
   static override args = {
-    file: Args.string({description: 'JSON file to create document(s) from', required: false}),
+    file: Args.string({
+      description: 'JSON file to create document(s) from',
+      required: false,
+    }),
   }
 
   static override description = 'Create one or more documents'
@@ -59,7 +62,10 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       description: 'Project ID to create document(s) in',
       semantics: 'override',
     }),
-    ...getDatasetFlag({description: 'Dataset to create document(s) in', semantics: 'override'}),
+    ...getDatasetFlag({
+      description: 'Dataset to create document(s) in',
+      semantics: 'override',
+    }),
     id: Flags.string({
       description:
         'Specify a document ID to use. Will fetch remote document ID and populate editor.',
@@ -90,17 +96,23 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
 
     if (!file && this.isUnattended()) {
       this.error(
-        'Document input is required in unattended mode. Provide a JSON file: sanity documents create <file>',
+        'Document input is required in unattended mode. Pass a JSON file: sanity documents create <file>',
         {exit: 2},
       )
     }
 
     if (replace && missing) {
-      this.error('Cannot use both --replace and --missing', {exit: 2})
+      this.error(
+        'Cannot use --replace and --missing together. Remove one flag and try again.',
+        {exit: 2},
+      )
     }
 
     if (id && file) {
-      this.error('Cannot use --id when specifying a file path', {exit: 2})
+      this.error(
+        'Cannot use --id with a file path. Remove --id or omit the file path and try again.',
+        {exit: 2},
+      )
     }
 
     const cliConfig = await this.tryGetCliConfig()
