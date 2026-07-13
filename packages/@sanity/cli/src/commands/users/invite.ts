@@ -58,17 +58,18 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
   public async run(): Promise<void> {
     const {email: selectedEmail} = this.args
     const {role: selectedRole} = this.flags
+    const normalizedEmail = selectedEmail?.trim()
 
-    if (this.isUnattended() && !selectedEmail) {
+    if (this.isUnattended() && !normalizedEmail) {
       this.error('Email address is required. Pass it as the `<email>` argument.', {exit: 2})
     }
     if (this.isUnattended() && !selectedRole) {
       this.error('User role is required. Pass it with `--role <role>`.', {exit: 2})
     }
 
-    if (selectedEmail) {
-      const validation = validateEmail(selectedEmail)
-      if (validation !== true) this.error(`${validation}. Pass a valid email address.`, {exit: 2})
+    if (selectedEmail !== undefined) {
+      const validation = validateEmail(normalizedEmail ?? '')
+      if (validation !== true) this.error(validation, {exit: 2})
     }
 
     const projectId = await this.getProjectId({
@@ -89,7 +90,7 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
       this.error('Error fetching roles', {exit: 1})
     }
 
-    const email = selectedEmail || (await this.promptForEmail())
+    const email = normalizedEmail || (await this.promptForEmail())
     const roleSelection = selectedRole || (await this.promptForRole(roles))
     const role = roles.find(({name}) => name.toLowerCase() === roleSelection.toLowerCase())
 

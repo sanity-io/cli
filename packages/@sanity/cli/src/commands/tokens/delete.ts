@@ -84,11 +84,11 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     if (!skipConfirmation) {
       const confirmed = await confirm({
         default: false,
-        message: `Are you sure you want to delete the token with ID "${tokenId}"?`,
+        message: `Delete API token "${tokenId}"?`,
       })
 
       if (!confirmed) {
-        this.log('Operation cancelled')
+        this.log('API token not deleted')
         this.exit(exitCodes.USER_ABORT)
       }
     }
@@ -99,7 +99,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
         tokenId,
       })
 
-      this.log('Token deleted successfully')
+      this.log('API token deleted')
     } catch (error) {
       if (error instanceof ClientError && error.response.statusCode === 404) {
         this.error(`Token with ID "${tokenId}" not found`, {exit: 1})
@@ -112,10 +112,20 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   }
 
   private async getTokenIdFromList() {
-    const tokens = await getTokens(this.projectId)
+    let tokens: Awaited<ReturnType<typeof getTokens>>
+    try {
+      tokens = await getTokens(this.projectId)
+    } catch (error) {
+      const err = error as Error
+      deleteTokenDebug(`Error fetching tokens for project ${this.projectId}`, err)
+      this.error(
+        `Could not list API tokens:\n${err.message}\nCheck the project ID and your access permissions, then try again.`,
+        {exit: 1},
+      )
+    }
 
     if (tokens.length === 0) {
-      this.error('No tokens found', {exit: 1})
+      this.error('No API tokens found for this project.', {exit: 1})
     }
 
     const choices = tokens.map((token) => ({

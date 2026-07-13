@@ -25,5 +25,5 @@ export async function validateRole(
   }
 
   const availableRoles = robotRoles.map((r) => r.name).join(', ')
-  return output.error(`Invalid role "${roleName}". Available roles: ${availableRoles}`, {exit: 1})
+  return output.error(`Invalid role "${roleName}". Available roles: ${availableRoles}`, {exit: 2})
 }

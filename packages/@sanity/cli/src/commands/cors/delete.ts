@@ -43,6 +43,10 @@ export class Delete extends SanityCommand<typeof Delete> {
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 
+    if (!args.origin && this.isUnattended()) {
+      this.error('Origin is required. Pass it as the `<origin>` argument.', {exit: 2})
+    }
+
     // Ensure we have project context
     const projectId = await this.getProjectId({
       fallback: () =>
@@ -69,11 +73,6 @@ export class Delete extends SanityCommand<typeof Delete> {
     specifiedOrigin: string | undefined,
     projectId: string,
   ): Promise<number> {
-    if (!specifiedOrigin && this.isUnattended()) {
-      this.error('Origin is required in unattended mode. Pass the origin as an argument.', {
-        exit: 2,
-      })
-    }
     let origins: CorsOrigin[]
     try {
       origins = await listCorsOrigins(projectId)

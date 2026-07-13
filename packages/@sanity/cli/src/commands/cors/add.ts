@@ -3,7 +3,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
@@ -91,7 +91,8 @@ export class Add extends SanityCommand<typeof Add> {
       }
       const confirmed = flags.yes || (await this.promptForWildcardConfirmation(origin))
       if (!confirmed) {
-        this.error('Operation cancelled', {exit: 3})
+        this.log('CORS origin not added')
+        this.exit(exitCodes.USER_ABORT)
       }
     }
 
@@ -115,7 +116,7 @@ export class Add extends SanityCommand<typeof Add> {
 
       addCorsDebug(`CORS origin added successfully`, response)
 
-      this.log('CORS origin added successfully')
+      this.log('CORS origin added')
     } catch (error) {
       const err = error as Error
 

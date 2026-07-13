@@ -66,6 +66,11 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     const {label: givenLabel} = args
     const {json, role} = flags
 
+    const label = givenLabel === undefined ? await this.promptForLabel() : givenLabel.trim()
+    if (!label) {
+      this.error('Token label cannot be empty. Pass a non-empty `<label>` argument.', {exit: 2})
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -76,13 +81,11 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
         }),
     })
 
-    const label = givenLabel || (await this.promptForLabel())
+    const roleName = await (role
+      ? validateRole(role, projectId, this.output)
+      : this.promptForRole(projectId))
 
     try {
-      const roleName = await (role
-        ? validateRole(role, projectId, this.output)
-        : this.promptForRole(projectId))
-
       tokensAddDebug(`Creating token for project ${projectId}`, {label, roleName})
       const token = await createToken({
         label,
@@ -95,13 +98,13 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
         return
       }
 
-      this.log('Token created successfully!')
+      this.log('API token created')
       this.log(`Label: ${token.label}`)
       this.log(`ID: ${token.id}`)
       this.log(`Role: ${token.roles.map((r) => r.title).join(', ')}`)
       this.log(`Token: ${token.key}`)
       this.log('')
-      this.log('Copy the token above – this is your only chance to do so!')
+      this.log("Copy the token now. It won't be shown again.")
     } catch (error) {
       const err = error as Error
 
@@ -127,7 +130,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
       },
     })
 
-    return label
+    return label.trim()
   }
 
   private async promptForRole(projectId: string): Promise<string> {

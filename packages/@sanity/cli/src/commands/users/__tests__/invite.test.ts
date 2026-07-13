@@ -116,6 +116,33 @@ describe('#invite', () => {
     expect(select).not.toHaveBeenCalled()
   })
 
+  test('uses provided values without prompting in unattended mode', async () => {
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/projects/${testProjectId}/roles`,
+    }).reply(200, mockRoles)
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'post',
+      uri: `/invitations/project/${testProjectId}`,
+    }).reply(200, function (_, requestBody) {
+      expect(requestBody).toEqual({email: 'test@example.com', role: 'developer'})
+      return {}
+    })
+
+    const {error, stdout} = await testCommand(
+      UsersInviteCommand,
+      [' test@example.com ', '--role', 'developer'],
+      {mocks: {...defaultMocks, isInteractive: false}},
+    )
+
+    if (error) throw error
+    expect(stdout).toContain('Invitation sent to test@example.com')
+    expect(input).not.toHaveBeenCalled()
+    expect(select).not.toHaveBeenCalled()
+  })
+
   test('validates an email argument before fetching roles', async () => {
     const {error} = await testCommand(UsersInviteCommand, ['not-an-email', '--role', 'developer'], {
       mocks: defaultMocks,
