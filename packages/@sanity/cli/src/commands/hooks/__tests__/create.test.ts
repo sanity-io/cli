@@ -46,14 +46,14 @@ describe('#hook:create', () => {
       organizationId: 'test-org',
     })
 
-    const {stdout} = await testCommand(CreateHookCommand, [], {
-      mocks: defaultMocks,
-    })
+    const {stdout} = await testCommand(CreateHookCommand, [], {mocks: defaultMocks})
 
     expect(open).toHaveBeenCalledWith(
-      expect.stringContaining('/organizations/test-org/project/test-project/api/webhooks/new'),
+      'https://www.sanity.io/organizations/test-org/project/test-project/api/webhooks/new',
     )
-    expect(stdout).toContain('/organizations/test-org/project/test-project/api/webhooks/new')
+    expect(stdout).toContain(
+      'Opening https://www.sanity.io/organizations/test-org/project/test-project/api/webhooks/new',
+    )
   })
 
   test('opens webhook creation URL for project without organization (personal)', async () => {
@@ -61,14 +61,14 @@ describe('#hook:create', () => {
       id: 'test-project',
     })
 
-    const {stdout} = await testCommand(CreateHookCommand, [], {
-      mocks: defaultMocks,
-    })
+    const {stdout} = await testCommand(CreateHookCommand, [], {mocks: defaultMocks})
 
     expect(open).toHaveBeenCalledWith(
-      expect.stringContaining('/organizations/personal/project/test-project/api/webhooks/new'),
+      'https://www.sanity.io/organizations/personal/project/test-project/api/webhooks/new',
     )
-    expect(stdout).toContain('/organizations/personal/project/test-project/api/webhooks/new')
+    expect(stdout).toContain(
+      'Opening https://www.sanity.io/organizations/personal/project/test-project/api/webhooks/new',
+    )
   })
 
   test('prints the webhook creation URL without opening a browser in unattended mode', async () => {
@@ -82,16 +82,15 @@ describe('#hook:create', () => {
     })
 
     expect(open).not.toHaveBeenCalled()
-    expect(stdout).toContain('/organizations/test-org/project/test-project/api/webhooks/new')
-    expect(stdout).toContain('Open this URL in a browser to create the webhook.')
+    expect(stdout).toContain(
+      'Create a webhook at https://www.sanity.io/organizations/test-org/project/test-project/api/webhooks/new',
+    )
   })
 
   test('displays an error if the project fetch fails', async () => {
     mockGetById.mockRejectedValueOnce(new Error('Internal Server Error'))
 
-    const {error} = await testCommand(CreateHookCommand, [], {
-      mocks: defaultMocks,
-    })
+    const {error} = await testCommand(CreateHookCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch project information')
@@ -117,9 +116,7 @@ describe('#hook:create', () => {
       organizationId: 'test-org',
     })
 
-    const {error} = await testCommand(CreateHookCommand, [], {
-      mocks: defaultMocks,
-    })
+    const {error} = await testCommand(CreateHookCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to open browser')
