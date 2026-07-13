@@ -3427,13 +3427,28 @@ Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ sanity undeploy [-y]
+  $ sanity undeploy [--dry-run] [-j] [-y]
 
 FLAGS
-  -y, --yes  Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
+  -j, --json     Output the result as JSON
+  -y, --yes      Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
+      --dry-run  Report what would be undeployed without deleting anything
 
 DESCRIPTION
   Removes the deployed Sanity Studio/App from Sanity hosting
+
+EXAMPLES
+  Undeploy the studio or application after confirming
+
+    $ sanity undeploy
+
+  Report what would be undeployed without deleting anything
+
+    $ sanity undeploy --dry-run
+
+  Undeploy without prompting and report the result as JSON
+
+    $ sanity undeploy --json --yes
 ```
 
 ## `sanity users invite [EMAIL]`
