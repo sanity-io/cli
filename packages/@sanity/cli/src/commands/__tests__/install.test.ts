@@ -48,7 +48,7 @@ describe('#install', () => {
       expect(mockGetPackageManagerChoice).toHaveBeenCalledWith(
         convertToSystemPath('/test/project'),
         {
-          interactive: true,
+          interactive: false,
         },
       )
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
@@ -59,6 +59,21 @@ describe('#install', () => {
         }),
       )
       expect(mockInstallNewPackages).not.toHaveBeenCalled()
+    })
+
+    test('uses package manager fallback in unattended mode', async () => {
+      mockGetPackageManagerChoice.mockResolvedValueOnce({chosen: 'npm'})
+      mockInstallDeclaredPackages.mockResolvedValueOnce()
+
+      const {error} = await testCommand(Install, [], {
+        mocks: {...defaultMocks, isInteractive: false},
+      })
+
+      if (error) throw error
+      expect(mockGetPackageManagerChoice).toHaveBeenCalledWith(
+        convertToSystemPath('/test/project'),
+        {interactive: false},
+      )
     })
 
     test('installs declared packages with yarn', async () => {
@@ -261,7 +276,7 @@ describe('#install', () => {
       expect(mockGetPackageManagerChoice).toHaveBeenCalledWith(
         convertToSystemPath('/test/project'),
         {
-          interactive: true,
+          interactive: false,
         },
       )
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(

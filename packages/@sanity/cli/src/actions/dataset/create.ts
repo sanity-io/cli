@@ -56,6 +56,11 @@ interface CreateDatasetOptions {
   isUnattended?: boolean
 
   /**
+   * Whether to omit human-readable success output
+   */
+  silent?: boolean
+
+  /**
    * Requested visibility mode from flags/options
    */
   visibility?: string
@@ -83,6 +88,7 @@ export async function createDataset(options: CreateDatasetOptions): Promise<Data
     output,
     projectFeatures,
     projectId,
+    silent = false,
     visibility,
   } = options
 
@@ -111,7 +117,7 @@ export async function createDataset(options: CreateDatasetOptions): Promise<Data
       projectId,
     })
     spin.succeed()
-    output.log(`Dataset created successfully`)
+    if (!silent) output.log(`Dataset created successfully`)
     return newDataset
   } catch (error) {
     debug('Error creating dataset', {datasetName, error})

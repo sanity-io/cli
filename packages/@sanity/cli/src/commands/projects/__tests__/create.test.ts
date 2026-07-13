@@ -271,4 +271,19 @@ describe('#projects:create', () => {
       expect.stringContaining('Project created successfully'),
     )
   })
+
+  test('keeps JSON output parseable when creating a dataset', async () => {
+    await CreateProjectCommand.run([
+      'My Project',
+      '--organization=org-1',
+      '--dataset=production',
+      '--json',
+    ])
+
+    const output = vi
+      .mocked(mocks.SanityCmdOutput.log)
+      .mock.calls.map(([message]) => String(message))
+    expect(output).toEqual([JSON.stringify(mockProject, null, 2)])
+    expect(JSON.parse(output[0]!)).toEqual(mockProject)
+  })
 })
