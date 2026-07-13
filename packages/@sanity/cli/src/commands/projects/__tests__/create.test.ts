@@ -134,7 +134,7 @@ describe('#projects:create', () => {
     beforeEach(() => {
       mocks.SanityCmdIsUnattended.mockReturnValue(true)
     })
-    test('creates project with dataset in unattended mode when dataset name provided as flag', async () => {
+    test('creates project with dataset when dataset name provided as flag', async () => {
       mockCreateDataset.mockResolvedValue({
         aclMode: 'private',
         datasetName: 'staging',
@@ -164,7 +164,7 @@ describe('#projects:create', () => {
       expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(expect.stringMatching(mockManageUrl))
     })
 
-    test('creates project without dataset in unattended mode if no dataset name provided as flag', async () => {
+    test('creates project without dataset if no dataset name provided as flag', async () => {
       await CreateProjectCommand.run(['--yes', '--organization=org-1'])
 
       expect(mockListDatasets).not.toHaveBeenCalled()
