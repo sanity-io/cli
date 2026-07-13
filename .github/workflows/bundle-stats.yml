@@ -29,7 +29,8 @@ jobs:
 
       - uses: rexxars/bundle-stats@d3671d09a4973b4b2b09c4fe8b1c07c360683397 # v1.11.3
         with:
-          packages: packages/@sanity/cli, packages/@sanity/cli-core, packages/create-sanity
+          packages: packages/@sanity/cli, packages/@sanity/cli-core, packages/@sanity/cli-build, packages/create-sanity
           build-command: pnpm build:cli
-          only: '.'
-          ignore: 'bin/**'
+          # _internal/** covers cli-build, which has no root export; with a
+          # bare '.' the action fails with "No exports or bin entries matched"
+          only: '., _internal/**'
