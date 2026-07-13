@@ -17,7 +17,7 @@ describe('graphql APIs integration', {timeout: 60_000}, () => {
   })
 
   describe('getGraphQLAPIs', () => {
-    test('resolves both APIs from multi-workspace config', async () => {
+    test('resolves both APIs from multi-workspace config and does not include extracted schema data', async () => {
       const apis = await getGraphQLAPIs(cwd)
 
       expect(apis).toHaveLength(2)
@@ -38,10 +38,6 @@ describe('graphql APIs integration', {timeout: 60_000}, () => {
         projectId,
         tag: 'staging',
       })
-    })
-
-    test('does not include extracted schema data', async () => {
-      const apis = await getGraphQLAPIs(cwd)
 
       for (const api of apis) {
         expect(api.extracted).toBeUndefined()
@@ -52,7 +48,7 @@ describe('graphql APIs integration', {timeout: 60_000}, () => {
   })
 
   describe('extractGraphQLAPIs', () => {
-    test('resolves and extracts both APIs from multi-workspace config', async () => {
+    test('resolves and extracts both APIs from multi-workspace config with workspace-specific types and interfaces', async () => {
       const apis = await extractGraphQLAPIs(cwd, {})
 
       expect(apis).toHaveLength(2)
@@ -73,10 +69,6 @@ describe('graphql APIs integration', {timeout: 60_000}, () => {
         projectId,
         tag: 'staging',
       })
-    })
-
-    test('extracts schema data with types and interfaces', async () => {
-      const apis = await extractGraphQLAPIs(cwd, {})
 
       for (const api of apis) {
         expect(api.extracted).toBeDefined()
@@ -92,24 +84,16 @@ describe('graphql APIs integration', {timeout: 60_000}, () => {
         const interfaceNames = api.extracted!.interfaces.map((i) => i.name)
         expect(interfaceNames).toContain('Document')
       }
-    })
 
-    test('production workspace does not have Event', async () => {
-      const apis = await extractGraphQLAPIs(cwd, {})
-      const production = apis.find((api) => api.id === 'production-api')!
-      const typeNames = production.extracted!.types.map((t) => t.name)
+      // production workspace does not have event, but staging does
+      const prodTypeNames = production!.extracted!.types.map((t) => t.name)
 
-      expect(typeNames).toContain('Category')
-      expect(typeNames).not.toContain('Event')
-    })
+      expect(prodTypeNames).toContain('Category')
+      expect(prodTypeNames).not.toContain('Event')
+      const stagingTypeNames = staging!.extracted!.types.map((t) => t.name)
 
-    test('staging workspace has Event (in addition to shared types)', async () => {
-      const apis = await extractGraphQLAPIs(cwd, {})
-      const staging = apis.find((api) => api.id === 'staging-api')!
-      const typeNames = staging.extracted!.types.map((t) => t.name)
-
-      expect(typeNames).toContain('Event')
-      expect(typeNames).toContain('Category')
+      expect(stagingTypeNames).toContain('Event')
+      expect(stagingTypeNames).toContain('Category')
     })
   })
 })
