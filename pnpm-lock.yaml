@@ -54,9 +54,6 @@ catalogs:
     '@types/node':
       specifier: ^22.20.0
       version: 22.20.0
-    '@types/tar-fs':
-      specifier: ^2.0.4
-      version: 2.0.4
     '@vitejs/plugin-react':
       specifier: ^6.0.3
       version: 6.0.3
@@ -96,6 +93,9 @@ catalogs:
     lodash-es:
       specifier: ^4.18.1
       version: 4.18.1
+    modern-tar:
+      specifier: ^0.7.6
+      version: 0.7.6
     nock:
       specifier: ^14.0.15
       version: 14.0.15
@@ -126,9 +126,6 @@ catalogs:
     strip-ansi:
       specifier: ^7.1.0
       version: 7.2.0
-    tar-fs:
-      specifier: ^3.1.2
-      version: 3.1.2
     tinyglobby:
       specifier: ^0.2.17
       version: 0.2.17
@@ -663,6 +660,9 @@ importers:
       minimist:
         specifier: ^1.2.8
         version: 1.2.8
+      modern-tar:
+        specifier: 'catalog:'
+        version: 0.7.6
       nanoid:
         specifier: ^5.1.11
         version: 5.1.14
@@ -714,15 +714,6 @@ importers:
       smol-toml:
         specifier: ^1.6.1
         version: 1.6.1
-      tar:
-        specifier: ^7.5.15
-        version: 7.5.16
-      tar-fs:
-        specifier: 'catalog:'
-        version: 3.1.2
-      tar-stream:
-        specifier: ^3.2.0
-        version: 3.2.0
       tinyglobby:
         specifier: 'catalog:'
         version: 0.2.17
@@ -805,12 +796,6 @@ importers:
       '@types/semver':
         specifier: ^7.7.1
         version: 7.7.1
-      '@types/tar-fs':
-        specifier: 'catalog:'
-        version: 2.0.4
-      '@types/tar-stream':
-        specifier: ^3.1.4
-        version: 3.1.4
       '@types/which':
         specifier: ^3.0.4
         version: 3.0.4
@@ -1274,9 +1259,9 @@ importers:
       form-data:
         specifier: 'catalog:'
         version: 4.0.6
-      tar-fs:
+      modern-tar:
         specifier: 'catalog:'
-        version: 3.1.2
+        version: 0.7.6
       vite:
         specifier: 'catalog:'
         version: 8.1.3(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
@@ -1308,9 +1293,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.0
-      '@types/tar-fs':
-        specifier: 'catalog:'
-        version: 2.0.4
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.9(vitest@4.1.9)
@@ -3301,34 +3283,17 @@ packages:
       vue-tsc:
         optional: true
 
-  '@module-federation/error-codes@2.6.0':
-    resolution: {integrity: sha512-J9opjWJJZ1JI/9EvNZF8Ps1VMHS9EsH/i0UjCkQQxFVYZxSDBX1CFunvc7awac4cY//LqJUfqBbfoQPhCfKKKw==}
-
   '@module-federation/error-codes@2.7.0':
     resolution: {integrity: sha512-syToF3H77IbBhJ7auGMCIb5ZDmJ5tvaqSeEvncJrOCq7JBT96F4UDlQDyNh6kCVznvYqqHsPeEMrfI9b5/Omlg==}
 
   '@module-federation/managers@2.7.0':
     resolution: {integrity: sha512-cWohiUvSrY6dIfhwsRABmEWfvJiAD5u/gxU7XRk7bx5nYPj7qn5gvYWJtvLNWzenluHZR6sib+03QMlyo+MYKQ==}
 
-  '@module-federation/runtime-core@2.6.0':
-    resolution: {integrity: sha512-9sL7Yj3H3COZI9JpK/J4hmJUBkIJdmowkj6phHuFiy5Hm5bHiE5U+9WBbR9KqTdyNhAVSL9FeprBW5/Io6i59A==}
-
   '@module-federation/runtime-core@2.7.0':
     resolution: {integrity: sha512-5ROZLVIeV9YnWO2RwCwSHcy6sh48yclErO/2GZ2Xe8lFubPrFirgU8pbwBjZw+All0ZzN44BGS4ECRMVFzVcpg==}
 
-  '@module-federation/runtime@2.6.0':
-    resolution: {integrity: sha512-Y8KgL70RDxD8cCtGWGlGkt+TSDleIjdGmS27gnllibQAIgG/vHhPD11r8kd92x44k4dqtMIntzreOphGICl92g==}
-
   '@module-federation/runtime@2.7.0':
     resolution: {integrity: sha512-UtLozKKNvhT0D1+F0MEWsAmddJ39ItKW15E22LVMAwXmYZRSnzIvJQ2Y6kQ4LwhWABsw/GRSpUDex5OfhpSQPw==}
-
-  '@module-federation/sdk@2.6.0':
-    resolution: {integrity: sha512-Z3HT1uDciMrvz2at3sw6TJbAK9Fl7RmoC/8iqO35HDtQMQJ1qSsMIAjnsiCpAC0D4nAm6PIqgSqPWRO/WYgo0Q==}
-    peerDependencies:
-      node-fetch: ^2.7.0 || ^3.3.2
-    peerDependenciesMeta:
-      node-fetch:
-        optional: true
 
   '@module-federation/sdk@2.7.0':
     resolution: {integrity: sha512-piiLEjaIdjbNq8E11Di6vsfryhcdN/+sBCH6NjG7gSU2VHHoHEayZQWWL7VVdS6rVjexF9McLhPTSrl0adUU+A==}
@@ -5278,12 +5243,6 @@ packages:
 
   '@types/semver@7.7.1':
     resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
-
-  '@types/tar-fs@2.0.4':
-    resolution: {integrity: sha512-ipPec0CjTmVDWE+QKr9cTmIIoTl7dFG/yARCM5MqK8i6CNLIG1P8x4kwDsOQY1ChZOZjH0wO9nvfgBvWl4R3kA==}
-
-  '@types/tar-stream@3.1.4':
-    resolution: {integrity: sha512-921gW0+g29mCJX0fRvqeHzBlE/XclDaAG0Ousy1LCghsOhvaKacDeRGEVzQP9IPfKn8Vysy7FEXAIxycpc/CMg==}
 
   '@types/tough-cookie@4.0.5':
     resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
@@ -7921,6 +7880,10 @@ packages:
 
   modern-ahocorasick@1.1.0:
     resolution: {integrity: sha512-sEKPVl2rM+MNVkGQt3ChdmD8YsigmXdn5NifZn6jiwn9LRJpWm8F3guhaqrJT/JOat6pwpbXEk6kv+b9DMIjsQ==}
+
+  modern-tar@0.7.6:
+    resolution: {integrity: sha512-sweCIVXzx1aIGTCdzcMlSZt1h8k5Tmk08VNAuRk3IU28XamGiOH5ypi11g6De2CH7PhYqSSnGy2A/EFhbWnVKg==}
+    engines: {node: '>=18.0.0'}
 
   motion-dom@12.40.0:
     resolution: {integrity: sha512-HxU3ZaBwNPVQUBQf1xxgq+7JrPNZvjLVxgbpEZL7RrWJnsxOf0/OM+yrHG9ogLQ31Do/r57Oz2gQWPK+6q62mg==}
@@ -12339,8 +12302,6 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@module-federation/error-codes@2.6.0': {}
-
   '@module-federation/error-codes@2.7.0': {}
 
   '@module-federation/managers@2.7.0':
@@ -12348,33 +12309,16 @@ snapshots:
       '@module-federation/sdk': 2.7.0
       empathic: 2.0.0
 
-  '@module-federation/runtime-core@2.6.0':
-    dependencies:
-      '@module-federation/error-codes': 2.6.0
-      '@module-federation/sdk': 2.6.0
-    transitivePeerDependencies:
-      - node-fetch
-
   '@module-federation/runtime-core@2.7.0':
     dependencies:
       '@module-federation/error-codes': 2.7.0
       '@module-federation/sdk': 2.7.0
-
-  '@module-federation/runtime@2.6.0':
-    dependencies:
-      '@module-federation/error-codes': 2.6.0
-      '@module-federation/runtime-core': 2.6.0
-      '@module-federation/sdk': 2.6.0
-    transitivePeerDependencies:
-      - node-fetch
 
   '@module-federation/runtime@2.7.0':
     dependencies:
       '@module-federation/error-codes': 2.7.0
       '@module-federation/runtime-core': 2.7.0
       '@module-federation/sdk': 2.7.0
-
-  '@module-federation/sdk@2.6.0': {}
 
   '@module-federation/sdk@2.7.0': {}
 
@@ -14105,7 +14049,7 @@ snapshots:
 
   '@sanity/workbench@0.1.0-alpha.23(@sanity/sdk@2.14.1(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.1))(react@19.2.7)(xstate@5.32.1)':
     dependencies:
-      '@module-federation/runtime': 2.6.0
+      '@module-federation/runtime': 2.7.0
       '@sanity/message-protocol': 0.23.0
       '@sanity/sdk': 2.14.1(@types/react@19.2.17)(immer@11.1.8)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.1)
       '@sanity/telemetry': 1.1.0(react@19.2.7)
@@ -14114,7 +14058,6 @@ snapshots:
       xstate: 5.32.1
       zod: 4.4.3
     transitivePeerDependencies:
-      - node-fetch
       - react
 
   '@sanity/worker-channels@2.0.0': {}
@@ -14468,15 +14411,6 @@ snapshots:
   '@types/resolve@1.20.2': {}
 
   '@types/semver@7.7.1': {}
-
-  '@types/tar-fs@2.0.4':
-    dependencies:
-      '@types/node': 26.0.0
-      '@types/tar-stream': 3.1.4
-
-  '@types/tar-stream@3.1.4':
-    dependencies:
-      '@types/node': 26.0.0
 
   '@types/tough-cookie@4.0.5': {}
 
@@ -17255,6 +17189,8 @@ snapshots:
 
   modern-ahocorasick@1.1.0: {}
 
+  modern-tar@0.7.6: {}
+
   motion-dom@12.40.0:
     dependencies:
       motion-utils: 12.39.0
@@ -18638,7 +18574,6 @@ snapshots:
       - bufferutil
       - canvas
       - immer
-      - node-fetch
       - prismjs
       - react-native
       - supports-color

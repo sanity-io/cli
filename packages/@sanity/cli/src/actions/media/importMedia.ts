@@ -11,6 +11,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {type SanityClient} from '@sanity/client'
 import {type FileAsset, type ImageAsset, type SanityDocument} from '@sanity/types'
 import gunzipMaybe from 'gunzip-maybe'
+import {unpackTar} from 'modern-tar/fs'
 // @ts-expect-error `peek-stream` module currently untyped
 import peek from 'peek-stream'
 import {
@@ -28,7 +29,6 @@ import {
   tap,
   zip,
 } from 'rxjs'
-import tar from 'tar-fs'
 import {glob} from 'tinyglobby'
 
 import {isTar} from '../../util/isTar.js'
@@ -214,7 +214,7 @@ function untarMaybe(outputPath: string) {
   // @ts-expect-error `peek-stream` module currently untyped
   return peek({maxBuffer: 300, newline: false}, (data, swap) => {
     if (isTar(data)) {
-      return swap(null, tar.extract(outputPath))
+      return swap(null, unpackTar(outputPath))
     }
 
     return swap(null)

@@ -1,10 +1,14 @@
 import path from 'node:path'
 import readline from 'node:readline'
 import {Readable, type Writable} from 'node:stream'
+import {
+  ReadableStream as WebReadableStream,
+  type TransformStream as WebTransformStream,
+} from 'node:stream/web'
 import zlib from 'node:zlib'
 
 import {type SanityDocument} from '@sanity/types'
-import tar from 'tar-stream'
+import {createTarDecoder, type ParsedTarEntry} from 'modern-tar'
 
 import {isTar} from './isTar.js'
 
@@ -44,6 +48,22 @@ async function* extract<TReturn>(
   extractor.destroy()
 }
 
+// ponytail: hand-rolled Readable.toWeb; the built-in is experimental until
+// Node 22.17 and the engines range starts at 22.12
+function toWebStream(iterable: AsyncIterable<Buffer>): WebReadableStream<Uint8Array> {
+  const iterator = iterable[Symbol.asyncIterator]()
+  return new WebReadableStream({
+    async cancel() {
+      await iterator.return?.()
+    },
+    async pull(controller) {
+      const {done, value} = await iterator.next()
+      if (done) controller.close()
+      else controller.enqueue(value)
+    },
+  })
+}
+
 /**
  * Given a async iterable of buffers, looks at the header of the file in the
  * first few bytes to see the file type then extracts the contents tries again.
@@ -75,13 +95,27 @@ async function* maybeExtractNdjson(stream: AsyncIterable<Buffer>): AsyncIterable
     }
 
     if (isTar(fileHeader)) {
-      for await (const entry of extract(restOfStream(), tar.extract())) {
+      // cast: modern-tar types its streams against DOM globals, which don't
+      // interop with node:stream/web types (and lack `[Symbol.asyncIterator]`)
+      const entries = toWebStream(restOfStream()).pipeThrough(
+        createTarDecoder() as unknown as WebTransformStream<Uint8Array, ParsedTarEntry>,
+      )
+      for await (const entry of entries) {
         const filename = path.basename(entry.header.name)
         const extname = path.extname(filename).toLowerCase()
-        // ignore hidden and non-ndjson files
-        if (extname !== '.ndjson' || filename.startsWith('.')) continue
+        // ignore hidden and non-ndjson files; skipped bodies must be drained
+        // for the decoder to advance to the next entry
+        if (extname !== '.ndjson' || filename.startsWith('.')) {
+          await entry.body.cancel()
+          continue
+        }
 
-        for await (const ndjsonChunk of entry) yield ndjsonChunk
+        const reader = entry.body.getReader()
+        for (;;) {
+          const {done, value} = await reader.read()
+          if (done) break
+          yield Buffer.from(value.buffer, value.byteOffset, value.byteLength)
+        }
         return
       }
     }

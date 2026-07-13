@@ -61,7 +61,7 @@
     "@sanity/cli-core": "workspace:^",
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",
-    "tar-fs": "catalog:",
+    "modern-tar": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
   },
@@ -74,7 +74,6 @@
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/node": "catalog:",
-    "@types/tar-fs": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",

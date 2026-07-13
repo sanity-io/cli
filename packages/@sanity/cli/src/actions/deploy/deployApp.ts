@@ -1,4 +1,4 @@
-import {basename, dirname} from 'node:path'
+import {basename} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
@@ -12,7 +12,7 @@ import {
   resolveInstallationId,
   summarizeConfig,
 } from '@sanity/workbench-cli/deploy'
-import {pack} from 'tar-fs'
+import {packTar} from 'modern-tar/fs'
 
 import {
   createDeployment,
@@ -382,7 +382,9 @@ async function shipAppDeployment({
   sourceDir: string
   version: string
 }): Promise<void> {
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = packTar([
+    {source: sourceDir, target: basename(sourceDir), type: 'directory'},
+  ]).pipe(createGzip())
 
   const spin = spinner('Deploying...').start()
   try {

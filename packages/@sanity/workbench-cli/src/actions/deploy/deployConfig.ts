@@ -1,11 +1,11 @@
-import {basename, dirname} from 'node:path'
+import {basename} from 'node:path'
 import {PassThrough} from 'node:stream'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {getGlobalCliClient, type Output, subdebug} from '@sanity/cli-core'
 import FormData from 'form-data'
-import {pack} from 'tar-fs'
+import {packTar} from 'modern-tar/fs'
 
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
@@ -70,7 +70,9 @@ export async function deployConfig(options: {
   version: string
 }): Promise<void> {
   const {appType, installationId, output, sourceDir, version} = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = packTar([
+    {source: sourceDir, target: basename(sourceDir), type: 'directory'},
+  ]).pipe(createGzip())
   const formData = new FormData()
   formData.append('version', version)
   formData.append('tarball', tarball, {
