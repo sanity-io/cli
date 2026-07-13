@@ -3301,34 +3301,17 @@ packages:
       vue-tsc:
         optional: true
 
-  '@module-federation/error-codes@2.6.0':
-    resolution: {integrity: sha512-J9opjWJJZ1JI/9EvNZF8Ps1VMHS9EsH/i0UjCkQQxFVYZxSDBX1CFunvc7awac4cY//LqJUfqBbfoQPhCfKKKw==}
-
   '@module-federation/error-codes@2.7.0':
     resolution: {integrity: sha512-syToF3H77IbBhJ7auGMCIb5ZDmJ5tvaqSeEvncJrOCq7JBT96F4UDlQDyNh6kCVznvYqqHsPeEMrfI9b5/Omlg==}
 
   '@module-federation/managers@2.7.0':
     resolution: {integrity: sha512-cWohiUvSrY6dIfhwsRABmEWfvJiAD5u/gxU7XRk7bx5nYPj7qn5gvYWJtvLNWzenluHZR6sib+03QMlyo+MYKQ==}
 
-  '@module-federation/runtime-core@2.6.0':
-    resolution: {integrity: sha512-9sL7Yj3H3COZI9JpK/J4hmJUBkIJdmowkj6phHuFiy5Hm5bHiE5U+9WBbR9KqTdyNhAVSL9FeprBW5/Io6i59A==}
-
   '@module-federation/runtime-core@2.7.0':
     resolution: {integrity: sha512-5ROZLVIeV9YnWO2RwCwSHcy6sh48yclErO/2GZ2Xe8lFubPrFirgU8pbwBjZw+All0ZzN44BGS4ECRMVFzVcpg==}
 
-  '@module-federation/runtime@2.6.0':
-    resolution: {integrity: sha512-Y8KgL70RDxD8cCtGWGlGkt+TSDleIjdGmS27gnllibQAIgG/vHhPD11r8kd92x44k4dqtMIntzreOphGICl92g==}
-
   '@module-federation/runtime@2.7.0':
     resolution: {integrity: sha512-UtLozKKNvhT0D1+F0MEWsAmddJ39ItKW15E22LVMAwXmYZRSnzIvJQ2Y6kQ4LwhWABsw/GRSpUDex5OfhpSQPw==}
-
-  '@module-federation/sdk@2.6.0':
-    resolution: {integrity: sha512-Z3HT1uDciMrvz2at3sw6TJbAK9Fl7RmoC/8iqO35HDtQMQJ1qSsMIAjnsiCpAC0D4nAm6PIqgSqPWRO/WYgo0Q==}
-    peerDependencies:
-      node-fetch: ^2.7.0 || ^3.3.2
-    peerDependenciesMeta:
-      node-fetch:
-        optional: true
 
   '@module-federation/sdk@2.7.0':
     resolution: {integrity: sha512-piiLEjaIdjbNq8E11Di6vsfryhcdN/+sBCH6NjG7gSU2VHHoHEayZQWWL7VVdS6rVjexF9McLhPTSrl0adUU+A==}
@@ -12304,8 +12287,6 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@module-federation/error-codes@2.6.0': {}
-
   '@module-federation/error-codes@2.7.0': {}
 
   '@module-federation/managers@2.7.0':
@@ -12313,33 +12294,16 @@ snapshots:
       '@module-federation/sdk': 2.7.0
       empathic: 2.0.0
 
-  '@module-federation/runtime-core@2.6.0':
-    dependencies:
-      '@module-federation/error-codes': 2.6.0
-      '@module-federation/sdk': 2.6.0
-    transitivePeerDependencies:
-      - node-fetch
-
   '@module-federation/runtime-core@2.7.0':
     dependencies:
       '@module-federation/error-codes': 2.7.0
       '@module-federation/sdk': 2.7.0
-
-  '@module-federation/runtime@2.6.0':
-    dependencies:
-      '@module-federation/error-codes': 2.6.0
-      '@module-federation/runtime-core': 2.6.0
-      '@module-federation/sdk': 2.6.0
-    transitivePeerDependencies:
-      - node-fetch
 
   '@module-federation/runtime@2.7.0':
     dependencies:
       '@module-federation/error-codes': 2.7.0
       '@module-federation/runtime-core': 2.7.0
       '@module-federation/sdk': 2.7.0
-
-  '@module-federation/sdk@2.6.0': {}
 
   '@module-federation/sdk@2.7.0': {}
 
@@ -14070,7 +14034,7 @@ snapshots:
 
   '@sanity/workbench@0.1.0-alpha.23(@sanity/sdk@2.14.1(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.1))(react@19.2.7)(xstate@5.32.1)':
     dependencies:
-      '@module-federation/runtime': 2.6.0
+      '@module-federation/runtime': 2.7.0
       '@sanity/message-protocol': 0.23.0
       '@sanity/sdk': 2.14.1(@types/react@19.2.17)(immer@11.1.8)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.1)
       '@sanity/telemetry': 1.1.0(react@19.2.7)
@@ -14079,7 +14043,6 @@ snapshots:
       xstate: 5.32.1
       zod: 4.4.3
     transitivePeerDependencies:
-      - node-fetch
       - react
 
   '@sanity/worker-channels@2.0.0': {}
@@ -18569,7 +18532,6 @@ snapshots:
       - bufferutil
       - canvas
       - immer
-      - node-fetch
       - prismjs
       - react-native
       - supports-color
