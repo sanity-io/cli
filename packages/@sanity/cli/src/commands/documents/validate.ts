@@ -55,6 +55,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     format: Flags.string({
       description:
         'The output format used to print the found validation markers and report progress',
+      options: ['json', 'ndjson', 'pretty'],
     }),
     level: Flags.custom<Level>({
       default: 'warning',
@@ -93,7 +94,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       'project-id': projectId,
       workspace,
     } = flags
-    const unattendedMode = Boolean(flags.yes)
+    const unattendedMode = this.isUnattended()
 
     let workDir: string
     let cliConfig: CliConfig
@@ -109,6 +110,26 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         )
       }
       throw err
+    }
+
+    let ndjsonFilePath
+    if (file) {
+      const filePath = path.resolve(workDir, file)
+
+      let stat
+      try {
+        stat = await fs.promises.stat(filePath)
+      } catch {
+        this.error(`File not found: ${file}. Provide an existing .ndjson file or tarball.`, {
+          exit: 2,
+        })
+      }
+
+      if (!stat.isFile()) {
+        this.error(`Invalid --file value: ${file}. Provide an .ndjson file or tarball.`, {exit: 2})
+      }
+
+      ndjsonFilePath = filePath
     }
 
     if (!unattendedMode) {
@@ -145,33 +166,8 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       })
 
       if (!confirmed) {
-        this.error('User aborted', {exit: 1})
+        this.error('Validation cancelled', {exit: 3})
       }
-    }
-
-    if (format && !(format in reporters)) {
-      const formatter = new Intl.ListFormat('en-US', {
-        style: 'long',
-        type: 'conjunction',
-      })
-      this.error(
-        `Did not recognize format '${format}'. Available formats are ${formatter.format(
-          Object.keys(reporters).map((key) => `'${key}'`),
-        )}`,
-        {exit: 1},
-      )
-    }
-
-    let ndjsonFilePath
-    if (file) {
-      const filePath = path.resolve(workDir, file)
-
-      const stat = await fs.promises.stat(filePath)
-      if (!stat.isFile()) {
-        this.error(`'--file' must point to a valid ndjson file or tarball`, {exit: 1})
-      }
-
-      ndjsonFilePath = filePath
     }
 
     try {

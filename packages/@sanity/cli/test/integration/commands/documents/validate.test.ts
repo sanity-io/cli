@@ -12,25 +12,16 @@ const INVALID_DOCS_PATH = resolve(
   '../../../__fixtures__/invalid-documents.ndjson',
 )
 
-const mocks = vi.hoisted(() => ({
-  confirm: vi.fn(),
-  getGlobalCliClient: vi.fn(),
-}))
+const mocks = vi.hoisted(() => ({confirm: vi.fn(), getGlobalCliClient: vi.fn()}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getGlobalCliClient: mocks.getGlobalCliClient,
-  }
+  return {...actual, getGlobalCliClient: mocks.getGlobalCliClient}
 })
 
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
-  return {
-    ...actual,
-    confirm: mocks.confirm,
-  }
+  return {...actual, confirm: mocks.confirm}
 })
 
 function setupMocksFromConfig(cliConfig: CliConfig) {
@@ -46,10 +37,7 @@ function setupMocksFromConfig(cliConfig: CliConfig) {
 const defaultMocks = {
   cliConfig: {api: {dataset: 'test-dataset', projectId: 'test-project'}},
   globalApiClient: {
-    config: vi.fn(() => ({
-      dataset: 'test-dataset',
-      projectId: 'test-project',
-    })),
+    config: vi.fn(() => ({dataset: 'test-dataset', projectId: 'test-project'})),
   } as never,
   projectRoot: {
     directory: '/test/path',
@@ -81,9 +69,7 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       expectedError: 'Expected an integer but received: xyz',
     },
   ])('throws error for $description', async ({args, expectedError}) => {
-    const {error} = await testCommand(ValidateDocumentsCommand, args, {
-      mocks: defaultMocks,
-    })
+    const {error} = await testCommand(ValidateDocumentsCommand, args, {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
     expect(error?.oclif?.exit).toBe(2)
@@ -112,15 +98,11 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         'xml',
       ])
 
-      expect(error?.message).toContain(
-        "Did not recognize format 'xml'. Available formats are 'json', 'ndjson', and 'pretty'",
-      )
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.message).toContain('Expected --format=xml to be one of: json, ndjson, pretty')
+      expect(error?.oclif?.exit).toBe(2)
     })
 
-    test('validates documents without markers and outputs empty NDJSON', async () => {
-      mocks.confirm.mockResolvedValue(true)
-
+    test('validates documents without prompting in unattended mode', async () => {
       const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
         '--file',
         VALID_DOCS_PATH,
@@ -129,29 +111,21 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       ])
 
       if (error) throw error
-      expect(stdout).toContain('Warning:')
-      expect(stdout).toContain('reads all documents from your input file')
-      expect(stdout).toContain('Potential pitfalls:')
-      expect(stdout).toContain('processes them through your local schema')
-      expect(stdout).toContain('Checks for missing document references')
-      expect(mocks.confirm).toHaveBeenCalledWith({
-        default: true,
-        message: 'Are you sure you want to continue?',
-      })
+      expect(stdout).toBe('')
+      expect(mocks.confirm).not.toHaveBeenCalled()
     })
 
     test('aborts when user declines confirmation', async () => {
       mocks.confirm.mockResolvedValue(false)
 
-      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'ndjson',
-      ])
+      const {error, stdout} = await testCommand(
+        ValidateDocumentsCommand,
+        ['--file', VALID_DOCS_PATH, '--format', 'ndjson'],
+        {mocks: {isInteractive: true}},
+      )
 
-      expect(error?.message).toBe('User aborted')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.message).toBe('Validation cancelled')
+      expect(error?.oclif?.exit).toBe(3)
       expect(stdout).toContain('Warning:')
       expect(mocks.confirm).toHaveBeenCalledWith({
         default: true,
@@ -162,12 +136,11 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
     test('shows file-specific warning when using --file flag', async () => {
       mocks.confirm.mockResolvedValue(true)
 
-      const {stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'ndjson',
-      ])
+      const {stdout} = await testCommand(
+        ValidateDocumentsCommand,
+        ['--file', VALID_DOCS_PATH, '--format', 'ndjson'],
+        {mocks: {isInteractive: true}},
+      )
 
       expect(stdout).toContain('reads all documents from your input file')
       expect(stdout).toContain('Checks for missing document references')
@@ -183,8 +156,9 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         'ndjson',
       ])
 
-      expect(error?.message).toBe("'--file' must point to a valid ndjson file or tarball")
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.message).toContain('Invalid --file value: .')
+      expect(error?.oclif?.exit).toBe(2)
+      expect(mocks.confirm).not.toHaveBeenCalled()
     })
 
     test('validates documents without markers and outputs empty JSON array', async () => {
