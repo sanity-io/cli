@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.0.0](https://github.com/sanity-io/cli/compare/cli-test-v3.0.1...cli-test-v4.0.0)
+
+_2026-07-13_
+
+### Features
+
+- **test:** granular exports for `cli-test` ([#1458](https://github.com/sanity-io/cli/pull/1458)) ([203a330](https://github.com/sanity-io/cli/commit/203a330a76e3a5dd01ab8667a9f57e3762684477))
+- **test:** `cli-test` now contains `cli-core` mocks ([#1448](https://github.com/sanity-io/cli/pull/1448)) ([f5f5f81](https://github.com/sanity-io/cli/commit/f5f5f81753879908ac8043914ca8007adf505800))
+
+### Bug Fixes
+
+- **test:** one more cli-test export ([#1460](https://github.com/sanity-io/cli/pull/1460)) ([277c65c](https://github.com/sanity-io/cli/commit/277c65c6c0e7df73314030b677d1fd9747172600))
+- **test:** fix default `getProjectRoot()` mock return value ([#1464](https://github.com/sanity-io/cli/pull/1464)) ([abe72c1](https://github.com/sanity-io/cli/commit/abe72c1091656fe22b6d9ba4a86e03e4c9746a11))
+- **test:** add missing ux.spinner and telemetry mocks to `cli-test` ([#1477](https://github.com/sanity-io/cli/pull/1477)) ([2777d86](https://github.com/sanity-io/cli/commit/2777d8661d5e4488e80820bf0c3f4b29c5b4e014))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.3.0
+
 ## [3.0.1](https://github.com/sanity-io/cli/compare/cli-test-v3.0.0...cli-test-v3.0.1)
 
 _2026-07-07_
