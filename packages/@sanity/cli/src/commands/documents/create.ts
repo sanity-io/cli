@@ -102,10 +102,9 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     }
 
     if (replace && missing) {
-      this.error(
-        'Cannot use --replace and --missing together. Remove one flag and try again.',
-        {exit: 2},
-      )
+      this.error('Cannot use --replace and --missing together. Remove one flag and try again.', {
+        exit: 2,
+      })
     }
 
     if (id && file) {

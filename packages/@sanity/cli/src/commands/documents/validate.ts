@@ -120,17 +120,15 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       try {
         stat = await fs.promises.stat(filePath)
       } catch {
-        this.error(
-          `File not found: ${file}. Pass an existing .ndjson file or tarball to --file.`,
-          {exit: 2},
-        )
+        this.error(`File not found: ${file}. Pass an existing .ndjson file or tarball to --file.`, {
+          exit: 2,
+        })
       }
 
       if (!stat.isFile()) {
-        this.error(
-          `Invalid --file path: ${file} is not a file. Pass an .ndjson file or tarball.`,
-          {exit: 2},
-        )
+        this.error(`Invalid --file path: ${file} is not a file. Pass an .ndjson file or tarball.`, {
+          exit: 2,
+        })
       }
 
       ndjsonFilePath = filePath
