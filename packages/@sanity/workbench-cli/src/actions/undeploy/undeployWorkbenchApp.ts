@@ -7,6 +7,8 @@ export interface ConfigSnapshot {
 
   createdAt?: string
   deployedBy?: string
+  /** Whether this snapshot is the one being served; at most one per installation. */
+  isActive?: boolean
 }
 
 async function getClient() {

@@ -145,9 +145,7 @@ async function resolveConfigTarget({
   }
 
   const configs = await listConfigs(installationId)
-  // Snapshots come newest first; the one being served reports as the active deployment.
-  const newest = configs[0]
-  if (!newest) {
+  if (configs.length === 0) {
     return {
       installationId,
       resolution: {
@@ -157,14 +155,15 @@ async function resolveConfigTarget({
     }
   }
 
+  // At most one snapshot is active (served); the rest are deactivated history.
+  const active = configs.find((snapshot) => snapshot.isActive)
   return {
     installationId,
     resolution: {
       target: {
-        activeDeployment: {
-          deployedAt: newest.createdAt ?? '',
-          deployedBy: newest.deployedBy ?? '',
-        },
+        activeDeployment: active
+          ? {deployedAt: active.createdAt ?? '', deployedBy: active.deployedBy ?? ''}
+          : null,
         appHost: null,
         configs: configs.map((snapshot) => ({
           createdAt: snapshot.createdAt ?? null,

@@ -193,6 +193,7 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
         createdAt: '2024-02-01T00:00:00Z',
         deployedBy: 'gustav@sanity.io',
         id: 'cfg-2',
+        isActive: true,
         version: '2.0.0',
       },
       {
@@ -206,7 +207,7 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     const resolution = await configAdapter().resolveTarget()
 
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
-      // The newest snapshot is the config being served
+      // The active snapshot is the config being served
       activeDeployment: {
         deployedAt: '2024-02-01T00:00:00Z',
         deployedBy: 'gustav@sanity.io',
@@ -226,6 +227,7 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
         createdAt: '2024-01-01T00:00:00Z',
         deployedBy: 'gustav@sanity.io',
         id: 'cfg-1',
+        isActive: true,
         version: '1.0.0',
       },
     ])
@@ -240,6 +242,15 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     expect(resolution.target).not.toHaveProperty('isSingleton')
     expect(resolution.target.activeDeployment).not.toHaveProperty('version')
     expect(resolution.target.configs[0]).not.toHaveProperty('version')
+  })
+
+  test('history without an active snapshot reports no active deployment', async () => {
+    stubInstallations([{createdAt: '2024-01-01T00:00:00Z', id: 'cfg-1', version: '1.0.0'}])
+
+    const resolution = await configAdapter().resolveTarget()
+    if (resolution.type !== 'found') throw new Error('expected found')
+
+    expect(resolution.target.activeDeployment).toBeNull()
   })
 
   test('no active installation → nothing to undeploy', async () => {
