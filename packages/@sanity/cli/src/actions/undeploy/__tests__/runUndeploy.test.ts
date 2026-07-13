@@ -432,6 +432,26 @@ describe('renderUndeployPlan', () => {
     expect(logged.some((line) => line.includes('Problems to fix:'))).toBe(true)
     expect(logged.some((line) => line.includes('boom: do X'))).toBe(true)
   })
+
+  test('a blocked config-only undeploy names the installation config in the verdict', () => {
+    const output = mockOutput()
+    renderUndeployPlan(
+      {
+        checks: [{message: 'boom', status: 'fail'}],
+        reason: null,
+        target: target({deletes: 'config', title: 'media-library', type: 'coreApp'}),
+        type: 'coreApp',
+      },
+      output,
+    )
+
+    const logged = vi.mocked(output.log).mock.calls.map((call) => String(call[0]))
+    expect(
+      logged.some((line) =>
+        line.includes('Installation config for "media-library" can not be undeployed.'),
+      ),
+    ).toBe(true)
+  })
 })
 
 describe('renderUndeployPlan target summary', () => {

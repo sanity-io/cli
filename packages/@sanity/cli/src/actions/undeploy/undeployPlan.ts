@@ -92,7 +92,12 @@ export function renderUndeployPlan(plan: UndeployPlan, output: Output): void {
 
   if (!canUndeploy(plan)) {
     if (problems.length > 0) {
-      const label = plan.type === 'coreApp' ? 'Application' : 'Studio'
+      const label =
+        plan.target?.deletes === 'config'
+          ? `Installation config${plan.target.title ? ` for "${plan.target.title}"` : ''}`
+          : plan.type === 'coreApp'
+            ? 'Application'
+            : 'Studio'
       output.log(styleText('red', `\n${checkStatusIcon('fail')} ${label} can not be undeployed.`))
     } else {
       output.log('\nNothing to undeploy.')
