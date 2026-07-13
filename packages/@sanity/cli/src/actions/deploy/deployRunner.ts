@@ -1,11 +1,10 @@
-import {format} from 'node:util'
-
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
+import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {type DeployCheck, type DeployCheckReporter, type DeployTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {
@@ -62,17 +61,8 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
   const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only
-  // the final JSON.stringify writes to stdout. Spinners are already on stderr.
-  const runOptions = json
-    ? {
-        ...options,
-        output: {
-          ...output,
-          log: (message = '', ...args: unknown[]) =>
-            void process.stderr.write(`${format(message, ...args)}\n`),
-        },
-      }
-    : options
+  // the final JSON.stringify writes to stdout.
+  const runOptions = json ? {...options, output: toStderrOutput(output)} : options
 
   try {
     if (options.flags['dry-run']) {

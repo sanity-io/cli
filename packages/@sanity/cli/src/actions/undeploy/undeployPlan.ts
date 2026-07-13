@@ -6,8 +6,8 @@ import {type Check, checkStatusIcon, renderIssues} from '../../util/checks.js'
 
 /**
  * What an undeploy deletes, resolved once and read by every report — the
- * dry-run plan and the real run's confirmation prompt — so the human and
- * machine outputs can't drift.
+ * dry-run plan, the `--json` payloads, and the real run's confirmation prompt —
+ * so the human and machine outputs can't drift.
  */
 export interface UndeployTarget {
   /** Details of the deployment currently being served; `null` when none is live. */
@@ -32,6 +32,8 @@ export type UndeployTargetResolution =
 /** What a `--dry-run` undeploy would do: the real undeploy sequence with the deletion gated off. */
 export interface UndeployPlan {
   checks: Check[]
+  /** Why there is nothing to undeploy; `null` when a target resolved. */
+  reason: string | null
   /** What would be deleted; `null` when there is nothing to undeploy. */
   target: UndeployTarget | null
   type: 'coreApp' | 'studio'
@@ -39,6 +41,34 @@ export interface UndeployPlan {
 
 export function canUndeploy(plan: UndeployPlan): boolean {
   return plan.target !== null && plan.checks.every((check) => check.status !== 'fail')
+}
+
+/**
+ * A machine-readable projection of the plan: blocking problems mapped to their
+ * fix, warnings as messages. Derived from the same checks and target the human
+ * report renders, so the two can't drift.
+ */
+export function undeployPlanToJson(plan: UndeployPlan): {
+  application: UndeployTarget | null
+  canUndeploy: boolean
+  errors: Record<string, string | null>
+  reason: string | null
+  warnings: string[]
+} {
+  const errors: Record<string, string | null> = {}
+  const warnings: string[] = []
+  for (const check of plan.checks) {
+    if (check.status === 'fail') errors[check.message] = check.solution ?? null
+    else if (check.status === 'warn') warnings.push(check.message)
+  }
+
+  return {
+    application: plan.target,
+    canUndeploy: canUndeploy(plan),
+    errors,
+    reason: plan.reason,
+    warnings,
+  }
 }
 
 /**

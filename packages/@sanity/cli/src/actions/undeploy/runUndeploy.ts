@@ -11,10 +11,12 @@ import {
   createCollectingReporter,
   createFailFastReporter,
 } from '../../util/checks.js'
+import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {
   describeUndeployTarget,
   renderUndeployPlan,
   type UndeployPlan,
+  undeployPlanToJson,
   type UndeployTarget,
   type UndeployTargetResolution,
 } from './undeployPlan.js'
@@ -41,16 +43,28 @@ export interface UndeployAdapter {
   undeploy(target: UndeployTarget): Promise<void>
 }
 
+/** What a real undeploy produced — the payload `--json` reports. */
+type UndeployResult =
+  | {application: UndeployTarget; undeployed: true}
+  | {reason: string; undeployed: false}
+
 /**
  * Runs an undeploy in the mode the flags select: a real undeploy fails fast,
  * confirms, and deletes; `--dry-run` drives the same target resolution
- * read-only and renders a plan instead.
+ * read-only and renders a plan instead. `--json` emits the same information as
+ * machine-readable JSON.
  */
 export async function runUndeploy(
   options: UndeployOptions,
   adapter: UndeployAdapter,
 ): Promise<void> {
   const {flags, output} = options
+  const json = !!flags.json
+  const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
+
+  // The JSON payload owns stdout, so the run's progress logs go to stderr; only
+  // the final JSON.stringify writes to stdout.
+  const runOptions = json ? {...options, output: toStderrOutput(output)} : options
 
   try {
     if (flags['dry-run']) {
@@ -58,35 +72,46 @@ export async function runUndeploy(
       const resolution = await resolveTarget(adapter, reporter)
       const plan: UndeployPlan = {
         checks: reporter.results,
+        reason: resolution?.type === 'none' ? resolution.message : null,
         target: resolution?.type === 'found' ? resolution.target : null,
         type: adapter.type,
       }
-      renderUndeployPlan(plan, output)
+      if (json) emitJson(undeployPlanToJson(plan))
+      else renderUndeployPlan(plan, output)
       // A blocked plan exits like a real (fail-fast) undeploy would.
       const failed = plan.checks.find((check) => check.status === 'fail')
       if (failed) output.error('Undeploy blocked by failing checks.', {exit: failed.exitCode ?? 1})
       return
     }
 
-    await undeployApp(options, adapter)
+    const result = await undeployApp(runOptions, adapter)
+    if (json && result) emitJson(result)
   } catch (error) {
     const failure = normalizeFailure(error, adapter.type)
+    // A blocked dry run reaches this catch too (its exit throws) and already
+    // printed its plan, so only a real undeploy adds the {undeployed: false} envelope.
+    if (json && !flags['dry-run']) {
+      emitJson({error: {message: failure.message}, undeployed: false})
+    }
     output.error(failure.message, {exit: failure.exit})
   }
 }
 
 /** The real run: resolve the target, confirm, delete, report. */
-async function undeployApp(options: UndeployOptions, adapter: UndeployAdapter): Promise<void> {
+async function undeployApp(
+  options: UndeployOptions,
+  adapter: UndeployAdapter,
+): Promise<UndeployResult | undefined> {
   const {flags, output} = options
 
   const resolution = await resolveTarget(adapter, createFailFastReporter(output))
   // A resolve failure never lands here: the fail-fast reporter already exited.
-  if (!resolution) return
+  if (!resolution) return undefined
   if (resolution.type === 'none') {
     output.log(`${resolution.message}.`)
     if (resolution.solution) output.log(`${resolution.solution}.`)
     output.log('Nothing to undeploy.')
-    return
+    return {reason: resolution.message, undeployed: false}
   }
 
   const {target} = resolution
@@ -95,7 +120,7 @@ async function undeployApp(options: UndeployOptions, adapter: UndeployAdapter): 
       default: false,
       message: confirmUndeployMessage(target),
     })
-    if (!shouldUndeploy) return
+    if (!shouldUndeploy) return undefined
   }
 
   const spin = spinner(
@@ -110,6 +135,7 @@ async function undeployApp(options: UndeployOptions, adapter: UndeployAdapter): 
   spin.succeed()
 
   printUndeployScheduled(target, output)
+  return {application: target, undeployed: true}
 }
 
 /**
@@ -174,7 +200,7 @@ function printUndeployScheduled(target: UndeployTarget, output: Output): void {
   )
 }
 
-/** The one failure diagnosis the stderr message reads. */
+/** The one failure diagnosis both the stderr message and the `--json` envelope read. */
 function normalizeFailure(
   error: unknown,
   type: UndeployAdapter['type'],

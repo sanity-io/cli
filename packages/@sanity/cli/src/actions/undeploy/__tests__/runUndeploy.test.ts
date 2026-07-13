@@ -8,6 +8,7 @@ import {
   describeUndeployTarget,
   renderUndeployPlan,
   type UndeployPlan,
+  undeployPlanToJson,
   type UndeployTarget,
 } from '../undeployPlan.js'
 
@@ -183,6 +184,66 @@ describe('runUndeploy real run', () => {
   })
 })
 
+describe('runUndeploy --json', () => {
+  test('a dry run emits the plan as JSON on stdout only', async () => {
+    const output = mockOutput()
+    await runUndeploy(options(output, {'dry-run': true, json: true}), adapter())
+
+    const logged = vi.mocked(output.log).mock.calls.map((call) => String(call[0]))
+    expect(logged).toHaveLength(1)
+    const payload = JSON.parse(logged[0]!)
+    expect(payload.canUndeploy).toBe(true)
+    expect(payload.application.id).toBe('app-1')
+  })
+
+  test('a real run emits an {undeployed: true} envelope with the target', async () => {
+    const output = mockOutput()
+    await runUndeploy(options(output, {json: true, yes: true}), adapter())
+
+    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
+    expect(payload.undeployed).toBe(true)
+    expect(payload.application.id).toBe('app-1')
+  })
+
+  test("without `yes` the runner still confirms — unattended consent is the command's job", async () => {
+    const output = mockOutput()
+    const undeploy = vi.fn()
+    vi.mocked(confirm).mockResolvedValueOnce(false)
+    await runUndeploy(options(output, {json: true}), adapter({undeploy}))
+
+    expect(confirm).toHaveBeenCalled()
+    expect(undeploy).not.toHaveBeenCalled()
+  })
+
+  test('nothing to undeploy emits {undeployed: false} with the reason', async () => {
+    const output = mockOutput()
+    await runUndeploy(
+      options(output, {json: true, yes: true}),
+      adapter({resolveTarget: async () => ({message: 'No application ID provided', type: 'none'})}),
+    )
+
+    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
+    expect(payload).toEqual({reason: 'No application ID provided', undeployed: false})
+  })
+
+  test('a failed deletion emits a {undeployed: false} error envelope and still errors on stderr', async () => {
+    const output = mockOutput()
+    await runUndeploy(
+      options(output, {json: true, yes: true}),
+      adapter({
+        undeploy: async () => {
+          throw new Error('boom')
+        },
+      }),
+    )
+
+    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
+    expect(payload.undeployed).toBe(false)
+    expect(payload.error.message).toContain('boom')
+    expect(output.error).toHaveBeenCalledWith(payload.error.message, {exit: 1})
+  })
+})
+
 describe('describeUndeployTarget', () => {
   test('a found studio → pass check naming its URL', () => {
     expect(describeUndeployTarget({target: target(), type: 'found'})).toEqual({
@@ -222,6 +283,7 @@ describe('canUndeploy', () => {
   test('true with a target and no failing checks', () => {
     const plan: UndeployPlan = {
       checks: [{message: 'ok', status: 'pass'}],
+      reason: null,
       target: target(),
       type: 'studio',
     }
@@ -229,16 +291,60 @@ describe('canUndeploy', () => {
   })
 
   test('false without a target', () => {
-    expect(canUndeploy({checks: [], target: null, type: 'studio'})).toBe(false)
+    expect(canUndeploy({checks: [], reason: null, target: null, type: 'studio'})).toBe(false)
   })
 
   test('false with a failing check', () => {
     const plan: UndeployPlan = {
       checks: [{message: 'boom', status: 'fail'}],
+      reason: null,
       target: target(),
       type: 'studio',
     }
     expect(canUndeploy(plan)).toBe(false)
+  })
+})
+
+describe('undeployPlanToJson', () => {
+  test('derives errors and warnings from the same checks the human report renders', () => {
+    const json = undeployPlanToJson({
+      checks: [
+        {message: 'ok', status: 'pass'},
+        {message: 'heads up', status: 'warn'},
+        {message: 'boom', solution: 'do X', status: 'fail'},
+      ],
+      reason: null,
+      target: target(),
+      type: 'studio',
+    })
+
+    expect(json).toEqual({
+      application: target(),
+      canUndeploy: false,
+      errors: {boom: 'do X'},
+      reason: null,
+      warnings: ['heads up'],
+    })
+  })
+
+  test('nothing to undeploy carries the reason for agents', () => {
+    const json = undeployPlanToJson({
+      checks: [{message: 'No application ID provided', status: 'skip'}],
+      reason: 'No application ID provided',
+      target: null,
+      type: 'coreApp',
+    })
+
+    expect(json.canUndeploy).toBe(false)
+    expect(json.errors).toEqual({})
+    expect(json.reason).toBe('No application ID provided')
+    expect(json.application).toBeNull()
+  })
+
+  test('an undeployable plan reports the full target', () => {
+    const json = undeployPlanToJson({checks: [], reason: null, target: target(), type: 'studio'})
+    expect(json.canUndeploy).toBe(true)
+    expect(json.application).toEqual(target())
   })
 })
 
@@ -248,6 +354,7 @@ describe('renderUndeployPlan', () => {
     renderUndeployPlan(
       {
         checks: [{message: 'Undeploys studio https://my-studio.sanity.studio', status: 'pass'}],
+        reason: null,
         target: target(),
         type: 'studio',
       },
@@ -265,6 +372,7 @@ describe('renderUndeployPlan', () => {
     renderUndeployPlan(
       {
         checks: [],
+        reason: null,
         target: target({
           activeDeployment: {
             deployedAt: '2024-01-02T00:00:00Z',
@@ -294,6 +402,7 @@ describe('renderUndeployPlan', () => {
     renderUndeployPlan(
       {
         checks: [{message: 'No application ID provided', status: 'skip'}],
+        reason: 'No application ID provided',
         target: null,
         type: 'coreApp',
       },
@@ -310,6 +419,7 @@ describe('renderUndeployPlan', () => {
     renderUndeployPlan(
       {
         checks: [{message: 'boom', solution: 'do X', status: 'fail'}],
+        reason: null,
         target: null,
         type: 'coreApp',
       },
