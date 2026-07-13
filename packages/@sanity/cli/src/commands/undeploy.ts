@@ -52,6 +52,9 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
       ? createAppUndeployAdapter(cliConfig)
       : createStudioUndeployAdapter(cliConfig)
 
-    await runUndeploy({flags, output: this.output}, adapter)
+    // An unattended run (--yes, --json, non-TTY) can't answer the confirmation
+    // prompt, so it consents up front; machine callers preview with --dry-run.
+    const undeployFlags = this.isUnattended() ? {...flags, yes: true} : flags
+    await runUndeploy({flags: undeployFlags, output: this.output}, adapter)
   }
 }

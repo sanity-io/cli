@@ -205,15 +205,14 @@ describe('runUndeploy --json', () => {
     expect(payload.application.id).toBe('app-1')
   })
 
-  test('a real run without --yes proceeds unattended, never prompting', async () => {
+  test("without `yes` the runner still confirms — unattended consent is the command's job", async () => {
     const output = mockOutput()
     const undeploy = vi.fn()
+    vi.mocked(confirm).mockResolvedValueOnce(false)
     await runUndeploy(options(output, {json: true}), adapter({undeploy}))
 
-    expect(confirm).not.toHaveBeenCalled()
-    expect(undeploy).toHaveBeenCalled()
-    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
-    expect(payload.undeployed).toBe(true)
+    expect(confirm).toHaveBeenCalled()
+    expect(undeploy).not.toHaveBeenCalled()
   })
 
   test('nothing to undeploy emits {undeployed: false} with the reason', async () => {

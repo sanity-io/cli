@@ -1,4 +1,4 @@
-import {format, styleText} from 'node:util'
+import {styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
 import {type Output, subdebug} from '@sanity/cli-core'
@@ -11,6 +11,7 @@ import {
   createCollectingReporter,
   createFailFastReporter,
 } from '../../util/checks.js'
+import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {
   describeUndeployTarget,
   renderUndeployPlan,
@@ -62,17 +63,8 @@ export async function runUndeploy(
   const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only
-  // the final JSON.stringify writes to stdout. Spinners are already on stderr.
-  const runOptions = json
-    ? {
-        ...options,
-        output: {
-          ...output,
-          log: (message = '', ...args: unknown[]) =>
-            void process.stderr.write(`${format(message, ...args)}\n`),
-        },
-      }
-    : options
+  // the final JSON.stringify writes to stdout.
+  const runOptions = json ? {...options, output: toStderrOutput(output)} : options
 
   try {
     if (flags['dry-run']) {
@@ -123,9 +115,7 @@ async function undeployApp(
   }
 
   const {target} = resolution
-  // --json runs unattended: confirmation prompts are for humans, and machine
-  // callers preview with --dry-run.
-  if (!flags.yes && !flags.json) {
+  if (!flags.yes) {
     const shouldUndeploy = await confirm({
       default: false,
       message: confirmUndeployMessage(target),

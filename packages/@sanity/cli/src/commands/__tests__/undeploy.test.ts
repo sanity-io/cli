@@ -168,6 +168,7 @@ describe('#undeploy', () => {
           api: {projectId: 'test'},
           studioHost: 'my-host',
         },
+        isInteractive: true,
         token: 'test-token',
       },
     })
@@ -200,6 +201,7 @@ describe('#undeploy', () => {
           api: {projectId: 'test'},
           studioHost: 'my-host',
         },
+        isInteractive: true,
         token: 'test-token',
       },
     })
@@ -233,6 +235,7 @@ describe('#undeploy', () => {
           app: {},
           deployment: {appId: 'core-id'},
         },
+        isInteractive: true,
         token: 'test-token',
       },
     })
@@ -273,6 +276,7 @@ describe('#undeploy', () => {
           app: {},
           deployment: {appId: 'core-id'},
         },
+        isInteractive: true,
         token: 'test-token',
       },
     })
