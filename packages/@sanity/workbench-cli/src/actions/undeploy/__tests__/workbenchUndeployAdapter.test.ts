@@ -207,12 +207,12 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
 
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
       config: expect.stringContaining('Alt text (alt)'),
-      id: null,
       configs: [
         expect.objectContaining({id: 'cfg-2', version: '2.0.0'}),
         expect.objectContaining({id: 'cfg-1', version: '1.0.0'}),
       ],
       deletes: 'config',
+      id: null,
       installationId: 'inst-1',
       isSingleton: true,
       organizationId: 'org-1',

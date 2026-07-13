@@ -97,8 +97,8 @@ async function resolveApplicationTarget({
       activeDeployment: null,
       appHost: application.slug,
       createdAt: null,
-      id: application.id,
       deletes: 'application',
+      id: application.id,
       interfaces: exposes,
       ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
       organizationId: application.organizationId,
@@ -156,7 +156,6 @@ async function resolveConfigTarget({
     target: {
       activeDeployment: null,
       appHost: null,
-      id: null,
       config: configSummary,
       configs: configs.map((snapshot) => ({
         createdAt: snapshot.createdAt ?? null,
@@ -166,6 +165,7 @@ async function resolveConfigTarget({
       })),
       createdAt: null,
       deletes: 'config',
+      id: null,
       installationId,
       isSingleton: true,
       organizationId,

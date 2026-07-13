@@ -9,15 +9,15 @@ export interface UndeployTarget {
   activeDeployment: {deployedAt: string; deployedBy: string; version: string} | null
   /** Hostname the application is served from; freed for anyone to claim after undeploy. */
   appHost: string | null
-  /** The application an undeploy deletes, along with all its deployments; `null` for a config-only undeploy. */
-  id: string | null
-  type: 'coreApp' | 'studio'
   createdAt: string | null
   /** What gets deleted: the application (with its deployments and interfaces) or an installation's config. */
   deletes: 'application' | 'config'
+  /** The application an undeploy deletes, along with all its deployments; `null` for a config-only undeploy. */
+  id: string | null
   organizationId: string | null
   projectId: string | null
   title: string | null
+  type: 'coreApp' | 'studio'
   /** Where the deployed studio/app is currently reachable. */
   url: string | null
 
