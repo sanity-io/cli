@@ -26,12 +26,13 @@ function workbenchApp(): DeployableWorkbenchApp {
   return app
 }
 
-function mediaLibraryApp(): DeployableWorkbenchApp {
+function mediaLibraryApp(
+  fields: {name: string; src: string; title: string}[] = [
+    {name: 'alt', src: './src/alt.ts', title: 'Alt text'},
+  ],
+): DeployableWorkbenchApp {
   const app = getWorkbench({
-    app: unstable_defineMediaLibrary({
-      fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
-      organizationId: 'org-1',
-    }),
+    app: unstable_defineMediaLibrary({fields, organizationId: 'org-1'}),
   } as CliConfig)
   if (!app) throw new Error('expected a workbench app')
   return app
@@ -242,6 +243,22 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     expect(resolution.target).not.toHaveProperty('isSingleton')
     expect(resolution.target.activeDeployment).not.toHaveProperty('version')
     expect(resolution.target.configs[0]).not.toHaveProperty('version')
+  })
+
+  test('a media library without local fields still undeploys its config', async () => {
+    stubInstallations([{createdAt: '2024-01-01T00:00:00Z', id: 'cfg-1', isActive: true}])
+
+    const resolution = await createWorkbenchUndeployAdapter({
+      appId: undefined,
+      organizationId: 'org-1',
+      type: 'coreApp',
+      workbench: mediaLibraryApp([]),
+    }).resolveTarget()
+
+    expect(resolution.type === 'found' && resolution.target).toMatchObject({
+      configs: [expect.objectContaining({id: 'cfg-1'})],
+      deletes: 'config',
+    })
   })
 
   test('history without an active snapshot reports no active deployment', async () => {

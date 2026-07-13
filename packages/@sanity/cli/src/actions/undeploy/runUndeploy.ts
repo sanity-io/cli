@@ -115,14 +115,20 @@ async function undeployApp(
     if (!shouldUndeploy) return undefined
   }
 
-  const spin = spinner(
-    `Undeploying ${adapter.type === 'coreApp' ? 'application' : 'studio'}`,
-  ).start()
+  const label =
+    target.deletes === 'config'
+      ? 'installation config'
+      : adapter.type === 'coreApp'
+        ? 'application'
+        : 'studio'
+  const spin = spinner(`Undeploying ${label}`).start()
   try {
     await adapter.undeploy(target)
   } catch (error) {
     spin.fail()
-    throw error
+    undeployDebug(`Error undeploying ${label}`, error)
+    // Labeled here, where the target is known — `normalizeFailure` only sees the adapter type.
+    throw new CLIError(`Error undeploying ${label}: ${getErrorMessage(error)}`, {exit: 1})
   }
   spin.succeed()
 

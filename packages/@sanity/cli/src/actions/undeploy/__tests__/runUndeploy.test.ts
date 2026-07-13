@@ -173,6 +173,26 @@ describe('runUndeploy real run', () => {
     expect(output.error).toHaveBeenCalledWith('Error undeploying studio: boom', {exit: 1})
   })
 
+  test('a failed config deletion is labeled as the installation config', async () => {
+    const output = mockOutput()
+    await runUndeploy(
+      options(output, {yes: true}),
+      adapter({
+        resolveTarget: async () => ({
+          target: {...target(), deletes: 'config' as const, id: null},
+          type: 'found',
+        }),
+        undeploy: async () => {
+          throw new Error('boom')
+        },
+      }),
+    )
+
+    expect(output.error).toHaveBeenCalledWith('Error undeploying installation config: boom', {
+      exit: 1,
+    })
+  })
+
   test('Ctrl+C on the prompt reads as a cancellation, not an error dump', async () => {
     const output = mockOutput()
     vi.mocked(confirm).mockRejectedValueOnce(

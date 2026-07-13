@@ -31,8 +31,8 @@ export type WorkbenchUndeployTarget =
  * The undeploy adapter for workbench apps, mirroring what a workbench deploy
  * creates: apps that expose interfaces delete their Brett application (the
  * server soft-deletes its deployments and refuses singletons with active
- * installations); a config-only singleton — a media library, or an app defined
- * with just a config — deletes its installation's config snapshots instead.
+ * installations); a singleton without interfaces — the media library — deletes
+ * its installation's config snapshots instead.
  */
 export function createWorkbenchUndeployAdapter(options: {
   appId: string | undefined
@@ -41,7 +41,10 @@ export function createWorkbenchUndeployAdapter(options: {
   workbench: DeployableWorkbenchApp
 }): UndeployAdapter<WorkbenchUndeployTarget> {
   const {appId, organizationId, type, workbench} = options
-  const configOnly = workbench.deploySingletonConfig && !workbench.hasInterfaces
+  // Keyed on singleton-ness, not on a locally declared config, so an undeploy
+  // still reaches the server's config snapshots after the fields are removed
+  // from sanity.cli.ts.
+  const configOnly = !!workbench.isSingleton && !workbench.hasInterfaces
   // Workbench-internal, so kept off the reported target; resolveTarget stashes it for the delete.
   let installationId: string | undefined
 
@@ -127,18 +130,19 @@ async function resolveConfigTarget({
   resolution: UndeployTargetResolution<WorkbenchUndeployTarget>
 }> {
   const config = workbench.config
-  if (!config) throw new Error('The app declares no config to undeploy')
+  const appType = config?.appType ?? workbench.applicationType
+  if (!appType) throw new Error('The app declares no app type to resolve its installation')
   if (!organizationId) {
     throw new Error(
       'sanity.cli.ts does not contain an organization identifier ("app.organizationId"), which is required to resolve the installation',
     )
   }
 
-  const installationId = await resolveInstallationId({appType: config.appType, organizationId})
+  const installationId = await resolveInstallationId({appType, organizationId})
   if (!installationId) {
     return {
       resolution: {
-        message: `No active "${config.appType}" installation for organization "${organizationId}"`,
+        message: `No active "${appType}" installation for organization "${organizationId}"`,
         type: 'none',
       },
     }
@@ -149,7 +153,7 @@ async function resolveConfigTarget({
     return {
       installationId,
       resolution: {
-        message: `No deployed config for the "${config.appType}" installation`,
+        message: `No deployed config for the "${appType}" installation`,
         type: 'none',
       },
     }
@@ -175,7 +179,7 @@ async function resolveConfigTarget({
         id: null,
         organizationId,
         projectId: null,
-        summary: [summarizeConfig(config)],
+        summary: config ? [summarizeConfig(config)] : undefined,
         title: workbench.name,
         type: 'coreApp',
         url: null,
