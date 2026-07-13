@@ -32,6 +32,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -89,6 +90,20 @@ describe('#backup:disable', () => {
       ],
       message: 'Select the dataset name:',
     })
+  })
+
+  test('should require a dataset in unattended mode', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}])
+
+    const {error} = await testCommand(DisableBackupCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(
+      'Dataset is required in unattended mode. Pass the dataset name as an argument.',
+    )
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('should fail when no project ID is available', async () => {

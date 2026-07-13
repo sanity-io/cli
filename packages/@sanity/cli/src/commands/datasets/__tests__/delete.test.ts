@@ -44,6 +44,7 @@ const TEST_PROJECT_ID = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: TEST_PROJECT_ID}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -82,7 +83,7 @@ describe('#dataset:delete', () => {
     mockDeleteDataset.mockResolvedValue(undefined)
 
     const {stdout} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME], {
-      mocks: {...defaultMocks, isInteractive: true},
+      mocks: defaultMocks,
     })
 
     expect(stdout).toContain(
@@ -90,10 +91,14 @@ describe('#dataset:delete', () => {
     )
     expect(stdout).toContain('Dataset deleted successfully\n')
     expect(mockInput).toHaveBeenCalledWith({
-      message:
-        'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
+      message: `Delete dataset "${TEST_DATASET_NAME}"?\n  Type the dataset name to confirm:`,
       validate: expect.any(Function),
     })
+    const validate = mockInput.mock.calls[0]?.[0].validate
+    expect(await validate?.(TEST_DATASET_NAME)).toBe(true)
+    expect(await validate?.('wrong-dataset')).toBe(
+      `Dataset name doesn't match. Enter "${TEST_DATASET_NAME}" or press Ctrl+C to cancel.`,
+    )
   })
 
   test('requires --force in unattended mode', async () => {
@@ -130,21 +135,9 @@ describe('#dataset:delete', () => {
   })
 
   test.each([
-    {
-      desc: 'when deleting dataset',
-      message: 'Internal Server Error',
-      statusCode: 500,
-    },
-    {
-      desc: 'with 404 error when deleting dataset',
-      message: 'Dataset not found',
-      statusCode: 404,
-    },
-    {
-      desc: 'with 403 error when deleting dataset',
-      message: 'Forbidden',
-      statusCode: 403,
-    },
+    {desc: 'when deleting dataset', message: 'Internal Server Error', statusCode: 500},
+    {desc: 'with 404 error when deleting dataset', message: 'Dataset not found', statusCode: 404},
+    {desc: 'with 403 error when deleting dataset', message: 'Forbidden', statusCode: 403},
   ])('handles API error $desc', async ({message, statusCode}) => {
     const deleteError = new Error(message)
     Object.assign(deleteError, {statusCode})
@@ -188,7 +181,7 @@ describe('#dataset:delete', () => {
     mockInput.mockRejectedValue(new Error('User cancelled'))
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME], {
-      mocks: {...defaultMocks, isInteractive: true},
+      mocks: defaultMocks,
     })
 
     expect(error?.message).toBe('User cancelled')
@@ -199,7 +192,7 @@ describe('#dataset:delete', () => {
     mockGetProjectById.mockRejectedValue(new Error('Project Error'))
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME], {
-      mocks: {...defaultMocks, isInteractive: true},
+      mocks: defaultMocks,
     })
 
     expect(error?.message).toContain('Project retrieval failed: Project Error')

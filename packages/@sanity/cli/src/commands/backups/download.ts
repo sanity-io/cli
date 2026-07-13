@@ -224,10 +224,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     docOutStream.end()
     await finished(docOutStream)
 
-    progressSpinner.set({
-      step: `Archiving files into a tarball...`,
-      update: true,
-    })
+    progressSpinner.set({step: `Archiving files into a tarball...`, update: true})
     try {
       await archiveDir(tmpOutDir, outFilePath, (processedBytes: number) => {
         progressSpinner.update({
@@ -258,15 +255,14 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       return path.resolve(this.flags.out)
     }
 
+    const workDir = process.cwd()
+    const defaultPath = path.join(workDir, defaultOutFileName)
     if (this.isUnattended()) {
-      this.error('Output path is required in unattended mode. Pass it with --out <path>.', {
-        exit: 2,
-      })
+      return defaultPath
     }
 
-    const workDir = process.cwd()
     const inputResult = await input({
-      default: path.join(workDir, defaultOutFileName),
+      default: defaultPath,
       message: 'Output path:',
     })
     return path.resolve(inputResult)
@@ -294,7 +290,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       'concurrency' in this.flags &&
       (this.flags.concurrency < 1 || this.flags.concurrency > MAX_DOWNLOAD_CONCURRENCY)
     ) {
-      this.error(`concurrency should be in 1 to ${MAX_DOWNLOAD_CONCURRENCY} range`, {exit: 2})
+      this.error(`--concurrency must be between 1 and ${MAX_DOWNLOAD_CONCURRENCY}.`, {exit: 2})
     }
 
     const defaultOutFileName = `${datasetName}-backup-${backupId}.tar.gz`

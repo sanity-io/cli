@@ -225,20 +225,14 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to attach to copy job: %s', message, error)
-      return this.output.error(`Failed to attach to copy job: ${message}`, {
-        exit: 1,
-      })
+      return this.output.error(`Failed to attach to copy job: ${message}`, {exit: 1})
     }
   }
 
   private async handleCopyMode(
     projectId: string,
     args: {source?: string; target?: string},
-    flags: {
-      detach?: boolean
-      'skip-content-releases'?: boolean
-      'skip-history'?: boolean
-    },
+    flags: {detach?: boolean; 'skip-content-releases'?: boolean; 'skip-history'?: boolean},
   ): Promise<void> {
     copyDatasetDebug('Starting copy mode')
 
@@ -260,9 +254,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to fetch datasets: %s', message, error)
-      return this.output.error(`Failed to fetch datasets: ${message}`, {
-        exit: 1,
-      })
+      return this.output.error(`Failed to fetch datasets: ${message}`, {exit: 1})
     }
 
     const datasetNames = new Set(datasetsResponse.map((ds) => ds.name))
@@ -332,9 +324,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Dataset copying failed: %s', message, error)
-      return this.output.error(`Dataset copying failed: ${message}`, {
-        exit: 1,
-      })
+      return this.output.error(`Dataset copying failed: ${message}`, {exit: 1})
     }
   }
 
@@ -360,9 +350,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to list dataset copy jobs: %s', message, error)
-      return this.output.error(`Failed to list dataset copy jobs: ${message}`, {
-        exit: 1,
-      })
+      return this.output.error(`Failed to list dataset copy jobs: ${message}`, {exit: 1})
     }
   }
 
@@ -376,10 +364,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         exit(130)
       }
 
-      const subscription = followCopyJobProgress({
-        jobId,
-        projectId,
-      }).subscribe({
+      const subscription = followCopyJobProgress({jobId, projectId}).subscribe({
         complete: () => {
           process.off('SIGINT', sigintHandler)
           spin.succeed('Copy finished.')

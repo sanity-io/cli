@@ -137,25 +137,32 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     // Determine dataset name
     let dataset = targetDataset
     if (!dataset) {
+      let defaultDataset: string | undefined
       try {
         // Get default dataset from config (only available when running from a project directory)
         const cliConfig = await this.tryGetCliConfig()
-        const defaultDataset = cliConfig.api?.dataset
-
-        if (defaultDataset) {
-          dataset = defaultDataset
-          this.log(`Using default dataset: ${dataset}`)
-        } else {
-          if (this.isUnattended()) {
-            this.error('Dataset name is required. Pass it as the first argument.', {exit: 2})
-          }
-          dataset = await promptForDataset({allowCreation: false, datasets})
-        }
+        defaultDataset = cliConfig.api?.dataset
       } catch (error) {
         exportDebug('Error selecting dataset', error)
         this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
           exit: 1,
         })
+      }
+
+      if (defaultDataset) {
+        dataset = defaultDataset
+        this.log(`Using default dataset: ${dataset}`)
+      } else if (this.isUnattended()) {
+        this.error('Dataset name is required. Pass it as the first argument.', {exit: 2})
+      } else {
+        try {
+          dataset = await promptForDataset({allowCreation: false, datasets})
+        } catch (error) {
+          exportDebug('Error selecting dataset', error)
+          this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
+            exit: 1,
+          })
+        }
       }
     }
 
@@ -296,7 +303,7 @@ dataset: ${dataset.padEnd(46)}`,
     const finalPathStats = await fs.stat(finalPath).catch(noop)
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
-      this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
+      this.error(`File "${finalPath}" already exists. Pass --overwrite to replace it.`, {
         exit: 2,
       })
     }

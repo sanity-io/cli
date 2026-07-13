@@ -95,15 +95,9 @@ describe('#dataset:copy', () => {
     })
 
     test.each([
-      {
-        desc: '--list with --attach',
-        flags: ['--list', '--attach', 'job-123'],
-      },
+      {desc: '--list with --attach', flags: ['--list', '--attach', 'job-123']},
       {desc: '--list with --detach', flags: ['--list', '--detach']},
-      {
-        desc: '--attach with --detach',
-        flags: ['--attach', 'job-123', '--detach'],
-      },
+      {desc: '--attach with --detach', flags: ['--attach', 'job-123', '--detach']},
     ])('errors when using mutually exclusive flags: $desc', async ({flags}) => {
       await expect(CopyDatasetCommand.run(flags)).rejects.toThrow(
         expect.objectContaining({

@@ -128,6 +128,27 @@ describe('#dataset:create', () => {
     expect(mockCreateDataset).not.toHaveBeenCalled()
   })
 
+  test('defaults to public visibility in unattended mode', async () => {
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+    mockCreateDataset.mockResolvedValue(undefined as never)
+
+    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error).toBeUndefined()
+    expect(mockSelect).not.toHaveBeenCalled()
+    expect(mockCreateDataset).toHaveBeenCalledWith('my-dataset', {
+      aclMode: 'public',
+    })
+  })
+
   test('errors when dataset name is invalid', async () => {
     const {error} = await testCommand(CreateDatasetCommand, ['Invalid-Dataset-Name'], {
       mocks: defaultMocks,

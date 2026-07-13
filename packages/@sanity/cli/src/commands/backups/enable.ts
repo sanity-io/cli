@@ -97,9 +97,7 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           enableBackupDebug(`Failed to create dataset ${newDatasetName}: ${message}`, error)
-          this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {
-            exit: 1,
-          })
+          this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {exit: 1})
         }
       }
     }

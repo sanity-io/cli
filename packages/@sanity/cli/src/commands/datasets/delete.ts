@@ -85,11 +85,13 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
       }
 
       await input({
-        message:
-          'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
+        message: `Delete dataset "${datasetName}"?\n  Type the dataset name to confirm:`,
         validate: (input) => {
           const trimmed = input.trim()
-          return trimmed === datasetName || 'Incorrect dataset name. Ctrl + C to cancel delete.'
+          return (
+            trimmed === datasetName ||
+            `Dataset name doesn't match. Enter "${datasetName}" or press Ctrl+C to cancel.`
+          )
         },
       })
     }

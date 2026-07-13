@@ -266,6 +266,37 @@ describe('#dataset:export', () => {
       )
     })
 
+    test('requires a dataset in unattended mode when no default is configured', async () => {
+      const {mocks} = createTestContext({dataset: null})
+
+      const {error} = await testCommand(DatasetExportCommand, [], {
+        mocks: {...mocks, isInteractive: false},
+      })
+
+      expect(error?.message).toBe(
+        'Dataset name is required. Pass it as the first argument.',
+      )
+      expect(error?.oclif?.exit).toBe(2)
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockInput).not.toHaveBeenCalled()
+    })
+
+    test('uses the default output path in unattended mode', async () => {
+      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+
+      const {error} = await testCommand(DatasetExportCommand, ['production'], {
+        mocks: {...mocks, isInteractive: false},
+      })
+
+      expect(error).toBeUndefined()
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockExportDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          outputPath: expect.stringMatching(/production\.tar\.gz$/),
+        }),
+      )
+    })
+
     test('prompts for dataset when project was selected via prompt outside a project directory', async () => {
       // Simulates: user is outside a project directory, selects project interactively.
       // getCliConfig() throws ProjectRootNotFoundError for both getProjectId and dataset
