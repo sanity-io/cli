@@ -60,12 +60,7 @@ describe('actions/organizations/getOrganization', () => {
 
   test('throws if requestedId does not match returned listed orgs', async () => {
     await expect(
-      getOrganization({
-        isUnattended: true,
-        output,
-        requestedId: 'nope',
-        user,
-      }),
+      getOrganization({isUnattended: true, output, requestedId: 'nope', user}),
     ).rejects.toThrow(`Organization "nope" not found or you don't have access to it`)
   })
 
@@ -85,7 +80,7 @@ describe('actions/organizations/getOrganization', () => {
       mockListOrgs.mockResolvedValue([])
 
       await expect(getOrganization(baseFlags)).rejects.toThrow(
-        'No organizations are available. Create an organization in sanity.io/manage, then pass its ID or slug with --organization.',
+        'No organizations are available. Create an organization at https://www.sanity.io/manage, then pass its ID or slug with --organization.',
       )
       expect(mockPromptForOrgName).not.toHaveBeenCalled()
       expect(uxMocks.select).not.toHaveBeenCalled()

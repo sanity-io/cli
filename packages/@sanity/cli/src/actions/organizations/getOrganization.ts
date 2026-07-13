@@ -60,7 +60,7 @@ export async function getOrganization({
   if (organizations.length === 0) {
     if (isUnattended) {
       throw new Error(
-        'No organizations are available. Create an organization in sanity.io/manage, then pass its ID or slug with --organization.',
+        'No organizations are available. Create an organization at https://www.sanity.io/manage, then pass its ID or slug with --organization.',
       )
     }
 
