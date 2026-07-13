@@ -1,4 +1,3 @@
-import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {Table} from 'console-table-printer'
@@ -6,7 +5,7 @@ import {Table} from 'console-table-printer'
 import {type Token} from '../../actions/tokens/types.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getTokens} from '../../services/tokens.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getJsonFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listTokenDebug = subdebug('tokens:list')
 
@@ -31,18 +30,14 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       description: 'Project ID to list tokens for',
       semantics: 'override',
     }),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output tokens in JSON format',
-    }),
+    ...getJsonFlag(),
   }
 
   static override hiddenAliases: string[] = ['token:list']
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(TokensListCommand)
-    const {json} = flags
-    const outputJson = json ?? false
+    const {json: outputJson} = flags
 
     // Ensure we have project context
     const projectId = await this.getProjectId({

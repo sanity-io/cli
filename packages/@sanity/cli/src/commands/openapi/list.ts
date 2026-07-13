@@ -2,6 +2,8 @@ import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
+import {getJsonFlag} from '../../util/sharedFlags.js'
+
 interface OpenAPISpec {
   description: string
   slug: string
@@ -29,9 +31,7 @@ export class ListOpenApiCommand extends SanityCommand<typeof ListOpenApiCommand>
   ]
 
   static override flags = {
-    json: Flags.boolean({
-      description: 'Output JSON',
-    }),
+    ...getJsonFlag(),
     web: Flags.boolean({
       char: 'w',
       description: 'Open HTTP Reference in web browser',

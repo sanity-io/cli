@@ -9,6 +9,7 @@ import {deployDebug} from '../actions/deploy/deployDebug.js'
 import {deployStudio} from '../actions/deploy/deployStudio.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
+import {getJsonFlag} from '../util/sharedFlags.js'
 
 export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   static override args = {
@@ -60,11 +61,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description: 'Register an externally hosted studio',
       exclusive: ['source-maps', 'minify', 'build'],
     }),
-    json: Flags.boolean({
-      char: 'j',
-      default: false,
-      description: 'Output the result as JSON',
-    }),
+    ...getJsonFlag(),
     minify: Flags.boolean({
       allowNo: true,
       default: true,

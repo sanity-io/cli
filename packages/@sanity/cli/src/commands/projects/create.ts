@@ -20,6 +20,7 @@ import {
 } from '../../services/organizations.js'
 import {createProject, type CreateProjectResult} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
+import {getJsonFlag} from '../../util/sharedFlags.js'
 
 const debug = subdebug('projects:create')
 
@@ -73,10 +74,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       description: 'Dataset visibility: public or private',
       options: ['private', 'public'],
     }),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output in JSON format',
-    }),
+    ...getJsonFlag(),
     organization: Flags.string({
       description: 'Organization to create the project in',
       helpValue: '<slug|id>',

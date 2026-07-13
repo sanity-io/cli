@@ -90,3 +90,20 @@ export function getDatasetFlag(options: SharedFlagOptions) {
     }),
   }
 }
+
+/**
+ * Returns a `--json` / `-j` flag definition.
+ *
+ * Locked: flag name (`json`), char (`j`), description, and `default` (false).
+ * Output format never falls back to CLI configuration, so there is no
+ * `semantics` option.
+ */
+export function getJsonFlag() {
+  return {
+    json: Flags.boolean({
+      char: 'j',
+      default: false,
+      description: 'Output the result as JSON',
+    }),
+  }
+}

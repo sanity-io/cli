@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {Args, Flags} from '@oclif/core'
+import {Args} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
@@ -14,6 +14,7 @@ import {
   type DoctorResults,
   type MessageType,
 } from '../actions/doctor/types.js'
+import {getJsonFlag} from '../util/sharedFlags.js'
 
 const STATUS_SYMBOLS: Record<CheckResultStatus, string> = {
   error: logSymbols.error,
@@ -52,11 +53,7 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
   ]
 
   static override flags = {
-    json: Flags.boolean({
-      char: 'j',
-      default: false,
-      description: 'Output results as JSON',
-    }),
+    ...getJsonFlag(),
   }
 
   // Needed for variable argument count

@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {getDatasetFlag, getProjectIdFlag} from '../sharedFlags.js'
+import {getDatasetFlag, getJsonFlag, getProjectIdFlag} from '../sharedFlags.js'
 
 describe('getProjectIdFlag', () => {
   test('override semantics: appends suffix and sets OVERRIDE helpGroup', () => {
@@ -97,5 +97,14 @@ describe('getDatasetFlag', () => {
     const invoke = (input: string) => parse(input, {} as any, {} as any)
     await expect(invoke('  staging  ')).resolves.toBe('staging')
     await expect(invoke('  ')).rejects.toThrow('cannot be empty')
+  })
+})
+
+describe('getJsonFlag', () => {
+  test('locks char, default, and description', () => {
+    const flag = getJsonFlag().json
+    expect(flag.char).toBe('j')
+    expect(flag.default).toBe(false)
+    expect(flag.description).toBe('Output the result as JSON')
   })
 })

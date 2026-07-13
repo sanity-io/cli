@@ -7,6 +7,7 @@ import {
 } from '../actions/undeploy/adapters.js'
 import {runUndeploy} from '../actions/undeploy/runUndeploy.js'
 import {determineIsApp} from '../util/determineIsApp.js'
+import {getJsonFlag} from '../util/sharedFlags.js'
 
 export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
   static override description = 'Removes the deployed Sanity Studio/App from Sanity hosting'
@@ -31,11 +32,7 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
       default: false,
       description: 'Report what would be undeployed without deleting anything',
     }),
-    json: Flags.boolean({
-      char: 'j',
-      default: false,
-      description: 'Output the result as JSON',
-    }),
+    ...getJsonFlag(),
     yes: Flags.boolean({
       char: 'y',
       default: false,

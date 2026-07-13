@@ -4,6 +4,7 @@ import {SanityCommand} from '@sanity/cli-core'
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
 import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {getJsonFlag} from '../../util/sharedFlags.js'
 
 const description = `
 List all schemas in the current dataset.
@@ -46,9 +47,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       description: 'Fetch a single schema by id',
       helpValue: '<schema_id>',
     }),
-    json: Flags.boolean({
-      description: 'Get schema as json',
-    }),
+    ...getJsonFlag(),
     'manifest-dir': Flags.directory({
       default: './dist/static',
       description: 'Directory containing manifest file',

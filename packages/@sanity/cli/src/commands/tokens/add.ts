@@ -5,7 +5,7 @@ import {input, select} from '@sanity/cli-core/ux'
 import {validateRole} from '../../actions/tokens/validateRole.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {createToken, getTokenRoles} from '../../services/tokens.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getJsonFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const tokensAddDebug = subdebug('tokens:add')
 
@@ -44,10 +44,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
 
   static override flags = {
     ...getProjectIdFlag({description: 'Project ID to add token to', semantics: 'override'}),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output as JSON',
-    }),
+    ...getJsonFlag(),
     role: Flags.string({
       description: 'Role to assign to the token',
       helpValue: 'viewer',
