@@ -1,7 +1,8 @@
 import {writeFileSync} from 'node:fs'
 
 import {formatSchemaValidation, getAggregatedSeverity} from '@sanity/cli-build/_internal/extract'
-import {Output, studioWorkerTask} from '@sanity/cli-core'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
+import {type Output} from '@sanity/cli-core/types'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 
 import {generateMetafile} from './metafile.js'
