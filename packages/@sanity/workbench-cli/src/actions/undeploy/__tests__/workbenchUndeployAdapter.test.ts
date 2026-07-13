@@ -1,7 +1,11 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {unstable_defineApp, unstable_defineMediaLibrary} from '../../../defineApp.js'
+import {
+  type MediaLibraryField,
+  unstable_defineApp,
+  unstable_defineMediaLibrary,
+} from '../../../defineApp.js'
 import {type DeployableWorkbenchApp, getWorkbench} from '../../deploy/getWorkbench.js'
 import {createWorkbenchUndeployAdapter} from '../workbenchUndeployAdapter.js'
 
@@ -27,9 +31,7 @@ function workbenchApp(): DeployableWorkbenchApp {
 }
 
 function mediaLibraryApp(
-  fields: {name: string; src: string; title: string}[] = [
-    {name: 'alt', src: './src/alt.ts', title: 'Alt text'},
-  ],
+  fields: MediaLibraryField[] = [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
 ): DeployableWorkbenchApp {
   const app = getWorkbench({
     app: unstable_defineMediaLibrary({fields, organizationId: 'org-1'}),
