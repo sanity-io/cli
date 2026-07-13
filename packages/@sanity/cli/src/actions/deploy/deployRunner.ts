@@ -6,7 +6,7 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
-import {type DeployCheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
+import {type DeployCheck, type DeployCheckReporter, type DeployTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {
   type DeploymentFile,

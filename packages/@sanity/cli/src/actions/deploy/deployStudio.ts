@@ -23,8 +23,8 @@ import {
   checkAutoUpdates,
   checkBuild,
   checkPackageVersion,
-  type DeployCheckReporter,
   checkStudioTarget,
+  type DeployCheckReporter,
   type DeployTarget,
   verifyOutputDir,
 } from './deployChecks.js'

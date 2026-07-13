@@ -109,7 +109,10 @@ export function checkAutoUpdates(
  * `findUserApplication`: a conflict fails (both `app.id` and `deployment.appId`
  * set), the deprecated config alone warns.
  */
-export function checkAppId(reporter: DeployCheckReporter, {cliConfig}: {cliConfig: CliConfig}): void {
+export function checkAppId(
+  reporter: DeployCheckReporter,
+  {cliConfig}: {cliConfig: CliConfig},
+): void {
   const issue = resolveAppIdIssue(cliConfig)
   if (issue === 'conflicting-config') {
     reporter.report({

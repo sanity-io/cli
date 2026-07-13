@@ -7,7 +7,7 @@ import {type DeployedExpose, summarizeExposes} from '@sanity/workbench-cli/deplo
 
 import {checkStatusIcon, nestLines, renderIssues} from '../../util/checks.js'
 import {pluralize} from '../../util/pluralize.js'
-import {type DeployCheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
+import {type DeployCheck, type DeployCheckReporter, type DeployTarget} from './deployChecks.js'
 
 export interface DeploymentFile {
   /** Path relative to the project root, POSIX-style. */
