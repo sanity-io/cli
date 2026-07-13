@@ -578,7 +578,7 @@ describe('#undeploy', () => {
     const payload = JSON.parse(stdout)
     expect(payload).toEqual({
       error: {
-        message: 'Undeploy requires confirmation in unattended mode. Pass --yes to continue.',
+        message: 'Undeploy requires confirmation. Pass --yes to continue.',
       },
       undeployed: false,
     })

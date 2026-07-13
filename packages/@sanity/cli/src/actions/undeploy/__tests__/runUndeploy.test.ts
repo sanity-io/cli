@@ -68,12 +68,7 @@ describe('runUndeploy dry run', () => {
     const output = mockOutput()
     await runUndeploy(
       options(output, {'dry-run': true}),
-      adapter({
-        resolveTarget: async () => ({
-          message: 'No application ID provided',
-          type: 'none',
-        }),
-      }),
+      adapter({resolveTarget: async () => ({message: 'No application ID provided', type: 'none'})}),
     )
 
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Nothing to undeploy.'))
@@ -118,9 +113,7 @@ describe('runUndeploy real run', () => {
     await runUndeploy(options(output), adapter({undeploy}))
 
     expect(undeploy).not.toHaveBeenCalled()
-    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled.', {
-      exit: 3,
-    })
+    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled', {exit: 3})
   })
 
   test('an unattended run requires explicit confirmation', async () => {
@@ -132,7 +125,7 @@ describe('runUndeploy real run', () => {
     expect(confirm).not.toHaveBeenCalled()
     expect(undeploy).not.toHaveBeenCalled()
     expect(output.error).toHaveBeenCalledWith(
-      'Undeploy requires confirmation in unattended mode. Pass --yes to continue.',
+      'Undeploy requires confirmation. Pass --yes to continue.',
       {exit: 2},
     )
   })
@@ -201,16 +194,12 @@ describe('runUndeploy real run', () => {
   test('Ctrl+C on the prompt reads as a cancellation, not an error dump', async () => {
     const output = mockOutput()
     vi.mocked(confirm).mockRejectedValueOnce(
-      Object.assign(new Error('User force closed'), {
-        name: 'ExitPromptError',
-      }),
+      Object.assign(new Error('User force closed'), {name: 'ExitPromptError'}),
     )
 
     await runUndeploy(options(output), adapter())
 
-    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled by user', {
-      exit: 1,
-    })
+    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled', {exit: 3})
   })
 })
 
@@ -249,19 +238,11 @@ describe('runUndeploy --json', () => {
     const output = mockOutput()
     await runUndeploy(
       options(output, {json: true, yes: true}),
-      adapter({
-        resolveTarget: async () => ({
-          message: 'No application ID provided',
-          type: 'none',
-        }),
-      }),
+      adapter({resolveTarget: async () => ({message: 'No application ID provided', type: 'none'})}),
     )
 
     const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
-    expect(payload).toEqual({
-      reason: 'No application ID provided',
-      undeployed: false,
-    })
+    expect(payload).toEqual({reason: 'No application ID provided', undeployed: false})
   })
 
   test('a failed deletion emits a {undeployed: false} error envelope and still errors on stderr', async () => {
@@ -278,9 +259,7 @@ describe('runUndeploy --json', () => {
     const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
     expect(payload.undeployed).toBe(false)
     expect(payload.error.message).toContain('boom')
-    expect(output.error).toHaveBeenCalledWith(payload.error.message, {
-      exit: 1,
-    })
+    expect(output.error).toHaveBeenCalledWith(payload.error.message, {exit: 1})
   })
 })
 
@@ -297,10 +276,7 @@ describe('describeUndeployTarget', () => {
       target: target({id: 'core-1', title: 'My App', type: 'coreApp'}),
       type: 'found',
     })
-    expect(check).toEqual({
-      message: 'Undeploys application "My App" (core-1)',
-      status: 'pass',
-    })
+    expect(check).toEqual({message: 'Undeploys application "My App" (core-1)', status: 'pass'})
   })
 
   test('an untitled application → pass check naming the ID', () => {
@@ -318,11 +294,7 @@ describe('describeUndeployTarget', () => {
         solution: 'Set it',
         type: 'none',
       }),
-    ).toEqual({
-      message: 'No application ID provided',
-      solution: 'Set it',
-      status: 'skip',
-    })
+    ).toEqual({message: 'No application ID provided', solution: 'Set it', status: 'skip'})
   })
 })
 
@@ -389,12 +361,7 @@ describe('undeployPlanToJson', () => {
   })
 
   test('an undeployable plan reports the full target', () => {
-    const json = undeployPlanToJson({
-      checks: [],
-      reason: null,
-      target: target(),
-      type: 'studio',
-    })
+    const json = undeployPlanToJson({checks: [], reason: null, target: target(), type: 'studio'})
     expect(json.canUndeploy).toBe(true)
     expect(json.application).toEqual(target())
   })
@@ -405,12 +372,7 @@ describe('renderUndeployPlan', () => {
     const output = mockOutput()
     renderUndeployPlan(
       {
-        checks: [
-          {
-            message: 'Undeploys studio https://my-studio.sanity.studio',
-            status: 'pass',
-          },
-        ],
+        checks: [{message: 'Undeploys studio https://my-studio.sanity.studio', status: 'pass'}],
         reason: null,
         target: target(),
         type: 'studio',

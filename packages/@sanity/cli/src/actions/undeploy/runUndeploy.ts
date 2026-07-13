@@ -117,10 +117,9 @@ async function undeployApp(
 
   const {target} = resolution
   if (!flags.yes && options.isUnattended) {
-    throw new CLIError(
-      'Undeploy requires confirmation in unattended mode. Pass --yes to continue.',
-      {exit: exitCodes.USAGE_ERROR},
-    )
+    throw new CLIError('Undeploy requires confirmation. Pass --yes to continue.', {
+      exit: exitCodes.USAGE_ERROR,
+    })
   }
 
   if (!flags.yes) {
@@ -129,7 +128,7 @@ async function undeployApp(
       message: confirmUndeployMessage(target),
     })
     if (!shouldUndeploy) {
-      throw new CLIError('Undeploy cancelled.', {exit: exitCodes.USER_ABORT})
+      throw new CLIError('Undeploy cancelled', {exit: exitCodes.USER_ABORT})
     }
   }
 
@@ -217,7 +216,7 @@ function normalizeFailure(
 ): {exit: number; message: string} {
   // Ctrl+C on the confirmation prompt isn't a real failure
   if (error instanceof Error && error.name === 'ExitPromptError') {
-    return {exit: 1, message: 'Undeploy cancelled by user'}
+    return {exit: exitCodes.USER_ABORT, message: 'Undeploy cancelled'}
   }
   // A failed check already carries its own message and exit code
   if (error instanceof CLIError) {
