@@ -59,13 +59,14 @@ export function describeUndeployTarget(resolution: UndeployTargetResolution): Ch
 }
 
 export function renderUndeployPlan(plan: UndeployPlan, output: Output): void {
-  const label = plan.type === 'coreApp' ? 'application' : 'studio'
   const problems = plan.checks.filter((check) => check.status === 'fail')
   const warnings = plan.checks.filter((check) => check.status === 'warn')
 
   output.log('\nDry run — no changes made.\n')
 
   // Only pass/skip here; problems and warnings render below with their fixes.
+  // A passing target check already says what gets undeployed, so an
+  // undeployable plan needs no extra verdict line.
   for (const check of plan.checks) {
     if (check.status === 'pass' || check.status === 'skip') {
       const fix = check.solution ? `: ${check.solution}` : ''
@@ -75,12 +76,13 @@ export function renderUndeployPlan(plan: UndeployPlan, output: Output): void {
 
   if (plan.target) renderTarget(plan.target, output)
 
-  if (canUndeploy(plan)) {
-    output.log(styleText('green', `\nThis ${label} can be undeployed.`))
-  } else if (problems.length > 0) {
-    output.log(styleText('red', `\nThis ${label} can't be undeployed.`))
-  } else {
-    output.log('\nNothing to undeploy.')
+  if (!canUndeploy(plan)) {
+    if (problems.length > 0) {
+      const label = plan.type === 'coreApp' ? 'Application' : 'Studio'
+      output.log(styleText('red', `\n${checkStatusIcon('fail')} ${label} can not be undeployed.`))
+    } else {
+      output.log('\nNothing to undeploy.')
+    }
   }
 
   renderIssues(output, 'Problems to fix:', problems)

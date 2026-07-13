@@ -401,7 +401,6 @@ describe('#undeploy', () => {
     expect(confirm).not.toHaveBeenCalled()
     expect(stdout).toContain('Dry run — no changes made.')
     expect(stdout).toContain('Undeploys studio https://my-host.sanity.studio')
-    expect(stdout).toContain('This studio can be undeployed.')
     expect(stdout).toContain('version 3.99.0')
   })
 
@@ -429,7 +428,6 @@ describe('#undeploy', () => {
 
     expect(stdout).toContain('Dry run — no changes made.')
     expect(stdout).toContain('Undeploys application "core-app" (core-id)')
-    expect(stdout).toContain('This application can be undeployed.')
   })
 
   test('dry run with nothing to undeploy exits cleanly', async () => {
@@ -464,7 +462,7 @@ describe('#undeploy', () => {
       },
     })
 
-    expect(stdout).toContain("This studio can't be undeployed.")
+    expect(stdout).toContain('Studio can not be undeployed.')
     expect(stdout).toContain('Generic error')
     expect(error?.message).toContain('Undeploy blocked by failing checks.')
   })

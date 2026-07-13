@@ -54,7 +54,7 @@ describe('runUndeploy dry run', () => {
     expect(confirm).not.toHaveBeenCalled()
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Dry run — no changes made.'))
     expect(output.log).toHaveBeenCalledWith(
-      expect.stringContaining('This studio can be undeployed.'),
+      expect.stringContaining('Undeploys studio https://my-studio.sanity.studio'),
     )
     expect(output.error).not.toHaveBeenCalled()
   })
@@ -243,7 +243,7 @@ describe('canUndeploy', () => {
 })
 
 describe('renderUndeployPlan', () => {
-  test('an undeployable studio renders the verdict and the consequence', () => {
+  test('an undeployable studio renders the target check without a verdict line', () => {
     const output = mockOutput()
     renderUndeployPlan(
       {
@@ -256,7 +256,8 @@ describe('renderUndeployPlan', () => {
 
     const logged = vi.mocked(output.log).mock.calls.map((call) => String(call[0]))
     expect(logged[0]).toContain('Dry run — no changes made.')
-    expect(logged.some((line) => line.includes('This studio can be undeployed.'))).toBe(true)
+    expect(logged.some((line) => line.includes('Undeploys studio'))).toBe(true)
+    expect(logged.some((line) => line.includes('can be undeployed'))).toBe(false)
   })
 
   test('renders the target details for humans', () => {
@@ -316,7 +317,7 @@ describe('renderUndeployPlan', () => {
     )
 
     const logged = vi.mocked(output.log).mock.calls.map((call) => String(call[0]))
-    expect(logged.some((line) => line.includes("This application can't be undeployed."))).toBe(true)
+    expect(logged.some((line) => line.includes('Application can not be undeployed.'))).toBe(true)
     expect(logged.some((line) => line.includes('Problems to fix:'))).toBe(true)
     expect(logged.some((line) => line.includes('boom: do X'))).toBe(true)
   })
