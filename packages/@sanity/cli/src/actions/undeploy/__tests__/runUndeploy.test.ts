@@ -2,16 +2,14 @@ import {type Output} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {runUndeploy, type UndeployAdapter, type UndeployOptions} from '../runUndeploy.js'
 import {
   canUndeploy,
   describeUndeployTarget,
   renderUndeployPlan,
-  runUndeploy,
-  type UndeployAdapter,
-  type UndeployOptions,
   type UndeployPlan,
   type UndeployTarget,
-} from '../runUndeploy.js'
+} from '../undeployPlan.js'
 
 vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 

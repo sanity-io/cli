@@ -8,7 +8,8 @@ import {
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {getCoreAppUrl} from '../deploy/urlUtils.js'
-import {type UndeployAdapter, type UndeployTarget} from './runUndeploy.js'
+import {type UndeployAdapter} from './runUndeploy.js'
+import {type UndeployTarget} from './undeployPlan.js'
 
 export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter {
   return {
