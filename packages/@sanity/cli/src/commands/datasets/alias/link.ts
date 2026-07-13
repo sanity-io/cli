@@ -1,4 +1,5 @@
 import {Args, Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 
@@ -88,6 +89,12 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
         this.error(datasetErr, {exit: 1})
       }
     }
+    if (this.isUnattended() && !args.aliasName) {
+      this.error('Dataset alias name is required. Pass it as the first argument.', {exit: 2})
+    }
+    if (this.isUnattended() && !args.targetDataset) {
+      this.error('Target dataset is required. Pass it as the second argument.', {exit: 2})
+    }
 
     try {
       const [datasetsResponse, aliases] = await Promise.all([
@@ -134,6 +141,11 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
       }
 
       if (existingAlias.datasetName && !force) {
+        if (this.isUnattended()) {
+          this.error('Relinking a dataset alias requires confirmation. Re-run with --force.', {
+            exit: 2,
+          })
+        }
         await this.confirmRelink(existingAlias.datasetName, targetDataset)
       } else if (force && existingAlias.datasetName) {
         this.warn(`'--force' used: skipping confirmation, linking alias to ${targetDataset}`)
@@ -143,6 +155,7 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
 
       this.log(`Dataset alias ${displayName} linked to ${targetDataset} successfully`)
     } catch (error) {
+      if (error instanceof CLIError) throw error
       linkAliasDebug(`Error linking dataset alias`, error)
       this.error(
         `Dataset alias linking failed: ${error instanceof Error ? error.message : String(error)}`,

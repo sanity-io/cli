@@ -68,7 +68,7 @@ describe('#dataset:visibility:get', () => {
     })
 
     expect(error?.message).toContain('Dataset name must only contain')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('shows error when no project ID is available', async () => {

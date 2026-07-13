@@ -1,4 +1,5 @@
 import {Args, Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 
@@ -62,6 +63,9 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
           ],
         }),
     })
+    if (!args.aliasName && this.isUnattended()) {
+      this.error('Dataset alias name is required. Pass it as an argument.', {exit: 2})
+    }
 
     try {
       const aliasNameInput = args.aliasName || (await promptForDatasetAliasName())
@@ -87,12 +91,18 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
       if (force) {
         this.warn(`'--force' used: skipping confirmation, unlinking alias "${displayName}"`)
       } else {
+        if (this.isUnattended()) {
+          this.error('Unlinking a dataset alias requires confirmation. Re-run with --force.', {
+            exit: 2,
+          })
+        }
         await this.confirmUnlink(linkedAlias.datasetName)
       }
 
       const result = await unlinkAlias(projectId, apiName)
       this.log(`Dataset alias ${displayName} unlinked from ${result.datasetName} successfully`)
     } catch (error) {
+      if (error instanceof CLIError) throw error
       unlinkAliasDebug('Error unlinking dataset alias', error)
       this.error(
         `Dataset alias unlink failed: ${error instanceof Error ? error.message : String(error)}`,

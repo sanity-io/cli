@@ -33,6 +33,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',

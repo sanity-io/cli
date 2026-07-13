@@ -47,7 +47,7 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
 
     const dsError = validateDatasetName(dataset)
     if (dsError) {
-      this.error(dsError, {exit: 1})
+      this.error(dsError, {exit: 2})
     }
 
     let current

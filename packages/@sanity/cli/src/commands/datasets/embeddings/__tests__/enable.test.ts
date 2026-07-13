@@ -41,6 +41,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -159,7 +160,7 @@ describe('#dataset:embeddings:enable', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid projection')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('should reject non-projection expression', async () => {
@@ -174,7 +175,7 @@ describe('#dataset:embeddings:enable', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid projection')
     expect(error?.message).toContain('Expected a GROQ projection')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('should accept complex valid projection', async () => {

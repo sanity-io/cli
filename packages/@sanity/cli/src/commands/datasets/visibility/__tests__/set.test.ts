@@ -107,7 +107,7 @@ describe('#dataset:visibility:set', () => {
     )
 
     expect(error?.message).toContain('Dataset name must only contain')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('handles error when listing datasets fails', async () => {

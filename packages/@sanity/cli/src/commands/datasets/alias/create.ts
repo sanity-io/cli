@@ -1,4 +1,5 @@
 import {Args} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
@@ -95,6 +96,9 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
         this.error(datasetErr, {exit: 1})
       }
     }
+    if (!args.aliasName && this.isUnattended()) {
+      this.error('Dataset alias name is required. Pass it as the first argument.', {exit: 2})
+    }
 
     try {
       const [datasetsResponse, aliases] = await Promise.all([
@@ -133,6 +137,7 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       const linkMessage = targetDataset ? ` and linked to ${targetDataset}` : ''
       this.log(`Dataset alias ${aliasOutputName} created${linkMessage} successfully`)
     } catch (error) {
+      if (error instanceof CLIError) throw error
       createAliasDebug(`Error creating dataset alias`, error)
       this.error(
         `Dataset alias creation failed: ${error instanceof Error ? error.message : String(error)}`,

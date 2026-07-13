@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
@@ -76,8 +77,14 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     })
 
     try {
-      ;({dataset} = await resolveDataset({dataset, output: this.output, projectId}))
+      ;({dataset} = await resolveDataset({
+        dataset,
+        isUnattended: this.isUnattended(),
+        output: this.output,
+        projectId,
+      }))
     } catch (error) {
+      if (error instanceof CLIError) throw error
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to resolve dataset: ${message}`, error)
       this.error(message, {exit: 1})
@@ -88,7 +95,7 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
         validateProjection(projection)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        this.error(`Invalid projection: ${message}`, {exit: 1})
+        this.error(`Invalid projection: ${message}`, {exit: 2})
       }
     }
 

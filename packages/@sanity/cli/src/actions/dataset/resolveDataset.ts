@@ -12,6 +12,7 @@ interface ResolveDatasetOptions {
   projectId: string
 
   dataset?: string
+  isUnattended?: boolean
 }
 
 interface ResolveDatasetResult {
@@ -26,6 +27,7 @@ interface ResolveDatasetResult {
  */
 export async function resolveDataset({
   dataset,
+  isUnattended,
   output,
   projectId,
 }: ResolveDatasetOptions): Promise<ResolveDatasetResult> {
@@ -38,6 +40,7 @@ export async function resolveDataset({
   if (dataset) {
     assertDatasetExists(datasets, dataset, output)
   } else {
+    if (isUnattended) output.error('Dataset name is required. Pass it as an argument.', {exit: 2})
     dataset = await promptForDataset({datasets})
   }
 
