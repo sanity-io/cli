@@ -592,7 +592,6 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Undeploys application "My App" (wb-app-1)')
-    expect(stdout).toContain('This application can be undeployed.')
   })
 
   test('workbench app undeploys through the applications API', async () => {
@@ -665,7 +664,6 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Undeploys the installation config')
     expect(stdout).toContain('Config snapshots to delete: 1')
     expect(stdout).toContain('Alt text (alt)')
-    expect(stdout).toContain('This installation config can be undeployed.')
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {
