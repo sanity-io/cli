@@ -1,8 +1,9 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {confirm, spinner} from '@sanity/cli-core/ux'
-import {DatasetResponse} from '@sanity/client'
+import {type DatasetResponse} from '@sanity/client'
 
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
@@ -13,8 +14,11 @@ import {promptForDefaultConfig} from '../../prompts/promptForDefaultConfig.js'
 import {promptForProjectName} from '../../prompts/promptForProjectName.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
-import {OrganizationCreateResponse, ProjectOrganization} from '../../services/organizations.js'
-import {createProject, CreateProjectResult} from '../../services/projects.js'
+import {
+  type OrganizationCreateResponse,
+  type ProjectOrganization,
+} from '../../services/organizations.js'
+import {createProject, type CreateProjectResult} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
 
 const debug = subdebug('projects:create')
@@ -117,7 +121,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       const errorText = organization
         ? `Failed to retrieve organization ${organization}`
         : 'Failed to retrieve an organization'
-      this.error(`${errorText}: ${error}`, {exit: 1})
+      return this.output.error(`${errorText}: ${error}`, {exit: 1})
     }
 
     const spin = spinner('Creating project').start()
@@ -134,7 +138,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     } catch (error) {
       spin.fail()
       debug(`Failed to create project: ${error}`)
-      this.error(`Failed to create project: ${error}`, {exit: 1})
+      return this.output.error(`Failed to create project: ${error}`, {exit: 1})
     }
 
     const newDataset = await this.handleDatasetCreation(
@@ -188,7 +192,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       return
     } catch (error) {
       debug(`Error creating dataset: ${error}`)
-      this.warn(`Project created but dataset creation failed: ${error}`)
+      this.output.warn(`Project created but dataset creation failed: ${error}`)
       return
     }
   }
@@ -199,20 +203,20 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     dataset: DatasetResponse | undefined,
   ) {
     if (this.flags.json) {
-      this.log(JSON.stringify(project, null, 2))
+      this.output.log(JSON.stringify(project, null, 2))
       return
     }
 
-    this.log(`Project created successfully!`)
-    this.log(`ID: ${project.projectId}`)
-    this.log(`Name: ${project.displayName}`)
-    this.log(`Organization: ${organization?.name || 'Personal'}`)
+    this.output.log(`Project created successfully!`)
+    this.output.log(`ID: ${project.projectId}`)
+    this.output.log(`Name: ${project.displayName}`)
+    this.output.log(`Organization: ${organization?.name || 'Personal'}`)
 
     if (dataset) {
-      this.log(`Dataset: ${dataset.datasetName} (${dataset.aclMode})`)
+      this.output.log(`Dataset: ${dataset.datasetName} (${dataset.aclMode})`)
     }
 
-    this.log(``)
-    this.log(`Manage your project: ${getManageUrl(project.projectId)}`)
+    this.output.log(``)
+    this.output.log(`Manage your project: ${getManageUrl(project.projectId)}`)
   }
 }
