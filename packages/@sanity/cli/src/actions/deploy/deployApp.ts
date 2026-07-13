@@ -231,6 +231,9 @@ async function runAppDeployment(
     const slug = workbench.slug ?? generateAppSlug()
     const {applicationId} = await deployWorkbenchCoreApp({
       appId,
+      // Brett only knows media-library besides coreApp; other kinds (e.g.
+      // dashboard) deploy as plain coreApps.
+      applicationType: workbench.applicationType === 'media-library' ? 'media-library' : 'coreApp',
       interfaces: buildExposes(workbench, {
         appName: workbench.name,
         appTitle,

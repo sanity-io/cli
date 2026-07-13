@@ -106,7 +106,7 @@ const devServerManifestSchema = z.object({
   port: z.number(),
   projectId: z.optional(z.string()),
   startedAt: z.string(),
-  type: z.enum(['coreApp', 'studio']),
+  type: z.enum(['coreApp', 'studio', 'media-library']),
   version: z.literal(REGISTRY_VERSION),
   workDir: z.string(),
 })

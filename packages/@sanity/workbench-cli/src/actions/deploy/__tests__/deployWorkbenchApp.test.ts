@@ -184,6 +184,7 @@ describe('createDeployment', () => {
 })
 
 const coreAppOptions = {
+  applicationType: 'coreApp' as const,
   interfaces,
   isAutoUpdating: false,
   isSingleton: false,
@@ -218,6 +219,15 @@ describe('deployCoreApp', () => {
       uri: '/applications',
     })
     expect(appendedFields()).toContainEqual(['slug', 'abc123'])
+    expect(appendedFields()).toContainEqual(['type', 'coreApp'])
+  })
+
+  test('creates a media-library app with its own type', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_new'})
+
+    await deployCoreApp({...coreAppOptions, appId: undefined, applicationType: 'media-library'})
+
+    expect(appendedFields()).toContainEqual(['type', 'media-library'])
   })
 
   test('forwards isSingleton when creating a singleton core app', async () => {

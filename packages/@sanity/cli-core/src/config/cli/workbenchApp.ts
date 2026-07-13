@@ -30,7 +30,7 @@ const STUDIO_CONFIG_FILES = [
 // Mirrors the `ApplicationType` enum in `@sanity/workbench-cli`'s `defineApp`
 // schema — `unstable_defineApp` doesn't validate, so the loader is the first
 // place `applicationType` can be checked. Kept in sync by a test there.
-const APPLICATION_TYPES = ['coreApp', 'studio', 'canvas', 'dashboard', 'media-library'] as const
+const APPLICATION_TYPES = ['coreApp', 'studio', 'dashboard', 'media-library'] as const
 
 /** The resolved kind of a workbench app — `studio` or one of the SDK app types. */
 export type ApplicationType = (typeof APPLICATION_TYPES)[number]

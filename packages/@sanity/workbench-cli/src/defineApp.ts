@@ -9,7 +9,7 @@ const APP_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
  * Internal application discriminator. Sanity-owned singleton apps only;
  * validated by the schema but excluded from the public `DefineAppInput` type.
  */
-const ApplicationType = z.enum(['coreApp', 'studio', 'canvas', 'dashboard', 'media-library'])
+const ApplicationType = z.enum(['coreApp', 'studio', 'dashboard', 'media-library'])
 
 /** Dock groups an app can place itself into. */
 const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user'])

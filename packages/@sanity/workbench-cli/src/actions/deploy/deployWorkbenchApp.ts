@@ -10,7 +10,7 @@ import {pack} from 'tar-fs'
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 import {type BrettInterface} from './buildExposes.js'
 
-export type ApplicationType = 'coreApp' | 'studio'
+export type ApplicationType = 'coreApp' | 'media-library' | 'studio'
 
 export interface Application {
   id: string
@@ -145,6 +145,7 @@ async function request<T>(uri: string, formData: FormData): Promise<T> {
  */
 export async function deployCoreApp(options: {
   appId: string | undefined
+  applicationType: Exclude<ApplicationType, 'studio'>
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
   isSingleton?: boolean
@@ -156,6 +157,7 @@ export async function deployCoreApp(options: {
 }): Promise<{applicationId: string}> {
   const {
     appId,
+    applicationType,
     interfaces,
     isAutoUpdating,
     isSingleton,
@@ -182,7 +184,7 @@ export async function deployCoreApp(options: {
       slug,
       tarball,
       title,
-      type: 'coreApp',
+      type: applicationType,
       version,
     })
     spin.succeed()
