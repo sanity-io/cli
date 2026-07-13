@@ -1,5 +1,6 @@
-import {Args} from '@oclif/core'
+import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {confirm, NonInteractiveError} from '@sanity/cli-core/ux'
 import {DatasetsResponse} from '@sanity/client'
 
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
@@ -30,8 +31,8 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
       description: 'Make a dataset private',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> my-dataset public',
-      description: 'Make a dataset public',
+      command: '<%= config.bin %> <%= command.id %> my-dataset public --yes',
+      description: 'Make a dataset public without a confirmation prompt',
     },
   ]
 
@@ -40,13 +41,20 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
       description: 'Project ID to set dataset visibility for',
       semantics: 'override',
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      description:
+        'Skip the confirmation prompt when changing a dataset to public. Required for non-interactive usage (e.g. CI or agents).',
+      required: false,
+    }),
   }
 
   static override hiddenAliases: string[] = ['dataset:visibility:set']
 
   public async run(): Promise<void> {
-    const {args} = await this.parse(DatasetVisibilitySetCommand)
+    const {args, flags} = await this.parse(DatasetVisibilitySetCommand)
     const {dataset, mode} = args
+    const {yes: skipConfirmation} = flags
 
     const projectId = await this.getProjectId({
       fallback: () =>
@@ -88,6 +96,35 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
       this.log(
         'Please note that while documents are private, assets (files and images) are still public',
       )
+    }
+
+    if (mode === 'public') {
+      this.warn(
+        `You are about to make "${dataset}" PUBLIC. Anyone on the internet will be able to read all documents and assets in this dataset without authentication. If this dataset contains any sensitive, personal, or proprietary data, cancel now and keep it private.`,
+      )
+
+      if (skipConfirmation) {
+        this.log(`--yes acknowledged: skipping confirmation and changing "${dataset}" to public`)
+      } else {
+        try {
+          const confirmed = await confirm({
+            default: false,
+            message: `Are you sure you want to make "${dataset}" public?`,
+          })
+          if (!confirmed) {
+            this.log('Operation cancelled')
+            return
+          }
+        } catch (error) {
+          if (error instanceof NonInteractiveError) {
+            this.error(
+              'Refusing to change dataset to public in a non-interactive environment without the --yes flag. Re-run with --yes to acknowledge that the data will be readable by anyone on the internet.',
+              {exit: 1},
+            )
+          }
+          throw error
+        }
+      }
     }
 
     try {

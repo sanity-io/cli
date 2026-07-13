@@ -1,4 +1,5 @@
 import {NonInteractiveError} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -7,6 +8,16 @@ import {DatasetVisibilitySetCommand} from '../set.js'
 vi.mock('../../../../prompts/promptForProject.js', () => ({
   promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
 }))
+
+vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
+  return {
+    ...actual,
+    confirm: vi.fn(),
+  }
+})
+
+const mockConfirm = vi.mocked(confirm)
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
 const mockEditDatasetAcl = vi.hoisted(() => vi.fn())
@@ -41,18 +52,79 @@ describe('#dataset:visibility:set', () => {
     vi.clearAllMocks()
   })
 
-  test('sets dataset visibility to public successfully', async () => {
+  test('sets dataset visibility to public successfully after confirmation', async () => {
     mockListDatasets.mockResolvedValue([{aclMode: 'private', name: 'my-dataset'}] as never)
     mockEditDatasetAcl.mockResolvedValue(undefined as never)
+    mockConfirm.mockResolvedValueOnce(true)
+
+    const {stderr, stdout} = await testCommand(
+      DatasetVisibilitySetCommand,
+      ['my-dataset', 'public'],
+      {
+        mocks: defaultMocks,
+      },
+    )
+
+    expect(mockConfirm).toHaveBeenCalledWith({
+      default: false,
+      message: 'Are you sure you want to make "my-dataset" public?',
+    })
+    expect(stderr).toContain('You are about to make')
+    expect(stderr).toContain('PUBLIC')
+    expect(stderr).toContain('Anyone on the internet')
+    expect(stdout).toContain('Dataset visibility changed')
+    expect(mockEditDatasetAcl).toHaveBeenCalledWith('my-dataset', {
+      aclMode: 'public',
+    })
+  })
+
+  test('cancels public visibility change when user declines confirmation', async () => {
+    mockListDatasets.mockResolvedValue([{aclMode: 'private', name: 'my-dataset'}] as never)
+    mockConfirm.mockResolvedValueOnce(false)
 
     const {stdout} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'public'], {
       mocks: defaultMocks,
     })
 
+    expect(stdout).toContain('Operation cancelled')
+    expect(mockEditDatasetAcl).not.toHaveBeenCalled()
+  })
+
+  test('skips confirmation when --yes flag is provided', async () => {
+    mockListDatasets.mockResolvedValue([{aclMode: 'private', name: 'my-dataset'}] as never)
+    mockEditDatasetAcl.mockResolvedValue(undefined as never)
+
+    const {stderr, stdout} = await testCommand(
+      DatasetVisibilitySetCommand,
+      ['my-dataset', 'public', '--yes'],
+      {mocks: defaultMocks},
+    )
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(stderr).toContain('You are about to make')
+    expect(stderr).toContain('PUBLIC')
+    expect(stderr).toContain('Anyone on the internet')
+    expect(stdout).toContain('--yes acknowledged: skipping confirmation')
     expect(stdout).toContain('Dataset visibility changed')
     expect(mockEditDatasetAcl).toHaveBeenCalledWith('my-dataset', {
       aclMode: 'public',
     })
+  })
+
+  test('errors when making dataset public in non-interactive mode without --yes', async () => {
+    mockListDatasets.mockResolvedValue([{aclMode: 'private', name: 'my-dataset'}] as never)
+    mockConfirm.mockRejectedValueOnce(new NonInteractiveError('confirm'))
+
+    const {error} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'public'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain(
+      'Refusing to change dataset to public in a non-interactive environment without the --yes flag',
+    )
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockEditDatasetAcl).not.toHaveBeenCalled()
   })
 
   test('sets dataset visibility to private successfully with warning', async () => {
