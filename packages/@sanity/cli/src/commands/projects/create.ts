@@ -141,11 +141,15 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       return this.output.error(`Failed to create project: ${error}`, {exit: 1})
     }
 
-    const newDataset = await this.handleDatasetCreation(
-      newProject.projectId,
-      dataset,
-      datasetVisibility,
-    )
+    let newDataset: DatasetResponse | undefined
+    // If dataset name specified, or in attended mode (to prompt for dataset name), create a dataset.
+    if (dataset || !this.isUnattended()) {
+      newDataset = await this.handleDatasetCreation(
+        newProject.projectId,
+        dataset,
+        datasetVisibility,
+      )
+    }
 
     this.printProjectCreationSuccess(chosenOrganization, newProject, newDataset)
   }
