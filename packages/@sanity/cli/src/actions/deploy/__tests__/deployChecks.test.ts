@@ -159,6 +159,7 @@ describe('checkStudioTarget', () => {
     )
     // The URL the human report shows is the same one the JSON reporter reads
     expect(reporter.results[0]?.target).toEqual({
+      action: 'update',
       applicationId: 'app-1',
       title: null,
       url: 'https://my-studio.sanity.studio',
@@ -186,6 +187,7 @@ describe('checkStudioTarget', () => {
     expect(reporter.results[0]?.message).toContain('titled "My Studio"')
     // The JSON target echoes the requested title, matching the human message
     expect(reporter.results[0]?.target).toEqual({
+      action: 'create',
       applicationId: null,
       title: 'My Studio',
       url: 'https://new-studio.sanity.studio',
@@ -300,6 +302,7 @@ describe('checkAppTarget', () => {
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "My App"')
     expect(reporter.results[0]?.message).toContain('/@org-1/application/core-1')
+    expect(reporter.results[0]?.target?.action).toBe('update')
     expect(reporter.results[0]?.target?.applicationId).toBe('core-1')
     expect(reporter.results[0]?.target?.url).toContain('/@org-1/application/core-1')
   })
@@ -325,7 +328,12 @@ describe('checkAppTarget', () => {
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Would create a new application "My App"')
     // The JSON target carries the pending title; id and URL come on creation
-    expect(reporter.results[0]?.target).toEqual({applicationId: null, title: 'My App', url: null})
+    expect(reporter.results[0]?.target).toEqual({
+      action: 'create',
+      applicationId: null,
+      title: 'My App',
+      url: null,
+    })
   })
 
   test('needs-input → fail check (would prompt)', async () => {
@@ -386,6 +394,7 @@ describe('checkAppTarget (workbench backend)', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "Drop Desk"')
+    expect(reporter.results[0]?.target?.action).toBe('update')
   })
 
   test('unknown appId → fail check pointing to deployment.appId', async () => {
@@ -422,6 +431,7 @@ describe('checkAppTarget (workbench backend)', () => {
       'Would create a new application "New App" with slug "drop-desk"',
     )
     expect(reporter.results[0]?.target).toEqual({
+      action: 'create',
       applicationId: null,
       slug: 'drop-desk',
       title: 'New App',
@@ -445,6 +455,7 @@ describe('checkStudioTarget (workbench backend)', () => {
     expect(reporter.results[0]?.message).toContain(
       'Deploys to existing studio https://my-studio.sanity.studio',
     )
+    expect(target?.action).toBe('update')
     expect(target?.url).toBe('https://my-studio.sanity.studio')
   })
 

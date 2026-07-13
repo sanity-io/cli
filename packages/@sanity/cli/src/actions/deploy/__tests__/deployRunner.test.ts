@@ -111,7 +111,12 @@ describe('runDeploy real deploy', () => {
     const result = {
       applicationType: 'studio' as const,
       applicationVersion: '3.99.0',
-      target: {applicationId: 'app-1', title: 'My Studio', url: 'https://my-studio.sanity.studio'},
+      target: {
+        action: 'update' as const,
+        applicationId: 'app-1',
+        title: 'My Studio',
+        url: 'https://my-studio.sanity.studio',
+      },
     }
     const spec: DeploySpec = {
       listFiles: async () => [],

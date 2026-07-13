@@ -31,6 +31,8 @@ type DeployCheckStatus = 'fail' | 'pass' | 'skip' | 'warn'
  * can't drift.
  */
 export interface DeployTarget {
+  /** Whether the deploy creates a new application/studio or updates an existing one. */
+  action: 'create' | 'update'
   /** The application the deploy targets; `null` when a deploy would create one. */
   applicationId: string | null
   /** The application's title; `null` when it has none (or isn't created yet). */
@@ -261,7 +263,12 @@ export function describeAppTarget(
       return {
         message: `Deploys to existing application "${title}" at ${url}`,
         status: 'pass',
-        target: {applicationId: application.id, title: application.title ?? null, url},
+        target: {
+          action: 'update',
+          applicationId: application.id,
+          title: application.title ?? null,
+          url,
+        },
       }
     }
     case 'invalid': {
@@ -285,7 +292,13 @@ export function describeAppTarget(
         return {
           message: `Would create a new application "${title}"${slug ? ` with slug "${slug}"` : ''}`,
           status: 'pass',
-          target: {applicationId: null, ...(slug ? {slug} : {}), title, url: null},
+          target: {
+            action: 'create',
+            applicationId: null,
+            ...(slug ? {slug} : {}),
+            title,
+            url: null,
+          },
         }
       }
       return {
@@ -363,6 +376,7 @@ export function describeStudioTarget(
         message: `Deploys to existing studio ${url}`,
         status: 'pass',
         target: {
+          action: 'update',
           applicationId: resolution.application.id,
           title: resolution.application.title ?? null,
           url,
@@ -398,7 +412,7 @@ export function describeStudioTarget(
         status: 'pass',
         // `title || null`, not `?? null`, so target.title tracks the same
         // truthiness the message's `titled` suffix uses (an empty title is no title)
-        target: {applicationId: null, title: title || null, url},
+        target: {action: 'create', applicationId: null, title: title || null, url},
       }
     }
   }

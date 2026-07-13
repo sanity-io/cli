@@ -55,7 +55,7 @@ describe('findUserApplication', () => {
 })
 
 describe('findUserApplicationForStudio', () => {
-  test('should pass the title through when registering the configured host', async () => {
+  test('registering a configured host passes the title through and reports created', async () => {
     const created = {title: 'My Studio'} as UserApplication
     mockResolveStudio.mockResolvedValue({appHost: 'new-host', type: 'would-create'})
     mockCreate.mockResolvedValue(created)
@@ -73,6 +73,23 @@ describe('findUserApplicationForStudio', () => {
       body: {appHost: 'new-host', title: 'My Studio', type: 'studio', urlType: 'internal'},
       projectId: 'project-1',
     })
-    expect(result).toBe(created)
+    // Registering a new host is a create, not an update — see #1462 (bugbot).
+    expect(result).toEqual({application: created, created: true})
+  })
+
+  test('an existing host is an update, not a create', async () => {
+    const existing = {appHost: 'my-studio', title: 'My Studio'} as UserApplication
+    mockResolveStudio.mockResolvedValue({application: existing, type: 'found'})
+    const output = mockOutput()
+
+    const result = await findUserApplicationForStudio({
+      appId: 'app-1',
+      isExternal: false,
+      output,
+      projectId: 'project-1',
+    })
+
+    expect(mockCreate).not.toHaveBeenCalled()
+    expect(result).toEqual({application: existing, created: false})
   })
 })

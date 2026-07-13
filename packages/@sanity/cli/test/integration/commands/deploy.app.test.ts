@@ -374,6 +374,7 @@ describe('#deploy app', () => {
     const plan = JSON.parse(stdout)
     expect(plan.isDeployable).toBe(true)
     expect(plan.target).toEqual({
+      action: 'create',
       applicationId: null,
       slug: 'drop-desk-host',
       title: 'Workbench App',
