@@ -646,7 +646,14 @@ describe('#undeploy', () => {
       query: {limit: 'none'},
       uri: '/installations/inst-1/configs',
     }).reply(200, {
-      data: [{createdAt: '2024-01-01T00:00:00Z', id: 'cfg-1', version: '1.0.0'}],
+      data: [
+        {
+          createdAt: '2024-01-01T00:00:00Z',
+          deployedBy: 'gustav@sanity.io',
+          id: 'cfg-1',
+          version: '1.0.0',
+        },
+      ],
     })
 
     const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
@@ -662,8 +669,61 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Undeploys the installation config')
-    expect(stdout).toContain('Config snapshots to delete: 1')
-    expect(stdout).toContain('Alt text (alt)')
+    expect(stdout).toContain('version 1.0.0 at 2024-01-01T00:00:00Z by gustav@sanity.io')
+    expect(stdout).toContain('Alt text (alt): ./src/alt.ts')
+    expect(stdout).not.toContain('Config snapshots')
+  })
+
+  test('media library dry run --json carries the structured config target', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none', organizationId: 'org-1'},
+      uri: '/installations',
+    }).reply(200, {
+      data: [{application: {slug: 'media-library'}, id: 'inst-1'}],
+    })
+
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none'},
+      uri: '/installations/inst-1/configs',
+    }).reply(200, {
+      data: [
+        {
+          createdAt: '2024-01-01T00:00:00Z',
+          deployedBy: 'gustav@sanity.io',
+          id: 'cfg-1',
+          version: '1.0.0',
+        },
+      ],
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run', '--json'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineMediaLibrary({
+            fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
+            organizationId: 'org-1',
+          }),
+        },
+        token: 'test-token',
+      },
+    })
+
+    const payload = JSON.parse(stdout)
+    expect(payload.canUndeploy).toBe(true)
+    expect(payload.application).toMatchObject({
+      activeDeployment: {
+        deployedAt: '2024-01-01T00:00:00Z',
+        deployedBy: 'gustav@sanity.io',
+        version: '1.0.0',
+      },
+      configs: [expect.objectContaining({id: 'cfg-1'})],
+      deletes: 'config',
+      fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
+      installationId: 'inst-1',
+    })
+    expect(payload.application.summary).toBeUndefined()
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {

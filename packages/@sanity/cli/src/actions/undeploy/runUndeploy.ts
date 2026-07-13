@@ -20,6 +20,7 @@ import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {
   describeUndeployTarget,
   renderUndeployPlan,
+  toJsonTarget,
   type UndeployPlan,
   undeployPlanToJson,
 } from './undeployPlan.js'
@@ -35,7 +36,7 @@ export interface UndeployOptions {
 
 /** What a real undeploy produced — the payload `--json` reports. */
 type UndeployResult =
-  | {application: UndeployTarget; undeployed: true}
+  | {application: Omit<UndeployTarget, 'summary'>; undeployed: true}
   | {reason: string; undeployed: false}
 
 /**
@@ -125,7 +126,7 @@ async function undeployApp(
   spin.succeed()
 
   printUndeployed(target, output)
-  return {application: target, undeployed: true}
+  return {application: toJsonTarget(target), undeployed: true}
 }
 
 /**

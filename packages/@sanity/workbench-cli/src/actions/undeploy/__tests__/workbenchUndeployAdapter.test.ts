@@ -206,12 +206,19 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     const resolution = await configAdapter().resolveTarget()
 
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
-      config: expect.stringContaining('Alt text (alt)'),
+      // The newest snapshot is the config being served
+      activeDeployment: {
+        deployedAt: '2024-02-01T00:00:00Z',
+        deployedBy: 'gustav@sanity.io',
+        version: '2.0.0',
+      },
       configs: [
         expect.objectContaining({id: 'cfg-2', version: '2.0.0'}),
         expect.objectContaining({id: 'cfg-1', version: '1.0.0'}),
       ],
+      createdAt: '2024-01-01T00:00:00Z',
       deletes: 'config',
+      fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
       id: null,
       installationId: 'inst-1',
       isSingleton: true,
@@ -283,8 +290,7 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     const resolution = await configAdapter().resolveTarget()
     const summary = resolution.type === 'found' ? (resolution.target.summary ?? []).join('\n') : ''
 
-    expect(summary).toContain('Alt text (alt)')
-    expect(summary).toContain('Config snapshots to delete: 1')
-    expect(summary).toContain('cfg-1 version 1.0.0')
+    expect(summary).toContain('Alt text (alt): ./src/alt.ts')
+    expect(summary).not.toContain('Config snapshots')
   })
 })

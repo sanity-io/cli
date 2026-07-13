@@ -95,16 +95,18 @@ describe('deployConfig', () => {
 })
 
 describe('summarizeConfig', () => {
-  test('lists a media library config as a heading with title/name per field', () => {
+  test('lists a media library config as a heading with one entry-point line per field', () => {
     expect(
       summarizeConfig({
         appType: 'media-library',
         fields: [
-          {name: 'title', title: 'Title'},
-          {name: 'author', title: 'Author'},
+          {name: 'title', src: './src/title.ts', title: 'Title'},
+          {name: 'author', src: './src/author.ts', title: 'Author'},
         ],
       }),
-    ).toBe('Media library fields:\n  Title (title)\n  Author (author)')
+    ).toBe(
+      'Media library fields:\n  Title (title): ./src/title.ts\n  Author (author): ./src/author.ts',
+    )
   })
 
   test('throws for an unhandled app type', () => {

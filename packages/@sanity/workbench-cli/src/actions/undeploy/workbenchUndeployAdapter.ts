@@ -5,21 +5,15 @@ import {
 } from '@sanity/cli-core/undeploy'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 
+import {type MediaLibraryField} from '../../defineApp.js'
 import {type DeployedExpose, summarizeExposes} from '../deploy/buildExposes.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {getApplication} from '../deploy/deployWorkbenchApp.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
-import {
-  type ConfigSnapshot,
-  deleteApplication,
-  deleteConfig,
-  listConfigs,
-} from './undeployWorkbenchApp.js'
+import {deleteApplication, deleteConfig, listConfigs} from './undeployWorkbenchApp.js'
 
 /** The workbench extension of the shared target; serializes into `--json` as-is. */
 export interface WorkbenchUndeployTarget extends UndeployTarget {
-  /** Summary of the config the app declares, when a config undeploys. */
-  config?: string
   /** The deployed config snapshots an undeploy deletes. */
   configs?: {
     createdAt: string | null
@@ -27,6 +21,8 @@ export interface WorkbenchUndeployTarget extends UndeployTarget {
     id: string
     version: string | null
   }[]
+  /** The custom fields the config declares, when a config undeploys. */
+  fields?: MediaLibraryField[]
   /** The installation whose config an undeploy deletes. */
   installationId?: string
   /** Interfaces (views and services) registered by the application. */
@@ -151,39 +147,37 @@ async function resolveConfigTarget({
     }
   }
 
-  const configSummary = summarizeConfig(config)
+  // Snapshots come newest first; the one being served reports as the active deployment.
+  const newest = configs[0]
   return {
     target: {
-      activeDeployment: null,
+      activeDeployment: newest
+        ? {
+            deployedAt: newest.createdAt ?? '',
+            deployedBy: newest.deployedBy ?? '',
+            version: newest.version ?? '',
+          }
+        : null,
       appHost: null,
-      config: configSummary,
       configs: configs.map((snapshot) => ({
         createdAt: snapshot.createdAt ?? null,
         deployedBy: snapshot.deployedBy ?? null,
         id: snapshot.id,
         version: snapshot.version ?? null,
       })),
-      createdAt: null,
+      createdAt: configs.at(-1)?.createdAt ?? null,
       deletes: 'config',
+      fields: config.fields,
       id: null,
       installationId,
       isSingleton: true,
       organizationId,
       projectId: null,
-      summary: [configSummary, summarizeSnapshots(configs)],
+      summary: [summarizeConfig(config)],
       title: workbench.name,
       type: 'coreApp',
       url: null,
     },
     type: 'found',
   }
-}
-
-function summarizeSnapshots(configs: ConfigSnapshot[]): string {
-  const items = configs.map((snapshot) => {
-    const version = snapshot.version ? ` version ${snapshot.version}` : ''
-    const created = snapshot.createdAt ? ` (${snapshot.createdAt})` : ''
-    return `  ${snapshot.id}${version}${created}`
-  })
-  return `Config snapshots to delete: ${configs.length}\n${items.join('\n')}`
 }

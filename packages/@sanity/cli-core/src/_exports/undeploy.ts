@@ -2,7 +2,8 @@
  * What an undeploy deletes, resolved once and read by every report — the
  * dry-run plan, the `--json` payloads, and the real run's confirmation prompt —
  * so the human and machine outputs can't drift. Adapters may extend it with
- * backend-specific fields; they serialize into `--json` as-is.
+ * backend-specific fields; they serialize into `--json` as-is, except the
+ * report-only `summary`.
  */
 export interface UndeployTarget {
   /** Details of the deployment currently being served; `null` when none is live. */

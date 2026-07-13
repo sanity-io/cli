@@ -20,12 +20,23 @@ export function canUndeploy(plan: UndeployPlan): boolean {
 }
 
 /**
+ * The target as `--json` reports it: the adapter's structured fields as-is,
+ * minus the report-only `summary` lines.
+ */
+export function toJsonTarget<TTarget extends UndeployTarget>(
+  target: TTarget,
+): Omit<TTarget, 'summary'> {
+  const {summary, ...rest} = target
+  return rest
+}
+
+/**
  * A machine-readable projection of the plan: blocking problems mapped to their
  * fix, warnings as messages. Derived from the same checks and target the human
  * report renders, so the two can't drift.
  */
 export function undeployPlanToJson(plan: UndeployPlan): {
-  application: UndeployTarget | null
+  application: Omit<UndeployTarget, 'summary'> | null
   canUndeploy: boolean
   errors: Record<string, string | null>
   reason: string | null
@@ -39,7 +50,7 @@ export function undeployPlanToJson(plan: UndeployPlan): {
   }
 
   return {
-    application: plan.target,
+    application: plan.target ? toJsonTarget(plan.target) : null,
     canUndeploy: canUndeploy(plan),
     errors,
     reason: plan.reason,
