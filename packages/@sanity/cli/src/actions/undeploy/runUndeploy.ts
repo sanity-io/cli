@@ -163,7 +163,7 @@ function confirmUndeployMessage(target: UndeployTarget): string {
     return `This will delete the deployed config for ${styleText(
       'yellow',
       target.title ?? 'this app',
-    )}. The installation itself stays installed.
+    )}.
 Are you ${styleText('red', 'sure')} you want to undeploy?`
   }
 
@@ -184,9 +184,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
 
 function printUndeployed(target: UndeployTarget, output: Output): void {
   if (target.deletes === 'config') {
-    output.log(
-      `\n${styleText('bold', 'Config deleted.')} Applications still resolving it keep working until the content is purged.`,
-    )
+    output.log(`\n${styleText('bold', 'Config deleted.')}`)
     return
   }
 

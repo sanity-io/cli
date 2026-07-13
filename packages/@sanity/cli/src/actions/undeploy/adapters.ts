@@ -88,7 +88,6 @@ function toUndeployTarget(
       ? {
           deployedAt: application.activeDeployment.deployedAt,
           deployedBy: application.activeDeployment.deployedBy,
-          version: application.activeDeployment.version,
         }
       : null,
     appHost: application.appHost ?? null,

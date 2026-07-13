@@ -7,7 +7,6 @@ export interface ConfigSnapshot {
 
   createdAt?: string
   deployedBy?: string
-  version?: string
 }
 
 async function getClient() {

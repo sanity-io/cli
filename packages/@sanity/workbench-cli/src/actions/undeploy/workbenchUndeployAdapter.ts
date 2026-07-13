@@ -6,7 +6,6 @@ import {
 } from '@sanity/cli-core/undeploy'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 
-import {type MediaLibraryField} from '../../defineApp.js'
 import {type DeployedExpose, summarizeExposes} from '../deploy/buildExposes.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {getApplication} from '../deploy/deployWorkbenchApp.js'
@@ -18,8 +17,6 @@ export type WorkbenchUndeployTarget =
   | (UndeployApplicationTarget & {
       /** Interfaces (views and services) registered by the application. */
       interfaces: DeployedExpose[]
-      /** The app's explicit singleton flag; omitted when the app doesn't set it. */
-      isSingleton?: boolean
     })
   | (UndeployConfigTarget & {
       /** The deployed config snapshots an undeploy deletes. */
@@ -27,13 +24,7 @@ export type WorkbenchUndeployTarget =
         createdAt: string | null
         deployedBy: string | null
         id: string
-        version: string | null
       }[]
-      /** The custom fields the config declares. */
-      fields: MediaLibraryField[]
-      /** The installation whose config an undeploy deletes. */
-      installationId: string
-      isSingleton: true
     })
 
 /**
@@ -51,17 +42,22 @@ export function createWorkbenchUndeployAdapter(options: {
 }): UndeployAdapter<WorkbenchUndeployTarget> {
   const {appId, organizationId, type, workbench} = options
   const configOnly = workbench.deploySingletonConfig && !workbench.hasInterfaces
+  // Workbench-internal, so kept off the reported target; resolveTarget stashes it for the delete.
+  let installationId: string | undefined
 
   return {
-    resolveTarget: () =>
-      configOnly
-        ? resolveConfigTarget({organizationId, workbench})
-        : resolveApplicationTarget({appId, type, workbench}),
+    resolveTarget: async () => {
+      if (!configOnly) return resolveApplicationTarget({appId, type, workbench})
+      const resolved = await resolveConfigTarget({organizationId, workbench})
+      installationId = resolved.installationId
+      return resolved.resolution
+    },
     type,
     async undeploy(target) {
       if (target.deletes === 'config') {
+        if (!installationId) throw new Error('No installation resolved for the config undeploy')
         for (const snapshot of target.configs) {
-          await deleteConfig(target.installationId, snapshot.id)
+          await deleteConfig(installationId, snapshot.id)
         }
         return
       }
@@ -101,7 +97,6 @@ async function resolveApplicationTarget({
       deletes: 'application',
       id: application.id,
       interfaces: exposes,
-      ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
       organizationId: application.organizationId,
       projectId: null,
       summary: [
@@ -127,7 +122,10 @@ async function resolveConfigTarget({
 }: {
   organizationId: string | undefined
   workbench: DeployableWorkbenchApp
-}): Promise<UndeployTargetResolution<WorkbenchUndeployTarget>> {
+}): Promise<{
+  installationId?: string
+  resolution: UndeployTargetResolution<WorkbenchUndeployTarget>
+}> {
   const config = workbench.config
   if (!config) throw new Error('The app declares no config to undeploy')
   if (!organizationId) {
@@ -139,8 +137,10 @@ async function resolveConfigTarget({
   const installationId = await resolveInstallationId({appType: config.appType, organizationId})
   if (!installationId) {
     return {
-      message: `No active "${config.appType}" installation for organization "${organizationId}"`,
-      type: 'none',
+      resolution: {
+        message: `No active "${config.appType}" installation for organization "${organizationId}"`,
+        type: 'none',
+      },
     }
   }
 
@@ -149,38 +149,39 @@ async function resolveConfigTarget({
   const newest = configs[0]
   if (!newest) {
     return {
-      message: `No deployed config for the "${config.appType}" installation`,
-      type: 'none',
+      installationId,
+      resolution: {
+        message: `No deployed config for the "${config.appType}" installation`,
+        type: 'none',
+      },
     }
   }
 
   return {
-    target: {
-      activeDeployment: {
-        deployedAt: newest.createdAt ?? '',
-        deployedBy: newest.deployedBy ?? '',
-        version: newest.version ?? '',
+    installationId,
+    resolution: {
+      target: {
+        activeDeployment: {
+          deployedAt: newest.createdAt ?? '',
+          deployedBy: newest.deployedBy ?? '',
+        },
+        appHost: null,
+        configs: configs.map((snapshot) => ({
+          createdAt: snapshot.createdAt ?? null,
+          deployedBy: snapshot.deployedBy ?? null,
+          id: snapshot.id,
+        })),
+        createdAt: configs.at(-1)?.createdAt ?? null,
+        deletes: 'config',
+        id: null,
+        organizationId,
+        projectId: null,
+        summary: [summarizeConfig(config)],
+        title: workbench.name,
+        type: 'coreApp',
+        url: null,
       },
-      appHost: null,
-      configs: configs.map((snapshot) => ({
-        createdAt: snapshot.createdAt ?? null,
-        deployedBy: snapshot.deployedBy ?? null,
-        id: snapshot.id,
-        version: snapshot.version ?? null,
-      })),
-      createdAt: configs.at(-1)?.createdAt ?? null,
-      deletes: 'config',
-      fields: config.fields,
-      id: null,
-      installationId,
-      isSingleton: true,
-      organizationId,
-      projectId: null,
-      summary: [summarizeConfig(config)],
-      title: workbench.name,
-      type: 'coreApp',
-      url: null,
+      type: 'found',
     },
-    type: 'found',
   }
 }

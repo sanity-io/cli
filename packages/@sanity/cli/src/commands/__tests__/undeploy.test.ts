@@ -406,7 +406,8 @@ describe('#undeploy', () => {
     expect(confirm).not.toHaveBeenCalled()
     expect(stdout).toContain('Dry run — no changes made.')
     expect(stdout).toContain('Undeploys studio https://my-host.sanity.studio')
-    expect(stdout).toContain('version 3.99.0')
+    expect(stdout).toContain('at 2024-01-02T00:00:00Z by gustav@sanity.io')
+    expect(stdout).not.toContain('3.99.0')
   })
 
   test('dry run reports the application without deleting it', async () => {
@@ -669,7 +670,8 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Undeploys the installation config')
-    expect(stdout).toContain('version 1.0.0 at 2024-01-01T00:00:00Z by gustav@sanity.io')
+    expect(stdout).toContain('at 2024-01-01T00:00:00Z by gustav@sanity.io')
+    expect(stdout).not.toContain('1.0.0')
     expect(stdout).toContain('Alt text (alt): ./src/alt.ts')
     expect(stdout).not.toContain('Config snapshots')
   })
@@ -716,14 +718,17 @@ describe('#undeploy', () => {
       activeDeployment: {
         deployedAt: '2024-01-01T00:00:00Z',
         deployedBy: 'gustav@sanity.io',
-        version: '1.0.0',
       },
       configs: [expect.objectContaining({id: 'cfg-1'})],
       deletes: 'config',
-      fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
-      installationId: 'inst-1',
     })
     expect(payload.application.summary).toBeUndefined()
+    // Workbench internals and versions never reach the machine payload
+    expect(payload.application.fields).toBeUndefined()
+    expect(payload.application.installationId).toBeUndefined()
+    expect(payload.application.isSingleton).toBeUndefined()
+    expect(payload.application.activeDeployment.version).toBeUndefined()
+    expect(payload.application.configs[0].version).toBeUndefined()
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {

@@ -378,7 +378,6 @@ describe('renderUndeployPlan', () => {
           activeDeployment: {
             deployedAt: '2024-01-02T00:00:00Z',
             deployedBy: 'gustav@sanity.io',
-            version: '3.99.0',
           },
           title: 'My Studio',
         }),
@@ -394,8 +393,7 @@ describe('renderUndeployPlan', () => {
     expect(logged).toContain('My Studio')
     expect(logged).toContain('app-1')
     expect(logged).toContain('https://my-studio.sanity.studio')
-    expect(logged).toContain('version 3.99.0')
-    expect(logged).toContain('by gustav@sanity.io')
+    expect(logged).toContain('at 2024-01-02T00:00:00Z by gustav@sanity.io')
   })
 
   test('no target renders "Nothing to undeploy." without a verdict', () => {

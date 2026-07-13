@@ -210,21 +210,36 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
       activeDeployment: {
         deployedAt: '2024-02-01T00:00:00Z',
         deployedBy: 'gustav@sanity.io',
-        version: '2.0.0',
       },
-      configs: [
-        expect.objectContaining({id: 'cfg-2', version: '2.0.0'}),
-        expect.objectContaining({id: 'cfg-1', version: '1.0.0'}),
-      ],
+      configs: [expect.objectContaining({id: 'cfg-2'}), expect.objectContaining({id: 'cfg-1'})],
       createdAt: '2024-01-01T00:00:00Z',
       deletes: 'config',
-      fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
       id: null,
-      installationId: 'inst-1',
-      isSingleton: true,
       organizationId: 'org-1',
       title: 'media-library',
     })
+  })
+
+  test('workbench internals and versions stay off the target', async () => {
+    stubInstallations([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        deployedBy: 'gustav@sanity.io',
+        id: 'cfg-1',
+        version: '1.0.0',
+      },
+    ])
+
+    const resolution = await configAdapter().resolveTarget()
+    if (resolution.type !== 'found' || resolution.target.deletes !== 'config') {
+      throw new Error('expected a config target')
+    }
+
+    expect(resolution.target).not.toHaveProperty('fields')
+    expect(resolution.target).not.toHaveProperty('installationId')
+    expect(resolution.target).not.toHaveProperty('isSingleton')
+    expect(resolution.target.activeDeployment).not.toHaveProperty('version')
+    expect(resolution.target.configs[0]).not.toHaveProperty('version')
   })
 
   test('no active installation → nothing to undeploy', async () => {

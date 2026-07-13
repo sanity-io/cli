@@ -21,7 +21,7 @@ export interface UndeployConfigTarget extends UndeployTargetDetails {
 
 interface UndeployTargetDetails {
   /** Details of the deployment currently being served; `null` when none is live. */
-  activeDeployment: {deployedAt: string; deployedBy: string; version: string} | null
+  activeDeployment: {deployedAt: string; deployedBy: string} | null
   /** Hostname the application is served from; freed for anyone to claim after undeploy. */
   appHost: string | null
   createdAt: string | null

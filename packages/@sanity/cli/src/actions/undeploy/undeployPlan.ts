@@ -130,7 +130,6 @@ function renderTarget(target: UndeployTarget, output: Output): void {
 function formatDeployment(deployment: UndeployTarget['activeDeployment']): string | null {
   if (!deployment) return null
   const parts = [
-    deployment.version ? `version ${deployment.version}` : null,
     deployment.deployedAt ? `at ${deployment.deployedAt}` : null,
     deployment.deployedBy ? `by ${deployment.deployedBy}` : null,
   ].filter(Boolean)
