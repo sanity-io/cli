@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {type Output, subdebug} from '@sanity/cli-core'
+import {exitCodes, type Output, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 
@@ -27,6 +27,7 @@ type UndeployFlags = UndeployCommand['flags']
 
 export interface UndeployOptions {
   flags: UndeployFlags
+  isUnattended: boolean
   output: Output
 }
 
@@ -115,12 +116,21 @@ async function undeployApp(
   }
 
   const {target} = resolution
+  if (!flags.yes && options.isUnattended) {
+    throw new CLIError(
+      'Undeploy requires confirmation in unattended mode. Pass --yes to continue.',
+      {exit: exitCodes.USAGE_ERROR},
+    )
+  }
+
   if (!flags.yes) {
     const shouldUndeploy = await confirm({
       default: false,
       message: confirmUndeployMessage(target),
     })
-    if (!shouldUndeploy) return undefined
+    if (!shouldUndeploy) {
+      throw new CLIError('Undeploy cancelled.', {exit: exitCodes.USER_ABORT})
+    }
   }
 
   const spin = spinner(
