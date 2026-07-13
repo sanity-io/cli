@@ -23,7 +23,7 @@ import {
   checkAutoUpdates,
   checkBuild,
   checkPackageVersion,
-  type CheckReporter,
+  type DeployCheckReporter,
   checkStudioTarget,
   type DeployTarget,
   verifyOutputDir,
@@ -49,7 +49,7 @@ export function deployStudio(options: DeployAppOptions): Promise<void> {
 /** Validates the deploy, extracts and uploads the schema, and ships the build. */
 async function runStudioDeployment(
   options: DeployAppOptions,
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
 ): Promise<DeployResult | void> {
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
@@ -216,7 +216,7 @@ async function runStudioDeployment(
  */
 async function resolveStudioApplication(
   options: DeployAppOptions,
-  {dryRun, reporter}: {dryRun: boolean; reporter: CheckReporter},
+  {dryRun, reporter}: {dryRun: boolean; reporter: DeployCheckReporter},
 ): Promise<{application: UserApplication | null; created: boolean}> {
   const {cliConfig, flags, output} = options
   const isExternal = !!flags.external

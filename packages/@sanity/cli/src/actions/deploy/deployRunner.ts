@@ -6,7 +6,7 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
-import {type CheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
+import {type DeployCheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {
   type DeploymentFile,
@@ -47,7 +47,7 @@ export interface DeploySpec {
   /** Files a real deploy would upload, listed only for the dry-run plan. */
   listFiles: (options: DeployAppOptions) => Promise<DeploymentFile[]>
   /** The step sequence; every step reports through `reporter`. */
-  run: (options: DeployAppOptions, reporter: CheckReporter) => Promise<DeployResult | void>
+  run: (options: DeployAppOptions, reporter: DeployCheckReporter) => Promise<DeployResult | void>
   type: 'coreApp' | 'studio'
 }
 

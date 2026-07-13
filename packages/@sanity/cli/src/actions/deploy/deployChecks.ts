@@ -4,7 +4,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput, type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
-import {type Check, type CheckReporter as CheckReporterFor, runStep} from '../../util/checks.js'
+import {type Check, type CheckReporter, runStep} from '../../util/checks.js'
 import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {
   getAutoUpdateIssueMessage,
@@ -59,10 +59,10 @@ export interface DeployCheck extends Check {
   version?: string
 }
 
-export type CheckReporter = CheckReporterFor<DeployCheck>
+export type DeployCheckReporter = CheckReporter<DeployCheck>
 
 export async function checkPackageVersion(
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
   {moduleName, workDir}: {moduleName: string; workDir: string},
 ): Promise<string | null> {
   const version = await getLocalPackageVersion(moduleName, workDir)
@@ -79,7 +79,7 @@ export async function checkPackageVersion(
 }
 
 export function checkAutoUpdates(
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
   {cliConfig, flags}: {cliConfig: CliConfig; flags: DeployFlags},
 ): boolean {
   const {enabled, issue} = resolveAutoUpdates({cliConfig, flags})
@@ -109,7 +109,7 @@ export function checkAutoUpdates(
  * `findUserApplication`: a conflict fails (both `app.id` and `deployment.appId`
  * set), the deprecated config alone warns.
  */
-export function checkAppId(reporter: CheckReporter, {cliConfig}: {cliConfig: CliConfig}): void {
+export function checkAppId(reporter: DeployCheckReporter, {cliConfig}: {cliConfig: CliConfig}): void {
   const issue = resolveAppIdIssue(cliConfig)
   if (issue === 'conflicting-config') {
     reporter.report({
@@ -127,7 +127,7 @@ export function checkAppId(reporter: CheckReporter, {cliConfig}: {cliConfig: Cli
 }
 
 export async function checkBuild(
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
   {
     build,
     skipReason,
@@ -161,7 +161,7 @@ export async function verifyOutputDir({
   sourceDir,
 }: {
   isWorkbenchApp: boolean
-  reporter: CheckReporter
+  reporter: DeployCheckReporter
   sourceDir: string
 }): Promise<void> {
   const spin = spinner('Verifying local content...').start()
@@ -261,7 +261,7 @@ export function describeAppTargetError(err: unknown, organizationId: string | un
  * it to reject a bad `appId` before building.
  */
 export async function checkAppTarget(
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
   options:
     | {appId: string | undefined; isWorkbenchApp: true; slug?: string; title?: string}
     | {
@@ -366,7 +366,7 @@ export function describeStudioTarget(
  * studio URL from the resolved slug.
  */
 export async function checkStudioTarget(
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
   options:
     | {
         appId: string | undefined

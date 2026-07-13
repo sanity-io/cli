@@ -33,7 +33,7 @@ import {
   checkAutoUpdates,
   checkBuild,
   checkPackageVersion,
-  type CheckReporter,
+  type DeployCheckReporter,
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
@@ -56,7 +56,7 @@ export function deployApp(options: DeployAppOptions): Promise<void> {
 /** Validates the deploy, syncs the title from the manifest, and ships the build. */
 async function runAppDeployment(
   options: DeployAppOptions,
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
 ): Promise<DeployResult | void> {
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
@@ -301,7 +301,7 @@ async function runAppDeployment(
  */
 async function resolveAppApplication(
   options: DeployAppOptions,
-  {dryRun, reporter}: {dryRun: boolean; reporter: CheckReporter},
+  {dryRun, reporter}: {dryRun: boolean; reporter: DeployCheckReporter},
 ): Promise<{application: UserApplicationResolved | null; created: boolean}> {
   const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''

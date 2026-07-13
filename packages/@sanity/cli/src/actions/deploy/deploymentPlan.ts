@@ -7,7 +7,7 @@ import {type DeployedExpose, summarizeExposes} from '@sanity/workbench-cli/deplo
 
 import {checkStatusIcon, nestLines, renderIssues} from '../../util/checks.js'
 import {pluralize} from '../../util/pluralize.js'
-import {type CheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
+import {type DeployCheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
 
 export interface DeploymentFile {
   /** Path relative to the project root, POSIX-style. */
@@ -124,7 +124,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
  * collector can read it back.
  */
 export function reportExposes(
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
   app: Parameters<typeof summarizeExposes>[0],
 ): DeployedExpose[] {
   const {exposes, lines} = summarizeExposes(app)
