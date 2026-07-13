@@ -159,9 +159,12 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
           dataset = await promptForDataset({allowCreation: false, datasets})
         } catch (error) {
           exportDebug('Error selecting dataset', error)
-          this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
-            exit: 1,
-          })
+          this.error(
+            `Failed to select dataset:\n${error instanceof Error ? error.message : error}`,
+            {
+              exit: 1,
+            },
+          )
         }
       }
     }

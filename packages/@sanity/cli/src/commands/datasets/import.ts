@@ -201,10 +201,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
     let dataset = datasetFlag ?? targetDatasetArg
     if (!dataset) {
       if (this.isUnattended()) {
-        return this.output.error(
-          'Dataset is required. Pass it with --dataset <name>.',
-          {exit: 2},
-        )
+        return this.output.error('Dataset is required. Pass it with --dataset <name>.', {exit: 2})
       }
 
       const datasets = await listDatasets(projectId)

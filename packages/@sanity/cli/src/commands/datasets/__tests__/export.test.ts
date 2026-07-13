@@ -273,9 +273,7 @@ describe('#dataset:export', () => {
         mocks: {...mocks, isInteractive: false},
       })
 
-      expect(error?.message).toBe(
-        'Dataset name is required. Pass it as the first argument.',
-      )
+      expect(error?.message).toBe('Dataset name is required. Pass it as the first argument.')
       expect(error?.oclif?.exit).toBe(2)
       expect(mockSelect).not.toHaveBeenCalled()
       expect(mockInput).not.toHaveBeenCalled()

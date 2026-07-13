@@ -397,9 +397,7 @@ describe('#backup:download', () => {
         {mocks: {...defaultMocks, isInteractive: false}},
       )
 
-      expect(stdout).toContain(
-        path.join(process.cwd(), 'production-backup-backup-123.tar.gz'),
-      )
+      expect(stdout).toContain(path.join(process.cwd(), 'production-backup-backup-123.tar.gz'))
       expect(error?.message).toContain('Downloading dataset backup failed')
       expect(mockInput).not.toHaveBeenCalled()
     })
