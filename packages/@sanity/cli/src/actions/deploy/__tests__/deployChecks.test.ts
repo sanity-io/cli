@@ -1,4 +1,4 @@
-import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes} from '@sanity/cli-core'
 import {type Application, getApplication} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -6,14 +6,13 @@ import {
   type UserApplication,
   type UserApplicationResolved,
 } from '../../../services/userApplications.js'
+import {createCollectingReporter} from '../../../util/checks.js'
 import {
   checkAppId,
   checkAppTarget,
   checkAutoUpdates,
   checkStudioTarget,
-  createCollectingReporter,
-  createFailFastReporter,
-  runStep,
+  type DeployCheck,
 } from '../deployChecks.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from '../resolveDeployTarget.js'
 import {type DeployFlags} from '../types.js'
@@ -35,8 +34,6 @@ const mockResolveStudio = vi.mocked(resolveStudioDeployTarget)
 const mockResolveApp = vi.mocked(resolveAppDeployTarget)
 const mockGetApplication = vi.mocked(getApplication)
 
-const mockOutput = () => ({error: vi.fn(), warn: vi.fn()}) as unknown as Output
-
 function application(overrides: Partial<UserApplication> = {}): UserApplication {
   return {
     appHost: 'my-studio',
@@ -54,89 +51,6 @@ function application(overrides: Partial<UserApplication> = {}): UserApplication 
 
 beforeEach(() => vi.clearAllMocks())
 
-describe('createFailFastReporter', () => {
-  test('a fail exits with its exit code', () => {
-    const output = mockOutput()
-    createFailFastReporter(output).report({exitCode: 2, message: 'boom', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom', {exit: 2})
-  })
-
-  test('a fail without an exit code defaults to 1', () => {
-    const output = mockOutput()
-    createFailFastReporter(output).report({message: 'boom', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom', {exit: 1})
-  })
-
-  test('a warn prints and does not exit', () => {
-    const output = mockOutput()
-    createFailFastReporter(output).report({message: 'heads up', status: 'warn'})
-    expect(output.warn).toHaveBeenCalledWith('heads up')
-    expect(output.error).not.toHaveBeenCalled()
-  })
-
-  test('pass and skip are silent', () => {
-    const output = mockOutput()
-    const reporter = createFailFastReporter(output)
-    reporter.report({message: 'good', status: 'pass'})
-    reporter.report({message: 'skipped', status: 'skip'})
-    expect(output.error).not.toHaveBeenCalled()
-    expect(output.warn).not.toHaveBeenCalled()
-  })
-
-  test('a fail appends its solution to the message', () => {
-    const output = mockOutput()
-    createFailFastReporter(output).report({message: 'boom', solution: 'do X', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom: do X', {exit: 1})
-  })
-
-  test('a warn appends its solution to the message', () => {
-    const output = mockOutput()
-    createFailFastReporter(output).report({message: 'heads up', solution: 'do Y', status: 'warn'})
-    expect(output.warn).toHaveBeenCalledWith('heads up: do Y')
-  })
-})
-
-describe('createCollectingReporter', () => {
-  test('collects every reported check on results', () => {
-    const reporter = createCollectingReporter()
-    reporter.report({message: 'ok', status: 'pass'})
-    reporter.report({message: 'bad', status: 'fail'})
-    expect(reporter.results).toHaveLength(2)
-  })
-})
-
-describe('runStep', () => {
-  test('returns the value when the work succeeds', async () => {
-    const reporter = createCollectingReporter()
-    const result = await runStep(reporter, 'ok', async () => 42)
-    expect(result).toBe(42)
-    expect(reporter.results).toHaveLength(0)
-  })
-
-  test('a throw becomes a fail check and returns null', async () => {
-    const reporter = createCollectingReporter()
-    const result = await runStep(reporter, 'boom', async () => {
-      throw new Error('nope')
-    })
-    expect(result).toBeNull()
-    expect(reporter.results[0]).toMatchObject({status: 'fail'})
-    expect(reporter.results[0]?.message).toContain('nope')
-  })
-
-  test('uses a custom formatError for the fail message', async () => {
-    const reporter = createCollectingReporter()
-    await runStep(
-      reporter,
-      'boom',
-      async () => {
-        throw new Error('raw')
-      },
-      () => 'friendly',
-    )
-    expect(reporter.results[0]?.message).toBe('friendly')
-  })
-})
-
 const studioArgs = {
   appId: undefined,
   isExternal: false,
@@ -149,7 +63,7 @@ const studioArgs = {
 describe('checkStudioTarget', () => {
   test('found → pass check for the existing studio', async () => {
     mockResolveStudio.mockResolvedValue({application: application(), type: 'found'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, studioArgs)
 
@@ -168,7 +82,7 @@ describe('checkStudioTarget', () => {
 
   test('would-create → pass check', async () => {
     mockResolveStudio.mockResolvedValue({appHost: 'new-studio', type: 'would-create'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, studioArgs)
 
@@ -179,7 +93,7 @@ describe('checkStudioTarget', () => {
 
   test('would-create with a title → pass check names the title', async () => {
     mockResolveStudio.mockResolvedValue({appHost: 'new-studio', type: 'would-create'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {...studioArgs, title: 'My Studio'})
 
@@ -196,7 +110,7 @@ describe('checkStudioTarget', () => {
 
   test('would-create with an empty title → target.title null, like the message', async () => {
     mockResolveStudio.mockResolvedValue({appHost: 'new-studio', type: 'would-create'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {...studioArgs, title: ''})
 
@@ -209,7 +123,7 @@ describe('checkStudioTarget', () => {
       appHost: 'https://studio.example.com',
       type: 'would-create',
     })
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {...studioArgs, isExternal: true})
 
@@ -221,7 +135,7 @@ describe('checkStudioTarget', () => {
 
   test('needs-input → fail check with a pure problem and its fix', async () => {
     mockResolveStudio.mockResolvedValue({existing: [], type: 'needs-input'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, studioArgs)
 
@@ -239,7 +153,7 @@ describe('checkStudioTarget', () => {
       reason: 'app-not-found',
       type: 'invalid',
     })
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {...studioArgs, appId: 'nope'})
 
@@ -256,7 +170,7 @@ describe('checkStudioTarget', () => {
       reason: 'invalid-host',
       type: 'invalid',
     })
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {...studioArgs, urlFlag: 'bad host'})
 
@@ -268,7 +182,7 @@ describe('checkStudioTarget', () => {
 
   test('blocked → skip check', async () => {
     mockResolveStudio.mockResolvedValue({message: 'api.projectId is missing', type: 'blocked'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, studioArgs)
 
@@ -277,7 +191,7 @@ describe('checkStudioTarget', () => {
 
   test('a thrown resolution becomes a fail check', async () => {
     mockResolveStudio.mockRejectedValue(new Error('network down'))
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, studioArgs)
 
@@ -295,7 +209,7 @@ describe('checkAppTarget', () => {
       type: 'coreApp',
     }) as UserApplicationResolved
     mockResolveApp.mockResolvedValue({application: app, type: 'found'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: 'core-1', organizationId: 'org-1'})
 
@@ -309,7 +223,7 @@ describe('checkAppTarget', () => {
 
   test('would-create without a title → fail check pointing to --title', async () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
@@ -321,7 +235,7 @@ describe('checkAppTarget', () => {
 
   test('would-create with a title → pass check (creates without prompting)', async () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1', title: 'My App'})
 
@@ -341,7 +255,7 @@ describe('checkAppTarget', () => {
       existing: [application(), application()] as UserApplicationResolved[],
       type: 'needs-input',
     })
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
@@ -355,7 +269,7 @@ describe('checkAppTarget', () => {
       reason: 'app-not-found',
       type: 'invalid',
     })
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: 'nope', organizationId: 'org-1'})
 
@@ -365,7 +279,7 @@ describe('checkAppTarget', () => {
 
   test('a 403 becomes a permissions fail check', async () => {
     mockResolveApp.mockRejectedValue(Object.assign(new Error('forbidden'), {statusCode: 403}))
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1'})
 
@@ -388,7 +302,7 @@ function workbenchApp(overrides: Partial<Application> = {}): Application {
 describe('checkAppTarget (workbench backend)', () => {
   test('existing appId → pass check for the resolved application', async () => {
     mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: 'app-1', isWorkbenchApp: true, title: 'ignored'})
 
@@ -399,7 +313,7 @@ describe('checkAppTarget (workbench backend)', () => {
 
   test('unknown appId → fail check pointing to deployment.appId', async () => {
     mockGetApplication.mockResolvedValue(null)
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: 'nope', isWorkbenchApp: true, title: 'ignored'})
 
@@ -408,7 +322,7 @@ describe('checkAppTarget (workbench backend)', () => {
   })
 
   test('no appId → pass check for the application that would be created', async () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: undefined, isWorkbenchApp: true, title: 'New App'})
 
@@ -418,7 +332,7 @@ describe('checkAppTarget (workbench backend)', () => {
   })
 
   test('no appId with a configured slug → check and target name the slug', async () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {
       appId: undefined,
@@ -443,7 +357,7 @@ describe('checkAppTarget (workbench backend)', () => {
 describe('checkStudioTarget (workbench backend)', () => {
   test('existing appId → pass check for the resolved studio, returns its target', async () => {
     mockGetApplication.mockResolvedValue(workbenchApp({slug: 'my-studio', type: 'studio'}))
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     const target = await checkStudioTarget(reporter, {
       appId: 'app-1',
@@ -460,7 +374,7 @@ describe('checkStudioTarget (workbench backend)', () => {
   })
 
   test('no appId with a studioHost → pass check for the studio that would be created', async () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {
       appId: undefined,
@@ -476,7 +390,7 @@ describe('checkStudioTarget (workbench backend)', () => {
   })
 
   test('no appId and no studioHost → usage-error fail check', async () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {
       appId: undefined,
@@ -491,7 +405,7 @@ describe('checkStudioTarget (workbench backend)', () => {
 
 describe('checkAutoUpdates', () => {
   test('a config conflict is a fail check', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     const enabled = checkAutoUpdates(reporter, {
       cliConfig: {autoUpdates: true, deployment: {autoUpdates: false}},
@@ -503,7 +417,7 @@ describe('checkAutoUpdates', () => {
   })
 
   test('the deprecated top-level config warns and includes the migration edit', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     const enabled = checkAutoUpdates(reporter, {
       cliConfig: {autoUpdates: true},
@@ -519,7 +433,7 @@ describe('checkAutoUpdates', () => {
   })
 
   test('a deprecated flag warns', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     checkAutoUpdates(reporter, {cliConfig: {}, flags: {'auto-updates': true} as DeployFlags})
 
@@ -527,7 +441,7 @@ describe('checkAutoUpdates', () => {
   })
 
   test('a clean config records no check', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     checkAutoUpdates(reporter, {
       cliConfig: {deployment: {autoUpdates: true}},
@@ -540,7 +454,7 @@ describe('checkAutoUpdates', () => {
 
 describe('checkAppId', () => {
   test('both app.id and deployment.appId set is a fail check with a fix', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     checkAppId(reporter, {cliConfig: {app: {id: 'old'}, deployment: {appId: 'new'}} as CliConfig})
 
@@ -554,7 +468,7 @@ describe('checkAppId', () => {
   })
 
   test('the deprecated app.id alone warns', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     checkAppId(reporter, {cliConfig: {app: {id: 'old'}} as CliConfig})
 
@@ -563,7 +477,7 @@ describe('checkAppId', () => {
   })
 
   test('deployment.appId alone records no check', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     checkAppId(reporter, {cliConfig: {deployment: {appId: 'new'}} as CliConfig})
 

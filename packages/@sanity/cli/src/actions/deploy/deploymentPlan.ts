@@ -3,11 +3,11 @@ import {join, relative, sep} from 'node:path'
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
-import {logSymbols} from '@sanity/cli-core/ux'
 import {type DeployedExpose, summarizeExposes} from '@sanity/workbench-cli/deploy'
 
+import {checkStatusIcon, nestLines, renderIssues} from '../../util/checks.js'
 import {pluralize} from '../../util/pluralize.js'
-import {type CheckReporter, type DeployCheck, type DeployTarget} from './deployChecks.js'
+import {type DeployCheck, type DeployCheckReporter, type DeployTarget} from './deployChecks.js'
 
 export interface DeploymentFile {
   /** Path relative to the project root, POSIX-style. */
@@ -124,7 +124,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
  * collector can read it back.
  */
 export function reportExposes(
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
   app: Parameters<typeof summarizeExposes>[0],
 ): DeployedExpose[] {
   const {exposes, lines} = summarizeExposes(app)
@@ -144,7 +144,7 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   // Only pass/skip here; problems and warnings render below with their fixes.
   for (const check of plan.checks) {
     if (check.status === 'pass' || check.status === 'skip') {
-      output.log(nestLines(`  ${statusIcon(check.status)} ${check.message}`))
+      output.log(nestLines(`  ${checkStatusIcon(check.status)} ${check.message}`))
     }
   }
 
@@ -168,39 +168,6 @@ export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void
   }
 }
 
-// Continuation lines of multi-line messages (expose and config summaries)
-// indent past the icon so their items nest under the heading.
-function nestLines(text: string): string {
-  return text.replaceAll('\n', '\n    ')
-}
-
-function renderIssues(output: Output, title: string, checks: DeployCheck[]): void {
-  if (checks.length === 0) return
-
-  output.log(`\n${title}`)
-  for (const check of checks) {
-    const fix = check.solution ? `: ${check.solution}` : ''
-    output.log(nestLines(`  ${statusIcon(check.status)} ${check.message}${fix}`))
-  }
-}
-
 function formatMB(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`
-}
-
-function statusIcon(status: DeployCheck['status']): string {
-  switch (status) {
-    case 'fail': {
-      return logSymbols.error
-    }
-    case 'skip': {
-      return logSymbols.info
-    }
-    case 'warn': {
-      return logSymbols.warning
-    }
-    default: {
-      return logSymbols.success
-    }
-  }
 }

@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {exitCodes} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   buildExposes,
@@ -22,7 +23,6 @@ import {
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {buildApp} from '../build/buildApp.js'
 import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
@@ -33,7 +33,7 @@ import {
   checkAutoUpdates,
   checkBuild,
   checkPackageVersion,
-  type CheckReporter,
+  type DeployCheckReporter,
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
@@ -56,7 +56,7 @@ export function deployApp(options: DeployAppOptions): Promise<void> {
 /** Validates the deploy, syncs the title from the manifest, and ships the build. */
 async function runAppDeployment(
   options: DeployAppOptions,
-  reporter: CheckReporter,
+  reporter: DeployCheckReporter,
 ): Promise<DeployResult | void> {
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
@@ -301,7 +301,7 @@ async function runAppDeployment(
  */
 async function resolveAppApplication(
   options: DeployAppOptions,
-  {dryRun, reporter}: {dryRun: boolean; reporter: CheckReporter},
+  {dryRun, reporter}: {dryRun: boolean; reporter: DeployCheckReporter},
 ): Promise<{application: UserApplicationResolved | null; created: boolean}> {
   const {cliConfig, flags, output} = options
   const organizationId = cliConfig.app?.organizationId ?? ''

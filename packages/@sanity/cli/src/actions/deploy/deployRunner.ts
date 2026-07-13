@@ -2,15 +2,11 @@ import {format} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
-import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {
-  type CheckReporter,
-  createCollectingReporter,
-  createFailFastReporter,
-  type DeployTarget,
-} from './deployChecks.js'
+import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
+import {type DeployCheck, type DeployCheckReporter, type DeployTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {
   type DeploymentFile,
@@ -51,7 +47,7 @@ export interface DeploySpec {
   /** Files a real deploy would upload, listed only for the dry-run plan. */
   listFiles: (options: DeployAppOptions) => Promise<DeploymentFile[]>
   /** The step sequence; every step reports through `reporter`. */
-  run: (options: DeployAppOptions, reporter: CheckReporter) => Promise<DeployResult | void>
+  run: (options: DeployAppOptions, reporter: DeployCheckReporter) => Promise<DeployResult | void>
   type: 'coreApp' | 'studio'
 }
 
@@ -102,7 +98,7 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
 
 /** Runs the step sequence read-only and gathers the plan a dry run reports. */
 async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise<DeploymentPlan> {
-  const reporter = createCollectingReporter()
+  const reporter = createCollectingReporter<DeployCheck>()
   await spec.run(options, reporter)
   const plan: DeploymentPlan = {
     checks: reporter.results,

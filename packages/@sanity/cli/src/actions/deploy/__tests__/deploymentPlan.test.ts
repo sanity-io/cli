@@ -5,7 +5,8 @@ import {join} from 'node:path'
 import {type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createCollectingReporter, type DeployCheck} from '../deployChecks.js'
+import {createCollectingReporter} from '../../../util/checks.js'
+import {type DeployCheck} from '../deployChecks.js'
 import {
   type DeploymentFile,
   type DeploymentPlan,
@@ -150,7 +151,7 @@ describe('deploymentPlanToJson', () => {
 
 describe('reportExposes', () => {
   test('reports views and services and returns them structured', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
 
     const exposes = reportExposes(reporter, {
       services: [{name: 'sync', src: './sync.ts', type: 'worker'}],
@@ -167,7 +168,7 @@ describe('reportExposes', () => {
   })
 
   test('reports nothing and returns empty without views or services', () => {
-    const reporter = createCollectingReporter()
+    const reporter = createCollectingReporter<DeployCheck>()
     expect(reportExposes(reporter, {})).toEqual([])
     expect(reporter.results).toEqual([])
   })
