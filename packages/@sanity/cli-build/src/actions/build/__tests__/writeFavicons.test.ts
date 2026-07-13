@@ -5,8 +5,8 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getDefaultFaviconsPath, writeFavicons} from '../writeFavicons'
 
-vi.mock('read-package-up', () => ({
-  readPackageUp: vi.fn(),
+vi.mock('empathic/package', () => ({
+  up: vi.fn(),
 }))
 
 vi.mock('node:fs/promises', () => ({
@@ -32,19 +32,16 @@ describe('#getDefaultFaviconsPath', () => {
   })
 
   test('should return a path to static/favicons', async () => {
-    const {readPackageUp} = await import('read-package-up')
-    vi.mocked(readPackageUp).mockResolvedValue({
-      packageJson: {name: '@sanity/cli-build'},
-      path: join(mockPackagePath, 'package.json'),
-    })
+    const {up} = await import('empathic/package')
+    vi.mocked(up).mockReturnValue(join(mockPackagePath, 'package.json'))
 
     const path = await getDefaultFaviconsPath()
     expect(path).toEqual(join(mockPackagePath, 'static', 'favicons'))
   })
 
   test('should throw error when @sanity/cli-build package path cannot be resolved', async () => {
-    const {readPackageUp} = await import('read-package-up')
-    vi.mocked(readPackageUp).mockResolvedValue(undefined)
+    const {up} = await import('empathic/package')
+    vi.mocked(up).mockReturnValue(undefined)
 
     await expect(getDefaultFaviconsPath()).rejects.toThrow(
       'Unable to resolve `@sanity/cli-build` module root',
@@ -56,11 +53,8 @@ describe('#writeFavicons', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
 
-    const {readPackageUp} = await import('read-package-up')
-    vi.mocked(readPackageUp).mockResolvedValue({
-      packageJson: {name: '@sanity/cli-build'},
-      path: join(mockPackagePath, 'package.json'),
-    })
+    const {up} = await import('empathic/package')
+    vi.mocked(up).mockReturnValue(join(mockPackagePath, 'package.json'))
   })
 
   test('creates the destination directory, copies favicons, writes the manifest, and copies favicon.ico to the parent dir', async () => {
