@@ -57,7 +57,9 @@ describe('#delete', () => {
       uri: '/hooks/projects/test-project/hook1',
     }).reply(200)
 
-    const {stdout} = await testCommand(Delete, ['test-hook'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(Delete, ['test-hook'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Hook deleted')
   })
@@ -76,7 +78,9 @@ describe('#delete', () => {
       },
     ])
 
-    const {error} = await testCommand(Delete, ['nonexistent-hook'], {mocks: defaultMocks})
+    const {error} = await testCommand(Delete, ['nonexistent-hook'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook with name "nonexistent-hook" not found')
@@ -169,7 +173,9 @@ describe('#delete', () => {
       uri: '/hooks/projects/test-project/hook1',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(Delete, ['test-hook'], {mocks: defaultMocks})
+    const {error} = await testCommand(Delete, ['test-hook'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook deletion failed')
@@ -207,7 +213,9 @@ describe('#delete', () => {
       uri: '/hooks/projects/test-project/hook1',
     }).reply(200)
 
-    const {stdout} = await testCommand(Delete, ['test-hook-name'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(Delete, ['test-hook-name'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Hook deleted')
   })

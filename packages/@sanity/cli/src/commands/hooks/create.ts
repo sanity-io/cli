@@ -32,7 +32,9 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
   public async run() {
     const projectId = await this.getProjectId({
       fallback: () =>
-        promptForProject({requiredPermissions: [{grant: 'read', permission: 'sanity.project'}]}),
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project'}],
+        }),
     })
 
     let projectInfo: {organizationId?: string | null}
@@ -41,7 +43,9 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
     } catch (error) {
       const err = error as Error
       createHookDebug(`Error fetching project info for project ${projectId}`, err)
-      this.error(`Failed to fetch project information:\n${err.message}`, {exit: 1})
+      this.error(`Failed to fetch project information:\n${err.message}`, {
+        exit: 1,
+      })
     }
 
     const organizationId = projectInfo.organizationId || 'personal'
@@ -50,6 +54,11 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
     )
 
     this.log(`Opening ${manageUrl}`)
+
+    if (this.isUnattended()) {
+      this.log('Open this URL in a browser to create the webhook.')
+      return
+    }
 
     try {
       await open(manageUrl)

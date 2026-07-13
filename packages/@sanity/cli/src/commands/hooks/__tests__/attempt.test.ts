@@ -47,7 +47,9 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Delivered')
@@ -77,7 +79,9 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -108,7 +112,9 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -138,7 +144,9 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -168,7 +176,9 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: In progress')
@@ -198,7 +208,9 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Delivered')
@@ -212,14 +224,18 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(404, {message: 'Attempt not found'})
 
-    const {error} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
+    const {error} = await testCommand(AttemptHookCommand, ['attempt123'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook attempt retrieval failed')
   })
 
   test('requires attempt ID argument', async () => {
-    const {error} = await testCommand(AttemptHookCommand, [], {mocks: defaultMocks})
+    const {error} = await testCommand(AttemptHookCommand, [], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing 1 required arg')
