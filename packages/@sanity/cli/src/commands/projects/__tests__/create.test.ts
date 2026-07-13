@@ -165,13 +165,10 @@ describe('#projects:create', () => {
     })
 
     test('creates project without dataset in unattended mode if no dataset name provided as flag', async () => {
-      mockCreateDataset.mockResolvedValue({
-        aclMode: 'private',
-        datasetName: 'staging',
-      })
-
       await CreateProjectCommand.run(['--yes', '--organization=org-1'])
 
+      expect(mockListDatasets).not.toHaveBeenCalled()
+      expect(mockCreateDataset).not.toHaveBeenCalled()
       expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
       expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
         expect.stringContaining('Project created successfully'),
