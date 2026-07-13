@@ -69,6 +69,11 @@ export class Delete extends SanityCommand<typeof Delete> {
     specifiedOrigin: string | undefined,
     projectId: string,
   ): Promise<number> {
+    if (!specifiedOrigin && this.isUnattended()) {
+      this.error('Origin is required in unattended mode. Pass the origin as an argument.', {
+        exit: 2,
+      })
+    }
     let origins: CorsOrigin[]
     try {
       origins = await listCorsOrigins(projectId)

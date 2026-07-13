@@ -41,6 +41,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -118,8 +119,21 @@ describe('#tokens:delete', () => {
 
     const {error} = await testCommand(DeleteTokensCommand, ['token-api-123'], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Operation cancelled')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(3)
+  })
+
+  test('requires a token ID and --yes in unattended mode', async () => {
+    const missingId = await testCommand(DeleteTokensCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+    expect(missingId.error?.message).toContain('<tokenId>')
+    expect(missingId.error?.oclif?.exit).toBe(2)
+
+    const missingConfirmation = await testCommand(DeleteTokensCommand, ['token-api-123'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+    expect(missingConfirmation.error?.message).toContain('--yes')
+    expect(missingConfirmation.error?.oclif?.exit).toBe(2)
   })
 
   test('prompts user to select token when none specified', async () => {

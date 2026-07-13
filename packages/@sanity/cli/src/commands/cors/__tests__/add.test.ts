@@ -88,8 +88,11 @@ describe('#cors:add', () => {
       }
     })
 
-    const {stdout} = await testCommand(Add, [origin, '--credentials'], {mocks: defaultMocks})
+    const {error, stdout} = await testCommand(Add, [origin, '--credentials'], {
+      mocks: defaultMocks,
+    })
 
+    if (error) throw error
     expect(stdout).toContain('CORS origin added successfully')
   })
 
@@ -118,9 +121,45 @@ describe('#cors:add', () => {
       }
     })
 
-    const {stdout} = await testCommand(Add, [origin, '--no-credentials'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(Add, [origin, '--no-credentials'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('CORS origin added successfully')
+  })
+
+  test('defaults credentials to false without prompting in unattended mode', async () => {
+    const origin = 'https://example.com'
+    mockApi({
+      apiVersion: CORS_API_VERSION,
+      method: 'post',
+      uri: '/projects/test-project/cors',
+    }).reply(201, function (_, requestBody) {
+      expect(requestBody).toEqual({allowCredentials: false, origin})
+      return {
+        allowCredentials: false,
+        id: 1,
+        origin,
+        projectId: 'test-project',
+      }
+    })
+
+    const {error} = await testCommand(Add, [origin], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    if (error) throw error
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
+  test('requires --yes for wildcard origins in unattended mode', async () => {
+    const {error} = await testCommand(Add, ['https://*.example.com', '--no-credentials'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toContain('Pass --yes to continue')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockConfirm).not.toHaveBeenCalled()
   })
 
   test('fails when no project ID is available', async () => {
@@ -209,7 +248,9 @@ describe('#cors:add', () => {
       async ({expectedError, expectedOutput, setupMocks}) => {
         setupMocks()
 
-        const result = await testCommand(Add, ['https://*.example.com'], {mocks: defaultMocks})
+        const result = await testCommand(Add, ['https://*.example.com'], {
+          mocks: defaultMocks,
+        })
 
         expect(confirm).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -244,7 +285,9 @@ describe('#cors:add', () => {
       mockConfirm.mockResolvedValueOnce(true)
       setupSuccessfulApiMock()
 
-      const {stdout} = await testCommand(Add, ['https://example.com'], {mocks: defaultMocks})
+      const {stdout} = await testCommand(Add, ['https://example.com'], {
+        mocks: defaultMocks,
+      })
 
       expect(confirm).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -261,7 +304,9 @@ describe('#cors:add', () => {
         .mockResolvedValueOnce(false) // Deny credentials
       setupSuccessfulApiMock()
 
-      const {stdout} = await testCommand(Add, ['https://*.example.com'], {mocks: defaultMocks})
+      const {stdout} = await testCommand(Add, ['https://*.example.com'], {
+        mocks: defaultMocks,
+      })
 
       expect(stdout).toContain('HIGHLY')
       expect(stdout).toContain('recommend NOT allowing credentials')
@@ -308,7 +353,9 @@ describe('#cors:add', () => {
     ]
 
     test.each(invalidOrigins)('rejects invalid origin: %s', async (origin) => {
-      const {error} = await testCommand(Add, [origin, '--credentials'], {mocks: defaultMocks})
+      const {error} = await testCommand(Add, [origin, '--credentials'], {
+        mocks: defaultMocks,
+      })
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Invalid origin')
@@ -351,7 +398,9 @@ describe('#cors:add', () => {
       async ({expectedOutput, input, shouldNormalize}) => {
         setupSuccessfulApiMock()
 
-        const {stdout} = await testCommand(Add, [input, '--credentials'], {mocks: defaultMocks})
+        const {stdout} = await testCommand(Add, [input, '--credentials'], {
+          mocks: defaultMocks,
+        })
 
         if (shouldNormalize) {
           expect(stdout).toContain(expectedOutput)

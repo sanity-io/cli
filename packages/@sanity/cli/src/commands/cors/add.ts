@@ -54,6 +54,10 @@ export class Add extends SanityCommand<typeof Add> {
       description: 'Allow credentials (token/cookie) to be sent from this origin',
       required: false,
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm risky wildcard origins without prompting',
+    }),
   }
 
   public async run(): Promise<void> {
@@ -82,15 +86,20 @@ export class Add extends SanityCommand<typeof Add> {
     const hasWildcard = origin.includes('*')
 
     if (hasWildcard) {
-      const confirmed = await this.promptForWildcardConfirmation(origin)
+      if (this.isUnattended() && !flags.yes) {
+        this.error('Wildcard origins require confirmation. Pass --yes to continue.', {exit: 2})
+      }
+      const confirmed = flags.yes || (await this.promptForWildcardConfirmation(origin))
       if (!confirmed) {
-        this.error('Operation cancelled', {exit: 1})
+        this.error('Operation cancelled', {exit: 3})
       }
     }
 
     const allowCredentials =
       flags.credentials === undefined
-        ? await this.promptForCredentials(hasWildcard)
+        ? this.isUnattended()
+          ? false
+          : await this.promptForCredentials(hasWildcard)
         : Boolean(flags.credentials)
 
     if (filteredOrigin !== origin) {

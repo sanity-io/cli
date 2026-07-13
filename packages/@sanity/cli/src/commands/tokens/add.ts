@@ -49,7 +49,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
       description: 'Output as JSON',
     }),
     role: Flags.string({
-      description: 'Role to assign to the token',
+      description: 'Role to assign to the token (defaults to viewer in unattended mode)',
       helpValue: 'viewer',
     }),
     yes: Flags.boolean({
@@ -76,8 +76,9 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
         }),
     })
 
+    const label = givenLabel || (await this.promptForLabel())
+
     try {
-      const label = givenLabel || (await this.promptForLabel())
       const roleName = await (role
         ? validateRole(role, projectId, this.output)
         : this.promptForRole(projectId))
@@ -111,12 +112,9 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
 
   private async promptForLabel(): Promise<string> {
     if (this.isUnattended()) {
-      this.error(
-        'Token label is required in non-interactive mode. Provide a label as an argument.',
-        {
-          exit: 1,
-        },
-      )
+      this.error('Token label is required. Pass it as the `<label>` argument.', {
+        exit: 2,
+      })
     }
 
     const label = await input({

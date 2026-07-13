@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
@@ -57,14 +57,16 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(DeleteTokensCommand)
 
-    const unattended = flags.yes
+    const skipConfirmation = flags.yes
+    const unattended = this.isUnattended()
     const {tokenId: givenTokenId} = args
 
     if (unattended && !givenTokenId) {
-      this.error(
-        'Token ID is required in non-interactive mode. Provide a token ID as an argument.',
-        {exit: 1},
-      )
+      this.error('Token ID is required. Pass it as the `<tokenId>` argument.', {exit: 2})
+    }
+
+    if (unattended && !skipConfirmation) {
+      this.error('Deletion requires confirmation. Pass `--yes` to delete the token.', {exit: 2})
     }
 
     // Ensure we have project context
@@ -77,22 +79,21 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
 
     this.projectId = projectId
 
-    let tokenId: string | undefined
+    const tokenId = givenTokenId || (await this.getTokenIdFromList())
+
+    if (!skipConfirmation) {
+      const confirmed = await confirm({
+        default: false,
+        message: `Are you sure you want to delete the token with ID "${tokenId}"?`,
+      })
+
+      if (!confirmed) {
+        this.log('Operation cancelled')
+        this.exit(exitCodes.USER_ABORT)
+      }
+    }
 
     try {
-      tokenId = givenTokenId || (await this.getTokenIdFromList())
-
-      if (!unattended) {
-        const confirmed = await confirm({
-          default: false,
-          message: `Are you sure you want to delete the token with ID "${tokenId}"?`,
-        })
-
-        if (!confirmed) {
-          this.error('Operation cancelled', {exit: 1})
-        }
-      }
-
       await deleteToken({
         projectId: this.projectId,
         tokenId,

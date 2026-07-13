@@ -85,8 +85,11 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(AddTokenCommand, ['My Test Token'], {mocks: defaultMocks})
+    const {error, stdout} = await testCommand(AddTokenCommand, ['My Test Token'], {
+      mocks: defaultMocks,
+    })
 
+    expect(error).toBeUndefined()
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: My Test Token')
     expect(stdout).toContain('ID: token-123')
@@ -421,8 +424,8 @@ describe('#tokens:add', () => {
     const {error} = await testCommand(AddTokenCommand, ['--yes'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Token label is required in non-interactive mode')
-    expect(error?.message).toContain('Provide a label as an argument')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Token label is required')
+    expect(error?.message).toContain('<label>')
+    expect(error?.oclif?.exit).toBe(2)
   })
 })

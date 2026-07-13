@@ -59,6 +59,18 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     const {email: selectedEmail} = this.args
     const {role: selectedRole} = this.flags
 
+    if (this.isUnattended() && !selectedEmail) {
+      this.error('Email address is required. Pass it as the `<email>` argument.', {exit: 2})
+    }
+    if (this.isUnattended() && !selectedRole) {
+      this.error('User role is required. Pass it with `--role <role>`.', {exit: 2})
+    }
+
+    if (selectedEmail) {
+      const validation = validateEmail(selectedEmail)
+      if (validation !== true) this.error(`${validation}. Pass a valid email address.`, {exit: 2})
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -84,7 +96,7 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     if (!role) {
       this.error(
         `Role name "${roleSelection}" not found. Available roles: ${roles.map((r) => r.name).join(', ')}`,
-        {exit: 1},
+        {exit: 2},
       )
     }
 
