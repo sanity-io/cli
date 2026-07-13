@@ -1,5 +1,5 @@
 import {type Output} from '@sanity/cli-core'
-import {type UndeployAdapter, type UndeployTarget} from '@sanity/cli-core/undeploy'
+import {type UndeployAdapter, type UndeployApplicationTarget} from '@sanity/cli-core/undeploy'
 import {confirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -19,7 +19,7 @@ const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unkn
 const options = (output: Output, flags: Partial<UndeployOptions['flags']> = {}): UndeployOptions =>
   ({flags: {'dry-run': false, yes: false, ...flags}, output}) as UndeployOptions
 
-function target(overrides: Partial<UndeployTarget> = {}): UndeployTarget {
+function target(overrides: Partial<UndeployApplicationTarget> = {}): UndeployApplicationTarget {
   return {
     activeDeployment: null,
     appHost: 'my-studio',
@@ -439,7 +439,11 @@ describe('renderUndeployPlan', () => {
       {
         checks: [{message: 'boom', status: 'fail'}],
         reason: null,
-        target: target({deletes: 'config', title: 'media-library', type: 'coreApp'}),
+        target: {
+          ...target({title: 'media-library', type: 'coreApp'}),
+          deletes: 'config',
+          id: null,
+        },
         type: 'coreApp',
       },
       output,

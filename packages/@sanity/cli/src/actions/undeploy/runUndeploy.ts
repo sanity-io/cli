@@ -20,7 +20,6 @@ import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {
   describeUndeployTarget,
   renderUndeployPlan,
-  toJsonTarget,
   type UndeployPlan,
   undeployPlanToJson,
 } from './undeployPlan.js'
@@ -36,7 +35,7 @@ export interface UndeployOptions {
 
 /** What a real undeploy produced — the payload `--json` reports. */
 type UndeployResult =
-  | {application: Omit<UndeployTarget, 'summary'>; undeployed: true}
+  | {application: UndeployTarget; undeployed: true}
   | {reason: string; undeployed: false}
 
 /**
@@ -51,7 +50,9 @@ export async function runUndeploy(
 ): Promise<void> {
   const {flags, output} = options
   const json = !!flags.json
-  const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
+  // The report-only `summary` lines never enter the payload
+  const emitJson = (payload: unknown) =>
+    output.log(JSON.stringify(payload, (key, value) => (key === 'summary' ? undefined : value), 2))
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only
   // the final JSON.stringify writes to stdout.
@@ -126,7 +127,7 @@ async function undeployApp(
   spin.succeed()
 
   printUndeployed(target, output)
-  return {application: toJsonTarget(target), undeployed: true}
+  return {application: target, undeployed: true}
 }
 
 /**
@@ -170,21 +171,19 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
     return `This will undeploy the following application:
 
     Title: ${styleText('yellow', target.title || '(untitled application)')}
-    ID:    ${styleText('yellow', target.id ?? '(unknown)')}
+    ID:    ${styleText('yellow', target.id)}
 
 The application will no longer be available for any of your users if you proceed.
 
 Are you ${styleText('red', 'sure')} you want to undeploy?`
   }
 
-  return `This will undeploy ${styleText('yellow', target.url ?? target.id ?? 'this studio')} and make it unavailable for your users.
+  return `This will undeploy ${styleText('yellow', target.url ?? target.id)} and make it unavailable for your users.
 Are you ${styleText('red', 'sure')} you want to undeploy?`
 }
 
 function printUndeployed(target: UndeployTarget, output: Output): void {
   if (target.deletes === 'config') {
-    // Verified server behavior: the config drops out of history immediately, but
-    // applications already resolving it keep working until its content is purged.
     output.log(
       `\n${styleText('bold', 'Config deleted.')} Applications still resolving it keep working until the content is purged.`,
     )

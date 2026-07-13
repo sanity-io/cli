@@ -1,5 +1,9 @@
 import {type CliConfig} from '@sanity/cli-core'
-import {type UndeployAdapter, type UndeployTarget} from '@sanity/cli-core/undeploy'
+import {
+  type UndeployAdapter,
+  type UndeployApplicationTarget,
+  type UndeployTarget,
+} from '@sanity/cli-core/undeploy'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 
 import {
@@ -10,7 +14,9 @@ import {
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
-export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter {
+export function createAppUndeployAdapter(
+  cliConfig: CliConfig,
+): UndeployAdapter<UndeployApplicationTarget> {
   return {
     async resolveTarget() {
       const appId = getAppId(cliConfig)
@@ -30,11 +36,13 @@ export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter 
       return {target: toUndeployTarget(application, 'coreApp'), type: 'found'}
     },
     type: 'coreApp',
-    undeploy: ({id}) => deleteUserApplication({applicationId: id!, appType: 'coreApp'}),
+    undeploy: ({id}) => deleteUserApplication({applicationId: id, appType: 'coreApp'}),
   }
 }
 
-export function createStudioUndeployAdapter(cliConfig: CliConfig): UndeployAdapter {
+export function createStudioUndeployAdapter(
+  cliConfig: CliConfig,
+): UndeployAdapter<UndeployApplicationTarget> {
   return {
     async resolveTarget() {
       const appId = cliConfig.deployment?.appId
@@ -67,14 +75,14 @@ export function createStudioUndeployAdapter(cliConfig: CliConfig): UndeployAdapt
       return {target: toUndeployTarget(application, 'studio'), type: 'found'}
     },
     type: 'studio',
-    undeploy: ({id}) => deleteUserApplication({applicationId: id!, appType: 'studio'}),
+    undeploy: ({id}) => deleteUserApplication({applicationId: id, appType: 'studio'}),
   }
 }
 
 function toUndeployTarget(
   application: UserApplication,
   type: UndeployTarget['type'],
-): UndeployTarget {
+): UndeployApplicationTarget {
   return {
     activeDeployment: application.activeDeployment
       ? {

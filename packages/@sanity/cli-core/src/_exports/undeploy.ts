@@ -1,20 +1,30 @@
 /**
  * What an undeploy deletes, resolved once and read by every report — the
  * dry-run plan, the `--json` payloads, and the real run's confirmation prompt —
- * so the human and machine outputs can't drift. Adapters may extend it with
- * backend-specific fields; they serialize into `--json` as-is, except the
- * report-only `summary`.
+ * so the human and machine outputs can't drift. Adapters may extend the
+ * variants with backend-specific fields; they serialize into `--json` as-is,
+ * except the report-only `summary`.
  */
-export interface UndeployTarget {
+export type UndeployTarget = UndeployApplicationTarget | UndeployConfigTarget
+
+/** An undeploy that deletes the application, along with all its deployments. */
+export interface UndeployApplicationTarget extends UndeployTargetDetails {
+  deletes: 'application'
+  id: string
+}
+
+/** An undeploy that deletes an installation's deployed config; the installation stays installed. */
+export interface UndeployConfigTarget extends UndeployTargetDetails {
+  deletes: 'config'
+  id: null
+}
+
+interface UndeployTargetDetails {
   /** Details of the deployment currently being served; `null` when none is live. */
   activeDeployment: {deployedAt: string; deployedBy: string; version: string} | null
   /** Hostname the application is served from; freed for anyone to claim after undeploy. */
   appHost: string | null
   createdAt: string | null
-  /** What gets deleted: the application (with its deployments and interfaces) or an installation's config. */
-  deletes: 'application' | 'config'
-  /** The application an undeploy deletes, along with all its deployments; `null` for a config-only undeploy. */
-  id: string | null
   organizationId: string | null
   projectId: string | null
   title: string | null

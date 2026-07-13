@@ -1,6 +1,7 @@
 import {
   type UndeployAdapter,
-  type UndeployTarget,
+  type UndeployApplicationTarget,
+  type UndeployConfigTarget,
   type UndeployTargetResolution,
 } from '@sanity/cli-core/undeploy'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
@@ -13,23 +14,27 @@ import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
 import {deleteApplication, deleteConfig, listConfigs} from './undeployWorkbenchApp.js'
 
 /** The workbench extension of the shared target; serializes into `--json` as-is. */
-export interface WorkbenchUndeployTarget extends UndeployTarget {
-  /** The deployed config snapshots an undeploy deletes. */
-  configs?: {
-    createdAt: string | null
-    deployedBy: string | null
-    id: string
-    version: string | null
-  }[]
-  /** The custom fields the config declares, when a config undeploys. */
-  fields?: MediaLibraryField[]
-  /** The installation whose config an undeploy deletes. */
-  installationId?: string
-  /** Interfaces (views and services) registered by the application. */
-  interfaces?: DeployedExpose[]
-  /** The app's explicit singleton flag; omitted when the app doesn't set it. */
-  isSingleton?: boolean
-}
+export type WorkbenchUndeployTarget =
+  | (UndeployApplicationTarget & {
+      /** Interfaces (views and services) registered by the application. */
+      interfaces: DeployedExpose[]
+      /** The app's explicit singleton flag; omitted when the app doesn't set it. */
+      isSingleton?: boolean
+    })
+  | (UndeployConfigTarget & {
+      /** The deployed config snapshots an undeploy deletes. */
+      configs: {
+        createdAt: string | null
+        deployedBy: string | null
+        id: string
+        version: string | null
+      }[]
+      /** The custom fields the config declares. */
+      fields: MediaLibraryField[]
+      /** The installation whose config an undeploy deletes. */
+      installationId: string
+      isSingleton: true
+    })
 
 /**
  * The undeploy adapter for workbench apps, mirroring what a workbench deploy
@@ -55,12 +60,12 @@ export function createWorkbenchUndeployAdapter(options: {
     type,
     async undeploy(target) {
       if (target.deletes === 'config') {
-        for (const snapshot of target.configs ?? []) {
-          await deleteConfig(target.installationId!, snapshot.id)
+        for (const snapshot of target.configs) {
+          await deleteConfig(target.installationId, snapshot.id)
         }
         return
       }
-      await deleteApplication(target.id!)
+      await deleteApplication(target.id)
     },
   }
 }
@@ -140,24 +145,22 @@ async function resolveConfigTarget({
   }
 
   const configs = await listConfigs(installationId)
-  if (configs.length === 0) {
+  // Snapshots come newest first; the one being served reports as the active deployment.
+  const newest = configs[0]
+  if (!newest) {
     return {
       message: `No deployed config for the "${config.appType}" installation`,
       type: 'none',
     }
   }
 
-  // Snapshots come newest first; the one being served reports as the active deployment.
-  const newest = configs[0]
   return {
     target: {
-      activeDeployment: newest
-        ? {
-            deployedAt: newest.createdAt ?? '',
-            deployedBy: newest.deployedBy ?? '',
-            version: newest.version ?? '',
-          }
-        : null,
+      activeDeployment: {
+        deployedAt: newest.createdAt ?? '',
+        deployedBy: newest.deployedBy ?? '',
+        version: newest.version ?? '',
+      },
       appHost: null,
       configs: configs.map((snapshot) => ({
         createdAt: snapshot.createdAt ?? null,
