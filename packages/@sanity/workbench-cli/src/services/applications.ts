@@ -1,16 +1,156 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {PassThrough} from 'node:stream'
+import {type Gzip} from 'node:zlib'
 
-import {APP_WORKBENCH_API_VERSION} from '../actions/deploy/apiVersion.js'
+import {getGlobalCliClient} from '@sanity/cli-core'
+import FormData from 'form-data'
+
+import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
+
+export type ApplicationType = 'coreApp' | 'studio'
+
+export interface Application {
+  id: string
+  organizationId: string
+  slug: string | null
+  title: string
+  type: ApplicationType
+}
+
+/**
+ * An interface as Brett stores it: the declared `type` (validated server-side,
+ * not here) and the remote-relative `moduleId` the workbench loads it by — the
+ * host prepends the app's own id.
+ * @internal
+ */
+export interface BrettInterface {
+  moduleId: string
+  name: string
+  title: string
+  type: string
+  version: string
+}
+
+/** A studio workspace as Brett stores it. */
+export interface BrettWorkspace {
+  dataset: string
+  projectId: string
+
+  basePath?: string
+  icon?: string
+  name?: string
+  subtitle?: string
+  title?: string
+}
+
+async function getClient() {
+  return getGlobalCliClient({apiVersion: APP_WORKBENCH_API_VERSION, requireUser: true})
+}
+
+export async function getApplication(applicationId: string): Promise<Application | null> {
+  const client = await getClient()
+  try {
+    return await client.request({uri: `/applications/${applicationId}`})
+  } catch (err) {
+    if ((err as {statusCode?: number})?.statusCode === 404) return null
+    throw err
+  }
+}
+
+/** Create an application and its first deployment in one call. */
+export async function createApplication(options: {
+  interfaces: readonly BrettInterface[]
+  isSingleton?: boolean
+  organizationId: string
+  projectId?: string
+  slug: string
+  tarball: Gzip
+  title: string
+  type: ApplicationType
+  version: string
+  workspaces?: readonly BrettWorkspace[]
+}): Promise<Application> {
+  const {
+    interfaces,
+    isSingleton,
+    organizationId,
+    projectId,
+    slug,
+    tarball,
+    title,
+    type,
+    version,
+    workspaces,
+  } = options
+  const formData = new FormData()
+  formData.append('type', type)
+  formData.append('title', title)
+  formData.append('organizationId', organizationId)
+  formData.append('slug', slug)
+  if (isSingleton !== undefined) formData.append('isSingleton', String(isSingleton))
+  // Studio config is set once, at create — it's immutable on redeploy.
+  if (projectId) appendJson(formData, 'config', {studio: {projectId}})
+  appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
+  return request(`/applications`, formData)
+}
+
+/** Deploy a new active version to an existing application. */
+export async function createDeployment(options: {
+  applicationId: string
+  interfaces: readonly BrettInterface[]
+  isAutoUpdating: boolean
+  tarball: Gzip
+  version: string
+  workspaces?: readonly BrettWorkspace[]
+}): Promise<{id: string}> {
+  const {applicationId, interfaces, isAutoUpdating, tarball, version, workspaces} = options
+  const formData = new FormData()
+  formData.append('isAutoUpdating', isAutoUpdating.toString())
+  appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
+  return request(`/applications/${applicationId}/deployments`, formData)
+}
 
 /** Soft-deletes the application and all its deployments; already deleted counts as done. */
 export async function deleteApplication(applicationId: string): Promise<void> {
-  const client = await getGlobalCliClient({
-    apiVersion: APP_WORKBENCH_API_VERSION,
-    requireUser: true,
-  })
+  const client = await getClient()
   try {
     await client.request({method: 'DELETE', uri: `/applications/${applicationId}`})
   } catch (err) {
     if ((err as {statusCode?: number})?.statusCode !== 404) throw err
   }
+}
+
+function appendDeploymentParts(
+  formData: FormData,
+  {
+    interfaces,
+    tarball,
+    version,
+    workspaces,
+  }: {
+    interfaces: readonly BrettInterface[]
+    tarball: Gzip
+    version: string
+    workspaces?: readonly BrettWorkspace[]
+  },
+): void {
+  formData.append('version', version)
+  appendJson(formData, 'interfaces', interfaces)
+  // Studio-only — the server rejects a workspaces part on non-studio types.
+  if (workspaces?.length) appendJson(formData, 'workspaces', workspaces)
+  formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
+}
+
+/** Structured parts must arrive as JSON so the server parses them. */
+function appendJson(formData: FormData, name: string, value: unknown): void {
+  formData.append(name, JSON.stringify(value), {contentType: 'application/json'})
+}
+
+async function request<T>(uri: string, formData: FormData): Promise<T> {
+  const client = await getClient()
+  return client.request({
+    body: formData.pipe(new PassThrough()),
+    headers: formData.getHeaders(),
+    method: 'POST',
+    uri,
+  })
 }

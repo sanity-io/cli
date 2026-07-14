@@ -1,5 +1,4 @@
 export {
-  type BrettInterface,
   buildExposes,
   type DeployedExpose,
   summarizeExposes,
@@ -10,11 +9,11 @@ export {
   resolveInstallationId,
   summarizeConfig,
 } from '../actions/deploy/deployConfig.js'
+export {deployCoreApp, deployStudio} from '../actions/deploy/deployWorkbenchApp.js'
+export {getWorkbench} from '../actions/deploy/getWorkbench.js'
 export {
   type Application,
+  type BrettInterface,
   type BrettWorkspace,
-  deployCoreApp,
-  deployStudio,
   getApplication,
-} from '../actions/deploy/deployWorkbenchApp.js'
-export {getWorkbench} from '../actions/deploy/getWorkbench.js'
+} from '../services/applications.js'
