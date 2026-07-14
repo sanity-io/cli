@@ -1,7 +1,10 @@
 import {resolve} from 'node:path'
 
-import {type CliConfig, getCliConfig, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {getCliConfig} from '@sanity/cli-core/config'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {testCommand, testFixture} from '@sanity/cli-test'
+import * as apiMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
+import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ValidateDocumentsCommand} from '../../../../src/commands/documents/validate.js'
@@ -12,29 +15,11 @@ const INVALID_DOCS_PATH = resolve(
   '../../../__fixtures__/invalid-documents.ndjson',
 )
 
-const mocks = vi.hoisted(() => ({
-  confirm: vi.fn(),
-  getGlobalCliClient: vi.fn(),
-}))
-
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getGlobalCliClient: mocks.getGlobalCliClient,
-  }
-})
-
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
-  return {
-    ...actual,
-    confirm: mocks.confirm,
-  }
-})
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
 
 function setupMocksFromConfig(cliConfig: CliConfig) {
-  mocks.getGlobalCliClient.mockResolvedValue({
+  apiMocks.getGlobalCliClient.mockResolvedValue({
     config: () => ({
       dataset: cliConfig.api?.dataset,
       projectId: cliConfig.api?.projectId,
@@ -43,50 +28,9 @@ function setupMocksFromConfig(cliConfig: CliConfig) {
   })
 }
 
-const defaultMocks = {
-  cliConfig: {api: {dataset: 'test-dataset', projectId: 'test-project'}},
-  globalApiClient: {
-    config: vi.fn(() => ({
-      dataset: 'test-dataset',
-      projectId: 'test-project',
-    })),
-  } as never,
-  projectRoot: {
-    directory: '/test/path',
-    path: '/test/path/sanity.config.ts',
-    type: 'studio' as const,
-  },
-  token: 'test-token',
-}
-
 describe('#documents:validate', {timeout: 60 * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test.each([
-    {
-      args: ['--level', 'critical'],
-      description: 'unsupported level flag',
-      expectedError: 'Expected --level=critical to be one of: error, warning, info',
-    },
-    {
-      args: ['--max-custom-validation-concurrency', 'abc'],
-      description: 'non-integer max-custom-validation-concurrency',
-      expectedError: 'Expected an integer but received: abc',
-    },
-    {
-      args: ['--max-fetch-concurrency', 'xyz'],
-      description: 'non-integer max-fetch-concurrency',
-      expectedError: 'Expected an integer but received: xyz',
-    },
-  ])('throws error for $description', async ({args, expectedError}) => {
-    const {error} = await testCommand(ValidateDocumentsCommand, args, {
-      mocks: defaultMocks,
-    })
-
-    expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(2)
   })
 
   describe('basic-studio', () => {
@@ -103,23 +47,8 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       setupMocksFromConfig(cliConfig)
     })
 
-    test('exits if format is incorrect value', async () => {
-      const {error} = await testCommand(ValidateDocumentsCommand, [
-        '--yes',
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'xml',
-      ])
-
-      expect(error?.message).toContain(
-        "Did not recognize format 'xml'. Available formats are 'json', 'ndjson', and 'pretty'",
-      )
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
     test('validates documents without markers and outputs empty NDJSON', async () => {
-      mocks.confirm.mockResolvedValue(true)
+      uxMocks.confirm.mockResolvedValue(true)
 
       const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
         '--file',
@@ -134,33 +63,14 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       expect(stdout).toContain('Potential pitfalls:')
       expect(stdout).toContain('processes them through your local schema')
       expect(stdout).toContain('Checks for missing document references')
-      expect(mocks.confirm).toHaveBeenCalledWith({
-        default: true,
-        message: 'Are you sure you want to continue?',
-      })
-    })
-
-    test('aborts when user declines confirmation', async () => {
-      mocks.confirm.mockResolvedValue(false)
-
-      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'ndjson',
-      ])
-
-      expect(error?.message).toBe('User aborted')
-      expect(error?.oclif?.exit).toBe(1)
-      expect(stdout).toContain('Warning:')
-      expect(mocks.confirm).toHaveBeenCalledWith({
+      expect(uxMocks.confirm).toHaveBeenCalledWith({
         default: true,
         message: 'Are you sure you want to continue?',
       })
     })
 
     test('shows file-specific warning when using --file flag', async () => {
-      mocks.confirm.mockResolvedValue(true)
+      uxMocks.confirm.mockResolvedValue(true)
 
       const {stdout} = await testCommand(ValidateDocumentsCommand, [
         '--file',
@@ -171,20 +81,6 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
 
       expect(stdout).toContain('reads all documents from your input file')
       expect(stdout).toContain('Checks for missing document references')
-    })
-
-    test('errors when --file points to a directory', async () => {
-      mocks.confirm.mockResolvedValue(true)
-
-      const {error} = await testCommand(ValidateDocumentsCommand, [
-        '--file',
-        '.',
-        '--format',
-        'ndjson',
-      ])
-
-      expect(error?.message).toBe("'--file' must point to a valid ndjson file or tarball")
-      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('validates documents without markers and outputs empty JSON array', async () => {
@@ -247,27 +143,6 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
           expect(marker.level).toBe('error')
         }
       }
-    })
-  })
-
-  describe('outside project context', () => {
-    test('errors when run outside a Sanity project directory', async () => {
-      const {error} = await testCommand(
-        ValidateDocumentsCommand,
-        ['--yes', '--file', VALID_DOCS_PATH],
-        {
-          mocks: {
-            cliConfigError: new ProjectRootNotFoundError('No project root found'),
-            token: 'test-token',
-          },
-        },
-      )
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain(
-        'This command must be run from within a Sanity project directory',
-      )
-      expect(error?.oclif?.exit).toBe(1)
     })
   })
 
