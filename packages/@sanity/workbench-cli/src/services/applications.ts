@@ -43,7 +43,6 @@ export interface BrettWorkspace {
   title?: string
 }
 
-/** The URL of an organization's workbench. */
 export function getWorkbenchUrl(organizationId: string): string {
   return `https://${organizationId}.${isStaging() ? 'run.sanity.work' : 'sanity.run'}`
 }

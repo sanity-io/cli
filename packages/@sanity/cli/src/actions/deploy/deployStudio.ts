@@ -107,7 +107,6 @@ async function runStudioDeployment(
             status: 'fail',
           },
     )
-    // Both modes, so a bad appId fails before the build.
     await checkStudioTarget(reporter, {
       appId,
       isWorkbenchApp: true,

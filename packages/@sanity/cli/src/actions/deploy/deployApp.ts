@@ -122,7 +122,6 @@ async function runAppDeployment(
       status: 'fail',
     })
   } else if (deployApplication && workbench) {
-    // Both modes, so a bad appId fails before the build rather than at the POST.
     await checkAppTarget(reporter, {
       appId,
       isWorkbenchApp: true,
