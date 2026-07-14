@@ -2,6 +2,7 @@
 '@sanity/cli': minor
 ---
 
-Make GraphQL and schema commands safe to automate by requiring `--force` or `--yes` for
-confirmation-gated operations, preserving machine-readable schema JSON on stdout, validating schema
-inputs before starting work, and returning distinct usage and cancellation exit codes.
+feat(cli): support unattended mode for GraphQL and schema commands
+
+Require `--force` or `--yes` for confirmation-gated operations, keep schema JSON machine-readable,
+and distinguish usage errors from cancellations.
