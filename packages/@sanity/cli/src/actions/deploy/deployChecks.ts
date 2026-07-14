@@ -199,7 +199,7 @@ export function describeAppTarget(
     case 'found': {
       const {application} = resolution
       const title = application.title ?? application.appHost
-      const url = getCoreAppUrl(application.organizationId, application.id)
+      const url = application.url ?? getCoreAppUrl(application.organizationId, application.id)
       return {
         message: `Deploys to existing application "${title}" at ${url}`,
         status: 'pass',
@@ -306,7 +306,7 @@ export async function checkAppTarget(
 /** Same contract as {@link describeAppTarget}, for the studio verdicts. */
 export function describeStudioTarget(
   resolution: StudioDeployTargetResolution,
-  {isExternal, title}: {isExternal: boolean; title?: string},
+  {isExternal, isWorkbench, title}: {isExternal: boolean; isWorkbench?: boolean; title?: string},
 ): DeployCheck {
   const studioUrl = (host: string) => (isExternal ? host : `https://${host}.sanity.studio`)
 
@@ -315,7 +315,7 @@ export function describeStudioTarget(
       return {message: `Deploy target not resolved — ${resolution.message}`, status: 'skip'}
     }
     case 'found': {
-      const url = studioUrl(resolution.application.appHost)
+      const url = resolution.application.url ?? studioUrl(resolution.application.appHost)
       return {
         message: `Deploys to existing studio ${url}`,
         status: 'pass',
@@ -347,12 +347,13 @@ export function describeStudioTarget(
       }
     }
     case 'would-create': {
-      const url = studioUrl(resolution.appHost)
+      // A workbench studio's URL needs the application id, which only exists after the create.
+      const url = isWorkbench ? null : studioUrl(resolution.appHost)
       const titled = title ? ` titled "${title}"` : ''
       return {
         message: isExternal
           ? `Would register external studio at ${resolution.appHost}${titled}`
-          : `Would create studio hostname ${url}${titled} (name availability is checked on deploy)`,
+          : `Would create studio hostname ${url ?? resolution.appHost}${titled} (name availability is checked on deploy)`,
         status: 'pass',
         // `title || null`, not `?? null`, so target.title tracks the same
         // truthiness the message's `titled` suffix uses (an empty title is no title)
@@ -365,8 +366,7 @@ export function describeStudioTarget(
 /**
  * Reports the studio deploy target as a check and returns the resolved target;
  * `isWorkbenchApp` selects the backend. Both modes run it — a real deploy uses
- * the returned target to reject a bad `appId` before building and to report the
- * studio URL from the resolved slug.
+ * it to reject a bad `appId` before building.
  */
 export async function checkStudioTarget(
   reporter: DeployCheckReporter,
@@ -399,7 +399,11 @@ export async function checkStudioTarget(
     formatError: (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,
     name: 'target',
     work: async () => {
-      const check = describeStudioTarget(await resolve, {isExternal, title})
+      const check = describeStudioTarget(await resolve, {
+        isExternal,
+        isWorkbench: !!options.isWorkbenchApp,
+        title,
+      })
       reporter.report(check)
       return check.target ?? null
     },

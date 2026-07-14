@@ -16,4 +16,6 @@ export {
   type BrettInterface,
   type BrettWorkspace,
   getApplication,
+  getApplicationUrl,
+  getWorkbenchUrl,
 } from '../services/applications.js'

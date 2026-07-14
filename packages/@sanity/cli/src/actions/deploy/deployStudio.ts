@@ -9,6 +9,7 @@ import {
   type BrettWorkspace,
   buildExposes,
   deployStudio as deployWorkbenchStudio,
+  getApplicationUrl,
   getWorkbench,
 } from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
@@ -25,7 +26,6 @@ import {
   checkPackageVersion,
   checkStudioTarget,
   type DeployCheckReporter,
-  type DeployTarget,
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
@@ -97,7 +97,6 @@ async function runStudioDeployment(
   // resolve/create on user-applications, unchanged.
   let application: UserApplication | null = null
   let studioCreated = false
-  let studioTarget: DeployTarget | null = null
   if (workbench && !isExternal) {
     reporter.report(
       organizationId
@@ -108,9 +107,7 @@ async function runStudioDeployment(
             status: 'fail',
           },
     )
-    // Both modes, so a bad appId fails before the build; its resolved URL feeds
-    // the deploy result.
-    studioTarget = await checkStudioTarget(reporter, {
+    await checkStudioTarget(reporter, {
       appId,
       isWorkbenchApp: true,
       studioHost: cliConfig.studioHost,
@@ -174,7 +171,8 @@ async function runStudioDeployment(
       version,
       workspaces: toWorkspaces(studioManifest),
     })
-    logWorkbenchStudioDeployed({applicationId, cliConfig, output})
+    const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
+    logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
     return {
       applicationType: 'studio',
       applicationVersion: version,
@@ -183,7 +181,7 @@ async function runStudioDeployment(
         action: appId ? 'update' : 'create',
         applicationId,
         title: appTitle,
-        url: studioTarget?.url ?? null,
+        url,
       },
     }
   }
@@ -392,12 +390,14 @@ function logWorkbenchStudioDeployed({
   applicationId,
   cliConfig,
   output,
+  url,
 }: {
   applicationId: string
   cliConfig: DeployAppOptions['cliConfig']
   output: DeployAppOptions['output']
+  url: string
 }): void {
-  output.log(`\nSuccess! Studio deployed`)
+  output.log(`\nSuccess! Studio deployed to ${styleText('cyan', url)}`)
   if (getAppId(cliConfig)) return
 
   output.log(`\nAdd ${styleText('cyan', `appId: '${applicationId}'`)}`)
