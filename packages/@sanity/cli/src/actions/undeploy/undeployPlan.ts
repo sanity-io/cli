@@ -19,6 +19,14 @@ export function canUndeploy(plan: UndeployPlan): boolean {
   return plan.target !== null && plan.checks.every((check) => check.status !== 'fail')
 }
 
+/** What an undeploy deletes, phrased for the human output. */
+export function undeployLabel(target: UndeployTarget | null, type: 'coreApp' | 'studio'): string {
+  if (target?.deletes === 'config') {
+    return `installation config${target.title ? ` for "${target.title}"` : ''}`
+  }
+  return type === 'coreApp' ? 'application' : 'studio'
+}
+
 /**
  * A machine-readable projection of the plan: blocking problems mapped to their
  * fix, warnings as messages. Derived from the same checks and target the human
@@ -92,13 +100,13 @@ export function renderUndeployPlan(plan: UndeployPlan, output: Output): void {
 
   if (!canUndeploy(plan)) {
     if (problems.length > 0) {
-      const label =
-        plan.target?.deletes === 'config'
-          ? `Installation config${plan.target.title ? ` for "${plan.target.title}"` : ''}`
-          : plan.type === 'coreApp'
-            ? 'Application'
-            : 'Studio'
-      output.log(styleText('red', `\n${checkStatusIcon('fail')} ${label} can not be undeployed.`))
+      const label = undeployLabel(plan.target, plan.type)
+      output.log(
+        styleText(
+          'red',
+          `\n${checkStatusIcon('fail')} ${label[0].toUpperCase()}${label.slice(1)} can not be undeployed.`,
+        ),
+      )
     } else {
       output.log('\nNothing to undeploy.')
     }

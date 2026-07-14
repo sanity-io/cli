@@ -20,6 +20,7 @@ import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {
   describeUndeployTarget,
   renderUndeployPlan,
+  undeployLabel,
   type UndeployPlan,
   undeployPlanToJson,
 } from './undeployPlan.js'
@@ -115,12 +116,7 @@ async function undeployApp(
     if (!shouldUndeploy) return undefined
   }
 
-  const label =
-    target.deletes === 'config'
-      ? 'installation config'
-      : adapter.type === 'coreApp'
-        ? 'application'
-        : 'studio'
+  const label = undeployLabel(target, adapter.type)
   const spin = spinner(`Undeploying ${label}`).start()
   try {
     await adapter.undeploy(target)
