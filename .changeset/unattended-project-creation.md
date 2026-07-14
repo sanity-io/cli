@@ -2,4 +2,7 @@
 '@sanity/cli': minor
 ---
 
-Make `projects create` automation-safe by erroring with flag guidance instead of prompting when no organizations are available or the choice is ambiguous, returning a usage exit code for invalid dataset names, and keeping JSON output parseable when creating a dataset.
+feat(cli): support unattended project creation
+
+Require organization flags when selection is ambiguous, validate dataset names as usage errors, and
+keep dataset creation JSON machine-readable.
