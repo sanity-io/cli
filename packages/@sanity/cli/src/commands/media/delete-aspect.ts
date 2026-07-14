@@ -39,7 +39,7 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
     }),
     yes: Flags.boolean({
       aliases: ['y'],
-      description: 'Skip confirmation prompt',
+      description: 'Run without prompts and confirm deletion',
       required: false,
     }),
   }

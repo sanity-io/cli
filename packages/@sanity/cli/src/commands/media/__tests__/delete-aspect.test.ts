@@ -121,6 +121,17 @@ describe('#media:delete-aspect', () => {
     expect(mockSelect).not.toHaveBeenCalled()
   })
 
+  test('should require the media library ID with --yes', async () => {
+    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockSelect).not.toHaveBeenCalled()
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
   test('should cancel operation if user declines confirmation', async () => {
     // Mock the media libraries API call
     mockApi({
