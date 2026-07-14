@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core/types'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {DefinedTelemetryTrace} from '@sanity/telemetry'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -97,14 +97,6 @@ vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
     spinner: mockedSpinner,
   }
 })
-
-function createMockOutput(): Output {
-  return {
-    error: vi.fn(),
-    log: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
-}
 
 describe('#buildStudio', () => {
   beforeEach(() => {

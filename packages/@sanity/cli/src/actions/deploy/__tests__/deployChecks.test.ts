@@ -2,10 +2,8 @@ import {type CliConfig, exitCodes} from '@sanity/cli-core'
 import {type Application, getApplication} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {
-  type UserApplication,
-  type UserApplicationResolved,
-} from '../../../services/userApplications.js'
+import {userApplication} from '../../../services/__tests__/testHelpers.js'
+import {type UserApplicationResolved} from '../../../services/userApplications.js'
 import {createCollectingReporter} from '../../../util/checks.js'
 import {
   checkAppId,
@@ -34,21 +32,6 @@ const mockResolveStudio = vi.mocked(resolveStudioDeployTarget)
 const mockResolveApp = vi.mocked(resolveAppDeployTarget)
 const mockGetApplication = vi.mocked(getApplication)
 
-function application(overrides: Partial<UserApplication> = {}): UserApplication {
-  return {
-    appHost: 'my-studio',
-    createdAt: '2024-01-01T00:00:00Z',
-    id: 'app-1',
-    organizationId: null,
-    projectId: 'project-1',
-    title: null,
-    type: 'studio',
-    updatedAt: '2024-01-01T00:00:00Z',
-    urlType: 'internal',
-    ...overrides,
-  }
-}
-
 beforeEach(() => vi.clearAllMocks())
 
 const studioArgs = {
@@ -62,7 +45,7 @@ const studioArgs = {
 
 describe('checkStudioTarget', () => {
   test('found → pass check for the existing studio', async () => {
-    mockResolveStudio.mockResolvedValue({application: application(), type: 'found'})
+    mockResolveStudio.mockResolvedValue({application: userApplication(), type: 'found'})
     const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, studioArgs)
@@ -201,7 +184,7 @@ describe('checkStudioTarget', () => {
 
 describe('checkAppTarget', () => {
   test('found → pass check for the existing application', async () => {
-    const app = application({
+    const app = userApplication({
       appHost: 'app-host',
       id: 'core-1',
       organizationId: 'org-1',
@@ -252,7 +235,7 @@ describe('checkAppTarget', () => {
 
   test('needs-input → fail check (would prompt)', async () => {
     mockResolveApp.mockResolvedValue({
-      existing: [application(), application()] as UserApplicationResolved[],
+      existing: [userApplication(), userApplication()] as UserApplicationResolved[],
       type: 'needs-input',
     })
     const reporter = createCollectingReporter<DeployCheck>()

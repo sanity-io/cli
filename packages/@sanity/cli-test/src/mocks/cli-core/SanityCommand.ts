@@ -2,6 +2,8 @@ import {Command} from '@oclif/core'
 import {type Output, ProjectRootResult, type SanityCommandInterface} from '@sanity/cli-core/types'
 import {Mock, vi} from 'vitest'
 
+import {createMockOutput} from '../../test/createMockOutput.js'
+
 interface MockCollection {
   DefaultProjectRoot: ProjectRootResult
   OclifCmdExit: Mock<Command['exit']>
@@ -33,17 +35,6 @@ export const mocks: MockCollection = {
   SanityCmdIsUnattended: vi.fn(),
   SanityCmdOutput: createMockOutput(),
   SanityCmdResolveIsInteractive: vi.fn(),
-}
-
-/**
- * @internal
- */
-export function createMockOutput(): Output {
-  return {
-    error: vi.fn(() => undefined as never),
-    log: vi.fn(),
-    warn: vi.fn(),
-  }
 }
 
 /**

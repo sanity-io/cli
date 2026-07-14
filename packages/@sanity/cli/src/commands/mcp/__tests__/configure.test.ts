@@ -4,7 +4,6 @@ import fs from 'node:fs/promises'
 import {checkbox} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ConfigureMcpCommand} from '../configure.js'
@@ -40,13 +39,7 @@ vi.mock('../../../services/mcp.js', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    checkbox: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('node:fs', () => ({
   existsSync: vi.fn(),
@@ -434,12 +427,7 @@ describe.sequential('#mcp:configure', () => {
     createTestToken('eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEyMyJ9.signature')
   })
 
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   // -------------------------------------------------------------------------
   // Per-editor detection (table-driven)

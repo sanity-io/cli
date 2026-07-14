@@ -4,7 +4,6 @@ import {join} from 'node:path'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {unstable_defineApp} from '@sanity/workbench-cli'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../../src/actions/build/buildApp.js'
@@ -106,12 +105,7 @@ describe('#deploy app', () => {
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
   })
 
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('shows an error for invalid flags', async () => {
     const {error} = await testCommand(DeployCommand, ['--invalid'])

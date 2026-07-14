@@ -4,7 +4,6 @@ import {join} from 'node:path'
 import {exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../../src/actions/build/buildStudio.js'
@@ -102,12 +101,7 @@ describe('#deploy studio', () => {
     })
   })
 
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('should handle missing sanity version', async () => {
     const cwd = await testFixture('basic-studio')

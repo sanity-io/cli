@@ -1,5 +1,5 @@
-import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import * as taskMocks from '@sanity/cli-test/mocks/cli-core/tasks'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {validateAction} from '../validateAction'

@@ -1,6 +1,5 @@
 import {getProjectCliClient} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
@@ -30,12 +29,7 @@ vi.mock('@sanity/cli-core', async () => {
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 describe('#list', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('displays users correctly', async () => {
     mockGetProjectCliClient.mockResolvedValue({

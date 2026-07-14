@@ -1,5 +1,5 @@
-import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {execa, type Result} from 'execa'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -31,11 +31,7 @@ const mockExeca = vi.mocked(execa)
 const mockSpinner = vi.mocked(spinner)
 const mockGetPartialEnvWithNpmPath = vi.mocked(getPartialEnvWithNpmPath)
 
-const mockOutput: Output = {
-  error: vi.fn() as never,
-  log: vi.fn(),
-  warn: vi.fn(),
-}
+const mockOutput = createMockOutput()
 
 const mockSpinnerInstance = {
   fail: vi.fn().mockReturnThis(),

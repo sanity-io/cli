@@ -1,5 +1,6 @@
 import {type Output} from '@sanity/cli-core'
-import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {createMockOutput} from '@sanity/cli-test/test/util'
+import {beforeEach, describe, expect, it} from 'vitest'
 
 import {resolveAutoUpdates, shouldAutoUpdate} from '../shouldAutoUpdate'
 import {type BuildFlags} from '../types'
@@ -8,10 +9,7 @@ describe('shouldAutoUpdate', () => {
   let mockOutput: Output
 
   beforeEach(() => {
-    mockOutput = {
-      error: vi.fn(),
-      warn: vi.fn(),
-    } as unknown as Output
+    mockOutput = createMockOutput()
   })
 
   describe('when no config is provided', () => {

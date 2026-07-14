@@ -1,7 +1,8 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockOutput, DEV_FLAGS as FLAGS} from '../../__tests__/testHelpers.js'
+import {DEV_FLAGS as FLAGS} from '../../__tests__/testHelpers.js'
 import {getDevServerConfig} from '../getDevServerConfig.js'
 
 vi.mock('@sanity/cli-core/ux', () => ({

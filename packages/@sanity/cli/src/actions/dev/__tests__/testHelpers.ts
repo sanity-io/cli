@@ -1,6 +1,6 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {unstable_defineApp} from '@sanity/workbench-cli'
-// eslint-disable-next-line import-x/no-extraneous-dependencies
 import {afterEach, beforeEach, type Mock, vi} from 'vitest'
 
 import {type DevActionOptions} from '../types.js'
@@ -29,14 +29,6 @@ export function studioWorkbenchApp(overrides: Record<string, unknown> = {}): Cli
 
 export function workbenchCliConfig(overrides: Partial<CliConfig> = {}): CliConfig {
   return {app: workbenchApp(), ...overrides} as CliConfig
-}
-
-export function createMockOutput(): Output {
-  return {
-    error: vi.fn(),
-    log: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
 }
 
 /** Minimal flags object accepted by the dev command — values aren't asserted

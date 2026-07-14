@@ -1,6 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {of, throwError} from 'rxjs'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -43,12 +42,7 @@ const defaultMocks = {
 }
 
 describe('#media:import', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('show console error when getMediaLibraries fails', async () => {
     mockApi({

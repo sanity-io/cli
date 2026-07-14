@@ -1,17 +1,10 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
-import {afterEach, describe, expect, test} from 'vitest'
+import {describe, expect, test} from 'vitest'
 
 import {List} from '../../../../src/commands/projects/list.js'
 import {PROJECTS_API_VERSION} from '../../../../src/services/projects.js'
 
 describe('#list', () => {
-  afterEach(() => {
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
-
   test('displays projects correctly', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,

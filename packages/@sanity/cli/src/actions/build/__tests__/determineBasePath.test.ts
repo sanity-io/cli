@@ -1,15 +1,7 @@
-import {type Output} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {determineBasePath} from '../determineBasePath.js'
-
-function createMockOutput(): Output {
-  return {
-    error: vi.fn(),
-    log: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
-}
 
 describe('#determineBasePath', () => {
   afterEach(() => {

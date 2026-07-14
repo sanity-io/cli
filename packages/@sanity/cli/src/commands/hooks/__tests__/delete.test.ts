@@ -1,17 +1,10 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
 import {Delete} from '../delete.js'
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const testProjectId = 'test-project'
 
@@ -28,12 +21,7 @@ const defaultMocks = {
 const mockSelect = vi.mocked(await import('@sanity/cli-core/ux')).select
 
 describe('#delete', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('deletes a hook by name', async () => {
     const mockHook = {

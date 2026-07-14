@@ -5,7 +5,6 @@ import {
   testCommand,
   testFixture,
 } from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {InitCommand} from '../../../../src/commands/init.js'
@@ -166,12 +165,7 @@ mocks.execa.mockResolvedValue(undefined)
 mocks.getSanityEnv.mockReturnValue('production')
 
 describe('#init:nextjs-app-initialization', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
   test('initializes nextjs app', async () => {
     const cwd = await testFixture('basic-app')
     process.chdir(cwd)

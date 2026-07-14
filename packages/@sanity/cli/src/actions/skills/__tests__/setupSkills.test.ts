@@ -1,3 +1,4 @@
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -13,11 +14,7 @@ vi.mock('execa', () => ({
   execa: mockExeca,
 }))
 
-const mockOutput = {
-  error: vi.fn() as never,
-  log: vi.fn(),
-  warn: vi.fn(),
-}
+const mockOutput = createMockOutput()
 
 describe('setupSkills', () => {
   afterEach(() => {
@@ -115,7 +112,10 @@ describe('setupSkills', () => {
 
     await setupSkills({agents: ['cursor', 'github-copilot', 'claude-code'], output: mockOutput})
 
-    const logged = mockOutput.log.mock.calls.map((call) => String(call[0])).join('\n')
+    const logged = vi
+      .mocked(mockOutput.log)
+      .mock.calls.map((call) => String(call[0]))
+      .join('\n')
     // Universal agents are grouped under a single shared-directory header.
     expect(logged).toContain('Universal (~/.agents/skills)')
     expect(logged).toContain('Cursor, GitHub Copilot')

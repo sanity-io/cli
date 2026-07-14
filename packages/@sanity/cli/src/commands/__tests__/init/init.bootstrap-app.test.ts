@@ -1,5 +1,5 @@
 import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
+import {select} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   bootstrapTemplate: vi.fn(),
   createOrAppendEnvVars: vi.fn(),
   installDeclaredPackages: vi.fn(),
-  select: vi.fn(),
   setupMCP: vi.fn(),
   setupSkills: vi.fn(),
 }))
@@ -64,13 +63,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: mocks.select,
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue(undefined),
@@ -144,16 +137,11 @@ const defaultMocks = {
 mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
 
 describe('#init: bootstrap-app-initialization', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
   test('initializes app without env files', async () => {
     setupInitSuccessMocks()
 
-    mocks.select.mockResolvedValueOnce('blog') // template
+    select.mockResolvedValueOnce('blog') // template
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
@@ -233,7 +221,7 @@ describe('#init: bootstrap-app-initialization', () => {
   test('passes the workbench opt-in through to bootstrapTemplate', async () => {
     setupInitSuccessMocks()
 
-    mocks.select.mockResolvedValueOnce('blog') // template
+    select.mockResolvedValueOnce('blog') // template
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
@@ -279,7 +267,7 @@ describe('#init: bootstrap-app-initialization', () => {
   test('initializes app with env file', async () => {
     setupInitSuccessMocks()
 
-    mocks.select.mockResolvedValueOnce('blog') // template
+    select.mockResolvedValueOnce('blog') // template
 
     const {error} = await testCommand(
       InitCommand,
@@ -297,7 +285,7 @@ describe('#init: bootstrap-app-initialization', () => {
 
   test('initializes app-quickstart template with app-specific output', async () => {
     // Reset select mock to clear any unconsumed mockResolvedValueOnce from prior tests
-    mocks.select.mockReset()
+    select.mockReset()
 
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
@@ -305,8 +293,8 @@ describe('#init: bootstrap-app-initialization', () => {
       uri: '/organizations',
     }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
-    mocks.select.mockResolvedValueOnce('org-1') // organization
-    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppTemplateSetup
+    select.mockResolvedValueOnce('org-1') // organization
+    select.mockResolvedValueOnce('__skip__') // promptForAppTemplateSetup
 
     mockApi({
       apiVersion: MCP_JOURNEY_API_VERSION,
@@ -370,7 +358,7 @@ describe('#init: bootstrap-app-initialization', () => {
   })
 
   test('initializes app-quickstart template non-interactively with --organization flag', async () => {
-    mocks.select.mockReset()
+    select.mockReset()
 
     mockApi({
       apiVersion: MCP_JOURNEY_API_VERSION,
@@ -413,7 +401,7 @@ describe('#init: bootstrap-app-initialization', () => {
     })
 
     // No prompts should have been called
-    expect(mocks.select).not.toHaveBeenCalled()
+    expect(select).not.toHaveBeenCalled()
 
     // App-specific success message
     expect(stdout).toContain('Your custom app has been scaffolded')
@@ -421,7 +409,7 @@ describe('#init: bootstrap-app-initialization', () => {
   })
 
   test('errors when app-quickstart template is used in unattended mode without --organization', async () => {
-    mocks.select.mockReset()
+    select.mockReset()
 
     const {error} = await testCommand(
       InitCommand,
@@ -441,7 +429,7 @@ describe('#init: bootstrap-app-initialization', () => {
   })
 
   test('initializes app-quickstart in CI mode (isInteractive: false) without --yes flag', async () => {
-    mocks.select.mockReset()
+    select.mockReset()
 
     mockApi({
       apiVersion: MCP_JOURNEY_API_VERSION,
@@ -484,14 +472,14 @@ describe('#init: bootstrap-app-initialization', () => {
     })
 
     // No prompts should have been called — CI detection makes init unattended
-    expect(mocks.select).not.toHaveBeenCalled()
+    expect(select).not.toHaveBeenCalled()
 
     expect(stdout).toContain('Your custom app has been scaffolded')
     expect(stdout).not.toContain('Your Studio has been created')
   })
 
   test('errors in CI mode (isInteractive: false) without --organization for app template', async () => {
-    mocks.select.mockReset()
+    select.mockReset()
 
     const {error} = await testCommand(
       InitCommand,

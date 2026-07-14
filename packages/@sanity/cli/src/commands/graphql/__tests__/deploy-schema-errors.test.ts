@@ -1,4 +1,5 @@
 import {testCommand} from '@sanity/cli-test'
+import {confirm as mockConfirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {SchemaError} from '../../../actions/graphql/SchemaError.js'
@@ -6,19 +7,12 @@ import {type ExtractedGraphQLAPI} from '../../../actions/graphql/types.js'
 import {GraphQLDeployCommand} from '../deploy.js'
 
 const mockExtractGraphQLAPIs = vi.hoisted(() => vi.fn())
-const mockConfirm = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../actions/graphql/extractGraphQLAPIs.js', () => ({
   extractGraphQLAPIs: mockExtractGraphQLAPIs,
 }))
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    confirm: mockConfirm,
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const defaultMocks = {
   cliConfig: {api: {dataset: 'production', projectId: 'test-project'}},

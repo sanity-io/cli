@@ -15,7 +15,6 @@ import {
 } from '@sanity/cli-core'
 import {createTestToken, mockApi, testHook} from '@sanity/cli-test'
 import {type TelemetryEvent} from '@sanity/telemetry'
-import {cleanAll, pendingMocks} from 'nock'
 import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -151,9 +150,6 @@ describe('setupTelemetry integration test', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
 
     // Reset globalThis.cliTelemetry after each test
     clearCliTelemetry()

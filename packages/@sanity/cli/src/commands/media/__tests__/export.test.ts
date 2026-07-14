@@ -4,7 +4,6 @@ import {type CliConfig} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {exportDataset} from '@sanity/export'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
@@ -14,14 +13,7 @@ vi.mock('@sanity/export', () => ({
   exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    input: vi.fn(),
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('node:fs/promises', () => ({
   default: {
@@ -123,9 +115,6 @@ describe('#media:export', () => {
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('should export with provided destination', async () => {

@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {bootstrapRemoteTemplate} from '../bootstrapRemoteTemplate.js'
@@ -61,7 +61,7 @@ vi.mock('../updateInitialTemplateMetadata.js', () => ({
   updateInitialTemplateMetadata: mocks.updateInitialTemplateMetadata,
 }))
 
-const mockOutput = {log: vi.fn()} as unknown as Output
+const mockOutput = createMockOutput()
 
 const baseOpts = {
   output: mockOutput,

@@ -22,13 +22,7 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    input: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('../../../prompts/promptForProject.js', async () => {
   const {NonInteractiveError} =

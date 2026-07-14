@@ -1,5 +1,5 @@
-import {type Output} from '@sanity/cli-core'
-import {describe, expect, test, vi} from 'vitest'
+import {createMockOutput} from '@sanity/cli-test/test/util'
+import {describe, expect, test} from 'vitest'
 
 import {
   checkStatusIcon,
@@ -9,30 +9,28 @@ import {
   runStep,
 } from '../checks.js'
 
-const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
-
 describe('createFailFastReporter', () => {
   test('a fail exits with its exit code', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     createFailFastReporter(output).report({exitCode: 2, message: 'boom', status: 'fail'})
     expect(output.error).toHaveBeenCalledWith('boom', {exit: 2})
   })
 
   test('a fail without an exit code defaults to 1', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     createFailFastReporter(output).report({message: 'boom', status: 'fail'})
     expect(output.error).toHaveBeenCalledWith('boom', {exit: 1})
   })
 
   test('a warn prints and does not exit', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     createFailFastReporter(output).report({message: 'heads up', status: 'warn'})
     expect(output.warn).toHaveBeenCalledWith('heads up')
     expect(output.error).not.toHaveBeenCalled()
   })
 
   test('pass and skip are silent', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const reporter = createFailFastReporter(output)
     reporter.report({message: 'good', status: 'pass'})
     reporter.report({message: 'skipped', status: 'skip'})
@@ -41,13 +39,13 @@ describe('createFailFastReporter', () => {
   })
 
   test('a fail appends its solution to the message', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     createFailFastReporter(output).report({message: 'boom', solution: 'do X', status: 'fail'})
     expect(output.error).toHaveBeenCalledWith('boom: do X', {exit: 1})
   })
 
   test('a warn appends its solution to the message', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     createFailFastReporter(output).report({message: 'heads up', solution: 'do Y', status: 'warn'})
     expect(output.warn).toHaveBeenCalledWith('heads up: do Y')
   })
@@ -110,13 +108,13 @@ describe('runStep', () => {
 
 describe('renderIssues', () => {
   test('prints nothing for an empty list', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     renderIssues(output, 'Problems to fix:', [])
     expect(output.log).not.toHaveBeenCalled()
   })
 
   test('prints the title and each check with its fix', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     renderIssues(output, 'Problems to fix:', [
       {message: 'boom', solution: 'do X', status: 'fail'},
       {message: 'heads up', status: 'warn'},

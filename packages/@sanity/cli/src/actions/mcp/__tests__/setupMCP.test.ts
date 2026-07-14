@@ -1,3 +1,4 @@
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {setupMCP} from '../setupMCP.js'
@@ -35,11 +36,7 @@ vi.mock('../../skills/readSkillState.js', () => ({
   readSkillState: mockReadSkillState,
 }))
 
-const mockOutput = {
-  error: vi.fn() as never,
-  log: vi.fn(),
-  warn: vi.fn(),
-}
+const mockOutput = createMockOutput()
 
 function editor(overrides: Partial<Editor> & Pick<Editor, 'name'>): Editor {
   return {

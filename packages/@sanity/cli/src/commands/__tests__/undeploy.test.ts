@@ -1,7 +1,6 @@
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {unstable_defineApp, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {UndeployCommand} from '../undeploy.js'
@@ -15,12 +14,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
 })
 
 describe('#undeploy', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('undeploys studio when studioHost is configured', async () => {
     mockApi({

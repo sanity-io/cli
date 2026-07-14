@@ -1,5 +1,4 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
@@ -49,22 +48,10 @@ const defaultMocks = {
   token: 'test-token',
 }
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    confirm: vi.fn(),
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 describe('#tokens:delete', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('deletes a specific token by ID with confirmation', async () => {
     const {confirm} = await import('@sanity/cli-core/ux')

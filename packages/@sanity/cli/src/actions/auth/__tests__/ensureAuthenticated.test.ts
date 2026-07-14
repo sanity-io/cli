@@ -1,3 +1,4 @@
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {LoginError} from '../../../errors/LoginError.js'
@@ -24,11 +25,7 @@ vi.mock('../login/login.js', () => ({
   login: mockLogin,
 }))
 
-const mockOutput = {
-  error: vi.fn() as never,
-  log: vi.fn(),
-  warn: vi.fn(),
-}
+const mockOutput = createMockOutput()
 
 const mockTelemetry = {} as never
 

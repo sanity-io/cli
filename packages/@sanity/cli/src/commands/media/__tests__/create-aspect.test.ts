@@ -7,13 +7,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {MediaCreateAspectCommand} from '../create-aspect.js'
 
 vi.mock('node:fs/promises')
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    input: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockInput = vi.mocked(input)
 const mockMkdir = vi.mocked(mkdir)

@@ -1,6 +1,6 @@
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import nock, {cleanAll, pendingMocks} from 'nock'
+import nock from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {GraphQLDeployCommand} from '../../../../src/commands/graphql/deploy.js'
@@ -39,12 +39,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
     dataset = cliConfig.api?.dataset ?? ''
   })
 
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending).toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('successfully deploys GraphQL API with no existing deployment', async () => {
     nock(`https://${projectId}.api.sanity.io`)

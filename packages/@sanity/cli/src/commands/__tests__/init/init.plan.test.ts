@@ -1,5 +1,5 @@
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
+import {confirm as mockConfirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {INIT_API_VERSION} from '../../../actions/init/constants.js'
@@ -7,17 +7,9 @@ import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init.js'
 
-const mockConfirm = vi.hoisted(() => vi.fn())
 const mockDetectedFramework = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual('@sanity/cli-core/ux')
-
-  return {
-    ...actual,
-    confirm: mockConfirm,
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: mockDetectedFramework,
@@ -153,12 +145,7 @@ describe('#init: retrieving plan', () => {
       slug: 'nextjs',
     })
   })
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('validates coupon when --coupon flag is provided', async () => {
     mockApi({

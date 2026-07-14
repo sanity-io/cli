@@ -1,4 +1,5 @@
 import nock from 'nock'
+import {afterEach, expect} from 'vitest'
 
 /**
  * @internal
@@ -63,4 +64,20 @@ export function mockApi({
   const queryParams = includeQueryTag ? {tag: 'sanity.cli', ...query} : query
 
   return nock(host)[method](`/${version}${uri}`).query(queryParams)
+}
+
+/**
+ * Registers an `afterEach` hook that fails the test when nock interceptors
+ * were set up but never hit, and cleans them all up so state never leaks
+ * between tests. Call once from a vitest setup file or at the top of a test
+ * file.
+ *
+ * @internal
+ */
+export function setupNockHygiene(): void {
+  afterEach(() => {
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
+  })
 }

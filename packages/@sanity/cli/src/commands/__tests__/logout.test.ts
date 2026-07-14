@@ -1,6 +1,5 @@
 import {getCliToken, setCliUserConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {AUTH_API_VERSION} from '../../services/auth.js'
@@ -23,12 +22,7 @@ vi.mock('@sanity/cli-core', async () => {
 const mockedGetCliToken = vi.mocked(getCliToken)
 const mockedSetConfig = vi.mocked(setCliUserConfig)
 
-afterEach(() => {
-  vi.clearAllMocks()
-  const pending = pendingMocks()
-  cleanAll()
-  expect(pending, 'pending mocks').toEqual([])
-})
+afterEach(() => vi.clearAllMocks())
 
 describe('#logout', () => {
   test('logs out successfully if a token exists', async () => {

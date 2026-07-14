@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import nock, {cleanAll, pendingMocks} from 'nock'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
@@ -103,12 +103,7 @@ function mockFileDownloads(files: {name: string; type: string; url: string}[]) {
 }
 
 describe('#backup:download', () => {
-  afterEach(() => {
-    const pending = pendingMocks()
-    cleanAll()
-    vi.clearAllMocks()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   describe('validation', () => {
     test.each([

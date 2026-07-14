@@ -3,7 +3,7 @@ import {
   getLocalPackageVersion,
   readPackageJson,
 } from '@sanity/cli-test/mocks/cli-core/package-manager'
-import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {coerce} from 'semver'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 

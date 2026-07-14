@@ -1,10 +1,10 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   createDevOptions,
   createMockDevServer,
-  createMockOutput,
   DEV_FLAGS,
   DEV_SERVER_CONFIG,
   studioWorkbenchApp,

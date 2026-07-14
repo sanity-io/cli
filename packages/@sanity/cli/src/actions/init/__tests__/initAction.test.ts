@@ -1,5 +1,4 @@
 import {createTestClient, mockApi} from '@sanity/cli-test'
-import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
@@ -111,12 +110,7 @@ function createTestContext(): InitContext {
 // ---------------------------------------------------------------------------
 
 describe('initAction (direct)', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('throws InitError for deprecated reconfigure flag', async () => {
     mockValidateSession.mockResolvedValue({

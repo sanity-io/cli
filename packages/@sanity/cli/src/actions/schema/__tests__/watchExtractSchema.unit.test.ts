@@ -1,5 +1,5 @@
 import {type ExtractOptions} from '@sanity/cli-build/_internal/extract'
-import {Output} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 const mockedStartExtractWatcher = vi.hoisted(() => vi.fn())
@@ -25,13 +25,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 // Import module under test after mocks are set up
 const {watchExtractSchema} = await import('../watchExtractSchema.js')
 
-function createMockOutput(): Output {
-  return {
-    error: vi.fn(),
-    log: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
-}
 function createMockExtractionOptions(overrides?: Partial<ExtractOptions>): ExtractOptions {
   return {
     configPath: 'doesntmatter/sanity.config.ts',

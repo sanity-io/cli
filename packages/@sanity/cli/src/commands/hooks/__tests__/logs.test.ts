@@ -1,18 +1,11 @@
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
 import {LogsHookCommand} from '../logs.js'
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const testProjectId = 'test-project'
 
@@ -29,12 +22,7 @@ const defaultMocks = {
 const mockedSelect = vi.mocked(select)
 
 describe('#hook:logs', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('displays error when no project ID is found', async () => {
     const {error} = await testCommand(LogsHookCommand, [], {

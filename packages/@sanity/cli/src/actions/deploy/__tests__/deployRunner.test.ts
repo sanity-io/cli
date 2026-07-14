@@ -1,11 +1,10 @@
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {describe, expect, test, vi} from 'vitest'
 
 import {type DeploySpec, runDeploy} from '../deployRunner.js'
 import {type DeployAppOptions} from '../types.js'
-
-const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
 
 const dryRunOptions = (output: Output): DeployAppOptions =>
   ({
@@ -18,7 +17,7 @@ const dryRunOptions = (output: Output): DeployAppOptions =>
 
 describe('runDeploy dry run', () => {
   test('exits with the first failing check exit code, like a real deploy', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [],
       run: async (_options, reporter) =>
@@ -32,7 +31,7 @@ describe('runDeploy dry run', () => {
   })
 
   test('a blocked plan lists no files, even when listFiles would return some', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const listFiles = vi.fn(async () => [{path: 'dist/index.html', size: 10}])
     const spec: DeploySpec = {
       listFiles,
@@ -48,7 +47,7 @@ describe('runDeploy dry run', () => {
   })
 
   test('a deployable dry run renders the plan without erroring', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [{path: 'dist/index.html', size: 10}],
       run: async (_options, reporter) => reporter.report({message: 'Project: p1', status: 'pass'}),
@@ -62,7 +61,7 @@ describe('runDeploy dry run', () => {
   })
 
   test('the JSON plan reports the version the run resolved, not a separate lookup', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [],
       run: async (_options, reporter) =>
@@ -80,7 +79,7 @@ describe('runDeploy dry run', () => {
   })
 
   test('a blocked --json dry run prints the plan only, never a deploy envelope', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     // A real run's output.error throws to abort; the plan JSON is already out.
     vi.mocked(output.error).mockImplementation(() => {
       throw new CLIError('blocked')
@@ -107,7 +106,7 @@ describe('runDeploy dry run', () => {
 
 describe('runDeploy real deploy', () => {
   test('emits the deploy result as JSON, marked deployed', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const result = {
       applicationType: 'studio' as const,
       applicationVersion: '3.99.0',
@@ -131,7 +130,7 @@ describe('runDeploy real deploy', () => {
   })
 
   test('a failed deploy emits a {deployed: false} envelope and still errors on stderr', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [],
       run: async () => {
@@ -150,7 +149,7 @@ describe('runDeploy real deploy', () => {
   })
 
   test('without --json a failed deploy stays on stderr, with no envelope', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [],
       run: async () => {
@@ -166,7 +165,7 @@ describe('runDeploy real deploy', () => {
   })
 
   test('surfaces the server message on a rejected deploy, not a raw error dump', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const err = Object.assign(new Error('HTTP 403'), {
       response: {
         body: {message: 'You are not allowed to deploy this application as a singleton'},

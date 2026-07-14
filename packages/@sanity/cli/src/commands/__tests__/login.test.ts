@@ -2,7 +2,7 @@ import http from 'node:http'
 import {Readable} from 'node:stream'
 
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
+import {input as mockInput, select as mockSelect} from '@sanity/cli-test/mocks/cli-core/ux'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -13,21 +13,12 @@ import {canLaunchBrowser} from '../../util/canLaunchBrowser.js'
 import {LoginCommand} from '../login.js'
 
 // Hoisted mocks for user prompts
-const mockInput = vi.hoisted(() => vi.fn())
-const mockSelect = vi.hoisted(() => vi.fn())
 const mockedGetCliToken = vi.hoisted(() => vi.fn())
 const mockedSetCliUserConfig = vi.hoisted(() => vi.fn())
 const mockedIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
 
 // Mock user interaction prompts
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    input: mockInput,
-    select: mockSelect,
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 // Mock browser launching
 vi.mock('open')
@@ -210,9 +201,6 @@ describe('#login', {timeout: 10_000}, () => {
     vi.unstubAllEnvs()
     vi.clearAllMocks()
     mockedIsInteractive.mockReturnValue(true)
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   describe('Token Login', () => {

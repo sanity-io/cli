@@ -1,6 +1,6 @@
 import * as cliUX from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
+import {confirm, input, select} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {setupMCP} from '../../../actions/mcp/setupMCP.js'
@@ -10,15 +10,12 @@ import {CREATE_PROJECT_API_VERSION, PROJECTS_API_VERSION} from '../../../service
 import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
-  confirm: vi.fn(),
   datasetsCreate: vi.fn(),
   detectFrameworkRecord: vi.fn(),
   getOrganizationChoices: vi.fn(),
   getOrganizationsWithAttachGrantInfo: vi.fn(),
   importDatasetRun: vi.fn(),
-  input: vi.fn(),
   listDatasets: vi.fn(),
-  select: vi.fn(),
   tryGitInit: vi.fn(),
   usersGetById: vi.fn(),
 }))
@@ -27,16 +24,7 @@ vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: mocks.detectFrameworkRecord,
 }))
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual('@sanity/cli-core/ux')
-
-  return {
-    ...actual,
-    confirm: mocks.confirm,
-    input: mocks.input,
-    select: mocks.select,
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -181,12 +169,7 @@ const defaultMocks = {
 }
 
 describe('#init: create new project', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('prompts user to create new organization if they have none', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
@@ -199,7 +182,7 @@ describe('#init: create new project', () => {
       uri: '/organizations',
     }).reply(200, [])
 
-    mocks.input.mockResolvedValueOnce('My New Organization')
+    input.mockResolvedValueOnce('My New Organization')
 
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
@@ -252,7 +235,7 @@ describe('#init: create new project', () => {
       },
     )
 
-    expect(mocks.input).toHaveBeenCalledWith(
+    expect(input).toHaveBeenCalledWith(
       expect.objectContaining({
         default: 'Test User',
         message: 'Organization name:',
@@ -297,9 +280,9 @@ describe('#init: create new project', () => {
       {name: 'Create new organization', value: '-new-'},
     ])
 
-    mocks.select.mockResolvedValueOnce('-new-')
+    select.mockResolvedValueOnce('-new-')
 
-    mocks.input.mockResolvedValueOnce('Brand New Organization')
+    input.mockResolvedValueOnce('Brand New Organization')
 
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
@@ -387,8 +370,8 @@ describe('#init: create new project', () => {
       uri: '/projects/project-123',
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
-    mocks.select.mockResolvedValueOnce('project-123')
-    mocks.select.mockResolvedValueOnce('production')
+    select.mockResolvedValueOnce('project-123')
+    select.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
@@ -439,8 +422,8 @@ describe('#init: create new project', () => {
       uri: '/projects/project-123',
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
-    mocks.select.mockResolvedValueOnce('project-123')
-    mocks.select.mockResolvedValueOnce('production')
+    select.mockResolvedValueOnce('project-123')
+    select.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
@@ -484,8 +467,8 @@ describe('#init: create new project', () => {
       uri: '/projects/project-123',
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
-    mocks.select.mockResolvedValueOnce('project-123')
-    mocks.select.mockResolvedValueOnce('production')
+    select.mockResolvedValueOnce('project-123')
+    select.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
@@ -532,7 +515,7 @@ describe('#init: create new project', () => {
     )
 
     if (error) throw error
-    expect(mocks.confirm).not.toHaveBeenCalled()
+    expect(confirm).not.toHaveBeenCalled()
     expect(mocks.importDatasetRun).not.toHaveBeenCalled()
   })
 
@@ -561,7 +544,7 @@ describe('#init: create new project', () => {
     )
 
     if (error) throw error
-    expect(mocks.confirm).not.toHaveBeenCalled()
+    expect(confirm).not.toHaveBeenCalled()
     expect(mocks.importDatasetRun).toHaveBeenCalledWith(
       expect.arrayContaining([
         'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
@@ -579,7 +562,7 @@ describe('#init: create new project', () => {
 
   test('prompts for dataset import when flag is not set in interactive mode', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
-    mocks.confirm.mockResolvedValueOnce(false)
+    confirm.mockResolvedValueOnce(false)
 
     setupInitSuccessMocks()
 
@@ -600,7 +583,7 @@ describe('#init: create new project', () => {
     )
 
     if (error) throw error
-    expect(mocks.confirm).toHaveBeenCalledWith(
+    expect(confirm).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Add a sampling of sci-fi movies to your dataset on the hosted backend?',
       }),

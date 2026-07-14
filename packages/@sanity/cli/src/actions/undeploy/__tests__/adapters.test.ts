@@ -1,11 +1,8 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {
-  deleteUserApplication,
-  getUserApplication,
-  type UserApplication,
-} from '../../../services/userApplications.js'
+import {userApplication} from '../../../services/__tests__/testHelpers.js'
+import {deleteUserApplication, getUserApplication} from '../../../services/userApplications.js'
 import {createAppUndeployAdapter, createStudioUndeployAdapter} from '../adapters.js'
 
 vi.mock('../../../services/userApplications.js', () => ({
@@ -14,21 +11,6 @@ vi.mock('../../../services/userApplications.js', () => ({
 }))
 
 const mockGetUserApplication = vi.mocked(getUserApplication)
-
-function application(overrides: Partial<UserApplication> = {}): UserApplication {
-  return {
-    appHost: 'my-studio',
-    createdAt: '2024-01-01T00:00:00Z',
-    id: 'app-1',
-    organizationId: null,
-    projectId: 'project-1',
-    title: null,
-    type: 'studio',
-    updatedAt: '2024-01-01T00:00:00Z',
-    urlType: 'internal',
-    ...overrides,
-  }
-}
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -52,7 +34,7 @@ describe('createAppUndeployAdapter', () => {
 
   test('found → target with the application details and its URL', async () => {
     mockGetUserApplication.mockResolvedValue(
-      application({
+      userApplication({
         activeDeployment: {
           createdAt: '2024-01-02T00:00:00Z',
           deployedAt: '2024-01-02T00:00:00Z',
@@ -90,7 +72,7 @@ describe('createAppUndeployAdapter', () => {
   })
 
   test('found without an organization → no URL', async () => {
-    mockGetUserApplication.mockResolvedValue(application({id: 'core-1', type: 'coreApp'}))
+    mockGetUserApplication.mockResolvedValue(userApplication({id: 'core-1', type: 'coreApp'}))
     const resolution = await createAppUndeployAdapter({
       app: {},
       deployment: {appId: 'core-1'},
@@ -100,7 +82,7 @@ describe('createAppUndeployAdapter', () => {
 
   test('undeploy deletes the application as a coreApp', async () => {
     const adapter = createAppUndeployAdapter({app: {}, deployment: {appId: 'core-1'}} as CliConfig)
-    mockGetUserApplication.mockResolvedValue(application({id: 'core-1', type: 'coreApp'}))
+    mockGetUserApplication.mockResolvedValue(userApplication({id: 'core-1', type: 'coreApp'}))
     const resolution = await adapter.resolveTarget()
     if (resolution.type !== 'found') throw new Error('expected found')
 
@@ -143,7 +125,7 @@ describe('createStudioUndeployAdapter', () => {
   })
 
   test('found → target with the hosted studio URL', async () => {
-    mockGetUserApplication.mockResolvedValue(application())
+    mockGetUserApplication.mockResolvedValue(userApplication())
     const resolution = await createStudioUndeployAdapter({
       api: {projectId: 'test'},
       studioHost: 'my-studio',
@@ -159,7 +141,7 @@ describe('createStudioUndeployAdapter', () => {
 
   test('found external studio → target URL is the host itself', async () => {
     mockGetUserApplication.mockResolvedValue(
-      application({appHost: 'https://studio.example.com', urlType: 'external'}),
+      userApplication({appHost: 'https://studio.example.com', urlType: 'external'}),
     )
     const resolution = await createStudioUndeployAdapter({
       api: {projectId: 'test'},
@@ -174,7 +156,7 @@ describe('createStudioUndeployAdapter', () => {
       api: {projectId: 'test'},
       studioHost: 'my-studio',
     } as CliConfig)
-    mockGetUserApplication.mockResolvedValue(application())
+    mockGetUserApplication.mockResolvedValue(userApplication())
     const resolution = await adapter.resolveTarget()
     if (resolution.type !== 'found') throw new Error('expected found')
 

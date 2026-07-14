@@ -1,13 +1,10 @@
+import {checkbox as mockCheckbox} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {type EditorChoice} from '../promptForMCPSetup.js'
 import {type Editor} from '../types.js'
 
-const mockCheckbox = vi.hoisted(() => vi.fn())
-
-vi.mock('@sanity/cli-core/ux', () => ({
-  checkbox: mockCheckbox,
-}))
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const {promptForMCPSetup} = await import('../promptForMCPSetup.js')
 

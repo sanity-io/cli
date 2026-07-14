@@ -1,3 +1,4 @@
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {type Editor} from '../../mcp/types.js'
@@ -22,11 +23,7 @@ function editor(name: Editor['name']): Editor {
   return {configPath: `/fake/${name}/config.json`, configured: false, name}
 }
 
-const mockOutput = {
-  error: vi.fn() as never,
-  log: vi.fn(),
-  warn: vi.fn(),
-}
+const mockOutput = createMockOutput()
 
 describe('configureSkills', () => {
   afterEach(() => {

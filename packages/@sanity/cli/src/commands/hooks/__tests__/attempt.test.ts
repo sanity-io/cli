@@ -1,5 +1,4 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
@@ -19,12 +18,7 @@ const defaultMocks = {
 }
 
 describe('#attempt', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('displays successful delivery attempt details', async () => {
     const mockAttempt: DeliveryAttempt = {

@@ -1,4 +1,5 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createUserApplication, type UserApplication} from '../../../services/userApplications.js'
@@ -22,8 +23,6 @@ const mockCreate = vi.mocked(createUserApplication)
 
 // output.error normally throws to abort; stubbed so the code falls through and a
 // single assertion can prove the exit fired.
-const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
-
 beforeEach(() => vi.clearAllMocks())
 
 describe('findUserApplication', () => {
@@ -31,7 +30,7 @@ describe('findUserApplication', () => {
 
   test('should return null so the caller creates when unattended with a title', async () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
-    const output = mockOutput()
+    const output = createMockOutput()
 
     const result = await findUserApplication({
       ...baseOptions,
@@ -46,7 +45,7 @@ describe('findUserApplication', () => {
 
   test('should exit instead of creating when unattended without a title', async () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
-    const output = mockOutput()
+    const output = createMockOutput()
 
     await findUserApplication({...baseOptions, output, unattended: true})
 
@@ -59,7 +58,7 @@ describe('findUserApplicationForStudio', () => {
     const created = {title: 'My Studio'} as UserApplication
     mockResolveStudio.mockResolvedValue({appHost: 'new-host', type: 'would-create'})
     mockCreate.mockResolvedValue(created)
-    const output = mockOutput()
+    const output = createMockOutput()
 
     const result = await findUserApplicationForStudio({
       isExternal: false,
@@ -80,7 +79,7 @@ describe('findUserApplicationForStudio', () => {
   test('an existing host is an update, not a create', async () => {
     const existing = {appHost: 'my-studio', title: 'My Studio'} as UserApplication
     mockResolveStudio.mockResolvedValue({application: existing, type: 'found'})
-    const output = mockOutput()
+    const output = createMockOutput()
 
     const result = await findUserApplicationForStudio({
       appId: 'app-1',

@@ -1,6 +1,7 @@
 import {Readable} from 'node:stream'
 
-import {getGlobalCliClient, type Output} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -12,14 +13,12 @@ vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
   getGlobalCliClient: vi.fn(),
 }))
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  spinner: () => ({start: () => ({clear: vi.fn(), fail: vi.fn(), succeed: vi.fn()})}),
-}))
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
-const output = {error: vi.fn(), log: vi.fn()} as unknown as Output
+const output = createMockOutput()
 const interfaces: BrettInterface[] = [
   {moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
 ]

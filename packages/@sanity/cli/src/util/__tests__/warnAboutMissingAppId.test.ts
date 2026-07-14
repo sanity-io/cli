@@ -1,14 +1,10 @@
-import {Output} from '@sanity/cli-core'
-import {describe, expect, test, vi} from 'vitest'
+import {createMockOutput} from '@sanity/cli-test/test/util'
+import {describe, expect, test} from 'vitest'
 
 import {warnAboutMissingAppId} from '../warnAboutMissingAppId'
 
 describe('warnAboutMissingAppId', () => {
-  const mockOutput = {
-    error: vi.fn(),
-    log: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
+  const mockOutput = createMockOutput()
 
   test('should log the expected warning when called', () => {
     warnAboutMissingAppId({

@@ -22,13 +22,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  spinner: vi.fn(() => ({
-    start: vi.fn(() => ({
-      stop: vi.fn(),
-    })),
-  })),
-}))
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('open', () => ({default: vi.fn()}))
 vi.mock('../../authServer.js', () => ({

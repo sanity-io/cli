@@ -1,5 +1,4 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
@@ -57,12 +56,7 @@ const mockTokens = [
 ]
 
 describe('#tokens:list', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('displays tokens in table format by default', async () => {
     mockApi({

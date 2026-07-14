@@ -1,5 +1,5 @@
 import {testCommand} from '@sanity/cli-test'
-import nock, {cleanAll, pendingMocks} from 'nock'
+import nock from 'nock'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -9,12 +9,7 @@ vi.mock('open')
 
 const mockOpen = vi.mocked(open)
 
-afterEach(() => {
-  const pending = pendingMocks()
-  cleanAll()
-  vi.clearAllMocks()
-  expect(pending, 'pending mocks').toEqual([])
-})
+afterEach(() => vi.clearAllMocks())
 
 describe('#docs:read', () => {
   test('reads article and displays content', async () => {

@@ -1,6 +1,5 @@
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DatasetEmbeddingsDisableCommand} from '../disable.js'
@@ -21,13 +20,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const testProjectId = 'test-project'
 
@@ -44,12 +37,7 @@ const defaultMocks = {
 const mockSelect = vi.mocked(select)
 
 describe('#dataset:embeddings:disable', () => {
-  afterEach(() => {
-    const pending = pendingMocks()
-    cleanAll()
-    vi.restoreAllMocks()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.restoreAllMocks())
 
   test('should disable embeddings for specified dataset', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}])

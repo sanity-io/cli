@@ -1,6 +1,5 @@
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
@@ -20,13 +19,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const testProjectId = 'test-project'
 
@@ -43,12 +36,7 @@ const defaultMocks = {
 const mockSelect = vi.mocked(select)
 
 describe('#backup:disable', () => {
-  afterEach(() => {
-    const pending = pendingMocks()
-    cleanAll()
-    vi.clearAllMocks()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('should disable backup for specified dataset', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}])

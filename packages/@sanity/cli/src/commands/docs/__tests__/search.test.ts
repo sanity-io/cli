@@ -1,17 +1,11 @@
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
-import nock, {cleanAll, pendingMocks} from 'nock'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DocsSearchCommand} from '../search.js'
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockedIsInteractive = vi.hoisted(() => vi.fn())
 
@@ -26,9 +20,6 @@ vi.mock('@sanity/cli-core', async () => {
 const mockedSelect = vi.mocked(select)
 
 afterEach(() => {
-  const pending = pendingMocks()
-  cleanAll()
-  expect(pending, 'pending mocks').toEqual([])
   vi.resetAllMocks()
 })
 

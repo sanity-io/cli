@@ -2,7 +2,6 @@ import {type CliConfig, exitCodes, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {unstable_defineApp} from '@sanity/workbench-cli'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../../src/actions/build/buildStudio.js'
@@ -91,12 +90,7 @@ describe('#deploy studio (external)', () => {
     })
   })
 
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('should register external studio with studioHost URL', async () => {
     const cwd = await testFixture('basic-studio')

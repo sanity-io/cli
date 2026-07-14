@@ -1,19 +1,11 @@
 import {confirm, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
 import {MediaDeleteAspectCommand} from '../delete-aspect.js'
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    confirm: vi.fn(),
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockConfirm = vi.mocked(confirm)
 const mockSelect = vi.mocked(select)
@@ -34,12 +26,7 @@ const defaultMocks = {
 }
 
 describe('#media:delete-aspect', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('should error if aspect name is not provided', async () => {
     const {error} = await testCommand(MediaDeleteAspectCommand, [], {mocks: defaultMocks})

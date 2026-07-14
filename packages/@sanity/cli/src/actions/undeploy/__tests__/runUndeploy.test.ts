@@ -1,6 +1,7 @@
 import {type Output} from '@sanity/cli-core'
 import {type UndeployAdapter, type UndeployApplicationTarget} from '@sanity/cli-core/undeploy'
 import {confirm} from '@sanity/cli-test/mocks/cli-core/ux'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {runUndeploy, type UndeployOptions} from '../runUndeploy.js'
@@ -13,8 +14,6 @@ import {
 } from '../undeployPlan.js'
 
 vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
-
-const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
 
 const options = (output: Output, flags: Partial<UndeployOptions['flags']> = {}): UndeployOptions =>
   ({flags: {'dry-run': false, yes: false, ...flags}, output}) as UndeployOptions
@@ -48,7 +47,7 @@ beforeEach(() => vi.clearAllMocks())
 
 describe('runUndeploy dry run', () => {
   test('renders the plan and never deletes', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const undeploy = vi.fn()
     await runUndeploy(options(output, {'dry-run': true}), adapter({undeploy}))
 
@@ -62,7 +61,7 @@ describe('runUndeploy dry run', () => {
   })
 
   test('nothing to undeploy exits cleanly, like a real run', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(
       options(output, {'dry-run': true}),
       adapter({resolveTarget: async () => ({message: 'No application ID provided', type: 'none'})}),
@@ -73,7 +72,7 @@ describe('runUndeploy dry run', () => {
   })
 
   test('a resolve failure blocks the plan and exits like a real run', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(
       options(output, {'dry-run': true}),
       adapter({
@@ -92,7 +91,7 @@ describe('runUndeploy dry run', () => {
 
 describe('runUndeploy real run', () => {
   test('confirms, deletes, and reports the scheduled undeploy', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const undeploy = vi.fn()
     vi.mocked(confirm).mockResolvedValueOnce(true)
 
@@ -103,7 +102,7 @@ describe('runUndeploy real run', () => {
   })
 
   test('a rejected confirmation deletes nothing', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const undeploy = vi.fn()
     vi.mocked(confirm).mockResolvedValueOnce(false)
 
@@ -113,7 +112,7 @@ describe('runUndeploy real run', () => {
   })
 
   test('--yes skips the confirmation', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const undeploy = vi.fn()
 
     await runUndeploy(options(output, {yes: true}), adapter({undeploy}))
@@ -123,7 +122,7 @@ describe('runUndeploy real run', () => {
   })
 
   test('nothing to undeploy prints the reason and never prompts', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(
       options(output),
       adapter({
@@ -141,7 +140,7 @@ describe('runUndeploy real run', () => {
   })
 
   test('an application undeploy reports the appId cleanup reminder', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(
       options(output, {yes: true}),
       adapter({
@@ -160,7 +159,7 @@ describe('runUndeploy real run', () => {
   })
 
   test('a failed deletion surfaces the server message', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(
       options(output, {yes: true}),
       adapter({
@@ -174,7 +173,7 @@ describe('runUndeploy real run', () => {
   })
 
   test('a failed config deletion is labeled as the installation config', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(
       options(output, {yes: true}),
       adapter({
@@ -194,7 +193,7 @@ describe('runUndeploy real run', () => {
   })
 
   test('Ctrl+C on the prompt reads as a cancellation, not an error dump', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     vi.mocked(confirm).mockRejectedValueOnce(
       Object.assign(new Error('User force closed'), {name: 'ExitPromptError'}),
     )
@@ -207,7 +206,7 @@ describe('runUndeploy real run', () => {
 
 describe('runUndeploy --json', () => {
   test('a dry run emits the plan as JSON on stdout only', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(options(output, {'dry-run': true, json: true}), adapter())
 
     const logged = vi.mocked(output.log).mock.calls.map((call) => String(call[0]))
@@ -218,7 +217,7 @@ describe('runUndeploy --json', () => {
   })
 
   test('a real run emits an {undeployed: true} envelope with the target', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(options(output, {json: true, yes: true}), adapter())
 
     const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
@@ -227,7 +226,7 @@ describe('runUndeploy --json', () => {
   })
 
   test("without `yes` the runner still confirms — unattended consent is the command's job", async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     const undeploy = vi.fn()
     vi.mocked(confirm).mockResolvedValueOnce(false)
     await runUndeploy(options(output, {json: true}), adapter({undeploy}))
@@ -237,7 +236,7 @@ describe('runUndeploy --json', () => {
   })
 
   test('nothing to undeploy emits {undeployed: false} with the reason', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(
       options(output, {json: true, yes: true}),
       adapter({resolveTarget: async () => ({message: 'No application ID provided', type: 'none'})}),
@@ -248,7 +247,7 @@ describe('runUndeploy --json', () => {
   })
 
   test('a failed deletion emits a {undeployed: false} error envelope and still errors on stderr', async () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     await runUndeploy(
       options(output, {json: true, yes: true}),
       adapter({
@@ -371,7 +370,7 @@ describe('undeployPlanToJson', () => {
 
 describe('renderUndeployPlan', () => {
   test('an undeployable studio renders the target check without a verdict line', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     renderUndeployPlan(
       {
         checks: [{message: 'Undeploys studio https://my-studio.sanity.studio', status: 'pass'}],
@@ -389,7 +388,7 @@ describe('renderUndeployPlan', () => {
   })
 
   test('renders the target details for humans', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     renderUndeployPlan(
       {
         checks: [],
@@ -417,7 +416,7 @@ describe('renderUndeployPlan', () => {
   })
 
   test('no target renders "Nothing to undeploy." without a verdict', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     renderUndeployPlan(
       {
         checks: [{message: 'No application ID provided', status: 'skip'}],
@@ -434,7 +433,7 @@ describe('renderUndeployPlan', () => {
   })
 
   test('a failing check renders the blocked verdict and the problem with its fix', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     renderUndeployPlan(
       {
         checks: [{message: 'boom', solution: 'do X', status: 'fail'}],
@@ -452,7 +451,7 @@ describe('renderUndeployPlan', () => {
   })
 
   test('a blocked config-only undeploy names the installation config in the verdict', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     renderUndeployPlan(
       {
         checks: [{message: 'boom', status: 'fail'}],
@@ -478,7 +477,7 @@ describe('renderUndeployPlan', () => {
 
 describe('renderUndeployPlan target summary', () => {
   test('renders adapter-authored summary lines, splitting multi-line entries', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
     renderUndeployPlan(
       {
         checks: [],

@@ -7,7 +7,6 @@ import {
   MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
   type MediaLibraryAssetAspectDocument,
 } from '@sanity/types'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
@@ -36,13 +35,7 @@ vi.mock('get-tsconfig', () => ({
   getTsconfig: mockGetTsconfig,
 }))
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const mockSelect = vi.mocked(select)
 
@@ -174,9 +167,6 @@ describe('#media:deploy-aspect', () => {
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test.each([

@@ -1,6 +1,5 @@
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
@@ -32,14 +31,7 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    input: vi.fn(),
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('../../../prompts/promptForProject.js', async () => {
   const {NonInteractiveError} =
@@ -63,12 +55,7 @@ const mockInput = vi.mocked(input)
 const mockSelect = vi.mocked(select)
 
 describe('#dataset:create', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('creates dataset with provided name', async () => {
     mockListDatasets.mockResolvedValue([])

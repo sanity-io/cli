@@ -13,14 +13,7 @@ vi.mock('@sanity/export', () => ({
   exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    input: vi.fn(),
-    select: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('node:fs/promises', () => ({
   default: {

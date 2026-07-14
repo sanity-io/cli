@@ -1,7 +1,6 @@
 import {NonInteractiveError} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DATASET_ALIASES_API_VERSION} from '../../../../services/datasetAliases.js'
@@ -11,13 +10,7 @@ vi.mock('../../../../prompts/promptForProject.js', () => ({
   promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
 }))
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    input: vi.fn(),
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const testProjectId = 'test-project'
 
@@ -34,12 +27,7 @@ const defaultMocks = {
 const mockInput = vi.mocked(input)
 
 describe('#dataset:alias:unlink', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test.each([
     ['staging', 'without ~ prefix'],

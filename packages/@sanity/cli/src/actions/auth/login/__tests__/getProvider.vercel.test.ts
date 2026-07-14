@@ -16,14 +16,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  input: vi.fn(),
-  spinner: vi.fn(() => ({
-    start: vi.fn(() => ({
-      stop: vi.fn(),
-    })),
-  })),
-}))
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('../getSSOProvider.js', () => ({
   getSSOProvider: vi.fn(),

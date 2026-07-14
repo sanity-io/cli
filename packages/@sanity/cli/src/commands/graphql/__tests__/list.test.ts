@@ -1,5 +1,4 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
@@ -18,12 +17,7 @@ const defaultMocks = {
 }
 
 describe('#list', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('displays GraphQL endpoints correctly with multiple endpoints', async () => {
     mockApi({

@@ -1,13 +1,12 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {describe, expect, test, vi} from 'vitest'
 
 import {logAppDeployed} from '../deployApp.js'
 
-const mockOutput = () => ({log: vi.fn()}) as unknown as Output
-
 describe('logAppDeployed', () => {
   test("updating prints the dashboard URL from the deployed app's organization", () => {
-    const output = mockOutput()
+    const output = createMockOutput()
 
     logAppDeployed({
       applicationId: 'app-1',
@@ -28,7 +27,7 @@ describe('logAppDeployed', () => {
   })
 
   test('creating without an appId warns that a redeploy creates another application', () => {
-    const output = mockOutput()
+    const output = createMockOutput()
 
     logAppDeployed({
       applicationId: 'app-2',

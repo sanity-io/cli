@@ -1,5 +1,5 @@
-import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getOrganization} from '../getOrganization.js'

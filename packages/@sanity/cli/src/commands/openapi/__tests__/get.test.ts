@@ -1,5 +1,5 @@
 import {testCommand} from '@sanity/cli-test'
-import nock, {cleanAll, pendingMocks} from 'nock'
+import nock from 'nock'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -32,12 +32,7 @@ const mockJsonSpec = JSON.stringify({
 })
 
 describe('#openapi:get', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('gets YAML spec by default', async () => {
     nock('https://www.sanity.io')

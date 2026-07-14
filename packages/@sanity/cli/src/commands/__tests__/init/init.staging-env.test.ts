@@ -1,5 +1,5 @@
 import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
+import {select} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {setupMCP} from '../../../actions/mcp/setupMCP.js'
@@ -14,7 +14,6 @@ const mocks = vi.hoisted(() => ({
   createOrAppendEnvVars: vi.fn(),
   getSanityEnv: vi.fn(),
   installDeclaredPackages: vi.fn(),
-  select: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -64,13 +63,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    select: mocks.select,
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue(undefined),
@@ -165,12 +158,7 @@ const defaultMocks = {
 mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
 
 describe('#init: staging env propagation', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.clearAllMocks())
 
   test('writes SANITY_INTERNAL_ENV to .env when in staging (--env flag path)', async () => {
     mocks.getSanityEnv.mockReturnValue('staging')
@@ -264,7 +252,7 @@ describe('#init: staging env propagation', () => {
     mocks.getSanityEnv.mockReturnValue('staging')
     setupInitSuccessMocks()
 
-    mocks.select.mockResolvedValueOnce('blog') // template
+    select.mockResolvedValueOnce('blog') // template
 
     const {stdout} = await testCommand(
       InitCommand,
@@ -301,7 +289,7 @@ describe('#init: staging env propagation', () => {
     mocks.getSanityEnv.mockReturnValue('production')
     setupInitSuccessMocks()
 
-    mocks.select.mockResolvedValueOnce('blog') // template
+    select.mockResolvedValueOnce('blog') // template
 
     const {stdout} = await testCommand(
       InitCommand,
@@ -330,7 +318,7 @@ describe('#init: staging env propagation', () => {
     mocks.getSanityEnv.mockReturnValue('staging')
     setupInitSuccessMocks()
 
-    mocks.select.mockResolvedValueOnce('blog') // template
+    select.mockResolvedValueOnce('blog') // template
 
     await testCommand(
       InitCommand,

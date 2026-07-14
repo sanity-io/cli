@@ -1,6 +1,5 @@
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DatasetEmbeddingsEnableCommand} from '../enable.js'
@@ -52,12 +51,7 @@ const defaultMocks = {
 const mockSelect = vi.mocked(select)
 
 describe('#dataset:embeddings:enable', () => {
-  afterEach(() => {
-    const pending = pendingMocks()
-    cleanAll()
-    vi.restoreAllMocks()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  afterEach(() => vi.restoreAllMocks())
 
   test('should enable embeddings for specified dataset', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}])

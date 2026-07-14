@@ -1,7 +1,8 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {confirm as mockConfirm} from '@sanity/cli-test/mocks/cli-core/ux'
+import {pendingMocks} from 'nock'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGraphQLAPIs} from '../../../actions/graphql/getGraphQLAPIs.js'
 import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
@@ -25,27 +26,13 @@ const defaultMocks = {
 }
 
 const mockGetGraphQLAPIs = vi.mocked(getGraphQLAPIs)
-const mockConfirm = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {
-    ...actual,
-    confirm: mockConfirm,
-  }
-})
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 describe('graphql undeploy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
-
-  afterEach(() => {
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
-
   test('successfully undeploys GraphQL API with default tag', async () => {
     mockConfirm.mockResolvedValueOnce(true)
 

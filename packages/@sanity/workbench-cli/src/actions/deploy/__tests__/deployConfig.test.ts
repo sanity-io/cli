@@ -1,6 +1,6 @@
 import {Readable} from 'node:stream'
 
-import {type Output} from '@sanity/cli-core'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {deployConfig, resolveInstallationId, summarizeConfig} from '../deployConfig.js'
@@ -17,7 +17,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 // has to exist on disk.
 vi.mock('tar-fs', () => ({pack: () => Readable.from(['remote'])}))
 
-const output = {error: vi.fn(), log: vi.fn(), warn: vi.fn()} as unknown as Output
+const output = createMockOutput()
 
 /** Answer the installations list with `data`, and the config POST with a record. */
 function stubBrett(data: unknown[]) {

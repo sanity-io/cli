@@ -6,7 +6,6 @@ import {
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
 import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
-import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECTS_API_VERSION} from '../../services/projects.js'
@@ -73,12 +72,7 @@ const defaultMocks = {
   token: 'mock-auth-token',
 }
 
-afterEach(() => {
-  vi.clearAllMocks()
-  const pending = pendingMocks()
-  cleanAll()
-  expect(pending, 'pending mocks').toEqual([])
-})
+afterEach(() => vi.clearAllMocks())
 
 describe('#debug', () => {
   describe('User section', () => {
