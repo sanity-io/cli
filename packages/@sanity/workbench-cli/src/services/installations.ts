@@ -1,6 +1,6 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 
-import {APP_WORKBENCH_API_VERSION} from '../deploy/apiVersion.js'
+import {APP_WORKBENCH_API_VERSION} from '../actions/deploy/apiVersion.js'
 
 export interface ConfigSnapshot {
   id: string
@@ -13,12 +13,6 @@ export interface ConfigSnapshot {
 
 async function getClient() {
   return getGlobalCliClient({apiVersion: APP_WORKBENCH_API_VERSION, requireUser: true})
-}
-
-/** Soft-deletes the application and all its deployments; already deleted counts as done. */
-export async function deleteApplication(applicationId: string): Promise<void> {
-  const client = await getClient()
-  await ignoreNotFound(client.request({method: 'DELETE', uri: `/applications/${applicationId}`}))
 }
 
 /** The installation's deployed config snapshots, newest first. */
@@ -37,19 +31,12 @@ export async function listConfigs(installationId: string): Promise<ConfigSnapsho
  */
 export async function deleteConfig(installationId: string, configId: string): Promise<void> {
   const client = await getClient()
-  await ignoreNotFound(
-    client.request({
+  try {
+    await client.request({
       method: 'DELETE',
       uri: `/installations/${installationId}/configs/${configId}`,
-    }),
-  )
-}
-
-async function ignoreNotFound(request: Promise<unknown>): Promise<void> {
-  try {
-    await request
+    })
   } catch (err) {
-    if ((err as {statusCode?: number})?.statusCode === 404) return
-    throw err
+    if ((err as {statusCode?: number})?.statusCode !== 404) throw err
   }
 }

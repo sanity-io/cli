@@ -6,11 +6,12 @@ import {
 } from '@sanity/cli-core/undeploy'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 
+import {deleteApplication} from '../../services/applications.js'
+import {deleteConfig, listConfigs} from '../../services/installations.js'
 import {type DeployedExpose, summarizeExposes} from '../deploy/buildExposes.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {getApplication} from '../deploy/deployWorkbenchApp.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
-import {deleteApplication, deleteConfig, listConfigs} from './undeployWorkbenchApp.js'
 
 /** The workbench extension of the shared target; serializes into `--json` as-is. */
 export type WorkbenchUndeployTarget =
