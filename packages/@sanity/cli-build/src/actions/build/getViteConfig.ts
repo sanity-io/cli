@@ -180,7 +180,12 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     configFile: false,
     define: {
       __SANITY_BUILD_TIMESTAMP__: JSON.stringify(Date.now()),
-      __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
+      // Workbench chunks load as federation remotes into hosts from any
+      // environment, so they read `globalThis.__SANITY_STAGING__` at runtime
+      // instead of an inlined value.
+      ...(isWorkbenchApp
+        ? {}
+        : {__SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging'}),
       'process.env.MODE': JSON.stringify(mode),
       'process.env.PKG_BUILD_VERSION': JSON.stringify(process.env.PKG_BUILD_VERSION),
       /**

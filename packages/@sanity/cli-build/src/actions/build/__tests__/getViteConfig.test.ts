@@ -315,6 +315,23 @@ describe('#getViteConfig', () => {
     expect(config.define?.__SANITY_STAGING__).toBe(true)
   })
 
+  test('should not define staging flag for workbench apps', async () => {
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
+
+    const options = {
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    expect(config.define).not.toHaveProperty('__SANITY_STAGING__')
+  })
+
   test('should configure auto-updates builds with vendor chunks and import map', async () => {
     const autoUpdates = {
       imports: {sanity: 'https://sanity-cdn.example/sanity'},
