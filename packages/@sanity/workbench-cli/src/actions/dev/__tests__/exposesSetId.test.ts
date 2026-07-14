@@ -5,14 +5,14 @@ import {createExposesTracker, exposesSetId, trackExposesSet} from '../exposesSet
 import {type DevServerManifest} from '../registry.js'
 
 const panel = (name: string, src = `./src/${name}.tsx`): DevServerInterface => ({
-  entry_point: src,
-  interface_type: 'panel',
+  entry: src,
   name,
+  type: 'panel',
 })
 const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => ({
-  entry_point: src,
-  interface_type: 'worker',
+  entry: src,
   name,
+  type: 'worker',
 })
 const mlConfig = (fields: DevServerConfig['fields']): DevServerConfig => ({
   appType: 'media-library',
@@ -52,7 +52,7 @@ describe('exposesSetId', () => {
     )
   })
 
-  test('distinguishes interface_type, name, and entry_point', () => {
+  test('distinguishes type, name, and entry', () => {
     expect(exposesSetId({interfaces: [panel('a')]})).not.toBe(
       exposesSetId({interfaces: [worker('a')]}),
     )

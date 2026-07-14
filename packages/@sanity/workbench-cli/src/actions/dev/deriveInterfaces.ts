@@ -19,7 +19,7 @@ export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
 /**
  * Map a workbench app's declarations to the interface records forwarded on its
  * registry entry: `views` → panels, `services` → workers, `entry` → the
- * navigable `app` view (`entry_point` is the raw `src`, not a resolved URL).
+ * navigable `app` view (`entry` is the raw `src`, not a resolved URL).
  * `undefined` for a non-branded app; a studio that declares `entry` is rejected
  * (studio app views are not implemented yet). The config is not an
  * interface — see {@link deriveConfigs}. `version` is the contract version the
@@ -38,20 +38,20 @@ export function deriveInterfaces(
 
   return [
     ...(app.views?.map((view) => ({
-      entry_point: view.src,
-      interface_type: view.type,
+      entry: view.src,
       name: view.name,
+      type: view.type,
       version: VIEW_CONTRACT_VERSION,
     })) ?? []),
     ...(app.services?.map((service) => ({
-      entry_point: service.src,
-      interface_type: service.type,
+      entry: service.src,
       name: service.name,
+      type: service.type,
       version: SERVICE_CONTRACT_VERSION,
     })) ?? []),
     ...(app.entry === undefined
       ? []
-      : [{entry_point: app.entry, interface_type: 'app' as const, name: app.name}]),
+      : [{entry: app.entry, name: app.name, type: 'app' as const}]),
   ]
 }
 

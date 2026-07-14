@@ -656,7 +656,7 @@ describe('startWorkbenchDevServer', () => {
           configs: [{appType: 'media-library', fields: [], moduleName: 'media-library'}],
           host: 'localhost',
           id: 'app-1',
-          interfaces: [{entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}],
+          interfaces: [{entry: './src/Feed.tsx', name: 'feed', type: 'panel'}],
           pid: 3,
           port: 3337,
           type: 'coreApp',
@@ -684,8 +684,8 @@ describe('startWorkbenchDevServer', () => {
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
 
       const base = {host: 'localhost', id: 'app-1', pid: 3, port: 3335, type: 'coreApp'}
-      const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
-      const alerts = {entry_point: './src/Alerts.tsx', interface_type: 'panel', name: 'alerts'}
+      const feed = {entry: './src/Feed.tsx', name: 'feed', type: 'panel'}
+      const alerts = {entry: './src/Alerts.tsx', name: 'alerts', type: 'panel'}
 
       // First sighting of the app — reconcile softly, don't reload.
       watchCallback([{...base, interfaces: [feed]}])
@@ -707,7 +707,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
 
-      const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
+      const feed = {entry: './src/Feed.tsx', name: 'feed', type: 'panel'}
       const base = {host: 'localhost', id: 'app-1', interfaces: [feed], pid: 3, port: 3335}
 
       watchCallback([{...base, manifest: {title: 'V1', version: '1'}, type: 'coreApp'}])
