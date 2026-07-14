@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -73,7 +75,7 @@ describe('ValidateDocumentsCommand', () => {
   })
 
   test('calls validateDocuments with all flags and does not error if return is not error', async () => {
-    const ndjsonFilePath = '/some/file'
+    const ndjsonFilePath = path.join('some', 'file')
     const dataset = 'staging'
     const workspace = 'homeoffice'
     const level = 'info'
@@ -102,7 +104,7 @@ describe('ValidateDocumentsCommand', () => {
         level,
         maxCustomValidationConcurrency,
         maxFetchConcurrency,
-        ndjsonFilePath,
+        ndjsonFilePath: expect.stringContaining(ndjsonFilePath),
         studioHost: cliConfig.studioHost,
         workspace,
       }),
