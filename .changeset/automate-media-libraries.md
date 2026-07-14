@@ -2,4 +2,7 @@
 '@sanity/cli': minor
 ---
 
-Add unattended support for media library commands. Aspect creation now accepts `--title` and `--name`, destructive actions require explicit confirmation, and import, export, and aspect deployment accept a media library ID without prompting. Media exports also use a default destination when none is provided.
+feat(cli): support unattended mode for media library commands
+
+Add flags for aspect names and titles, accept media library IDs without prompting, require confirmation
+for destructive actions, and default export destinations.
