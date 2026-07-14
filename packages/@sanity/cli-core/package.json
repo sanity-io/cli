@@ -77,6 +77,10 @@
       "source": "./src/_exports/types.ts",
       "default": "./dist/_exports/types.js"
     },
+    "./undeploy": {
+      "source": "./src/_exports/undeploy.ts",
+      "default": "./dist/_exports/undeploy.js"
+    },
     "./util": {
       "source": "./src/_exports/util.ts",
       "default": "./dist/_exports/util.js"

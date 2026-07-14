@@ -3,6 +3,11 @@ import {styleText} from 'node:util'
 import {CLIError} from '@oclif/core/errors'
 import {type Output, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {
+  type UndeployAdapter,
+  type UndeployTarget,
+  type UndeployTargetResolution,
+} from '@sanity/cli-core/undeploy'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 
 import {type UndeployCommand} from '../../commands/undeploy.js'
@@ -15,10 +20,9 @@ import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {
   describeUndeployTarget,
   renderUndeployPlan,
+  undeployLabel,
   type UndeployPlan,
   undeployPlanToJson,
-  type UndeployTarget,
-  type UndeployTargetResolution,
 } from './undeployPlan.js'
 
 const undeployDebug = subdebug('undeploy')
@@ -28,19 +32,6 @@ type UndeployFlags = UndeployCommand['flags']
 export interface UndeployOptions {
   flags: UndeployFlags
   output: Output
-}
-
-/**
- * The parts of an undeploy that differ per application backend. The shared
- * sequence — mode selection, target reporting, confirmation, error handling —
- * lives in `runUndeploy`; adapters only resolve and delete.
- */
-export interface UndeployAdapter {
-  /** Resolves what an undeploy would delete; read-only. */
-  resolveTarget(): Promise<UndeployTargetResolution>
-  type: 'coreApp' | 'studio'
-  /** Deletes the target — the only mutating step, never run on a dry run. */
-  undeploy(target: UndeployTarget): Promise<void>
 }
 
 /** What a real undeploy produced — the payload `--json` reports. */
@@ -60,7 +51,9 @@ export async function runUndeploy(
 ): Promise<void> {
   const {flags, output} = options
   const json = !!flags.json
-  const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
+  // The report-only `summary` lines never enter the payload
+  const emitJson = (payload: unknown) =>
+    output.log(JSON.stringify(payload, (key, value) => (key === 'summary' ? undefined : value), 2))
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only
   // the final JSON.stringify writes to stdout.
@@ -123,18 +116,19 @@ async function undeployApp(
     if (!shouldUndeploy) return undefined
   }
 
-  const spin = spinner(
-    `Undeploying ${adapter.type === 'coreApp' ? 'application' : 'studio'}`,
-  ).start()
+  const label = undeployLabel(target, adapter.type)
+  const spin = spinner(`Undeploying ${label}`).start()
   try {
     await adapter.undeploy(target)
   } catch (error) {
     spin.fail()
-    throw error
+    undeployDebug(`Error undeploying ${label}`, error)
+    // Labeled here, where the target is known — `normalizeFailure` only sees the adapter type.
+    throw new CLIError(`Error undeploying ${label}: ${getErrorMessage(error)}`, {exit: 1})
   }
   spin.succeed()
 
-  printUndeployScheduled(target, output)
+  printUndeployed(target, output)
   return {application: target, undeployed: true}
 }
 
@@ -167,6 +161,14 @@ async function resolveTarget(
 }
 
 function confirmUndeployMessage(target: UndeployTarget): string {
+  if (target.deletes === 'config') {
+    return `This will delete the deployed config for ${styleText(
+      'yellow',
+      target.title ?? 'this app',
+    )}.
+Are you ${styleText('red', 'sure')} you want to undeploy?`
+  }
+
   if (target.type === 'coreApp') {
     return `This will undeploy the following application:
 
@@ -182,7 +184,12 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
 Are you ${styleText('red', 'sure')} you want to undeploy?`
 }
 
-function printUndeployScheduled(target: UndeployTarget, output: Output): void {
+function printUndeployed(target: UndeployTarget, output: Output): void {
+  if (target.deletes === 'config') {
+    output.log(`\n${styleText('bold', 'Config deleted.')}`)
+    return
+  }
+
   if (target.type === 'coreApp') {
     output.log(
       `\n${styleText('bold', '⏱️ Application undeploy scheduled.')} It might be a few minutes until ${

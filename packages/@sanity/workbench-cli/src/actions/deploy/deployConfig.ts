@@ -8,6 +8,7 @@ import FormData from 'form-data'
 import {pack} from 'tar-fs'
 
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
+import {summarizeExposeGroup} from './buildExposes.js'
 
 const debug = subdebug('deploy')
 
@@ -43,12 +44,11 @@ export async function resolveInstallationId(options: {
  */
 export function summarizeConfig(config: {
   appType: string
-  fields: {name: string; title: string}[]
+  fields: {name: string; src: string; title: string}[]
 }): string {
   switch (config.appType) {
     case 'media-library': {
-      const items = config.fields.map((field) => `  ${field.title} (${field.name})`).join('\n')
-      return `Media library fields:\n${items}`
+      return summarizeExposeGroup('Media library fields', config.fields)
     }
     default: {
       throw new Error(`Cannot create config for unknown app type: ${config.appType}`)

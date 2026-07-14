@@ -8,7 +8,7 @@ import {type CliConfig} from '@sanity/cli-core'
 import {type ResolvedWorkbenchApp, resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDeployment.js'
 
-interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
+export interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
   /**
    * Throws when the app exposes nothing (no entry, view, service, or config) —
    * the remote would have nothing to load. Gated before any prompt or API call.

@@ -59,9 +59,17 @@ export interface DeployedExpose {
   type: string
 }
 
-function summarizeExposeGroup(heading: string, items: readonly DeployedExpose[]): string {
-  const label = (item: DeployedExpose) =>
-    item.title === item.name ? item.name : `${item.title} (${item.name})`
+const label = (item: {name: string; title: string}) =>
+  item.title === item.name ? item.name : `${item.title} (${item.name})`
+
+/**
+ * One `Title (name): src` report line per declared entry point.
+ * @internal
+ */
+export function summarizeExposeGroup(
+  heading: string,
+  items: readonly {name: string; src: string; title: string}[],
+): string {
   return `${heading}:\n${items.map((item) => `  ${label(item)}: ${item.src}`).join('\n')}`
 }
 

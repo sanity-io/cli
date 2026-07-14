@@ -1,5 +1,6 @@
 import {type CliConfig, exitCodes, getLocalPackageVersion} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
 import {checkBuiltOutput, type DeployedExpose} from '@sanity/workbench-cli/deploy'
 
@@ -22,7 +23,6 @@ import {
   type StudioDeployTargetResolution,
 } from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
-import {getCoreAppUrl} from './urlUtils.js'
 
 /**
  * Where a deploy resolves to, computed once from the deploy-target verdict. The
