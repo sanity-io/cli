@@ -1,18 +1,5 @@
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
-
-/**
- * An interface as Brett stores it: the declared `type` (validated server-side,
- * not here) and the remote-relative `moduleId` the workbench loads it by — the
- * host prepends the app's own id.
- * @internal
- */
-export interface BrettInterface {
-  moduleId: string
-  name: string
-  title: string
-  type: string
-  version: string
-}
+import {type BrettInterface} from '../../services/applications.js'
 
 interface BuildExposesContext {
   appName: string
