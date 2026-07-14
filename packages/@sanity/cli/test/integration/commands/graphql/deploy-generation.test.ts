@@ -6,15 +6,7 @@ import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import {GraphQLDeployCommand} from '../../../../src/commands/graphql/deploy.js'
 import {GRAPHQL_API_VERSION} from '../../../../src/services/graphql.js'
 
-const mockIsInteractive = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    isInteractive: mockIsInteractive,
-  }
-})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
@@ -83,8 +75,6 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
   })
 
   test('changes generation with --force from gen2 to gen3', async () => {
-    mockIsInteractive.mockReturnValue(false)
-
     nock(`https://${projectId}.api.sanity.io`)
       .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
@@ -128,7 +118,6 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
   })
 
   test('prompts for generation change in interactive mode and user declines', async () => {
-    mockIsInteractive.mockReturnValue(true)
     mockConfirm.mockResolvedValue(false) // User declines the generation change
 
     nock(`https://${projectId}.api.sanity.io`)
@@ -138,9 +127,12 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
         'x-sanity-graphql-playground': 'true',
       })
 
-    const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'])
+    const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'], {
+      mocks: {isInteractive: true},
+    })
 
-    if (error) throw error
+    expect(error?.message).toBe('GraphQL deployment cancelled')
+    expect(error?.oclif?.exit).toBe(3)
     expect(stderr).toContain('Specified generation (gen3)')
     expect(stderr).toContain('currently deployed (gen2)')
     expect(mockConfirm).toHaveBeenCalledWith(
@@ -152,8 +144,6 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
   })
 
   test('fails changing generation in non-interactive mode without --force', async () => {
-    mockIsInteractive.mockReturnValue(false)
-
     nock(`https://${projectId}.api.sanity.io`)
       .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
@@ -161,17 +151,18 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
         'x-sanity-graphql-playground': 'true',
       })
 
-    const {error} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'])
+    const {error} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'], {
+      mocks: {isInteractive: false},
+    })
 
     expect(error).toBeDefined()
     expect(error?.message).toContain('Specified generation (gen3)')
     expect(error?.message).toContain('differs from the one currently deployed (gen2)')
     expect(error?.message).toContain('--force')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('changes generation in interactive mode when user confirms', async () => {
-    mockIsInteractive.mockReturnValue(true)
     mockConfirm.mockResolvedValue(true) // User confirms the generation change
 
     nock(`https://${projectId}.api.sanity.io`)
@@ -203,7 +194,9 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
       return {location: `/v1/graphql/${dataset}/default`}
     })
 
-    const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'])
+    const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'], {
+      mocks: {isInteractive: true},
+    })
 
     if (error) throw error
     expect(stderr).toContain('Specified generation (gen3)')

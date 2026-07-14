@@ -9,16 +9,7 @@ import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import {GraphQLDeployCommand} from '../../../../src/commands/graphql/deploy.js'
 import {GRAPHQL_API_VERSION} from '../../../../src/services/graphql.js'
 
-const mockIsInteractive = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    isInteractive: mockIsInteractive,
-  }
-})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
@@ -73,14 +64,16 @@ describe('#graphql:deploy errors', {timeout: 60 * 1000}, () => {
       validationError: null,
     })
 
-    const {error, stdout} = await testCommand(GraphQLDeployCommand, [])
+    const {error, stdout} = await testCommand(GraphQLDeployCommand, [], {
+      mocks: {isInteractive: false},
+    })
 
     expect(error).toBeDefined()
-    expect(error?.message).toContain('Dangerous changes found')
+    expect(error?.message).toContain('schema contains dangerous changes')
     expect(error?.message).toContain('--force')
     expect(stdout).toContain('Found BREAKING changes')
     expect(stdout).toContain('Field "oldField" was removed')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('handles validation errors', async () => {
