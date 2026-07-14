@@ -2,6 +2,7 @@
 '@sanity/cli': minor
 ---
 
-Make document commands safer to automate by requiring file input instead of opening an editor,
-skipping validation confirmations in unattended environments, validating flags and file paths before
-starting work, and returning distinct usage and cancellation exit codes.
+feat(cli): support unattended mode in document commands
+
+Require file input instead of opening an editor, skip validation confirmations, and distinguish usage
+errors from cancellations.
