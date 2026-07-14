@@ -42,7 +42,7 @@ export interface BuildOptions {
   minify: boolean
   outDir: string | undefined
   output: Output
-  reactCompiler: CliConfig['reactCompiler']
+  reactCompiler: boolean | CliConfig['reactCompiler'] | undefined
   schemaExtraction: CliConfig['schemaExtraction']
   sourceMap: boolean
   stats: boolean

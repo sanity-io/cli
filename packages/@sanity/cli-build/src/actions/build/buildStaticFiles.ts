@@ -40,7 +40,7 @@ interface StaticBuildOptions {
   isWorkbenchApp?: boolean
   minify?: boolean
   profile?: boolean
-  reactCompiler?: ReactCompilerConfig
+  reactCompiler?: boolean | ReactCompilerConfig
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
   vite?: UserViteConfig
