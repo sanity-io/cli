@@ -5,6 +5,7 @@ import {createGzip} from 'node:zlib'
 import {type Output, subdebug} from '@sanity/cli-core'
 import {pack} from 'tar-fs'
 
+import {getWorkbenchUrl} from '../../services/applications.js'
 import {createConfig, resolveSingletonInstallationId} from '../../services/installations.js'
 import {summarizeExposeGroup} from './buildExposes.js'
 
@@ -57,14 +58,16 @@ export function summarizeConfig(config: {
 export async function deployConfig(options: {
   appType: string
   installationId: string
+  organizationId: string
   output: Output
   sourceDir: string
   version: string
 }): Promise<void> {
-  const {appType, installationId, output, sourceDir, version} = options
+  const {appType, installationId, organizationId, output, sourceDir, version} = options
   const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
   await createConfig(installationId, {tarball, version})
 
   debug('Deployed config for app type: %s', appType)
-  output.log(`\n🚀 ${styleText('bold', 'Success!')} Config deployed`)
+  const url = getWorkbenchUrl(organizationId)
+  output.log(`\n🚀 ${styleText('bold', 'Success!')} Config deployed to ${styleText('cyan', url)}`)
 }

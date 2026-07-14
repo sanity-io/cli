@@ -4,9 +4,13 @@ import {
   type UndeployConfigTarget,
   type UndeployTargetResolution,
 } from '@sanity/cli-core/undeploy'
-import {getCoreAppUrl} from '@sanity/cli-core/util'
 
-import {deleteApplication, getApplication} from '../../services/applications.js'
+import {
+  deleteApplication,
+  getApplication,
+  getApplicationUrl,
+  getWorkbenchUrl,
+} from '../../services/applications.js'
 import {deleteConfig, listConfigs} from '../../services/installations.js'
 import {type DeployedExpose, summarizeExposes} from '../deploy/buildExposes.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
@@ -108,12 +112,7 @@ async function resolveApplicationTarget({
       ],
       title: application.title,
       type,
-      url:
-        type === 'studio'
-          ? application.slug
-            ? `https://${application.slug}.sanity.studio`
-            : null
-          : getCoreAppUrl(application.organizationId, application.id),
+      url: getApplicationUrl({...application, type}),
     },
     type: 'found',
   }
@@ -182,7 +181,7 @@ async function resolveConfigTarget({
         summary: config ? [summarizeConfig(config)] : undefined,
         title: workbench.name,
         type: 'coreApp',
-        url: null,
+        url: getWorkbenchUrl(organizationId),
       },
       type: 'found',
     },

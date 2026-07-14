@@ -2,6 +2,7 @@ import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
@@ -40,6 +41,19 @@ export interface BrettWorkspace {
   name?: string
   subtitle?: string
   title?: string
+}
+
+/** The URL of an organization's workbench. */
+export function getWorkbenchUrl(organizationId: string): string {
+  return `https://${organizationId}.${isStaging() ? 'run.sanity.work' : 'sanity.run'}`
+}
+
+/** Where a deployed application is served on its organization's workbench. */
+export function getApplicationUrl(
+  application: Pick<Application, 'id' | 'organizationId' | 'type'>,
+): string {
+  const segment = application.type === 'studio' ? 'studio' : 'application'
+  return `${getWorkbenchUrl(application.organizationId)}/${segment}/${application.id}`
 }
 
 async function getClient() {

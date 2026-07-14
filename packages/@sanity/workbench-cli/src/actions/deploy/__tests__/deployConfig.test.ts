@@ -80,6 +80,7 @@ describe('deployConfig', () => {
     await deployConfig({
       appType: 'media-library',
       installationId: 'inst_ml',
+      organizationId: 'org-1',
       output,
       sourceDir: '/tmp/build/app',
       version: '3.99.0',
@@ -91,6 +92,21 @@ describe('deployConfig', () => {
     const post = mockRequest.mock.calls.find(([arg]) => arg.method === 'POST')?.[0]
     expect(post.uri).toBe('/installations/inst_ml/configs')
     expect(post.headers['content-type']).toMatch(/multipart\/form-data/)
+  })
+
+  test('reports the workbench URL on success', async () => {
+    stubBrett([])
+
+    await deployConfig({
+      appType: 'media-library',
+      installationId: 'inst_ml',
+      organizationId: 'org-1',
+      output,
+      sourceDir: '/tmp/build/app',
+      version: '3.99.0',
+    })
+
+    expect(vi.mocked(output.log).mock.calls.join('\n')).toContain('https://org-1.sanity.run')
   })
 })
 

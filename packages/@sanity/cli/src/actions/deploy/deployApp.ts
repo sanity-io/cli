@@ -10,6 +10,7 @@ import {
   buildExposes,
   deployConfig,
   deployCoreApp as deployWorkbenchCoreApp,
+  getApplicationUrl,
   getWorkbench,
   resolveInstallationId,
   summarizeConfig,
@@ -198,10 +199,11 @@ async function runAppDeployment(
   // Dry run stops here — everything below mutates.
   if (dryRun) return
 
-  if (installationId && version && configAppType) {
+  if (installationId && version && configAppType && organizationId) {
     await deployConfig({
       appType: configAppType,
       installationId,
+      organizationId,
       output,
       sourceDir,
       version,
@@ -245,6 +247,7 @@ async function runAppDeployment(
       title: appTitle,
       version,
     })
+    const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
     logAppDeployed({
       applicationId,
       cliConfig,
@@ -252,6 +255,7 @@ async function runAppDeployment(
       organizationId,
       output,
       title: appTitle,
+      url,
     })
     return {
       applicationType: 'coreApp',
@@ -264,7 +268,7 @@ async function runAppDeployment(
         // A redeploy ignores the slug, so only a create reports the one it used.
         ...(appId ? {} : {slug}),
         title: appTitle,
-        url: getCoreAppUrl(organizationId, applicationId),
+        url,
       },
     }
   }
@@ -408,6 +412,7 @@ export function logAppDeployed({
   organizationId,
   output,
   title,
+  url = getCoreAppUrl(organizationId, applicationId),
 }: {
   applicationId: string
   cliConfig: DeployAppOptions['cliConfig']
@@ -415,8 +420,8 @@ export function logAppDeployed({
   organizationId: string
   output: DeployAppOptions['output']
   title: string | null
+  url?: string
 }): void {
-  const url = getCoreAppUrl(organizationId, applicationId)
   const named = title ? ` — "${title}"` : ''
   output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}${named}`)
   output.log(created ? 'Created a new application.' : 'Updated the existing application.')

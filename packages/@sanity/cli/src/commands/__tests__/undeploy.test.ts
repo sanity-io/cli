@@ -630,7 +630,11 @@ describe('#undeploy', () => {
 
     const payload = JSON.parse(stdout)
     expect(payload.undeployed).toBe(true)
-    expect(payload.application).toMatchObject({deletes: 'application', id: 'wb-app-1'})
+    expect(payload.application).toMatchObject({
+      deletes: 'application',
+      id: 'wb-app-1',
+      url: 'https://org-1.sanity.run/application/wb-app-1',
+    })
   })
 
   test('media library dry run reports the installation config', async () => {

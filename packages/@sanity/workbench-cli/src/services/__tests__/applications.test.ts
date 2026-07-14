@@ -11,6 +11,8 @@ import {
   createApplication,
   createDeployment,
   getApplication,
+  getApplicationUrl,
+  getWorkbenchUrl,
 } from '../applications.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
@@ -171,5 +173,27 @@ describe('createDeployment', () => {
     })
 
     expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
+  })
+})
+
+describe('getWorkbenchUrl / getApplicationUrl', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('builds production URLs on sanity.run', () => {
+    expect(getWorkbenchUrl('org-1')).toBe('https://org-1.sanity.run')
+    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'coreApp'})).toBe(
+      'https://org-1.sanity.run/application/app-1',
+    )
+    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'studio'})).toBe(
+      'https://org-1.sanity.run/studio/app-1',
+    )
+  })
+
+  test('builds staging URLs on run.sanity.work', () => {
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
+    expect(getWorkbenchUrl('org-1')).toBe('https://org-1.run.sanity.work')
+    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'coreApp'})).toBe(
+      'https://org-1.run.sanity.work/application/app-1',
+    )
   })
 })

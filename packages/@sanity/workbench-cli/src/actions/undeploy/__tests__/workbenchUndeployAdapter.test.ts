@@ -91,7 +91,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     })
   })
 
-  test('found → target with the Brett application, its interfaces, and dashboard URL', async () => {
+  test('found → target with the Brett application, its interfaces, and workbench URL', async () => {
     mockRequest.mockResolvedValue({
       id: 'wb-app-1',
       organizationId: 'org-1',
@@ -112,11 +112,11 @@ describe('createWorkbenchUndeployAdapter — application', () => {
       organizationId: 'org-1',
       title: 'My App',
       type: 'coreApp',
-      url: expect.stringContaining('/@org-1/application/wb-app-1'),
+      url: 'https://org-1.sanity.run/application/wb-app-1',
     })
   })
 
-  test('a studio target points at its sanity.studio hostname', async () => {
+  test('a studio target points at its workbench studio URL', async () => {
     mockRequest.mockResolvedValue({
       id: 'wb-studio-1',
       organizationId: 'org-1',
@@ -133,7 +133,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     }).resolveTarget()
 
     expect(resolution.type === 'found' && resolution.target.url).toBe(
-      'https://my-studio.sanity.studio',
+      'https://org-1.sanity.run/studio/wb-studio-1',
     )
   })
 
@@ -221,6 +221,7 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
       id: null,
       organizationId: 'org-1',
       title: 'media-library',
+      url: 'https://org-1.sanity.run',
     })
   })
 
