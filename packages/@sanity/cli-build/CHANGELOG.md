@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.0.0](https://github.com/sanity-io/cli/compare/cli-build-v3.0.0...cli-build-v4.0.0)
+
+_2026-07-13_
+
+### ⚠ BREAKING CHANGES
+
+- move compareDependencyVersions into cli-build ([#1466](https://github.com/sanity-io/cli/pull/1466)) ([f424cba](https://github.com/sanity-io/cli/commit/f424cba7c1c2de601ce1c7e1d062e3a8dba6745b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.3.0
+    - @sanity/cli-core bumped to 2.3.0
+
 ## [3.0.0](https://github.com/sanity-io/cli/compare/cli-build-v2.0.1...cli-build-v3.0.0)
 
 _2026-07-07_

@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.0](https://github.com/sanity-io/cli/compare/cli-core-v2.2.1...cli-core-v2.3.0)
+
+_2026-07-13_
+
+### Features
+
+- **undeploy:** add --dry-run flag ([#1470](https://github.com/sanity-io/cli/pull/1470)) ([f381c73](https://github.com/sanity-io/cli/commit/f381c73b29827f2f0c420a3dd9e9f53b082b4e8b))
+
 ## [2.2.1](https://github.com/sanity-io/cli/compare/cli-core-v2.2.0...cli-core-v2.2.1)
 
 _2026-07-07_
