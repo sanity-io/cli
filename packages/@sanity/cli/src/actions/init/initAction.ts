@@ -10,6 +10,7 @@ import {promptForConfigFiles} from '../../prompts/init/nextjs.js'
 import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
 import {getProviderName} from '../auth/getProviderName.js'
@@ -189,7 +190,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   async function installSkills(): Promise<void> {
     if (mcpResult.skillsToInstall.length === 0) return
     try {
-      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall, output})
+      const skillsResult = await setupSkills({
+        agents: mcpResult.skillsToInstall,
+        output,
+      })
       trace.log({
         installedAgents: skillsResult.installedAgents,
         skipped: skillsResult.skipped,
@@ -326,37 +330,39 @@ function checkFlagsInUnattendedMode(
 ): void {
   debug('Unattended mode, validating required options')
 
-  if (options.projectName && !options.organization) {
-    throw new InitError('`--project-name` requires `--organization <id>` in unattended mode', 1)
-  }
+  const errors: string[] = []
 
   if (isAppTemplate) {
     if (!options.outputPath) {
-      throw new InitError('`--output-path` must be specified in unattended mode', 1)
+      errors.push('`--output-path` must be specified in unattended mode')
     }
 
-    const hasProjectFlag = Boolean(options.project || options.projectName)
-
-    if (!hasProjectFlag && !options.organization) {
-      throw new InitError(
+    if (options.projectName && !options.organization) {
+      errors.push('`--project-name` requires `--organization <id>` in unattended mode')
+    } else if (!options.project && !options.organization) {
+      errors.push(
         'The --organization flag is required for app templates in unattended mode. ' +
           'Use --organization <id>, or pass --project <id> / --project-name <name>.',
-        1,
+      )
+    }
+  } else {
+    if (!isNextJs && !options.bare && !options.outputPath) {
+      errors.push('`--output-path` must be specified in unattended mode')
+    }
+
+    if (!options.project && !options.projectName) {
+      errors.push(
+        '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
       )
     }
 
-    return
+    if (!options.project && !options.organization) {
+      errors.push('`--project-name` requires `--organization <id>` in unattended mode')
+    }
   }
 
-  if (!isNextJs && !options.bare && !options.outputPath) {
-    throw new InitError('`--output-path` must be specified in unattended mode', 1)
-  }
-
-  if (!options.project && !options.projectName) {
-    throw new InitError(
-      '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
-      1,
-    )
+  if (errors.length > 0) {
+    throw new InitError(formatCliErrorMessages(errors), 2)
   }
 }
 

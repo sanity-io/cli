@@ -91,7 +91,11 @@ describe('#init: oclif command setup', () => {
   })
 
   test.each([
-    {flag: 'env', message: 'Env filename (`--env`) must start with `.env`', value: 'invalid.txt'},
+    {
+      flag: 'env',
+      message: 'Env filename (`--env`) must start with `.env`',
+      value: 'invalid.txt',
+    },
     {
       flag: 'visibility',
       message: 'Expected --visibility=opaque to be one of: public, private',
@@ -207,8 +211,8 @@ describe('#init: oclif command setup', () => {
     })
 
     // Should throw output-path error for non-Next.js projects
-    expect(error?.message).toContain('`--output-path` must be specified in unattended mode')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toBe('`--output-path` must be specified in unattended mode')
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('does not require `output-path` in unattended mode when `bare` is used', async () => {
@@ -250,10 +254,11 @@ describe('#init: oclif command setup', () => {
       },
     )
 
-    expect(error?.message).toContain(
-      '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
+    expect(error?.message).toBe(
+      '`--project <id>` or `--project-name <name>` must be specified in unattended mode\n' +
+        'Error: `--project-name` requires `--organization <id>` in unattended mode',
     )
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('throws error when in unattended mode and `project-name` set without `organization`', async () => {
@@ -272,10 +277,28 @@ describe('#init: oclif command setup', () => {
       },
     )
 
-    expect(error?.message).toContain(
+    expect(error?.message).toBe(
       '`--project-name` requires `--organization <id>` in unattended mode',
     )
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
+  })
+
+  test('reports all missing unattended options before authentication', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+    const {error} = await testCommand(InitCommand, ['--yes'], {
+      mocks: {
+        ...defaultMocks,
+      },
+    })
+
+    expect(error?.message).toBe(
+      '`--output-path` must be specified in unattended mode\n' +
+        'Error: `--project <id>` or `--project-name <name>` must be specified in unattended mode\n' +
+        'Error: `--project-name` requires `--organization <id>` in unattended mode',
+    )
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mocks.getById).not.toHaveBeenCalled()
   })
 
   test('logs properly if app template flag is not valid', async () => {

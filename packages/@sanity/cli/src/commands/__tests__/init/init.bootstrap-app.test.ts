@@ -30,11 +30,13 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
       return {
         projects: {
-          list: vi
-            .fn()
-            .mockResolvedValue([
-              {createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'},
-            ]),
+          list: vi.fn().mockResolvedValue([
+            {
+              createdAt: '2024-01-01T00:00:00Z',
+              displayName: 'Test',
+              id: 'test',
+            },
+          ]),
         },
         request: globalTestClient.request,
         users: {
@@ -224,7 +226,10 @@ describe('#init: bootstrap-app-initialization', () => {
 
     // Skills install runs before scaffolding (and thus before the "Success!"
     // message), so its progress + result surface above the success output.
-    expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor'], output: expect.any(Object)})
+    expect(mocks.setupSkills).toHaveBeenCalledWith({
+      agents: ['cursor'],
+      output: expect.any(Object),
+    })
     const bootstrapOrder = mocks.bootstrapTemplate.mock.invocationCallOrder[0]
     const skillsOrder = mocks.setupSkills.mock.invocationCallOrder[0]
     expect(skillsOrder).toBeLessThan(bootstrapOrder)
@@ -434,9 +439,10 @@ describe('#init: bootstrap-app-initialization', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(1)
-    expect(error?.message).toContain(
-      'The --organization flag is required for app templates in unattended mode',
+    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.message).toBe(
+      'The --organization flag is required for app templates in unattended mode. ' +
+        'Use --organization <id>, or pass --project <id> / --project-name <name>.',
     )
   })
 
@@ -505,9 +511,34 @@ describe('#init: bootstrap-app-initialization', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(1)
-    expect(error?.message).toContain(
-      'The --organization flag is required for app templates in unattended mode',
+    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.message).toBe(
+      'The --organization flag is required for app templates in unattended mode. ' +
+        'Use --organization <id>, or pass --project <id> / --project-name <name>.',
     )
+  })
+
+  test('reports missing app template options before scaffolding', async () => {
+    mocks.select.mockReset()
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--template=app-quickstart', '--package-manager=npm'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.message).toBe(
+      '`--output-path` must be specified in unattended mode\n' +
+        'Error: The --organization flag is required for app templates in unattended mode. ' +
+        'Use --organization <id>, or pass --project <id> / --project-name <name>.',
+    )
+    expect(mocks.select).not.toHaveBeenCalled()
+    expect(mocks.bootstrapTemplate).not.toHaveBeenCalled()
+    expect(mocks.createOrAppendEnvVars).not.toHaveBeenCalled()
   })
 })
