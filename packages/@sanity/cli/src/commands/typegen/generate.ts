@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import {spinner} from '@sanity/cli-core/ux'
+import {spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {
   configDefinition,
   readConfig,
@@ -159,12 +159,13 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
 
   private async runSingle(): Promise<void> {
     const trace = this.telemetry.trace(TypesGeneratedTrace)
+    let spin: SpinnerInstance | undefined
 
     try {
       const {config: typegenConfig, type: typegenConfigMethod, workDir} = await this.getConfig()
       trace.start()
 
-      const spin = spinner({}).start('Loading schema…')
+      spin = spinner({}).start('Loading schema…')
       const result = await runTypegenGenerate({
         config: typegenConfig,
         onProgress: createTypegenProgressRenderer(spin, {
@@ -184,6 +185,9 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       })
       trace.complete()
     } catch (error) {
+      if (spin?.isSpinning) {
+        spin.fail()
+      }
       trace.error(error instanceof Error ? error : new Error(String(error)))
       this.error(`${error instanceof Error ? error.message : 'Unknown error'}`, {exit: 1})
     }
