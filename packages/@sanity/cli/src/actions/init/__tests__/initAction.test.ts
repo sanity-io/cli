@@ -200,9 +200,8 @@ describe('initAction (direct)', () => {
 
     expect(caughtError).toBeInstanceOf(InitError)
     const initError = caughtError as InitError
-    expect(initError.message).toBe(
-      'Must be logged in to run this command in unattended mode, run `sanity login`',
-    )
+    expect(initError.message).toContain('Not logged in. Run `sanity login` to authenticate')
+    expect(initError.message).toContain('run `sanity new` to create a project without logging in')
     expect(initError.exitCode).toBe(1)
   })
 })

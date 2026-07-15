@@ -25,6 +25,7 @@ import {InitError} from './initError.js'
 import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {initNextJs} from './initNextJs.js'
 import {initStudio} from './initStudio.js'
+import {renderNewCommandBanner} from './newCommandBanner.js'
 import {getPlan} from './plan/getPlan.js'
 import {createProjectFromName} from './project/createProjectFromName.js'
 import {getProjectDetails} from './project/getProjectDetails.js'
@@ -377,12 +378,16 @@ async function ensureAuthenticated(
 
   if (options.unattended) {
     throw new InitError(
-      'Must be logged in to run this command in unattended mode, run `sanity login`',
+      'Not logged in. Run `sanity login` to authenticate, then re-run this command. ' +
+        'Alternatively, run `sanity new` to create a project without logging in — ' +
+        'you can claim it with a Sanity account later. See `sanity new --help`.',
       1,
     )
   }
 
   trace.log({step: 'login'})
+
+  renderNewCommandBanner(output)
 
   try {
     await login({
