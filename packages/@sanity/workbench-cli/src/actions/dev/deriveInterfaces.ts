@@ -49,9 +49,7 @@ export function deriveInterfaces(
       type: service.type,
       version: SERVICE_CONTRACT_VERSION,
     })) ?? []),
-    ...(app.entry === undefined
-      ? []
-      : [{entry: app.entry, name: app.name, type: 'app' as const}]),
+    ...(app.entry === undefined ? [] : [{entry: app.entry, name: app.name, type: 'app' as const}]),
   ]
 }
 
