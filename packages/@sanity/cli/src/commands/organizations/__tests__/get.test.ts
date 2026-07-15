@@ -1,8 +1,8 @@
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {httpError} from '../../../../test/helpers/httpError.js'
 import {GetOrganizationCommand} from '../get.js'
-import {httpError} from './httpError.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
 
