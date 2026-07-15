@@ -6,6 +6,7 @@ Code for sanity cli
 
 - [@sanity/cli](#sanitycli)
 - [Commands](#commands)
+
 <!-- tocstop -->
 
 # Commands
