@@ -1,7 +1,8 @@
 import {access} from 'node:fs/promises'
 
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 
 import {extractSchema} from '../../actions/schema/extractSchema.js'
 import {getExtractOptions} from '../../actions/schema/getExtractOptions.js'
@@ -78,10 +79,22 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
       () => false,
     )
     if (outputExists && !flags.force) {
-      this.error(
-        `Schema file already exists at "${extractOptions.outputPath}". Pass --force to overwrite it.`,
-        {exit: 2},
-      )
+      if (this.isUnattended()) {
+        this.error(
+          `Schema file already exists at "${extractOptions.outputPath}". Pass --force to overwrite it.`,
+          {exit: 2},
+        )
+      }
+
+      const shouldOverwrite = await confirm({
+        default: false,
+        message: `Schema file already exists at "${extractOptions.outputPath}". Overwrite it?`,
+      })
+
+      if (!shouldOverwrite) {
+        this.output.log('Schema extraction cancelled')
+        return this.exit(exitCodes.USER_ABORT)
+      }
     }
 
     if (flags.watch) {
