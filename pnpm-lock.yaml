@@ -607,8 +607,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       '@vercel/frameworks':
-        specifier: 3.29.0
-        version: 3.29.0
+        specifier: 3.30.6
+        version: 3.30.6
       chokidar:
         specifier: ^5.0.0
         version: 5.0.0
@@ -5742,8 +5742,8 @@ packages:
   '@vercel/error-utils@2.2.0':
     resolution: {integrity: sha512-WFWiRxfPzoYWYifaj4thSKvAaZZwUOqD4k5GINRIgZgCiS2E3iAJbWbIsIZmkQdTecWFHcWGA6q48CjisgpOBA==}
 
-  '@vercel/frameworks@3.29.0':
-    resolution: {integrity: sha512-qqkIhTkSkWdaGOs6+oOTliY/1bLd8cLLNQYCBVYSRFU5RiPjm5pM2fhZGFJaosQpFBBBOLEKeCZqYhTcphs6OQ==}
+  '@vercel/frameworks@3.30.6':
+    resolution: {integrity: sha512-x5UVinPjYkoCCVQB0jPtjoIrVe7XH81fpPo3cQXTYye/HHIYNaha6DoriujRMPXCXFfRXe5Fo3s3IthRV1WORQ==}
 
   '@vercel/stega@1.1.0':
     resolution: {integrity: sha512-DFOm3Gk78nKDkppQEG5aj8Wj8R8hPKu/xrz4Rtp0AfiaNbZNCoJbxn7VI6iMxqhGeLdUDy/8mTuTWMz/izAtPA==}
@@ -15246,7 +15246,7 @@ snapshots:
 
   '@vercel/error-utils@2.2.0': {}
 
-  '@vercel/frameworks@3.29.0':
+  '@vercel/frameworks@3.30.6':
     dependencies:
       '@vercel/error-utils': 2.2.0
       js-yaml: 3.13.1

@@ -97,7 +97,7 @@
     "@sanity/types": "catalog:",
     "@sanity/workbench-cli": "workspace:^",
     "@sanity/worker-channels": "^2.0.0",
-    "@vercel/frameworks": "3.29.0",
+    "@vercel/frameworks": "3.30.6",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",
     "date-fns": "^4.4.0",
