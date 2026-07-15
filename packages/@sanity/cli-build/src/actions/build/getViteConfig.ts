@@ -24,6 +24,7 @@ import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
 import {VENDOR_DIR} from './constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
+import {sanityAsyncModuleScriptsPlugin} from './vite/plugin-sanity-async-module-scripts.js'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
@@ -151,7 +152,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const envVars = options.getEnvironmentVariables()
 
   const sharedPlugins: PluginOption = [
+    // viteReact must precede sanityAsyncModuleScriptsPlugin so the latter's
+    // `order: 'pre'` transformIndexHtml runs after react-refresh injection.
     viteReact(),
+    sanityAsyncModuleScriptsPlugin(),
     ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
     ...(schemaExtraction?.enabled
       ? [

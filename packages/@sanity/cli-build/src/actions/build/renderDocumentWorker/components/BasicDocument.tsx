@@ -49,7 +49,7 @@ export function BasicDocument(props: BasicDocumentProps): JSX.Element {
       </head>
       <body>
         <div id="root" />
-        <script src={entryPath} type="module" />
+        <script async src={entryPath} type="module" />
         <NoJavascript />
       </body>
     </html>

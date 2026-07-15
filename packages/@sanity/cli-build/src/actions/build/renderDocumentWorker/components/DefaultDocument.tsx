@@ -151,7 +151,7 @@ export function DefaultDocument(props: DefaultDocumentProps): React.JSX.Element 
       </head>
       <body>
         <div id="sanity" />
-        <script src={entryPath} type="module" />
+        <script async src={entryPath} type="module" />
         <NoJavascript />
       </body>
     </html>

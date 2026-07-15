@@ -154,7 +154,10 @@ describe('#getViteConfig', () => {
     expect(config.define).not.toHaveProperty('process.env.VITE_CUSTOM_VAR')
     expect(config.define).not.toHaveProperty('process.env.APP_VAR')
 
-    expect(config.plugins).toHaveLength(4)
+    expect(config.plugins).toHaveLength(5)
+    expect(config.plugins).toEqual(
+      expect.arrayContaining([expect.objectContaining({name: 'sanity/async-module-scripts'})]),
+    )
     expect(config.resolve?.dedupe).toEqual(['react', 'react-dom', 'sanity', 'styled-components'])
   })
 
