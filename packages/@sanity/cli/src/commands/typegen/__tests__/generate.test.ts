@@ -1,7 +1,15 @@
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-const runTypegenGenerate = vi.hoisted(() => vi.fn())
+const runTypegenGenerate = vi.hoisted(() =>
+  vi.fn<typeof import('@sanity/codegen').runTypegenGenerate>(),
+)
+// Not strictly typed against `typeof runTypegenWatcher`: its return type includes
+// a chokidar `FSWatcher`, but two different chokidar major versions are present in
+// this workspace's dependency graph (see pnpm-lock.yaml), so a literal `FSWatcher`
+// instance built here doesn't structurally match the one in @sanity/codegen's
+// compiled types. The command under test never reads `.watcher` (only `getStats()`
+// and `stop()`), so a loosely-typed mock is a deliberate, contained trade-off.
 const runTypegenWatcher = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/codegen', async (importOriginal) => {
@@ -61,6 +69,7 @@ describe('#typegen:generate', () => {
 
     expect(runTypegenGenerate).toHaveBeenCalledOnce()
     const [options] = runTypegenGenerate.mock.calls[0]
+    if (!options.config) throw new Error('Expected a config to be passed to runTypegenGenerate')
     expect(options.workDir).toBe('/test/path')
     expect(typeof options.onProgress).toBe('function')
     expect(options.config.generates).toBe('./sanity.types.ts')
@@ -76,6 +85,7 @@ describe('#typegen:generate', () => {
 
     expect(runTypegenGenerate).toHaveBeenCalledOnce()
     const [options] = runTypegenGenerate.mock.calls[0]
+    if (!options.config) throw new Error('Expected a config to be passed to runTypegenGenerate')
     expect(options.config.generates).toBe('./sanity.types.ts')
     expect(options.config.schema).toBe('./schema.json')
   })
