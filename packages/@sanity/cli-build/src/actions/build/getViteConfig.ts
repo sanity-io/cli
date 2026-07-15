@@ -204,7 +204,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ...(isWorkbenchApp
         ? [
             ...sharedPlugins,
-            await workbenchVitePlugins({appId: workbenchAppId, cwd, entries, exposes, isApp}),
+            await workbenchVitePlugins({
+              appId: workbenchAppId,
+              cwd,
+              dev: mode === 'development',
+              entries,
+              exposes,
+              isApp,
+            }),
           ]
         : [
             ...sharedPlugins,

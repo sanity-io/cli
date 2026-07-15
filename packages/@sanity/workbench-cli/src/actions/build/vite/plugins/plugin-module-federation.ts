@@ -1,7 +1,7 @@
 import {federation as moduleFederation, type ModuleFederationOptions} from '@module-federation/vite'
 import {type Plugin, type PluginOption} from 'vite'
 
-import {FEDERATION_DIR_NAME, FEDERATION_FILE_NAME} from '../constants.js'
+import {DTS_TSCONFIG_PATH, FEDERATION_DIR_NAME, FEDERATION_FILE_NAME} from '../constants.js'
 
 /**
  * @internal
@@ -13,23 +13,30 @@ export interface FederationOptions extends Pick<ModuleFederationOptions, 'expose
    * defaults to your package.json name if not provided.
    */
   name: string
+
+  /**
+   * Dev server build. Type generation is best-effort and never fails the build;
+   * in dev we surface its errors in the terminal, in production we keep them silent.
+   */
+  dev?: boolean
 }
 
-export function sanityModuleFederation({exposes, name}: FederationOptions): PluginOption {
+export function sanityModuleFederation({dev, exposes, name}: FederationOptions): PluginOption {
   const mfPlugins = moduleFederation({
     dev: {
       disableDynamicRemoteTypeHints: true,
       remoteHmr: true,
     },
-    // Remote type generation stays off: it compiles the exposes with the
-    // project's tsconfig, and that breaks twice over on real projects.
-    // The exposes are generated .js/.jsx shims, which tsc refuses without
-    // allowJs (TYPE-001/TS6504) — no app template sets it. And with allowJs
-    // worked around, declaration emit pulls in the user's own modules, which
-    // are noEmit projects never written to be declaration-emittable: TS2742
-    // (non-portable inferred types, endemic under pnpm) and TS4082 (private
-    // names in default exports) then fail the compile just the same.
-    dts: {generateTypes: false},
+    dts: {
+      // On so a remote picks up another remote's published types once workbench
+      // apps compose each other's exposes. Inert until then — nothing configures
+      // `remotes` to consume, and the build only consumes when `typesOnBuild` is set.
+      consumeTypes: true,
+      displayErrorInTerminal: Boolean(dev),
+      // Compile from the build-owned tsconfig (see `sanityFederationTypes`), not
+      // the app's. `abortOnError: false` keeps generation from failing the build.
+      generateTypes: {abortOnError: false, tsConfigPath: DTS_TSCONFIG_PATH},
+    },
     exposes,
     filename: `${FEDERATION_FILE_NAME}.js`,
     manifest: true,

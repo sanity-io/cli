@@ -1,7 +1,7 @@
 import {type Environment, type Plugin} from 'vite'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {FEDERATION_DIR_NAME} from '../constants.js'
+import {DTS_TSCONFIG_PATH, FEDERATION_DIR_NAME} from '../constants.js'
 import {sanityModuleFederation} from './plugin-module-federation.js'
 
 const mockFederation = vi.hoisted(() => vi.fn())
@@ -27,18 +27,28 @@ function appliesTo(plugin: Plugin, name: string, command: 'build' | 'serve'): bo
 }
 
 describe('sanityModuleFederation', () => {
-  // Regression test for TYPE-001: upstream defaults dts generation on for any
-  // project with a tsconfig.json, but it compiles the generated .js/.jsx
-  // expose shims with the user's compiler options — tsc rejects them without
-  // allowJs (TS6504), and declaration emit of the user's noEmit app code fails
-  // on its own (TS2742/TS4082). Type generation must stay explicitly off.
-  it('disables dts type generation so the user tsconfig never compiles the generated exposes', () => {
+  // Type generation compiles the exposes with a tsconfig the build owns, not the
+  // app's — so real projects generate types without their own compiler options
+  // breaking the compile — and stays best-effort so a failure never fails the build.
+  it('generates dts from the build-owned tsconfig, best-effort', () => {
     mockFederation.mockReturnValue([])
 
     runPlugin()
 
     expect(mockFederation).toHaveBeenCalledTimes(1)
-    expect(mockFederation.mock.calls[0][0].dts).toEqual({generateTypes: false})
+    expect(mockFederation.mock.calls[0][0].dts).toEqual({
+      consumeTypes: true,
+      displayErrorInTerminal: false,
+      generateTypes: {abortOnError: false, tsConfigPath: DTS_TSCONFIG_PATH},
+    })
+  })
+
+  it('surfaces type-generation errors in the terminal only for the dev server', () => {
+    mockFederation.mockReturnValue([])
+
+    sanityModuleFederation({dev: true, exposes: {}, name: 'test-app'})
+
+    expect(mockFederation.mock.calls[0][0].dts.displayErrorInTerminal).toBe(true)
   })
 
   it('scopes plugins to the dev server and the federation build environment', () => {
