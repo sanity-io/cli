@@ -1,4 +1,5 @@
-import {interfaceModuleId} from '../../contract.js'
+import {interfaceModuleId, toMetadata} from '../../contract.js'
+import {type DockGroup} from '../../defineApp.js'
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 import {type BrettInterface} from '../../services/applications.js'
 
@@ -8,6 +9,11 @@ interface BuildExposesContext {
   /** Whether the build exposes the app view (`./App`) — apps with an `entry`, and every studio. */
   exposesAppView: boolean
   version: string
+
+  /** Dock group the app renders in, on the `app` interface only. */
+  group?: DockGroup
+  /** Sort position within the dock group, on the `app` interface only. */
+  priority?: number
 }
 
 /**
@@ -17,12 +23,12 @@ interface BuildExposesContext {
  */
 export function buildExposes(
   exposes: WorkbenchExposes,
-  {appName, appTitle, exposesAppView, version}: BuildExposesContext,
+  {appName, appTitle, exposesAppView, group, priority, version}: BuildExposesContext,
 ): BrettInterface[] {
   const records: BrettInterface[] = []
   if (exposesAppView) {
     records.push({
-      metadata: null,
+      metadata: toMetadata({group, priority}),
       moduleId: interfaceModuleId('app', appName),
       name: appName,
       title: appTitle,

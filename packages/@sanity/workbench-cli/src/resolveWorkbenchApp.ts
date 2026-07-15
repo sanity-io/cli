@@ -6,7 +6,13 @@
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 
-import {type DefineAppInput, isWorkbenchApp, readConfig, type WorkbenchApp} from './defineApp.js'
+import {
+  type DefineAppInput,
+  type DockGroup,
+  isWorkbenchApp,
+  readConfig,
+  type WorkbenchApp,
+} from './defineApp.js'
 
 /**
  * Bundled so adding a declaration family touches this type and the artifact
@@ -35,10 +41,14 @@ export interface ResolvedWorkbenchApp {
   readonly config?: WorkbenchApp['config']
   /** SDK app-view entrypoint, when declared. */
   readonly entry?: string
+  /** Dock group the app renders in, when declared. */
+  readonly group?: DockGroup
   /** Path to the app's icon SVG, resolved and shipped to Brett on deploy. */
   readonly icon?: string
   /** Explicit singleton flag (a Sanity-owned app); `undefined` when the app doesn't set it. */
   readonly isSingleton?: boolean
+  /** Sort position within the dock group, when declared. */
+  readonly priority?: number
   /** Hostname the application is created at on first deploy. */
   readonly slug?: string
   /** Dashboard visibility declared by the app; `undefined` when unset. */
@@ -59,9 +69,11 @@ export function resolveWorkbenchApp(
     applicationType: app.applicationType,
     config: readConfig(app),
     entry: app.entry,
+    group: app.group,
     icon: app.icon,
     isSingleton: app.isSingleton,
     name: app.name,
+    priority: app.priority,
     services: app.services ?? [],
     slug: app.slug,
     views: app.views ?? [],

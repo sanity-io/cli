@@ -54,6 +54,16 @@ export const AppInterfaceMetadataSchema = z.object({
 export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
 
 /**
+ * The `app` interface's metadata from its declared placement, or `null` when it
+ * sets none. Only the `app` interface carries metadata today.
+ * @internal
+ */
+export function toMetadata({group, priority}: AppInterfaceMetadata): AppInterfaceMetadata | null {
+  if (group === undefined && priority === undefined) return null
+  return {group, priority}
+}
+
+/**
  * The module-federation id a build exposes an interface at. Dev stamps the same
  * id a deploy would, so the workbench loads a local interface like a deployed one.
  * @internal

@@ -6,6 +6,7 @@ import {
   interfaceModuleId,
   MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
   SERVICE_CONTRACT_VERSION,
+  toMetadata,
   VIEW_CONTRACT_VERSION,
 } from '../../contract.js'
 import {isWorkbenchApp, readConfig} from '../../defineApp.js'
@@ -68,7 +69,7 @@ export function deriveInterfaces(
       : [
           {
             id: interfaceId('app', app.name),
-            metadata: null,
+            metadata: toMetadata({group: app.group, priority: app.priority}),
             moduleId: interfaceModuleId('app', app.name),
             name: app.name,
             src: app.entry,

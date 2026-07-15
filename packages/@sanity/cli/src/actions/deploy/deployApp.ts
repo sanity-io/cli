@@ -245,6 +245,8 @@ async function runAppDeployment(
         appName: workbench.name,
         appTitle,
         exposesAppView: workbench.entry !== undefined,
+        group: workbench.group,
+        priority: workbench.priority,
         version,
       }),
       isAutoUpdating,

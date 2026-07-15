@@ -161,6 +161,8 @@ async function runStudioDeployment(
         appName: workbench.name,
         appTitle,
         exposesAppView: true,
+        group: workbench.group,
+        priority: workbench.priority,
         version,
       }),
       isAutoUpdating,

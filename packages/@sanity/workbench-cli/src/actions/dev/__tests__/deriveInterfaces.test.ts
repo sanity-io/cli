@@ -72,7 +72,7 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('carries null metadata on every interface (not yet populated)', () => {
+  test('carries null metadata on every interface when no dock placement is declared', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
       views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
@@ -86,6 +86,39 @@ describe('deriveInterfaces', () => {
     const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
     const result = deriveInterfaces(app, {isApp: true})
     expect(result?.some((iface) => iface.type === 'app')).toBe(false)
+  })
+
+  test('carries dock placement on the app interface metadata only', () => {
+    const app = workbenchApp({
+      entry: './src/App.tsx',
+      group: 'dock.system',
+      name: 'my-app',
+      priority: 20,
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
+    })
+    const result = deriveInterfaces(app, {isApp: true})
+
+    expect(result).toEqual([
+      {
+        id: 'my-app-panel-feed',
+        metadata: null,
+        moduleId: 'views/feed',
+        name: 'feed',
+        src: './src/FeedPanel.tsx',
+        title: 'feed',
+        type: 'panel',
+        version: '1',
+      },
+      {
+        id: 'my-app-app-my-app',
+        metadata: {group: 'dock.system', priority: 20},
+        moduleId: 'App',
+        name: 'my-app',
+        src: './src/App.tsx',
+        title: 'Test App',
+        type: 'app',
+      },
+    ])
   })
 
   test('combines views, services, and the app view (in that order)', () => {

@@ -78,6 +78,33 @@ describe('buildExposes', () => {
     }
     expect(buildExposes(exposes, {...context, exposesAppView: false})[0]?.type).toBe('panel')
   })
+
+  test('carries dock placement on the app view metadata only', () => {
+    const exposes: WorkbenchExposes = {
+      services: [{name: 'unread', src: './src/unread.ts', type: 'worker'}],
+      views: [{name: 'feed', src: './src/feed.tsx', type: 'panel'}],
+    }
+
+    const [app, view, service] = buildExposes(exposes, {
+      ...context,
+      group: 'dock.system',
+      priority: 20,
+    })
+
+    expect(app?.metadata).toEqual({group: 'dock.system', priority: 20})
+    expect(view?.metadata).toBeNull()
+    expect(service?.metadata).toBeNull()
+  })
+
+  test('keeps priority 0 in the app view metadata', () => {
+    const [app] = buildExposes({}, {...context, priority: 0})
+    expect(app?.metadata).toEqual({priority: 0})
+  })
+
+  test('sets null metadata when no dock placement is declared', () => {
+    const [app] = buildExposes({}, context)
+    expect(app?.metadata).toBeNull()
+  })
 })
 
 describe('summarizeExposes', () => {

@@ -25,19 +25,23 @@ describe('resolveWorkbenchApp', () => {
       applicationType: undefined,
       config: undefined,
       entry: undefined,
+      group: undefined,
       isSingleton: undefined,
       name: 'my-app',
+      priority: undefined,
       services: [],
       views: [],
     })
   })
 
-  test('passes through declared views, services, entry, slug, and visibility', () => {
+  test('passes through declared views, services, entry, slug, visibility, and dock placement', () => {
     const config = asConfig(
       unstable_defineApp({
         entry: './src/App.tsx',
+        group: 'dock.system',
         name: 'my-app',
         organizationId: 'org-123',
+        priority: 20,
         services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
         slug: 'my-app-host',
         title: 'My App',
@@ -49,6 +53,8 @@ describe('resolveWorkbenchApp', () => {
     const resolved = resolveWorkbenchApp(config)
     expect(resolved).toMatchObject({
       entry: './src/App.tsx',
+      group: 'dock.system',
+      priority: 20,
       services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
       slug: 'my-app-host',
       views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
