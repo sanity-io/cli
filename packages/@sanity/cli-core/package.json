@@ -103,7 +103,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
