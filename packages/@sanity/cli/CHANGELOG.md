@@ -1,5 +1,23 @@
 # Change Log
 
+## [7.9.0](https://github.com/sanity-io/cli/compare/cli-v7.8.0...cli-v7.9.0)
+
+_2026-07-15_
+
+### Features
+
+- **workbench:** undeploy through the applications API ([#1472](https://github.com/sanity-io/cli/pull/1472)) ([6ddf505](https://github.com/sanity-io/cli/commit/6ddf505229ebc19169572d225385d9ed6f22f4cb))
+- **deploy:** report workbench URLs on deploy and undeploy ([#1507](https://github.com/sanity-io/cli/pull/1507)) ([76b2a1e](https://github.com/sanity-io/cli/commit/76b2a1e9529699bf58cf469aaf489e8b14a27d0c))
+- Allow boolean for reactCompiler config ([#1513](https://github.com/sanity-io/cli/pull/1513)) ([6a292b7](https://github.com/sanity-io/cli/commit/6a292b7dcca05137b7457f8dcd605f68aa76dac2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.4.0
+    - @sanity/cli-core bumped to 2.4.0
+    - @sanity/cli-build bumped to 4.1.0
+
 ## [7.8.0](https://github.com/sanity-io/cli/compare/cli-v7.7.1...cli-v7.8.0)
 
 _2026-07-13_

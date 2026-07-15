@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.4.0](https://github.com/sanity-io/cli/compare/cli-core-v2.3.0...cli-core-v2.4.0)
+
+_2026-07-15_
+
+### Features
+
+- **workbench:** undeploy through the applications API ([#1472](https://github.com/sanity-io/cli/pull/1472)) ([6ddf505](https://github.com/sanity-io/cli/commit/6ddf505229ebc19169572d225385d9ed6f22f4cb))
+- Allow boolean for reactCompiler config ([#1513](https://github.com/sanity-io/cli/pull/1513)) ([6a292b7](https://github.com/sanity-io/cli/commit/6a292b7dcca05137b7457f8dcd605f68aa76dac2))
+
 ## [2.3.0](https://github.com/sanity-io/cli/compare/cli-core-v2.2.1...cli-core-v2.3.0)
 
 _2026-07-13_

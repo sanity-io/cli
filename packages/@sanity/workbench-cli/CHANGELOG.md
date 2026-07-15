@@ -1,5 +1,26 @@
 # @sanity/workbench-cli
 
+## [1.4.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.3.0...workbench-cli-v1.4.0)
+
+_2026-07-15_
+
+### Features
+
+- **workbench:** undeploy through the applications API ([#1472](https://github.com/sanity-io/cli/pull/1472)) ([6ddf505](https://github.com/sanity-io/cli/commit/6ddf505229ebc19169572d225385d9ed6f22f4cb))
+- **deploy:** report workbench URLs on deploy and undeploy ([#1507](https://github.com/sanity-io/cli/pull/1507)) ([76b2a1e](https://github.com/sanity-io/cli/commit/76b2a1e9529699bf58cf469aaf489e8b14a27d0c))
+
+### Bug Fixes
+
+- **workbench:** align interface shape with brett ([#1512](https://github.com/sanity-io/cli/pull/1512)) ([bb7ea81](https://github.com/sanity-io/cli/commit/bb7ea815ad818012b7139135b9109e54fcb43250))
+- **workbench:** emit standalone SPA for workbench remotes ([#1517](https://github.com/sanity-io/cli/pull/1517)) ([b2dcc3c](https://github.com/sanity-io/cli/commit/b2dcc3c9256e37045c269dd195bc3fed249189a7))
+- **workbench:** inline app-id define via rolldownOptions ([#1514](https://github.com/sanity-io/cli/pull/1514)) ([44d6633](https://github.com/sanity-io/cli/commit/44d66336504ffac2a160d60907f06c9e249620c7))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.4.0
+
 ## [1.3.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.2.0...workbench-cli-v1.3.0)
 
 _2026-07-13_
