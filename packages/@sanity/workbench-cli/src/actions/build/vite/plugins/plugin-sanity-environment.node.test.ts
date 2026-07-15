@@ -44,7 +44,7 @@ describe('sanityEnvironmentPlugin', () => {
     expect(config.environments.federation.build.emptyOutDir).toBe(false)
     expect(config.environments.client.build.emptyOutDir).toBe(false)
     expect(config.environments.client.build.assetsDir).toBe('static')
-    expect(config.environments.client.build.rollupOptions.input).toEqual({sanity: clientInput})
+    expect(config.environments.client.build.rolldownOptions.input).toEqual({sanity: clientInput})
 
     // Both environments build in the single buildApp invocation.
     expect(await buildOrder(config)).toEqual(['client-env', 'federation-env'])
