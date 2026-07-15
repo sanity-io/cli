@@ -164,7 +164,9 @@ describe('startDevServerRegistration', () => {
     const params = {configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}
     await expect(extract(params)).resolves.toEqual({
       configs: [],
-      interfaces: [{entry: './src/FeedPanel.tsx', name: 'feed', type: 'panel', version: 1}],
+      interfaces: [
+        {name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel', version: 1},
+      ],
       manifest,
     })
     expect(mockExtractManifest).toHaveBeenCalledWith(params)
@@ -203,7 +205,7 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
         interfaces: expect.arrayContaining([
-          {entry: './src/App.tsx', name: 'test-app', type: 'app'},
+          {name: 'test-app', src: './src/App.tsx', title: 'Test App', type: 'app'},
         ]),
       }),
     )
@@ -224,7 +226,7 @@ describe('startDevServerRegistration', () => {
 
   // Adding/removing a view or service must rebuild the federation remote so the
   // new interface gets an expose + artifact. The watcher drives it.
-  const feed = {entry: './src/Feed.tsx', name: 'feed', type: 'panel'}
+  const feed = {name: 'feed', src: './src/Feed.tsx', type: 'panel'}
 
   test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {
     const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)

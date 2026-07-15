@@ -29,7 +29,7 @@ describe('startDevManifestWatcher', () => {
   let fakeWatcher: FakeFsWatcher
   let mockExtract: Mock<
     (params: {configPath: string; workDir: string}) => Promise<{
-      interfaces?: {entry: string; name: string; type: string}[] | undefined
+      interfaces?: {name: string; src: string; type: string}[] | undefined
       manifest: unknown
     }>
   >
@@ -260,7 +260,7 @@ describe('startDevManifestWatcher', () => {
     const appManifest = {icon: '<svg/>', title: 'My App', version: '1'}
     // Interfaces ride alongside the manifest (not inside it) and re-sync on
     // every config edit.
-    const appInterfaces = [{entry: './src/FeedPanel.tsx', name: 'feed', type: 'panel'}]
+    const appInterfaces = [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]
     mockFindProjectRoot.mockResolvedValue({
       directory: APP_WORK_DIR,
       path: APP_CONFIG_PATH,

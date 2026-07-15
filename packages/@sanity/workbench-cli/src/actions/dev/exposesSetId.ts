@@ -19,7 +19,7 @@ interface ExposeSet {
  */
 export function exposesSetId({configs, interfaces}: ExposeSet): string {
   const keys = [
-    ...(interfaces ?? []).map((iface) => [iface.type, iface.name, iface.entry].join('::')),
+    ...(interfaces ?? []).map((iface) => [iface.type, iface.name, iface.src].join('::')),
     ...(configs ?? []).flatMap((config) => [
       ['config', config.appType].join('::'),
       ...deriveConfigEntries(config).map((entry) =>

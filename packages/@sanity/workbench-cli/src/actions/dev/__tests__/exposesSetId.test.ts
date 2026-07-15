@@ -5,13 +5,15 @@ import {createExposesTracker, exposesSetId, trackExposesSet} from '../exposesSet
 import {type DevServerManifest} from '../registry.js'
 
 const panel = (name: string, src = `./src/${name}.tsx`): DevServerInterface => ({
-  entry: src,
   name,
+  src,
+  title: name,
   type: 'panel',
 })
 const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => ({
-  entry: src,
   name,
+  src,
+  title: name,
   type: 'worker',
 })
 const mlConfig = (fields: DevServerConfig['fields']): DevServerConfig => ({
@@ -52,7 +54,7 @@ describe('exposesSetId', () => {
     )
   })
 
-  test('distinguishes type, name, and entry', () => {
+  test('distinguishes type, name, and src', () => {
     expect(exposesSetId({interfaces: [panel('a')]})).not.toBe(
       exposesSetId({interfaces: [worker('a')]}),
     )

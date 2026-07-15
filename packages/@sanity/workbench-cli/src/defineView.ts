@@ -13,8 +13,9 @@ import {
  * @public
  */
 export type PanelViewProps = ViewComponentBaseProps<{
-  entry: string
   name: string
+  src: string
+  title: string
   type: 'panel'
 }>
 

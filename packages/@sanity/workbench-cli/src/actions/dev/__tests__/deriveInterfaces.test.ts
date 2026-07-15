@@ -13,7 +13,7 @@ describe('deriveInterfaces', () => {
   test('maps views to panel interfaces', () => {
     const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry: './src/FeedPanel.tsx', name: 'feed', type: 'panel', version: 1},
+      {name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel', version: 1},
     ])
   })
 
@@ -22,14 +22,14 @@ describe('deriveInterfaces', () => {
       services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry: './src/service.ts', name: 'unread', type: 'worker', version: 1},
+      {name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker', version: 1},
     ])
   })
 
   test('derives an app interface from entry for an SDK app', () => {
     const app = workbenchApp({entry: './src/App.tsx', name: 'my-app'})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry: './src/App.tsx', name: 'my-app', type: 'app'},
+      {name: 'my-app', src: './src/App.tsx', title: 'Test App', type: 'app'},
     ])
   })
 
@@ -47,9 +47,9 @@ describe('deriveInterfaces', () => {
       views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry: './src/FeedPanel.tsx', name: 'feed', type: 'panel', version: 1},
-      {entry: './src/service.ts', name: 'unread', type: 'worker', version: 1},
-      {entry: './src/App.tsx', name: 'my-app', type: 'app'},
+      {name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel', version: 1},
+      {name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker', version: 1},
+      {name: 'my-app', src: './src/App.tsx', title: 'Test App', type: 'app'},
     ])
   })
 
@@ -63,7 +63,7 @@ describe('deriveInterfaces', () => {
     })
     // only the panel — the config rides deriveConfigs, not interfaces
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
-      {entry: './src/FeedPanel.tsx', name: 'feed', type: 'panel', version: 1},
+      {name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel', version: 1},
     ])
   })
 
@@ -77,7 +77,7 @@ describe('deriveInterfaces', () => {
   test('a studio without entry still derives its panels/workers', () => {
     const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
     expect(deriveInterfaces(app, {isApp: false})).toEqual([
-      {entry: './src/FeedPanel.tsx', name: 'feed', type: 'panel', version: 1},
+      {name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel', version: 1},
     ])
   })
 })

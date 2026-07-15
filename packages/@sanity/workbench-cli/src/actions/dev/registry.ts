@@ -74,15 +74,16 @@ const devServerManifestSchema = z.object({
    * `type: "worker"`). A service is just an interface, so both live
    * in this one list. Carried separately from the manifest — interfaces live in
    * the application service, not the manifest — so the workbench can render
-   * local panels and run local workers without a deploy. `entry` is the
-   * declared `src`. Lenient by design; the workbench is the authority on the
-   * interface shape.
+   * local panels and run local workers without a deploy. `src` is the
+   * declared source file; `title` defaults to `name`. Lenient by design; the
+   * workbench is the authority on the interface shape.
    */
   interfaces: z.optional(
     z.array(
       z.object({
-        entry: z.string(),
         name: z.string(),
+        src: z.string(),
+        title: z.string(),
         type: z.string(),
         // Contract version the interface's generated module exports; the app
         // view has no versioned contract and carries none.
