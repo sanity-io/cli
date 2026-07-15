@@ -19,11 +19,10 @@ export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
 /**
  * Map a workbench app's declarations to the interface records forwarded on its
  * registry entry: `views` → panels, `services` → workers, `entry` → the
- * navigable `app` view (`entry_point` is the raw `src`, not a resolved URL).
- * `undefined` for a non-branded app; a studio that declares `entry` is rejected
- * (studio app views are not implemented yet). The config is not an
- * interface — see {@link deriveConfigs}. `version` is the contract version the
- * interface's generated module exports, known before the module runs; the app
+ * navigable `app` view. `src` is the raw source, not a resolved URL. `undefined`
+ * for a non-branded app; a studio that declares `entry` is rejected (studio app
+ * views are not implemented yet). The config is not an interface — see
+ * {@link deriveConfigs}. `version` is the module's contract version; the app
  * view has no versioned contract, so it carries none.
  */
 export function deriveInterfaces(
@@ -36,22 +35,17 @@ export function deriveInterfaces(
     throw new Error('App views for studios are not implemented yet')
   }
 
+  const toInterface = (
+    {name, src, title, type}: {name: string; src: string; title?: string; type: string},
+    version: number,
+  ): DevServerInterface => ({name, src, title: title ?? name, type, version})
+
   return [
-    ...(app.views?.map((view) => ({
-      entry_point: view.src,
-      interface_type: view.type,
-      name: view.name,
-      version: VIEW_CONTRACT_VERSION,
-    })) ?? []),
-    ...(app.services?.map((service) => ({
-      entry_point: service.src,
-      interface_type: service.type,
-      name: service.name,
-      version: SERVICE_CONTRACT_VERSION,
-    })) ?? []),
+    ...(app.views ?? []).map((view) => toInterface(view, VIEW_CONTRACT_VERSION)),
+    ...(app.services ?? []).map((service) => toInterface(service, SERVICE_CONTRACT_VERSION)),
     ...(app.entry === undefined
       ? []
-      : [{entry_point: app.entry, interface_type: 'app' as const, name: app.name}]),
+      : [{name: app.name, src: app.entry, title: app.title, type: 'app' as const}]),
   ]
 }
 

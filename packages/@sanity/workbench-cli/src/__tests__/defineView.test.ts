@@ -36,9 +36,10 @@ describe('type surface', () => {
       title: (props) => {
         expectTypeOf(props).toEqualTypeOf<PanelViewProps>()
         expectTypeOf(props.view).toEqualTypeOf<{
-          entry_point: string
-          interface_type: 'panel'
           name: string
+          src: string
+          title: string
+          type: 'panel'
         }>()
         return null
       },

@@ -165,7 +165,7 @@ describe('startDevServerRegistration', () => {
     await expect(extract(params)).resolves.toEqual({
       configs: [],
       interfaces: [
-        {entry_point: './src/FeedPanel.tsx', interface_type: 'panel', name: 'feed', version: 1},
+        {name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel', version: 1},
       ],
       manifest,
     })
@@ -205,7 +205,7 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
         interfaces: expect.arrayContaining([
-          {entry_point: './src/App.tsx', interface_type: 'app', name: 'test-app'},
+          {name: 'test-app', src: './src/App.tsx', title: 'Test App', type: 'app'},
         ]),
       }),
     )
@@ -215,9 +215,7 @@ describe('startDevServerRegistration', () => {
     await register({cliConfig: {app: workbenchApp()} as any, isApp: true})
 
     const {interfaces} = mockRegisterDevServer.mock.calls[0][0]
-    expect(
-      (interfaces ?? []).some((i: {interface_type: string}) => i.interface_type === 'app'),
-    ).toBe(false)
+    expect((interfaces ?? []).some((i: {type: string}) => i.type === 'app')).toBe(false)
   })
 
   test('rejects a studio that declares `entry` — app views for studios are not implemented yet', async () => {
@@ -228,7 +226,7 @@ describe('startDevServerRegistration', () => {
 
   // Adding/removing a view or service must rebuild the federation remote so the
   // new interface gets an expose + artifact. The watcher drives it.
-  const feed = {entry_point: './src/Feed.tsx', interface_type: 'panel', name: 'feed'}
+  const feed = {name: 'feed', src: './src/Feed.tsx', type: 'panel'}
 
   test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {
     const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)
