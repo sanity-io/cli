@@ -215,15 +215,15 @@ describe('#graphql:deploy schema errors', () => {
       mockExtractGraphQLAPIs.mockResolvedValue(apis)
       mockConfirm.mockResolvedValue(false)
 
-      const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--tag', 'custom'], {
+      const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, ['--tag', 'custom'], {
         mocks: {...multiApiMocks, isInteractive: true},
       })
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('GraphQL deployment cancelled')
       expect(error?.oclif?.exit).toBe(3)
       expect(stderr).toContain('--tag')
       expect(stderr).toContain('for ALL APIs')
+      expect(stdout).toContain('GraphQL deployment cancelled')
     })
 
     test('skips confirmation with --force when flags override multiple APIs', async () => {

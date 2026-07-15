@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {exitCodes, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
@@ -61,7 +61,7 @@ export async function resolveApiGeneration({
       }))
 
     if (!confirmDeploy) {
-      throw new CLIError('GraphQL deployment cancelled', {exit: exitCodes.USER_ABORT})
+      return undefined
     }
 
     return specifiedGeneration

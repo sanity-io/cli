@@ -269,9 +269,9 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       mocks: {isInteractive: true},
     })
 
-    expect(error?.message).toBe('GraphQL deployment cancelled')
     expect(error?.oclif?.exit).toBe(3)
     expect(stdout).toContain('Found BREAKING changes')
+    expect(stdout).toContain('GraphQL deployment cancelled')
     expect(stderr).not.toContain('Deployed!')
     expect(mockConfirm).toHaveBeenCalledWith(
       expect.objectContaining({

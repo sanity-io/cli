@@ -39,12 +39,16 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
 
   test('exits with user-abort when interactive confirmation is declined', async () => {
     mockConfirm.mockResolvedValue(false)
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.production'], {
-      mocks: {isInteractive: true},
-    })
+    const {error, stdout} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', '_.schemas.production'],
+      {
+        mocks: {isInteractive: true},
+      },
+    )
 
-    expect(error?.message).toBe('Schema deletion cancelled')
     expect(error?.oclif?.exit).toBe(3)
+    expect(stdout).toContain('Schema deletion cancelled')
   })
 
   test('successfully deletes a single schema', async () => {

@@ -161,7 +161,8 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
           message: 'Continue with flag overrides for all APIs?',
         })
         if (!confirmed) {
-          this.error('GraphQL deployment cancelled', {exit: exitCodes.USER_ABORT})
+          this.log('GraphQL deployment cancelled')
+          this.exit(exitCodes.USER_ABORT)
         }
       }
     }
@@ -281,9 +282,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       })
 
       if (!generation) {
-        // User cancelled
-        spin.fail()
-        continue
+        spin.stop()
+        this.log('GraphQL deployment cancelled')
+        this.exit(exitCodes.USER_ABORT)
       }
 
       if (!this.isRecognizedApiGeneration(generation)) {
@@ -353,8 +354,8 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         })
 
         if (!shouldDeploy) {
-          spin.fail()
-          this.error('GraphQL deployment cancelled', {exit: exitCodes.USER_ABORT})
+          this.log('GraphQL deployment cancelled')
+          this.exit(exitCodes.USER_ABORT)
         }
 
         spin.succeed()

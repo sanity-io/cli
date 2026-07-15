@@ -86,7 +86,8 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       })
 
       if (!confirmed) {
-        this.error('Schema deletion cancelled', {exit: exitCodes.USER_ABORT})
+        this.log('Schema deletion cancelled')
+        this.exit(exitCodes.USER_ABORT)
       }
     }
 

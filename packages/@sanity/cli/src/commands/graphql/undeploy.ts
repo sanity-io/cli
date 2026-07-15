@@ -139,20 +139,14 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
           ? `Delete the GraphQL API for dataset "${dataset}" in project ${projectId}?`
           : `Delete the GraphQL API for dataset "${dataset}" in project ${projectId} with tag "${tag}"?`
 
-      let confirmed: boolean
-      try {
-        confirmed = await confirm({
-          default: false,
-          message: confirmMessage,
-        })
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(`${error}`)
-        undeployGraphqlDebug('User cancelled', err)
-        this.error('GraphQL API undeploy cancelled', {exit: exitCodes.USER_ABORT})
-      }
+      const confirmed = await confirm({
+        default: false,
+        message: confirmMessage,
+      })
 
       if (!confirmed) {
-        this.error('GraphQL API undeploy cancelled', {exit: exitCodes.USER_ABORT})
+        this.log('GraphQL API undeploy cancelled')
+        this.exit(exitCodes.USER_ABORT)
       }
     }
 

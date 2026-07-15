@@ -141,9 +141,9 @@ describe('graphql undeploy', () => {
 
   test('cancels deletion when user declines confirmation', async () => {
     mockConfirm.mockResolvedValue(false)
-    const {error} = await testCommand(Undeploy, [], {mocks: defaultMocks})
-    expect(error?.message).toBe('GraphQL API undeploy cancelled')
+    const {error, stdout} = await testCommand(Undeploy, [], {mocks: defaultMocks})
     expect(error?.oclif?.exit).toBe(3)
+    expect(stdout).toContain('GraphQL API undeploy cancelled')
     expect(pendingMocks()).toHaveLength(0) // No API call should be made
   })
 
@@ -300,13 +300,13 @@ describe('graphql undeploy', () => {
   })
 
   test('handles user cancelling confirmation prompt', async () => {
-    mockConfirm.mockRejectedValue(new Error('User cancelled'))
+    mockConfirm.mockRejectedValue(Object.assign(new Error('SIGINT'), {name: 'ExitPromptError'}))
 
-    const {error} = await testCommand(Undeploy, [], {mocks: defaultMocks})
+    const {error, stderr} = await testCommand(Undeploy, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toBe('GraphQL API undeploy cancelled')
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(130)
+    expect(stderr).toContain('Aborted by user')
   })
 
   test('propagates errors from getGraphQLAPIs when using --api flag', async () => {

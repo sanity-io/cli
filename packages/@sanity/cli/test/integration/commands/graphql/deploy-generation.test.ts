@@ -127,14 +127,18 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
         'x-sanity-graphql-playground': 'true',
       })
 
-    const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'], {
-      mocks: {isInteractive: true},
-    })
+    const {error, stderr, stdout} = await testCommand(
+      GraphQLDeployCommand,
+      ['--generation', 'gen3'],
+      {
+        mocks: {isInteractive: true},
+      },
+    )
 
-    expect(error?.message).toBe('GraphQL deployment cancelled')
     expect(error?.oclif?.exit).toBe(3)
     expect(stderr).toContain('Specified generation (gen3)')
     expect(stderr).toContain('currently deployed (gen2)')
+    expect(stdout).toContain('GraphQL deployment cancelled')
     expect(mockConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Are you sure you want to deploy?',
