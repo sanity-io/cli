@@ -19,6 +19,7 @@ import {createDeployment, type UserApplication} from '../../services/userApplica
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {buildStudio} from '../build/buildStudio.js'
+import {readIconFromPath} from '../manifest/extractCoreAppManifest.js'
 import {createStudioUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
@@ -155,6 +156,7 @@ async function runStudioDeployment(
   if (workbench && !isExternal && organizationId) {
     const {applicationId} = await deployWorkbenchStudio({
       appId,
+      icon: workbench.icon ? await readIconFromPath(workDir, workbench.icon) : undefined,
       interfaces: buildExposes(workbench, {
         appName: workbench.name,
         appTitle,

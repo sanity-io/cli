@@ -10,6 +10,7 @@ import {
   type BrettWorkspace,
   createApplication,
   createDeployment,
+  updateApplication,
 } from '../../services/applications.js'
 
 /**
@@ -20,6 +21,7 @@ import {
  */
 export async function deployCoreApp(options: {
   appId: string | undefined
+  icon?: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
   isSingleton?: boolean
@@ -31,6 +33,7 @@ export async function deployCoreApp(options: {
 }): Promise<{applicationId: string}> {
   const {
     appId,
+    icon,
     interfaces,
     isAutoUpdating,
     isSingleton,
@@ -46,11 +49,13 @@ export async function deployCoreApp(options: {
   try {
     if (appId) {
       await createDeployment({applicationId: appId, interfaces, isAutoUpdating, tarball, version})
+      if (icon) await updateApplication(appId, {icon})
       spin.succeed()
       return {applicationId: appId}
     }
 
     const {id} = await createApplication({
+      icon,
       interfaces,
       isSingleton,
       organizationId,
@@ -76,6 +81,7 @@ export async function deployCoreApp(options: {
  */
 export async function deployStudio(options: {
   appId: string | undefined
+  icon?: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
   organizationId: string
@@ -89,6 +95,7 @@ export async function deployStudio(options: {
 }): Promise<{applicationId: string}> {
   const {
     appId,
+    icon,
     interfaces,
     isAutoUpdating,
     organizationId,
@@ -113,6 +120,7 @@ export async function deployStudio(options: {
         version,
         workspaces,
       })
+      if (icon) await updateApplication(appId, {icon})
       spin.succeed()
       return {applicationId: appId}
     }
@@ -126,6 +134,7 @@ export async function deployStudio(options: {
     }
 
     const application = await createApplication({
+      icon,
       interfaces,
       organizationId,
       projectId,

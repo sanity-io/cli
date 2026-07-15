@@ -35,6 +35,8 @@ export interface ResolvedWorkbenchApp {
   readonly config?: WorkbenchApp['config']
   /** SDK app-view entrypoint, when declared. */
   readonly entry?: string
+  /** Path to the app's icon SVG, resolved and shipped to Brett on deploy. */
+  readonly icon?: string
   /** Explicit singleton flag (a Sanity-owned app); `undefined` when the app doesn't set it. */
   readonly isSingleton?: boolean
   /** Hostname the application is created at on first deploy. */
@@ -55,6 +57,7 @@ export function resolveWorkbenchApp(
     applicationType: app.applicationType,
     config: readConfig(app),
     entry: app.entry,
+    icon: app.icon,
     isSingleton: app.isSingleton,
     name: app.name,
     services: app.services ?? [],
