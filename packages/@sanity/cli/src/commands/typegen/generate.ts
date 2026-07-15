@@ -196,10 +196,10 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       const {config: typegenConfig, workDir} = await this.getConfig()
       trace.start()
 
-      // @ts-expect-error `Promise.withResolvers` is available at runtime (Node 22.12+) but
-      // not in this monorepo's `ES2023` lib typings; see `codegen/src/utils/promiseWithResolvers.ts`
-      // for the same workaround.
-      const {promise, resolve} = Promise.withResolvers<void>()
+      let resolve: () => void = () => {}
+      const promise = new Promise<void>((res) => {
+        resolve = res
+      })
 
       const typegenWatcher = runTypegenWatcher({
         config: typegenConfig,
