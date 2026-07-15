@@ -111,8 +111,16 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     ? {appEntry: options.appEntry, isApp: true}
     : {isApp: false, studioConfigPath: options.studioConfigPath}
 
+  // A workbench remote can also serve itself standalone. When the remote flag is
+  // set (and there's an `./App` to mount — never for a dock-only app), build the
+  // SPA client environment from the runtime bootstrap cli-build writes.
+  const clientInput =
+    process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true' && exposesApp
+      ? path.join(workDir, '.sanity', 'runtime', 'app.js')
+      : undefined
+
   return [
-    sanityEnvironmentPlugin({input: entryPath}),
+    sanityEnvironmentPlugin({clientInput, input: entryPath}),
     sanityFederationRuntime(runtimeOptions),
     sanityExtensionArtifacts({artifacts}),
     sanityModuleFederation({exposes: federationExposes, name}),
