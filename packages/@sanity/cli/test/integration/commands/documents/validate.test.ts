@@ -138,9 +138,9 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         {mocks: {isInteractive: true}},
       )
 
-      expect(error?.message).toBe('Validation cancelled')
       expect(error?.oclif?.exit).toBe(3)
       expect(stdout).toContain('Warning:')
+      expect(stdout).toContain('Validation cancelled')
       expect(mocks.confirm).toHaveBeenCalledWith({
         default: true,
         message: 'Are you sure you want to continue?',

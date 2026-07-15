@@ -168,7 +168,8 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       })
 
       if (!confirmed) {
-        this.error('Validation cancelled', {exit: exitCodes.USER_ABORT})
+        this.log('Validation cancelled')
+        this.exit(exitCodes.USER_ABORT)
       }
     }
 
