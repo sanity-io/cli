@@ -52,7 +52,7 @@ interface ViteOptions {
    */
   mode: 'development' | 'production'
 
-  reactCompiler: ReactCompilerConfig | undefined
+  reactCompiler: boolean | ReactCompilerConfig | undefined
 
   /**
    * Additional plugins when configured, eg. typegen
@@ -152,7 +152,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
 
   const sharedPlugins: PluginOption = [
     viteReact(),
-    ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
+    ...(reactCompiler
+      ? [babel({presets: [reactCompilerPreset(reactCompiler === true ? {} : reactCompiler)]})]
+      : []),
     ...(schemaExtraction?.enabled
       ? [
           sanitySchemaExtractionPlugin({

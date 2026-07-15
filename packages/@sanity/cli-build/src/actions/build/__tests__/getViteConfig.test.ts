@@ -299,6 +299,26 @@ describe('#getViteConfig', () => {
     })
   })
 
+  test('should handle react compiler boolean configuration', async () => {
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+
+    const options = {
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: true,
+    }
+
+    await getViteConfig(options)
+
+    expect(reactCompilerPreset).toHaveBeenCalledWith({})
+    expect(babel).toHaveBeenCalledWith({
+      presets: [expect.objectContaining({name: 'react-compiler-preset'})],
+    })
+  })
+
   test('should set staging flag when SANITY_INTERNAL_ENV is staging', async () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
 
