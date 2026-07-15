@@ -123,16 +123,29 @@ describe('#dataset:alias:link', () => {
     expect(error?.oclif?.exit).toBe(2)
   })
 
-  test.each([
-    [[], 'Dataset alias name is required. Pass it as the first argument.'],
-    [['staging'], 'Target dataset is required. Pass it as the second argument.'],
-  ])('requires all arguments in unattended mode: %j', async (args, expectedError) => {
-    const {error} = await testCommand(LinkAliasCommand, args, {
+  test('requires all arguments in unattended mode', async () => {
+    const missingBoth = await testCommand(LinkAliasCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {}},
+        isInteractive: false,
+      },
+    })
+
+    expect(missingBoth.error?.message).toBe(
+      'Dataset alias name is required. Pass it as the first argument.\n' +
+        'Error: Target dataset is required. Pass it as the second argument.',
+    )
+    expect(missingBoth.error?.oclif?.exit).toBe(2)
+
+    const missingTarget = await testCommand(LinkAliasCommand, ['staging'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toBe(expectedError)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(missingTarget.error?.message).toBe(
+      'Target dataset is required. Pass it as the second argument.',
+    )
+    expect(missingTarget.error?.oclif?.exit).toBe(2)
     expect(mockListDatasets).not.toHaveBeenCalled()
   })
 

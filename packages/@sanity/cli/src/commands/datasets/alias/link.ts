@@ -11,6 +11,7 @@ import {promptForProject} from '../../../prompts/promptForProject.js'
 import {selectDataset} from '../../../prompts/selectDataset.js'
 import {listAliases, updateAlias} from '../../../services/datasetAliases.js'
 import {listDatasets} from '../../../services/datasets.js'
+import {formatCliErrorMessages} from '../../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const linkAliasDebug = subdebug('dataset:alias:link')
@@ -65,11 +66,19 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
     const {args, flags} = await this.parse(LinkAliasCommand)
     const {force} = flags
 
-    if (this.isUnattended() && !args.aliasName) {
-      this.error('Dataset alias name is required. Pass it as the first argument.', {exit: 2})
-    }
-    if (this.isUnattended() && !args.targetDataset) {
-      this.error('Target dataset is required. Pass it as the second argument.', {exit: 2})
+    if (this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!args.aliasName) {
+        errors.push('Dataset alias name is required. Pass it as the first argument.')
+      }
+      if (!args.targetDataset) {
+        errors.push('Target dataset is required. Pass it as the second argument.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {exit: 2})
+      }
     }
 
     if (args.aliasName) {
