@@ -393,7 +393,7 @@ describe('#migration:run', () => {
       },
     })
 
-    expect(error?.message).toContain('Only "up" migrations are supported at this time')
+    expect(error?.message).toContain('Named "up"/"down" migration exports are not supported')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -424,7 +424,7 @@ describe('#migration:run', () => {
       },
     })
 
-    expect(error?.message).toContain('Only "up" migrations are supported at this time')
+    expect(error?.message).toContain('Named "up"/"down" migration exports are not supported')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -685,5 +685,28 @@ describe('#migration:run', () => {
     expect(mockSpinner.text).toContain('5 requests pending…')
     expect(mockSpinner.text).toContain('0 transactions committed.')
     expect(mockSpinner.text).toContain('» [transaction] tx-1')
+  })
+
+  test('stops the spinner when the migration run throws', async () => {
+    mockConfirm.mockResolvedValueOnce(true)
+    mockRun.mockRejectedValueOnce(new Error('migration failed'))
+
+    const {error} = await testCommand(RunMigrationCommand, ['my-migration', '--no-dry-run'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {
+          api: {
+            dataset: 'production',
+            projectId: 'test-project',
+          },
+        },
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('migration failed')
+    // The spinner must be stopped even when run() rejects, so it does not keep
+    // animating after the command has failed.
+    expect(mockSpinner.stop).toHaveBeenCalled()
   })
 })

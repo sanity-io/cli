@@ -203,9 +203,12 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     if ('up' in mod || 'down' in mod) {
       // todo: consider adding support for up/down as separate named exports
       // For now, make sure we reserve the names for future use
-      this.error('Only "up" migrations are supported at this time, please use a default export', {
-        exit: 1,
-      })
+      this.error(
+        'Named "up"/"down" migration exports are not supported at this time, please export your migration as the default export',
+        {
+          exit: 1,
+        },
+      )
     }
 
     const migration: Migration = mod.default
@@ -258,15 +261,18 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     }
 
     const spin = spinner(`Running migration "${id}"`).start()
-    await run(
-      {
-        api: apiConfig,
-        concurrency,
-        onProgress: this.createProgress(spin, flags, id, dry, apiConfig, migration),
-      },
-      migration,
-    )
-    spin.stop()
+    try {
+      await run(
+        {
+          api: apiConfig,
+          concurrency,
+          onProgress: this.createProgress(spin, flags, id, dry, apiConfig, migration),
+        },
+        migration,
+      )
+    } finally {
+      spin.stop()
+    }
   }
 
   private createProgress(
