@@ -5,6 +5,7 @@ import {ClientError} from '@sanity/client'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteToken, getTokens} from '../../services/tokens.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteTokenDebug = subdebug('tokens:delete')
@@ -61,12 +62,19 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     const unattended = this.isUnattended()
     const {tokenId: givenTokenId} = args
 
-    if (unattended && !givenTokenId) {
-      this.error('Token ID is required. Pass it as the `<tokenId>` argument.', {exit: 2})
-    }
+    if (unattended) {
+      const errors: string[] = []
 
-    if (unattended && !skipConfirmation) {
-      this.error('Deletion requires confirmation. Pass `--yes` to delete the token.', {exit: 2})
+      if (!givenTokenId) {
+        errors.push('Token ID is required. Pass it as the `<tokenId>` argument.')
+      }
+      if (!skipConfirmation) {
+        errors.push('Deletion requires confirmation. Pass `--yes` to delete the token.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {exit: 2})
+      }
     }
 
     // Ensure we have project context

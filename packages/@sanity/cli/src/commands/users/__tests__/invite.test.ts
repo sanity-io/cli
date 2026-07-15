@@ -101,6 +101,19 @@ describe('#invite', () => {
   })
 
   test('requires email and role in unattended mode', async () => {
+    const missingBoth = await testCommand(UsersInviteCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
+        isInteractive: false,
+      },
+    })
+    expect(missingBoth.error?.message).toBe(
+      'Email address is required. Pass it as the `<email>` argument.\n' +
+        'Error: User role is required. Pass it with `--role <role>`.',
+    )
+    expect(missingBoth.error?.oclif?.exit).toBe(2)
+
     const missingEmail = await testCommand(UsersInviteCommand, ['--role', 'developer'], {
       mocks: {...defaultMocks, isInteractive: false},
     })

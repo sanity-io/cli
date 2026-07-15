@@ -6,6 +6,7 @@ import {type Role} from '../../actions/users/types.js'
 import {validateEmail} from '../../actions/users/validateEmail.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getProjectRoles, inviteUser} from '../../services/projects.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const QUOTA_ERROR_MESSAGE =
@@ -60,11 +61,19 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     const {role: selectedRole} = this.flags
     const normalizedEmail = selectedEmail?.trim()
 
-    if (this.isUnattended() && !normalizedEmail) {
-      this.error('Email address is required. Pass it as the `<email>` argument.', {exit: 2})
-    }
-    if (this.isUnattended() && !selectedRole) {
-      this.error('User role is required. Pass it with `--role <role>`.', {exit: 2})
+    if (this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!normalizedEmail) {
+        errors.push('Email address is required. Pass it as the `<email>` argument.')
+      }
+      if (!selectedRole) {
+        errors.push('User role is required. Pass it with `--role <role>`.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {exit: 2})
+      }
     }
 
     if (selectedEmail !== undefined) {

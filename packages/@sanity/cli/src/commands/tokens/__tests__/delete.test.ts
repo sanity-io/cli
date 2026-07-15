@@ -130,9 +130,16 @@ describe('#tokens:delete', () => {
   test('requires a token ID and --yes in unattended mode', async () => {
     const {confirm, select} = await import('@sanity/cli-core/ux')
     const missingId = await testCommand(DeleteTokensCommand, [], {
-      mocks: {...defaultMocks, isInteractive: false},
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
+        isInteractive: false,
+      },
     })
-    expect(missingId.error?.message).toContain('<tokenId>')
+    expect(missingId.error?.message).toBe(
+      'Token ID is required. Pass it as the `<tokenId>` argument.\n' +
+        'Error: Deletion requires confirmation. Pass `--yes` to delete the token.',
+    )
     expect(missingId.error?.oclif?.exit).toBe(2)
 
     const missingConfirmation = await testCommand(DeleteTokensCommand, ['token-api-123'], {
