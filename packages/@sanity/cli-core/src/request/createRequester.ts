@@ -15,7 +15,7 @@ import {debug as debugMiddleware} from 'get-it/middleware'
 let cachedPkg: {name: string; version: string} | undefined
 
 /**
- * Options for {@link createRequester}.
+ * Options for creating a Sanity CLI requester.
  *
  * Extends get-it v9's requester options with Sanity CLI defaults for
  * User-Agent headers and debug logging.

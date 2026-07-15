@@ -1,7 +1,7 @@
 import {Readable} from 'node:stream'
 
 /**
- * Convert a Web {@link ReadableStream} to a Node.js {@link Readable}.
+ * Convert a Web `ReadableStream` to a Node.js `Readable`.
  *
  * Prefer this over `Readable.fromWeb()` while the CLI engines range includes
  * Node versions where `fromWeb` is still experimental (`>=22.12 <22.17`).

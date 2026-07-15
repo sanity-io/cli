@@ -50,6 +50,8 @@ vi.mock('@sanity/import', () => ({
 
 vi.mock('@sanity/cli-core/request', () => ({
   createRequester: vi.fn().mockReturnValue(mockRequest),
+  // Tests pass a Node Readable as `body`; passthrough matches that fixture shape.
+  nodeReadableFromWeb: (stream: unknown) => stream,
 }))
 
 vi.mock('node:fs', async (importOriginal) => {
