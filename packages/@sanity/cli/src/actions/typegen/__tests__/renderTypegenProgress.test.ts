@@ -87,4 +87,82 @@ describe('createTypegenProgressRenderer', () => {
 
     expect(spin.fail).toHaveBeenCalledWith('boom')
   })
+
+  test('sets spinner text on formatting', () => {
+    const {spin} = createFakeSpinner()
+    const render = createTypegenProgressRenderer(spin, {
+      formatGeneratedCode: true,
+      generates: 'sanity.types.ts',
+      schema: 'schema.json',
+    })
+
+    render({formatterName: 'prettier', type: 'formatting'})
+
+    expect(spin.text).toBe('Formatting generated types with prettier…')
+  })
+
+  test('warns on formatFailed', () => {
+    const {spin} = createFakeSpinner()
+    const render = createTypegenProgressRenderer(spin, {
+      formatGeneratedCode: true,
+      generates: 'sanity.types.ts',
+      schema: 'schema.json',
+    })
+
+    render({formatterName: 'prettier', message: 'unexpected token', type: 'formatFailed'})
+
+    expect(spin.warn).toHaveBeenCalledWith(
+      'Failed to format generated types with prettier: unexpected token',
+    )
+  })
+
+  test('warns about files with errors before succeeding on complete', () => {
+    const {calls, spin} = createFakeSpinner()
+    const render = createTypegenProgressRenderer(spin, {
+      formatGeneratedCode: false,
+      generates: 'sanity.types.ts',
+      schema: 'schema.json',
+    })
+
+    render({result: {...result, filesWithErrors: 2}, type: 'complete'})
+
+    expect(spin.warn).toHaveBeenCalledWith('Encountered errors in 2 files while generating types')
+
+    const warnIndex = calls.findIndex((c) => c.method === 'warn')
+    const succeedIndex = calls.findIndex((c) => c.method === 'succeed')
+    expect(warnIndex).toBeGreaterThanOrEqual(0)
+    expect(succeedIndex).toBeGreaterThan(warnIndex)
+  })
+
+  test('success text mentions the formatter used when formatting succeeded', () => {
+    const {spin} = createFakeSpinner()
+    const render = createTypegenProgressRenderer(spin, {
+      formatGeneratedCode: true,
+      generates: 'sanity.types.ts',
+      schema: 'schema.json',
+    })
+
+    render({formatterName: 'prettier', type: 'formatting'})
+    render({result, type: 'complete'})
+
+    expect(spin.succeed).toHaveBeenCalledWith(
+      expect.stringContaining('formatted the generated code with prettier'),
+    )
+  })
+
+  test('success text mentions a formatting error when formatting failed', () => {
+    const {spin} = createFakeSpinner()
+    const render = createTypegenProgressRenderer(spin, {
+      formatGeneratedCode: true,
+      generates: 'sanity.types.ts',
+      schema: 'schema.json',
+    })
+
+    render({formatterName: 'prettier', message: 'unexpected token', type: 'formatFailed'})
+    render({result, type: 'complete'})
+
+    expect(spin.succeed).toHaveBeenCalledWith(
+      expect.stringContaining('an error occurred during formatting'),
+    )
+  })
 })

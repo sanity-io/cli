@@ -4,13 +4,32 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 const runTypegenGenerate = vi.hoisted(() =>
   vi.fn<typeof import('@sanity/codegen').runTypegenGenerate>(),
 )
-// Not strictly typed against `typeof runTypegenWatcher`: its return type includes
-// a chokidar `FSWatcher`, but two different chokidar major versions are present in
-// this workspace's dependency graph (see pnpm-lock.yaml), so a literal `FSWatcher`
-// instance built here doesn't structurally match the one in @sanity/codegen's
-// compiled types. The command under test never reads `.watcher` (only `getStats()`
-// and `stop()`), so a loosely-typed mock is a deliberate, contained trade-off.
-const runTypegenWatcher = vi.hoisted(() => vi.fn())
+
+/**
+ * Minimal structural shape of `runTypegenWatcher`'s return value, covering only
+ * what `TypegenGenerateCommand` actually reads (`getStats()` and `stop()`).
+ *
+ * Not typed against `typeof runTypegenWatcher`: its real return type includes a
+ * chokidar `FSWatcher`, but two different chokidar major versions are present in
+ * this workspace's dependency graph (see pnpm-lock.yaml), so a literal `FSWatcher`
+ * instance built here doesn't structurally match the one in \@sanity/codegen's
+ * compiled types. `watcher: unknown` keeps this mock honest without needing that
+ * type or a type assertion.
+ */
+interface FakeTypegenWatcher {
+  getStats: () => {
+    averageGenerationDuration: number
+    generationFailedCount: number
+    generationSuccessfulCount: number
+    watcherDuration: number
+  }
+  stop: () => Promise<void>
+  watcher: unknown
+}
+
+const runTypegenWatcher = vi.hoisted(() =>
+  vi.fn<(options: import('@sanity/codegen').RunTypegenOptions) => FakeTypegenWatcher>(),
+)
 
 vi.mock('@sanity/codegen', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/codegen')>()
