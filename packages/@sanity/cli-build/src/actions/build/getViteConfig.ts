@@ -199,12 +199,19 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     logLevel: mode === 'production' ? 'silent' : 'info',
     mode,
     plugins: [
-      // Federation builds only need the federation plugin — skip client-specific
-      // plugins (favicons, runtime rewrite, build entries)
+      // Federation builds skip the serve-only client plugins (favicons, runtime
+      // rewrite) — they no-op at build. `sanityBuildEntries` is scoped to the
+      // `client` environment so it emits the standalone SPA `index.html`
+      // (bridge-free) when the workbench remote SPA is enabled, and no-ops in the
+      // federation env / when no client env exists (see plugin-sanity-environment).
       ...(isWorkbenchApp
         ? [
             ...sharedPlugins,
             await workbenchVitePlugins({appId: workbenchAppId, cwd, entries, exposes, isApp}),
+            {
+              ...sanityBuildEntries({basePath, bridge: false, cwd, isApp}),
+              applyToEnvironment: (env) => env.name === 'client',
+            } satisfies Plugin,
           ]
         : [
             ...sharedPlugins,

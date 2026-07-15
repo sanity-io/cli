@@ -68,6 +68,7 @@ describe('buildStaticFiles', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   describe('federation enabled / isWorkbenchApp=true', () => {
@@ -134,6 +135,63 @@ describe('buildStaticFiles', () => {
       )
     })
   })
+
+  describe('workbench remote SPA (SANITY_INTERNAL_IS_WORKBENCH_REMOTE=true)', () => {
+    beforeEach(() => {
+      vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
+    })
+
+    test('emits the SPA (runtime + static + favicons) for an app with an entry', async () => {
+      await buildStaticFiles({
+        basePath: '/',
+        cwd,
+        entry: './src/App',
+        isApp: true,
+        isWorkbenchApp: true,
+        outputDir,
+      })
+
+      expect(mockWriteSanityRuntime).toHaveBeenCalled()
+      expect(mockCopyDir).toHaveBeenCalledWith(
+        path.join(cwd, 'static'),
+        path.join(outputDir, 'static'),
+      )
+      expect(mockWriteFavicons).toHaveBeenCalledWith('/static', path.join(outputDir, 'static'))
+      // The SPA path resolves entries via writeSanityRuntime, not resolveEntries.
+      expect(mockResolveEntries).not.toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalled()
+    })
+
+    test('emits the SPA for a federated studio (no entry)', async () => {
+      await buildStaticFiles({
+        basePath: '/',
+        cwd,
+        isWorkbenchApp: true,
+        outputDir,
+      })
+
+      expect(mockWriteSanityRuntime).toHaveBeenCalled()
+      expect(mockWriteFavicons).toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalled()
+    })
+
+    test('skips the SPA for a dock-only app (isApp with no entry)', async () => {
+      await buildStaticFiles({
+        basePath: '/',
+        cwd,
+        isApp: true,
+        isWorkbenchApp: true,
+        outputDir,
+      })
+
+      expect(mockWriteSanityRuntime).not.toHaveBeenCalled()
+      expect(mockWriteFavicons).not.toHaveBeenCalled()
+      expect(mockCopyDir).not.toHaveBeenCalled()
+      expect(mockResolveEntries).toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalled()
+    })
+  })
+
   describe('isWorkbenchapp=false', () => {
     test('should run a vite build, write favicons and return chunk stats', async () => {
       const basePath = '/' // this is OS-agnostic, even on windows :shrug:
