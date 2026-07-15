@@ -125,7 +125,7 @@ export interface ApplicationUpdate {
 
 /**
  * Patch an application's mutable fields. The deploy endpoint ignores these, so a
- * redeploy updates them here alongside the new deployment (e.g. a changed icon).
+ * redeploy syncs the title (and icon) from config here alongside the new deployment.
  */
 export async function updateApplication(
   applicationId: string,
