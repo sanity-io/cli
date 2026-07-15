@@ -24,20 +24,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-// get-it v9's Node entry uses undici with a private dispatcher, which bypasses
-// nock. Force the global fetch so existing nock interceptors still apply.
-vi.mock('@sanity/cli-core/request', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core/request')>()
-  return {
-    ...actual,
-    createRequester: (options?: Parameters<typeof actual.createRequester>[0]) =>
-      actual.createRequester({
-        ...options,
-        fetch: options?.fetch ?? globalThis.fetch,
-      }),
-  }
-})
-
 vi.mock(import('node:fs/promises'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
