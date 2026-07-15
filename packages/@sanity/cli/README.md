@@ -96,6 +96,11 @@ Code for sanity cli
 - [`sanity migrations run [ID]`](#sanity-migrations-run-id)
 - [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
 - [`sanity openapi list`](#sanity-openapi-list)
+- [`sanity organizations create`](#sanity-organizations-create)
+- [`sanity organizations delete ORGANIZATIONID`](#sanity-organizations-delete-organizationid)
+- [`sanity organizations get ORGANIZATIONID`](#sanity-organizations-get-organizationid)
+- [`sanity organizations list`](#sanity-organizations-list)
+- [`sanity organizations update ORGANIZATIONID`](#sanity-organizations-update-organizationid)
 - [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
 - [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
 - [`sanity projects list`](#sanity-projects-list)
@@ -2918,6 +2923,132 @@ EXAMPLES
   Open HTTP Reference in browser
 
     $ sanity openapi list --web
+```
+
+## `sanity organizations create`
+
+Create a new organization
+
+```
+USAGE
+  $ sanity organizations create [--default-role <value>] [--name <value>]
+
+FLAGS
+  --default-role=<value>  Default role assigned to new members
+  --name=<value>          Organization name
+
+DESCRIPTION
+  Create a new organization
+
+EXAMPLES
+  Interactively create an organization
+
+    $ sanity organizations create
+
+  Create an organization named "Acme Corp"
+
+    $ sanity organizations create --name "Acme Corp"
+
+  Create an organization with a default member role
+
+    $ sanity organizations create --name "Acme Corp" --default-role member
+```
+
+## `sanity organizations delete ORGANIZATIONID`
+
+Delete an organization
+
+```
+USAGE
+  $ sanity organizations delete ORGANIZATIONID [--force]
+
+ARGUMENTS
+  ORGANIZATIONID  Organization ID to delete
+
+FLAGS
+  --force  Do not prompt for delete confirmation - forcefully delete
+
+DESCRIPTION
+  Delete an organization
+
+EXAMPLES
+  Delete an organization (prompts for confirmation)
+
+    $ sanity organizations delete org-abc123
+
+  Delete an organization without confirmation
+
+    $ sanity organizations delete org-abc123 --force
+```
+
+## `sanity organizations get ORGANIZATIONID`
+
+Get details of an organization
+
+```
+USAGE
+  $ sanity organizations get ORGANIZATIONID
+
+ARGUMENTS
+  ORGANIZATIONID  Organization ID
+
+DESCRIPTION
+  Get details of an organization
+
+EXAMPLES
+  Get details of a specific organization
+
+    $ sanity organizations get org-abc123
+```
+
+## `sanity organizations list`
+
+List organizations you are a member of
+
+```
+USAGE
+  $ sanity organizations list
+
+DESCRIPTION
+  List organizations you are a member of
+
+EXAMPLES
+  List all your organizations
+
+    $ sanity organizations list
+```
+
+## `sanity organizations update ORGANIZATIONID`
+
+Update an organization
+
+```
+USAGE
+  $ sanity organizations update ORGANIZATIONID [--default-role <value>] [--name <value>] [--slug <value>]
+
+ARGUMENTS
+  ORGANIZATIONID  Organization ID
+
+FLAGS
+  --default-role=<value>  New default role for new members
+  --name=<value>          New organization name
+  --slug=<value>          New URL slug (requires authSAML feature on the organization)
+
+DESCRIPTION
+  Update an organization
+
+EXAMPLES
+  Rename an organization
+
+    $ sanity organizations update org-abc123 --name "New Name"
+
+  Set the organization slug (requires authSAML feature)
+
+    $ sanity organizations update org-abc123 --slug new-slug
+
+  Change the default member role
+
+    $ sanity organizations update org-abc123 --default-role viewer
 ```
 
 ## `sanity preview [OUTPUTDIR]`
