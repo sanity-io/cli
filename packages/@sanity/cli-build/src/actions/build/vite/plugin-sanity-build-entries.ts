@@ -30,10 +30,15 @@ const entryChunkId = '.sanity/runtime/app.js'
 export function sanityBuildEntries(options: {
   autoUpdates?: AutoUpdatesBuildConfig
   basePath: string
+  /**
+   * Injects the core-ui bridge script into the emitted `index.html`. Defaults to
+   * `true`. Workbench remotes serve themselves standalone and pass `false`.
+   */
+  bridge?: boolean
   cwd: string
   isApp?: boolean
 }): Plugin {
-  const {autoUpdates, basePath, cwd, isApp} = options
+  const {autoUpdates, basePath, bridge = true, cwd, isApp} = options
 
   return {
     apply: 'build',
@@ -101,23 +106,21 @@ export function sanityBuildEntries(options: {
           }
         : undefined
 
+      const html = await renderDocument({
+        autoUpdatesCssUrls: autoUpdates?.cssUrls,
+        importMap,
+        isApp,
+        props: {
+          basePath,
+          css,
+          entryPath,
+        },
+        studioRootPath: cwd,
+      })
+
       this.emitFile({
         fileName: 'index.html',
-        source: decorateIndexWithStagingScript(
-          decorateIndexWithBridgeScript(
-            await renderDocument({
-              autoUpdatesCssUrls: autoUpdates?.cssUrls,
-              importMap,
-              isApp,
-              props: {
-                basePath,
-                css,
-                entryPath,
-              },
-              studioRootPath: cwd,
-            }),
-          ),
-        ),
+        source: decorateIndexWithStagingScript(bridge ? decorateIndexWithBridgeScript(html) : html),
         type: 'asset',
       })
     },

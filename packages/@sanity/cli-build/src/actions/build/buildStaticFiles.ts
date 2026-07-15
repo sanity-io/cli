@@ -81,8 +81,30 @@ export async function buildStaticFiles(
    * runtime generation, static file copies, and favicons.
    */
   if (isWorkbenchApp) {
-    buildDebug('Resolving entries for federation build')
-    const entries = await resolveEntries({cwd, entry, isApp, isWorkbenchApp})
+    // A workbench remote can also serve itself standalone. When
+    // `SANITY_INTERNAL_IS_WORKBENCH_REMOTE` is set, emit an SPA (index.html +
+    // bootstrap + favicons) into the same `dist` as the federation output via a
+    // dedicated `client` environment (see plugin-sanity-environment). Skipped for
+    // a dock-only app (no `./App` to mount), matching `exposesApp` in plugin.ts.
+    const emitSpa = process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true' && !(isApp && !entry)
+
+    let entries: Awaited<ReturnType<typeof resolveEntries>>
+    if (emitSpa) {
+      buildDebug('Writing Sanity runtime files (workbench remote SPA)')
+      ;({entries} = await writeSanityRuntime({
+        appTitle,
+        basePath,
+        cwd,
+        entry,
+        isApp,
+        isWorkbenchApp,
+        reactStrictMode: false,
+        watch: false,
+      }))
+    } else {
+      buildDebug('Resolving entries for federation build')
+      entries = await resolveEntries({cwd, entry, isApp, isWorkbenchApp})
+    }
 
     buildDebug('Resolving vite config (federation)')
     let viteConfig = await getViteConfig({
@@ -114,6 +136,16 @@ export async function buildStaticFiles(
         viteConfig,
         extendViteConfig,
       )
+    }
+
+    if (emitSpa) {
+      const fromPath = path.join(cwd, 'static')
+      const staticPath = path.join(outputDir, 'static')
+      buildDebug(`Copying static files from ${fromPath} to output dir`)
+      await copyDir(fromPath, staticPath)
+      buildDebug('Writing favicons to output dir')
+      const faviconBasePath = `${basePath.replace(/\/+$/, '')}/static`
+      await writeFavicons(faviconBasePath, staticPath)
     }
 
     buildDebug('Bundling federation environment')
