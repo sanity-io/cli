@@ -1,79 +1,124 @@
 import {readFileSync} from 'node:fs'
 
+import debugIt from 'debug'
 import {up as packageUp} from 'empathic/package'
-import {getIt, type Requester} from 'get-it'
-import {debug, headers, httpErrors, promise} from 'get-it/middleware'
+import {
+  createRequester as createGetItRequester,
+  type FetchFunction,
+  type FetchHeaders,
+  type RequestFunction,
+  type TransformMiddleware,
+  type WrappingMiddleware,
+} from 'get-it'
+import {debug as debugMiddleware} from 'get-it/middleware'
 
 let cachedPkg: {name: string; version: string} | undefined
 
 /**
- * Options for configuring individual middleware in {@link createRequester}.
+ * Options for {@link createRequester}.
  *
- * Each key corresponds to a middleware. Omitting a key uses the default,
- * `false` disables it, and an object merges with the defaults.
+ * Extends get-it v9's requester options with Sanity CLI defaults for
+ * User-Agent headers and debug logging.
  *
  * @public
  */
-export type MiddlewareOptions = {
+export type CreateRequesterOptions = {
+  /** Default response format. Per-request `as` overrides this. */
+  as?: 'json' | 'stream' | 'text'
+  /** Base URL prepended to relative request URLs. */
+  base?: string
+  /**
+   * Debug logging middleware. Defaults to enabled with namespace `sanity:cli`.
+   * Pass `false` to disable.
+   */
   debug?: false | {namespace?: string; verbose?: boolean}
+  /** Custom fetch implementation. */
+  fetch?: FetchFunction
+  /**
+   * Default headers for all requests.
+   * Omitting uses a lazy User-Agent of `@sanity/cli-core@<version>`.
+   * Pass `false` to send no default headers.
+   */
   headers?: false | Record<string, string>
-  httpErrors?: false
-  promise?: false | {onlyBody?: boolean}
+  /** When `true` (default), throws `HttpError` for 4xx/5xx responses. */
+  httpErrors?: boolean
+  /** Additional middleware (e.g. `retry()`). */
+  middleware?: Array<TransformMiddleware | WrappingMiddleware>
+  /** Default request timeout in milliseconds. Set to `false` to disable. */
+  timeout?: false | number
 }
 
 /**
- * Creates a `get-it` requester with a standard set of middleware.
+ * Creates a get-it requester with Sanity CLI defaults.
  *
- * Default middleware (in order):
- * 1. `httpErrors()` — throw on HTTP error status codes
- * 2. `headers({'User-Agent': '@sanity/cli-core@<version>'})` — identify CLI requests
- * 3. `debug({verbose: true, namespace: 'sanity:cli'})` — debug logging
- * 4. `promise({onlyBody: true})` — return body directly (must be last)
+ * Defaults:
+ * - User-Agent header: `@sanity/cli-core@<version>` (lazy)
+ * - Debug logging via `DEBUG=sanity:cli` (verbose)
+ * - HTTP error throwing on (get-it default)
  *
- * @param options - Optional configuration to disable or customize middleware
- * @returns A configured `get-it` requester
+ * @param options - Optional configuration to customize or disable defaults
+ * @returns A configured get-it request function
  * @public
  */
-export function createRequester(options?: {middleware?: MiddlewareOptions}): Requester {
-  const opts = options?.middleware
+export function createRequester(
+  options: CreateRequesterOptions & {as: 'json'},
+): RequestFunction<'json'>
+export function createRequester(
+  options: CreateRequesterOptions & {as: 'text'},
+): RequestFunction<'text'>
+export function createRequester(
+  options: CreateRequesterOptions & {as: 'stream'},
+): RequestFunction<'stream'>
+export function createRequester(options?: CreateRequesterOptions): RequestFunction
+export function createRequester(
+  options?: CreateRequesterOptions,
+): RequestFunction<'json' | 'stream' | 'text' | undefined> {
+  const middleware: Array<TransformMiddleware | WrappingMiddleware> = [
+    ...(options?.middleware ?? []),
+  ]
 
-  const middleware = []
-
-  // 1. httpErrors
-  if (opts?.httpErrors !== false) {
-    middleware.push(httpErrors())
-  }
-
-  // 2. headers
-  if (opts?.headers !== false) {
-    const customHeaders = typeof opts?.headers === 'object' ? opts.headers : {}
-    const allHeaders = customHeaders['User-Agent']
-      ? {...customHeaders}
-      : {
-          get ['User-Agent']() {
-            const pkg = getPackageInfo()
-            return `${pkg.name}@${pkg.version}`
-          },
-          ...customHeaders,
-        }
-    middleware.push(headers(allHeaders))
-  }
-
-  // 3. debug
-  if (opts?.debug !== false) {
+  if (options?.debug !== false) {
     const debugDefaults = {namespace: 'sanity:cli', verbose: true}
-    const customDebug = typeof opts?.debug === 'object' ? opts.debug : {}
-    middleware.push(debug({...debugDefaults, ...customDebug}))
+    const customDebug = typeof options?.debug === 'object' ? options.debug : {}
+    const {namespace, verbose} = {...debugDefaults, ...customDebug}
+    middleware.push(debugMiddleware({log: debugIt(namespace), verbose}))
   }
 
-  // 4. promise (must be last)
-  if (opts?.promise !== false) {
-    const promiseDefaults = {onlyBody: true}
-    const customPromise = typeof opts?.promise === 'object' ? opts.promise : {}
-    middleware.push(promise({...promiseDefaults, ...customPromise}))
+  return createGetItRequester({
+    as: options?.as,
+    base: options?.base,
+    fetch: options?.fetch,
+    headers: resolveDefaultHeaders(options?.headers),
+    httpErrors: options?.httpErrors,
+    middleware,
+    timeout: options?.timeout,
+  })
+}
+
+/**
+ * Builds default headers, including a lazy User-Agent unless overridden or disabled.
+ *
+ * @internal
+ */
+function resolveDefaultHeaders(
+  headers: false | Record<string, string> | undefined,
+): FetchHeaders | undefined {
+  if (headers === false) {
+    return undefined
   }
 
-  return getIt(middleware)
+  const customHeaders = typeof headers === 'object' ? headers : {}
+  if (customHeaders['User-Agent'] || customHeaders['user-agent']) {
+    return customHeaders
+  }
+
+  return {
+    get ['User-Agent']() {
+      const pkg = getPackageInfo()
+      return `${pkg.name}@${pkg.version}`
+    },
+    ...customHeaders,
+  }
 }
 
 /**

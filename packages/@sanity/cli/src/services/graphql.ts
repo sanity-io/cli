@@ -1,4 +1,5 @@
 import {getProjectCliClient} from '@sanity/cli-core'
+import {HttpError} from '@sanity/cli-core/request'
 
 import {
   type DeployResponse,
@@ -149,14 +150,7 @@ export async function getCurrentSchemaProps(
       playgroundEnabled: res['x-sanity-graphql-playground'] === 'true',
     }
   } catch (err) {
-    if (
-      err instanceof Error &&
-      'response' in err &&
-      typeof err.response === 'object' &&
-      err.response !== null &&
-      'statusCode' in err.response &&
-      err.response.statusCode === 404
-    ) {
+    if (err instanceof HttpError && err.status === 404) {
       return {}
     }
 

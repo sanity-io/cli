@@ -1,22 +1,21 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-const mockGetIt = vi.hoisted(() => vi.fn())
-const mockHttpErrors = vi.hoisted(() => vi.fn())
-const mockHeaders = vi.hoisted(() => vi.fn())
-const mockDebug = vi.hoisted(() => vi.fn())
-const mockPromise = vi.hoisted(() => vi.fn())
+const mockCreateGetItRequester = vi.hoisted(() => vi.fn())
+const mockDebugMiddleware = vi.hoisted(() => vi.fn())
+const mockDebugIt = vi.hoisted(() => vi.fn())
 const mockPackageUp = vi.hoisted(() => vi.fn())
 const mockReadFileSync = vi.hoisted(() => vi.fn())
 
 vi.mock('get-it', () => ({
-  getIt: mockGetIt,
+  createRequester: mockCreateGetItRequester,
 }))
 
 vi.mock('get-it/middleware', () => ({
-  debug: mockDebug,
-  headers: mockHeaders,
-  httpErrors: mockHttpErrors,
-  promise: mockPromise,
+  debug: mockDebugMiddleware,
+}))
+
+vi.mock('debug', () => ({
+  default: mockDebugIt,
 }))
 
 vi.mock('empathic/package', () => ({
@@ -39,70 +38,55 @@ describe('#createRequester', () => {
 
     mockPackageUp.mockReturnValue('/packages/@sanity/cli-core/package.json')
     mockReadFileSync.mockReturnValue(JSON.stringify({name: '@sanity/cli-core', version: '1.0.0'}))
+    mockDebugIt.mockReturnValue(vi.fn())
+    mockDebugMiddleware.mockReturnValue({id: 'debug'})
+    mockCreateGetItRequester.mockReturnValue(vi.fn())
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('applies all default middleware in correct order', () => {
-    const httpErrorsResult = {id: 'httpErrors'}
-    const headersResult = {id: 'headers'}
+  test('applies default debug middleware and User-Agent headers', () => {
     const debugResult = {id: 'debug'}
-    const promiseResult = {id: 'promise'}
-
-    mockHttpErrors.mockReturnValue(httpErrorsResult)
-    mockHeaders.mockReturnValue(headersResult)
-    mockDebug.mockReturnValue(debugResult)
-    mockPromise.mockReturnValue(promiseResult)
+    const logFn = vi.fn()
+    mockDebugIt.mockReturnValue(logFn)
+    mockDebugMiddleware.mockReturnValue(debugResult)
 
     createRequester()
 
-    expect(mockHttpErrors).toHaveBeenCalledOnce()
-    expect(mockHeaders).toHaveBeenCalledWith(
-      expect.objectContaining({'User-Agent': '@sanity/cli-core@1.0.0'}),
+    expect(mockDebugIt).toHaveBeenCalledWith('sanity:cli')
+    expect(mockDebugMiddleware).toHaveBeenCalledWith({log: logFn, verbose: true})
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith(
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'User-Agent': expect.any(String),
+        }),
+        middleware: [debugResult],
+      }),
     )
-    expect(mockDebug).toHaveBeenCalledWith({namespace: 'sanity:cli', verbose: true})
-    expect(mockPromise).toHaveBeenCalledWith({onlyBody: true})
-
-    // Verify order: httpErrors, headers, debug, promise
-    expect(mockGetIt).toHaveBeenCalledWith([
-      httpErrorsResult,
-      headersResult,
-      debugResult,
-      promiseResult,
-    ])
   })
 
   test('does not resolve package info until User-Agent header is accessed', () => {
-    mockHttpErrors.mockReturnValue({})
-    mockHeaders.mockReturnValue({})
-    mockDebug.mockReturnValue({})
-    mockPromise.mockReturnValue({})
-
     createRequester()
 
     expect(mockPackageUp).not.toHaveBeenCalled()
 
-    // Accessing the getter triggers the lazy resolution
-    const headersObj = mockHeaders.mock.calls[0][0]
+    const headersObj = mockCreateGetItRequester.mock.calls[0][0].headers as Record<string, string>
     expect(headersObj['User-Agent']).toBe('@sanity/cli-core@1.0.0')
 
     expect(mockPackageUp).toHaveBeenCalledOnce()
   })
 
   test('caches package info across calls', () => {
-    mockHttpErrors.mockReturnValue({})
-    mockHeaders.mockReturnValue({})
-    mockDebug.mockReturnValue({})
-    mockPromise.mockReturnValue({})
-
     createRequester()
     createRequester()
 
-    // Trigger the lazy getter on both headers objects
-    const firstHeaders = mockHeaders.mock.calls[0][0]
-    const secondHeaders = mockHeaders.mock.calls[1][0]
+    const firstHeaders = mockCreateGetItRequester.mock.calls[0][0].headers as Record<string, string>
+    const secondHeaders = mockCreateGetItRequester.mock.calls[1][0].headers as Record<
+      string,
+      string
+    >
     expect(firstHeaders['User-Agent']).toBe('@sanity/cli-core@1.0.0')
     expect(secondHeaders['User-Agent']).toBe('@sanity/cli-core@1.0.0')
 
@@ -111,157 +95,118 @@ describe('#createRequester', () => {
   })
 
   test('disables httpErrors when set to false', () => {
-    const headersResult = {id: 'headers'}
-    const debugResult = {id: 'debug'}
-    const promiseResult = {id: 'promise'}
+    createRequester({httpErrors: false})
 
-    mockHeaders.mockReturnValue(headersResult)
-    mockDebug.mockReturnValue(debugResult)
-    mockPromise.mockReturnValue(promiseResult)
-
-    createRequester({middleware: {httpErrors: false}})
-
-    expect(mockHttpErrors).not.toHaveBeenCalled()
-    expect(mockGetIt).toHaveBeenCalledWith([headersResult, debugResult, promiseResult])
-  })
-
-  test('disables promise when set to false', () => {
-    const httpErrorsResult = {id: 'httpErrors'}
-    const headersResult = {id: 'headers'}
-    const debugResult = {id: 'debug'}
-
-    mockHttpErrors.mockReturnValue(httpErrorsResult)
-    mockHeaders.mockReturnValue(headersResult)
-    mockDebug.mockReturnValue(debugResult)
-
-    createRequester({middleware: {promise: false}})
-
-    expect(mockPromise).not.toHaveBeenCalled()
-    expect(mockGetIt).toHaveBeenCalledWith([httpErrorsResult, headersResult, debugResult])
-  })
-
-  test('customizes promise options', () => {
-    mockHttpErrors.mockReturnValue({})
-    mockHeaders.mockReturnValue({})
-    mockDebug.mockReturnValue({})
-    mockPromise.mockReturnValue({})
-
-    createRequester({middleware: {promise: {onlyBody: false}}})
-
-    expect(mockPromise).toHaveBeenCalledWith({onlyBody: false})
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith(
+      expect.objectContaining({httpErrors: false}),
+    )
   })
 
   test('disables headers when set to false', () => {
-    const httpErrorsResult = {id: 'httpErrors'}
-    const debugResult = {id: 'debug'}
-    const promiseResult = {id: 'promise'}
+    createRequester({headers: false})
 
-    mockHttpErrors.mockReturnValue(httpErrorsResult)
-    mockDebug.mockReturnValue(debugResult)
-    mockPromise.mockReturnValue(promiseResult)
-
-    createRequester({middleware: {headers: false}})
-
-    expect(mockHeaders).not.toHaveBeenCalled()
-    expect(mockGetIt).toHaveBeenCalledWith([httpErrorsResult, debugResult, promiseResult])
-  })
-
-  test('does not resolve package info when headers disabled', () => {
-    mockHttpErrors.mockReturnValue({})
-    mockDebug.mockReturnValue({})
-    mockPromise.mockReturnValue({})
-
-    createRequester({middleware: {headers: false}})
-
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith(
+      expect.objectContaining({headers: undefined}),
+    )
     expect(mockPackageUp).not.toHaveBeenCalled()
   })
 
   test('merges custom headers with default User-Agent', () => {
-    mockHttpErrors.mockReturnValue({})
-    mockHeaders.mockReturnValue({})
-    mockDebug.mockReturnValue({})
-    mockPromise.mockReturnValue({})
+    createRequester({headers: {'X-Custom': 'value'}})
 
-    createRequester({middleware: {headers: {'X-Custom': 'value'}}})
-
-    expect(mockHeaders).toHaveBeenCalledWith(
-      expect.objectContaining({
-        'User-Agent': '@sanity/cli-core@1.0.0',
-        'X-Custom': 'value',
-      }),
-    )
+    const headersObj = mockCreateGetItRequester.mock.calls[0][0].headers as Record<string, string>
+    expect(headersObj['X-Custom']).toBe('value')
+    expect(headersObj['User-Agent']).toBe('@sanity/cli-core@1.0.0')
   })
 
   test('allows overriding default User-Agent header', () => {
-    mockHttpErrors.mockReturnValue({})
-    mockHeaders.mockReturnValue({})
-    mockDebug.mockReturnValue({})
-    mockPromise.mockReturnValue({})
+    createRequester({headers: {'User-Agent': 'custom-agent'}})
 
-    createRequester({middleware: {headers: {'User-Agent': 'custom-agent'}}})
-
-    expect(mockHeaders).toHaveBeenCalledWith(
-      expect.objectContaining({'User-Agent': 'custom-agent'}),
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith(
+      expect.objectContaining({
+        headers: expect.objectContaining({'User-Agent': 'custom-agent'}),
+      }),
     )
     // Should not resolve package info when User-Agent is overridden
     expect(mockPackageUp).not.toHaveBeenCalled()
   })
 
   test('disables debug when set to false', () => {
-    const httpErrorsResult = {id: 'httpErrors'}
-    const headersResult = {id: 'headers'}
-    const promiseResult = {id: 'promise'}
+    createRequester({debug: false})
 
-    mockHttpErrors.mockReturnValue(httpErrorsResult)
-    mockHeaders.mockReturnValue(headersResult)
-    mockPromise.mockReturnValue(promiseResult)
-
-    createRequester({middleware: {debug: false}})
-
-    expect(mockDebug).not.toHaveBeenCalled()
-    expect(mockGetIt).toHaveBeenCalledWith([httpErrorsResult, headersResult, promiseResult])
+    expect(mockDebugMiddleware).not.toHaveBeenCalled()
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith(expect.objectContaining({middleware: []}))
   })
 
   test('customizes debug options', () => {
-    mockHttpErrors.mockReturnValue({})
-    mockHeaders.mockReturnValue({})
-    mockDebug.mockReturnValue({})
-    mockPromise.mockReturnValue({})
+    const logFn = vi.fn()
+    mockDebugIt.mockReturnValue(logFn)
 
-    createRequester({middleware: {debug: {namespace: 'sanity:custom'}}})
+    createRequester({debug: {namespace: 'sanity:custom'}})
 
-    expect(mockDebug).toHaveBeenCalledWith({namespace: 'sanity:custom', verbose: true})
+    expect(mockDebugIt).toHaveBeenCalledWith('sanity:custom')
+    expect(mockDebugMiddleware).toHaveBeenCalledWith({log: logFn, verbose: true})
   })
 
-  test('can disable all middleware', () => {
+  test('passes additional middleware through', () => {
+    const retryMw = Object.assign(vi.fn(), {id: 'retry'})
+    const debugResult = {id: 'debug'}
+    mockDebugMiddleware.mockReturnValue(debugResult)
+
+    createRequester({middleware: [retryMw]})
+
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith(
+      expect.objectContaining({
+        middleware: [retryMw, debugResult],
+      }),
+    )
+  })
+
+  test('forwards base, timeout, fetch, and as options', () => {
+    const fetchFn = vi.fn()
     createRequester({
-      middleware: {
-        debug: false,
-        headers: false,
-        httpErrors: false,
-        promise: false,
-      },
+      as: 'json',
+      base: 'https://api.example.com',
+      fetch: fetchFn,
+      timeout: 5000,
     })
 
-    expect(mockHttpErrors).not.toHaveBeenCalled()
-    expect(mockHeaders).not.toHaveBeenCalled()
-    expect(mockDebug).not.toHaveBeenCalled()
-    expect(mockPromise).not.toHaveBeenCalled()
-    expect(mockGetIt).toHaveBeenCalledWith([])
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith(
+      expect.objectContaining({
+        as: 'json',
+        base: 'https://api.example.com',
+        fetch: fetchFn,
+        timeout: 5000,
+      }),
+    )
+  })
+
+  test('can disable all defaults', () => {
+    createRequester({
+      debug: false,
+      headers: false,
+      httpErrors: false,
+    })
+
+    expect(mockDebugMiddleware).not.toHaveBeenCalled()
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith({
+      as: undefined,
+      base: undefined,
+      fetch: undefined,
+      headers: undefined,
+      httpErrors: false,
+      middleware: [],
+      timeout: undefined,
+    })
   })
 
   test('throws when package.json cannot be found', () => {
     mockPackageUp.mockReturnValue(undefined)
 
-    mockHttpErrors.mockReturnValue({})
-    mockHeaders.mockReturnValue({})
-    mockDebug.mockReturnValue({})
-    mockPromise.mockReturnValue({})
-
     createRequester()
 
     // The error is thrown lazily when the User-Agent getter is accessed
-    const headersObj = mockHeaders.mock.calls[0][0]
+    const headersObj = mockCreateGetItRequester.mock.calls[0][0].headers as Record<string, string>
     expect(() => headersObj['User-Agent']).toThrow(
       'Unable to resolve @sanity/cli-core package root',
     )

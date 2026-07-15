@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
-import {createRequester} from '@sanity/cli-core/request'
+import {createRequester, nodeReadableFromWeb} from '@sanity/cli-core/request'
 import {spinner} from '@sanity/cli-core/ux'
 import {sanityImport} from '@sanity/import'
 import prettyMs from 'pretty-ms'
@@ -39,13 +39,11 @@ function getAssetsBase(source: string): string | undefined {
 }
 
 async function getUriStream(uri: string): Promise<NodeJS.ReadableStream> {
-  const request = createRequester({
-    middleware: {promise: {onlyBody: false}},
-  })
+  const request = createRequester()
 
   try {
-    const response = (await request({stream: true, url: uri})) as {body: NodeJS.ReadableStream}
-    return response.body
+    const response = await request({as: 'stream', url: uri})
+    return nodeReadableFromWeb(response.body)
   } catch (err) {
     throw new Error(`Error fetching source:\n${(err as Error).message}`, {cause: err})
   }
