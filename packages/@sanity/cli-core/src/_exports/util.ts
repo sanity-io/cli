@@ -1,6 +1,7 @@
 // Pure in-memory and zero dep utilities
 //
 export {doImport} from '../util/doImport.js'
+export {getCoreAppUrl} from '../util/getCoreAppUrl.js'
 export {getSanityConfigDir, getSanityDataDir} from '../util/getSanityConfigDir.js'
 export {getSanityEnvVar} from '../util/getSanityEnvVar.js'
 export {getSanityUrl} from '../util/getSanityUrl.js'

@@ -1,6 +1,6 @@
 {
   "name": "@sanity/workbench-cli",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "Internal implementation detail of the Sanity CLI's unstable workbench support. Not intended for direct use.",
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
@@ -39,13 +39,17 @@
       "source": "./src/_exports/init.ts",
       "default": "./dist/_exports/init.js"
     },
+    "./undeploy": {
+      "source": "./src/_exports/undeploy.ts",
+      "default": "./dist/_exports/undeploy.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",

@@ -1,9 +1,12 @@
-import fs from 'node:fs'
+import {stat} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {type CliConfig, exitCodes, ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core'
+import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {type CliConfig} from '@sanity/cli-core/types'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
 import {type Level} from '../../actions/documents/types.js'
@@ -104,7 +107,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       cliConfig = await this.getCliConfig()
     } catch (err) {
       if (err instanceof ProjectRootNotFoundError) {
-        this.error(
+        return this.output.error(
           'This command must be run from within a Sanity project directory (requires studio schema for validation)',
           {exit: 1},
         )
@@ -116,26 +119,28 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     if (file) {
       const filePath = path.resolve(workDir, file)
 
-      let stat
+      let fileStat
       try {
-        stat = await fs.promises.stat(filePath)
+        fileStat = await stat(filePath)
       } catch {
-        this.error(`File not found: ${file}. Pass an existing .ndjson file or tarball to --file.`, {
-          exit: 2,
-        })
+        return this.output.error(
+          `File not found: ${file}. Pass an existing .ndjson file or tarball to --file.`,
+          {exit: 2},
+        )
       }
 
-      if (!stat.isFile()) {
-        this.error(`Invalid --file path: ${file} is not a file. Pass an .ndjson file or tarball.`, {
-          exit: 2,
-        })
+      if (!fileStat.isFile()) {
+        return this.output.error(
+          `Invalid --file path: ${file} is not a file. Pass an .ndjson file or tarball.`,
+          {exit: 2},
+        )
       }
 
       ndjsonFilePath = filePath
     }
 
     if (!unattendedMode) {
-      this.log(
+      this.output.log(
         `${styleText('yellow', `${logSymbols.warning} Warning:`)} This command ${
           file
             ? 'reads all documents from your input file'
@@ -143,21 +148,21 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         } and processes them through your local schema within a ` +
           `simulated browser environment.\n`,
       )
-      this.log(`Potential pitfalls:\n`)
-      this.log(
+      this.output.log(`Potential pitfalls:\n`)
+      this.output.log(
         `- Processes all documents locally (excluding assets). Large datasets may require more resources.`,
       )
-      this.log(
+      this.output.log(
         `- Executes all custom validation functions. Some functions may need to be refactored for compatibility.`,
       )
-      this.log(
+      this.output.log(
         `- Not all standard browser features are available and may cause issues while loading your Studio.`,
       )
-      this.log(
+      this.output.log(
         `- Adheres to document permissions. Ensure this account can see all desired documents.`,
       )
       if (file) {
-        this.log(
+        this.output.log(
           `- Checks for missing document references against the live dataset if not found in your file.`,
         )
       }
@@ -168,8 +173,8 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       })
 
       if (!confirmed) {
-        this.log('Validation cancelled')
-        this.exit(exitCodes.USER_ABORT)
+        this.output.log('Validation cancelled')
+        return this.exit(exitCodes.USER_ABORT)
       }
     }
 
@@ -195,10 +200,10 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       })
 
       if (overallLevel === 'error') {
-        this.exit(1)
+        return this.exit(1)
       }
     } catch (err) {
-      this.error(err instanceof Error ? err.message : String(err), {exit: 1})
+      return this.output.error(err instanceof Error ? err.message : String(err), {exit: 1})
     }
   }
 }

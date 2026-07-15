@@ -1,5 +1,6 @@
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
+import {unstable_defineApp, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -405,7 +406,8 @@ describe('#undeploy', () => {
     expect(confirm).not.toHaveBeenCalled()
     expect(stdout).toContain('Dry run — no changes made.')
     expect(stdout).toContain('Undeploys studio https://my-host.sanity.studio')
-    expect(stdout).toContain('version 3.99.0')
+    expect(stdout).toContain('at 2024-01-02T00:00:00Z by gustav@sanity.io')
+    expect(stdout).not.toContain('3.99.0')
   })
 
   test('dry run reports the application without deleting it', async () => {
@@ -561,6 +563,178 @@ describe('#undeploy', () => {
     expect(confirm).not.toHaveBeenCalled()
     const payload = JSON.parse(stdout)
     expect(payload.undeployed).toBe(true)
+  })
+
+  test('workbench app dry run resolves the Brett application', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      uri: '/applications/wb-app-1',
+    }).reply(200, {
+      id: 'wb-app-1',
+      organizationId: 'org-1',
+      slug: 'my-app-x1',
+      title: 'My App',
+      type: 'coreApp',
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineApp({
+            entry: './src/App.tsx',
+            name: 'my-app',
+            organizationId: 'org-1',
+            title: 'My App',
+          }),
+          deployment: {appId: 'wb-app-1'},
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Undeploys application "My App" (wb-app-1)')
+  })
+
+  test('workbench app undeploys through the applications API', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      uri: '/applications/wb-app-1',
+    }).reply(200, {
+      id: 'wb-app-1',
+      organizationId: 'org-1',
+      slug: 'my-app-x1',
+      title: 'My App',
+      type: 'coreApp',
+    })
+
+    mockApi({
+      apiVersion: 'vX',
+      method: 'delete',
+      uri: '/applications/wb-app-1',
+    }).reply(200, {deleted: true})
+
+    const {stdout} = await testCommand(UndeployCommand, ['--json', '--yes'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineApp({
+            entry: './src/App.tsx',
+            name: 'my-app',
+            organizationId: 'org-1',
+            title: 'My App',
+          }),
+          deployment: {appId: 'wb-app-1'},
+        },
+        token: 'test-token',
+      },
+    })
+
+    const payload = JSON.parse(stdout)
+    expect(payload.undeployed).toBe(true)
+    expect(payload.application).toMatchObject({
+      deletes: 'application',
+      id: 'wb-app-1',
+      url: 'https://org-1.sanity.run/application/wb-app-1',
+    })
+  })
+
+  test('media library dry run reports the installation config', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none', organizationId: 'org-1'},
+      uri: '/installations',
+    }).reply(200, {
+      data: [{application: {slug: 'media-library'}, id: 'inst-1'}],
+    })
+
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none'},
+      uri: '/installations/inst-1/configs',
+    }).reply(200, {
+      data: [
+        {
+          createdAt: '2024-01-01T00:00:00Z',
+          deployedBy: 'gustav@sanity.io',
+          id: 'cfg-1',
+          isActive: true,
+          version: '1.0.0',
+        },
+      ],
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineMediaLibrary({
+            fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
+            organizationId: 'org-1',
+          }),
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Undeploys the installation config')
+    expect(stdout).toContain('at 2024-01-01T00:00:00Z by gustav@sanity.io')
+    expect(stdout).not.toContain('1.0.0')
+    expect(stdout).toContain('Alt text (alt): ./src/alt.ts')
+    expect(stdout).not.toContain('Config snapshots')
+  })
+
+  test('media library dry run --json carries the structured config target', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none', organizationId: 'org-1'},
+      uri: '/installations',
+    }).reply(200, {
+      data: [{application: {slug: 'media-library'}, id: 'inst-1'}],
+    })
+
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none'},
+      uri: '/installations/inst-1/configs',
+    }).reply(200, {
+      data: [
+        {
+          createdAt: '2024-01-01T00:00:00Z',
+          deployedBy: 'gustav@sanity.io',
+          id: 'cfg-1',
+          isActive: true,
+          version: '1.0.0',
+        },
+      ],
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run', '--json'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineMediaLibrary({
+            fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
+            organizationId: 'org-1',
+          }),
+        },
+        token: 'test-token',
+      },
+    })
+
+    const payload = JSON.parse(stdout)
+    expect(payload.canUndeploy).toBe(true)
+    expect(payload.application).toMatchObject({
+      activeDeployment: {
+        deployedAt: '2024-01-01T00:00:00Z',
+        deployedBy: 'gustav@sanity.io',
+      },
+      configs: [expect.objectContaining({id: 'cfg-1'})],
+      deletes: 'config',
+    })
+    expect(payload.application.summary).toBeUndefined()
+    // Workbench internals and versions never reach the machine payload
+    expect(payload.application.fields).toBeUndefined()
+    expect(payload.application.installationId).toBeUndefined()
+    expect(payload.application.isSingleton).toBeUndefined()
+    expect(payload.application.activeDeployment.version).toBeUndefined()
+    expect(payload.application.configs[0].version).toBeUndefined()
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {

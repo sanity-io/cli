@@ -1,11 +1,15 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
+import {type UndeployAdapter} from '@sanity/cli-core/undeploy'
+import {getWorkbench} from '@sanity/workbench-cli/deploy'
+import {createWorkbenchUndeployAdapter} from '@sanity/workbench-cli/undeploy'
 
 import {
   createAppUndeployAdapter,
   createStudioUndeployAdapter,
 } from '../actions/undeploy/adapters.js'
 import {runUndeploy} from '../actions/undeploy/runUndeploy.js'
+import {getAppId} from '../util/appId.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 
 export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
@@ -48,9 +52,21 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
     const {flags} = await this.parse(UndeployCommand)
 
     const cliConfig = await this.getCliConfig()
-    const adapter = determineIsApp(cliConfig)
-      ? createAppUndeployAdapter(cliConfig)
-      : createStudioUndeployAdapter(cliConfig)
+    const isApp = determineIsApp(cliConfig)
+
+    // Workbench apps deploy through Brett, so they undeploy through it too;
+    // plain projects keep the user-applications backend.
+    const workbench = getWorkbench(cliConfig)
+    const adapter: UndeployAdapter = workbench
+      ? createWorkbenchUndeployAdapter({
+          appId: getAppId(cliConfig),
+          organizationId: cliConfig.app?.organizationId,
+          type: isApp ? 'coreApp' : 'studio',
+          workbench,
+        })
+      : isApp
+        ? createAppUndeployAdapter(cliConfig)
+        : createStudioUndeployAdapter(cliConfig)
 
     // An unattended run (--yes, --json, non-TTY) can't answer the confirmation
     // prompt, so it consents up front; machine callers preview with --dry-run.

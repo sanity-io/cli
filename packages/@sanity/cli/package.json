@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli",
-  "version": "7.7.1",
+  "version": "7.9.0",
   "description": "Sanity CLI tool for managing Sanity projects and organizations",
   "keywords": [
     "cli",
@@ -55,7 +55,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "postbuild": "pnpm run manifest:generate && pnpm run check:topic-aliases",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:topic-aliases": "tsx scripts/check-topic-aliases.ts",
@@ -90,7 +90,7 @@
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^6.0.3",
     "@sanity/migrate": "^7.0.3",
-    "@sanity/runtime-cli": "^17.0.0",
+    "@sanity/runtime-cli": "^17.1.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@sanity/template-validator": "^3.1.0",
@@ -151,7 +151,7 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/ui": "^3.2.0",
+    "@sanity/ui": "^3.3.5",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/debug": "catalog:",
@@ -173,7 +173,7 @@
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "nock": "catalog:",
-    "oclif": "^4.23.16",
+    "oclif": "^4.23.27",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",

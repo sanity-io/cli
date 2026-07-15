@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-test",
-  "version": "3.0.1",
+  "version": "5.0.0",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
     "cli",
@@ -131,7 +131,7 @@
     "@oclif/core": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@sanity/client": "^7.23.0",
+    "@sanity/client": "^7.23.2",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",

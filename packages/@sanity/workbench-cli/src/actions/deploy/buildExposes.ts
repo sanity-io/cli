@@ -1,18 +1,5 @@
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
-
-/**
- * An interface as Brett stores it: the declared `type` (validated server-side,
- * not here) and the remote-relative `moduleId` the workbench loads it by — the
- * host prepends the app's own id.
- * @internal
- */
-export interface BrettInterface {
-  moduleId: string
-  name: string
-  title: string
-  type: string
-  version: string
-}
+import {type BrettInterface} from '../../services/applications.js'
 
 interface BuildExposesContext {
   appName: string
@@ -59,9 +46,17 @@ export interface DeployedExpose {
   type: string
 }
 
-function summarizeExposeGroup(heading: string, items: readonly DeployedExpose[]): string {
-  const label = (item: DeployedExpose) =>
-    item.title === item.name ? item.name : `${item.title} (${item.name})`
+const label = (item: {name: string; title: string}) =>
+  item.title === item.name ? item.name : `${item.title} (${item.name})`
+
+/**
+ * One `Title (name): src` report line per declared entry point.
+ * @internal
+ */
+export function summarizeExposeGroup(
+  heading: string,
+  items: readonly {name: string; src: string; title: string}[],
+): string {
   return `${heading}:\n${items.map((item) => `  ${label(item)}: ${item.src}`).join('\n')}`
 }
 

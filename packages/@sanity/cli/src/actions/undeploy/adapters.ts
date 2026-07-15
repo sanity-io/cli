@@ -1,4 +1,10 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {
+  type UndeployAdapter,
+  type UndeployApplicationTarget,
+  type UndeployTarget,
+} from '@sanity/cli-core/undeploy'
+import {getCoreAppUrl} from '@sanity/cli-core/util'
 
 import {
   deleteUserApplication,
@@ -7,11 +13,10 @@ import {
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
-import {getCoreAppUrl} from '../deploy/urlUtils.js'
-import {type UndeployAdapter} from './runUndeploy.js'
-import {type UndeployTarget} from './undeployPlan.js'
 
-export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter {
+export function createAppUndeployAdapter(
+  cliConfig: CliConfig,
+): UndeployAdapter<UndeployApplicationTarget> {
   return {
     async resolveTarget() {
       const appId = getAppId(cliConfig)
@@ -35,7 +40,9 @@ export function createAppUndeployAdapter(cliConfig: CliConfig): UndeployAdapter 
   }
 }
 
-export function createStudioUndeployAdapter(cliConfig: CliConfig): UndeployAdapter {
+export function createStudioUndeployAdapter(
+  cliConfig: CliConfig,
+): UndeployAdapter<UndeployApplicationTarget> {
   return {
     async resolveTarget() {
       const appId = cliConfig.deployment?.appId
@@ -75,17 +82,17 @@ export function createStudioUndeployAdapter(cliConfig: CliConfig): UndeployAdapt
 function toUndeployTarget(
   application: UserApplication,
   type: UndeployTarget['type'],
-): UndeployTarget {
+): UndeployApplicationTarget {
   return {
     activeDeployment: application.activeDeployment
       ? {
           deployedAt: application.activeDeployment.deployedAt,
           deployedBy: application.activeDeployment.deployedBy,
-          version: application.activeDeployment.version,
         }
       : null,
     appHost: application.appHost ?? null,
     createdAt: application.createdAt ?? null,
+    deletes: 'application',
     id: application.id,
     organizationId: application.organizationId ?? null,
     projectId: application.projectId ?? null,

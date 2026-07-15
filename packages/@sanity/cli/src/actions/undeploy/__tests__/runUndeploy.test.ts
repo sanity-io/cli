@@ -1,15 +1,15 @@
 import {type Output} from '@sanity/cli-core'
+import {type UndeployAdapter, type UndeployApplicationTarget} from '@sanity/cli-core/undeploy'
 import {confirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {runUndeploy, type UndeployAdapter, type UndeployOptions} from '../runUndeploy.js'
+import {runUndeploy, type UndeployOptions} from '../runUndeploy.js'
 import {
   canUndeploy,
   describeUndeployTarget,
   renderUndeployPlan,
   type UndeployPlan,
   undeployPlanToJson,
-  type UndeployTarget,
 } from '../undeployPlan.js'
 
 vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
@@ -19,11 +19,12 @@ const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unkn
 const options = (output: Output, flags: Partial<UndeployOptions['flags']> = {}): UndeployOptions =>
   ({flags: {'dry-run': false, yes: false, ...flags}, output}) as UndeployOptions
 
-function target(overrides: Partial<UndeployTarget> = {}): UndeployTarget {
+function target(overrides: Partial<UndeployApplicationTarget> = {}): UndeployApplicationTarget {
   return {
     activeDeployment: null,
     appHost: 'my-studio',
     createdAt: null,
+    deletes: 'application',
     id: 'app-1',
     organizationId: null,
     projectId: 'project-1',
@@ -170,6 +171,26 @@ describe('runUndeploy real run', () => {
     )
 
     expect(output.error).toHaveBeenCalledWith('Error undeploying studio: boom', {exit: 1})
+  })
+
+  test('a failed config deletion is labeled as the installation config', async () => {
+    const output = mockOutput()
+    await runUndeploy(
+      options(output, {yes: true}),
+      adapter({
+        resolveTarget: async () => ({
+          target: {...target(), deletes: 'config' as const, id: null},
+          type: 'found',
+        }),
+        undeploy: async () => {
+          throw new Error('boom')
+        },
+      }),
+    )
+
+    expect(output.error).toHaveBeenCalledWith('Error undeploying installation config: boom', {
+      exit: 1,
+    })
   })
 
   test('Ctrl+C on the prompt reads as a cancellation, not an error dump', async () => {
@@ -377,7 +398,6 @@ describe('renderUndeployPlan', () => {
           activeDeployment: {
             deployedAt: '2024-01-02T00:00:00Z',
             deployedBy: 'gustav@sanity.io',
-            version: '3.99.0',
           },
           title: 'My Studio',
         }),
@@ -393,8 +413,7 @@ describe('renderUndeployPlan', () => {
     expect(logged).toContain('My Studio')
     expect(logged).toContain('app-1')
     expect(logged).toContain('https://my-studio.sanity.studio')
-    expect(logged).toContain('version 3.99.0')
-    expect(logged).toContain('by gustav@sanity.io')
+    expect(logged).toContain('at 2024-01-02T00:00:00Z by gustav@sanity.io')
   })
 
   test('no target renders "Nothing to undeploy." without a verdict', () => {
@@ -430,5 +449,52 @@ describe('renderUndeployPlan', () => {
     expect(logged.some((line) => line.includes('Application can not be undeployed.'))).toBe(true)
     expect(logged.some((line) => line.includes('Problems to fix:'))).toBe(true)
     expect(logged.some((line) => line.includes('boom: do X'))).toBe(true)
+  })
+
+  test('a blocked config-only undeploy names the installation config in the verdict', () => {
+    const output = mockOutput()
+    renderUndeployPlan(
+      {
+        checks: [{message: 'boom', status: 'fail'}],
+        reason: null,
+        target: {
+          ...target({title: 'media-library', type: 'coreApp'}),
+          deletes: 'config',
+          id: null,
+        },
+        type: 'coreApp',
+      },
+      output,
+    )
+
+    const logged = vi.mocked(output.log).mock.calls.map((call) => String(call[0]))
+    expect(
+      logged.some((line) =>
+        line.includes('Installation config for "media-library" can not be undeployed.'),
+      ),
+    ).toBe(true)
+  })
+})
+
+describe('renderUndeployPlan target summary', () => {
+  test('renders adapter-authored summary lines, splitting multi-line entries', () => {
+    const output = mockOutput()
+    renderUndeployPlan(
+      {
+        checks: [],
+        reason: null,
+        target: target({summary: ['Views:\n  Insights (insights)', 'Singleton: true']}),
+        type: 'studio',
+      },
+      output,
+    )
+
+    const logged = vi
+      .mocked(output.log)
+      .mock.calls.map((call) => String(call[0]))
+      .join('\n')
+    expect(logged).toContain('Views:')
+    expect(logged).toContain('Insights (insights)')
+    expect(logged).toContain('Singleton: true')
   })
 })

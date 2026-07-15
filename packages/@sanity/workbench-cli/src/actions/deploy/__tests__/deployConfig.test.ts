@@ -80,6 +80,7 @@ describe('deployConfig', () => {
     await deployConfig({
       appType: 'media-library',
       installationId: 'inst_ml',
+      organizationId: 'org-1',
       output,
       sourceDir: '/tmp/build/app',
       version: '3.99.0',
@@ -92,19 +93,36 @@ describe('deployConfig', () => {
     expect(post.uri).toBe('/installations/inst_ml/configs')
     expect(post.headers['content-type']).toMatch(/multipart\/form-data/)
   })
+
+  test('reports the workbench URL on success', async () => {
+    stubBrett([])
+
+    await deployConfig({
+      appType: 'media-library',
+      installationId: 'inst_ml',
+      organizationId: 'org-1',
+      output,
+      sourceDir: '/tmp/build/app',
+      version: '3.99.0',
+    })
+
+    expect(vi.mocked(output.log).mock.calls.join('\n')).toContain('https://org-1.sanity.run')
+  })
 })
 
 describe('summarizeConfig', () => {
-  test('lists a media library config as a heading with title/name per field', () => {
+  test('lists a media library config as a heading with one entry-point line per field', () => {
     expect(
       summarizeConfig({
         appType: 'media-library',
         fields: [
-          {name: 'title', title: 'Title'},
-          {name: 'author', title: 'Author'},
+          {name: 'title', src: './src/title.ts', title: 'Title'},
+          {name: 'author', src: './src/author.ts', title: 'Author'},
         ],
       }),
-    ).toBe('Media library fields:\n  Title (title)\n  Author (author)')
+    ).toBe(
+      'Media library fields:\n  Title (title): ./src/title.ts\n  Author (author): ./src/author.ts',
+    )
   })
 
   test('throws for an unhandled app type', () => {

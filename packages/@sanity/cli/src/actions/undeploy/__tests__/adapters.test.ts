@@ -80,7 +80,6 @@ describe('createAppUndeployAdapter', () => {
       activeDeployment: {
         deployedAt: '2024-01-02T00:00:00Z',
         deployedBy: 'gustav@sanity.io',
-        version: '2.0.0',
       },
       id: 'core-1',
       organizationId: 'org-1',

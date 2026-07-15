@@ -1,33 +1,9 @@
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
+import {type UndeployTarget, type UndeployTargetResolution} from '@sanity/cli-core/undeploy'
 
 import {type Check, checkStatusIcon, renderIssues} from '../../util/checks.js'
-
-/**
- * What an undeploy deletes, resolved once and read by every report — the
- * dry-run plan, the `--json` payloads, and the real run's confirmation prompt —
- * so the human and machine outputs can't drift.
- */
-export interface UndeployTarget {
-  /** Details of the deployment currently being served; `null` when none is live. */
-  activeDeployment: {deployedAt: string; deployedBy: string; version: string} | null
-  /** Hostname the application is served from. */
-  appHost: string | null
-  createdAt: string | null
-  /** The application an undeploy deletes, along with all its deployments. */
-  id: string
-  organizationId: string | null
-  projectId: string | null
-  title: string | null
-  type: 'coreApp' | 'studio'
-  /** Where the deployed studio/app is currently reachable. */
-  url: string | null
-}
-
-export type UndeployTargetResolution =
-  | {message: string; solution?: string; type: 'none'}
-  | {target: UndeployTarget; type: 'found'}
 
 /** What a `--dry-run` undeploy would do: the real undeploy sequence with the deletion gated off. */
 export interface UndeployPlan {
@@ -41,6 +17,14 @@ export interface UndeployPlan {
 
 export function canUndeploy(plan: UndeployPlan): boolean {
   return plan.target !== null && plan.checks.every((check) => check.status !== 'fail')
+}
+
+/** What an undeploy deletes, phrased for the human output. */
+export function undeployLabel(target: UndeployTarget | null, type: 'coreApp' | 'studio'): string {
+  if (target?.deletes === 'config') {
+    return `installation config${target.title ? ` for "${target.title}"` : ''}`
+  }
+  return type === 'coreApp' ? 'application' : 'studio'
 }
 
 /**
@@ -81,6 +65,14 @@ export function describeUndeployTarget(resolution: UndeployTargetResolution): Ch
   }
 
   const {target} = resolution
+  if (target.deletes === 'config') {
+    return {
+      message: target.title
+        ? `Undeploys the installation config for "${target.title}"`
+        : 'Undeploys the installation config',
+      status: 'pass',
+    }
+  }
   if (target.type === 'studio') {
     return {message: `Undeploys studio ${target.url ?? target.id}`, status: 'pass'}
   }
@@ -108,8 +100,13 @@ export function renderUndeployPlan(plan: UndeployPlan, output: Output): void {
 
   if (!canUndeploy(plan)) {
     if (problems.length > 0) {
-      const label = plan.type === 'coreApp' ? 'Application' : 'Studio'
-      output.log(styleText('red', `\n${checkStatusIcon('fail')} ${label} can not be undeployed.`))
+      const label = undeployLabel(plan.target, plan.type)
+      output.log(
+        styleText(
+          'red',
+          `\n${checkStatusIcon('fail')} ${label[0].toUpperCase()}${label.slice(1)} can not be undeployed.`,
+        ),
+      )
     } else {
       output.log('\nNothing to undeploy.')
     }
@@ -131,12 +128,16 @@ function renderTarget(target: UndeployTarget, output: Output): void {
   for (const [key, value] of rows) {
     if (value) output.log(`    ${key.padEnd(8)} ${styleText('yellow', value)}`)
   }
+
+  // Adapter-authored lines about what gets deleted (interfaces, config snapshots, …)
+  for (const entry of target.summary ?? []) {
+    for (const line of entry.split('\n')) output.log(`    ${line}`)
+  }
 }
 
 function formatDeployment(deployment: UndeployTarget['activeDeployment']): string | null {
   if (!deployment) return null
   const parts = [
-    deployment.version ? `version ${deployment.version}` : null,
     deployment.deployedAt ? `at ${deployment.deployedAt}` : null,
     deployment.deployedBy ? `by ${deployment.deployedBy}` : null,
   ].filter(Boolean)

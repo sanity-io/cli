@@ -350,7 +350,11 @@ describe('#deploy app', () => {
     )
     const result = JSON.parse(stdout)
     expect(result.deployed).toBe(true)
-    expect(result.target).toMatchObject({applicationId: 'app_new', slug: 'drop-desk-host'})
+    expect(result.target).toMatchObject({
+      applicationId: 'app_new',
+      slug: 'drop-desk-host',
+      url: `https://${organizationId}.sanity.run/application/app_new`,
+    })
   })
 
   test('a dry run surfaces the configured slug in the report and --json target', async () => {

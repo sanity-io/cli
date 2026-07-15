@@ -1,5 +1,54 @@
 # Change Log
 
+## [7.9.0](https://github.com/sanity-io/cli/compare/cli-v7.8.0...cli-v7.9.0)
+
+_2026-07-15_
+
+### Features
+
+- **workbench:** undeploy through the applications API ([#1472](https://github.com/sanity-io/cli/pull/1472)) ([6ddf505](https://github.com/sanity-io/cli/commit/6ddf505229ebc19169572d225385d9ed6f22f4cb))
+- **deploy:** report workbench URLs on deploy and undeploy ([#1507](https://github.com/sanity-io/cli/pull/1507)) ([76b2a1e](https://github.com/sanity-io/cli/commit/76b2a1e9529699bf58cf469aaf489e8b14a27d0c))
+- Allow boolean for reactCompiler config ([#1513](https://github.com/sanity-io/cli/pull/1513)) ([6a292b7](https://github.com/sanity-io/cli/commit/6a292b7dcca05137b7457f8dcd605f68aa76dac2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.4.0
+    - @sanity/cli-core bumped to 2.4.0
+    - @sanity/cli-build bumped to 4.1.0
+
+## [7.8.0](https://github.com/sanity-io/cli/compare/cli-v7.7.1...cli-v7.8.0)
+
+_2026-07-13_
+
+### Features
+
+- **deploy:** report whether a deploy created a new application or updated an existing one (in the success output and via `target.action` in the dry-run/`--json` payload), and warn that redeploying without `deployment.appId` creates another application ([#1462](https://github.com/sanity-io/cli/pull/1462)) ([d388f76](https://github.com/sanity-io/cli/commit/d388f763cbacda2cdb42f8d547a80c95830f425d))
+- **workbench:** deploy workbench apps to the Sanity app registry on `sanity deploy`, registering their interfaces (app view, views, services). Plain studios and coreApps are unaffected. ([#1442](https://github.com/sanity-io/cli/pull/1442)) ([a377fdb](https://github.com/sanity-io/cli/commit/a377fdb1e6c277311f97f632ac5fe76bc41f3904))
+- **workbench:** send `isSingleton` on core-app create (`POST /applications`) when set, surface it in the deploy report and `--json`, and relay the API's rejection message on failure. ([#1455](https://github.com/sanity-io/cli/pull/1455)) ([7f83938](https://github.com/sanity-io/cli/commit/7f83938eed8055b3fa6f2c8faf6f17e5f48f9694))
+- **workbench:** send studio workspaces (project, dataset, base path, title, icon) with workbench studio deploys, so the dashboard can surface them. ([#1453](https://github.com/sanity-io/cli/pull/1453)) ([fa1edf4](https://github.com/sanity-io/cli/commit/fa1edf4b13539e077880a7205e9b96d3252ae5d2))
+- **test:** `cli-test` now contains `cli-core` mocks ([#1448](https://github.com/sanity-io/cli/pull/1448)) ([f5f5f81](https://github.com/sanity-io/cli/commit/f5f5f81753879908ac8043914ca8007adf505800))
+- **undeploy:** add --dry-run flag ([#1470](https://github.com/sanity-io/cli/pull/1470)) ([f381c73](https://github.com/sanity-io/cli/commit/f381c73b29827f2f0c420a3dd9e9f53b082b4e8b))
+- **undeploy:** add --json flag ([#1471](https://github.com/sanity-io/cli/pull/1471)) ([5300202](https://github.com/sanity-io/cli/commit/5300202566cce95c1892ce161f50e617dc714415))
+- **deploy:** create workbench apps at a configured slug ([#1473](https://github.com/sanity-io/cli/pull/1473)) ([0d0ae06](https://github.com/sanity-io/cli/commit/0d0ae066a28b1225dcf88ee600facd43f1c17d25))
+
+### Bug Fixes
+
+- make projects list SANITY_INTERNAL_ENV-aware ([#1461](https://github.com/sanity-io/cli/pull/1461)) ([24081c3](https://github.com/sanity-io/cli/commit/24081c33f03cd7bde46e095bdaf06500f257f116))
+- move compareDependencyVersions into cli-build ([#1466](https://github.com/sanity-io/cli/pull/1466)) ([f424cba](https://github.com/sanity-io/cli/commit/f424cba7c1c2de601ce1c7e1d062e3a8dba6745b))
+- **deploy:** nest expose and config summaries in the dry-run report ([#1475](https://github.com/sanity-io/cli/pull/1475)) ([64e22e1](https://github.com/sanity-io/cli/commit/64e22e1280f763e31acbaa9e0ac28ca573c8dcb4))
+- **project:** Ensure no dataset listing/create operations during `project create` in unattended mode with no dataset specified ([#1495](https://github.com/sanity-io/cli/pull/1495)) ([abece33](https://github.com/sanity-io/cli/commit/abece3331d0a91c59bbb9994dd8328c32af01ab6))
+- **workbench:** rename the internal `installationConfig` field to `config`. ([#1456](https://github.com/sanity-io/cli/pull/1456)) ([62e8ad6](https://github.com/sanity-io/cli/commit/62e8ad66096ca6c840cfe7d960df2a91e9314e16))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.3.0
+    - @sanity/cli-build bumped to 4.0.0
+    - @sanity/cli-core bumped to 2.3.0
+
 ## [7.7.1](https://github.com/sanity-io/cli/compare/cli-v7.7.0...cli-v7.7.1)
 
 _2026-07-08_

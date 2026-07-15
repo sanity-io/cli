@@ -1,4 +1,4 @@
-import {getApplication} from '@sanity/workbench-cli/deploy'
+import {getApplication, getApplicationUrl} from '@sanity/workbench-cli/deploy'
 
 import {
   getUserApplication,
@@ -14,6 +14,8 @@ interface DeployTargetApp {
   appHost: string
   id: string
   title: string | null
+
+  url?: string
 }
 
 /** A coreApp verdict also carries the organization, for the dashboard URL. */
@@ -200,6 +202,7 @@ async function resolveAppById(
           id: application.id,
           organizationId: application.organizationId,
           title: application.title,
+          url: getApplicationUrl(application),
         },
         type: 'found',
       }

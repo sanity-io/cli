@@ -309,6 +309,7 @@ describe('checkAppTarget (workbench backend)', () => {
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "Drop Desk"')
     expect(reporter.results[0]?.target?.action).toBe('update')
+    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run/application/app-1')
   })
 
   test('unknown appId → fail check pointing to deployment.appId', async () => {
@@ -367,10 +368,10 @@ describe('checkStudioTarget (workbench backend)', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain(
-      'Deploys to existing studio https://my-studio.sanity.studio',
+      'Deploys to existing studio https://org-1.sanity.run/studio/app-1',
     )
     expect(target?.action).toBe('update')
-    expect(target?.url).toBe('https://my-studio.sanity.studio')
+    expect(target?.url).toBe('https://org-1.sanity.run/studio/app-1')
   })
 
   test('no appId with a studioHost → pass check for the studio that would be created', async () => {
@@ -384,8 +385,9 @@ describe('checkStudioTarget (workbench backend)', () => {
     })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
-    expect(reporter.results[0]?.message).toContain('Would create studio hostname')
+    expect(reporter.results[0]?.message).toContain('Would create studio hostname my-studio')
     expect(reporter.results[0]?.message).toContain('titled "New Studio"')
+    expect(reporter.results[0]?.target?.url).toBeNull()
     expect(mockGetApplication).not.toHaveBeenCalled()
   })
 
