@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.1.0](https://github.com/sanity-io/cli/compare/cli-build-v4.0.0...cli-build-v4.1.0)
+
+_2026-07-15_
+
+### Features
+
+- Allow boolean for reactCompiler config ([#1513](https://github.com/sanity-io/cli/pull/1513)) ([6a292b7](https://github.com/sanity-io/cli/commit/6a292b7dcca05137b7457f8dcd605f68aa76dac2))
+
+### Bug Fixes
+
+- **cli-build:** add bridge toggle and workbench SPA build steps ([#1516](https://github.com/sanity-io/cli/pull/1516)) ([0679b10](https://github.com/sanity-io/cli/commit/0679b10daae86d52138888457734d632fff5b896))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.4.0
+    - @sanity/cli-core bumped to 2.4.0
+
 ## [4.0.0](https://github.com/sanity-io/cli/compare/cli-build-v3.0.0...cli-build-v4.0.0)
 
 _2026-07-13_
