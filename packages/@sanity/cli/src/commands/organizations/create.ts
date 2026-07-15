@@ -1,12 +1,12 @@
 import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {validateOrganizationName} from '../../actions/organizations/validateOrganizationName.js'
 import {promptForOrganizationName} from '../../prompts/promptForOrganizationName.js'
 import {createOrganization} from '../../services/organizations.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
 
 const createOrgDebug = subdebug('organizations:create')

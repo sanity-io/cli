@@ -3,11 +3,11 @@ import {styleText} from 'node:util'
 import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {input, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
 import {deleteOrganization, getOrganization} from '../../services/organizations.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
 
 const deleteOrgDebug = subdebug('organizations:delete')
