@@ -171,31 +171,38 @@ describe('#backup:download', () => {
     })
 
     test('should require a dataset in unattended mode', async () => {
-      mockListDatasets.mockResolvedValue([{name: 'production'}])
-
       const {error} = await testCommand(DownloadBackupCommand, [], {
-        mocks: {...defaultMocks, isInteractive: false},
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {}},
+          isInteractive: false,
+        },
       })
 
       expect(error?.message).toBe(
-        'Dataset is required in unattended mode. Pass the dataset name as an argument.',
+        'Dataset is required in unattended mode. Pass the dataset name as an argument.\n' +
+          'Error: Backup ID is required in unattended mode. Pass it with --backup-id <id>.',
       )
       expect(error?.oclif?.exit).toBe(2)
+      expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mockSelect).not.toHaveBeenCalled()
       expect(mockInput).not.toHaveBeenCalled()
     })
 
     test('should require a backup ID in unattended mode', async () => {
-      mockListDatasets.mockResolvedValue([{name: 'production'}])
-
       const {error} = await testCommand(DownloadBackupCommand, ['production'], {
-        mocks: {...defaultMocks, isInteractive: false},
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {}},
+          isInteractive: false,
+        },
       })
 
       expect(error?.message).toBe(
         'Backup ID is required in unattended mode. Pass it with --backup-id <id>.',
       )
       expect(error?.oclif?.exit).toBe(2)
+      expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mockSelect).not.toHaveBeenCalled()
       expect(mockInput).not.toHaveBeenCalled()
     })

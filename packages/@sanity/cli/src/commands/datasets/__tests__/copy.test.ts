@@ -79,17 +79,23 @@ describe('#dataset:copy', () => {
   describe('flag validation', () => {
     test('requires source and target datasets in unattended mode', async () => {
       mocks.SanityCmdIsUnattended.mockReturnValue(true)
-      mockListDatasets.mockResolvedValue([createMockDataset('production')])
       vi.mocked(mocks.SanityCmdOutput.error).mockImplementation((message) => {
         throw new Error(String(message))
       })
 
-      await expect(CopyDatasetCommand.run([])).rejects.toThrow('Source dataset is required')
+      await expect(CopyDatasetCommand.run([])).rejects.toThrow(
+        'Source dataset is required. Pass it as the first argument.\n' +
+          'Error: Target dataset is required. Pass it as the second argument.',
+      )
+      expect(mocks.SanityCmdGetProjectId).not.toHaveBeenCalled()
+      expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mockPromptForDataset).not.toHaveBeenCalled()
 
       await expect(CopyDatasetCommand.run(['production'])).rejects.toThrow(
         'Target dataset is required',
       )
+      expect(mocks.SanityCmdGetProjectId).not.toHaveBeenCalled()
+      expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mockPromptForDatasetName).not.toHaveBeenCalled()
       vi.mocked(mocks.SanityCmdOutput.error).mockImplementation(() => undefined as never)
     })

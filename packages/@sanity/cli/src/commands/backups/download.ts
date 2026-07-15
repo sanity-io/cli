@@ -25,6 +25,7 @@ import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {type BackupItem, listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {humanFileSize} from '../../util/humanFileSize.js'
 import {isPathDirName} from '../../util/isPathDirName.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -97,8 +98,23 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
   static override hiddenAliases: string[] = ['backup:download']
 
   public async run(): Promise<void> {
-    const {args} = await this.parse(DownloadBackupCommand)
+    const {args, flags} = await this.parse(DownloadBackupCommand)
     let {dataset} = args
+
+    if (this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!dataset) {
+        errors.push('Dataset is required in unattended mode. Pass the dataset name as an argument.')
+      }
+      if (!flags['backup-id']) {
+        errors.push('Backup ID is required in unattended mode. Pass it with --backup-id <id>.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {exit: 2})
+      }
+    }
 
     const projectId = await this.getProjectId({
       fallback: () =>
@@ -123,10 +139,6 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
 
     if (dataset) {
       assertDatasetExists(datasets, dataset, this.output)
-    } else if (this.isUnattended()) {
-      this.error('Dataset is required in unattended mode. Pass the dataset name as an argument.', {
-        exit: 2,
-      })
     } else {
       dataset = await promptForDataset({allowCreation: false, datasets})
     }
@@ -277,11 +289,6 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       this.error(err, {exit: 1})
     }
 
-    if (!this.flags['backup-id'] && this.isUnattended()) {
-      this.error('Backup ID is required in unattended mode. Pass it with --backup-id <id>.', {
-        exit: 2,
-      })
-    }
     const backupId = String(
       this.flags['backup-id'] || (await this.promptForBackupId(projectId, datasetName)),
     )

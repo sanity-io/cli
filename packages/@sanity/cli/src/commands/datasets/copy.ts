@@ -22,6 +22,7 @@ import {
   listDatasetCopyJobs,
   listDatasets,
 } from '../../services/datasets.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const copyDatasetDebug = subdebug('dataset:copy')
@@ -126,6 +127,21 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CopyDatasetCommand)
+
+    if (!flags.list && !flags.attach && this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!args.source) {
+        errors.push('Source dataset is required. Pass it as the first argument.')
+      }
+      if (!args.target) {
+        errors.push('Target dataset is required. Pass it as the second argument.')
+      }
+
+      if (errors.length > 0) {
+        this.output.error(formatCliErrorMessages(errors), {exit: 2})
+      }
+    }
 
     const projectId = await this.getProjectId({
       fallback: () =>
@@ -261,9 +277,6 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
     // Prompt for source if not provided
     if (!sourceDataset) {
-      if (this.isUnattended()) {
-        this.output.error('Source dataset is required. Pass it as the first argument.', {exit: 2})
-      }
       sourceDataset = await promptForDataset({
         datasets: datasetsResponse,
       })
@@ -281,9 +294,6 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         return this.output.error(nameError, {exit: 2})
       }
     } else {
-      if (this.isUnattended()) {
-        this.output.error('Target dataset is required. Pass it as the second argument.', {exit: 2})
-      }
       targetDataset = await promptForDatasetName({
         message: 'Target dataset name:',
       })
