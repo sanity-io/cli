@@ -163,9 +163,16 @@ describe('#media:delete-aspect', () => {
 
   test('requires the media library ID and confirmation in unattended mode', async () => {
     const missingLibrary = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
-      mocks: {...defaultMocks, isInteractive: false},
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {},
+        isInteractive: false,
+      },
     })
-    expect(missingLibrary.error?.message).toContain('--media-library-id <id>')
+    expect(missingLibrary.error?.message).toBe(
+      'Media library ID is required. Pass it with `--media-library-id <id>`.\n' +
+        'Error: Deletion requires confirmation. Pass `--yes` to delete the aspect.',
+    )
     expect(missingLibrary.error?.oclif?.exit).toBe(2)
 
     const missingConfirmation = await testCommand(

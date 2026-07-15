@@ -7,6 +7,7 @@ import {confirm} from '@sanity/cli-core/ux'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deleteAspect} from '../../services/mediaLibraries.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteAspectDebug = subdebug('media:delete-aspect')
@@ -48,22 +49,29 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
     const {aspectName} = this.args
     const {'media-library-id': mediaLibraryIdFlag, yes: skipConfirmation} = this.flags
 
+    if (this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!mediaLibraryIdFlag) {
+        errors.push('Media library ID is required. Pass it with `--media-library-id <id>`.')
+      }
+      if (!skipConfirmation) {
+        errors.push('Deletion requires confirmation. Pass `--yes` to delete the aspect.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {exit: 2})
+      }
+    }
+
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     let mediaLibraryId = mediaLibraryIdFlag
     if (!mediaLibraryId) {
-      if (this.isUnattended()) {
-        this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
-          exit: 2,
-        })
-      }
       mediaLibraryId = await selectMediaLibrary(projectId)
     }
 
     if (!skipConfirmation) {
-      if (this.isUnattended()) {
-        this.error('Deletion requires confirmation. Pass `--yes` to delete the aspect.', {exit: 2})
-      }
       const confirmed = await confirm({
         default: false,
         message: `Are you absolutely sure you want to undeploy the ${aspectName} aspect from the "${mediaLibraryId}" media library?`,
