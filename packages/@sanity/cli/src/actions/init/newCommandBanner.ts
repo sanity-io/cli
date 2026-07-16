@@ -2,19 +2,10 @@ import {styleText} from 'node:util'
 
 import {boxen, logSymbols} from '@sanity/cli-core/ux'
 
+import {hyperlink as link} from '../../util/terminalLink.js'
 import {type InitContext} from './types.js'
 
 const SANITY_NEW_URL = 'https://sanity.new'
-
-/**
- * Creates a terminal hyperlink (OSC 8). Only emits the escape sequence when stdout is a TTY;
- * otherwise falls back to underlined text so piped output stays readable.
- */
-function link(linkText: string, url: string): string {
-  return process.stdout.isTTY
-    ? `\u001B]8;;${url}\u0007${linkText}\u001B]8;;\u0007`
-    : styleText('underline', linkText)
-}
 
 /** 24-bit foreground gradient across `text`, from `from` to `to` RGB. Skipped under NO_COLOR. */
 function gradient(text: string, from: [number, number, number], to: [number, number, number]) {
