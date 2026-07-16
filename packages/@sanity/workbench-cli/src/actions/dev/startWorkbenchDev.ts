@@ -12,8 +12,6 @@ import {
 } from './startWorkbenchDevServer.js'
 
 export interface StartWorkbenchDevOptions {
-  /** Resolved app id for the registry entry (the CLI owns id resolution). */
-  appId: string | undefined
   /** Directory for the workbench Vite server's dependency cache. */
   cacheDir: string
   /** CLI-domain `app.id`/`deployment.appId` deprecation check, run before registering. */
@@ -52,7 +50,6 @@ export async function startWorkbenchDev(
   options: StartWorkbenchDevOptions,
 ): Promise<{close: () => Promise<void>}> {
   const {
-    appId,
     cacheDir,
     checkForDeprecatedAppId,
     cliConfig,
@@ -128,7 +125,6 @@ export async function startWorkbenchDev(
     // The deprecated-id check and manifest extractor are CLI-domain, injected here.
     checkForDeprecatedAppId()
     const registration = await startDevServerRegistration({
-      appId,
       cliConfig,
       extractManifest,
       isApp,

@@ -35,7 +35,6 @@ type RegistrationOptions = Parameters<typeof startDevServerRegistration>[0]
 /** Run registration with sensible defaults; override only what a test asserts on. */
 function register(overrides: Partial<RegistrationOptions> = {}) {
   return startDevServerRegistration({
-    appId: undefined,
     cliConfig: workbenchCliConfig(),
     extractManifest: mockExtractManifest,
     isApp: false,
@@ -77,10 +76,12 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
   })
 
-  test('records the caller-resolved appId on the registry entry', async () => {
-    await register({appId: 'app-abc'})
+  test('identifies the local app by host and port, not its deployment app id', async () => {
+    await register({server: mockServer({port: 3337}) as any})
 
-    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'app-abc'}))
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({id: 'localhost-3337'}),
+    )
   })
 
   test('forwards api.projectId to registerDevServer', async () => {

@@ -7,8 +7,6 @@ import {type DevServerManifest, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
-  /** Resolved app id for the registry entry; the caller owns id resolution and the deprecation check. */
-  appId: string | undefined
   cliConfig: CliConfig
   /**
    * Extract the project manifest to inline into the registry. The caller owns the
@@ -57,8 +55,7 @@ function serverAddress(server: ViteDevServer) {
 export async function startDevServerRegistration(
   options: DevServerRegistrationOptions,
 ): Promise<DevServerRegistrationHandle> {
-  const {appId, cliConfig, extractManifest, isApp, onInterfaceSetChange, output, server, workDir} =
-    options
+  const {cliConfig, extractManifest, isApp, onInterfaceSetChange, output, server, workDir} = options
 
   const {host: appHost, port: appPort} = serverAddress(server)
 
@@ -70,7 +67,11 @@ export async function startDevServerRegistration(
   const registration = registerDevServer({
     configs,
     host: appHost,
-    id: appId,
+    // A local dev app is identified by where it's served, not its deployment
+    // app id — so a running app can't collide with its deployed twin (they'd
+    // share `deployment.appId`), and the port stays visible in the URL. Deployed
+    // apps keep their app id.
+    id: `${appHost}-${appPort}`,
     interfaces,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
