@@ -92,6 +92,14 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
       selectedHook = hooks[0]
     } else {
       // Otherwise prompt user to select a hook
+      if (this.isUnattended()) {
+        this.error(
+          'Webhook name is required when multiple webhooks exist. Pass the name as an argument.',
+          {
+            exit: 2,
+          },
+        )
+      }
       selectedHook = await this.selectHook(hooks)
     }
 
