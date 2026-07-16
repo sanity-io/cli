@@ -11,7 +11,6 @@ export function createMockSpinner(
   overrides?: Partial<SpinnerInstance>,
 ): Mock<(options: string) => SpinnerInstance> {
   return vi.fn((options: string) => {
-    void options
     return {
       clear: function (): SpinnerInstance {
         throw new Error('Function not implemented.')
@@ -52,7 +51,7 @@ export function createMockSpinner(
         throw new Error('Function not implemented.')
       },
       suffixText: '',
-      text: '',
+      text: options,
       warn: function (_text?: string): SpinnerInstance {
         throw new Error('Function not implemented.')
       },
