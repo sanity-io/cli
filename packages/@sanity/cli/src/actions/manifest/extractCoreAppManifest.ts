@@ -4,6 +4,7 @@ import {relative, resolve} from 'node:path'
 import {doImport, getCliConfigUncached} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
+import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {type sanitizeIcon as sanitizeIconFn} from './sanitizeIcon.js'
 import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
@@ -107,12 +108,15 @@ export async function extractCoreAppManifest(
       return undefined
     }
 
+    const slug = isWorkbenchApp(app) ? app.slug : undefined
+
     const manifest: CoreAppManifest = coreAppManifestSchema.parse({
       version: '1',
       ...(icon ? {icon} : {}),
       ...(app.title ? {title: app.title} : {}),
       ...(app.group ? {group: app.group} : {}),
       ...(app.priority === undefined ? {} : {priority: app.priority}),
+      ...(slug ? {slug} : {}),
     })
 
     spin.succeed(`Extracted manifest`)
