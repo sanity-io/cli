@@ -10,7 +10,7 @@ import {Mock, vi} from 'vitest'
 export function createMockSpinner(
   overrides?: Partial<SpinnerInstance>,
 ): Mock<(options: string) => SpinnerInstance> {
-  return vi.fn(() => {
+  return vi.fn((_options: string) => {
     return {
       clear: function (): SpinnerInstance {
         throw new Error('Function not implemented.')
@@ -27,6 +27,8 @@ export function createMockSpinner(
         throw new Error('Function not implemented.')
       },
       interval: 0,
+      isEnabled: false,
+      isSilent: false,
       isSpinning: false,
       prefixText: '',
       render: function (): SpinnerInstance {
