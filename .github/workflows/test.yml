@@ -214,7 +214,15 @@ jobs:
           restore-keys: |
             vitest-cache-integration-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-
 
+      - name: Integration Test on windows-8core (node 22)
+        if: matrix.os == 'windows-8core' && matrix.node-version == 22
+        shell: bash
+        env:
+          SANITY_AUTH_TOKEN: 'test-token'
+        run: pnpm test:integration --test-timeout=60000 --maxWorkers=2 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
       - name: Integration Test on ${{ matrix.os }}
+        if: matrix.os != 'windows-8core' || matrix.node-version != 22
         shell: bash
         env:
           SANITY_AUTH_TOKEN: 'test-token'
