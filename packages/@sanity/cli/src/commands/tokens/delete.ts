@@ -73,7 +73,9 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       }
 
       if (errors.length > 0) {
-        this.error(formatCliErrorMessages(errors), {exit: 2})
+        this.error(formatCliErrorMessages(errors), {
+          exit: exitCodes.USAGE_ERROR,
+        })
       }
     }
 
@@ -128,12 +130,14 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       deleteTokenDebug(`Error fetching tokens for project ${this.projectId}`, err)
       this.error(
         `Could not list API tokens:\n${err.message}\nCheck the project ID and your access permissions, then try again.`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
 
     if (tokens.length === 0) {
-      this.error('No API tokens found for this project.', {exit: 1})
+      this.error('No API tokens found for this project.', {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const choices = tokens.map((token) => ({

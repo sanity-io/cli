@@ -87,7 +87,9 @@ export class Add extends SanityCommand<typeof Add> {
 
     if (hasWildcard) {
       if (this.isUnattended() && !flags.yes) {
-        this.error('Wildcard origins require confirmation. Pass --yes to continue.', {exit: 2})
+        this.error('Wildcard origins require confirmation. Pass `--yes` to continue.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
       }
       const confirmed = flags.yes || (await this.promptForWildcardConfirmation(origin))
       if (!confirmed) {

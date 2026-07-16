@@ -1,5 +1,5 @@
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -44,7 +44,9 @@ export class Delete extends SanityCommand<typeof Delete> {
     const {args} = await this.parse(Delete)
 
     if (!args.origin && this.isUnattended()) {
-      this.error('Origin is required. Pass it as the `<origin>` argument.', {exit: 2})
+      this.error('Origin is required. Pass it as the `<origin>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     // Ensure we have project context

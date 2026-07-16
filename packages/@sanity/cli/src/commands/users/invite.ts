@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 
 import {type Role} from '../../actions/users/types.js'
@@ -72,13 +72,15 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
       }
 
       if (errors.length > 0) {
-        this.error(formatCliErrorMessages(errors), {exit: 2})
+        this.error(formatCliErrorMessages(errors), {
+          exit: exitCodes.USAGE_ERROR,
+        })
       }
     }
 
     if (selectedEmail !== undefined) {
       const validation = validateEmail(normalizedEmail ?? '')
-      if (validation !== true) this.error(validation, {exit: 2})
+      if (validation !== true) this.error(validation, {exit: exitCodes.USAGE_ERROR})
     }
 
     const projectId = await this.getProjectId({
@@ -106,7 +108,7 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     if (!role) {
       this.error(
         `Role name "${roleSelection}" not found. Available roles: ${roles.map((r) => r.name).join(', ')}`,
-        {exit: 2},
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
