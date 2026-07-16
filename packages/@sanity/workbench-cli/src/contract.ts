@@ -40,6 +40,41 @@ export type InterfaceType = keyof typeof VIEW_COMPONENTS
 /** @public */
 export type ServiceType = 'worker'
 
+/**
+ * The `app` interface's dock-placement metadata. Interface metadata is
+ * discriminated on `type`; `app` is the only type with a shape so far.
+ * @internal
+ */
+export const AppInterfaceMetadataSchema = z.object({
+  group: z.optional(z.string()),
+  priority: z.optional(z.number()),
+})
+
+/** @internal */
+export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
+
+/**
+ * The module-federation id a build exposes an interface at. Dev stamps the same
+ * id a deploy would, so the workbench loads a local interface like a deployed one.
+ * @internal
+ */
+export function interfaceModuleId(type: string, name: string): string {
+  switch (type) {
+    case 'app': {
+      return 'App'
+    }
+    case 'panel': {
+      return `views/${name}`
+    }
+    case 'worker': {
+      return `services/${name}`
+    }
+    default: {
+      throw new Error(`Cannot derive a moduleId for unknown interface type: ${type}`)
+    }
+  }
+}
+
 // Shared `name` + `src`; `kind` only tailors the validation message.
 function extensionDeclarationFields(kind: 'Field' | 'Service' | 'View') {
   const pattern = /^[a-zA-Z0-9_-]+$/
