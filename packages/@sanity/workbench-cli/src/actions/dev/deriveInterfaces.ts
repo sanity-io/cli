@@ -3,6 +3,7 @@ import {hash} from 'node:crypto'
 import {type CliConfig} from '@sanity/cli-core'
 
 import {
+  interfaceModuleId,
   MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
   SERVICE_CONTRACT_VERSION,
   VIEW_CONTRACT_VERSION,
@@ -17,13 +18,11 @@ export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[nu
 export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
 
 /**
- * Map a workbench app's declarations to the interface records forwarded on its
- * registry entry: `views` → panels, `services` → workers, `entry` → the
- * navigable `app` view. `src` is the raw source, not a resolved URL. `undefined`
- * for a non-branded app; a studio that declares `entry` is rejected (studio app
- * views are not implemented yet). The config is not an interface — see
- * {@link deriveConfigs}. `version` is the module's contract version; the app
- * view has no versioned contract, so it carries none.
+ * Map a workbench app's declarations to its registry interface records:
+ * `views` → panels, `services` → workers, `entry` → the `app` view. Each mirrors
+ * a deployed record so the workbench loads a local interface like a deployed one.
+ * `undefined` for a non-branded app; a studio that declares `entry` is rejected
+ * (studio app views aren't implemented yet).
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
@@ -35,18 +34,50 @@ export function deriveInterfaces(
     throw new Error('App views for studios are not implemented yet')
   }
 
-  const toInterface = (
-    {name, src, title, type}: {name: string; src: string; title?: string; type: string},
-    version: number,
-  ): DevServerInterface => ({name, src, title: title ?? name, type, version})
+  const interfaceId = (type: string, name: string): string => `${app.name}-${type}-${name}`
 
-  return [
-    ...(app.views ?? []).map((view) => toInterface(view, VIEW_CONTRACT_VERSION)),
-    ...(app.services ?? []).map((service) => toInterface(service, SERVICE_CONTRACT_VERSION)),
-    ...(app.entry === undefined
+  const views = (app.views ?? []).map(
+    (view): DevServerInterface => ({
+      id: interfaceId('panel', view.name),
+      metadata: null,
+      moduleId: interfaceModuleId('panel', view.name),
+      name: view.name,
+      src: view.src,
+      title: view.title ?? view.name,
+      type: 'panel',
+      version: String(VIEW_CONTRACT_VERSION),
+    }),
+  )
+
+  const services = (app.services ?? []).map(
+    (service): DevServerInterface => ({
+      id: interfaceId('worker', service.name),
+      metadata: null,
+      moduleId: interfaceModuleId('worker', service.name),
+      name: service.name,
+      src: service.src,
+      title: service.title ?? service.name,
+      type: 'worker',
+      version: String(SERVICE_CONTRACT_VERSION),
+    }),
+  )
+
+  const appView: DevServerInterface[] =
+    app.entry === undefined
       ? []
-      : [{name: app.name, src: app.entry, title: app.title, type: 'app' as const}]),
-  ]
+      : [
+          {
+            id: interfaceId('app', app.name),
+            metadata: null,
+            moduleId: interfaceModuleId('app', app.name),
+            name: app.name,
+            src: app.entry,
+            title: app.title,
+            type: 'app',
+          },
+        ]
+
+  return [...views, ...services, ...appView]
 }
 
 /**

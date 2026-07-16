@@ -165,7 +165,16 @@ describe('startDevServerRegistration', () => {
     await expect(extract(params)).resolves.toEqual({
       configs: [],
       interfaces: [
-        {name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel', version: 1},
+        {
+          id: 'test-app-panel-feed',
+          metadata: null,
+          moduleId: 'views/feed',
+          name: 'feed',
+          src: './src/FeedPanel.tsx',
+          title: 'feed',
+          type: 'panel',
+          version: '1',
+        },
       ],
       manifest,
     })
@@ -205,7 +214,15 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
         interfaces: expect.arrayContaining([
-          {name: 'test-app', src: './src/App.tsx', title: 'Test App', type: 'app'},
+          {
+            id: 'test-app-app-test-app',
+            metadata: null,
+            moduleId: 'App',
+            name: 'test-app',
+            src: './src/App.tsx',
+            title: 'Test App',
+            type: 'app',
+          },
         ]),
       }),
     )
