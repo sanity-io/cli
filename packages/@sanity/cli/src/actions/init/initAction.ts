@@ -1,6 +1,11 @@
 import {styleText} from 'node:util'
 
-import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
+import {
+  exitCodes,
+  type SanityOrgUser,
+  subdebug,
+  type TelemetryUserProperties,
+} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
@@ -334,35 +339,44 @@ function checkFlagsInUnattendedMode(
 
   if (isAppTemplate) {
     if (!options.outputPath) {
-      errors.push('`--output-path` must be specified in unattended mode')
+      errors.push(
+        'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
+      )
     }
 
     if (options.projectName && !options.organization) {
-      errors.push('`--project-name` requires `--organization <id>` in unattended mode')
+      errors.push(
+        'Organization is required when creating a project in unattended mode. Pass it with `--organization <id>`.',
+      )
     } else if (!options.project && !options.organization) {
       errors.push(
-        'The --organization flag is required for app templates in unattended mode. ' +
-          'Use --organization <id>, or pass --project <id> / --project-name <name>.',
+        'Project or organization is required for app templates in unattended mode. ' +
+          'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+          '`--project-name <name>` with `--organization <id>`.',
       )
     }
   } else {
     if (!isNextJs && !options.bare && !options.outputPath) {
-      errors.push('`--output-path` must be specified in unattended mode')
+      errors.push(
+        'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
+      )
     }
 
     if (!options.project && !options.projectName) {
       errors.push(
-        '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
+        'Project is required in unattended mode. Pass it with `--project <id>` or `--project-name <name>`.',
       )
     }
 
     if (!options.project && !options.organization) {
-      errors.push('`--project-name` requires `--organization <id>` in unattended mode')
+      errors.push(
+        'Organization is required when creating a project in unattended mode. Pass it with `--organization <id>`.',
+      )
     }
   }
 
   if (errors.length > 0) {
-    throw new InitError(formatCliErrorMessages(errors), 2)
+    throw new InitError(formatCliErrorMessages(errors), exitCodes.USAGE_ERROR)
   }
 }
 

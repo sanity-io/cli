@@ -441,8 +441,9 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.oclif?.exit).toBe(2)
     expect(error?.message).toBe(
-      'The --organization flag is required for app templates in unattended mode. ' +
-        'Use --organization <id>, or pass --project <id> / --project-name <name>.',
+      'Project or organization is required for app templates in unattended mode. ' +
+        'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+        '`--project-name <name>` with `--organization <id>`.',
     )
   })
 
@@ -513,8 +514,9 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.oclif?.exit).toBe(2)
     expect(error?.message).toBe(
-      'The --organization flag is required for app templates in unattended mode. ' +
-        'Use --organization <id>, or pass --project <id> / --project-name <name>.',
+      'Project or organization is required for app templates in unattended mode. ' +
+        'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+        '`--project-name <name>` with `--organization <id>`.',
     )
   })
 
@@ -533,9 +535,10 @@ describe('#init: bootstrap-app-initialization', () => {
 
     expect(error?.oclif?.exit).toBe(2)
     expect(error?.message).toBe(
-      '`--output-path` must be specified in unattended mode\n' +
-        'Error: The --organization flag is required for app templates in unattended mode. ' +
-        'Use --organization <id>, or pass --project <id> / --project-name <name>.',
+      'Output path is required in unattended mode. Pass it with `--output-path <path>`.\n' +
+        'Error: Project or organization is required for app templates in unattended mode. ' +
+        'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+        '`--project-name <name>` with `--organization <id>`.',
     )
     expect(mocks.select).not.toHaveBeenCalled()
     expect(mocks.bootstrapTemplate).not.toHaveBeenCalled()

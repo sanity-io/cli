@@ -211,7 +211,9 @@ describe('#init: oclif command setup', () => {
     })
 
     // Should throw output-path error for non-Next.js projects
-    expect(error?.message).toBe('`--output-path` must be specified in unattended mode')
+    expect(error?.message).toBe(
+      'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
+    )
     expect(error?.oclif?.exit).toBe(2)
   })
 
@@ -230,7 +232,7 @@ describe('#init: oclif command setup', () => {
 
     // Should NOT throw output-path error — bare mode doesn't need it
     expect(error?.message ?? '').not.toContain(
-      '`--output-path` must be specified in unattended mode',
+      'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
     )
   })
 
@@ -255,8 +257,9 @@ describe('#init: oclif command setup', () => {
     )
 
     expect(error?.message).toBe(
-      '`--project <id>` or `--project-name <name>` must be specified in unattended mode\n' +
-        'Error: `--project-name` requires `--organization <id>` in unattended mode',
+      'Project is required in unattended mode. Pass it with `--project <id>` or `--project-name <name>`.\n' +
+        'Error: Organization is required when creating a project in unattended mode. ' +
+        'Pass it with `--organization <id>`.',
     )
     expect(error?.oclif?.exit).toBe(2)
   })
@@ -278,7 +281,8 @@ describe('#init: oclif command setup', () => {
     )
 
     expect(error?.message).toBe(
-      '`--project-name` requires `--organization <id>` in unattended mode',
+      'Organization is required when creating a project in unattended mode. ' +
+        'Pass it with `--organization <id>`.',
     )
     expect(error?.oclif?.exit).toBe(2)
   })
@@ -293,9 +297,11 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toBe(
-      '`--output-path` must be specified in unattended mode\n' +
-        'Error: `--project <id>` or `--project-name <name>` must be specified in unattended mode\n' +
-        'Error: `--project-name` requires `--organization <id>` in unattended mode',
+      'Output path is required in unattended mode. Pass it with `--output-path <path>`.\n' +
+        'Error: Project is required in unattended mode. ' +
+        'Pass it with `--project <id>` or `--project-name <name>`.\n' +
+        'Error: Organization is required when creating a project in unattended mode. ' +
+        'Pass it with `--organization <id>`.',
     )
     expect(error?.oclif?.exit).toBe(2)
     expect(mocks.getById).not.toHaveBeenCalled()
