@@ -58,6 +58,12 @@ export async function getOrganization({
   // If the user has no organizations, prompt them to create one with the same name as
   // their user, but allow them to customize it if they want
   if (organizations.length === 0) {
+    if (isUnattended) {
+      throw new Error(
+        'No organizations are available. Create an organization at https://www.sanity.io/manage, then pass its ID or slug with --organization.',
+      )
+    }
+
     output.log('You need to create an organization to create projects.')
     return promptAndCreateNewOrganization(user)
   }
@@ -72,10 +78,14 @@ export async function getOrganization({
   debug('User has attach access to %d organizations.', withAttach.length)
   const organizationChoices = getOrganizationChoices(withGrantInfo)
 
-  // In unattended mode  use defaults without prompting
   if (isUnattended) {
-    // Use the first organization with attach permissions
-    return withAttach.length > 0 ? withAttach[0].organization : undefined
+    if (withAttach.length > 1) {
+      throw new Error(
+        'Multiple organizations are available. Select one with --organization <slug|id>.',
+      )
+    }
+
+    return withAttach[0]?.organization
   }
 
   // If the user only has a single organization (and they have attach access to it),

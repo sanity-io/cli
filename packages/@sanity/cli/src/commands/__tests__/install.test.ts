@@ -35,14 +35,16 @@ afterEach(() => {
 
 describe('#install', () => {
   describe('install declared packages (no arguments)', () => {
-    test('installs declared packages with npm', async () => {
+    test('installs declared packages with npm in interactive mode', async () => {
       mockGetPackageManagerChoice.mockResolvedValueOnce({
         chosen: 'npm',
         mostOptimal: 'npm',
       })
       mockInstallDeclaredPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, [], {mocks: defaultMocks})
+      const {error} = await testCommand(Install, [], {
+        mocks: {...defaultMocks, isInteractive: true},
+      })
 
       if (error) throw error
       expect(mockGetPackageManagerChoice).toHaveBeenCalledWith(
@@ -59,6 +61,21 @@ describe('#install', () => {
         }),
       )
       expect(mockInstallNewPackages).not.toHaveBeenCalled()
+    })
+
+    test('uses package manager fallback in unattended mode', async () => {
+      mockGetPackageManagerChoice.mockResolvedValueOnce({chosen: 'npm'})
+      mockInstallDeclaredPackages.mockResolvedValueOnce()
+
+      const {error} = await testCommand(Install, [], {
+        mocks: {...defaultMocks, isInteractive: false},
+      })
+
+      if (error) throw error
+      expect(mockGetPackageManagerChoice).toHaveBeenCalledWith(
+        convertToSystemPath('/test/project'),
+        {interactive: false},
+      )
     })
 
     test('installs declared packages with yarn', async () => {
@@ -256,7 +273,9 @@ describe('#install', () => {
       })
       mockInstallDeclaredPackages.mockResolvedValueOnce()
 
-      await testCommand(Install, [], {mocks: defaultMocks})
+      await testCommand(Install, [], {
+        mocks: {...defaultMocks, isInteractive: true},
+      })
 
       expect(mockGetPackageManagerChoice).toHaveBeenCalledWith(
         convertToSystemPath('/test/project'),

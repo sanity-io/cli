@@ -63,7 +63,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       parse: async (input) => {
         const datasetNameError = validateDatasetName(input)
         if (datasetNameError) {
-          throw new CLIError(datasetNameError, {exit: 1})
+          throw new CLIError(datasetNameError, {exit: 2})
         }
 
         return input
@@ -189,6 +189,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
           output: this.output,
           projectFeatures,
           projectId,
+          silent: this.flags.json,
           visibility: datasetVisibility,
         })
       }
