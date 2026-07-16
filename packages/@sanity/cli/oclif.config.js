@@ -10,6 +10,7 @@ export default {
       './dist/hooks/prerun/injectEnvVariables.js',
       './dist/hooks/prerun/setupTelemetry.js',
       './dist/hooks/prerun/warnings.js',
+      './dist/hooks/prerun/claimReminders.js',
     ],
   },
   plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/migrate', '@sanity/codegen'],

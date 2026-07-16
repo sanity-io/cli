@@ -41,6 +41,40 @@ function getProvisionApiBase(): string {
   return isStaging() ? 'https://api.sanity.work' : 'https://api.sanity.io'
 }
 
+/** Claim state of a minted resource, per the provision lookup endpoint. */
+export type ClaimState = 'claimable' | 'claimed' | 'expired'
+
+/**
+ * Look up the claim state for a minted project. Unauthenticated and non-destructive — possession
+ * of the claim token is the capability, and the endpoint is safe to poll.
+ *
+ * Returns `undefined` when the state can't be determined (network failure, timeout, kill switch
+ * off) so callers can fail open and fall back to locally stored expiry data.
+ */
+export async function lookupClaimState(
+  claimToken: string,
+  options?: {timeoutMs?: number},
+): Promise<{expiresAt: string | null; state: ClaimState} | undefined> {
+  const url = `${getProvisionApiBase()}/${PROVISION_API_VERSION}/provision/${claimToken}/lookup`
+  debug('looking up claim state at %s', url)
+
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(options?.timeoutMs ?? 1500),
+    })
+    if (!response.ok) return undefined
+
+    const data = (await response.json()) as {expiresAt?: string | null; state?: ClaimState}
+    if (data.state !== 'claimable' && data.state !== 'claimed' && data.state !== 'expired') {
+      return undefined
+    }
+    return {expiresAt: data.expiresAt ?? null, state: data.state}
+  } catch (err) {
+    debug('claim state lookup failed: %s', err)
+    return undefined
+  }
+}
+
 /**
  * Mint an unclaimed Sanity project via the unauthenticated provision endpoint, returning a
  * scoped robot token and a claim URL:

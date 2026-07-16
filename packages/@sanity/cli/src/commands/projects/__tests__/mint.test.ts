@@ -5,6 +5,7 @@ import {NewCommand} from '../../new.js'
 import {MintProjectCommand} from '../mint.js'
 
 const mockMintUnclaimedProject = vi.hoisted(() => vi.fn())
+const mockRecordMintedProject = vi.hoisted(() => vi.fn())
 
 vi.mock(
   '@sanity/cli-core/SanityCommand',
@@ -12,6 +13,9 @@ vi.mock(
 )
 vi.mock('../../../services/mintProject.js', () => ({
   mintUnclaimedProject: mockMintUnclaimedProject,
+}))
+vi.mock('../../../util/claimNudges.js', () => ({
+  recordMintedProject: mockRecordMintedProject,
 }))
 
 const mockMinted = {
@@ -49,6 +53,7 @@ describe('#projects:mint', () => {
     await MintProjectCommand.run(['My New Project'])
 
     expect(mockMintUnclaimedProject).toHaveBeenCalledWith({displayName: 'My New Project'})
+    expect(mockRecordMintedProject).toHaveBeenCalledWith(mockMinted)
     expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
     expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
       expect.stringContaining('Your project is live now'),

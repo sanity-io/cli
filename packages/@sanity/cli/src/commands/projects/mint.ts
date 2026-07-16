@@ -5,6 +5,7 @@ import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {mintUnclaimedProject} from '../../services/mintProject.js'
+import {recordMintedProject} from '../../util/claimNudges.js'
 
 function hoursUntil(iso: string): number | undefined {
   const ms = new Date(iso).getTime() - Date.now()
@@ -67,6 +68,8 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
 
     const displayName = this.args.projectName?.trim() || 'My Sanity project'
     const minted = await mintUnclaimedProject({displayName})
+    // Remember the mint so later CLI invocations can nudge toward claiming before expiry.
+    recordMintedProject(minted)
     const hrs = hoursUntil(minted.expiresAt)
 
     output.log(`${logSymbols.success} Your project is live now.`)
