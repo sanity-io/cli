@@ -1,6 +1,10 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockOutput, workbenchCliConfig} from '../../dev/__tests__/devTestHelpers.js'
+import {
+  createMockOutput,
+  mockWorkbenchServer,
+  workbenchCliConfig,
+} from '../../dev/__tests__/devTestHelpers.js'
 import {startWorkbenchPreview, type StartWorkbenchPreviewOptions} from '../startWorkbenchPreview.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
@@ -38,19 +42,9 @@ function run(overrides: Partial<StartWorkbenchPreviewOptions> = {}) {
   })
 }
 
-function workbenchRunning(overrides: Record<string, unknown> = {}) {
-  return {
-    close: vi.fn().mockResolvedValue(undefined),
-    httpHost: 'localhost',
-    workbenchAvailable: true,
-    workbenchPort: 3333,
-    ...overrides,
-  }
-}
-
 describe('startWorkbenchPreview', () => {
   beforeEach(() => {
-    mockStartWorkbenchDevServer.mockResolvedValue(workbenchRunning())
+    mockStartWorkbenchDevServer.mockResolvedValue(mockWorkbenchServer())
     mockServeBuiltApplication.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
       host: 'localhost',
@@ -75,7 +69,9 @@ describe('startWorkbenchPreview', () => {
     })
 
     test('serves the build on the configured port when no workbench runs', async () => {
-      mockStartWorkbenchDevServer.mockResolvedValue(workbenchRunning({workbenchAvailable: false}))
+      mockStartWorkbenchDevServer.mockResolvedValue(
+        mockWorkbenchServer({workbenchAvailable: false}),
+      )
 
       await run()
 
@@ -118,7 +114,7 @@ describe('startWorkbenchPreview', () => {
 
   describe('teardown', () => {
     test('tears down the workbench and re-throws when the build cannot be served', async () => {
-      const workbench = workbenchRunning()
+      const workbench = mockWorkbenchServer()
       mockStartWorkbenchDevServer.mockResolvedValue(workbench)
       const serveError = new Error('build not found')
       mockServeBuiltApplication.mockRejectedValue(serveError)
@@ -131,7 +127,7 @@ describe('startWorkbenchPreview', () => {
     })
 
     test('tears down both servers and re-throws when registration fails', async () => {
-      const workbench = workbenchRunning()
+      const workbench = mockWorkbenchServer()
       const remoteClose = vi.fn().mockResolvedValue(undefined)
       mockStartWorkbenchDevServer.mockResolvedValue(workbench)
       mockServeBuiltApplication.mockResolvedValue({
@@ -152,7 +148,7 @@ describe('startWorkbenchPreview', () => {
     })
 
     test('close releases the registration and both servers', async () => {
-      const workbench = workbenchRunning()
+      const workbench = mockWorkbenchServer()
       const remoteClose = vi.fn().mockResolvedValue(undefined)
       const release = vi.fn()
       mockStartWorkbenchDevServer.mockResolvedValue(workbench)
@@ -181,7 +177,7 @@ describe('startWorkbenchPreview', () => {
     })
 
     test('shows the existing lock host, not the caller host', async () => {
-      mockStartWorkbenchDevServer.mockResolvedValue(workbenchRunning({httpHost: 'mydev.local'}))
+      mockStartWorkbenchDevServer.mockResolvedValue(mockWorkbenchServer({httpHost: 'mydev.local'}))
       const output = createMockOutput()
 
       await run({output})
@@ -190,7 +186,9 @@ describe('startWorkbenchPreview', () => {
     })
 
     test('announces the build URL directly when no workbench runs', async () => {
-      mockStartWorkbenchDevServer.mockResolvedValue(workbenchRunning({workbenchAvailable: false}))
+      mockStartWorkbenchDevServer.mockResolvedValue(
+        mockWorkbenchServer({workbenchAvailable: false}),
+      )
       mockServeBuiltApplication.mockResolvedValue({
         close: vi.fn().mockResolvedValue(undefined),
         host: 'localhost',

@@ -1,7 +1,12 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startWorkbenchDev, type StartWorkbenchDevOptions} from '../startWorkbenchDev.js'
-import {createMockOutput, workbenchCliConfig} from './devTestHelpers.js'
+import {
+  createMockOutput,
+  createMockViteServer,
+  mockWorkbenchServer,
+  workbenchCliConfig,
+} from './devTestHelpers.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevServerRegistration = vi.hoisted(() => vi.fn())
@@ -22,7 +27,7 @@ vi.mock('../startDevServerRegistration.js', () => ({
 function mockAppServer({port = 3334}: {port?: number} = {}) {
   return {
     close: vi.fn().mockResolvedValue(undefined),
-    server: {config: {server: {port}}, httpServer: {address: () => ({port})}},
+    server: createMockViteServer({port}),
     started: true as const,
   }
 }
@@ -61,12 +66,7 @@ function installedSignalHandler(): (signal: NodeJS.Signals) => void {
 
 describe('startWorkbenchDev', () => {
   beforeEach(() => {
-    mockStartWorkbenchDevServer.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
-      httpHost: 'localhost',
-      workbenchAvailable: true,
-      workbenchPort: 3333,
-    })
+    mockStartWorkbenchDevServer.mockResolvedValue(mockWorkbenchServer())
     mockStartDevServerRegistration.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockStartAppServer.mockResolvedValue(mockAppServer({port: 3334}))
     mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
@@ -94,12 +94,9 @@ describe('startWorkbenchDev', () => {
     })
 
     test('keeps the configured port and announces the URL when the workbench is unavailable', async () => {
-      mockStartWorkbenchDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        httpHost: 'localhost',
-        workbenchAvailable: false,
-        workbenchPort: 3333,
-      })
+      mockStartWorkbenchDevServer.mockResolvedValue(
+        mockWorkbenchServer({workbenchAvailable: false}),
+      )
 
       await run()
 
@@ -116,12 +113,7 @@ describe('startWorkbenchDev', () => {
     })
 
     test('shows the existing lock host in the URL, not the caller host', async () => {
-      mockStartWorkbenchDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        httpHost: 'mydev.local',
-        workbenchAvailable: true,
-        workbenchPort: 3333,
-      })
+      mockStartWorkbenchDevServer.mockResolvedValue(mockWorkbenchServer({httpHost: 'mydev.local'}))
       const output = createMockOutput()
 
       await run({output})
@@ -130,12 +122,7 @@ describe('startWorkbenchDev', () => {
     })
 
     test('falls back to localhost for a non-routable bind address', async () => {
-      mockStartWorkbenchDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        httpHost: '0.0.0.0',
-        workbenchAvailable: true,
-        workbenchPort: 3333,
-      })
+      mockStartWorkbenchDevServer.mockResolvedValue(mockWorkbenchServer({httpHost: '0.0.0.0'}))
       const output = createMockOutput()
 
       await run({output})
@@ -163,14 +150,9 @@ describe('startWorkbenchDev', () => {
     })
 
     test('tears down both servers and re-throws when registration fails', async () => {
-      const workbenchClose = vi.fn().mockResolvedValue(undefined)
+      const workbench = mockWorkbenchServer()
       const appClose = vi.fn().mockResolvedValue(undefined)
-      mockStartWorkbenchDevServer.mockResolvedValue({
-        close: workbenchClose,
-        httpHost: 'localhost',
-        workbenchAvailable: true,
-        workbenchPort: 3333,
-      })
+      mockStartWorkbenchDevServer.mockResolvedValue(workbench)
       mockStartAppServer.mockResolvedValue({...mockAppServer({port: 3334}), close: appClose})
       const registrationError = new Error('deriveInterfaces failed')
       mockStartDevServerRegistration.mockRejectedValue(registrationError)
@@ -178,7 +160,7 @@ describe('startWorkbenchDev', () => {
       const thrown = await run().catch((err) => err)
 
       expect(thrown).toBe(registrationError)
-      expect(workbenchClose).toHaveBeenCalled()
+      expect(workbench.close).toHaveBeenCalled()
       expect(appClose).toHaveBeenCalled()
     })
 
@@ -193,19 +175,14 @@ describe('startWorkbenchDev', () => {
     })
 
     test('returns a workbench-only close and skips registration when the app server does not start', async () => {
-      const workbenchClose = vi.fn().mockResolvedValue(undefined)
-      mockStartWorkbenchDevServer.mockResolvedValue({
-        close: workbenchClose,
-        httpHost: 'localhost',
-        workbenchAvailable: false,
-        workbenchPort: 3333,
-      })
+      const workbench = mockWorkbenchServer({workbenchAvailable: false})
+      mockStartWorkbenchDevServer.mockResolvedValue(workbench)
       mockStartAppServer.mockResolvedValue({reason: 'missing-organization-id', started: false})
 
       const {close} = await run()
       await close()
 
-      expect(workbenchClose).toHaveBeenCalled()
+      expect(workbench.close).toHaveBeenCalled()
       expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
     })
   })

@@ -64,3 +64,32 @@ export function createDevOptions(
     ...overrides,
   }
 }
+
+/** A minimal Vite dev server stand-in — enough of the shape the workbench dev
+ * flow reads (bound address, config, ws channel, lifecycle). */
+export function createMockViteServer({host, port = 3333}: {host?: string; port?: number} = {}) {
+  return {
+    close: vi.fn().mockResolvedValue(),
+    config: {server: {host, port}},
+    httpServer: {address: vi.fn().mockReturnValue({address: '127.0.0.1', family: 'IPv4', port})},
+    listen: vi.fn().mockResolvedValue(),
+    ws: {on: vi.fn(), send: vi.fn()},
+  }
+}
+
+/** A `startWorkbenchDevServer` result — the singleton shell as seen by its callers. */
+export function mockWorkbenchServer(
+  overrides: {
+    httpHost?: string
+    workbenchAvailable?: boolean
+    workbenchPort?: number
+  } = {},
+) {
+  return {
+    close: vi.fn().mockResolvedValue(),
+    httpHost: 'localhost',
+    workbenchAvailable: true,
+    workbenchPort: 3333,
+    ...overrides,
+  }
+}
