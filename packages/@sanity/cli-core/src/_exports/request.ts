@@ -17,6 +17,3 @@ export {
 
 // Re-export middleware still available in get-it v9
 export {debug, retry} from 'get-it/middleware'
-
-// Re-export the Node fetch factory for consumers that need transport wrappers.
-export {createNodeFetch, type NodeFetchOptions, type TlsOptions} from 'get-it/node'

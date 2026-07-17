@@ -2,40 +2,37 @@ import {Transform, type TransformCallback, type Writable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 
 import {
-  createNodeFetch,
   createRequester,
-  type FetchFunction,
   nodeReadableFromWeb,
   retry,
   type StreamResponse,
+  type WrappingMiddleware,
 } from '@sanity/cli-core/request'
 
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
 const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
 
-const nodeFetch = createNodeFetch()
-const fetchWithConnectionTimeout: FetchFunction = async (url, init) => {
+const connectionTimeout: WrappingMiddleware = async (options, next) => {
   const connectionController = new AbortController()
-  const connectionTimeout = setTimeout(() => {
-    connectionController.abort(
-      new Error('Backup download timed out before receiving a response. Try again.'),
-    )
+  const connectionTimer = setTimeout(() => {
+    const error = new Error('Backup download timed out before receiving a response. Try again.')
+    Object.assign(error, {code: 'ETIMEDOUT'})
+    connectionController.abort(error)
   }, CONNECTION_TIMEOUT)
-  connectionTimeout.unref()
+  connectionTimer.unref()
 
-  const signal = init?.signal
-    ? AbortSignal.any([init.signal, connectionController.signal])
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, connectionController.signal])
     : connectionController.signal
   try {
-    return await nodeFetch(url, {...init, signal})
+    return await next({...options, signal})
   } finally {
-    clearTimeout(connectionTimeout)
+    clearTimeout(connectionTimer)
   }
 }
 
 const request = createRequester({
-  fetch: fetchWithConnectionTimeout,
-  middleware: [retry()],
+  middleware: [retry(), connectionTimeout],
   timeout: false,
 })
 

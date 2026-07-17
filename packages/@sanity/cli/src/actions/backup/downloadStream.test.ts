@@ -1,17 +1,17 @@
 import {Writable} from 'node:stream'
 
 import {
+  type BufferedResponse,
   type CreateRequesterOptions,
-  type FetchFunction,
   type RequestOptions,
   type StreamResponse,
+  type WrappingMiddleware,
 } from '@sanity/cli-core/request'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {downloadStream} from './downloadStream.js'
 
 const mockRequest = vi.hoisted(() => vi.fn<(options: RequestOptions) => Promise<StreamResponse>>())
-const mockNodeFetch = vi.hoisted(() => vi.fn<FetchFunction>())
 const requesterOptions = vi.hoisted(() => ({
   current: undefined as CreateRequesterOptions | undefined,
 }))
@@ -20,7 +20,6 @@ vi.mock('@sanity/cli-core/request', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core/request')>()
   return {
     ...actual,
-    createNodeFetch: () => mockNodeFetch,
     createRequester: (options: CreateRequesterOptions) => {
       requesterOptions.current = options
       return mockRequest
@@ -51,7 +50,6 @@ function createDestination(chunks: Buffer[] = []): Writable {
 
 describe('#downloadStream', () => {
   afterEach(() => {
-    mockNodeFetch.mockReset()
     mockRequest.mockReset()
     vi.useRealTimers()
   })
@@ -81,7 +79,7 @@ describe('#downloadStream', () => {
       url: 'https://example.com/backup',
     })
     expect(requesterOptions.current).toMatchObject({
-      fetch: expect.any(Function),
+      middleware: [expect.any(Function), expect.any(Function)],
       timeout: false,
     })
   })
@@ -97,30 +95,36 @@ describe('#downloadStream', () => {
     expect(destination.destroyed).toBe(true)
   })
 
-  test('gives each fetch attempt a separate connection timeout', async () => {
+  test('starts a separate connection timeout for each retry attempt', async () => {
     vi.useFakeTimers()
-    mockNodeFetch.mockImplementation(
-      (_url, init) =>
+    const next = vi.fn<(options: RequestOptions) => Promise<BufferedResponse>>()
+    next.mockImplementation(
+      ({signal}) =>
         new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), {once: true})
+          signal?.addEventListener('abort', () => reject(signal.reason), {once: true})
         }),
     )
-    const fetch = requesterOptions.current?.fetch
-    if (!fetch) throw new Error('Expected a configured fetch function')
+    const connectionTimeout = requesterOptions.current?.middleware?.[1] as
+      | WrappingMiddleware
+      | undefined
+    if (!connectionTimeout) throw new Error('Expected connection timeout middleware')
 
-    const firstAttempt = fetch('https://example.com/backup')
-    const firstRejection = expect(firstAttempt).rejects.toThrow(
-      'Backup download timed out before receiving a response. Try again.',
-    )
+    const options = {url: 'https://example.com/backup'}
+    const firstAttempt = connectionTimeout(options, next)
+    const firstRejection = expect(firstAttempt).rejects.toMatchObject({
+      code: 'ETIMEDOUT',
+      message: 'Backup download timed out before receiving a response. Try again.',
+    })
     await vi.advanceTimersByTimeAsync(CONNECTION_TIMEOUT)
     await firstRejection
 
-    const secondAttempt = fetch('https://example.com/backup')
-    const secondRejection = expect(secondAttempt).rejects.toThrow(
-      'Backup download timed out before receiving a response. Try again.',
-    )
+    const secondAttempt = connectionTimeout(options, next)
+    const secondRejection = expect(secondAttempt).rejects.toMatchObject({
+      code: 'ETIMEDOUT',
+      message: 'Backup download timed out before receiving a response. Try again.',
+    })
     await vi.advanceTimersByTimeAsync(CONNECTION_TIMEOUT - 1)
-    expect(mockNodeFetch.mock.calls[1]?.[1]?.signal?.aborted).toBe(false)
+    expect(next.mock.calls[1]?.[0].signal?.aborted).toBe(false)
     await vi.advanceTimersByTimeAsync(1)
     await secondRejection
   })
