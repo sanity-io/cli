@@ -14,13 +14,22 @@ export function nodeReadableFromWeb(stream: ReadableStream<Uint8Array>): Readabl
   return Readable.from(
     (async function* () {
       const reader = stream.getReader()
+      let completed = false
       try {
         while (true) {
           const {done, value} = await reader.read()
-          if (done) return
+          if (done) {
+            completed = true
+            return
+          }
           yield value
         }
       } finally {
+        if (!completed) {
+          await reader.cancel().catch(() => {
+            // Preserve the error that stopped the Node stream.
+          })
+        }
         reader.releaseLock()
       }
     })(),

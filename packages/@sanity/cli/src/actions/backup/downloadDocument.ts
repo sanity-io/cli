@@ -1,13 +1,7 @@
-import {createRequester, retry} from '@sanity/cli-core/request'
+import {Writable} from 'node:stream'
 
 import {backupDownloadDebug} from './backupDownloadDebug.js'
-
-const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
-
-const request = createRequester({
-  as: 'text',
-  middleware: [retry()],
-})
+import {downloadStream} from './downloadStream.js'
 
 /**
  * Downloads a document from a backup URL
@@ -16,12 +10,16 @@ const request = createRequester({
  * @returns The document content as received from the API
  */
 export async function downloadDocument(url: string): Promise<string> {
-  const response = await request({
-    timeout: READ_TIMEOUT,
-    url,
+  const chunks: Buffer[] = []
+  const destination = new Writable({
+    write(chunk: Buffer, _encoding, callback) {
+      chunks.push(Buffer.from(chunk))
+      callback()
+    },
   })
+  const status = await downloadStream(url, destination)
 
-  backupDownloadDebug('Received document from %s with status code %d', url, response.status)
+  backupDownloadDebug('Received document from %s with status code %d', url, status)
 
-  return response.body
+  return Buffer.concat(chunks).toString()
 }

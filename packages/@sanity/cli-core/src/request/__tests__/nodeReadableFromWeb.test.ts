@@ -1,6 +1,7 @@
+import {once} from 'node:events'
 import {Readable} from 'node:stream'
 
-import {describe, expect, test} from 'vitest'
+import {describe, expect, test, vi} from 'vitest'
 
 import {nodeReadableFromWeb} from '../nodeReadableFromWeb.js'
 
@@ -28,7 +29,9 @@ describe('#nodeReadableFromWeb', () => {
   })
 
   test('handles an empty stream', async () => {
+    const cancel = vi.fn()
     const webStream = new ReadableStream<Uint8Array>({
+      cancel,
       start(controller) {
         controller.close()
       },
@@ -40,5 +43,22 @@ describe('#nodeReadableFromWeb', () => {
     }
 
     expect(received).toEqual([])
+    expect(cancel).not.toHaveBeenCalled()
+  })
+
+  test('cancels the web stream when the Node stream is destroyed early', async () => {
+    const cancel = vi.fn()
+    const webStream = new ReadableStream<Uint8Array>({
+      cancel,
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3]))
+      },
+    })
+    const nodeStream = nodeReadableFromWeb(webStream)
+
+    nodeStream.once('data', () => nodeStream.destroy())
+    await once(nodeStream, 'close')
+
+    expect(cancel).toHaveBeenCalledOnce()
   })
 })
