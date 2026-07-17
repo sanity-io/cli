@@ -12,6 +12,7 @@ import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js' // TODO: this imports jsdom!!! Unpacked Size (module + dependencies): 26 MB
 import {isRecord} from '../../util/isRecord.js'
+import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
 
 if (isMainThread) {
   throw new Error('Should be child of thread, not the main thread')
@@ -126,46 +127,26 @@ debug('Creating Vite server with config: %o', viteConfig)
 // We include the inject plugin in order to provide the stubs for the undefined global APIs.
 const server = await createServer(viteConfig)
 
-/**
- * Closes the Vite server, bounded by a timeout so a hung close can never
- * stall the worker (and thereby the CLI) indefinitely. Close errors are
- * swallowed — at this point only the task result matters, not the teardown.
- */
-const SERVER_CLOSE_TIMEOUT_MS = 5000
-let serverClosePromise: Promise<void> | undefined
-function closeServer(): Promise<void> {
-  serverClosePromise ??= new Promise<void>((resolve) => {
-    debug('Closing Vite server')
-    const timer = setTimeout(() => {
-      debug('Timed out waiting %dms for the Vite server to close', SERVER_CLOSE_TIMEOUT_MS)
-      resolve()
-    }, SERVER_CLOSE_TIMEOUT_MS)
-    Promise.resolve(server.close())
-      .catch((err: unknown) => {
-        debug('Failed to close Vite server: %o', err)
+// One-shot tasks (`studioWorkerTask`) resolve on their first message, and the
+// main thread historically terminate()d the worker right after — destroying
+// the worker's libuv loop while rolldown's native threads were still live.
+// The next `napi_call_threadsafe_function` then locked a destroyed mutex and
+// aborted the whole process (silent SIGABRT / exit code 134, reliably
+// reproduced on macOS). The lifecycle closes the Vite server BEFORE any
+// message reaches the main thread, and the main thread no longer terminates
+// one-shot workers at all (see `terminateOnSettle` in promisifyWorker).
+const lifecycle =
+  process.env.STUDIO_WORKER_ONE_SHOT === '1' && parentPort
+    ? createOneShotWorkerLifecycle({
+        closeServer: async () => {
+          debug('Closing Vite server')
+          await server.close()
+          debug('Vite server closed')
+        },
+        onCloseError: (error) => debug('Failed to close Vite server: %o', error),
+        parentPort,
       })
-      .then(() => {
-        debug('Vite server closed')
-        clearTimeout(timer)
-        resolve()
-      })
-  })
-  return serverClosePromise
-}
-
-// One-shot tasks (`studioWorkerTask`) are terminated by the main thread as
-// soon as they post their first message. If the Vite server is still running
-// at that point, `worker.terminate()` destroys the worker's libuv loop while
-// rolldown's native threads are live — the next `napi_call_threadsafe_function`
-// locks a destroyed mutex and aborts the whole process (silent SIGABRT / exit
-// code 134, reliably reproduced on macOS). Close the server BEFORE the result
-// message reaches the main thread so terminate() can't race those threads.
-if (process.env.STUDIO_WORKER_ONE_SHOT === '1' && parentPort) {
-  const originalPostMessage = parentPort.postMessage.bind(parentPort)
-  parentPort.postMessage = (...args: Parameters<typeof originalPostMessage>) => {
-    void closeServer().then(() => originalPostMessage(...args))
-  }
-}
+    : undefined
 
 try {
   // Bit of a hack, but seems necessary based on the `node-vite` binary implementation
@@ -223,11 +204,17 @@ try {
   await runner.executeId('/@vite/env')
 
   await runner.executeId(workerScriptPath)
-} catch (err) {
-  // A throwing task (e.g. a broken `sanity.config.ts` or a user Vite plugin)
-  // surfaces as a Worker 'error' event, which also leads to terminate() on the
-  // main thread. Close the server first so the real error isn't masked by the
-  // same terminate-while-rolldown-alive abort.
-  await closeServer()
-  throw err
+} catch (error) {
+  // Long-lived workers keep the original behavior: the error surfaces as a
+  // Worker 'error' event.
+  if (!lifecycle) {
+    throw error
+  }
+
+  // One-shot workers close the server first and post a serialized error the
+  // main thread rethrows, so the worker exits cleanly (code 0) and the real
+  // error (e.g. a broken `sanity.config.ts`) isn't masked by a teardown abort.
+  await lifecycle.postError(error)
+} finally {
+  await lifecycle?.close()
 }

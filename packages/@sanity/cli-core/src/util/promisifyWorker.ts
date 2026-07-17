@@ -4,20 +4,22 @@ import {subdebug} from '../_exports/debug.js'
 
 const debug = subdebug('promisifyWorker')
 
-/**
- * How long a settled worker gets to exit on its own before it is forcefully
- * terminated. Overridable through the `SANITY_WORKER_EXIT_GRACE_MS`
- * environment variable.
- */
-const DEFAULT_EXIT_GRACE_MS = 2000
-
-function getExitGraceMs(): number {
-  const grace = Number(process.env.SANITY_WORKER_EXIT_GRACE_MS)
-  return Number.isFinite(grace) && grace >= 0 ? grace : DEFAULT_EXIT_GRACE_MS
+function onDetachedWorkerError(err: Error) {
+  debug(`Detached worker error: ${err.message}`, err)
 }
 
 interface PromisifyWorkerOptions extends WorkerOptions {
-  /** Optional timeout in milliseconds. If the worker does not respond within this time, it will be terminated and the promise rejected. */
+  /**
+   * Whether to forcibly terminate the worker after settling. Disable this for
+   * workers that host native addons (e.g. rolldown via Vite 8) whose threads
+   * must tear down with the process: terminating such a worker while native
+   * threads are live can abort the whole process with a silent SIGABRT. A
+   * disabled worker is unrefed and may continue running until the process
+   * exits, including after a timeout.
+   */
+  terminateOnSettle?: boolean
+
+  /** Optional timeout in milliseconds. If the worker does not respond within this time, the promise is rejected. */
   timeout?: number
 }
 
@@ -25,7 +27,8 @@ interface PromisifyWorkerOptions extends WorkerOptions {
  * Creates a Node.js Worker from the given file path and options, and wraps it
  * in a Promise that resolves with the first message the worker sends, and
  * rejects on error, message deserialization failure, or non-zero exit code.
- * The worker is terminated after a message or error is received.
+ * By default, the worker is terminated after a message or error is received.
+ * Callers can instead unref it and allow natural process teardown.
  *
  * @param filePath - URL to the worker file
  * @param options - Options to pass to the Worker constructor
@@ -37,7 +40,7 @@ export function promisifyWorker<T = unknown>(
   filePath: URL,
   options?: PromisifyWorkerOptions,
 ): Promise<T> {
-  const {timeout, ...workerOptions} = options ?? {}
+  const {terminateOnSettle = true, timeout, ...workerOptions} = options ?? {}
   const worker = new Worker(filePath, workerOptions)
 
   const fileName = `[${filePath.pathname}]`
@@ -50,8 +53,7 @@ export function promisifyWorker<T = unknown>(
       timeoutId = setTimeout(() => {
         settled = true
         reject(new Error(`Worker timed out after ${timeout}ms`))
-        void worker.terminate()
-        worker.removeAllListeners()
+        cleanup(false)
       }, timeout)
     }
 
@@ -89,27 +91,22 @@ export function promisifyWorker<T = unknown>(
       cleanup()
     })
 
-    function cleanup() {
-      worker.removeAllListeners()
+    function cleanup(deferTermination = true) {
+      if (terminateOnSettle) {
+        if (deferTermination) {
+          setImmediate(() => void worker.terminate())
+        } else {
+          void worker.terminate()
+        }
+        worker.removeAllListeners()
+        return
+      }
 
-      // Give the worker a chance to exit on its own before force-terminating
-      // it. Terminating a worker while native threads (e.g. rolldown's, with
-      // Vite 8) are still winding down can abort the whole process with a
-      // silent SIGABRT on macOS — see `studioWorkerLoader.worker.ts`. One-shot
-      // studio workers close their Vite server before posting their result,
-      // so they normally exit by themselves right after.
-      const graceMs = getExitGraceMs()
-      const graceTimer = setTimeout(() => {
-        debug(`${fileName} did not exit within ${graceMs}ms, terminating`)
-        void worker.terminate()
-      }, graceMs)
-
-      // Neither the grace timer nor the worker should keep the parent process
-      // alive: when the CLI is otherwise done, process exit tears the worker
-      // down without going through `worker.terminate()`.
-      graceTimer.unref()
       worker.unref()
-      worker.once('exit', () => clearTimeout(graceTimer))
+      worker.removeAllListeners()
+      // A detached worker may still fail before process teardown. Keep an error
+      // listener so EventEmitter does not rethrow it in the parent process.
+      worker.addListener('error', onDetachedWorkerError)
     }
   })
 }

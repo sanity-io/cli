@@ -4,6 +4,11 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 import {type RequireProps} from '../../types.js'
 import {isRecord} from '../../util/isRecord.js'
 import {promisifyWorker} from '../../util/promisifyWorker.js'
+import {
+  deserializeStudioWorkerError,
+  isStudioWorkerErrorMessage,
+  type StudioWorkerErrorMessage,
+} from './studioWorkerLifecycle.js'
 
 /**
  * Options for the studio worker task
@@ -13,7 +18,7 @@ import {promisifyWorker} from '../../util/promisifyWorker.js'
 interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
   studioRootPath: string
 
-  /** Optional timeout in milliseconds. If the worker does not respond within this time, it will be terminated and the promise rejected. */
+  /** Optional timeout in milliseconds. If the worker does not respond within this time, the promise is rejected. */
   timeout?: number
 }
 
@@ -56,20 +61,34 @@ export function studioWorkerTask<T = unknown>(
   }
 
   const {studioRootPath, timeout, ...workerOptions} = options
-  return promisifyWorker<T>(new URL('studioWorkerLoader.worker.js', import.meta.url), {
-    ...workerOptions,
-    env: {
-      ...(isRecord(workerOptions.env) ? workerOptions.env : process.env),
-      // Tasks spawned here are one-shot: promisifyWorker resolves on the first
-      // message and terminates the worker. The loader uses this flag to close
-      // the Vite (rolldown) server before that message reaches the main thread,
-      // preventing terminate() from racing rolldown's native threads (SIGABRT
-      // on macOS). Long-lived workers (`createStudioWorker`) must NOT set it.
-      STUDIO_WORKER_ONE_SHOT: '1',
-      STUDIO_WORKER_STUDIO_ROOT_PATH: studioRootPath,
-      STUDIO_WORKER_TASK_FILE: normalizedFilePath,
+  const workerPromise = promisifyWorker<StudioWorkerErrorMessage | T>(
+    new URL('studioWorkerLoader.worker.js', import.meta.url),
+    {
+      ...workerOptions,
+      env: {
+        ...(isRecord(workerOptions.env) ? workerOptions.env : process.env),
+        // Tasks spawned here are one-shot: the loader closes its Vite
+        // (rolldown) server before any message reaches the main thread, so
+        // teardown can never race rolldown's native threads (SIGABRT on
+        // macOS). Long-lived workers (`createStudioWorker`) must NOT set it.
+        STUDIO_WORKER_ONE_SHOT: '1',
+        STUDIO_WORKER_STUDIO_ROOT_PATH: studioRootPath,
+        STUDIO_WORKER_TASK_FILE: normalizedFilePath,
+      },
+      // Never terminate() a worker hosting rolldown's native threads — let it
+      // exit on its own (it closes its server first) or tear down with the
+      // process.
+      terminateOnSettle: false,
+      timeout,
     },
-    timeout,
+  )
+
+  return workerPromise.then((result) => {
+    if (isStudioWorkerErrorMessage(result)) {
+      throw deserializeStudioWorkerError(result)
+    }
+
+    return result
   })
 }
 
