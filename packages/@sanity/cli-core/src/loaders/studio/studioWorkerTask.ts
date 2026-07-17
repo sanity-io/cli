@@ -4,6 +4,11 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 import {type RequireProps} from '../../types.js'
 import {isRecord} from '../../util/isRecord.js'
 import {promisifyWorker} from '../../util/promisifyWorker.js'
+import {
+  deserializeStudioWorkerError,
+  isStudioWorkerErrorMessage,
+  type StudioWorkerErrorMessage,
+} from './studioWorkerLifecycle.js'
 
 /**
  * Options for the studio worker task
@@ -13,7 +18,7 @@ import {promisifyWorker} from '../../util/promisifyWorker.js'
 interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
   studioRootPath: string
 
-  /** Optional timeout in milliseconds. If the worker does not respond within this time, it will be terminated and the promise rejected. */
+  /** Optional timeout in milliseconds. If the worker does not respond within this time, the promise is rejected. */
   timeout?: number
 }
 
@@ -56,14 +61,27 @@ export function studioWorkerTask<T = unknown>(
   }
 
   const {studioRootPath, timeout, ...workerOptions} = options
-  return promisifyWorker<T>(new URL('studioWorkerLoader.worker.js', import.meta.url), {
-    ...workerOptions,
-    env: {
-      ...(isRecord(workerOptions.env) ? workerOptions.env : process.env),
-      STUDIO_WORKER_STUDIO_ROOT_PATH: studioRootPath,
-      STUDIO_WORKER_TASK_FILE: normalizedFilePath,
+  const workerPromise = promisifyWorker<StudioWorkerErrorMessage | T>(
+    new URL('studioWorkerLoader.worker.js', import.meta.url),
+    {
+      ...workerOptions,
+      env: {
+        ...(isRecord(workerOptions.env) ? workerOptions.env : process.env),
+        STUDIO_WORKER_ONE_SHOT: '1',
+        STUDIO_WORKER_STUDIO_ROOT_PATH: studioRootPath,
+        STUDIO_WORKER_TASK_FILE: normalizedFilePath,
+      },
+      terminateOnSettle: false,
+      timeout,
     },
-    timeout,
+  )
+
+  return workerPromise.then((result) => {
+    if (isStudioWorkerErrorMessage(result)) {
+      throw deserializeStudioWorkerError(result)
+    }
+
+    return result
   })
 }
 

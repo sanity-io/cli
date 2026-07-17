@@ -18,6 +18,7 @@ function createMockWorker() {
       for (const key of Object.keys(listeners)) delete listeners[key]
     }),
     terminate: vi.fn(),
+    unref: vi.fn(),
   }
 }
 
@@ -114,6 +115,20 @@ describe('promisifyWorker', () => {
     expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
   })
 
+  test('unrefs without terminating when forced termination is disabled', async () => {
+    const promise = promisifyWorker(TEST_WORKER_URL, {
+      name: 'test',
+      terminateOnSettle: false,
+    })
+
+    lastCreatedWorker.emit('message', 'data')
+    await promise
+
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.terminate).not.toHaveBeenCalled()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+  })
+
   test('removes all listeners after receiving a message', async () => {
     const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test'})
 
@@ -144,6 +159,23 @@ describe('promisifyWorker', () => {
     expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
   })
+
+  test.each(['error', 'messageerror'])(
+    'unrefs without terminating after a worker %s',
+    async (event) => {
+      const promise = promisifyWorker(TEST_WORKER_URL, {
+        name: 'test',
+        terminateOnSettle: false,
+      })
+
+      lastCreatedWorker.emit(event, new Error('fail'))
+      await promise.catch(() => {})
+
+      expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
+      expect(lastCreatedWorker.terminate).not.toHaveBeenCalled()
+      expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+    },
+  )
 
   test('resolves with only the first message when multiple are emitted', async () => {
     const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test'})
@@ -202,6 +234,23 @@ describe('promisifyWorker', () => {
     await expect(promise).rejects.toThrow('Worker timed out after 500ms')
 
     expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+  })
+
+  test('unrefs without terminating when the timeout expires and forced termination is disabled', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {
+      name: 'test',
+      terminateOnSettle: false,
+      timeout: 500,
+    })
+
+    vi.advanceTimersByTime(500)
+
+    await expect(promise).rejects.toThrow('Worker timed out after 500ms')
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.terminate).not.toHaveBeenCalled()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
   })
 

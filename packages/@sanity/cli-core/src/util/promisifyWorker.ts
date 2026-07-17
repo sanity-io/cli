@@ -5,7 +5,13 @@ import {subdebug} from '../_exports/debug.js'
 const debug = subdebug('promisifyWorker')
 
 interface PromisifyWorkerOptions extends WorkerOptions {
-  /** Optional timeout in milliseconds. If the worker does not respond within this time, it will be terminated and the promise rejected. */
+  /**
+   * Whether to forcibly terminate the worker after settling. Disable this for
+   * workers that host native addons which must tear down with the process.
+   */
+  terminateOnSettle?: boolean
+
+  /** Optional timeout in milliseconds. If the worker does not respond within this time, the promise is rejected. */
   timeout?: number
 }
 
@@ -13,7 +19,8 @@ interface PromisifyWorkerOptions extends WorkerOptions {
  * Creates a Node.js Worker from the given file path and options, and wraps it
  * in a Promise that resolves with the first message the worker sends, and
  * rejects on error, message deserialization failure, or non-zero exit code.
- * The worker is terminated after a message or error is received.
+ * By default, the worker is terminated after a message or error is received.
+ * Callers can instead unref it and allow natural process teardown.
  *
  * @param filePath - URL to the worker file
  * @param options - Options to pass to the Worker constructor
@@ -25,7 +32,7 @@ export function promisifyWorker<T = unknown>(
   filePath: URL,
   options?: PromisifyWorkerOptions,
 ): Promise<T> {
-  const {timeout, ...workerOptions} = options ?? {}
+  const {terminateOnSettle = true, timeout, ...workerOptions} = options ?? {}
   const worker = new Worker(filePath, workerOptions)
 
   const fileName = `[${filePath.pathname}]`
@@ -38,8 +45,7 @@ export function promisifyWorker<T = unknown>(
       timeoutId = setTimeout(() => {
         settled = true
         reject(new Error(`Worker timed out after ${timeout}ms`))
-        void worker.terminate()
-        worker.removeAllListeners()
+        cleanup()
       }, timeout)
     }
 
@@ -78,7 +84,11 @@ export function promisifyWorker<T = unknown>(
     })
 
     function cleanup() {
-      setImmediate(() => worker.terminate())
+      if (terminateOnSettle) {
+        setImmediate(() => void worker.terminate())
+      } else {
+        worker.unref()
+      }
       worker.removeAllListeners()
     }
   })

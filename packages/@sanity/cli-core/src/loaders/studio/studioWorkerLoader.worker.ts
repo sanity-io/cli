@@ -1,4 +1,4 @@
-import {isMainThread} from 'node:worker_threads'
+import {isMainThread, parentPort} from 'node:worker_threads'
 
 import {createServer, type InlineConfig, loadEnv, mergeConfig} from 'vite'
 import {ViteNodeRunner} from 'vite-node/client'
@@ -12,6 +12,7 @@ import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js' // TODO: this imports jsdom!!! Unpacked Size (module + dependencies): 26 MB
 import {isRecord} from '../../util/isRecord.js'
+import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
 
 if (isMainThread) {
   throw new Error('Should be child of thread, not the main thread')
@@ -126,58 +127,77 @@ debug('Creating Vite server with config: %o', viteConfig)
 // We include the inject plugin in order to provide the stubs for the undefined global APIs.
 const server = await createServer(viteConfig)
 
-// Bit of a hack, but seems necessary based on the `node-vite` binary implementation
-await server.pluginContainer.buildStart({})
+const lifecycle =
+  process.env.STUDIO_WORKER_ONE_SHOT === '1' && parentPort
+    ? createOneShotWorkerLifecycle({
+        closeServer: () => server.close(),
+        onCloseError: (error) => debug('Failed to close Vite server: %o', error),
+        parentPort,
+      })
+    : undefined
 
-// Load environment variables from `.env` files in the same way as Vite does.
-// Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
-// and so we need to do the same here.
-// Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
-// vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
-// The ??= on the next line prevents overwriting existing process.env values.
-const env = loadEnv(server.config.mode, server.config.envDir, '')
-for (const key in env) {
-  process.env[key] ??= env[key]
+try {
+  // Bit of a hack, but seems necessary based on the `node-vite` binary implementation
+  await server.pluginContainer.buildStart({})
+
+  // Load environment variables from `.env` files in the same way as Vite does.
+  // Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
+  // and so we need to do the same here.
+  // Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
+  // vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
+  // The ??= on the next line prevents overwriting existing process.env values.
+  const env = loadEnv(server.config.mode, server.config.envDir, '')
+  for (const key in env) {
+    process.env[key] ??= env[key]
+  }
+
+  // Now we're providing the glue that ensures node-specific loading and execution works.
+  const node = new ViteNodeServer(server)
+
+  // Should make it easier to debug any crashes in the imported code…
+  installSourcemapsSupport({
+    getSourceMap: (source) => node.getSourceMap(source),
+  })
+
+  const runner = new ViteNodeRunner({
+    base: server.config.base,
+    async fetchModule(id) {
+      // Vite's SSR transform externalizes https:// imports, so Node's ESM loader
+      // would reject them. We fetch the module over HTTP and run it through Vite's
+      // SSR transform to rewrite ESM export/import syntax to the __vite_ssr_*
+      // format that ViteNodeRunner expects.
+      if (isHttpsUrl(id)) {
+        const {code: rawCode} = await fetchHttpModule(id)
+        const result = await server.ssrTransform(rawCode, null, id)
+        return {code: result?.code || rawCode}
+      }
+      return node.fetchModule(id)
+    },
+    resolveId(id, importer) {
+      // Prevent vite-node from trying to resolve HTTP URLs through Node's resolver
+      if (isHttpsUrl(id)) return {id}
+      // Resolve any import from an HTTP-fetched module against the remote origin
+      // (e.g. esm.sh returns `export * from '/pkg@1.0/es2022/pkg.mjs'`)
+      if (importer && isHttpsUrl(importer)) {
+        return {id: new URL(id, importer).href}
+      }
+      return node.resolveId(id, importer)
+    },
+    root: server.config.root,
+  })
+
+  // Copied from `vite-node` - it appears that this applies the `define` config from
+  // vite, but it also takes a surprisingly long time to execute. Not clear at this
+  // point why this is, so we should investigate whether it's necessary or not.
+  await runner.executeId('/@vite/env')
+
+  await runner.executeId(workerScriptPath)
+} catch (error) {
+  if (!lifecycle) {
+    throw error
+  }
+
+  await lifecycle.postError(error)
+} finally {
+  await lifecycle?.close()
 }
-
-// Now we're providing the glue that ensures node-specific loading and execution works.
-const node = new ViteNodeServer(server)
-
-// Should make it easier to debug any crashes in the imported code…
-installSourcemapsSupport({
-  getSourceMap: (source) => node.getSourceMap(source),
-})
-
-const runner = new ViteNodeRunner({
-  base: server.config.base,
-  async fetchModule(id) {
-    // Vite's SSR transform externalizes https:// imports, so Node's ESM loader
-    // would reject them. We fetch the module over HTTP and run it through Vite's
-    // SSR transform to rewrite ESM export/import syntax to the __vite_ssr_*
-    // format that ViteNodeRunner expects.
-    if (isHttpsUrl(id)) {
-      const {code: rawCode} = await fetchHttpModule(id)
-      const result = await server.ssrTransform(rawCode, null, id)
-      return {code: result?.code || rawCode}
-    }
-    return node.fetchModule(id)
-  },
-  resolveId(id, importer) {
-    // Prevent vite-node from trying to resolve HTTP URLs through Node's resolver
-    if (isHttpsUrl(id)) return {id}
-    // Resolve any import from an HTTP-fetched module against the remote origin
-    // (e.g. esm.sh returns `export * from '/pkg@1.0/es2022/pkg.mjs'`)
-    if (importer && isHttpsUrl(importer)) {
-      return {id: new URL(id, importer).href}
-    }
-    return node.resolveId(id, importer)
-  },
-  root: server.config.root,
-})
-
-// Copied from `vite-node` - it appears that this applies the `define` config from
-// vite, but it also takes a surprisingly long time to execute. Not clear at this
-// point why this is, so we should investigate whether it's necessary or not.
-await runner.executeId('/@vite/env')
-
-await runner.executeId(workerScriptPath)
