@@ -25,6 +25,9 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "checkJs": false,
+    // TypeScript 6.0 defaults `types` to [] (no automatic @types inclusion).
+    // Explicitly include Node globals used throughout the monorepo.
+    "types": ["node"],
 
     // Strict type-checking
     "strict": true,
