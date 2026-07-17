@@ -68,7 +68,7 @@
     "lint-staged": "^16.4.0",
     "oxfmt": "catalog:",
     "rimraf": "catalog:",
-    "turbo": "^2.9.18",
+    "turbo": "^2.10.5",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
