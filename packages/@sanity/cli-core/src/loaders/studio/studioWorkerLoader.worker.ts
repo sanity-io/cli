@@ -1,4 +1,4 @@
-import {isMainThread} from 'node:worker_threads'
+import {isMainThread, parentPort} from 'node:worker_threads'
 
 import {createServer, type InlineConfig, loadEnv, mergeConfig} from 'vite'
 import {ViteNodeRunner} from 'vite-node/client'
@@ -126,58 +126,108 @@ debug('Creating Vite server with config: %o', viteConfig)
 // We include the inject plugin in order to provide the stubs for the undefined global APIs.
 const server = await createServer(viteConfig)
 
-// Bit of a hack, but seems necessary based on the `node-vite` binary implementation
-await server.pluginContainer.buildStart({})
-
-// Load environment variables from `.env` files in the same way as Vite does.
-// Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
-// and so we need to do the same here.
-// Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
-// vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
-// The ??= on the next line prevents overwriting existing process.env values.
-const env = loadEnv(server.config.mode, server.config.envDir, '')
-for (const key in env) {
-  process.env[key] ??= env[key]
+/**
+ * Closes the Vite server, bounded by a timeout so a hung close can never
+ * stall the worker (and thereby the CLI) indefinitely. Close errors are
+ * swallowed — at this point only the task result matters, not the teardown.
+ */
+const SERVER_CLOSE_TIMEOUT_MS = 5000
+let serverClosePromise: Promise<void> | undefined
+function closeServer(): Promise<void> {
+  serverClosePromise ??= new Promise<void>((resolve) => {
+    debug('Closing Vite server')
+    const timer = setTimeout(() => {
+      debug('Timed out waiting %dms for the Vite server to close', SERVER_CLOSE_TIMEOUT_MS)
+      resolve()
+    }, SERVER_CLOSE_TIMEOUT_MS)
+    Promise.resolve(server.close())
+      .catch((err: unknown) => {
+        debug('Failed to close Vite server: %o', err)
+      })
+      .then(() => {
+        debug('Vite server closed')
+        clearTimeout(timer)
+        resolve()
+      })
+  })
+  return serverClosePromise
 }
 
-// Now we're providing the glue that ensures node-specific loading and execution works.
-const node = new ViteNodeServer(server)
+// One-shot tasks (`studioWorkerTask`) are terminated by the main thread as
+// soon as they post their first message. If the Vite server is still running
+// at that point, `worker.terminate()` destroys the worker's libuv loop while
+// rolldown's native threads are live — the next `napi_call_threadsafe_function`
+// locks a destroyed mutex and aborts the whole process (silent SIGABRT / exit
+// code 134, reliably reproduced on macOS). Close the server BEFORE the result
+// message reaches the main thread so terminate() can't race those threads.
+if (process.env.STUDIO_WORKER_ONE_SHOT === '1' && parentPort) {
+  const originalPostMessage = parentPort.postMessage.bind(parentPort)
+  parentPort.postMessage = (...args: Parameters<typeof originalPostMessage>) => {
+    void closeServer().then(() => originalPostMessage(...args))
+  }
+}
 
-// Should make it easier to debug any crashes in the imported code…
-installSourcemapsSupport({
-  getSourceMap: (source) => node.getSourceMap(source),
-})
+try {
+  // Bit of a hack, but seems necessary based on the `node-vite` binary implementation
+  await server.pluginContainer.buildStart({})
 
-const runner = new ViteNodeRunner({
-  base: server.config.base,
-  async fetchModule(id) {
-    // Vite's SSR transform externalizes https:// imports, so Node's ESM loader
-    // would reject them. We fetch the module over HTTP and run it through Vite's
-    // SSR transform to rewrite ESM export/import syntax to the __vite_ssr_*
-    // format that ViteNodeRunner expects.
-    if (isHttpsUrl(id)) {
-      const {code: rawCode} = await fetchHttpModule(id)
-      const result = await server.ssrTransform(rawCode, null, id)
-      return {code: result?.code || rawCode}
-    }
-    return node.fetchModule(id)
-  },
-  resolveId(id, importer) {
-    // Prevent vite-node from trying to resolve HTTP URLs through Node's resolver
-    if (isHttpsUrl(id)) return {id}
-    // Resolve any import from an HTTP-fetched module against the remote origin
-    // (e.g. esm.sh returns `export * from '/pkg@1.0/es2022/pkg.mjs'`)
-    if (importer && isHttpsUrl(importer)) {
-      return {id: new URL(id, importer).href}
-    }
-    return node.resolveId(id, importer)
-  },
-  root: server.config.root,
-})
+  // Load environment variables from `.env` files in the same way as Vite does.
+  // Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
+  // and so we need to do the same here.
+  // Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
+  // vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
+  // The ??= on the next line prevents overwriting existing process.env values.
+  const env = loadEnv(server.config.mode, server.config.envDir, '')
+  for (const key in env) {
+    process.env[key] ??= env[key]
+  }
 
-// Copied from `vite-node` - it appears that this applies the `define` config from
-// vite, but it also takes a surprisingly long time to execute. Not clear at this
-// point why this is, so we should investigate whether it's necessary or not.
-await runner.executeId('/@vite/env')
+  // Now we're providing the glue that ensures node-specific loading and execution works.
+  const node = new ViteNodeServer(server)
 
-await runner.executeId(workerScriptPath)
+  // Should make it easier to debug any crashes in the imported code…
+  installSourcemapsSupport({
+    getSourceMap: (source) => node.getSourceMap(source),
+  })
+
+  const runner = new ViteNodeRunner({
+    base: server.config.base,
+    async fetchModule(id) {
+      // Vite's SSR transform externalizes https:// imports, so Node's ESM loader
+      // would reject them. We fetch the module over HTTP and run it through Vite's
+      // SSR transform to rewrite ESM export/import syntax to the __vite_ssr_*
+      // format that ViteNodeRunner expects.
+      if (isHttpsUrl(id)) {
+        const {code: rawCode} = await fetchHttpModule(id)
+        const result = await server.ssrTransform(rawCode, null, id)
+        return {code: result?.code || rawCode}
+      }
+      return node.fetchModule(id)
+    },
+    resolveId(id, importer) {
+      // Prevent vite-node from trying to resolve HTTP URLs through Node's resolver
+      if (isHttpsUrl(id)) return {id}
+      // Resolve any import from an HTTP-fetched module against the remote origin
+      // (e.g. esm.sh returns `export * from '/pkg@1.0/es2022/pkg.mjs'`)
+      if (importer && isHttpsUrl(importer)) {
+        return {id: new URL(id, importer).href}
+      }
+      return node.resolveId(id, importer)
+    },
+    root: server.config.root,
+  })
+
+  // Copied from `vite-node` - it appears that this applies the `define` config from
+  // vite, but it also takes a surprisingly long time to execute. Not clear at this
+  // point why this is, so we should investigate whether it's necessary or not.
+  await runner.executeId('/@vite/env')
+
+  await runner.executeId(workerScriptPath)
+} catch (err) {
+  // A throwing task (e.g. a broken `sanity.config.ts` or a user Vite plugin)
+  // surfaces as a Worker 'error' event, which also leads to terminate() on the
+  // main thread. Close the server first so the real error isn't masked by the
+  // same terminate-while-rolldown-alive abort.
+  await closeServer()
+  throw err
+}

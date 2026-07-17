@@ -60,6 +60,12 @@ export function studioWorkerTask<T = unknown>(
     ...workerOptions,
     env: {
       ...(isRecord(workerOptions.env) ? workerOptions.env : process.env),
+      // Tasks spawned here are one-shot: promisifyWorker resolves on the first
+      // message and terminates the worker. The loader uses this flag to close
+      // the Vite (rolldown) server before that message reaches the main thread,
+      // preventing terminate() from racing rolldown's native threads (SIGABRT
+      // on macOS). Long-lived workers (`createStudioWorker`) must NOT set it.
+      STUDIO_WORKER_ONE_SHOT: '1',
       STUDIO_WORKER_STUDIO_ROOT_PATH: studioRootPath,
       STUDIO_WORKER_TASK_FILE: normalizedFilePath,
     },

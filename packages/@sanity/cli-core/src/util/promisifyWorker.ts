@@ -4,6 +4,18 @@ import {subdebug} from '../_exports/debug.js'
 
 const debug = subdebug('promisifyWorker')
 
+/**
+ * How long a settled worker gets to exit on its own before it is forcefully
+ * terminated. Overridable through the `SANITY_WORKER_EXIT_GRACE_MS`
+ * environment variable.
+ */
+const DEFAULT_EXIT_GRACE_MS = 2000
+
+function getExitGraceMs(): number {
+  const grace = Number(process.env.SANITY_WORKER_EXIT_GRACE_MS)
+  return Number.isFinite(grace) && grace >= 0 ? grace : DEFAULT_EXIT_GRACE_MS
+}
+
 interface PromisifyWorkerOptions extends WorkerOptions {
   /** Optional timeout in milliseconds. If the worker does not respond within this time, it will be terminated and the promise rejected. */
   timeout?: number
@@ -78,8 +90,26 @@ export function promisifyWorker<T = unknown>(
     })
 
     function cleanup() {
-      setImmediate(() => worker.terminate())
       worker.removeAllListeners()
+
+      // Give the worker a chance to exit on its own before force-terminating
+      // it. Terminating a worker while native threads (e.g. rolldown's, with
+      // Vite 8) are still winding down can abort the whole process with a
+      // silent SIGABRT on macOS — see `studioWorkerLoader.worker.ts`. One-shot
+      // studio workers close their Vite server before posting their result,
+      // so they normally exit by themselves right after.
+      const graceMs = getExitGraceMs()
+      const graceTimer = setTimeout(() => {
+        debug(`${fileName} did not exit within ${graceMs}ms, terminating`)
+        void worker.terminate()
+      }, graceMs)
+
+      // Neither the grace timer nor the worker should keep the parent process
+      // alive: when the CLI is otherwise done, process exit tears the worker
+      // down without going through `worker.terminate()`.
+      graceTimer.unref()
+      worker.unref()
+      worker.once('exit', () => clearTimeout(graceTimer))
     }
   })
 }
