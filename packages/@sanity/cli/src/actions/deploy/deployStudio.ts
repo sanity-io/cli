@@ -8,7 +8,8 @@ import {spinner} from '@sanity/cli-core/ux'
 import {
   type BrettWorkspace,
   buildExposes,
-  deployStudio as deployWorkbenchStudio,
+  createStudio,
+  deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
 } from '@sanity/workbench-cli/deploy'
@@ -111,7 +112,7 @@ async function runStudioDeployment(
     await checkStudioTarget(reporter, {
       appId,
       isWorkbenchApp: true,
-      studioHost: cliConfig.studioHost,
+      slug: workbench.slug,
       title: appTitle,
     })
   } else {
@@ -121,9 +122,30 @@ async function runStudioDeployment(
     }))
   }
 
+  // Read up front so a bad icon path fails before we create or build.
+  const appIcon =
+    !dryRun && !isExternal && workbench?.icon
+      ? await readIconFromPath(workDir, workbench.icon)
+      : undefined
+
+  // Create the studio before the build so the bundle carries its real id. A
+  // redeploy already has it from `deployment.appId`; a dry run skips creation.
+  let applicationId = appId
+  let applicationCreated = false
+  if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
+    ;({applicationId} = await createStudio({
+      organizationId,
+      projectId,
+      slug: workbench.slug,
+      title: appTitle,
+    }))
+    applicationCreated = true
+  }
+
   await checkBuild(reporter, {
     build: () =>
       buildStudio({
+        applicationId: workbench ? applicationId : undefined,
         autoUpdatesEnabled: isAutoUpdating,
         calledFromDeploy: true,
         cliConfig,
@@ -152,11 +174,12 @@ async function runStudioDeployment(
   if (!version) return
 
   const studioManifest = await uploadStudioSchema(options, {isExternal})
-  // Workbench studios deploy to Brett; plain studios use user-applications.
-  if (workbench && !isExternal && organizationId) {
-    const {applicationId} = await deployWorkbenchStudio({
-      appId,
-      icon: workbench.icon ? await readIconFromPath(workDir, workbench.icon) : undefined,
+  // The studio was created (or resolved from `deployment.appId`) before the
+  // build, so this only ships the deployment; plain studios use user-applications.
+  if (workbench && !isExternal && organizationId && applicationId) {
+    await deployWorkbenchApp({
+      applicationId,
+      icon: appIcon,
       interfaces: buildExposes(workbench, {
         appName: workbench.name,
         appTitle,
@@ -164,11 +187,8 @@ async function runStudioDeployment(
         version,
       }),
       isAutoUpdating,
-      organizationId,
-      output,
-      projectId,
+      label: 'Deploying to sanity.studio',
       sourceDir,
-      studioHost: cliConfig.studioHost,
       title: appTitle,
       version,
       workspaces: toWorkspaces(studioManifest),
@@ -180,7 +200,7 @@ async function runStudioDeployment(
       applicationVersion: version,
       ...(exposes.length > 0 ? {exposes} : {}),
       target: {
-        action: appId ? 'update' : 'create',
+        action: applicationCreated ? 'create' : 'update',
         applicationId,
         title: appTitle,
         url,

@@ -1,6 +1,7 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
+import {resolveAppId} from '../../appId.js'
 import {deriveConfigs, deriveInterfaces} from './deriveInterfaces.js'
 import {trackExposesSet} from './exposesSetId.js'
 import {type DevServerManifest, registerDevServer} from './registry.js'
@@ -67,11 +68,10 @@ export async function startDevServerRegistration(
   const registration = registerDevServer({
     configs,
     host: appHost,
-    // A local dev app is identified by where it's served, not its deployment
-    // app id — so a running app can't collide with its deployed twin (they'd
-    // share `deployment.appId`), and the port stays visible in the URL. Deployed
-    // apps keep their app id.
-    id: `${appHost}-${appPort}`,
+    // Keyed by where it's served, not its deployment app id, so a running app
+    // can't collide with its deployed twin. Matches the served bundle's
+    // `__SANITY_APP_ID__` (see `resolveAppId`).
+    id: resolveAppId({host: appHost, port: appPort}),
     interfaces,
     port: appPort,
     projectId: cliConfig?.api?.projectId,

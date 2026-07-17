@@ -1,7 +1,7 @@
 import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
-import {type AppVisibility, exitCodes, type Output} from '@sanity/cli-core'
+import {type AppVisibility} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -14,148 +14,92 @@ import {
 } from '../../services/applications.js'
 
 /**
- * Deploy a workbench coreApp through Brett: redeploy when `appId` is set,
- * otherwise create the application at `slug`. Returns the application id for the
- * shell to report.
+ * Create a coreApp record (no deployment) and return its id, so the CLI can
+ * build with it before shipping the first deployment. First deploy only.
  * @internal
  */
-export async function deployCoreApp(options: {
-  appId: string | undefined
-  icon?: string
-  interfaces: readonly BrettInterface[]
-  isAutoUpdating: boolean
+export async function createCoreApp(options: {
   isSingleton?: boolean
   organizationId: string
   slug: string
-  sourceDir: string
   title: string
-  version: string
   visibility?: AppVisibility
 }): Promise<{applicationId: string}> {
-  const {
-    appId,
-    icon,
-    interfaces,
-    isAutoUpdating,
-    isSingleton,
-    organizationId,
-    slug,
-    sourceDir,
-    title,
-    version,
-    visibility,
-  } = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
-
-  const spin = spinner('Deploying...').start()
+  const spin = spinner('Creating application...').start()
   try {
-    if (appId) {
-      await createDeployment({applicationId: appId, interfaces, isAutoUpdating, tarball, version})
-      await updateApplication(appId, {
-        title,
-        ...(icon ? {icon} : {}),
-        ...(visibility ? {visibility} : {}),
-      })
-      spin.succeed()
-      return {applicationId: appId}
-    }
-
-    const {id} = await createApplication({
-      icon,
-      interfaces,
-      isSingleton,
-      organizationId,
-      slug,
-      tarball,
-      title,
-      type: 'coreApp',
-      version,
-      visibility,
-    })
+    const {id} = await createApplication({...options, type: 'coreApp'})
     spin.succeed()
     return {applicationId: id}
   } catch (error) {
-    spin.clear()
+    spin.fail()
     throw error
   }
 }
 
 /**
- * Deploy a workbench studio through Brett: redeploy when `appId` is set,
- * otherwise create the studio at `studioHost`. Returns the application id for
- * the shell to report; a missing `studioHost` on create is a usage error.
+ * Create a studio record (no deployment) and return its id.
  * @internal
  */
-export async function deployStudio(options: {
-  appId: string | undefined
+export async function createStudio(options: {
+  organizationId: string
+  projectId: string | undefined
+  slug: string
+  title: string
+}): Promise<{applicationId: string}> {
+  const spin = spinner('Creating studio...').start()
+  try {
+    const {id} = await createApplication({...options, type: 'studio'})
+    spin.succeed()
+    return {applicationId: id}
+  } catch (error) {
+    spin.fail()
+    throw error
+  }
+}
+
+/**
+ * Ship a deployment to an already-created (or `deployment.appId`) application,
+ * then sync its mutable metadata (`title`, and `icon` when set) from config.
+ * @internal
+ */
+export async function deployWorkbenchApp(options: {
+  applicationId: string
   icon?: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
-  organizationId: string
-  output: Output
-  projectId: string | undefined
+  label?: string
   sourceDir: string
-  studioHost: string | undefined
   title: string
   version: string
-  workspaces: readonly BrettWorkspace[]
-}): Promise<{applicationId: string}> {
+  workspaces?: readonly BrettWorkspace[]
+}): Promise<void> {
   const {
-    appId,
+    applicationId,
     icon,
     interfaces,
     isAutoUpdating,
-    organizationId,
-    output,
-    projectId,
+    label = 'Deploying...',
     sourceDir,
-    studioHost,
     title,
     version,
     workspaces,
   } = options
   const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
 
-  const spin = spinner('Deploying to sanity.studio').start()
+  const spin = spinner(label).start()
   try {
-    if (appId) {
-      await createDeployment({
-        applicationId: appId,
-        interfaces,
-        isAutoUpdating,
-        tarball,
-        version,
-        workspaces,
-      })
-      await updateApplication(appId, {title, ...(icon ? {icon} : {})})
-      spin.succeed()
-      return {applicationId: appId}
-    }
-
-    if (!studioHost) {
-      spin.fail()
-      return output.error(
-        'No studio hostname configured. Set `studioHost` in sanity.cli.ts to create a studio.',
-        {exit: exitCodes.USAGE_ERROR},
-      )
-    }
-
-    const application = await createApplication({
-      icon,
+    await createDeployment({
+      applicationId,
       interfaces,
-      organizationId,
-      projectId,
-      slug: studioHost,
+      isAutoUpdating,
       tarball,
-      title,
-      type: 'studio',
       version,
       workspaces,
     })
+    await updateApplication(applicationId, {title, ...(icon ? {icon} : {})})
     spin.succeed()
-    return {applicationId: application.id}
   } catch (error) {
-    spin.fail()
+    spin.clear()
     throw error
   }
 }

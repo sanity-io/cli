@@ -383,13 +383,13 @@ export async function checkStudioTarget(
     | {
         appId: string | undefined
         isWorkbenchApp: true
-        studioHost: string | undefined
+        slug: string
         title?: string
       },
 ): Promise<DeployTarget | null> {
   const {title} = options
   const resolve = options.isWorkbenchApp
-    ? resolveWorkbenchStudio({appId: options.appId, studioHost: options.studioHost})
+    ? resolveWorkbenchStudio({appId: options.appId, slug: options.slug})
     : resolveStudioDeployTarget(options)
   // Workbench studios always deploy to Sanity hosting, never an external URL.
   const isExternal = options.isWorkbenchApp ? false : options.isExternal

@@ -8,8 +8,9 @@ import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   buildExposes,
+  createCoreApp,
   deployConfig,
-  deployCoreApp as deployWorkbenchCoreApp,
+  deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
   resolveInstallationId,
@@ -32,7 +33,7 @@ import {
   resolveTitleUpdate,
 } from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
-import {createUserApplication, generateAppSlug} from './createUserApplication.js'
+import {createUserApplication} from './createUserApplication.js'
 import {
   checkAppId,
   checkAppTarget,
@@ -136,9 +137,29 @@ async function runAppDeployment(
     ;({application, created: appCreated} = await resolveAppApplication(options, {dryRun, reporter}))
   }
 
+  // Read up front so a bad icon path fails before we create or build.
+  const appIcon =
+    !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
+
+  // Create the app before the build so the bundle carries its real id. A
+  // redeploy already has it from `deployment.appId`; a dry run skips creation.
+  let applicationId = appId
+  let applicationCreated = false
+  if (!dryRun && deployApplication && workbench && organizationId && !applicationId) {
+    ;({applicationId} = await createCoreApp({
+      isSingleton: workbench.isSingleton,
+      organizationId,
+      slug: workbench.slug,
+      title: appTitle,
+      visibility: workbench.visibility,
+    }))
+    applicationCreated = true
+  }
+
   await checkBuild(reporter, {
     build: () =>
       buildApp({
+        applicationId: workbench ? applicationId : undefined,
         autoUpdatesEnabled: isAutoUpdating,
         calledFromDeploy: true,
         cliConfig,
@@ -234,13 +255,12 @@ async function runAppDeployment(
   // A real deploy already exited on a version-resolution failure; this narrows the type.
   if (!version) return
 
-  // Workbench apps deploy to Brett; plain coreApps use user-applications.
-  if (workbench && organizationId) {
-    const appId = getAppId(cliConfig)
-    const slug = workbench.slug ?? generateAppSlug()
-    const {applicationId} = await deployWorkbenchCoreApp({
-      appId,
-      icon: workbench.icon ? await readIconFromPath(workDir, workbench.icon) : undefined,
+  // The app was created (or resolved from `deployment.appId`) before the build,
+  // so this only ships the deployment; plain coreApps use user-applications below.
+  if (workbench && organizationId && applicationId) {
+    await deployWorkbenchApp({
+      applicationId,
+      icon: appIcon,
       interfaces: buildExposes(workbench, {
         appName: workbench.name,
         appTitle,
@@ -248,19 +268,15 @@ async function runAppDeployment(
         version,
       }),
       isAutoUpdating,
-      isSingleton: workbench.isSingleton,
-      organizationId,
-      slug,
       sourceDir,
       title: appTitle,
       version,
-      visibility: workbench.visibility,
     })
     const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
     logAppDeployed({
       applicationId,
       cliConfig,
-      created: !appId,
+      created: applicationCreated,
       organizationId,
       output,
       title: appTitle,
@@ -272,10 +288,10 @@ async function runAppDeployment(
       ...(exposes.length > 0 ? {exposes} : {}),
       ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
       target: {
-        action: appId ? 'update' : 'create',
+        action: applicationCreated ? 'create' : 'update',
         applicationId,
-        // A redeploy ignores the slug, so only a create reports the one it used.
-        ...(appId ? {} : {slug}),
+        // A redeploy targets an existing app; only a create reports the slug.
+        ...(applicationCreated ? {slug: workbench.slug} : {}),
         title: appTitle,
         url,
       },

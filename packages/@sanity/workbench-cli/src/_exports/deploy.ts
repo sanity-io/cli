@@ -9,7 +9,11 @@ export {
   resolveInstallationId,
   summarizeConfig,
 } from '../actions/deploy/deployConfig.js'
-export {deployCoreApp, deployStudio} from '../actions/deploy/deployWorkbenchApp.js'
+export {
+  createCoreApp,
+  createStudio,
+  deployWorkbenchApp,
+} from '../actions/deploy/deployWorkbenchApp.js'
 export {getWorkbench} from '../actions/deploy/getWorkbench.js'
 export {
   type Application,

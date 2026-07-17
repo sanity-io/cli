@@ -68,17 +68,14 @@ describe('getApplication', () => {
 })
 
 describe('createApplication', () => {
-  test('POSTs a coreApp create with the deployment parts, no studio config', async () => {
+  test('POSTs a coreApp create without deployment parts or studio config', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 
     await createApplication({
-      interfaces,
       organizationId: 'org-1',
       slug: 'abc123',
-      tarball: tarball(),
       title: 'Drop Desk',
       type: 'coreApp',
-      version: '1.2.3',
     })
 
     const post = mockClient.request.mock.calls[0][0]
@@ -90,25 +87,24 @@ describe('createApplication', () => {
     expect(fields).toContainEqual(['title', 'Drop Desk'])
     expect(fields).toContainEqual(['organizationId', 'org-1'])
     expect(fields).toContainEqual(['slug', 'abc123'])
-    expect(fields).toContainEqual(['version', '1.2.3'])
-    expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
-    expect(fields.map(([name]) => name)).toContain('tarball')
-    expect(fields.map(([name]) => name)).not.toContain('config')
-    expect(fields.map(([name]) => name)).not.toContain('workspaces')
+    // Create carries no deployment — those parts ride the first createDeployment.
+    const names = fields.map(([name]) => name)
+    expect(names).not.toContain('version')
+    expect(names).not.toContain('interfaces')
+    expect(names).not.toContain('tarball')
+    expect(names).not.toContain('config')
+    expect(names).not.toContain('workspaces')
     // isSingleton is opt-in; a regular create omits it.
-    expect(fields.map(([name]) => name)).not.toContain('isSingleton')
+    expect(names).not.toContain('isSingleton')
   })
 
   test('appends visibility on create when set, omits it when unset', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
     await createApplication({
-      interfaces,
       organizationId: 'org-1',
       slug: 'abc123',
-      tarball: tarball(),
       title: 'Drop Desk',
       type: 'coreApp',
-      version: '1.2.3',
       visibility: 'unlisted',
     })
     expect(appendedFields()).toContainEqual(['visibility', 'unlisted'])
@@ -116,13 +112,10 @@ describe('createApplication', () => {
     appendSpy.mockClear()
     mockClient.request.mockResolvedValueOnce({id: 'app_2'})
     await createApplication({
-      interfaces,
       organizationId: 'org-1',
       slug: 'def456',
-      tarball: tarball(),
       title: 'Drop Desk',
       type: 'coreApp',
-      version: '1.2.3',
     })
     expect(appendedFields().map(([name]) => name)).not.toContain('visibility')
   })
@@ -131,67 +124,32 @@ describe('createApplication', () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 
     await createApplication({
-      interfaces,
       isSingleton: true,
       organizationId: 'org-1',
       slug: 'dashboard',
-      tarball: tarball(),
       title: 'Dashboard',
       type: 'coreApp',
-      version: '1.0.0',
     })
 
     expect(appendedFields()).toContainEqual(['isSingleton', 'true'])
   })
 
-  test('sends studio config and workspaces as JSON parts for a studio create', async () => {
+  test('sends studio config as a JSON part for a studio create', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 
     await createApplication({
-      interfaces,
       organizationId: 'org-1',
       projectId: 'proj-1',
       slug: 'my-studio',
-      tarball: tarball(),
       title: 'My Studio',
       type: 'studio',
-      version: '3.0.0',
-      workspaces,
     })
 
     const fields = appendedFields()
     expect(fields).toContainEqual(['type', 'studio'])
     expect(fields).toContainEqual(['config', JSON.stringify({studio: {projectId: 'proj-1'}})])
-    expect(fields).toContainEqual(['workspaces', JSON.stringify(workspaces)])
-  })
-
-  test('sends the icon as a JSON part when provided, omits it otherwise', async () => {
-    mockClient.request.mockResolvedValue({id: 'app_1'})
-    const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
-
-    await createApplication({
-      icon,
-      interfaces,
-      organizationId: 'org-1',
-      slug: 'abc123',
-      tarball: tarball(),
-      title: 'Drop Desk',
-      type: 'coreApp',
-      version: '1.0.0',
-    })
-    expect(appendedFields()).toContainEqual(['icon', JSON.stringify(icon)])
-
-    appendSpy.mockClear()
-    await createApplication({
-      interfaces,
-      organizationId: 'org-1',
-      slug: 'abc123',
-      tarball: tarball(),
-      title: 'Drop Desk',
-      type: 'coreApp',
-      version: '1.0.0',
-    })
-    expect(appendedFields().map(([name]) => name)).not.toContain('icon')
+    // Workspaces are deployment data — they ride createDeployment, not create.
+    expect(fields.map(([name]) => name)).not.toContain('workspaces')
   })
 })
 

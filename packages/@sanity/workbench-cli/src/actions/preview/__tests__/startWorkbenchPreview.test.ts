@@ -1,5 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {buildAppId} from '../../../appId.js'
+import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
 import {
   createMockOutput,
   mockWorkbenchServer,
@@ -97,7 +99,8 @@ describe('startWorkbenchPreview', () => {
       expect(mockRegisterDevServer).toHaveBeenCalledWith(
         expect.objectContaining({
           host: 'localhost',
-          id: 'localhost-3334',
+          // `start` advertises the build id (matching the bundle), not host-port.
+          id: buildAppId(resolveWorkbenchApp(workbenchCliConfig())!),
           manifest: {title: 'Test App'},
           port: 3334,
           type: 'coreApp',

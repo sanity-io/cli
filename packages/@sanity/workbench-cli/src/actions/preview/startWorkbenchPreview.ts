@@ -2,6 +2,8 @@ import {styleText} from 'node:util'
 
 import {type CliConfig, findProjectRoot, type Output} from '@sanity/cli-core'
 
+import {buildAppId} from '../../appId.js'
+import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {deriveConfigs, deriveInterfaces} from '../dev/deriveInterfaces.js'
 import {type DevServerManifest, registerDevServer} from '../dev/registry.js'
@@ -90,11 +92,13 @@ export async function startWorkbenchPreview(
     // out of workbench-cli.
     checkForDeprecatedAppId()
     const configPath = (await findProjectRoot(workDir)).path
+    const workbench = resolveWorkbenchApp(cliConfig)
     const registration = registerDevServer({
       configs: deriveConfigs(cliConfig.app),
       host: remote.host,
-      // A local app is identified by where it's served, matching `sanity dev`.
-      id: `${remote.host}-${remote.port}`,
+      // `start` serves a build, so it advertises the build's inlined id (matching
+      // the bundle's `__SANITY_APP_ID__`), not the dev host-port.
+      id: workbench ? buildAppId(workbench) : `${remote.host}-${remote.port}`,
       interfaces: deriveInterfaces(cliConfig.app, {isApp}),
       manifest: await extractManifest({configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),

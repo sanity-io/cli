@@ -73,35 +73,20 @@ export async function getApplication(applicationId: string): Promise<Application
   }
 }
 
-/** Create an application and its first deployment in one call. */
+/**
+ * Create an application record (no deployment), so the CLI can build with the
+ * returned id, then ship it via {@link createDeployment}.
+ */
 export async function createApplication(options: {
-  icon?: string
-  interfaces: readonly BrettInterface[]
   isSingleton?: boolean
   organizationId: string
   projectId?: string
   slug: string
-  tarball: Gzip
   title: string
   type: ApplicationType
-  version: string
   visibility?: AppVisibility
-  workspaces?: readonly BrettWorkspace[]
 }): Promise<Application> {
-  const {
-    icon,
-    interfaces,
-    isSingleton,
-    organizationId,
-    projectId,
-    slug,
-    tarball,
-    title,
-    type,
-    version,
-    visibility,
-    workspaces,
-  } = options
+  const {isSingleton, organizationId, projectId, slug, title, type, visibility} = options
   const formData = new FormData()
   formData.append('type', type)
   formData.append('title', title)
@@ -111,9 +96,6 @@ export async function createApplication(options: {
   if (visibility) formData.append('visibility', visibility)
   // Studio config is set once, at create — it's immutable on redeploy.
   if (projectId) appendJson(formData, 'config', {studio: {projectId}})
-  // Application-level JSON part, independent of the deployment.
-  if (icon) appendJson(formData, 'icon', icon)
-  appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
   return request(`/applications`, formData)
 }
 

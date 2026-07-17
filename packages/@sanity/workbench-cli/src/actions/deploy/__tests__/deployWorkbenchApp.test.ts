@@ -1,11 +1,11 @@
 import {Readable} from 'node:stream'
 
-import {getGlobalCliClient, type Output} from '@sanity/cli-core'
+import {getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type BrettInterface, type BrettWorkspace} from '../../../services/applications.js'
-import {deployCoreApp, deployStudio} from '../deployWorkbenchApp.js'
+import {createCoreApp, createStudio, deployWorkbenchApp} from '../deployWorkbenchApp.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -19,13 +19,13 @@ vi.mock('@sanity/cli-core/ux', () => ({
 vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
-const output = {error: vi.fn(), log: vi.fn()} as unknown as Output
 const interfaces: BrettInterface[] = [
   {metadata: null, moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
 ]
 const workspaces: BrettWorkspace[] = [
   {basePath: '/', dataset: 'production', name: 'default', projectId: 'proj-1', title: 'Default'},
 ]
+const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
 
 /** The (name, value) pairs a call appended to its FormData. */
 function appendedFields(): Array<[string, unknown]> {
@@ -43,65 +43,120 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-const coreAppOptions = {
-  interfaces,
-  isAutoUpdating: false,
-  isSingleton: false,
-  organizationId: 'org-1',
-  slug: 'abc123',
-  sourceDir: '/tmp/build/app',
-  title: 'Drop Desk',
-  version: '1.0.0',
-}
-
-describe('deployCoreApp', () => {
-  test('redeploys to an existing deployment.appId', async () => {
-    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
-
-    expect(await deployCoreApp({...coreAppOptions, appId: 'app_1'})).toEqual({
-      applicationId: 'app_1',
-    })
-    expect(mockClient.request.mock.calls[0][0]).toMatchObject({
-      method: 'POST',
-      uri: '/applications/app_1/deployments',
-    })
-  })
-
-  test('creates a new application at the given slug when no appId is set', async () => {
+describe('createCoreApp', () => {
+  test('creates a coreApp at the given slug and returns the id', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_new'})
 
-    expect(await deployCoreApp({...coreAppOptions, appId: undefined})).toEqual({
-      applicationId: 'app_new',
-    })
+    expect(
+      await createCoreApp({organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk'}),
+    ).toEqual({applicationId: 'app_new'})
     expect(mockClient.request.mock.calls[0][0]).toMatchObject({
       method: 'POST',
       uri: '/applications',
     })
-    expect(appendedFields()).toContainEqual(['slug', 'abc123'])
+    const fields = appendedFields()
+    expect(fields).toContainEqual(['type', 'coreApp'])
+    expect(fields).toContainEqual(['slug', 'abc123'])
+    // Create carries no deployment.
+    expect(fields.map(([name]) => name)).not.toContain('tarball')
   })
 
   test('forwards isSingleton when creating a singleton core app', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_new'})
 
-    await deployCoreApp({...coreAppOptions, appId: undefined, isSingleton: true})
+    await createCoreApp({isSingleton: true, organizationId: 'org-1', slug: 'ml', title: 'Media'})
 
     expect(appendedFields()).toContainEqual(['isSingleton', 'true'])
   })
 
-  test('sends the icon as a JSON part on create', async () => {
+  test('forwards visibility as a create-time part', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_new'})
-    const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
 
-    await deployCoreApp({...coreAppOptions, appId: undefined, icon})
+    await createCoreApp({
+      organizationId: 'org-1',
+      slug: 'abc123',
+      title: 'Drop Desk',
+      visibility: 'unlisted',
+    })
 
-    expect(appendedFields()).toContainEqual(['icon', JSON.stringify(icon)])
+    expect(appendedFields()).toContainEqual(['visibility', 'unlisted'])
+  })
+})
+
+describe('createStudio', () => {
+  test('creates a studio at the given slug and returns the id', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
+
+    expect(
+      await createStudio({
+        organizationId: 'org-1',
+        projectId: 'proj-1',
+        slug: 'my-studio',
+        title: 'My Studio',
+      }),
+    ).toEqual({applicationId: 'studio_new'})
+    expect(mockClient.request.mock.calls[0][0]).toMatchObject({
+      method: 'POST',
+      uri: '/applications',
+    })
+    const fields = appendedFields()
+    expect(fields).toContainEqual(['type', 'studio'])
+    expect(fields).toContainEqual(['slug', 'my-studio'])
+    expect(fields).toContainEqual(['config', JSON.stringify({studio: {projectId: 'proj-1'}})])
+  })
+})
+
+describe('deployWorkbenchApp', () => {
+  test('POSTs a deployment (interfaces + tarball) to the application', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    await deployWorkbenchApp({
+      applicationId: 'app_1',
+      interfaces,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
+
+    expect(mockClient.request.mock.calls[0][0]).toMatchObject({
+      method: 'POST',
+      uri: '/applications/app_1/deployments',
+    })
+    const fields = appendedFields()
+    expect(fields).toContainEqual(['version', '1.0.0'])
+    expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
+    expect(fields.map(([name]) => name)).toContain('tarball')
   })
 
-  test('updates the title and icon after redeploying to an existing appId', async () => {
+  test('sends workspaces for a studio deployment', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
-    const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
 
-    await deployCoreApp({...coreAppOptions, appId: 'app_1', icon})
+    await deployWorkbenchApp({
+      applicationId: 'studio_1',
+      interfaces,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/studio',
+      title: 'My Studio',
+      version: '3.0.0',
+      workspaces,
+    })
+
+    expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
+  })
+
+  test('syncs the title and icon after shipping the deployment', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    await deployWorkbenchApp({
+      applicationId: 'app_1',
+      icon,
+      interfaces,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
 
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {icon, title: 'Drop Desk'},
@@ -110,10 +165,17 @@ describe('deployCoreApp', () => {
     })
   })
 
-  test('updates the title on redeploy even when no icon is declared', async () => {
+  test('syncs the title without an icon when none is declared', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
-    await deployCoreApp({...coreAppOptions, appId: 'app_1'})
+    await deployWorkbenchApp({
+      applicationId: 'app_1',
+      interfaces,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
 
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {title: 'Drop Desk'},
@@ -129,70 +191,6 @@ describe('deployCoreApp', () => {
 
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {title: 'Drop Desk', visibility: 'unlisted'},
-      method: 'PATCH',
-      uri: '/applications/app_1',
-    })
-  })
-})
-
-const studioOptions = {
-  interfaces,
-  isAutoUpdating: false,
-  organizationId: 'org-1',
-  output,
-  projectId: 'proj-1',
-  sourceDir: '/tmp/build/studio',
-  title: 'My Studio',
-  version: '3.0.0',
-  workspaces,
-}
-
-describe('deployStudio', () => {
-  test('redeploys to an existing deployment.appId', async () => {
-    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
-
-    expect(await deployStudio({...studioOptions, appId: 'app_1', studioHost: undefined})).toEqual({
-      applicationId: 'app_1',
-    })
-    expect(mockClient.request.mock.calls[0][0]).toMatchObject({
-      method: 'POST',
-      uri: '/applications/app_1/deployments',
-    })
-    expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
-  })
-
-  test('creates a studio at studioHost when no appId is set', async () => {
-    mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
-
-    expect(
-      await deployStudio({...studioOptions, appId: undefined, studioHost: 'my-studio'}),
-    ).toEqual({applicationId: 'studio_new'})
-    expect(mockClient.request.mock.calls[0][0]).toMatchObject({
-      method: 'POST',
-      uri: '/applications',
-    })
-    expect(appendedFields()).toContainEqual(['slug', 'my-studio'])
-    expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
-  })
-
-  test('fails without deploying when no appId and no studioHost are set', async () => {
-    await deployStudio({...studioOptions, appId: undefined, studioHost: undefined})
-
-    expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('studio hostname'),
-      expect.objectContaining({exit: expect.any(Number)}),
-    )
-    expect(mockClient.request).not.toHaveBeenCalled()
-  })
-
-  test('updates the title and icon after redeploying to an existing appId', async () => {
-    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
-    const icon = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>'
-
-    await deployStudio({...studioOptions, appId: 'app_1', icon, studioHost: undefined})
-
-    expect(mockClient.request.mock.calls[1][0]).toEqual({
-      body: {icon, title: 'My Studio'},
       method: 'PATCH',
       uri: '/applications/app_1',
     })
