@@ -33,7 +33,7 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
   }
   static override hiddenAliases: string[] = ['start']
 
-  public async run(): Promise<PreviewServer | void> {
+  public async run(): Promise<PreviewServer | {close: () => Promise<void>} | void> {
     const {args, flags} = await this.parse(PreviewCommand)
 
     const workDir = (await this.getProjectRoot()).directory
@@ -45,7 +45,7 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
     const outDir = path.resolve(outputDir || defaultRootDir)
 
     try {
-      return await previewAction({cliConfig, flags, outDir, workDir})
+      return await previewAction({cliConfig, flags, outDir, output: this.output, workDir})
     } catch (error: unknown) {
       const suggestions =
         error instanceof Error && error.name === 'BUILD_NOT_FOUND'
