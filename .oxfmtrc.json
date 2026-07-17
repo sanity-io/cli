@@ -17,6 +17,7 @@
     ".release-please-manifest.json",
     "**/tsconfig.json",
     "**/__snapshots__/**",
+    "**/src/generated/**",
     ".claude",
     ".changeset",
     "**/dist/**",
