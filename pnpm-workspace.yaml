@@ -40,8 +40,8 @@ catalog:
   tsx: ^4.23.1
 
   # Testing
-  vitest: ^4.1.9
-  '@vitest/coverage-istanbul': ^4.1.9
+  vitest: ^4.1.10
+  '@vitest/coverage-istanbul': ^4.1.10
   nock: ^14.0.15
   node-pty: ^1.1.0
   dotenv: ^17.4.2
@@ -70,7 +70,7 @@ catalog:
   tar-fs: ^3.1.2
 
   # Build Tools
-  '@swc/core': ^1.15.41
+  '@swc/core': ^1.15.43
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^11.0.9
