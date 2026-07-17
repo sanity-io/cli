@@ -185,12 +185,12 @@ describe('#media:deploy-aspect', () => {
       args: [],
       description: 'neither aspect name nor --all flag is provided',
       expectedError:
-        'Specify an aspect name, or use the `--all` option to deploy all aspect definitions.',
+        'Aspect name is required. Pass it as the `<aspectName>` argument, or pass `--all`.',
     },
     {
       args: ['myAspect', '--all'],
       description: 'both aspect name and --all flag are provided',
-      expectedError: 'Specify an aspect name or `--all`, but not both.',
+      expectedError: 'Specify either the `<aspectName>` argument or `--all`, but not both.',
     },
   ])('should error if $description', async ({args, expectedError}) => {
     const {error} = await testCommand(MediaDeployAspectCommand, args, {mocks: defaultMocks})

@@ -3,7 +3,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {createPublishedId} from '@sanity/id-utils'
 import camelCase from 'lodash-es/camelCase.js'
@@ -38,7 +38,9 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
     const title =
       this.flags.title ??
       (this.isUnattended()
-        ? this.error('Aspect title is required. Pass it with `--title <title>`.', {exit: 2})
+        ? this.error('Aspect title is required. Pass it with `--title <title>`.', {
+            exit: exitCodes.USAGE_ERROR,
+          })
         : await input({message: 'Title'}))
 
     const defaultName = createPublishedId(camelCase(title))

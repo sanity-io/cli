@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
 import prettyMs from 'pretty-ms'
@@ -96,7 +96,7 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
     if (!mediaLibraryId) {
       if (this.isUnattended()) {
         this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
-          exit: 2,
+          exit: exitCodes.USAGE_ERROR,
         })
       }
       try {
@@ -223,8 +223,8 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
     const finalPathStats = await fs.stat(finalPath).catch(noop)
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
-      this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
-        exit: 2,
+      this.error(`File "${finalPath}" already exists. Pass \`--overwrite\` to replace it.`, {
+        exit: exitCodes.USAGE_ERROR,
       })
     }
 

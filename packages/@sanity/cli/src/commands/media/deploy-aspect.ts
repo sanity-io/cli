@@ -1,7 +1,13 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {type CliConfig, ProjectRootNotFoundError, SanityCommand, subdebug} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  exitCodes,
+  ProjectRootNotFoundError,
+  SanityCommand,
+  subdebug,
+} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 
@@ -59,14 +65,16 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
     // Validation: must provide either aspect name or --all flag
     if (!all && !aspectName) {
       this.error(
-        'Specify an aspect name, or use the `--all` option to deploy all aspect definitions.',
-        {exit: 2},
+        'Aspect name is required. Pass it as the `<aspectName>` argument, or pass `--all`.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
     // Validation: cannot provide both aspect name and --all flag
     if (all && aspectName) {
-      this.error('Specify an aspect name or `--all`, but not both.', {exit: 2})
+      this.error('Specify either the `<aspectName>` argument or `--all`, but not both.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     let cliConfig: CliConfig
@@ -91,7 +99,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
 
     if (!mediaLibraryIdFlag && this.isUnattended()) {
       this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
-        exit: 2,
+        exit: exitCodes.USAGE_ERROR,
       })
     }
 

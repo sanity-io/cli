@@ -60,7 +60,7 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
       }
 
       if (errors.length > 0) {
-        this.error(formatCliErrorMessages(errors), {exit: 2})
+        this.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
       }
     }
 
