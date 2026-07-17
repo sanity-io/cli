@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -87,7 +88,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       `--${name2}=${value2} cannot also be provided when using --${name1}`,
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test.each([
@@ -115,7 +116,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain(message)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('throws error when type argument is passed', async () => {
@@ -214,7 +215,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toBe(
       'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('does not require `output-path` in unattended mode when `bare` is used', async () => {
@@ -261,7 +262,7 @@ describe('#init: oclif command setup', () => {
         'Error: Organization is required when creating a project in unattended mode. ' +
         'Pass it with `--organization <id>`.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('throws error when in unattended mode and `project-name` set without `organization`', async () => {
@@ -284,7 +285,7 @@ describe('#init: oclif command setup', () => {
       'Organization is required when creating a project in unattended mode. ' +
         'Pass it with `--organization <id>`.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('reports all missing unattended options before authentication', async () => {
@@ -303,7 +304,7 @@ describe('#init: oclif command setup', () => {
         'Error: Organization is required when creating a project in unattended mode. ' +
         'Pass it with `--organization <id>`.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mocks.getById).not.toHaveBeenCalled()
   })
 

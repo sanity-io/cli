@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -1308,6 +1309,6 @@ describe('#init: promptForAppTemplateSetup', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('--organization')
     expect(error?.message).toContain('--project')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 })

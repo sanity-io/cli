@@ -1,7 +1,7 @@
 import {inspect, styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import groupBy from 'lodash-es/groupBy.js'
 
@@ -96,7 +96,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
         this.error(
           'Webhook name is required when multiple webhooks exist. Pass the name as an argument.',
           {
-            exit: 2,
+            exit: exitCodes.USAGE_ERROR,
           },
         )
       }
