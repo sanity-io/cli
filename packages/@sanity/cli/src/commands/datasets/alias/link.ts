@@ -1,5 +1,6 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
@@ -10,6 +11,7 @@ import {promptForProject} from '../../../prompts/promptForProject.js'
 import {selectDataset} from '../../../prompts/selectDataset.js'
 import {listAliases, updateAlias} from '../../../services/datasetAliases.js'
 import {listDatasets} from '../../../services/datasets.js'
+import {formatCliErrorMessages} from '../../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const linkAliasDebug = subdebug('dataset:alias:link')
@@ -64,6 +66,36 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
     const {args, flags} = await this.parse(LinkAliasCommand)
     const {force} = flags
 
+    if (this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!args.aliasName) {
+        errors.push('Dataset alias name is required. Pass it as the `<aliasName>` argument.')
+      }
+      if (!args.targetDataset) {
+        errors.push('Target dataset is required. Pass it as the `<targetDataset>` argument.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
+      }
+    }
+
+    if (args.aliasName) {
+      const {apiName} = processAliasName(args.aliasName)
+      const nameError = validateDatasetAliasName(apiName)
+      if (nameError) {
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
+      }
+    }
+
+    if (args.targetDataset) {
+      const datasetErr = validateDatasetName(args.targetDataset)
+      if (datasetErr) {
+        this.error(datasetErr, {exit: exitCodes.USAGE_ERROR})
+      }
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -73,21 +105,6 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
           ],
         }),
     })
-
-    if (args.aliasName) {
-      const {apiName} = processAliasName(args.aliasName)
-      const nameError = validateDatasetAliasName(apiName)
-      if (nameError) {
-        this.error(nameError, {exit: 1})
-      }
-    }
-
-    if (args.targetDataset) {
-      const datasetErr = validateDatasetName(args.targetDataset)
-      if (datasetErr) {
-        this.error(datasetErr, {exit: 1})
-      }
-    }
 
     try {
       const [datasetsResponse, aliases] = await Promise.all([
@@ -134,6 +151,11 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
       }
 
       if (existingAlias.datasetName && !force) {
+        if (this.isUnattended()) {
+          this.error('Relinking a dataset alias requires confirmation. Re-run with `--force`.', {
+            exit: exitCodes.USAGE_ERROR,
+          })
+        }
         await this.confirmRelink(existingAlias.datasetName, targetDataset)
       } else if (force && existingAlias.datasetName) {
         this.warn(`'--force' used: skipping confirmation, linking alias to ${targetDataset}`)
@@ -143,6 +165,7 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
 
       this.log(`Dataset alias ${displayName} linked to ${targetDataset} successfully`)
     } catch (error) {
+      if (error instanceof CLIError) throw error
       linkAliasDebug(`Error linking dataset alias`, error)
       this.error(
         `Dataset alias linking failed: ${error instanceof Error ? error.message : String(error)}`,

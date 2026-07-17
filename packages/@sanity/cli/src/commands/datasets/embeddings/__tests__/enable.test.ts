@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -41,6 +42,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -55,6 +57,7 @@ describe('#dataset:embeddings:enable', () => {
   afterEach(() => {
     const pending = pendingMocks()
     cleanAll()
+    vi.clearAllMocks()
     vi.restoreAllMocks()
     expect(pending, 'pending mocks').toEqual([])
   })
@@ -98,6 +101,17 @@ describe('#dataset:embeddings:enable', () => {
 
     expect(mockSelect).toHaveBeenCalled()
     expect(stdout).toContain('Embeddings enabled for dataset staging')
+  })
+
+  test('should require a dataset without prompting in unattended mode', async () => {
+    const {error} = await testCommand(DatasetEmbeddingsEnableCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Dataset name is required. Pass it as the `<dataset>` argument.')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockListDatasets).not.toHaveBeenCalled()
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('--wait should poll until status is ready', async () => {
@@ -159,7 +173,7 @@ describe('#dataset:embeddings:enable', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid projection')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('should reject non-projection expression', async () => {
@@ -174,7 +188,7 @@ describe('#dataset:embeddings:enable', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid projection')
     expect(error?.message).toContain('Expected a GROQ projection')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('should accept complex valid projection', async () => {

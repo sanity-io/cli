@@ -1,4 +1,5 @@
 import {Args} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
@@ -48,8 +49,14 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
     })
 
     try {
-      ;({dataset} = await resolveDataset({dataset, output: this.output, projectId}))
+      ;({dataset} = await resolveDataset({
+        dataset,
+        isUnattended: this.isUnattended(),
+        output: this.output,
+        projectId,
+      }))
     } catch (error) {
+      if (error instanceof CLIError) throw error
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to resolve dataset: ${message}`, error)
       this.error(message, {exit: 1})
