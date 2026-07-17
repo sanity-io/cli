@@ -1,5 +1,6 @@
 import {Readable} from 'node:stream'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
@@ -248,7 +249,7 @@ describe('#dataset:import', () => {
       expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         'Dataset is required. Pass it with `--dataset <name>`.',
-        {exit: 2},
+        {exit: exitCodes.USAGE_ERROR},
       )
     })
 

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 
 import {type CliConfig, getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {exportDataset, type ExportResult} from '@sanity/export'
@@ -274,7 +275,7 @@ describe('#dataset:export', () => {
       })
 
       expect(error?.message).toBe('Dataset name is required. Pass it as the `<name>` argument.')
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockSelect).not.toHaveBeenCalled()
       expect(mockInput).not.toHaveBeenCalled()
     })
@@ -402,7 +403,7 @@ describe('#dataset:export', () => {
 
       expect(error?.message).toContain(ERROR_MESSAGES.ALREADY_EXISTS)
       expect(error?.message).toContain(ERROR_MESSAGES.USE_OVERWRITE)
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('allows overwrite with flag', async () => {
@@ -579,7 +580,7 @@ describe('#dataset:export', () => {
       )
 
       expect(error?.message).toContain('lowercase')
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('handles dataset listing errors gracefully', async () => {

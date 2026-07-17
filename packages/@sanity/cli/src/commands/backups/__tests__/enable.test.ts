@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -110,7 +111,7 @@ describe('#backup:enable', () => {
     expect(error?.message).toBe(
       'Dataset is required in unattended mode. Pass it as the `<dataset>` argument.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
     expect(mockInput).not.toHaveBeenCalled()
   })

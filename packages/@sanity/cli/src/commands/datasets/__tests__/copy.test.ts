@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {spinnerText} from '@sanity/cli-test/mocks/cli-core/ux'
 import {of} from 'rxjs'
@@ -302,7 +303,7 @@ describe('#dataset:copy', () => {
         args: ['Invalid-Dataset', 'backup'],
         description: 'source dataset name is invalid',
         expectedError: 'must be all lowercase',
-        expectedExit: 2,
+        expectedExit: exitCodes.USAGE_ERROR,
         setupMocks: () => {
           mockValidateDatasetName.mockReturnValue('must be all lowercase')
         },
@@ -311,7 +312,7 @@ describe('#dataset:copy', () => {
         args: ['nonexistent', 'backup'],
         description: 'source dataset does not exist',
         expectedError: 'Source dataset "nonexistent" doesn\'t exist',
-        expectedExit: 1,
+        expectedExit: exitCodes.RUNTIME_ERROR,
         setupMocks: () => {
           mockListDatasets.mockResolvedValue([
             createMockDataset('production'),
@@ -323,7 +324,7 @@ describe('#dataset:copy', () => {
         args: ['production', 'Invalid-Dataset'],
         description: 'target dataset name is invalid',
         expectedError: 'must be all lowercase',
-        expectedExit: 2,
+        expectedExit: exitCodes.USAGE_ERROR,
         setupMocks: () => {
           mockValidateDatasetName.mockImplementationOnce(() => undefined)
           mockValidateDatasetName.mockImplementationOnce(() => 'must be all lowercase')
@@ -337,7 +338,7 @@ describe('#dataset:copy', () => {
         args: ['production', 'staging'],
         description: 'target dataset already exists',
         expectedError: 'Target dataset "staging" already exists',
-        expectedExit: 1,
+        expectedExit: exitCodes.RUNTIME_ERROR,
         setupMocks: () => {
           mockListDatasets.mockResolvedValue([
             createMockDataset('production'),

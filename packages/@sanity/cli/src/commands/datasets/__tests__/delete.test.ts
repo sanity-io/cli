@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -107,7 +108,7 @@ describe('#dataset:delete', () => {
     })
 
     expect(error?.message).toBe('Dataset deletion requires confirmation. Re-run with `--force`.')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
     expect(mockDeleteDataset).not.toHaveBeenCalled()
   })
@@ -117,7 +118,7 @@ describe('#dataset:delete', () => {
       mocks: defaultMocks,
     })
     expect(commandError?.message).toBe('Dataset name is missing')
-    expect(commandError?.oclif?.exit).toBe(2)
+    expect(commandError?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test.each([

@@ -2,6 +2,7 @@ import {existsSync, mkdirSync} from 'node:fs'
 import {mkdir, mkdtemp, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
@@ -183,7 +184,7 @@ describe('#backup:download', () => {
         'Dataset is required in unattended mode. Pass it as the `<dataset>` argument.\n' +
           'Error: Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.',
       )
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mockSelect).not.toHaveBeenCalled()
       expect(mockInput).not.toHaveBeenCalled()
@@ -201,7 +202,7 @@ describe('#backup:download', () => {
       expect(error?.message).toBe(
         'Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.',
       )
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mockSelect).not.toHaveBeenCalled()
       expect(mockInput).not.toHaveBeenCalled()
@@ -222,7 +223,7 @@ describe('#backup:download', () => {
       expect(error?.message).toBe(
         `File "${path.resolve(out)}" already exists. Pass \`--overwrite\` to replace it.`,
       )
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockConfirm).not.toHaveBeenCalled()
     })
 
@@ -295,7 +296,7 @@ describe('#backup:download', () => {
       })
 
       expect(error?.message).toContain('Operation cancelled.')
-      expect(error?.oclif?.exit).toBe(3)
+      expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     })
 
     test.each([

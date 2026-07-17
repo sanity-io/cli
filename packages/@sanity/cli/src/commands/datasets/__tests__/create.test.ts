@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -123,7 +124,7 @@ describe('#dataset:create', () => {
     })
 
     expect(error?.message).toBe('Dataset name is required. Pass it as the `<name>` argument.')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
     expect(mockCreateDataset).not.toHaveBeenCalled()
   })
@@ -155,7 +156,7 @@ describe('#dataset:create', () => {
     })
 
     expect(error?.message).toContain('must be all lowercase')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('errors when dataset already exists', async () => {
