@@ -1,6 +1,7 @@
 import {resolve} from 'node:path'
 
 import {getCliConfig} from '@sanity/cli-core/config'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type CliConfig} from '@sanity/cli-core/types'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import * as apiMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
@@ -47,15 +48,40 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       setupMocksFromConfig(cliConfig)
     })
 
-    test('validates documents without markers and outputs empty NDJSON', async () => {
-      uxMocks.confirm.mockResolvedValue(true)
+    test('exits if format is incorrect value', async () => {
+      const {error} = await testCommand(ValidateDocumentsCommand, [
+        '--yes',
+        '--file',
+        VALID_DOCS_PATH,
+        '--format',
+        'xml',
+      ])
 
+      expect(error?.message).toContain('Expected --format=xml to be one of: json, ndjson, pretty')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    })
+
+    test('validates documents without prompting in unattended mode', async () => {
       const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
         '--file',
         VALID_DOCS_PATH,
         '--format',
         'ndjson',
       ])
+
+      if (error) throw error
+      expect(stdout).toBe('')
+      expect(uxMocks.confirm).not.toHaveBeenCalled()
+    })
+
+    test('validates documents without markers and outputs empty NDJSON in attended mode', async () => {
+      uxMocks.confirm.mockResolvedValue(true)
+
+      const {error, stdout} = await testCommand(
+        ValidateDocumentsCommand,
+        ['--file', VALID_DOCS_PATH, '--format', 'ndjson'],
+        {mocks: {isInteractive: true}},
+      )
 
       if (error) throw error
       expect(stdout).toContain('Warning:')
@@ -69,18 +95,61 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       })
     })
 
+    test('aborts when user declines confirmation', async () => {
+      uxMocks.confirm.mockResolvedValue(false)
+
+      const {error, stdout} = await testCommand(
+        ValidateDocumentsCommand,
+        ['--file', VALID_DOCS_PATH, '--format', 'ndjson'],
+        {mocks: {isInteractive: true}},
+      )
+
+      expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
+      expect(stdout).toContain('Warning:')
+      expect(stdout).toContain('Validation cancelled')
+      expect(uxMocks.confirm).toHaveBeenCalledWith({
+        default: true,
+        message: 'Are you sure you want to continue?',
+      })
+    })
+
     test('shows file-specific warning when using --file flag', async () => {
       uxMocks.confirm.mockResolvedValue(true)
 
-      const {stdout} = await testCommand(ValidateDocumentsCommand, [
+      const {stdout} = await testCommand(
+        ValidateDocumentsCommand,
+        ['--file', VALID_DOCS_PATH, '--format', 'ndjson'],
+        {mocks: {isInteractive: true}},
+      )
+
+      expect(stdout).toContain('reads all documents from your input file')
+      expect(stdout).toContain('Checks for missing document references')
+    })
+
+    test('errors when --file points to a directory', async () => {
+      const {error} = await testCommand(ValidateDocumentsCommand, [
         '--file',
-        VALID_DOCS_PATH,
+        '.',
         '--format',
         'ndjson',
       ])
 
-      expect(stdout).toContain('reads all documents from your input file')
-      expect(stdout).toContain('Checks for missing document references')
+      expect(error?.message).toContain('Invalid file path: . is not a file')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(uxMocks.confirm).not.toHaveBeenCalled()
+    })
+
+    test('errors when --file does not exist', async () => {
+      const {error} = await testCommand(ValidateDocumentsCommand, [
+        '--file',
+        'missing-documents.ndjson',
+        '--format',
+        'ndjson',
+      ])
+
+      expect(error?.message).toContain('File not found: missing-documents.ndjson')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(uxMocks.confirm).not.toHaveBeenCalled()
     })
 
     test('validates documents without markers and outputs empty JSON array', async () => {

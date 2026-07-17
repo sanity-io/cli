@@ -1,5 +1,11 @@
 import {Args, Flags} from '@oclif/core'
-import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {
+  colorizeJson,
+  exitCodes,
+  getProjectCliClient,
+  SanityCommand,
+  subdebug,
+} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -79,8 +85,8 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
-        'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',
-        {exit: 1},
+        'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 

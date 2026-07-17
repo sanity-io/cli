@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -36,6 +37,7 @@ describe('ValidateDocumentsCommand', () => {
     uxMocks.confirm.mockResolvedValue(true)
     mockStat.mockResolvedValue({isFile: () => true})
     mocks.SanityCmdGetCliConfig.mockResolvedValue(cliConfig)
+    mocks.SanityCmdIsUnattended.mockReturnValue(false)
   })
   afterEach(() => {
     vi.clearAllMocks()
@@ -57,10 +59,9 @@ describe('ValidateDocumentsCommand', () => {
 
     await ValidateDocumentsCommand.run([])
 
-    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
-      expect.stringContaining('User aborted'),
-      {exit: 1},
-    )
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Validation cancelled')
+    expect(mocks.OclifCmdExit).toHaveBeenCalledWith(exitCodes.USER_ABORT)
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
   })
 
   test('bails if file provided cannot be validated', async () => {
@@ -69,8 +70,19 @@ describe('ValidateDocumentsCommand', () => {
     await ValidateDocumentsCommand.run(['--file', '/some/file'])
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
-      expect.stringContaining('must point to a valid ndjson file or tar'),
-      {exit: 1},
+      expect.stringContaining('is not a file'),
+      {exit: exitCodes.USAGE_ERROR},
+    )
+  })
+
+  test('bails if file provided does not exist', async () => {
+    mockStat.mockRejectedValueOnce(new Error('not found'))
+
+    await ValidateDocumentsCommand.run(['--file', '/some/file'])
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('File not found'),
+      {exit: exitCodes.USAGE_ERROR},
     )
   })
 
@@ -170,11 +182,12 @@ describe('ValidateDocumentsCommand', () => {
     })
 
     test('errors with unrecognized format flag', async () => {
-      await ValidateDocumentsCommand.run(['--format', 'xml'])
-
-      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
-        expect.stringMatching(/did not recognize format 'xml'.*json.*ndjson.*pretty/i),
-        {exit: 1},
+      await expect(ValidateDocumentsCommand.run(['--format', 'xml'])).rejects.toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining(
+            'Expected --format=xml to be one of: json, ndjson, pretty',
+          ),
+        }),
       )
     })
   })

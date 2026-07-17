@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {type MultipleMutationResult, type Mutation} from '@sanity/client'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
@@ -94,14 +94,37 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     const {file} = args
     const {dataset, id, json5: useJson5, missing, replace, watch} = flags
 
+    if (!file && this.isUnattended()) {
+      this.error(
+        'Document input is required in unattended mode. Pass it as the `<file>` argument.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
+    if (replace && missing) {
+      this.error(
+        'Cannot use `--replace` and `--missing` together. Remove one flag and try again.',
+        {
+          exit: exitCodes.USAGE_ERROR,
+        },
+      )
+    }
+
+    if (id && file) {
+      this.error(
+        'Cannot use `--id` with the `<file>` argument. Remove `--id` or omit `<file>` and try again.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
     const cliConfig = await this.tryGetCliConfig()
 
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
-        'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',
-        {exit: 1},
+        'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
@@ -113,14 +136,6 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       projectId,
       requireUser: true,
     })
-
-    if (replace && missing) {
-      this.error('Cannot use both --replace and --missing', {exit: 1})
-    }
-
-    if (id && file) {
-      this.error('Cannot use --id when specifying a file path', {exit: 1})
-    }
 
     let operation: MutationOperationName = 'create'
     if (replace || missing) {
