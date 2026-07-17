@@ -1,6 +1,6 @@
 import {type MessagePort} from 'node:worker_threads'
 
-export const DEFAULT_STUDIO_WORKER_CLOSE_TIMEOUT = 5000
+const DEFAULT_STUDIO_WORKER_CLOSE_TIMEOUT = 5000
 
 const STUDIO_WORKER_ERROR_MARKER = 'sanity.studioWorker.error'
 
