@@ -1,25 +1,24 @@
 import {Readable} from 'node:stream'
 
-import {getGlobalCliClient, type Output} from '@sanity/cli-core'
+import * as apiClient from '@sanity/cli-test/mocks/cli-core/apiClient'
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type BrettInterface, type BrettWorkspace} from '../../../services/applications.js'
 import {deployCoreApp, deployStudio} from '../deployWorkbenchApp.js'
 
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  getGlobalCliClient: vi.fn(),
+vi.mock('@sanity/cli-core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+  ...(await import('@sanity/cli-test/mocks/cli-core/apiClient')),
 }))
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  spinner: () => ({start: () => ({clear: vi.fn(), fail: vi.fn(), succeed: vi.fn()})}),
-}))
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
-const output = {error: vi.fn(), log: vi.fn()} as unknown as Output
+const output = createMockOutput()
 const interfaces: BrettInterface[] = [
   {metadata: null, moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
 ]
@@ -34,7 +33,7 @@ function appendedFields(): Array<[string, unknown]> {
 let appendSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
-  vi.mocked(getGlobalCliClient).mockResolvedValue(mockClient as never)
+  apiClient.getGlobalCliClient.mockResolvedValue(mockClient as never)
   appendSpy = vi.spyOn(FormData.prototype, 'append')
 })
 

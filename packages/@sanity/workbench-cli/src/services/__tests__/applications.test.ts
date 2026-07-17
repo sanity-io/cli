@@ -1,7 +1,7 @@
 import {Readable} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
-import {getGlobalCliClient} from '@sanity/cli-core'
+import * as apiClient from '@sanity/cli-test/mocks/cli-core/apiClient'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -15,9 +15,9 @@ import {
   getWorkbenchUrl,
 } from '../applications.js'
 
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  getGlobalCliClient: vi.fn(),
+vi.mock('@sanity/cli-core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+  ...(await import('@sanity/cli-test/mocks/cli-core/apiClient')),
 }))
 
 const mockClient = {request: vi.fn()}
@@ -37,7 +37,7 @@ function appendedFields(): Array<[string, unknown]> {
 let appendSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
-  vi.mocked(getGlobalCliClient).mockResolvedValue(mockClient as never)
+  apiClient.getGlobalCliClient.mockResolvedValue(mockClient as never)
   appendSpy = vi.spyOn(FormData.prototype, 'append')
 })
 
@@ -51,7 +51,7 @@ describe('getApplication', () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1', title: 'App', type: 'coreApp'})
 
     expect(await getApplication('app_1')).toMatchObject({id: 'app_1'})
-    expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
+    expect(apiClient.getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
     expect(mockClient.request).toHaveBeenCalledWith({uri: '/applications/app_1'})
   })
 

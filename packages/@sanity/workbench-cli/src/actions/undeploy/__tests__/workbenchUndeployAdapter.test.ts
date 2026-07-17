@@ -1,4 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
+import * as apiClient from '@sanity/cli-test/mocks/cli-core/apiClient'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -9,12 +10,11 @@ import {
 import {type DeployableWorkbenchApp, getWorkbench} from '../../deploy/getWorkbench.js'
 import {createWorkbenchUndeployAdapter} from '../workbenchUndeployAdapter.js'
 
-const mockGetGlobalCliClient = vi.hoisted(() => vi.fn())
-const mockRequest = vi.hoisted(() => vi.fn())
+const mockRequest = vi.fn()
 
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
-  getGlobalCliClient: mockGetGlobalCliClient,
+  ...(await import('@sanity/cli-test/mocks/cli-core/apiClient')),
 }))
 
 function workbenchApp(): DeployableWorkbenchApp {
@@ -40,7 +40,7 @@ function mediaLibraryApp(
   return app
 }
 
-beforeEach(() => mockGetGlobalCliClient.mockResolvedValue({request: mockRequest}))
+beforeEach(() => apiClient.getGlobalCliClient.mockResolvedValue({request: mockRequest}))
 afterEach(() => vi.clearAllMocks())
 
 const appAdapter = () =>

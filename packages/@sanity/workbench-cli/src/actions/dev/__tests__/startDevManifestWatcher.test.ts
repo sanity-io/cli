@@ -1,7 +1,8 @@
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 
 import {startDevManifestWatcher} from '../startDevManifestWatcher.js'
-import {createMockOutput, FakeFsWatcher} from './devTestHelpers.js'
+import {FakeFsWatcher} from './devTestHelpers.js'
 
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
 const mockFsWatch = vi.hoisted(() => vi.fn())
