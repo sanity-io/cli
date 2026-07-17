@@ -45,7 +45,7 @@ export function promisifyWorker<T = unknown>(
       timeoutId = setTimeout(() => {
         settled = true
         reject(new Error(`Worker timed out after ${timeout}ms`))
-        cleanup()
+        cleanup(false)
       }, timeout)
     }
 
@@ -83,9 +83,13 @@ export function promisifyWorker<T = unknown>(
       cleanup()
     })
 
-    function cleanup() {
+    function cleanup(deferTermination = true) {
       if (terminateOnSettle) {
-        setImmediate(() => void worker.terminate())
+        if (deferTermination) {
+          setImmediate(() => void worker.terminate())
+        } else {
+          void worker.terminate()
+        }
       } else {
         worker.unref()
       }
