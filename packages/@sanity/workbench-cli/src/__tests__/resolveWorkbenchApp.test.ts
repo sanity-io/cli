@@ -32,7 +32,7 @@ describe('resolveWorkbenchApp', () => {
     })
   })
 
-  test('passes through declared views, services, entry, and slug', () => {
+  test('passes through declared views, services, entry, slug, and visibility', () => {
     const config = asConfig(
       unstable_defineApp({
         entry: './src/App.tsx',
@@ -42,6 +42,7 @@ describe('resolveWorkbenchApp', () => {
         slug: 'my-app-host',
         title: 'My App',
         views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
+        visibility: 'unlisted',
       }),
     )
 
@@ -51,6 +52,7 @@ describe('resolveWorkbenchApp', () => {
       services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
       slug: 'my-app-host',
       views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
+      visibility: 'unlisted',
     })
   })
 

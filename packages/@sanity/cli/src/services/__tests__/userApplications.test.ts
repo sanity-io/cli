@@ -163,6 +163,20 @@ describe('createUserApplication', () => {
     })
     expect(app).toBe(result)
   })
+
+  test('forwards dashboardStatus in the body when provided', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'new-core-id'})
+
+    await createUserApplication({
+      appType: 'coreApp',
+      body: {appHost: 'my-app', dashboardStatus: 'unlisted', type: 'coreApp', urlType: 'internal'},
+      organizationId: 'org-123',
+    })
+
+    expect(mockClient.request).toHaveBeenCalledWith(
+      expect.objectContaining({body: expect.objectContaining({dashboardStatus: 'unlisted'})}),
+    )
+  })
 })
 
 describe('createDeployment', () => {
@@ -275,5 +289,19 @@ describe('updateUserApplication', () => {
       uri: '/user-applications/123',
     })
     expect(result).toBe(updated)
+  })
+
+  test('sends dashboardStatus in the PATCH body', async () => {
+    mockClient.request.mockResolvedValueOnce({id: '123'})
+
+    await updateUserApplication({
+      applicationId: '123',
+      appType: 'coreApp',
+      body: {dashboardStatus: 'unlisted'},
+    })
+
+    expect(mockClient.request).toHaveBeenCalledWith(
+      expect.objectContaining({body: {dashboardStatus: 'unlisted'}}),
+    )
   })
 })

@@ -98,6 +98,34 @@ describe('createApplication', () => {
     expect(fields.map(([name]) => name)).not.toContain('isSingleton')
   })
 
+  test('appends visibility on create when set, omits it when unset', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_1'})
+    await createApplication({
+      interfaces,
+      organizationId: 'org-1',
+      slug: 'abc123',
+      tarball: tarball(),
+      title: 'Drop Desk',
+      type: 'coreApp',
+      version: '1.2.3',
+      visibility: 'unlisted',
+    })
+    expect(appendedFields()).toContainEqual(['visibility', 'unlisted'])
+
+    appendSpy.mockClear()
+    mockClient.request.mockResolvedValueOnce({id: 'app_2'})
+    await createApplication({
+      interfaces,
+      organizationId: 'org-1',
+      slug: 'def456',
+      tarball: tarball(),
+      title: 'Drop Desk',
+      type: 'coreApp',
+      version: '1.2.3',
+    })
+    expect(appendedFields().map(([name]) => name)).not.toContain('visibility')
+  })
+
   test('flags a singleton create when isSingleton is set', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 

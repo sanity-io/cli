@@ -11,6 +11,15 @@ export interface TypeGenConfig {
 }
 
 /**
+ * Dashboard visibility an application can declare. Mirrors Brett's canonical
+ * `VISIBILITIES` — the source of truth lives in the application service.
+ * @public
+ */
+export const APP_VISIBILITIES = ['default', 'unlisted', 'disabled'] as const
+/** @public */
+export type AppVisibility = (typeof APP_VISIBILITIES)[number]
+
+/**
  * @public
  */
 export interface CliConfig {
@@ -39,6 +48,8 @@ export interface CliConfig {
     priority?: number
     /** The title of the custom app, as it is seen in Dashboard UI */
     title?: string
+    /** Dashboard visibility of the application. Defaults to `default`. */
+    visibility?: AppVisibility
   }
 
   /** @deprecated Use deployment.autoUpdates */

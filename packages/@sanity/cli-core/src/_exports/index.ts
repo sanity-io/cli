@@ -17,7 +17,12 @@ export {
 } from '../config/cli/cliUserConfig.js'
 export {getCliConfig, getCliConfigUncached} from '../config/cli/getCliConfig.js'
 export {getCliConfigSync} from '../config/cli/getCliConfigSync.js'
-export {type CliConfig, type ConfigStore} from '../config/cli/types/cliConfig.js'
+export {
+  APP_VISIBILITIES,
+  type AppVisibility,
+  type CliConfig,
+  type ConfigStore,
+} from '../config/cli/types/cliConfig.js'
 export {type UserViteConfig} from '../config/cli/types/userViteConfig.js'
 export {type ApplicationType, isWorkbenchApp} from '../config/cli/workbenchApp.js'
 export {findProjectRoot} from '../config/findProjectRoot.js'

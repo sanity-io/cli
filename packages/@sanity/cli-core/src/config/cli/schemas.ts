@@ -1,7 +1,7 @@
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {z} from 'zod/mini'
 
-import {type CliConfig, type TypeGenConfig} from './types/cliConfig'
+import {APP_VISIBILITIES, type CliConfig, type TypeGenConfig} from './types/cliConfig.js'
 import {type UserViteConfig} from './types/userViteConfig'
 
 /**
@@ -22,6 +22,7 @@ export const cliConfigSchema = z.object({
       id: z.optional(z.string()),
       organizationId: z.optional(z.string()),
       title: z.optional(z.string()),
+      visibility: z.optional(z.enum(APP_VISIBILITIES)),
     }),
   ),
 
