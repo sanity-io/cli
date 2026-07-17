@@ -1308,6 +1308,6 @@ describe('#init: promptForAppTemplateSetup', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('--organization')
     expect(error?.message).toContain('--project')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(2)
   })
 })

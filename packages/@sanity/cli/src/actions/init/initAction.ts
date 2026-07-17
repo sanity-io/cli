@@ -1,6 +1,11 @@
 import {styleText} from 'node:util'
 
-import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
+import {
+  exitCodes,
+  type SanityOrgUser,
+  subdebug,
+  type TelemetryUserProperties,
+} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
@@ -10,6 +15,7 @@ import {promptForConfigFiles} from '../../prompts/init/nextjs.js'
 import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
 import {getProviderName} from '../auth/getProviderName.js'
@@ -189,7 +195,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   async function installSkills(): Promise<void> {
     if (mcpResult.skillsToInstall.length === 0) return
     try {
-      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall, output})
+      const skillsResult = await setupSkills({
+        agents: mcpResult.skillsToInstall,
+        output,
+      })
       trace.log({
         installedAgents: skillsResult.installedAgents,
         skipped: skillsResult.skipped,
@@ -326,37 +335,48 @@ function checkFlagsInUnattendedMode(
 ): void {
   debug('Unattended mode, validating required options')
 
-  if (options.projectName && !options.organization) {
-    throw new InitError('`--project-name` requires `--organization <id>` in unattended mode', 1)
-  }
+  const errors: string[] = []
 
   if (isAppTemplate) {
     if (!options.outputPath) {
-      throw new InitError('`--output-path` must be specified in unattended mode', 1)
-    }
-
-    const hasProjectFlag = Boolean(options.project || options.projectName)
-
-    if (!hasProjectFlag && !options.organization) {
-      throw new InitError(
-        'The --organization flag is required for app templates in unattended mode. ' +
-          'Use --organization <id>, or pass --project <id> / --project-name <name>.',
-        1,
+      errors.push(
+        'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
       )
     }
 
-    return
+    if (options.projectName && !options.organization) {
+      errors.push(
+        'Organization is required when creating a project in unattended mode. Pass it with `--organization <id>`.',
+      )
+    } else if (!options.project && !options.organization) {
+      errors.push(
+        'Project or organization is required for app templates in unattended mode. ' +
+          'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+          '`--project-name <name>` with `--organization <id>`.',
+      )
+    }
+  } else {
+    if (!isNextJs && !options.bare && !options.outputPath) {
+      errors.push(
+        'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
+      )
+    }
+
+    if (!options.project && !options.projectName) {
+      errors.push(
+        'Project is required in unattended mode. Pass it with `--project <id>` or `--project-name <name>`.',
+      )
+    }
+
+    if (!options.project && !options.organization) {
+      errors.push(
+        'Organization is required when creating a project in unattended mode. Pass it with `--organization <id>`.',
+      )
+    }
   }
 
-  if (!isNextJs && !options.bare && !options.outputPath) {
-    throw new InitError('`--output-path` must be specified in unattended mode', 1)
-  }
-
-  if (!options.project && !options.projectName) {
-    throw new InitError(
-      '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
-      1,
-    )
+  if (errors.length > 0) {
+    throw new InitError(formatCliErrorMessages(errors), exitCodes.USAGE_ERROR)
   }
 }
 
