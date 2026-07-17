@@ -122,7 +122,7 @@ describe('#dataset:create', () => {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toBe('Dataset name is required. Pass it as an argument.')
+    expect(error?.message).toBe('Dataset name is required. Pass it as the `<name>` argument.')
     expect(error?.oclif?.exit).toBe(2)
     expect(mockInput).not.toHaveBeenCalled()
     expect(mockCreateDataset).not.toHaveBeenCalled()

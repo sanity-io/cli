@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
@@ -145,7 +145,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
       } catch (error) {
         exportDebug('Error selecting dataset', error)
         this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
       }
 
@@ -153,7 +153,9 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
         dataset = defaultDataset
         this.log(`Using default dataset: ${dataset}`)
       } else if (this.isUnattended()) {
-        this.error('Dataset name is required. Pass it as the first argument.', {exit: 2})
+        this.error('Dataset name is required. Pass it as the `<name>` argument.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
       } else {
         try {
           dataset = await promptForDataset({allowCreation: false, datasets})
@@ -162,7 +164,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
           this.error(
             `Failed to select dataset:\n${error instanceof Error ? error.message : error}`,
             {
-              exit: 1,
+              exit: exitCodes.RUNTIME_ERROR,
             },
           )
         }
@@ -172,7 +174,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     // Validate dataset name
     const dsError = validateDatasetName(dataset)
     if (dsError) {
-      this.error(dsError, {exit: 2})
+      this.error(dsError, {exit: exitCodes.USAGE_ERROR})
     }
 
     // Verify existence of dataset before trying to export from it
@@ -306,8 +308,8 @@ dataset: ${dataset.padEnd(46)}`,
     const finalPathStats = await fs.stat(finalPath).catch(noop)
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
-      this.error(`File "${finalPath}" already exists. Pass --overwrite to replace it.`, {
-        exit: 2,
+      this.error(`File "${finalPath}" already exists. Pass \`--overwrite\` to replace it.`, {
+        exit: exitCodes.USAGE_ERROR,
       })
     }
 

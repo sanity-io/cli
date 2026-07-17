@@ -84,8 +84,8 @@ describe('#dataset:copy', () => {
       })
 
       await expect(CopyDatasetCommand.run([])).rejects.toThrow(
-        'Source dataset is required. Pass it as the first argument.\n' +
-          'Error: Target dataset is required. Pass it as the second argument.',
+        'Source dataset is required. Pass it as the `<source>` argument.\n' +
+          'Error: Target dataset is required. Pass it as the `<target>` argument.',
       )
       expect(mocks.SanityCmdGetProjectId).not.toHaveBeenCalled()
       expect(mockListDatasets).not.toHaveBeenCalled()

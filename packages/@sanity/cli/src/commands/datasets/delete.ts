@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, logSymbols} from '@sanity/cli-core/ux'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
@@ -61,14 +61,16 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
 
     const dsError = validateDatasetName(datasetName)
     if (dsError) {
-      this.error(dsError, {exit: 2})
+      this.error(dsError, {exit: exitCodes.USAGE_ERROR})
     }
 
     if (force) {
       this.warn(`'--force' used: skipping confirmation, deleting dataset "${datasetName}"`)
     } else {
       if (this.isUnattended()) {
-        this.error('Dataset deletion requires confirmation. Re-run with --force.', {exit: 2})
+        this.error('Dataset deletion requires confirmation. Re-run with `--force`.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
       }
       try {
         const project = await getProjectById(projectId)

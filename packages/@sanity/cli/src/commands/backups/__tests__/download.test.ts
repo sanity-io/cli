@@ -116,12 +116,12 @@ describe('#backup:download', () => {
       [
         'concurrency value below minimum',
         ['--backup-id', 'test', '--concurrency', '0'],
-        '--concurrency must be between 1 and 24.',
+        '`--concurrency` must be between 1 and 24.',
       ],
       [
         'concurrency value above maximum',
         ['--backup-id', 'test', '--concurrency', '25'],
-        '--concurrency must be between 1 and 24.',
+        '`--concurrency` must be between 1 and 24.',
       ],
     ])('should reject %s', async (_, flags, expectedError) => {
       setupTempDir()
@@ -180,8 +180,8 @@ describe('#backup:download', () => {
       })
 
       expect(error?.message).toBe(
-        'Dataset is required in unattended mode. Pass the dataset name as an argument.\n' +
-          'Error: Backup ID is required in unattended mode. Pass it with --backup-id <id>.',
+        'Dataset is required in unattended mode. Pass it as the `<dataset>` argument.\n' +
+          'Error: Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.',
       )
       expect(error?.oclif?.exit).toBe(2)
       expect(mockListDatasets).not.toHaveBeenCalled()
@@ -199,7 +199,7 @@ describe('#backup:download', () => {
       })
 
       expect(error?.message).toBe(
-        'Backup ID is required in unattended mode. Pass it with --backup-id <id>.',
+        'Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.',
       )
       expect(error?.oclif?.exit).toBe(2)
       expect(mockListDatasets).not.toHaveBeenCalled()
@@ -220,7 +220,7 @@ describe('#backup:download', () => {
       )
 
       expect(error?.message).toBe(
-        `File "${path.resolve(out)}" already exists. Pass --overwrite to replace it.`,
+        `File "${path.resolve(out)}" already exists. Pass \`--overwrite\` to replace it.`,
       )
       expect(error?.oclif?.exit).toBe(2)
       expect(mockConfirm).not.toHaveBeenCalled()

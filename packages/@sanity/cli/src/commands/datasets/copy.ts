@@ -2,6 +2,7 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exit} from '@oclif/core/errors'
+import {exitCodes} from '@sanity/cli-core'
 import {subdebug} from '@sanity/cli-core/debug'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {spinner} from '@sanity/cli-core/ux'
@@ -132,14 +133,14 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       const errors: string[] = []
 
       if (!args.source) {
-        errors.push('Source dataset is required. Pass it as the first argument.')
+        errors.push('Source dataset is required. Pass it as the `<source>` argument.')
       }
       if (!args.target) {
-        errors.push('Target dataset is required. Pass it as the second argument.')
+        errors.push('Target dataset is required. Pass it as the `<target>` argument.')
       }
 
       if (errors.length > 0) {
-        this.output.error(formatCliErrorMessages(errors), {exit: 2})
+        this.output.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
       }
     }
 
@@ -260,7 +261,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     if (sourceDataset) {
       const nameError = validateDatasetName(sourceDataset)
       if (nameError) {
-        return this.output.error(nameError, {exit: 2})
+        return this.output.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     }
 
@@ -291,7 +292,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     if (targetDataset) {
       const nameError = validateDatasetName(targetDataset)
       if (nameError) {
-        return this.output.error(nameError, {exit: 2})
+        return this.output.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     } else {
       targetDataset = await promptForDatasetName({

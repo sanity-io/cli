@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {Table} from 'console-table-printer'
@@ -101,8 +101,8 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     if (dataset) {
       assertDatasetExists(datasets, dataset, this.output)
     } else if (this.isUnattended()) {
-      this.error('Dataset is required in unattended mode. Pass the dataset name as an argument.', {
-        exit: 2,
+      this.error('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
       })
     } else {
       dataset = await this.promptForDataset(datasets)

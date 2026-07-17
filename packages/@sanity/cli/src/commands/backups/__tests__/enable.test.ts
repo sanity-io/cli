@@ -108,7 +108,7 @@ describe('#backup:enable', () => {
     })
 
     expect(error?.message).toBe(
-      'Dataset is required in unattended mode. Pass the dataset name as an argument.',
+      'Dataset is required in unattended mode. Pass it as the `<dataset>` argument.',
     )
     expect(error?.oclif?.exit).toBe(2)
     expect(mockSelect).not.toHaveBeenCalled()

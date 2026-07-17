@@ -247,7 +247,7 @@ describe('#dataset:import', () => {
 
       expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
-        'Dataset is required. Pass it with --dataset <name>.',
+        'Dataset is required. Pass it with `--dataset <name>`.',
         {exit: 2},
       )
     })

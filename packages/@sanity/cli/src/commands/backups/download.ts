@@ -6,7 +6,7 @@ import {finished} from 'node:stream/promises'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {boxen, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import pMap from 'p-map'
@@ -105,14 +105,14 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
       const errors: string[] = []
 
       if (!dataset) {
-        errors.push('Dataset is required in unattended mode. Pass the dataset name as an argument.')
+        errors.push('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.')
       }
       if (!flags['backup-id']) {
-        errors.push('Backup ID is required in unattended mode. Pass it with --backup-id <id>.')
+        errors.push('Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.')
       }
 
       if (errors.length > 0) {
-        this.error(formatCliErrorMessages(errors), {exit: 2})
+        this.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
       }
     }
 
@@ -297,7 +297,9 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       'concurrency' in this.flags &&
       (this.flags.concurrency < 1 || this.flags.concurrency > MAX_DOWNLOAD_CONCURRENCY)
     ) {
-      this.error(`--concurrency must be between 1 and ${MAX_DOWNLOAD_CONCURRENCY}.`, {exit: 2})
+      this.error(`\`--concurrency\` must be between 1 and ${MAX_DOWNLOAD_CONCURRENCY}.`, {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     const defaultOutFileName = `${datasetName}-backup-${backupId}.tar.gz`
@@ -315,7 +317,9 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     // If the file already exists, ask for confirmation if it should be overwritten.
     if (!this.flags.overwrite && exists) {
       if (this.isUnattended()) {
-        this.error(`File "${out}" already exists. Pass --overwrite to replace it.`, {exit: 2})
+        this.error(`File "${out}" already exists. Pass \`--overwrite\` to replace it.`, {
+          exit: exitCodes.USAGE_ERROR,
+        })
       }
       const shouldOverwrite = await confirm({
         default: false,
@@ -324,7 +328,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
 
       // If the user does not want to overwrite the file, cancel the operation.
       if (!shouldOverwrite) {
-        this.error('Operation cancelled.', {exit: 3})
+        this.error('Operation cancelled.', {exit: exitCodes.USER_ABORT})
       }
     }
 
