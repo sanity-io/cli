@@ -1,7 +1,12 @@
 import {Transform, type TransformCallback, type Writable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 
-import {createRequester, nodeReadableFromWeb, retry} from '@sanity/cli-core/request'
+import {
+  createRequester,
+  nodeReadableFromWeb,
+  retry,
+  type StreamResponse,
+} from '@sanity/cli-core/request'
 
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
 const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
@@ -30,7 +35,7 @@ export async function downloadStream(url: string, destination: Writable): Promis
   }, CONNECTION_TIMEOUT)
   connectionTimeout.unref()
 
-  let response
+  let response: StreamResponse
   try {
     response = await request({
       as: 'stream',
@@ -38,6 +43,9 @@ export async function downloadStream(url: string, destination: Writable): Promis
       timeout: false,
       url,
     })
+  } catch (error) {
+    destination.destroy()
+    throw error
   } finally {
     clearTimeout(connectionTimeout)
   }
@@ -46,7 +54,10 @@ export async function downloadStream(url: string, destination: Writable): Promis
   const resetReadTimeout = () => {
     if (readTimeout) clearTimeout(readTimeout)
     readTimeout = setTimeout(() => {
-      const error = new Error('Backup download stalled: no data received for 3 minutes. Try again.')
+      const timeoutMinutes = READ_TIMEOUT / (60 * 1000)
+      const error = new Error(
+        `Backup download stalled: no data received for ${timeoutMinutes} minutes. Try again.`,
+      )
       abortController.abort(error)
       timeoutStream.destroy(error)
     }, READ_TIMEOUT)

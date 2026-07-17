@@ -69,6 +69,17 @@ describe('#downloadStream', () => {
     })
   })
 
+  test('destroys the destination when the request fails before streaming', async () => {
+    const destination = createDestination()
+    mockRequest.mockRejectedValue(new Error('Request failed'))
+
+    await expect(downloadStream('https://example.com/backup', destination)).rejects.toThrow(
+      'Request failed',
+    )
+
+    expect(destination.destroyed).toBe(true)
+  })
+
   test('aborts when response headers exceed the connection timeout', async () => {
     vi.useFakeTimers()
     mockRequest.mockImplementation(
