@@ -1,3 +1,5 @@
+import {fileURLToPath} from 'node:url'
+
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {createStudioWorker, studioWorkerTask} from '../studioWorkerTask.js'
@@ -18,7 +20,9 @@ vi.mock('node:worker_threads', async (importOriginal) => ({
   Worker: mockWorker,
 }))
 
-const TASK_URL = new URL('file:///test/example.worker.ts')
+const INVALID_TASK_URL = new URL('example.ts', import.meta.url)
+const TASK_URL = new URL('example.worker.ts', import.meta.url)
+const TASK_PATH = fileURLToPath(TASK_URL)
 
 describe('studioWorkerTask', () => {
   afterEach(() => {
@@ -43,7 +47,7 @@ describe('studioWorkerTask', () => {
           CUSTOM_ENV: 'value',
           STUDIO_WORKER_ONE_SHOT: '1',
           STUDIO_WORKER_STUDIO_ROOT_PATH: '/studio',
-          STUDIO_WORKER_TASK_FILE: '/test/example.worker.ts',
+          STUDIO_WORKER_TASK_FILE: TASK_PATH,
         },
         name: 'example',
         terminateOnSettle: false,
@@ -86,7 +90,7 @@ describe('studioWorkerTask', () => {
 
   test('validates the task file name before creating a worker', () => {
     expect(() =>
-      studioWorkerTask(new URL('file:///test/example.ts'), {
+      studioWorkerTask(INVALID_TASK_URL, {
         name: 'example',
         studioRootPath: '/studio',
       }),
@@ -114,7 +118,7 @@ describe('createStudioWorker', () => {
         env: {
           CUSTOM_ENV: 'value',
           STUDIO_WORKER_STUDIO_ROOT_PATH: '/studio',
-          STUDIO_WORKER_TASK_FILE: '/test/example.worker.ts',
+          STUDIO_WORKER_TASK_FILE: TASK_PATH,
         },
         name: 'example',
         studioRootPath: '/studio',
@@ -125,7 +129,7 @@ describe('createStudioWorker', () => {
 
   test('validates the task file name before creating a worker', () => {
     expect(() =>
-      createStudioWorker(new URL('file:///test/example.ts'), {
+      createStudioWorker(INVALID_TASK_URL, {
         name: 'example',
         studioRootPath: '/studio',
       }),
