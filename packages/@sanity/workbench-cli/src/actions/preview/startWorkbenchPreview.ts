@@ -64,6 +64,7 @@ export async function startWorkbenchPreview(
     cliConfig,
     httpHost,
     httpPort,
+    mode: 'preview',
     output,
     reactStrictMode,
     workDir,

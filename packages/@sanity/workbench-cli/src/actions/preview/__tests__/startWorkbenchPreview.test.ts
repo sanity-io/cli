@@ -79,6 +79,14 @@ describe('startWorkbenchPreview', () => {
 
       expect(mockServeBuiltRemote).toHaveBeenCalledWith(expect.objectContaining({httpPort: 3333}))
     })
+
+    test('runs the workbench shell in preview mode', async () => {
+      await run()
+
+      expect(mockStartWorkbenchDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({mode: 'preview'}),
+      )
+    })
   })
 
   describe('registration', () => {

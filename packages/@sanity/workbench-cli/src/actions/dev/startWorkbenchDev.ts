@@ -95,6 +95,7 @@ export async function startWorkbenchDev(
     cliConfig,
     httpHost,
     httpPort,
+    mode: 'development',
     output,
     reactStrictMode,
     workDir,

@@ -85,6 +85,14 @@ describe('startWorkbenchDev', () => {
       )
     })
 
+    test('runs the workbench shell in development mode', async () => {
+      await run()
+
+      expect(mockStartWorkbenchDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({mode: 'development'}),
+      )
+    })
+
     test('keeps the configured port and announces the URL when the workbench is unavailable', async () => {
       mockStartWorkbenchDevServer.mockResolvedValue({
         close: vi.fn().mockResolvedValue(undefined),

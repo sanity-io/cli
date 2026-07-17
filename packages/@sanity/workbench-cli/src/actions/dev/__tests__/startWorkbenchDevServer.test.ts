@@ -174,6 +174,34 @@ describe('startWorkbenchDevServer', () => {
       )
     })
 
+    test('development mode forwards the SANITY_INTERNAL_WORKBENCH_REMOTE_URL override', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+      vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'http://localhost:5173/mf-manifest.json')
+
+      await startWorkbenchDevServer(
+        createDevOptions({cliConfig: federationConfig, mode: 'development'}),
+      )
+
+      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
+        expect.objectContaining({remoteUrl: expect.stringContaining('localhost:5173')}),
+      )
+    })
+
+    test('preview mode drops the dev override so the deployed workbench UI is used', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+      vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'http://localhost:5173/mf-manifest.json')
+
+      await startWorkbenchDevServer(
+        createDevOptions({cliConfig: federationConfig, mode: 'preview'}),
+      )
+
+      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
+        expect.objectContaining({remoteUrl: undefined}),
+      )
+    })
+
     test('passes organizationId from cliConfig.app.organizationId', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
