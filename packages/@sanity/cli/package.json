@@ -55,6 +55,7 @@
     "access": "public"
   },
   "scripts": {
+    "prebuild": "pnpm run generate:api-routes",
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "postbuild": "pnpm run manifest:generate && pnpm run check:topic-aliases",
     "build:types": "pkg-utils build --emitDeclarationOnly",

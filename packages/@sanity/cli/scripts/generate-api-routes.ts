@@ -7,7 +7,10 @@
  * version to default to.
  *
  * The manifest is generated - not hand-maintained - so the set of APIs
- * reachable through `sanity api` follows the published specs.
+ * reachable through `sanity api` follows the published specs. It runs on
+ * every build (prebuild hook) and fails the build when the specs can't be
+ * fetched or the distilled manifest would be empty, so a release can never
+ * ship with a missing or empty endpoint list.
  *
  * Regenerate:        tsx scripts/generate-api-routes.ts
  * Verify freshness:  tsx scripts/generate-api-routes.ts --check
@@ -16,7 +19,10 @@
 /* eslint-disable no-console */
 import {readFileSync, writeFileSync} from 'node:fs'
 import {dirname, join} from 'node:path'
+import {setTimeout as sleep} from 'node:timers/promises'
 import {fileURLToPath} from 'node:url'
+
+import pMap from 'p-map'
 
 import {OPENAPI_SPEC_INDEX_URL} from '../src/actions/api/constants.ts'
 import {distillApiRoutes, type SpecSource} from '../src/actions/api/distillApiRoutes.ts'
@@ -31,6 +37,8 @@ const OUTPUT_PATH = join(
 )
 
 const FETCH_TIMEOUT_MS = 30_000
+const FETCH_ATTEMPTS = 3
+const FETCH_CONCURRENCY = 6
 
 interface SpecIndexEntry {
   slug: string
@@ -38,11 +46,26 @@ interface SpecIndexEntry {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)})
-  if (!response.ok) {
-    throw new Error(`GET ${url} responded with HTTP ${response.status}`)
+  let lastError: unknown
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(url, {signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)})
+      if (!response.ok) {
+        throw new Error(`GET ${url} responded with HTTP ${response.status}`)
+      }
+      return (await response.json()) as T
+    } catch (error) {
+      lastError = error
+      if (attempt < FETCH_ATTEMPTS) {
+        const delayMs = 1000 * 2 ** (attempt - 1)
+        console.warn(
+          `Fetch failed (attempt ${attempt}/${FETCH_ATTEMPTS}), retrying in ${delayMs}ms: ${url}`,
+        )
+        await sleep(delayMs)
+      }
+    }
   }
-  return response.json() as Promise<T>
+  throw lastError
 }
 
 async function fetchSpecSources(): Promise<SpecSource[]> {
@@ -52,15 +75,17 @@ async function fetchSpecSources(): Promise<SpecSource[]> {
     throw new Error(`No OpenAPI specs found at ${OPENAPI_SPEC_INDEX_URL}`)
   }
 
-  const sources: SpecSource[] = []
-  for (const {slug, title} of specs) {
-    console.log(`Fetching spec: ${slug}`)
-    const document = await fetchJson<OpenApiDocument>(
-      `${OPENAPI_SPEC_INDEX_URL}/${slug}?format=json`,
-    )
-    sources.push({document, slug, title})
-  }
-  return sources
+  return pMap(
+    specs,
+    async ({slug, title}): Promise<SpecSource> => {
+      console.log(`Fetching spec: ${slug}`)
+      const document = await fetchJson<OpenApiDocument>(
+        `${OPENAPI_SPEC_INDEX_URL}/${slug}?format=json`,
+      )
+      return {document, slug, title}
+    },
+    {concurrency: FETCH_CONCURRENCY},
+  )
 }
 
 function renderManifest(routes: ApiRouteEntry[]): string {
@@ -91,6 +116,11 @@ async function main(): Promise<void> {
 
   const sources = await fetchSpecSources()
   const routes = distillApiRoutes(sources)
+  if (routes.length === 0) {
+    throw new Error(
+      `Distilled API routing manifest is empty (${sources.length} specs fetched) - refusing to write an empty endpoint list`,
+    )
+  }
   const rendered = renderManifest(routes)
 
   if (checkOnly) {
