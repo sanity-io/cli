@@ -118,7 +118,7 @@ describe('#dataset:alias:link', () => {
     })
 
     expect(error?.message).toBe(
-      'Relinking a dataset alias requires confirmation. Re-run with --force.',
+      'Relinking a dataset alias requires confirmation. Re-run with `--force`.',
     )
     expect(error?.oclif?.exit).toBe(2)
   })
@@ -133,8 +133,8 @@ describe('#dataset:alias:link', () => {
     })
 
     expect(missingBoth.error?.message).toBe(
-      'Dataset alias name is required. Pass it as the first argument.\n' +
-        'Error: Target dataset is required. Pass it as the second argument.',
+      'Dataset alias name is required. Pass it as the `<aliasName>` argument.\n' +
+        'Error: Target dataset is required. Pass it as the `<targetDataset>` argument.',
     )
     expect(missingBoth.error?.oclif?.exit).toBe(2)
 
@@ -143,7 +143,7 @@ describe('#dataset:alias:link', () => {
     })
 
     expect(missingTarget.error?.message).toBe(
-      'Target dataset is required. Pass it as the second argument.',
+      'Target dataset is required. Pass it as the `<targetDataset>` argument.',
     )
     expect(missingTarget.error?.oclif?.exit).toBe(2)
     expect(mockListDatasets).not.toHaveBeenCalled()

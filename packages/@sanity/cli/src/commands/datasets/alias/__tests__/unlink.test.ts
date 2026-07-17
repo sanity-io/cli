@@ -113,7 +113,7 @@ describe('#dataset:alias:unlink', () => {
     })
 
     expect(error?.message).toBe(
-      'Unlinking a dataset alias requires confirmation. Re-run with --force.',
+      'Unlinking a dataset alias requires confirmation. Re-run with `--force`.',
     )
     expect(error?.oclif?.exit).toBe(2)
     expect(mockInput).not.toHaveBeenCalled()
@@ -124,7 +124,9 @@ describe('#dataset:alias:unlink', () => {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toBe('Dataset alias name is required. Pass it as an argument.')
+    expect(error?.message).toBe(
+      'Dataset alias name is required. Pass it as the `<aliasName>` argument.',
+    )
     expect(error?.oclif?.exit).toBe(2)
     expect(mockInput).not.toHaveBeenCalled()
   })

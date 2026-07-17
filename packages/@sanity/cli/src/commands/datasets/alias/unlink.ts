@@ -1,6 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
@@ -55,14 +55,16 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
     const {force} = flags
 
     if (!args.aliasName && this.isUnattended()) {
-      this.error('Dataset alias name is required. Pass it as an argument.', {exit: 2})
+      this.error('Dataset alias name is required. Pass it as the `<aliasName>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     if (args.aliasName) {
       const {apiName} = processAliasName(args.aliasName)
       const nameError = validateDatasetAliasName(apiName)
       if (nameError) {
-        this.error(nameError, {exit: 2})
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     }
 
@@ -82,7 +84,7 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
 
       const nameError = validateDatasetAliasName(apiName)
       if (nameError) {
-        this.error(nameError, {exit: 2})
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
 
       const aliases = await listAliases(projectId)
@@ -101,8 +103,8 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
         this.warn(`'--force' used: skipping confirmation, unlinking alias "${displayName}"`)
       } else {
         if (this.isUnattended()) {
-          this.error('Unlinking a dataset alias requires confirmation. Re-run with --force.', {
-            exit: 2,
+          this.error('Unlinking a dataset alias requires confirmation. Re-run with `--force`.', {
+            exit: exitCodes.USAGE_ERROR,
           })
         }
         await this.confirmUnlink(linkedAlias.datasetName)

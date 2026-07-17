@@ -1,6 +1,6 @@
 import {Args} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
@@ -60,20 +60,22 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
     const {args} = await this.parse(CreateAliasCommand)
 
     if (!args.aliasName && this.isUnattended()) {
-      this.error('Dataset alias name is required. Pass it as the first argument.', {exit: 2})
+      this.error('Dataset alias name is required. Pass it as the `<aliasName>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     if (args.aliasName) {
       const nameError = validateDatasetAliasName(args.aliasName)
       if (nameError) {
-        this.error(nameError, {exit: 2})
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     }
 
     if (args.targetDataset) {
       const datasetErr = validateDatasetName(args.targetDataset)
       if (datasetErr) {
-        this.error(datasetErr, {exit: 2})
+        this.error(datasetErr, {exit: exitCodes.USAGE_ERROR})
       }
     }
 

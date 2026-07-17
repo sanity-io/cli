@@ -1,5 +1,5 @@
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
@@ -47,7 +47,7 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
 
     const dsError = validateDatasetName(dataset)
     if (dsError) {
-      this.error(dsError, {exit: 2})
+      this.error(dsError, {exit: exitCodes.USAGE_ERROR})
     }
 
     let current

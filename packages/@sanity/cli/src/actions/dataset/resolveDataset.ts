@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {promptForDataset} from '../../prompts/promptForDataset.js'
@@ -32,7 +32,9 @@ export async function resolveDataset({
   projectId,
 }: ResolveDatasetOptions): Promise<ResolveDatasetResult> {
   if (!dataset && isUnattended) {
-    output.error('Dataset name is required. Pass it as an argument.', {exit: 2})
+    output.error('Dataset name is required. Pass it as the `<dataset>` argument.', {
+      exit: exitCodes.USAGE_ERROR,
+    })
   }
 
   const datasets = await listDatasets(projectId)

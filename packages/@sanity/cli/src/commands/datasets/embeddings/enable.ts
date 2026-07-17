@@ -2,7 +2,7 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
@@ -95,7 +95,7 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
         validateProjection(projection)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        this.error(`Invalid projection: ${message}`, {exit: 2})
+        this.error(`Invalid projection: ${message}`, {exit: exitCodes.USAGE_ERROR})
       }
     }
 

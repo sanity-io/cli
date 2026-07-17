@@ -1,6 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
@@ -53,7 +53,7 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
 
     const nameError = validateDatasetAliasName(apiName)
     if (nameError) {
-      this.error(nameError, {exit: 2})
+      this.error(nameError, {exit: exitCodes.USAGE_ERROR})
     }
 
     const projectId = await this.getProjectId({
@@ -80,8 +80,8 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
         this.warn(`'--force' used: skipping confirmation, deleting alias "${displayName}"`)
       } else {
         if (this.isUnattended()) {
-          this.error('Dataset alias deletion requires confirmation. Re-run with --force.', {
-            exit: 2,
+          this.error('Dataset alias deletion requires confirmation. Re-run with `--force`.', {
+            exit: exitCodes.USAGE_ERROR,
           })
         }
         await this.confirmDeletion(apiName, existingAlias.datasetName)

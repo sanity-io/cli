@@ -1,6 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
@@ -70,14 +70,14 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
       const errors: string[] = []
 
       if (!args.aliasName) {
-        errors.push('Dataset alias name is required. Pass it as the first argument.')
+        errors.push('Dataset alias name is required. Pass it as the `<aliasName>` argument.')
       }
       if (!args.targetDataset) {
-        errors.push('Target dataset is required. Pass it as the second argument.')
+        errors.push('Target dataset is required. Pass it as the `<targetDataset>` argument.')
       }
 
       if (errors.length > 0) {
-        this.error(formatCliErrorMessages(errors), {exit: 2})
+        this.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
       }
     }
 
@@ -85,14 +85,14 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
       const {apiName} = processAliasName(args.aliasName)
       const nameError = validateDatasetAliasName(apiName)
       if (nameError) {
-        this.error(nameError, {exit: 2})
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     }
 
     if (args.targetDataset) {
       const datasetErr = validateDatasetName(args.targetDataset)
       if (datasetErr) {
-        this.error(datasetErr, {exit: 2})
+        this.error(datasetErr, {exit: exitCodes.USAGE_ERROR})
       }
     }
 
@@ -152,8 +152,8 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
 
       if (existingAlias.datasetName && !force) {
         if (this.isUnattended()) {
-          this.error('Relinking a dataset alias requires confirmation. Re-run with --force.', {
-            exit: 2,
+          this.error('Relinking a dataset alias requires confirmation. Re-run with `--force`.', {
+            exit: exitCodes.USAGE_ERROR,
           })
         }
         await this.confirmRelink(existingAlias.datasetName, targetDataset)

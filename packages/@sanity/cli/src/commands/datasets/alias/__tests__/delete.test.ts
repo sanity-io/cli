@@ -107,7 +107,7 @@ describe('#dataset:alias:delete', () => {
     })
 
     expect(error?.message).toBe(
-      'Dataset alias deletion requires confirmation. Re-run with --force.',
+      'Dataset alias deletion requires confirmation. Re-run with `--force`.',
     )
     expect(error?.oclif?.exit).toBe(2)
     expect(mockInput).not.toHaveBeenCalled()

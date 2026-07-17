@@ -82,7 +82,7 @@ describe('#dataset:embeddings:disable', () => {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toBe('Dataset name is required. Pass it as an argument.')
+    expect(error?.message).toBe('Dataset name is required. Pass it as the `<dataset>` argument.')
     expect(error?.oclif?.exit).toBe(2)
     expect(mockListDatasets).not.toHaveBeenCalled()
     expect(mockSelect).not.toHaveBeenCalled()
