@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -87,12 +88,12 @@ describe('#tokens:add', () => {
 
     const {stdout} = await testCommand(AddTokenCommand, ['My Test Token'], {mocks: defaultMocks})
 
-    expect(stdout).toContain('Token created successfully!')
+    expect(stdout).toContain('API token created')
     expect(stdout).toContain('Label: My Test Token')
     expect(stdout).toContain('ID: token-123')
     expect(stdout).toContain('Role: Viewer')
     expect(stdout).toContain('Token: sk_test_abcd1234')
-    expect(stdout).toContain('Copy the token above')
+    expect(stdout).toContain("Copy the token now. It won't be shown again.")
   })
 
   test('creates token with specific role', async () => {
@@ -145,7 +146,7 @@ describe('#tokens:add', () => {
       mocks: defaultMocks,
     })
 
-    expect(stdout).toContain('Token created successfully!')
+    expect(stdout).toContain('API token created')
     expect(stdout).toContain('Label: Editor Token')
     expect(stdout).toContain('Role: Editor')
     expect(stdout).toContain('Token: sk_test_editor1234')
@@ -207,7 +208,7 @@ describe('#tokens:add', () => {
       mocks: defaultMocks,
     })
 
-    expect(stdout).toContain('Token created successfully!')
+    expect(stdout).toContain('API token created')
     expect(stdout).toContain('Label: Unattended Token')
     expect(mockedSelect).not.toHaveBeenCalled()
     expect(mockedInput).not.toHaveBeenCalled()
@@ -238,7 +239,7 @@ describe('#tokens:add', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid role "invalid"')
     expect(error?.message).toContain('Available roles: viewer')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles API error during token creation', async () => {
@@ -357,7 +358,7 @@ describe('#tokens:add', () => {
       message: 'Token label:',
       validate: expect.any(Function),
     })
-    expect(stdout).toContain('Token created successfully!')
+    expect(stdout).toContain('API token created')
     expect(stdout).toContain('Label: Prompted Label')
   })
 
@@ -417,12 +418,30 @@ describe('#tokens:add', () => {
     }
   })
 
-  test('throws error when no label provided in non-interactive mode with --yes flag', async () => {
-    const {error} = await testCommand(AddTokenCommand, ['--yes'], {mocks: defaultMocks})
+  test.each([
+    {args: ['--yes'], description: 'with --yes', isInteractive: true},
+    {args: [], description: 'without an interactive terminal', isInteractive: false},
+  ])('requires a label in unattended mode $description', async ({args, isInteractive}) => {
+    const {error} = await testCommand(AddTokenCommand, args, {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
+        isInteractive,
+      },
+    })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Token label is required in non-interactive mode')
-    expect(error?.message).toContain('Provide a label as an argument')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Token label is required')
+    expect(error?.message).toContain('<label>')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('rejects an empty label argument before project lookup', async () => {
+    const {error} = await testCommand(AddTokenCommand, ['   ', '--yes'], {
+      mocks: {...defaultMocks, cliConfig: {api: {projectId: undefined}}},
+    })
+
+    expect(error?.message).toContain('Token label cannot be empty')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 })

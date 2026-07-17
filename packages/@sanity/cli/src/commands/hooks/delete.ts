@@ -1,5 +1,5 @@
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {type Hook} from '../../actions/hook/types'
@@ -47,7 +47,9 @@ export class Delete extends SanityCommand<typeof Delete> {
     const {args} = await this.parse(Delete)
 
     if (!args.name && this.isUnattended()) {
-      this.error('Webhook name is required. Pass the name as an argument.', {exit: 2})
+      this.error('Webhook name is required. Pass the name as an argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     const projectId = await this.getProjectId({

@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -87,7 +88,7 @@ describe('#projects:create', () => {
     mockValidateDatasetName.mockReturnValue(datasetError) // returns error if invalid
     await expect(CreateProjectCommand.run(['--dataset=~~invalid-name'])).rejects.toMatchObject({
       message: expect.stringContaining(datasetError),
-      oclif: {exit: 2},
+      oclif: {exit: exitCodes.USAGE_ERROR},
     })
   })
 

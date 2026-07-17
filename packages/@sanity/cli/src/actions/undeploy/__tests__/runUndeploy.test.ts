@@ -1,4 +1,5 @@
 import {type Output} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type UndeployAdapter, type UndeployApplicationTarget} from '@sanity/cli-core/undeploy'
 import {confirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
@@ -114,7 +115,9 @@ describe('runUndeploy real run', () => {
     await runUndeploy(options(output), adapter({undeploy}))
 
     expect(undeploy).not.toHaveBeenCalled()
-    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled', {exit: 3})
+    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled', {
+      exit: exitCodes.USER_ABORT,
+    })
   })
 
   test('an unattended run requires explicit confirmation', async () => {
@@ -127,7 +130,7 @@ describe('runUndeploy real run', () => {
     expect(undeploy).not.toHaveBeenCalled()
     expect(output.error).toHaveBeenCalledWith(
       'Undeploy requires confirmation. Pass --yes to continue.',
-      {exit: 2},
+      {exit: exitCodes.USAGE_ERROR},
     )
   })
 
@@ -220,7 +223,9 @@ describe('runUndeploy real run', () => {
 
     await runUndeploy(options(output), adapter())
 
-    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled', {exit: 3})
+    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled', {
+      exit: exitCodes.USER_ABORT,
+    })
   })
 })
 

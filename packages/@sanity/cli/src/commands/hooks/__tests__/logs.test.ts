@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -309,7 +310,7 @@ describe('#hook:logs', () => {
     expect(error?.message).toBe(
       'Webhook name is required when multiple webhooks exist. Pass the name as an argument.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockedSelect).not.toHaveBeenCalled()
   })
 

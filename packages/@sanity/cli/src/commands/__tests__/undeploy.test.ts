@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {unstable_defineApp, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
@@ -177,7 +178,7 @@ describe('#undeploy', () => {
       },
     })
 
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
   })
 
   test('requires --yes before prompting in unattended mode', async () => {
@@ -196,7 +197,7 @@ describe('#undeploy', () => {
     })
 
     expect(error?.message).toContain('Pass --yes to continue')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(confirm).not.toHaveBeenCalled()
   })
 
@@ -584,7 +585,7 @@ describe('#undeploy', () => {
       },
       undeployed: false,
     })
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('workbench app dry run resolves the Brett application', async () => {

@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -32,6 +33,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -96,6 +98,19 @@ describe('#cors:delete', () => {
       ],
       message: 'Select origin to delete',
     })
+  })
+
+  test('requires an origin before project lookup in unattended mode', async () => {
+    const {error} = await testCommand(Delete, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
+        isInteractive: false,
+      },
+    })
+
+    expect(error?.message).toContain('<origin>')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles case-insensitive origin matching', async () => {

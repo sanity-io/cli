@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 
 import {validateRole} from '../../actions/tokens/validateRole.js'
@@ -43,13 +43,16 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
   ]
 
   static override flags = {
-    ...getProjectIdFlag({description: 'Project ID to add token to', semantics: 'override'}),
+    ...getProjectIdFlag({
+      description: 'Project ID to add token to',
+      semantics: 'override',
+    }),
     json: Flags.boolean({
       default: false,
       description: 'Output as JSON',
     }),
     role: Flags.string({
-      description: 'Role to assign to the token',
+      description: 'Role to assign to the token (defaults to viewer in unattended mode)',
       helpValue: 'viewer',
     }),
     yes: Flags.boolean({
@@ -66,6 +69,13 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     const {label: givenLabel} = args
     const {json, role} = flags
 
+    const label = givenLabel === undefined ? await this.promptForLabel() : givenLabel.trim()
+    if (!label) {
+      this.error('Token label cannot be empty. Pass a non-empty value as the `<label>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -76,13 +86,15 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
         }),
     })
 
-    try {
-      const label = givenLabel || (await this.promptForLabel())
-      const roleName = await (role
-        ? validateRole(role, projectId, this.output)
-        : this.promptForRole(projectId))
+    const roleName = await (role
+      ? validateRole(role, projectId, this.output)
+      : this.promptForRole(projectId))
 
-      tokensAddDebug(`Creating token for project ${projectId}`, {label, roleName})
+    try {
+      tokensAddDebug(`Creating token for project ${projectId}`, {
+        label,
+        roleName,
+      })
       const token = await createToken({
         label,
         projectId,
@@ -94,13 +106,13 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
         return
       }
 
-      this.log('Token created successfully!')
+      this.log('API token created')
       this.log(`Label: ${token.label}`)
       this.log(`ID: ${token.id}`)
       this.log(`Role: ${token.roles.map((r) => r.title).join(', ')}`)
       this.log(`Token: ${token.key}`)
       this.log('')
-      this.log('Copy the token above – this is your only chance to do so!')
+      this.log("Copy the token now. It won't be shown again.")
     } catch (error) {
       const err = error as Error
 
@@ -111,12 +123,9 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
 
   private async promptForLabel(): Promise<string> {
     if (this.isUnattended()) {
-      this.error(
-        'Token label is required in non-interactive mode. Provide a label as an argument.',
-        {
-          exit: 1,
-        },
-      )
+      this.error('Token label is required. Pass it as the `<label>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     const label = await input({
@@ -129,7 +138,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
       },
     })
 
-    return label
+    return label.trim()
   }
 
   private async promptForRole(projectId: string): Promise<string> {

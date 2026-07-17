@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -439,7 +440,7 @@ describe('#init: bootstrap-app-initialization', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(error?.message).toBe(
       'Project or organization is required for app templates in unattended mode. ' +
         'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
@@ -512,7 +513,7 @@ describe('#init: bootstrap-app-initialization', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(error?.message).toBe(
       'Project or organization is required for app templates in unattended mode. ' +
         'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
@@ -533,7 +534,7 @@ describe('#init: bootstrap-app-initialization', () => {
       },
     )
 
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(error?.message).toBe(
       'Output path is required in unattended mode. Pass it with `--output-path <path>`.\n' +
         'Error: Project or organization is required for app templates in unattended mode. ' +

@@ -1,11 +1,12 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 
 import {type Role} from '../../actions/users/types.js'
 import {validateEmail} from '../../actions/users/validateEmail.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getProjectRoles, inviteUser} from '../../services/projects.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const QUOTA_ERROR_MESSAGE =
@@ -58,6 +59,29 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
   public async run(): Promise<void> {
     const {email: selectedEmail} = this.args
     const {role: selectedRole} = this.flags
+    const normalizedEmail = selectedEmail?.trim()
+
+    if (this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!normalizedEmail) {
+        errors.push('Email address is required. Pass it as the `<email>` argument.')
+      }
+      if (!selectedRole) {
+        errors.push('User role is required. Pass it with `--role <role>`.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
+    }
+
+    if (selectedEmail !== undefined) {
+      const validation = validateEmail(normalizedEmail ?? '')
+      if (validation !== true) this.error(validation, {exit: exitCodes.USAGE_ERROR})
+    }
 
     const projectId = await this.getProjectId({
       fallback: () =>
@@ -77,14 +101,14 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
       this.error('Error fetching roles', {exit: 1})
     }
 
-    const email = selectedEmail || (await this.promptForEmail())
+    const email = normalizedEmail || (await this.promptForEmail())
     const roleSelection = selectedRole || (await this.promptForRole(roles))
     const role = roles.find(({name}) => name.toLowerCase() === roleSelection.toLowerCase())
 
     if (!role) {
       this.error(
         `Role name "${roleSelection}" not found. Available roles: ${roles.map((r) => r.name).join(', ')}`,
-        {exit: 1},
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
