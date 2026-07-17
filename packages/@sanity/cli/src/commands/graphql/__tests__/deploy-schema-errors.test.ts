@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -220,7 +221,7 @@ describe('#graphql:deploy schema errors', () => {
       })
 
       expect(error).toBeDefined()
-      expect(error?.oclif?.exit).toBe(3)
+      expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
       expect(stderr).toContain('--tag')
       expect(stderr).toContain('for ALL APIs')
       expect(stdout).toContain('GraphQL deployment cancelled')

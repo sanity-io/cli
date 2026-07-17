@@ -2,6 +2,7 @@ import {writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {getCliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -73,7 +74,7 @@ describe('#graphql:deploy errors', {timeout: 60 * 1000}, () => {
     expect(error?.message).toContain('--force')
     expect(stdout).toContain('Found BREAKING changes')
     expect(stdout).toContain('Field "oldField" was removed')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles validation errors', async () => {

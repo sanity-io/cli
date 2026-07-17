@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
@@ -43,9 +43,9 @@ export async function resolveApiGeneration({
       throw new CLIError(
         oneline`
         Specified generation (${specifiedGeneration}) for API at index ${index} differs from the one currently deployed (${currentGeneration}).
-        Pass --force to continue.
+        Pass \`--force\` to continue.
       `,
-        {exit: 2},
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 

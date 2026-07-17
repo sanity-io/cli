@@ -1,4 +1,5 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -142,7 +143,7 @@ describe('graphql undeploy', () => {
   test('cancels deletion when user declines confirmation', async () => {
     mockConfirm.mockResolvedValue(false)
     const {error, stdout} = await testCommand(Undeploy, [], {mocks: defaultMocks})
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     expect(stdout).toContain('GraphQL API undeploy cancelled')
     expect(pendingMocks()).toHaveLength(0) // No API call should be made
   })
@@ -152,8 +153,8 @@ describe('graphql undeploy', () => {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toContain('Pass --force to continue')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.message).toContain('Pass `--force` to continue')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockConfirm).not.toHaveBeenCalled()
   })
 
@@ -276,9 +277,9 @@ describe('graphql undeploy', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain(
-      'Dataset is required. Specify it with --dataset or configure it in your project.',
+      'Dataset is required. Pass it with `--dataset <name>` or configure it in your project.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles API deletion error', async () => {
@@ -305,7 +306,7 @@ describe('graphql undeploy', () => {
     const {error, stderr} = await testCommand(Undeploy, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(130)
+    expect(error?.oclif?.exit).toBe(exitCodes.SIGINT)
     expect(stderr).toContain('Aborted by user')
   })
 
@@ -351,7 +352,7 @@ describe('graphql undeploy', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Dataset is required')
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
   })
 })

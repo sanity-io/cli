@@ -1,4 +1,5 @@
 import {getCliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
@@ -162,7 +163,7 @@ describe('#schema:list', {timeout: 60 * 1000}, () => {
     const {error} = await testCommand(ListSchemaCommand, ['--id', id])
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('throws an error if no schemas are found', async () => {

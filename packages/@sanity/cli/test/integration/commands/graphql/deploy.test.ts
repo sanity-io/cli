@@ -1,4 +1,5 @@
 import {getCliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -269,7 +270,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       mocks: {isInteractive: true},
     })
 
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     expect(stdout).toContain('Found BREAKING changes')
     expect(stdout).toContain('GraphQL deployment cancelled')
     expect(stderr).not.toContain('Deployed!')
@@ -371,7 +372,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       mocks: {isInteractive: true},
     })
 
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     expect(stdout).toContain('Found potentially dangerous changes from previous schema')
     expect(stdout).toContain('Field "count" changed type from "Int" to "String"')
     expect(stdout).toContain('Enum value "ACTIVE" was added')

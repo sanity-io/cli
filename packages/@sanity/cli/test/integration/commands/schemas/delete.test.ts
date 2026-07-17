@@ -1,4 +1,5 @@
 import {getCliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
@@ -32,8 +33,8 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
       mocks: {isInteractive: false},
     })
 
-    expect(error?.message).toContain('Re-run with --yes')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.message).toContain('Pass `--yes`')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockConfirm).not.toHaveBeenCalled()
   })
 
@@ -47,7 +48,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
       },
     )
 
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     expect(stdout).toContain('Schema deletion cancelled')
   })
 

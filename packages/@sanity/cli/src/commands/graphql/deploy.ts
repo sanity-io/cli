@@ -150,9 +150,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         this.warn(`--force specified, continuing...`)
       } else if (this.isUnattended()) {
         this.error(
-          'Flag overrides for multiple APIs require confirmation. Pass --force to continue.',
+          'Flag overrides for multiple APIs require confirmation. Pass `--force` to continue.',
           {
-            exit: 2,
+            exit: exitCodes.USAGE_ERROR,
           },
         )
       } else {
@@ -228,8 +228,8 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       if (!dataset) {
         spin.fail()
         this.error(
-          `Dataset is required for API at index ${index}. Pass --dataset <name> or configure a dataset for the API.`,
-          {exit: 2},
+          `Dataset is required for API at index ${index}. Pass it with \`--dataset <name>\` or configure a dataset for the API.`,
+          {exit: exitCodes.USAGE_ERROR},
         )
       }
 
@@ -341,8 +341,8 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
           spin.fail()
           this.renderBreakingChanges(valid)
           this.error(
-            'GraphQL deployment requires confirmation because the schema contains dangerous changes. Pass --force to continue.',
-            {exit: 2},
+            'GraphQL deployment requires confirmation because the schema contains dangerous changes. Pass `--force` to continue.',
+            {exit: exitCodes.USAGE_ERROR},
           )
         }
 

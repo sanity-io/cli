@@ -1,4 +1,5 @@
 import {getCliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -135,7 +136,7 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
       },
     )
 
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     expect(stderr).toContain('Specified generation (gen3)')
     expect(stderr).toContain('currently deployed (gen2)')
     expect(stdout).toContain('GraphQL deployment cancelled')
@@ -163,7 +164,7 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
     expect(error?.message).toContain('Specified generation (gen3)')
     expect(error?.message).toContain('differs from the one currently deployed (gen2)')
     expect(error?.message).toContain('--force')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('changes generation in interactive mode when user confirms', async () => {

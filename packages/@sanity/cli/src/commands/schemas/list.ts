@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
@@ -65,7 +65,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
     const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
     if (errors.length > 0) {
       this.error(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`, {
-        exit: 2,
+        exit: exitCodes.USAGE_ERROR,
       })
     }
 

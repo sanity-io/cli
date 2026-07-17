@@ -119,9 +119,9 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
     if (!dataset) {
       this.error(
-        'Dataset is required. Specify it with --dataset or configure it in your project.',
+        'Dataset is required. Pass it with `--dataset <name>` or configure it in your project.',
         {
-          exit: 2,
+          exit: exitCodes.USAGE_ERROR,
         },
       )
     }
@@ -129,8 +129,8 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
     // Confirm deletion unless --force is used
     if (!force) {
       if (this.isUnattended()) {
-        this.error('GraphQL API undeploy requires confirmation. Pass --force to continue.', {
-          exit: 2,
+        this.error('GraphQL API undeploy requires confirmation. Pass `--force` to continue.', {
+          exit: exitCodes.USAGE_ERROR,
         })
       }
 

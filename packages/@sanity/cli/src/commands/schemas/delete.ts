@@ -71,12 +71,9 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     const ids = parseIds(flags.ids)
 
     if (!yes && this.isUnattended()) {
-      this.error(
-        'Schema deletion requires confirmation. Re-run with --yes to delete the schemas.',
-        {
-          exit: 2,
-        },
-      )
+      this.error('Schema deletion requires confirmation. Pass `--yes` to delete the schemas.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     if (!yes) {

@@ -81,8 +81,8 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     if (outputExists && !flags.force) {
       if (this.isUnattended()) {
         this.error(
-          `Schema file already exists at "${extractOptions.outputPath}". Pass --force to overwrite it.`,
-          {exit: 2},
+          `Schema file already exists at "${extractOptions.outputPath}". Pass \`--force\` to overwrite it.`,
+          {exit: exitCodes.USAGE_ERROR},
         )
       }
 
