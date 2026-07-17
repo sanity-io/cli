@@ -11,27 +11,63 @@ import {Readable} from 'node:stream'
  * @public
  */
 export function nodeReadableFromWeb(stream: ReadableStream<Uint8Array>): Readable {
-  return Readable.from(
-    (async function* () {
-      const reader = stream.getReader()
-      let completed = false
-      try {
-        while (true) {
-          const {done, value} = await reader.read()
+  const reader = stream.getReader()
+  let reading = false
+  let ended = false
+  let released = false
+
+  const releaseLock = () => {
+    if (released) return
+    released = true
+    reader.releaseLock()
+  }
+
+  return new Readable({
+    destroy(error, callback) {
+      if (ended) {
+        releaseLock()
+        callback(error)
+        return
+      }
+
+      ended = true
+      reader.cancel(error ?? undefined).then(
+        () => {
+          releaseLock()
+          callback(error)
+        },
+        (cancelError: unknown) => {
+          releaseLock()
+          callback(error ?? toError(cancelError))
+        },
+      )
+    },
+    read() {
+      if (reading || ended) return
+      reading = true
+      reader.read().then(
+        ({done, value}) => {
+          reading = false
+          if (ended) return
           if (done) {
-            completed = true
+            ended = true
+            releaseLock()
+            this.push(null)
             return
           }
-          yield value
-        }
-      } finally {
-        if (!completed) {
-          await reader.cancel().catch(() => {
-            // Preserve the error that stopped the Node stream.
-          })
-        }
-        reader.releaseLock()
-      }
-    })(),
-  )
+          this.push(value)
+        },
+        (error: unknown) => {
+          reading = false
+          ended = true
+          releaseLock()
+          this.destroy(toError(error))
+        },
+      )
+    },
+  })
+}
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error))
 }

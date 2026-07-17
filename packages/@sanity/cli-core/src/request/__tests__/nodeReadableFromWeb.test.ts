@@ -50,13 +50,12 @@ describe('#nodeReadableFromWeb', () => {
     const cancel = vi.fn()
     const webStream = new ReadableStream<Uint8Array>({
       cancel,
-      start(controller) {
-        controller.enqueue(new Uint8Array([1, 2, 3]))
-      },
     })
     const nodeStream = nodeReadableFromWeb(webStream)
 
-    nodeStream.once('data', () => nodeStream.destroy())
+    nodeStream.resume()
+    await Promise.resolve()
+    nodeStream.destroy()
     await once(nodeStream, 'close')
 
     expect(cancel).toHaveBeenCalledOnce()
