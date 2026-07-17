@@ -105,6 +105,7 @@ export default defineConfig(
           devDependencies: [
             '**/*.test.ts',
             '**/*.test.tsx',
+            '**/__tests__/**',
             '**/test/**',
             '**/config-eslint/**',
             '**/vite.config.ts',

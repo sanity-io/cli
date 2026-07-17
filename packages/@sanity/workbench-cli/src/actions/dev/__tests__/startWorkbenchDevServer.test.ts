@@ -1,12 +1,8 @@
+import {createMockOutput} from '@sanity/cli-test/test/util'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
-import {
-  createDevOptions,
-  createMockOutput,
-  workbenchApp,
-  workbenchCliConfig,
-} from './devTestHelpers.js'
+import {createDevOptions, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
 
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
