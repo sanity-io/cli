@@ -38,13 +38,17 @@ describe('serveBuiltApplication', () => {
     vi.clearAllMocks()
   })
 
-  test('re-tags a missing build as BUILD_NOT_FOUND so the command can hint at `sanity build`', async () => {
-    mockCheckBuiltOutput.mockRejectedValue(new Error('mf-manifest.json does not exist'))
+  test('propagates a failed build check and never starts the server', async () => {
+    // checkBuiltOutput owns the BUILD_NOT_FOUND tagging; this just verifies the
+    // error passes through untouched and no server is started.
+    const error = Object.assign(new Error('mf-manifest.json does not exist'), {
+      name: 'BUILD_NOT_FOUND',
+    })
+    mockCheckBuiltOutput.mockRejectedValue(error)
 
     const thrown = await serve().catch((err) => err)
 
-    expect(thrown).toBeInstanceOf(Error)
-    expect(thrown.name).toBe('BUILD_NOT_FOUND')
+    expect(thrown).toBe(error)
     expect(mockPreview).not.toHaveBeenCalled()
   })
 

@@ -18,8 +18,9 @@ export interface BuiltApplicationServer {
  * server, so its `mf-manifest.json` + `remote-entry.js` are reachable exactly as
  * a live `sanity dev` remote would be — the workbench then federates it in.
  *
- * A missing federation build is re-tagged `BUILD_NOT_FOUND` so the command
- * surfaces the same "run sanity build" hint the studio preview path shows.
+ * A missing federation build surfaces as `BUILD_NOT_FOUND` (from
+ * `checkBuiltOutput`) so the command shows the same "run sanity build" hint the
+ * studio preview path does; real I/O errors surface as themselves.
  */
 export async function serveBuiltApplication(options: {
   cacheDir: string
@@ -30,12 +31,7 @@ export async function serveBuiltApplication(options: {
 }): Promise<BuiltApplicationServer> {
   const {cacheDir, httpHost, httpPort, outDir, workDir} = options
 
-  try {
-    await checkBuiltOutput(outDir)
-  } catch (err) {
-    if (err instanceof Error) err.name = 'BUILD_NOT_FOUND'
-    throw err
-  }
+  await checkBuiltOutput(outDir)
 
   const config: InlineConfig = {
     // Serve at the root so `mf-manifest.json` and its `publicPath: 'auto'` chunks
