@@ -17,6 +17,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -135,6 +136,16 @@ describe('#delete', () => {
       message: 'Select hook to delete',
     })
     expect(stdout).toContain('Hook deleted')
+  })
+
+  test('requires a hook name without prompting in unattended mode', async () => {
+    const {error} = await testCommand(Delete, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Webhook name is required. Pass the name as an argument.')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('handles API error when fetching hooks', async () => {

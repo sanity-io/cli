@@ -34,7 +34,7 @@ catalog:
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
   typescript: ^5.9.3
-  vite: ^8.1.4
+  vite: ^8.1.5
   vite-node: ^6.0.0
   '@vitejs/plugin-react': ^6.0.3
   tsx: ^4.22.4
@@ -74,7 +74,7 @@ catalog:
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^10.9.2
-  oxfmt: ^0.56.0
+  oxfmt: ^0.59.0
 
   # Type Definitions
   '@types/node': ^22.20.0

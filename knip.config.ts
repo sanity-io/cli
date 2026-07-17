@@ -13,8 +13,6 @@ const baseConfig = {
     '.changeset/changelog.mjs',
     // Generated test fixture copies (gitignored, populated during test runs)
     'packages/@sanity/cli-test/fixtures/**',
-    // Local temporary fixture copies generated during local test runs
-    'tmp/**',
   ],
   workspaces: {
     'fixtures/*': {
@@ -53,8 +51,6 @@ const baseConfig = {
       project,
     },
     'packages/@repo/coverage-delta': {
-      // GitHub CLI binary used in CI to post/update pull request comments
-      ignoreBinaries: ['gh'],
       project,
     },
     'packages/@repo/upload-docs': {
@@ -103,6 +99,8 @@ const baseConfig = {
     },
     'packages/@sanity/workbench-cli': {
       entry: ['package.config.ts'],
+      // System `ps` binary used to read process start times on Unix
+      ignoreBinaries: ['ps'],
       project,
     },
     'packages/create-sanity': {},

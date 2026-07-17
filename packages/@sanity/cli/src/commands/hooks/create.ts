@@ -49,6 +49,11 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
       `/organizations/${organizationId}/project/${projectId}/api/webhooks/new`,
     )
 
+    if (this.isUnattended()) {
+      this.log(`Create a webhook at ${manageUrl}`)
+      return
+    }
+
     this.log(`Opening ${manageUrl}`)
 
     try {

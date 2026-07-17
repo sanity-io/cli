@@ -5,6 +5,7 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
+import {type AppInterfaceMetadata} from '../contract.js'
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
 export type ApplicationType = 'coreApp' | 'studio'
@@ -17,19 +18,22 @@ export interface Application {
   type: ApplicationType
 }
 
-/**
- * An interface as Brett stores it: the declared `type` (validated server-side,
- * not here) and the remote-relative `moduleId` the workbench loads it by — the
- * host prepends the app's own id.
- * @internal
- */
-export interface BrettInterface {
+interface BrettInterfaceBase {
   moduleId: string
   name: string
   title: string
-  type: string
   version: string
 }
+
+/**
+ * An interface as Brett stores it, discriminated on `type`. `moduleId` is
+ * remote-relative — the host prepends the app's id. Brett assigns the id.
+ * @internal
+ */
+export type BrettInterface =
+  | (BrettInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
+  | (BrettInterfaceBase & {metadata: null; type: 'panel'})
+  | (BrettInterfaceBase & {metadata: null; type: 'worker'})
 
 /** A studio workspace as Brett stores it. */
 export interface BrettWorkspace {
