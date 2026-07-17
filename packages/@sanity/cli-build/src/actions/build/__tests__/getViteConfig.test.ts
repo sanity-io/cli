@@ -14,6 +14,7 @@ import {
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
 const mockWorkbenchVitePlugins = vi.hoisted(() => vi.fn())
+const mockWorkbenchOptimizeDeps = vi.hoisted(() => vi.fn())
 const mockFaviconsPlugin = vi.hoisted(() => vi.fn())
 const mockFaviconsPath = vi.hoisted(() => vi.fn())
 const mockNormalizeBasePaths = vi.hoisted(() => vi.fn())
@@ -30,6 +31,7 @@ vi.mock('@sanity/cli-core/telemetry', () => ({
 }))
 
 vi.mock('@sanity/workbench-cli/build', () => ({
+  workbenchOptimizeDeps: mockWorkbenchOptimizeDeps,
   workbenchVitePlugins: mockWorkbenchVitePlugins,
 }))
 
@@ -91,6 +93,10 @@ describe('#getViteConfig', () => {
   beforeEach(() => {
     mockWorkbenchVitePlugins.mockResolvedValue({
       name: 'sanity/federation',
+    })
+    mockWorkbenchOptimizeDeps.mockReturnValue({
+      entries: ['src/App.tsx'],
+      include: ['react', 'react-dom/client'],
     })
     mockExtractSchemaPlugin.mockReturnValue({
       name: 'sanity/schema-extraction',
@@ -552,6 +558,62 @@ describe('#getViteConfig', () => {
     // Workbench stacks the app server next to the workbench port, so it must
     // be able to drift even when the project is a studio.
     expect(config.server?.strictPort).toBe(false)
+  })
+
+  test('front-loads workbench exposes into optimizeDeps for the dev server', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', type: 'panel'}]},
+      getEnvironmentVariables,
+      isApp: true,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    })
+
+    // Runtime-relative entry/config resolve to absolute app sources; exposes pass
+    // through so the helper can add each declared view/service/config source.
+    expect(mockWorkbenchOptimizeDeps).toHaveBeenCalledWith({
+      appSources: [join(mockTestCwd, 'src/App'), join(mockTestCwd, 'sanity.config.ts')],
+      cwd: mockTestCwd,
+      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', type: 'panel'}]},
+    })
+    expect(config.optimizeDeps).toEqual({
+      entries: ['src/App.tsx'],
+      include: ['react', 'react-dom/client'],
+    })
+  })
+
+  test('does not set optimizeDeps for non-workbench apps', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isApp: true,
+      isWorkbenchApp: false,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    })
+
+    expect(mockWorkbenchOptimizeDeps).not.toHaveBeenCalled()
+    expect(config.optimizeDeps).toBeUndefined()
+  })
+
+  test('does not set optimizeDeps for workbench production builds', async () => {
+    // `optimizeDeps` is a dev-server concern; Vite ignores it at build.
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isApp: true,
+      isWorkbenchApp: true,
+      mode: 'production' as const,
+      reactCompiler: undefined,
+    })
+
+    expect(mockWorkbenchOptimizeDeps).not.toHaveBeenCalled()
+    expect(config.optimizeDeps).toBeUndefined()
   })
 
   test('should not require a sanity config for workbench apps', async () => {
