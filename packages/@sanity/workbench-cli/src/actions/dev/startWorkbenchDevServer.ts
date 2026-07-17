@@ -252,9 +252,9 @@ async function createWorkbenchViteServer(
   const {cacheDir, cliConfig, httpHost, mode, output, reactStrictMode, workbenchPort, workDir} =
     options
 
-  // A production preview loads the deployed workbench UI (render.ts picks it by
-  // environment), so ignore the local dev-server override `.env.development`
-  // sets — nothing is listening there.
+  // `preview` loads `.env.development` (the env hook treats only `build`/`deploy`
+  // as production), which points the workbench UI at a local dev server that
+  // isn't running here. Ignore the override and load the deployed UI instead.
   const remoteUrl =
     mode === 'preview'
       ? undefined
