@@ -26,7 +26,11 @@ import {
 import {getAppId} from '../../util/appId.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {buildApp} from '../build/buildApp.js'
-import {extractCoreAppManifest, resolveTitleUpdate} from '../manifest/extractCoreAppManifest.js'
+import {
+  extractCoreAppManifest,
+  readIconFromPath,
+  resolveTitleUpdate,
+} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
 import {createUserApplication, generateAppSlug} from './createUserApplication.js'
 import {
@@ -151,16 +155,20 @@ async function runAppDeployment(
 
   await verifyOutputDir({isWorkbenchApp: workbench !== null, reporter, sourceDir})
 
-  // Manifests aren't strictly essential, so a failure warns and continues
+  // Workbench apps ship their icon straight to Brett (below) and don't read the
+  // core-app manifest; only plain core-apps do. Manifests aren't strictly
+  // essential, so a failure warns and continues.
   let manifest: CoreAppManifest | undefined
-  try {
-    manifest = await extractCoreAppManifest({workDir})
-  } catch (err) {
-    deployDebug('Error extracting app manifest', err)
-    reporter.report({
-      message: `Error extracting app manifest: ${getErrorMessage(err)}`,
-      status: 'warn',
-    })
+  if (!workbench) {
+    try {
+      manifest = await extractCoreAppManifest({workDir})
+    } catch (err) {
+      deployDebug('Error extracting app manifest', err)
+      reporter.report({
+        message: `Error extracting app manifest: ${getErrorMessage(err)}`,
+        status: 'warn',
+      })
+    }
   }
 
   // Resolve the installation in both modes so the report — dry-run and real —
@@ -232,6 +240,7 @@ async function runAppDeployment(
     const slug = workbench.slug ?? generateAppSlug()
     const {applicationId} = await deployWorkbenchCoreApp({
       appId,
+      icon: workbench.icon ? await readIconFromPath(workDir, workbench.icon) : undefined,
       interfaces: buildExposes(workbench, {
         appName: workbench.name,
         appTitle,
