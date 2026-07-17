@@ -126,3 +126,7 @@ minimumReleaseAgeExclude:
   - esbuild@0.28.1
   # Renovate security update: form-data@4.0.6
   - form-data@4.0.6
+  # Renovate devDependency update: @changesets/cli@2.31.1
+  - '@changesets/cli@2.31.1'
+  # Renovate devDependency update: knip@6.27.0
+  - knip@6.27.0
