@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.5.0](https://github.com/sanity-io/cli/compare/cli-core-v2.4.0...cli-core-v2.5.0)
+
+_2026-07-17_
+
+### Features
+
+- declare application visibility from the CLI config ([#1541](https://github.com/sanity-io/cli/pull/1541)) ([cc06484](https://github.com/sanity-io/cli/commit/cc06484481b6586c40320836b311ea1395119c47))
+
+### Bug Fixes
+
+- **cli-core:** prevent silent SIGABRT (exit 134) in `sanity schemas deploy` and other one-shot studio worker commands ([#1554](https://github.com/sanity-io/cli/pull/1554)) ([9baab95](https://github.com/sanity-io/cli/commit/9baab9594e17ffa7a64a61871d09dbfcaf95b36e))
+
+  With Vite 8, studio bundling runs through rolldown — a native addon with its own thread pool. The studio worker never closed its Vite server, and the main thread called `worker.terminate()` as soon as the worker posted its result, destroying the worker's event loop while rolldown's threads were still live. The next threadsafe-function call then aborted the whole process with no output (reliably on macOS, intermittently on Linux), affecting `schemas deploy`/`extract`/`validate`/`list`/`delete`, `graphql deploy`, `manifest extract`, and `deploy`.
+
+  One-shot studio workers now close their Vite server (bounded by a timeout) before posting any message to the main thread, and the main thread never force-terminates them — settled workers are unref'd and tear down with the process. Errors thrown while loading the studio config (e.g. a broken `sanity.config.ts`) are serialized and posted after cleanup, so the real error surfaces instead of exit 134.
+
+- **workbench:** forward app slug to the dev workbench ([#1537](https://github.com/sanity-io/cli/pull/1537)) ([a2e001c](https://github.com/sanity-io/cli/commit/a2e001c07cefdce2a2c51556a362f966a64c8073))
+
 ## [2.4.0](https://github.com/sanity-io/cli/compare/cli-core-v2.3.0...cli-core-v2.4.0)
 
 _2026-07-15_
