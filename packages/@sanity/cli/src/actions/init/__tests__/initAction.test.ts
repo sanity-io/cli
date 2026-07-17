@@ -3,6 +3,7 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
+import {LOGIN_REQUIRED_MESSAGE} from '../../auth/login/loginInstructions.js'
 import {initAction} from '../initAction.js'
 import {InitError} from '../initError.js'
 import {type InitContext, type InitOptions} from '../types.js'
@@ -200,9 +201,7 @@ describe('initAction (direct)', () => {
 
     expect(caughtError).toBeInstanceOf(InitError)
     const initError = caughtError as InitError
-    expect(initError.message).toBe(
-      'Must be logged in to run this command in unattended mode, run `sanity login`',
-    )
+    expect(initError.message).toBe(LOGIN_REQUIRED_MESSAGE)
     expect(initError.exitCode).toBe(1)
   })
 })
