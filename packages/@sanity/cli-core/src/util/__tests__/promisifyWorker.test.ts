@@ -12,7 +12,12 @@ function createMockWorker() {
       listeners[event].push(cb)
     }),
     emit(event: string, ...args: unknown[]) {
-      for (const cb of listeners[event] ?? []) cb(...args)
+      const callbacks = listeners[event] ?? []
+      if (event === 'error' && callbacks.length === 0) {
+        const [error] = args
+        throw error instanceof Error ? error : new Error(String(error))
+      }
+      for (const cb of callbacks) cb(...args)
     },
     removeAllListeners: vi.fn(() => {
       for (const key of Object.keys(listeners)) delete listeners[key]
