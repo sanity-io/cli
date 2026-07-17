@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {spinnerText} from '@sanity/cli-test/mocks/cli-core/ux'
 import {of} from 'rxjs'
@@ -77,6 +78,29 @@ describe('#dataset:copy', () => {
   })
 
   describe('flag validation', () => {
+    test('requires source and target datasets in unattended mode', async () => {
+      mocks.SanityCmdIsUnattended.mockReturnValue(true)
+      vi.mocked(mocks.SanityCmdOutput.error).mockImplementation((message) => {
+        throw new Error(String(message))
+      })
+
+      await expect(CopyDatasetCommand.run([])).rejects.toThrow(
+        'Source dataset is required. Pass it as the `<source>` argument.\n' +
+          'Error: Target dataset is required. Pass it as the `<target>` argument.',
+      )
+      expect(mocks.SanityCmdGetProjectId).not.toHaveBeenCalled()
+      expect(mockListDatasets).not.toHaveBeenCalled()
+      expect(mockPromptForDataset).not.toHaveBeenCalled()
+
+      await expect(CopyDatasetCommand.run(['production'])).rejects.toThrow(
+        'Target dataset is required',
+      )
+      expect(mocks.SanityCmdGetProjectId).not.toHaveBeenCalled()
+      expect(mockListDatasets).not.toHaveBeenCalled()
+      expect(mockPromptForDatasetName).not.toHaveBeenCalled()
+      vi.mocked(mocks.SanityCmdOutput.error).mockImplementation(() => undefined as never)
+    })
+
     test.each([
       {desc: '--list with --attach', flags: ['--list', '--attach', 'job-123']},
       {desc: '--list with --detach', flags: ['--list', '--detach']},
@@ -279,6 +303,7 @@ describe('#dataset:copy', () => {
         args: ['Invalid-Dataset', 'backup'],
         description: 'source dataset name is invalid',
         expectedError: 'must be all lowercase',
+        expectedExit: exitCodes.USAGE_ERROR,
         setupMocks: () => {
           mockValidateDatasetName.mockReturnValue('must be all lowercase')
         },
@@ -287,6 +312,7 @@ describe('#dataset:copy', () => {
         args: ['nonexistent', 'backup'],
         description: 'source dataset does not exist',
         expectedError: 'Source dataset "nonexistent" doesn\'t exist',
+        expectedExit: exitCodes.RUNTIME_ERROR,
         setupMocks: () => {
           mockListDatasets.mockResolvedValue([
             createMockDataset('production'),
@@ -298,6 +324,7 @@ describe('#dataset:copy', () => {
         args: ['production', 'Invalid-Dataset'],
         description: 'target dataset name is invalid',
         expectedError: 'must be all lowercase',
+        expectedExit: exitCodes.USAGE_ERROR,
         setupMocks: () => {
           mockValidateDatasetName.mockImplementationOnce(() => undefined)
           mockValidateDatasetName.mockImplementationOnce(() => 'must be all lowercase')
@@ -311,6 +338,7 @@ describe('#dataset:copy', () => {
         args: ['production', 'staging'],
         description: 'target dataset already exists',
         expectedError: 'Target dataset "staging" already exists',
+        expectedExit: exitCodes.RUNTIME_ERROR,
         setupMocks: () => {
           mockListDatasets.mockResolvedValue([
             createMockDataset('production'),
@@ -318,14 +346,14 @@ describe('#dataset:copy', () => {
           ])
         },
       },
-    ])('errors when $description', async ({args, expectedError, setupMocks}) => {
+    ])('errors when $description', async ({args, expectedError, expectedExit, setupMocks}) => {
       setupMocks()
 
       await CopyDatasetCommand.run(args)
 
       expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(new RegExp(expectedError)),
-        {exit: 1},
+        {exit: expectedExit},
       )
     })
 

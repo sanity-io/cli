@@ -2,6 +2,7 @@ import {existsSync, mkdirSync} from 'node:fs'
 import {mkdir, mkdtemp, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
@@ -50,6 +51,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -115,12 +117,12 @@ describe('#backup:download', () => {
       [
         'concurrency value below minimum',
         ['--backup-id', 'test', '--concurrency', '0'],
-        'concurrency should be in 1 to 24 range',
+        '`--concurrency` must be between 1 and 24.',
       ],
       [
         'concurrency value above maximum',
         ['--backup-id', 'test', '--concurrency', '25'],
-        'concurrency should be in 1 to 24 range',
+        '`--concurrency` must be between 1 and 24.',
       ],
     ])('should reject %s', async (_, flags, expectedError) => {
       setupTempDir()
@@ -167,6 +169,62 @@ describe('#backup:download', () => {
 
       expect(error?.message).toContain('Unable to determine project ID')
       expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should require a dataset in unattended mode', async () => {
+      const {error} = await testCommand(DownloadBackupCommand, [], {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {}},
+          isInteractive: false,
+        },
+      })
+
+      expect(error?.message).toBe(
+        'Dataset is required in unattended mode. Pass it as the `<dataset>` argument.\n' +
+          'Error: Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.',
+      )
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(mockListDatasets).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockInput).not.toHaveBeenCalled()
+    })
+
+    test('should require a backup ID in unattended mode', async () => {
+      const {error} = await testCommand(DownloadBackupCommand, ['production'], {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {}},
+          isInteractive: false,
+        },
+      })
+
+      expect(error?.message).toBe(
+        'Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.',
+      )
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(mockListDatasets).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockInput).not.toHaveBeenCalled()
+    })
+
+    test('should reject an existing output file without --overwrite in unattended mode', async () => {
+      mockListDatasets.mockResolvedValue([{name: 'production'}])
+      const out = `tmp/${Date.now()}-backup-unattended/backup.tar.gz`
+      await mkdir(path.dirname(out), {recursive: true})
+      await writeFile(out, 'fake-data')
+
+      const {error} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123', '--out', out],
+        {mocks: {...defaultMocks, isInteractive: false}},
+      )
+
+      expect(error?.message).toBe(
+        `File "${path.resolve(out)}" already exists. Pass \`--overwrite\` to replace it.`,
+      )
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(mockConfirm).not.toHaveBeenCalled()
     })
 
     test('should error when no backups are available to select', async () => {
@@ -238,7 +296,7 @@ describe('#backup:download', () => {
       })
 
       expect(error?.message).toContain('Operation cancelled.')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     })
 
     test.each([
@@ -332,6 +390,26 @@ describe('#backup:download', () => {
   })
 
   describe('successful downloads', () => {
+    test('should use the default output path in unattended mode', async () => {
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}])
+      mockApi({
+        apiVersion: BACKUP_API_VERSION,
+        method: 'get',
+        uri: `/projects/test-project/datasets/production/backups/backup-123`,
+      }).reply(500, {message: 'Backup API error'})
+
+      const {error, stdout} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123'],
+        {mocks: {...defaultMocks, isInteractive: false}},
+      )
+
+      expect(stdout).toContain(path.join(process.cwd(), 'production-backup-backup-123.tar.gz'))
+      expect(error?.message).toContain('Downloading dataset backup failed')
+      expect(mockInput).not.toHaveBeenCalled()
+    })
+
     test('should download backup with all flags specified', async () => {
       setupTempDir()
       mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])

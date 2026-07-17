@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
@@ -137,29 +137,44 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     // Determine dataset name
     let dataset = targetDataset
     if (!dataset) {
+      let defaultDataset: string | undefined
       try {
         // Get default dataset from config (only available when running from a project directory)
         const cliConfig = await this.tryGetCliConfig()
-        const defaultDataset = cliConfig.api?.dataset
-
-        if (defaultDataset) {
-          dataset = defaultDataset
-          this.log(`Using default dataset: ${dataset}`)
-        } else {
-          dataset = await promptForDataset({allowCreation: false, datasets})
-        }
+        defaultDataset = cliConfig.api?.dataset
       } catch (error) {
         exportDebug('Error selecting dataset', error)
         this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
+      }
+
+      if (defaultDataset) {
+        dataset = defaultDataset
+        this.log(`Using default dataset: ${dataset}`)
+      } else if (this.isUnattended()) {
+        this.error('Dataset name is required. Pass it as the `<name>` argument.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      } else {
+        try {
+          dataset = await promptForDataset({allowCreation: false, datasets})
+        } catch (error) {
+          exportDebug('Error selecting dataset', error)
+          this.error(
+            `Failed to select dataset:\n${error instanceof Error ? error.message : error}`,
+            {
+              exit: exitCodes.RUNTIME_ERROR,
+            },
+          )
+        }
       }
     }
 
     // Validate dataset name
     const dsError = validateDatasetName(dataset)
     if (dsError) {
-      this.error(dsError, {exit: 1})
+      this.error(dsError, {exit: exitCodes.USAGE_ERROR})
     }
 
     // Verify existence of dataset before trying to export from it
@@ -182,7 +197,9 @@ dataset: ${dataset.padEnd(46)}`,
     // Determine output path
     let destinationPath = targetDestination
     if (!destinationPath) {
-      destinationPath = await this.promptForDestination({dataset})
+      destinationPath = this.isUnattended()
+        ? path.join(process.cwd(), `${dataset}.tar.gz`)
+        : await this.promptForDestination({dataset})
     }
 
     const outputPath = await this.getOutputPath(destinationPath, dataset, flags)
@@ -291,8 +308,8 @@ dataset: ${dataset.padEnd(46)}`,
     const finalPathStats = await fs.stat(finalPath).catch(noop)
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
-      this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
-        exit: 1,
+      this.error(`File "${finalPath}" already exists. Pass \`--overwrite\` to replace it.`, {
+        exit: exitCodes.USAGE_ERROR,
       })
     }
 

@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -44,6 +45,7 @@ const TEST_PROJECT_ID = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: TEST_PROJECT_ID}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -90,10 +92,25 @@ describe('#dataset:delete', () => {
     )
     expect(stdout).toContain('Dataset deleted successfully\n')
     expect(mockInput).toHaveBeenCalledWith({
-      message:
-        'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
+      message: `Delete dataset "${TEST_DATASET_NAME}"?\n  Type the dataset name to confirm:`,
       validate: expect.any(Function),
     })
+    const validate = mockInput.mock.calls[0]?.[0].validate
+    expect(await validate?.(TEST_DATASET_NAME)).toBe(true)
+    expect(await validate?.('wrong-dataset')).toBe(
+      `Dataset name doesn't match. Enter "${TEST_DATASET_NAME}" or press Ctrl+C to cancel.`,
+    )
+  })
+
+  test('requires --force in unattended mode', async () => {
+    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Dataset deletion requires confirmation. Re-run with `--force`.')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockDeleteDataset).not.toHaveBeenCalled()
   })
 
   test('throws error for empty dataset name', async () => {
@@ -101,7 +118,7 @@ describe('#dataset:delete', () => {
       mocks: defaultMocks,
     })
     expect(commandError?.message).toBe('Dataset name is missing')
-    expect(commandError?.oclif?.exit).toBe(1)
+    expect(commandError?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test.each([
@@ -169,7 +186,7 @@ describe('#dataset:delete', () => {
     })
 
     expect(error?.message).toBe('User cancelled')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBeUndefined()
   })
 
   test('handles project retrieval error', async () => {

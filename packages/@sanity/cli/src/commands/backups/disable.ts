@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
@@ -73,6 +73,10 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
 
     if (dataset) {
       assertDatasetExists(datasets, dataset, this.output)
+    } else if (this.isUnattended()) {
+      this.error('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     } else {
       dataset = await this.promptForDataset(datasets)
     }
