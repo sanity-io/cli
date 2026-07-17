@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -158,7 +159,7 @@ describe('#cors:add', () => {
     })
 
     expect(error?.message).toContain('Pass `--yes` to continue')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockConfirm).not.toHaveBeenCalled()
   })
 
@@ -262,7 +263,7 @@ describe('#cors:add', () => {
       {
         confirmWildcard: false,
         description: 'cancels operation when wildcard confirmation is denied',
-        expectedExit: 3,
+        expectedExit: exitCodes.USER_ABORT,
         expectedOutput: 'CORS origin not added',
         setupMocks: () => mockConfirm.mockResolvedValueOnce(false),
       },

@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -123,7 +124,7 @@ describe('#tokens:delete', () => {
       mocks: defaultMocks,
     })
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     expect(stdout).toBe('API token not deleted\n')
   })
 
@@ -140,13 +141,13 @@ describe('#tokens:delete', () => {
       'Token ID is required. Pass it as the `<tokenId>` argument.\n' +
         'Error: Deletion requires confirmation. Pass `--yes` to delete the token.',
     )
-    expect(missingId.error?.oclif?.exit).toBe(2)
+    expect(missingId.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
     const missingConfirmation = await testCommand(DeleteTokensCommand, ['token-api-123'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
     expect(missingConfirmation.error?.message).toContain('--yes')
-    expect(missingConfirmation.error?.oclif?.exit).toBe(2)
+    expect(missingConfirmation.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(confirm).not.toHaveBeenCalled()
     expect(select).not.toHaveBeenCalled()
   })

@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -238,7 +239,7 @@ describe('#tokens:add', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid role "invalid"')
     expect(error?.message).toContain('Available roles: viewer')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles API error during token creation', async () => {
@@ -432,7 +433,7 @@ describe('#tokens:add', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token label is required')
     expect(error?.message).toContain('<label>')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('rejects an empty label argument before project lookup', async () => {
@@ -441,6 +442,6 @@ describe('#tokens:add', () => {
     })
 
     expect(error?.message).toContain('Token label cannot be empty')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 })

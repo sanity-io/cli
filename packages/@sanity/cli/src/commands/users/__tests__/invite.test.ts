@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -112,19 +113,19 @@ describe('#invite', () => {
       'Email address is required. Pass it as the `<email>` argument.\n' +
         'Error: User role is required. Pass it with `--role <role>`.',
     )
-    expect(missingBoth.error?.oclif?.exit).toBe(2)
+    expect(missingBoth.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
     const missingEmail = await testCommand(UsersInviteCommand, ['--role', 'developer'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
     expect(missingEmail.error?.message).toContain('<email>')
-    expect(missingEmail.error?.oclif?.exit).toBe(2)
+    expect(missingEmail.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
     const missingRole = await testCommand(UsersInviteCommand, ['test@example.com'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
     expect(missingRole.error?.message).toContain('--role <role>')
-    expect(missingRole.error?.oclif?.exit).toBe(2)
+    expect(missingRole.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(input).not.toHaveBeenCalled()
     expect(select).not.toHaveBeenCalled()
   })
@@ -162,7 +163,7 @@ describe('#invite', () => {
     })
 
     expect(error?.message).toContain('valid email address')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('invites user with email provided via args and role as flag', async () => {
@@ -201,7 +202,7 @@ describe('#invite', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Role name "invalid-role" not found')
     expect(error?.message).toContain('Available roles:')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('exits when project ID is not found', async () => {
@@ -305,7 +306,7 @@ describe('#invite', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Role name "robot" not found')
     expect(error?.message).toContain('Available roles:')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('role names are case insensitive', async () => {
