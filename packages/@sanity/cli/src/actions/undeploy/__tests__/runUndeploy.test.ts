@@ -17,7 +17,11 @@ vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-co
 const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
 
 const options = (output: Output, flags: Partial<UndeployOptions['flags']> = {}): UndeployOptions =>
-  ({flags: {'dry-run': false, yes: false, ...flags}, output}) as UndeployOptions
+  ({
+    flags: {'dry-run': false, yes: false, ...flags},
+    isUnattended: false,
+    output,
+  }) as UndeployOptions
 
 function target(overrides: Partial<UndeployApplicationTarget> = {}): UndeployApplicationTarget {
   return {
@@ -110,6 +114,21 @@ describe('runUndeploy real run', () => {
     await runUndeploy(options(output), adapter({undeploy}))
 
     expect(undeploy).not.toHaveBeenCalled()
+    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled', {exit: 3})
+  })
+
+  test('an unattended run requires explicit confirmation', async () => {
+    const output = mockOutput()
+    const undeploy = vi.fn()
+
+    await runUndeploy({...options(output), isUnattended: true}, adapter({undeploy}))
+
+    expect(confirm).not.toHaveBeenCalled()
+    expect(undeploy).not.toHaveBeenCalled()
+    expect(output.error).toHaveBeenCalledWith(
+      'Undeploy requires confirmation. Pass --yes to continue.',
+      {exit: 2},
+    )
   })
 
   test('--yes skips the confirmation', async () => {
@@ -201,7 +220,7 @@ describe('runUndeploy real run', () => {
 
     await runUndeploy(options(output), adapter())
 
-    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled by user', {exit: 1})
+    expect(output.error).toHaveBeenCalledWith('Undeploy cancelled', {exit: 3})
   })
 })
 
