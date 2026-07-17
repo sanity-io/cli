@@ -46,6 +46,10 @@ export class Delete extends SanityCommand<typeof Delete> {
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 
+    if (!args.name && this.isUnattended()) {
+      this.error('Webhook name is required. Pass the name as an argument.', {exit: 2})
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({

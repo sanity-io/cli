@@ -21,7 +21,7 @@ vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 const mockClient = {request: vi.fn()}
 const output = {error: vi.fn(), log: vi.fn()} as unknown as Output
 const interfaces: BrettInterface[] = [
-  {moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
+  {metadata: null, moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
 ]
 const workspaces: BrettWorkspace[] = [
   {basePath: '/', dataset: 'production', name: 'default', projectId: 'proj-1', title: 'Default'},

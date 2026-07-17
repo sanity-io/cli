@@ -85,9 +85,10 @@ describe('#projects:create', () => {
   test('throws error if provided invalid dataset flag', async () => {
     const datasetError = 'terrible name'
     mockValidateDatasetName.mockReturnValue(datasetError) // returns error if invalid
-    await expect(CreateProjectCommand.run(['--dataset=~~invalid-name'])).rejects.toThrow(
-      datasetError,
-    )
+    await expect(CreateProjectCommand.run(['--dataset=~~invalid-name'])).rejects.toMatchObject({
+      message: expect.stringContaining(datasetError),
+      oclif: {exit: 2},
+    })
   })
 
   test('errors when retrieving organization fails', async () => {
@@ -270,5 +271,21 @@ describe('#projects:create', () => {
     expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
       expect.stringContaining('Project created successfully'),
     )
+  })
+
+  test('keeps JSON output parseable when creating a dataset', async () => {
+    await CreateProjectCommand.run([
+      'My Project',
+      '--organization=org-1',
+      '--dataset=production',
+      '--json',
+    ])
+
+    const output = vi
+      .mocked(mocks.SanityCmdOutput.log)
+      .mock.calls.map(([message]) => String(message))
+    expect(output).toEqual([JSON.stringify(mockProject, null, 2)])
+    expect(JSON.parse(output[0]!)).toEqual(mockProject)
+    expect(mockCreateDataset).toHaveBeenCalledWith(expect.objectContaining({silent: true}))
   })
 })

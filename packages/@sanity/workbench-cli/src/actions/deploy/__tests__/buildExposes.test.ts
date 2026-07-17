@@ -18,9 +18,24 @@ describe('buildExposes', () => {
     }
 
     expect(buildExposes(exposes, context)).toEqual([
-      {moduleId: 'App', name: 'drop-desk', title: 'Drop Desk', type: 'app', version: '1.2.3'},
-      {moduleId: 'views/feed', name: 'feed', title: 'Feed', type: 'panel', version: '1.2.3'},
       {
+        metadata: null,
+        moduleId: 'App',
+        name: 'drop-desk',
+        title: 'Drop Desk',
+        type: 'app',
+        version: '1.2.3',
+      },
+      {
+        metadata: null,
+        moduleId: 'views/feed',
+        name: 'feed',
+        title: 'Feed',
+        type: 'panel',
+        version: '1.2.3',
+      },
+      {
+        metadata: null,
         moduleId: 'services/unread',
         name: 'unread',
         title: 'Unread',

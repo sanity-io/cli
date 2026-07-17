@@ -1,3 +1,4 @@
+import {interfaceModuleId} from '../../contract.js'
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 import {type BrettInterface} from '../../services/applications.js'
 
@@ -18,23 +19,37 @@ export function buildExposes(
   exposes: WorkbenchExposes,
   {appName, appTitle, exposesAppView, version}: BuildExposesContext,
 ): BrettInterface[] {
-  const toRecord = (
-    prefix: string,
-    decl: {name: string; title?: string; type: string},
-  ): BrettInterface => ({
-    moduleId: `${prefix}/${decl.name}`,
-    name: decl.name,
-    title: decl.title ?? decl.name,
-    type: decl.type,
-    version,
-  })
-
   const records: BrettInterface[] = []
   if (exposesAppView) {
-    records.push({moduleId: 'App', name: appName, title: appTitle, type: 'app', version})
+    records.push({
+      metadata: null,
+      moduleId: interfaceModuleId('app', appName),
+      name: appName,
+      title: appTitle,
+      type: 'app',
+      version,
+    })
   }
-  for (const view of exposes.views ?? []) records.push(toRecord('views', view))
-  for (const service of exposes.services ?? []) records.push(toRecord('services', service))
+  for (const view of exposes.views ?? []) {
+    records.push({
+      metadata: null,
+      moduleId: interfaceModuleId('panel', view.name),
+      name: view.name,
+      title: view.title ?? view.name,
+      type: 'panel',
+      version,
+    })
+  }
+  for (const service of exposes.services ?? []) {
+    records.push({
+      metadata: null,
+      moduleId: interfaceModuleId('worker', service.name),
+      name: service.name,
+      title: service.title ?? service.name,
+      type: 'worker',
+      version,
+    })
+  }
   return records
 }
 
