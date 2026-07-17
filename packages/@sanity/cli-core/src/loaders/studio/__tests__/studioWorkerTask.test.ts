@@ -1,3 +1,6 @@
+import {join} from 'node:path'
+import {pathToFileURL} from 'node:url'
+
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {createStudioWorker, studioWorkerTask} from '../studioWorkerTask.js'
@@ -20,7 +23,11 @@ vi.mock('node:worker_threads', async (importOriginal) => {
   }
 })
 
-const TASK_FILE_URL = new URL('file:///studio/task.worker.js')
+// Build file URLs from real absolute paths: on Windows, fileURLToPath() throws
+// ERR_INVALID_FILE_URL_PATH for drive-letter-less URLs like file:///studio/….
+const STUDIO_ROOT = join(process.cwd(), 'studio')
+const TASK_FILE_URL = pathToFileURL(join(STUDIO_ROOT, 'task.worker.js'))
+const NON_WORKER_FILE_URL = pathToFileURL(join(STUDIO_ROOT, 'task.js'))
 
 describe('studioWorkerTask', () => {
   afterEach(() => {
@@ -30,14 +37,14 @@ describe('studioWorkerTask', () => {
   test('marks the worker as one-shot so the loader closes its Vite server', async () => {
     mockPromisifyWorker.mockResolvedValue('result')
 
-    await studioWorkerTask(TASK_FILE_URL, {name: 'test', studioRootPath: '/studio'})
+    await studioWorkerTask(TASK_FILE_URL, {name: 'test', studioRootPath: STUDIO_ROOT})
 
     expect(mockPromisifyWorker).toHaveBeenCalledWith(
       expect.objectContaining({href: expect.stringContaining('studioWorkerLoader.worker.js')}),
       expect.objectContaining({
         env: expect.objectContaining({
           STUDIO_WORKER_ONE_SHOT: '1',
-          STUDIO_WORKER_STUDIO_ROOT_PATH: '/studio',
+          STUDIO_WORKER_STUDIO_ROOT_PATH: STUDIO_ROOT,
           STUDIO_WORKER_TASK_FILE: expect.stringContaining('task.worker.js'),
         }),
       }),
@@ -46,9 +53,9 @@ describe('studioWorkerTask', () => {
 
   test('rejects file paths without a .worker suffix', () => {
     expect(() =>
-      studioWorkerTask(new URL('file:///studio/task.js'), {
+      studioWorkerTask(NON_WORKER_FILE_URL, {
         name: 'test',
-        studioRootPath: '/studio',
+        studioRootPath: STUDIO_ROOT,
       }),
     ).toThrow('Studio worker tasks must include `.worker.(js|ts)` in path')
   })
@@ -60,7 +67,7 @@ describe('createStudioWorker', () => {
   })
 
   test('does not mark long-lived workers as one-shot', () => {
-    createStudioWorker(TASK_FILE_URL, {name: 'test', studioRootPath: '/studio'})
+    createStudioWorker(TASK_FILE_URL, {name: 'test', studioRootPath: STUDIO_ROOT})
 
     expect(mockWorkerConstructor).toHaveBeenCalledWith(
       expect.objectContaining({href: expect.stringContaining('studioWorkerLoader.worker.js')}),
