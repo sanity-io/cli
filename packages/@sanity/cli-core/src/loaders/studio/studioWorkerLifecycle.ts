@@ -100,6 +100,8 @@ export function isStudioWorkerErrorMessage(value: unknown): value is StudioWorke
 function closeServerWithTimeout(closeServer: () => Promise<void>, timeout: number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
+      // Vite does not expose cancellation for close(); stop waiting while the
+      // unrefed worker lets the still-pending close finish with process teardown.
       reject(new Error(`Vite server close timed out after ${timeout}ms`))
     }, timeout)
 

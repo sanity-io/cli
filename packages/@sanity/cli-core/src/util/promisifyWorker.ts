@@ -4,10 +4,16 @@ import {subdebug} from '../_exports/debug.js'
 
 const debug = subdebug('promisifyWorker')
 
+function onDetachedWorkerError(err: Error) {
+  debug(`Detached worker error: ${err.message}`, err)
+}
+
 interface PromisifyWorkerOptions extends WorkerOptions {
   /**
    * Whether to forcibly terminate the worker after settling. Disable this for
-   * workers that host native addons which must tear down with the process.
+   * workers that host native addons which must tear down with the process. A
+   * disabled worker is unrefed and may continue running until the process exits,
+   * including after a timeout.
    */
   terminateOnSettle?: boolean
 
@@ -90,10 +96,15 @@ export function promisifyWorker<T = unknown>(
         } else {
           void worker.terminate()
         }
-      } else {
-        worker.unref()
+        worker.removeAllListeners()
+        return
       }
+
+      worker.unref()
       worker.removeAllListeners()
+      // A detached worker may still fail before process teardown. Keep an error
+      // listener so EventEmitter does not rethrow it in the parent process.
+      worker.addListener('error', onDetachedWorkerError)
     }
   })
 }

@@ -127,6 +127,11 @@ describe('promisifyWorker', () => {
     expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.terminate).not.toHaveBeenCalled()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.addListener).toHaveBeenLastCalledWith('error', expect.any(Function))
+
+    lastCreatedWorker.emit('error', new Error('late worker failure'))
+    expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
   })
 
   test('removes all listeners after receiving a message', async () => {
@@ -252,6 +257,7 @@ describe('promisifyWorker', () => {
     expect(lastCreatedWorker.unref).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.terminate).not.toHaveBeenCalled()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.addListener).toHaveBeenLastCalledWith('error', expect.any(Function))
   })
 
   test('cleans up timer after an error', async () => {
