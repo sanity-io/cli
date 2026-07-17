@@ -1,7 +1,7 @@
 import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
-import {exitCodes, type Output} from '@sanity/cli-core'
+import {type AppVisibility, exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -28,6 +28,7 @@ export async function deployCoreApp(options: {
   sourceDir: string
   title: string
   version: string
+  visibility?: AppVisibility
 }): Promise<{applicationId: string}> {
   const {
     appId,
@@ -39,6 +40,7 @@ export async function deployCoreApp(options: {
     sourceDir,
     title,
     version,
+    visibility,
   } = options
   const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
 
@@ -59,6 +61,7 @@ export async function deployCoreApp(options: {
       title,
       type: 'coreApp',
       version,
+      visibility,
     })
     spin.succeed()
     return {applicationId: id}

@@ -33,6 +33,26 @@ describe('createUserApplication', () => {
     )
     expect(result).toBe(app)
   })
+
+  test('maps visibility to dashboardStatus in the request body', async () => {
+    mockRequest.mockResolvedValue({title: 'My App'} as UserApplication)
+
+    await createUserApplication('org-1', 'My App', 'unlisted')
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({dashboardStatus: 'unlisted'}),
+      }),
+    )
+  })
+
+  test('omits dashboardStatus when visibility is unset', async () => {
+    mockRequest.mockResolvedValue({title: 'My App'} as UserApplication)
+
+    await createUserApplication('org-1', 'My App')
+
+    expect(mockRequest.mock.calls[0]?.[0].body).not.toHaveProperty('dashboardStatus')
+  })
 })
 
 describe('generateAppSlug', () => {

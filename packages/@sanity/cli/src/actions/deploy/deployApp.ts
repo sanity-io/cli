@@ -2,7 +2,7 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
-import {exitCodes} from '@sanity/cli-core'
+import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
@@ -245,6 +245,7 @@ async function runAppDeployment(
       sourceDir,
       title: appTitle,
       version,
+      visibility: workbench.visibility,
     })
     const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
     logAppDeployed({
@@ -276,7 +277,12 @@ async function runAppDeployment(
   // resolved application means the deploy target was never resolved.
   if (!application) return
 
-  application = await syncApplicationTitle({application, manifest, output})
+  application = await syncApplicationMetadata({
+    application,
+    manifest,
+    output,
+    visibility: cliConfig.app?.visibility,
+  })
   await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
   logAppDeployed({
     applicationId: application.id,
@@ -327,7 +333,7 @@ async function resolveAppApplication(
 
   if (!application) {
     deployDebug('No user application found. Creating a new one')
-    application = await createUserApplication(organizationId, title)
+    application = await createUserApplication(organizationId, title, cliConfig.app?.visibility)
     deployDebug('User application created', application)
     return {application, created: true}
   }
@@ -335,39 +341,58 @@ async function resolveAppApplication(
   return {application, created: false}
 }
 
-/** Syncs the application title from the manifest when it has changed. */
-async function syncApplicationTitle({
+/**
+ * Syncs application metadata on redeploy when it has changed: the title from the
+ * manifest and the dashboard visibility from config. Sends a single PATCH with
+ * only the changed fields, and skips the request entirely when nothing changed.
+ */
+export async function syncApplicationMetadata({
   application,
   manifest,
   output,
+  visibility,
 }: {
   application: UserApplicationResolved
   manifest: CoreAppManifest | undefined
   output: DeployAppOptions['output']
+  visibility: AppVisibility | undefined
 }): Promise<UserApplicationResolved> {
   const titleUpdate = resolveTitleUpdate(manifest, application)
-  if (!titleUpdate) return application
+  // Treat an unset server value as `default` so a config of `default` is a no-op.
+  const visibilityChanged =
+    visibility !== undefined && visibility !== (application.dashboardStatus ?? 'default')
 
-  deployDebug('Updating application title from manifest', titleUpdate)
-  output.log(
-    titleUpdate.from
-      ? `Updating title from "${titleUpdate.from}" to "${titleUpdate.to}"`
-      : `Setting application title to "${titleUpdate.to}"`,
-  )
-  const spin = spinner('Updating application title').start()
+  if (!titleUpdate && !visibilityChanged) return application
+
+  if (titleUpdate) {
+    deployDebug('Updating application title from manifest', titleUpdate)
+    output.log(
+      titleUpdate.from
+        ? `Updating title from "${titleUpdate.from}" to "${titleUpdate.to}"`
+        : `Setting application title to "${titleUpdate.to}"`,
+    )
+  }
+  if (visibilityChanged) {
+    output.log(`Setting dashboard visibility to "${visibility}"`)
+  }
+
+  const spin = spinner('Updating application').start()
   try {
     const updated = await updateUserApplication({
       applicationId: application.id,
       appType: 'coreApp',
-      body: {title: titleUpdate.to},
+      body: {
+        ...(titleUpdate ? {title: titleUpdate.to} : {}),
+        ...(visibilityChanged ? {dashboardStatus: visibility} : {}),
+      },
     })
     spin.succeed()
     return updated
   } catch (err) {
     spin.fail()
     const message = getErrorMessage(err)
-    deployDebug('Error updating application title', {message})
-    output.warn(`Error updating application title: ${message}`)
+    deployDebug('Error updating application metadata', {message})
+    output.warn(`Error updating application metadata: ${message}`)
     return application
   }
 }

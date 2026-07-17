@@ -1,7 +1,7 @@
 import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
@@ -84,6 +84,7 @@ export async function createApplication(options: {
   title: string
   type: ApplicationType
   version: string
+  visibility?: AppVisibility
   workspaces?: readonly BrettWorkspace[]
 }): Promise<Application> {
   const {
@@ -96,6 +97,7 @@ export async function createApplication(options: {
     title,
     type,
     version,
+    visibility,
     workspaces,
   } = options
   const formData = new FormData()
@@ -104,6 +106,7 @@ export async function createApplication(options: {
   formData.append('organizationId', organizationId)
   formData.append('slug', slug)
   if (isSingleton !== undefined) formData.append('isSingleton', String(isSingleton))
+  if (visibility) formData.append('visibility', visibility)
   // Studio config is set once, at create — it's immutable on redeploy.
   if (projectId) appendJson(formData, 'config', {studio: {projectId}})
   appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})

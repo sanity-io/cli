@@ -1,4 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
+import {type AppVisibility} from '@sanity/cli-core'
 import {input, spinner} from '@sanity/cli-core/ux'
 import {customAlphabet} from 'nanoid'
 
@@ -89,6 +90,7 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
 export async function createUserApplication(
   organizationId?: string,
   title?: string,
+  visibility?: AppVisibility,
 ): Promise<UserApplicationResolved> {
   if (!organizationId) {
     throw new Error(NO_ORGANIZATION_ID)
@@ -101,10 +103,10 @@ export async function createUserApplication(
       validate: (value: string) => value.length > 0 || 'Title is required',
     }))
 
-  return tryCreateApp(resolvedTitle, organizationId)
+  return tryCreateApp(resolvedTitle, organizationId, visibility)
 }
 
-const tryCreateApp = async (title: string, organizationId: string) => {
+const tryCreateApp = async (title: string, organizationId: string, visibility?: AppVisibility) => {
   // we will likely prepend this with an org ID or other parameter in the future
   const appHost = generateAppSlug()
 
@@ -113,7 +115,13 @@ const tryCreateApp = async (title: string, organizationId: string) => {
   try {
     const response = await createUserApplicationRequest({
       appType: 'coreApp',
-      body: {appHost, title, type: 'coreApp', urlType: 'internal'},
+      body: {
+        appHost,
+        title,
+        type: 'coreApp',
+        urlType: 'internal',
+        ...(visibility ? {dashboardStatus: visibility} : {}),
+      },
       organizationId,
     })
 
@@ -123,7 +131,7 @@ const tryCreateApp = async (title: string, organizationId: string) => {
     // if the name is taken, generate a new one and try again
     if ([402, 409].includes(e?.statusCode)) {
       deployDebug('App host taken, retrying with new host')
-      return tryCreateApp(title, organizationId)
+      return tryCreateApp(title, organizationId, visibility)
     }
 
     spin.fail()

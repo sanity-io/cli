@@ -470,7 +470,7 @@ describe('#deploy app', () => {
 
     if (error) throw error
     expect(stdout).toContain('Updating title from "Existing App" to "New Title From Manifest"')
-    expect(stderr).toContain('Updating application title')
+    expect(stderr).toContain('Updating application')
     expect(stdout).toContain('Success! Application deployed')
   })
 
@@ -517,7 +517,7 @@ describe('#deploy app', () => {
     })
 
     if (error) throw error
-    expect(stderr).not.toContain('Updating application title')
+    expect(stderr).not.toContain('Updating application')
     expect(stdout).toContain('Success! Application deployed')
   })
 

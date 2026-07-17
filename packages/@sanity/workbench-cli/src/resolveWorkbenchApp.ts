@@ -4,7 +4,7 @@
 // build their command-specific view on top of this one brand-check +
 // extraction, so the discrimination lives in exactly one place.
 
-import {type CliConfig} from '@sanity/cli-core'
+import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 
 import {type DefineAppInput, isWorkbenchApp, readConfig, type WorkbenchApp} from './defineApp.js'
 
@@ -39,6 +39,8 @@ export interface ResolvedWorkbenchApp {
   readonly isSingleton?: boolean
   /** Hostname the application is created at on first deploy. */
   readonly slug?: string
+  /** Dashboard visibility declared by the app; `undefined` when unset. */
+  readonly visibility?: AppVisibility
 }
 
 /**
@@ -60,5 +62,6 @@ export function resolveWorkbenchApp(
     services: app.services ?? [],
     slug: app.slug,
     views: app.views ?? [],
+    visibility: app.visibility,
   }
 }
