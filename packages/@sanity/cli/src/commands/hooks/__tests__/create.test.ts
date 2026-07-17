@@ -12,6 +12,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -67,6 +68,22 @@ describe('#hook:create', () => {
     )
     expect(stdout).toContain(
       'Opening https://www.sanity.io/organizations/personal/project/test-project/api/webhooks/new',
+    )
+  })
+
+  test('prints the webhook creation URL without opening a browser in unattended mode', async () => {
+    mockGetById.mockResolvedValueOnce({
+      id: 'test-project',
+      organizationId: 'test-org',
+    })
+
+    const {stdout} = await testCommand(CreateHookCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(open).not.toHaveBeenCalled()
+    expect(stdout).toContain(
+      'Create a webhook at https://www.sanity.io/organizations/test-org/project/test-project/api/webhooks/new',
     )
   })
 

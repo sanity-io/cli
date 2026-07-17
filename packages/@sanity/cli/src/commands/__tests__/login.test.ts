@@ -1315,17 +1315,18 @@ describe('#login', {timeout: 10_000}, () => {
       expect(error?.oclif?.exit).toBe(1)
     })
 
-    test('succeeds non-interactively with a single OAuth provider', async () => {
+    test('selects the sole OAuth provider when experimental SSO is enabled', async () => {
       mockedGetCliToken.mockResolvedValue('')
       mockedIsInteractive.mockReturnValue(false)
       mockSingleProviderLogin()
 
-      const commandPromise = testCommand(LoginCommand, [])
+      const commandPromise = testCommand(LoginCommand, ['--experimental'])
       await simulateOAuthCallback(commandPromise, 'test-session-id')
       const {error, stdout} = await commandPromise
 
       if (error) throw error
       expect(stdout).toContain('Login successful')
+      expect(mockSelect).not.toHaveBeenCalled()
     })
   })
 

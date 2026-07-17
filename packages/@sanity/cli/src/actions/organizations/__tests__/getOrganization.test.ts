@@ -66,18 +66,45 @@ describe('actions/organizations/getOrganization', () => {
 
   test('prompts to create an org if none returned by list orgs', async () => {
     mockListOrgs.mockResolvedValue([])
-    await getOrganization(baseFlags)
+    await getOrganization({...baseFlags, isUnattended: false})
     expect(output.log).toHaveBeenCalledWith(
       'You need to create an organization to create projects.',
     )
+    expect(mockPromptForOrgName).toHaveBeenCalled()
+    expect(mockCreateOrg).toHaveBeenCalled()
     expect(mockGetOrgsWithGrantInfo).not.toHaveBeenCalled()
   })
 
   describe('unattended mode', () => {
-    test('should return first attached-grant-info orgs if at least one exists', async () => {
+    test('throws an actionable error instead of prompting if no organizations exist', async () => {
+      mockListOrgs.mockResolvedValue([])
+
+      await expect(getOrganization(baseFlags)).rejects.toThrow(
+        'No organizations are available. Create an organization at https://www.sanity.io/manage, then pass its ID or slug with --organization.',
+      )
+      expect(mockPromptForOrgName).not.toHaveBeenCalled()
+      expect(uxMocks.select).not.toHaveBeenCalled()
+    })
+
+    test('returns the only organization with attach access', async () => {
       const result = await getOrganization(baseFlags)
       expect(result).toEqual(org)
     })
+
+    test('requires an explicit organization when multiple organizations have attach access', async () => {
+      const otherOrg = {id: 'org-2', name: 'Org 2', slug: 'org-2'}
+      mockListOrgs.mockResolvedValue([org, otherOrg])
+      mockGetOrgsWithGrantInfo.mockResolvedValue([
+        orgWithGrantInfo,
+        {hasAttachGrant: true, organization: otherOrg},
+      ])
+
+      await expect(getOrganization(baseFlags)).rejects.toThrow(
+        'Multiple organizations are available. Select one with --organization <slug|id>.',
+      )
+      expect(uxMocks.select).not.toHaveBeenCalled()
+    })
+
     test('should return undefined if no attached-grant-info orgs exist', async () => {
       mockGetOrgsWithGrantInfo.mockResolvedValue([])
       const result = await getOrganization(baseFlags)
