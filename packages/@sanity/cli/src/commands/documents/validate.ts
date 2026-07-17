@@ -53,7 +53,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
     file: Flags.string({
       description:
-        'Provide a path to either an .ndjson file or a tarball containing an .ndjson file',
+        'Path to an NDJSON file or tar archive containing an NDJSON file (optionally gzip-compressed)',
     }),
     format: Flags.string({
       description:
@@ -124,15 +124,15 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         fileStat = await stat(filePath)
       } catch {
         return this.output.error(
-          `File not found: ${file}. Pass an existing .ndjson file or tarball to --file.`,
-          {exit: 2},
+          `File not found: ${file}. Pass an existing NDJSON file or tar archive with \`--file <path>\`.`,
+          {exit: exitCodes.USAGE_ERROR},
         )
       }
 
       if (!fileStat.isFile()) {
         return this.output.error(
-          `Invalid --file path: ${file} is not a file. Pass an .ndjson file or tarball.`,
-          {exit: 2},
+          `Invalid file path: ${file} is not a file. Pass an NDJSON file or tar archive with \`--file <path>\`.`,
+          {exit: exitCodes.USAGE_ERROR},
         )
       }
 

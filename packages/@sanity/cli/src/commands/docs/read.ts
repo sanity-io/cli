@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import open from 'open'
 
 import {readDoc} from '../../services/docs.js'
@@ -90,7 +90,7 @@ export class DocsReadCommand extends SanityCommand<typeof DocsReadCommand> {
       this.error(
         'Invalid path or URL. Expected a Sanity docs path or URL.\nExamples:\n  /docs/studio/installation\n  https://www.sanity.io/docs/studio/installation',
         {
-          exit: 2,
+          exit: exitCodes.USAGE_ERROR,
         },
       )
     }
@@ -99,7 +99,7 @@ export class DocsReadCommand extends SanityCommand<typeof DocsReadCommand> {
       this.error(
         'Invalid path. Must be a valid Sanity docs path starting with /docs/\nExample: /docs/studio/installation',
         {
-          exit: 2,
+          exit: exitCodes.USAGE_ERROR,
         },
       )
     }

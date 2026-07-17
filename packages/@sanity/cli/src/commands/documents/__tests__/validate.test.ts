@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {exitCodes} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -71,7 +71,7 @@ describe('ValidateDocumentsCommand', () => {
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('is not a file'),
-      {exit: 2},
+      {exit: exitCodes.USAGE_ERROR},
     )
   })
 
@@ -82,7 +82,7 @@ describe('ValidateDocumentsCommand', () => {
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('File not found'),
-      {exit: 2},
+      {exit: exitCodes.USAGE_ERROR},
     )
   })
 

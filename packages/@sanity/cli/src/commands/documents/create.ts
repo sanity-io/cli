@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {type MultipleMutationResult, type Mutation} from '@sanity/client'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
@@ -96,21 +96,24 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
 
     if (!file && this.isUnattended()) {
       this.error(
-        'Document input is required in unattended mode. Pass a JSON file: sanity documents create <file>',
-        {exit: 2},
+        'Document input is required in unattended mode. Pass it as the `<file>` argument.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
     if (replace && missing) {
-      this.error('Cannot use --replace and --missing together. Remove one flag and try again.', {
-        exit: 2,
-      })
+      this.error(
+        'Cannot use `--replace` and `--missing` together. Remove one flag and try again.',
+        {
+          exit: exitCodes.USAGE_ERROR,
+        },
+      )
     }
 
     if (id && file) {
       this.error(
-        'Cannot use --id with a file path. Remove --id or omit the file path and try again.',
-        {exit: 2},
+        'Cannot use `--id` with the `<file>` argument. Remove `--id` or omit `<file>` and try again.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
@@ -120,8 +123,8 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
-        'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',
-        {exit: 2},
+        'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 

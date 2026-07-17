@@ -1,6 +1,7 @@
 import {resolve} from 'node:path'
 
 import {getCliConfig} from '@sanity/cli-core/config'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type CliConfig} from '@sanity/cli-core/types'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import * as apiMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
@@ -57,7 +58,7 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       ])
 
       expect(error?.message).toContain('Expected --format=xml to be one of: json, ndjson, pretty')
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('validates documents without prompting in unattended mode', async () => {
@@ -103,7 +104,7 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         {mocks: {isInteractive: true}},
       )
 
-      expect(error?.oclif?.exit).toBe(3)
+      expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
       expect(stdout).toContain('Warning:')
       expect(stdout).toContain('Validation cancelled')
       expect(uxMocks.confirm).toHaveBeenCalledWith({
@@ -133,8 +134,8 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         'ndjson',
       ])
 
-      expect(error?.message).toContain('Invalid --file path: . is not a file')
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.message).toContain('Invalid file path: . is not a file')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(uxMocks.confirm).not.toHaveBeenCalled()
     })
 
@@ -147,7 +148,7 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       ])
 
       expect(error?.message).toContain('File not found: missing-documents.ndjson')
-      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(uxMocks.confirm).not.toHaveBeenCalled()
     })
 
