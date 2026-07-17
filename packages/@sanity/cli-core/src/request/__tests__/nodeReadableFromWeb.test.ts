@@ -60,4 +60,21 @@ describe('#nodeReadableFromWeb', () => {
 
     expect(cancel).toHaveBeenCalledOnce()
   })
+
+  test('propagates cancellation errors when the Node stream is destroyed', async () => {
+    const cancelError = new Error('Cancellation failed')
+    const webStream = new ReadableStream<Uint8Array>({
+      cancel() {
+        return Promise.reject(cancelError)
+      },
+    })
+    const nodeStream = nodeReadableFromWeb(webStream)
+    const emittedError = once(nodeStream, 'error')
+
+    nodeStream.resume()
+    await Promise.resolve()
+    nodeStream.destroy()
+
+    await expect(emittedError).resolves.toEqual([cancelError])
+  })
 })

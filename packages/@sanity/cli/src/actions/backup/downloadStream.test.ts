@@ -1,17 +1,30 @@
 import {Writable} from 'node:stream'
 
-import {type RequestOptions, type StreamResponse} from '@sanity/cli-core/request'
+import {
+  type CreateRequesterOptions,
+  type FetchFunction,
+  type RequestOptions,
+  type StreamResponse,
+} from '@sanity/cli-core/request'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {downloadStream} from './downloadStream.js'
 
 const mockRequest = vi.hoisted(() => vi.fn<(options: RequestOptions) => Promise<StreamResponse>>())
+const mockNodeFetch = vi.hoisted(() => vi.fn<FetchFunction>())
+const requesterOptions = vi.hoisted(() => ({
+  current: undefined as CreateRequesterOptions | undefined,
+}))
 
 vi.mock('@sanity/cli-core/request', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core/request')>()
   return {
     ...actual,
-    createRequester: () => mockRequest,
+    createNodeFetch: () => mockNodeFetch,
+    createRequester: (options: CreateRequesterOptions) => {
+      requesterOptions.current = options
+      return mockRequest
+    },
   }
 })
 
@@ -38,6 +51,7 @@ function createDestination(chunks: Buffer[] = []): Writable {
 
 describe('#downloadStream', () => {
   afterEach(() => {
+    mockNodeFetch.mockReset()
     mockRequest.mockReset()
     vi.useRealTimers()
   })
@@ -64,8 +78,11 @@ describe('#downloadStream', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       as: 'stream',
       signal: expect.any(AbortSignal),
-      timeout: false,
       url: 'https://example.com/backup',
+    })
+    expect(requesterOptions.current).toMatchObject({
+      fetch: expect.any(Function),
+      timeout: false,
     })
   })
 
@@ -80,22 +97,32 @@ describe('#downloadStream', () => {
     expect(destination.destroyed).toBe(true)
   })
 
-  test('aborts when response headers exceed the connection timeout', async () => {
+  test('gives each fetch attempt a separate connection timeout', async () => {
     vi.useFakeTimers()
-    mockRequest.mockImplementation(
-      ({signal}) =>
+    mockNodeFetch.mockImplementation(
+      (_url, init) =>
         new Promise((_resolve, reject) => {
-          signal?.addEventListener('abort', () => reject(signal.reason), {once: true})
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), {once: true})
         }),
     )
+    const fetch = requesterOptions.current?.fetch
+    if (!fetch) throw new Error('Expected a configured fetch function')
 
-    const download = downloadStream('https://example.com/backup', createDestination())
-    const rejection = expect(download).rejects.toThrow(
+    const firstAttempt = fetch('https://example.com/backup')
+    const firstRejection = expect(firstAttempt).rejects.toThrow(
       'Backup download timed out before receiving a response. Try again.',
     )
     await vi.advanceTimersByTimeAsync(CONNECTION_TIMEOUT)
+    await firstRejection
 
-    await rejection
+    const secondAttempt = fetch('https://example.com/backup')
+    const secondRejection = expect(secondAttempt).rejects.toThrow(
+      'Backup download timed out before receiving a response. Try again.',
+    )
+    await vi.advanceTimersByTimeAsync(CONNECTION_TIMEOUT - 1)
+    expect(mockNodeFetch.mock.calls[1]?.[1]?.signal?.aborted).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+    await secondRejection
   })
 
   test('aborts and cancels the response when no data arrives before the read timeout', async () => {

@@ -2,7 +2,9 @@ import {Transform, type TransformCallback, type Writable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 
 import {
+  createNodeFetch,
   createRequester,
+  type FetchFunction,
   nodeReadableFromWeb,
   retry,
   type StreamResponse,
@@ -11,8 +13,30 @@ import {
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
 const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
 
+const nodeFetch = createNodeFetch()
+const fetchWithConnectionTimeout: FetchFunction = async (url, init) => {
+  const connectionController = new AbortController()
+  const connectionTimeout = setTimeout(() => {
+    connectionController.abort(
+      new Error('Backup download timed out before receiving a response. Try again.'),
+    )
+  }, CONNECTION_TIMEOUT)
+  connectionTimeout.unref()
+
+  const signal = init?.signal
+    ? AbortSignal.any([init.signal, connectionController.signal])
+    : connectionController.signal
+  try {
+    return await nodeFetch(url, {...init, signal})
+  } finally {
+    clearTimeout(connectionTimeout)
+  }
+}
+
 const request = createRequester({
+  fetch: fetchWithConnectionTimeout,
   middleware: [retry()],
+  timeout: false,
 })
 
 /**
@@ -28,26 +52,17 @@ const request = createRequester({
  */
 export async function downloadStream(url: string, destination: Writable): Promise<number> {
   const abortController = new AbortController()
-  const connectionTimeout = setTimeout(() => {
-    abortController.abort(
-      new Error('Backup download timed out before receiving a response. Try again.'),
-    )
-  }, CONNECTION_TIMEOUT)
-  connectionTimeout.unref()
 
   let response: StreamResponse
   try {
     response = await request({
       as: 'stream',
       signal: abortController.signal,
-      timeout: false,
       url,
     })
   } catch (error) {
     destination.destroy()
     throw error
-  } finally {
-    clearTimeout(connectionTimeout)
   }
 
   let readTimeout: NodeJS.Timeout | undefined

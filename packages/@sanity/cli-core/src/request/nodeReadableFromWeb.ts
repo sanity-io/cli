@@ -59,6 +59,7 @@ export function nodeReadableFromWeb(stream: ReadableStream<Uint8Array>): Readabl
         },
         (error: unknown) => {
           reading = false
+          if (ended) return
           ended = true
           releaseLock()
           this.destroy(toError(error))
