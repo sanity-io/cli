@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -169,7 +170,7 @@ describe('#dataset:alias:create', () => {
     expect(error?.message).toBe(
       'Dataset alias name is required. Pass it as the `<aliasName>` argument.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockListDatasets).not.toHaveBeenCalled()
     expect(mockSelect).not.toHaveBeenCalled()
   })
@@ -294,6 +295,6 @@ describe('#dataset:alias:create', () => {
     const {error} = await testCommand(CreateAliasCommand, [alias, dataset], {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 })

@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -83,7 +84,7 @@ describe('#dataset:embeddings:disable', () => {
     })
 
     expect(error?.message).toBe('Dataset name is required. Pass it as the `<dataset>` argument.')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockListDatasets).not.toHaveBeenCalled()
     expect(mockSelect).not.toHaveBeenCalled()
   })

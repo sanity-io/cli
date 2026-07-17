@@ -1,4 +1,5 @@
 import {NonInteractiveError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -107,7 +108,7 @@ describe('#dataset:visibility:set', () => {
     )
 
     expect(error?.message).toContain('Dataset name must only contain')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles error when listing datasets fails', async () => {

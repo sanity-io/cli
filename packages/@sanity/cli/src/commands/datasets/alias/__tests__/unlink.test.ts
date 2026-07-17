@@ -1,4 +1,5 @@
 import {NonInteractiveError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -115,7 +116,7 @@ describe('#dataset:alias:unlink', () => {
     expect(error?.message).toBe(
       'Unlinking a dataset alias requires confirmation. Re-run with `--force`.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
   })
 
@@ -127,7 +128,7 @@ describe('#dataset:alias:unlink', () => {
     expect(error?.message).toBe(
       'Dataset alias name is required. Pass it as the `<aliasName>` argument.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
   })
 
@@ -197,7 +198,7 @@ describe('#dataset:alias:unlink', () => {
     expect(error?.message).toContain(
       'Alias name must only contain letters, numbers, dashes and underscores',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('shows error when alias does not exist', async () => {

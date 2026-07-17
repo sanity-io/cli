@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -120,7 +121,7 @@ describe('#dataset:alias:link', () => {
     expect(error?.message).toBe(
       'Relinking a dataset alias requires confirmation. Re-run with `--force`.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('requires all arguments in unattended mode', async () => {
@@ -136,7 +137,7 @@ describe('#dataset:alias:link', () => {
       'Dataset alias name is required. Pass it as the `<aliasName>` argument.\n' +
         'Error: Target dataset is required. Pass it as the `<targetDataset>` argument.',
     )
-    expect(missingBoth.error?.oclif?.exit).toBe(2)
+    expect(missingBoth.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
     const missingTarget = await testCommand(LinkAliasCommand, ['staging'], {
       mocks: {...defaultMocks, isInteractive: false},
@@ -145,7 +146,7 @@ describe('#dataset:alias:link', () => {
     expect(missingTarget.error?.message).toBe(
       'Target dataset is required. Pass it as the `<targetDataset>` argument.',
     )
-    expect(missingTarget.error?.oclif?.exit).toBe(2)
+    expect(missingTarget.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockListDatasets).not.toHaveBeenCalled()
   })
 
@@ -185,7 +186,7 @@ describe('#dataset:alias:link', () => {
     const {error} = await testCommand(LinkAliasCommand, [alias, dataset], {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('fails when no project ID', async () => {

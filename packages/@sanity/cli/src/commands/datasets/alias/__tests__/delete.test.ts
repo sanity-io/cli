@@ -1,4 +1,5 @@
 import {NonInteractiveError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -109,7 +110,7 @@ describe('#dataset:alias:delete', () => {
     expect(error?.message).toBe(
       'Dataset alias deletion requires confirmation. Re-run with `--force`.',
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
   })
 
@@ -191,7 +192,7 @@ describe('#dataset:alias:delete', () => {
     })
 
     expect(error?.message).toContain('Alias name must be at least two characters long')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('fails when no project ID available', async () => {

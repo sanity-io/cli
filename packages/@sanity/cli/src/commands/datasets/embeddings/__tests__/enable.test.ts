@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -108,7 +109,7 @@ describe('#dataset:embeddings:enable', () => {
     })
 
     expect(error?.message).toBe('Dataset name is required. Pass it as the `<dataset>` argument.')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockListDatasets).not.toHaveBeenCalled()
     expect(mockSelect).not.toHaveBeenCalled()
   })
@@ -172,7 +173,7 @@ describe('#dataset:embeddings:enable', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid projection')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('should reject non-projection expression', async () => {
@@ -187,7 +188,7 @@ describe('#dataset:embeddings:enable', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid projection')
     expect(error?.message).toContain('Expected a GROQ projection')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('should accept complex valid projection', async () => {
