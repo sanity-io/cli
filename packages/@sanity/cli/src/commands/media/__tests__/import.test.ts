@@ -1,4 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {of, throwError} from 'rxjs'
@@ -136,7 +137,7 @@ describe('#media:import', () => {
     })
 
     expect(error?.message).toContain('--media-library-id <id>')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
   })
 

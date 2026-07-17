@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -50,7 +51,7 @@ describe('#media:delete-aspect', () => {
       aspectName  Name of the aspect to delete
       See more help with --help"
     `)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('should error if project ID is not configured', async () => {
@@ -127,7 +128,7 @@ describe('#media:delete-aspect', () => {
     })
 
     expect(error?.message).toContain('--media-library-id <id>')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
     expect(mockConfirm).not.toHaveBeenCalled()
   })
@@ -158,7 +159,7 @@ describe('#media:delete-aspect', () => {
 
     expect(mockConfirm).toHaveBeenCalled()
     expect(stdout).toContain('Operation cancelled')
-    expect(error?.oclif?.exit).toBe(3)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
   })
 
   test('requires the media library ID and confirmation in unattended mode', async () => {
@@ -173,7 +174,7 @@ describe('#media:delete-aspect', () => {
       'Media library ID is required. Pass it with `--media-library-id <id>`.\n' +
         'Error: Deletion requires confirmation. Pass `--yes` to delete the aspect.',
     )
-    expect(missingLibrary.error?.oclif?.exit).toBe(2)
+    expect(missingLibrary.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
     const missingConfirmation = await testCommand(
       MediaDeleteAspectCommand,
@@ -181,7 +182,7 @@ describe('#media:delete-aspect', () => {
       {mocks: {...defaultMocks, isInteractive: false}},
     )
     expect(missingConfirmation.error?.message).toContain('--yes')
-    expect(missingConfirmation.error?.oclif?.exit).toBe(2)
+    expect(missingConfirmation.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
     expect(mockConfirm).not.toHaveBeenCalled()
   })

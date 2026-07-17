@@ -1,6 +1,7 @@
 import {basename} from 'node:path'
 
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {
@@ -196,7 +197,7 @@ describe('#media:deploy-aspect', () => {
     const {error} = await testCommand(MediaDeployAspectCommand, args, {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('errors when run outside a Sanity project directory', async () => {
@@ -293,7 +294,7 @@ describe('#media:deploy-aspect', () => {
     })
 
     expect(error?.message).toContain('--media-library-id <id>')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
   })
 

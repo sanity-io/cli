@@ -1,5 +1,6 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input} from '@sanity/cli-core/ux'
 import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -130,7 +131,7 @@ describe('#media:create-aspect', () => {
     })
 
     expect(error?.message).toContain('--title <title>')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
     expect(mockWriteFile).not.toHaveBeenCalled()
   })

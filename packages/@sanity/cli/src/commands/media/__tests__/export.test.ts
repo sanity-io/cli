@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 
 import {type CliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {exportDataset} from '@sanity/export'
@@ -277,7 +278,7 @@ describe('#media:export', () => {
 
     expect(error?.message).toContain(ERROR_MESSAGES.ALREADY_EXISTS)
     expect(error?.message).toContain(ERROR_MESSAGES.USE_OVERWRITE)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('should overwrite file when overwrite flag is provided', async () => {
@@ -326,7 +327,7 @@ describe('#media:export', () => {
     })
 
     expect(error?.message).toContain('--media-library-id <id>')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
   })
 
