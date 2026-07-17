@@ -1,5 +1,25 @@
 # @sanity/workbench-cli
 
+## [1.5.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.4.0...workbench-cli-v1.5.0)
+
+_2026-07-17_
+
+### Features
+
+- declare application visibility from the CLI config ([#1541](https://github.com/sanity-io/cli/pull/1541)) ([cc06484](https://github.com/sanity-io/cli/commit/cc06484481b6586c40320836b311ea1395119c47))
+
+### Bug Fixes
+
+- **workbench:** align interface records with brett's shape ([#1538](https://github.com/sanity-io/cli/pull/1538)) ([fb121f0](https://github.com/sanity-io/cli/commit/fb121f0c0b1f16ccf52f4c52e561522bd5a6c494))
+- **deps:** update dependency @module-federation/vite to v1.17.0 ([#1544](https://github.com/sanity-io/cli/pull/1544)) ([cf65928](https://github.com/sanity-io/cli/commit/cf65928ed36e77650df4fb2d5d3b9afeb27003de))
+- **deps:** update dependency @module-federation/vite to v1.17.1 ([#1550](https://github.com/sanity-io/cli/pull/1550)) ([018a48d](https://github.com/sanity-io/cli/commit/018a48d13f0f1677db0d1527e7db03f7800e3008))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.5.0
+
 ## [1.4.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.3.0...workbench-cli-v1.4.0)
 
 _2026-07-15_

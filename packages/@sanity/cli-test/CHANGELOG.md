@@ -1,5 +1,20 @@
 # Changelog
 
+## [6.0.0](https://github.com/sanity-io/cli/compare/cli-test-v5.0.0...cli-test-v6.0.0)
+
+_2026-07-17_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1419](https://github.com/sanity-io/cli/pull/1419)) ([dfbab41](https://github.com/sanity-io/cli/commit/dfbab41b47d1942c59532e30c5e475b03e1dcabd))
+- **deps:** update dependency tsx to ^4.23.1 ([#1543](https://github.com/sanity-io/cli/pull/1543)) ([307e5f4](https://github.com/sanity-io/cli/commit/307e5f403f5b6ba9022b802a1806d85111ea882c))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.5.0
+
 ## [5.0.0](https://github.com/sanity-io/cli/compare/cli-test-v4.0.0...cli-test-v5.0.0)
 
 _2026-07-15_
