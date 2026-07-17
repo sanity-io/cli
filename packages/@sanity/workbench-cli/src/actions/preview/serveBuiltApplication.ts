@@ -5,7 +5,7 @@ import {checkBuiltOutput} from '../deploy/checkBuiltOutput.js'
 
 const previewDebug = subdebug('preview')
 
-export interface BuiltRemoteServer {
+export interface BuiltApplicationServer {
   close: () => Promise<void>
   /** Routable host the remote is reachable at, for the registry's remote URL. */
   host: string
@@ -21,13 +21,13 @@ export interface BuiltRemoteServer {
  * A missing federation build is re-tagged `BUILD_NOT_FOUND` so the command
  * surfaces the same "run sanity build" hint the studio preview path shows.
  */
-export async function serveBuiltRemote(options: {
+export async function serveBuiltApplication(options: {
   cacheDir: string
   httpHost: string
   httpPort: number
   outDir: string
   workDir: string
-}): Promise<BuiltRemoteServer> {
+}): Promise<BuiltApplicationServer> {
   const {cacheDir, httpHost, httpPort, outDir, workDir} = options
 
   try {

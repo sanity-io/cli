@@ -4,7 +4,7 @@ import {createMockOutput, workbenchCliConfig} from '../../dev/__tests__/devTestH
 import {startWorkbenchPreview, type StartWorkbenchPreviewOptions} from '../startWorkbenchPreview.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
-const mockServeBuiltRemote = vi.hoisted(() => vi.fn())
+const mockServeBuiltApplication = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
 
@@ -15,7 +15,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 vi.mock('../../dev/startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
 }))
-vi.mock('../serveBuiltRemote.js', () => ({serveBuiltRemote: mockServeBuiltRemote}))
+vi.mock('../serveBuiltApplication.js', () => ({serveBuiltApplication: mockServeBuiltApplication}))
 vi.mock('../../dev/registry.js', () => ({registerDevServer: mockRegisterDevServer}))
 
 const mockExtractManifest = vi.hoisted(() => vi.fn())
@@ -51,7 +51,7 @@ function workbenchRunning(overrides: Record<string, unknown> = {}) {
 describe('startWorkbenchPreview', () => {
   beforeEach(() => {
     mockStartWorkbenchDevServer.mockResolvedValue(workbenchRunning())
-    mockServeBuiltRemote.mockResolvedValue({
+    mockServeBuiltApplication.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
       host: 'localhost',
       port: 3334,
@@ -69,7 +69,9 @@ describe('startWorkbenchPreview', () => {
     test('serves the build on the next port when the workbench claims the configured one', async () => {
       await run()
 
-      expect(mockServeBuiltRemote).toHaveBeenCalledWith(expect.objectContaining({httpPort: 3334}))
+      expect(mockServeBuiltApplication).toHaveBeenCalledWith(
+        expect.objectContaining({httpPort: 3334}),
+      )
     })
 
     test('serves the build on the configured port when no workbench runs', async () => {
@@ -77,7 +79,9 @@ describe('startWorkbenchPreview', () => {
 
       await run()
 
-      expect(mockServeBuiltRemote).toHaveBeenCalledWith(expect.objectContaining({httpPort: 3333}))
+      expect(mockServeBuiltApplication).toHaveBeenCalledWith(
+        expect.objectContaining({httpPort: 3333}),
+      )
     })
 
     test('runs the workbench shell in preview mode', async () => {
@@ -117,7 +121,7 @@ describe('startWorkbenchPreview', () => {
       const workbench = workbenchRunning()
       mockStartWorkbenchDevServer.mockResolvedValue(workbench)
       const serveError = new Error('build not found')
-      mockServeBuiltRemote.mockRejectedValue(serveError)
+      mockServeBuiltApplication.mockRejectedValue(serveError)
 
       const thrown = await run().catch((err) => err)
 
@@ -130,7 +134,11 @@ describe('startWorkbenchPreview', () => {
       const workbench = workbenchRunning()
       const remoteClose = vi.fn().mockResolvedValue(undefined)
       mockStartWorkbenchDevServer.mockResolvedValue(workbench)
-      mockServeBuiltRemote.mockResolvedValue({close: remoteClose, host: 'localhost', port: 3334})
+      mockServeBuiltApplication.mockResolvedValue({
+        close: remoteClose,
+        host: 'localhost',
+        port: 3334,
+      })
       const registrationError = new Error('deriveInterfaces failed')
       mockRegisterDevServer.mockImplementation(() => {
         throw registrationError
@@ -148,7 +156,11 @@ describe('startWorkbenchPreview', () => {
       const remoteClose = vi.fn().mockResolvedValue(undefined)
       const release = vi.fn()
       mockStartWorkbenchDevServer.mockResolvedValue(workbench)
-      mockServeBuiltRemote.mockResolvedValue({close: remoteClose, host: 'localhost', port: 3334})
+      mockServeBuiltApplication.mockResolvedValue({
+        close: remoteClose,
+        host: 'localhost',
+        port: 3334,
+      })
       mockRegisterDevServer.mockReturnValue({release, update: vi.fn()})
 
       const {close} = await run()
@@ -179,7 +191,7 @@ describe('startWorkbenchPreview', () => {
 
     test('announces the build URL directly when no workbench runs', async () => {
       mockStartWorkbenchDevServer.mockResolvedValue(workbenchRunning({workbenchAvailable: false}))
-      mockServeBuiltRemote.mockResolvedValue({
+      mockServeBuiltApplication.mockResolvedValue({
         close: vi.fn().mockResolvedValue(undefined),
         host: 'localhost',
         port: 3333,

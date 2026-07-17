@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {serveBuiltRemote} from '../serveBuiltRemote.js'
+import {serveBuiltApplication} from '../serveBuiltApplication.js'
 
 const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
 const mockPreview = vi.hoisted(() => vi.fn())
@@ -18,7 +18,7 @@ function fakeViteServer({port = 3334}: {port?: number} = {}) {
 }
 
 function serve(overrides: Record<string, unknown> = {}) {
-  return serveBuiltRemote({
+  return serveBuiltApplication({
     cacheDir: '/tmp/.sanity/vite',
     httpHost: 'localhost',
     httpPort: 3334,
@@ -28,7 +28,7 @@ function serve(overrides: Record<string, unknown> = {}) {
   })
 }
 
-describe('serveBuiltRemote', () => {
+describe('serveBuiltApplication', () => {
   beforeEach(() => {
     mockCheckBuiltOutput.mockResolvedValue(undefined)
     mockPreview.mockResolvedValue(fakeViteServer())

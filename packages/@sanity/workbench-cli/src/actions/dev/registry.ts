@@ -23,7 +23,7 @@ import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
 /**
  * The dev-server registry: how a running `sanity dev` / `sanity start` process
- * tells the workbench on this machine "I'm here, load me."
+ * advertises itself so the workbench on this machine can find and load it.
  *
  * Two kinds of file under `~/.sanity/dev-servers/` do the coordinating:
  *

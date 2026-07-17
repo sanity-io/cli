@@ -6,7 +6,7 @@ import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestrati
 import {deriveConfigs, deriveInterfaces} from '../dev/deriveInterfaces.js'
 import {type DevServerManifest, registerDevServer} from '../dev/registry.js'
 import {startWorkbenchDevServer} from '../dev/startWorkbenchDevServer.js'
-import {serveBuiltRemote} from './serveBuiltRemote.js'
+import {serveBuiltApplication} from './serveBuiltApplication.js'
 
 export interface StartWorkbenchPreviewOptions {
   /** Directory for the workbench Vite server's dependency cache. */
@@ -73,7 +73,7 @@ export async function startWorkbenchPreview(
 
   const remotePort = workbench.workbenchAvailable ? workbench.workbenchPort + 1 : httpPort
 
-  const remote = await serveBuiltRemote({
+  const remote = await serveBuiltApplication({
     cacheDir,
     httpHost,
     httpPort: remotePort,
