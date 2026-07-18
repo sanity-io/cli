@@ -13,6 +13,7 @@ import {
   getApplication,
   getApplicationUrl,
   getWorkbenchUrl,
+  updateApplication,
 } from '../applications.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
@@ -98,6 +99,34 @@ describe('createApplication', () => {
     expect(fields.map(([name]) => name)).not.toContain('isSingleton')
   })
 
+  test('appends visibility on create when set, omits it when unset', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_1'})
+    await createApplication({
+      interfaces,
+      organizationId: 'org-1',
+      slug: 'abc123',
+      tarball: tarball(),
+      title: 'Drop Desk',
+      type: 'coreApp',
+      version: '1.2.3',
+      visibility: 'unlisted',
+    })
+    expect(appendedFields()).toContainEqual(['visibility', 'unlisted'])
+
+    appendSpy.mockClear()
+    mockClient.request.mockResolvedValueOnce({id: 'app_2'})
+    await createApplication({
+      interfaces,
+      organizationId: 'org-1',
+      slug: 'def456',
+      tarball: tarball(),
+      title: 'Drop Desk',
+      type: 'coreApp',
+      version: '1.2.3',
+    })
+    expect(appendedFields().map(([name]) => name)).not.toContain('visibility')
+  })
+
   test('flags a singleton create when isSingleton is set', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 
@@ -134,6 +163,51 @@ describe('createApplication', () => {
     expect(fields).toContainEqual(['type', 'studio'])
     expect(fields).toContainEqual(['config', JSON.stringify({studio: {projectId: 'proj-1'}})])
     expect(fields).toContainEqual(['workspaces', JSON.stringify(workspaces)])
+  })
+
+  test('sends the icon as a JSON part when provided, omits it otherwise', async () => {
+    mockClient.request.mockResolvedValue({id: 'app_1'})
+    const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
+
+    await createApplication({
+      icon,
+      interfaces,
+      organizationId: 'org-1',
+      slug: 'abc123',
+      tarball: tarball(),
+      title: 'Drop Desk',
+      type: 'coreApp',
+      version: '1.0.0',
+    })
+    expect(appendedFields()).toContainEqual(['icon', JSON.stringify(icon)])
+
+    appendSpy.mockClear()
+    await createApplication({
+      interfaces,
+      organizationId: 'org-1',
+      slug: 'abc123',
+      tarball: tarball(),
+      title: 'Drop Desk',
+      type: 'coreApp',
+      version: '1.0.0',
+    })
+    expect(appendedFields().map(([name]) => name)).not.toContain('icon')
+  })
+})
+
+describe('updateApplication', () => {
+  test('PATCHes the given mutable fields', async () => {
+    mockClient.request.mockResolvedValueOnce(undefined)
+    const icon = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>'
+
+    await updateApplication('app_1', {icon})
+
+    expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {icon},
+      method: 'PATCH',
+      uri: '/applications/app_1',
+    })
   })
 })
 

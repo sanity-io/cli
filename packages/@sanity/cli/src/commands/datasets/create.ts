@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
@@ -80,9 +80,14 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     if (datasetName) {
       const nameError = validateDatasetName(datasetName)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     } else {
+      if (this.isUnattended()) {
+        this.error('Dataset name is required. Pass it as the `<name>` argument.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
       datasetName = await promptForDatasetName()
     }
 
@@ -114,6 +119,7 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
         datasetName,
         embeddings: flags.embeddings,
         embeddingsProjection: flags['embeddings-projection'],
+        isUnattended: this.isUnattended(),
         output: this.output,
         projectFeatures,
         projectId,

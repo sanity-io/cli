@@ -3,7 +3,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
@@ -54,6 +54,10 @@ export class Add extends SanityCommand<typeof Add> {
       description: 'Allow credentials (token/cookie) to be sent from this origin',
       required: false,
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm risky wildcard origins without prompting',
+    }),
   }
 
   public async run(): Promise<void> {
@@ -82,15 +86,23 @@ export class Add extends SanityCommand<typeof Add> {
     const hasWildcard = origin.includes('*')
 
     if (hasWildcard) {
-      const confirmed = await this.promptForWildcardConfirmation(origin)
+      if (this.isUnattended() && !flags.yes) {
+        this.error('Wildcard origins require confirmation. Pass `--yes` to continue.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
+      const confirmed = flags.yes || (await this.promptForWildcardConfirmation(origin))
       if (!confirmed) {
-        this.error('Operation cancelled', {exit: 1})
+        this.log('CORS origin not added')
+        this.exit(exitCodes.USER_ABORT)
       }
     }
 
     const allowCredentials =
       flags.credentials === undefined
-        ? await this.promptForCredentials(hasWildcard)
+        ? this.isUnattended()
+          ? false
+          : await this.promptForCredentials(hasWildcard)
         : Boolean(flags.credentials)
 
     if (filteredOrigin !== origin) {
@@ -106,7 +118,7 @@ export class Add extends SanityCommand<typeof Add> {
 
       addCorsDebug(`CORS origin added successfully`, response)
 
-      this.log('CORS origin added successfully')
+      this.log('CORS origin added')
     } catch (error) {
       const err = error as Error
 

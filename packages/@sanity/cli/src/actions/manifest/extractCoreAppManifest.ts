@@ -44,14 +44,16 @@ async function lazySanitizeIcon(): Promise<typeof sanitizeIconFn> {
 }
 
 /**
- * Resolves app.icon from config (a file path) to an SVG string for the manifest.
- * The manifest expects the SVG string inline, not a path.
+ * Resolves app.icon from config (a file path) to a sanitized SVG string. Used
+ * both for the manifest and, on deploy, for the icon shipped to Brett — the
+ * manifest expects the SVG inline, not a path.
  *
  * The file is sanitized through the same allowlist as the studio manifest's
  * icon resolver (see {@link lazySanitizeIcon}) so both manifest paths inline the
  * same trusted subset of SVG markup.
+ * @internal
  */
-async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
+export async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
   const resolvedPath = resolve(workDir, iconPath)
   const pathRelativeToWorkDir = relative(workDir, resolvedPath)
   if (pathRelativeToWorkDir.startsWith('..')) {

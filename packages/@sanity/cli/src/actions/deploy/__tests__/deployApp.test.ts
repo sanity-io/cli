@@ -1,9 +1,20 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {logAppDeployed} from '../deployApp.js'
+import {
+  updateUserApplication,
+  type UserApplicationResolved,
+} from '../../../services/userApplications.js'
+import {type CoreAppManifest} from '../../manifest/types.js'
+import {logAppDeployed, syncApplicationMetadata} from '../deployApp.js'
 
-const mockOutput = () => ({log: vi.fn()}) as unknown as Output
+vi.mock('../../../services/userApplications.js', () => ({
+  createDeployment: vi.fn(),
+  updateUserApplication: vi.fn(),
+}))
+vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
+
+const mockOutput = () => ({log: vi.fn(), warn: vi.fn()}) as unknown as Output
 
 describe('logAppDeployed', () => {
   test("updating prints the dashboard URL from the deployed app's organization", () => {
@@ -46,5 +57,96 @@ describe('logAppDeployed', () => {
     expect(logged).toContain('Created a new application.')
     expect(logged).toContain('creates another new application')
     expect(logged).toContain("appId: 'app-2'")
+  })
+})
+
+describe('syncApplicationMetadata', () => {
+  const baseApp = {
+    dashboardStatus: 'default',
+    id: 'app-1',
+    organizationId: 'org-1',
+    title: 'My App',
+    type: 'coreApp',
+  } as UserApplicationResolved
+
+  afterEach(() => vi.clearAllMocks())
+
+  test('does not PATCH when nothing changed', async () => {
+    const result = await syncApplicationMetadata({
+      application: baseApp,
+      manifest: undefined,
+      output: mockOutput(),
+      visibility: 'default',
+    })
+
+    expect(updateUserApplication).not.toHaveBeenCalled()
+    expect(result).toBe(baseApp)
+  })
+
+  test('treats an unset dashboardStatus as default, so visibility "default" is a no-op', async () => {
+    await syncApplicationMetadata({
+      application: {...baseApp, dashboardStatus: undefined} as UserApplicationResolved,
+      manifest: undefined,
+      output: mockOutput(),
+      visibility: 'default',
+    })
+
+    expect(updateUserApplication).not.toHaveBeenCalled()
+  })
+
+  test('PATCHes only dashboardStatus when visibility changed', async () => {
+    vi.mocked(updateUserApplication).mockResolvedValue({...baseApp, dashboardStatus: 'unlisted'})
+
+    await syncApplicationMetadata({
+      application: baseApp,
+      manifest: undefined,
+      output: mockOutput(),
+      visibility: 'unlisted',
+    })
+
+    expect(updateUserApplication).toHaveBeenCalledWith({
+      applicationId: 'app-1',
+      appType: 'coreApp',
+      body: {dashboardStatus: 'unlisted'},
+    })
+  })
+
+  test('PATCHes only title when the manifest title changed', async () => {
+    vi.mocked(updateUserApplication).mockResolvedValue({...baseApp, title: 'Renamed'})
+
+    await syncApplicationMetadata({
+      application: baseApp,
+      manifest: {title: 'Renamed', version: '1'} as CoreAppManifest,
+      output: mockOutput(),
+      visibility: undefined,
+    })
+
+    expect(updateUserApplication).toHaveBeenCalledWith({
+      applicationId: 'app-1',
+      appType: 'coreApp',
+      body: {title: 'Renamed'},
+    })
+  })
+
+  test('PATCHes both title and dashboardStatus in one call when both changed', async () => {
+    vi.mocked(updateUserApplication).mockResolvedValue({
+      ...baseApp,
+      dashboardStatus: 'unlisted',
+      title: 'Renamed',
+    })
+
+    await syncApplicationMetadata({
+      application: baseApp,
+      manifest: {title: 'Renamed', version: '1'} as CoreAppManifest,
+      output: mockOutput(),
+      visibility: 'unlisted',
+    })
+
+    expect(updateUserApplication).toHaveBeenCalledTimes(1)
+    expect(updateUserApplication).toHaveBeenCalledWith({
+      applicationId: 'app-1',
+      appType: 'coreApp',
+      body: {dashboardStatus: 'unlisted', title: 'Renamed'},
+    })
   })
 })

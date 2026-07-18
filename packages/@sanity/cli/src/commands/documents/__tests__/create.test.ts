@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import {getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
@@ -99,6 +100,7 @@ const baseConfig = {
 
 const defaultMocks = {
   cliConfig: baseConfig,
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -155,6 +157,19 @@ describe('#documents:create', () => {
       'utf8',
     )
     expect(mockTransaction).toHaveBeenCalledWith([{create: mockDoc}])
+  })
+
+  test('requires a file in unattended mode without launching an editor', async () => {
+    const {error} = await testCommand(CreateDocumentCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toContain('Pass it as the `<file>` argument.')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockGetProjectCliClient).not.toHaveBeenCalled()
+    expect(mockExeca).not.toHaveBeenCalled()
+    expect(mockExecaSync).not.toHaveBeenCalled()
+    expect(mockFs.writeFile).not.toHaveBeenCalled()
   })
 
   test('creates document with replace flag', async () => {
@@ -299,8 +314,8 @@ describe('#documents:create', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Cannot use both --replace and --missing')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Cannot use `--replace` and `--missing` together')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('throws error when --id and file path are both provided', async () => {
@@ -309,8 +324,8 @@ describe('#documents:create', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Cannot use --id when specifying a file path')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Cannot use `--id` with the `<file>` argument')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('throws error when no dataset is configured and none provided', async () => {
@@ -327,8 +342,8 @@ describe('#documents:create', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No dataset specified')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Dataset is required')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('displays error message when file cannot be read', async () => {
@@ -944,8 +959,8 @@ describe('#documents:create', () => {
       )
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('No dataset specified')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.message).toContain('Dataset is required')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
   })
 })

@@ -1,5 +1,48 @@
 # Change Log
 
+## [7.10.0](https://github.com/sanity-io/cli/compare/cli-v7.9.0...cli-v7.10.0)
+
+_2026-07-17_
+
+### Features
+
+- declare application visibility from the CLI config ([#1541](https://github.com/sanity-io/cli/pull/1541)) ([cc06484](https://github.com/sanity-io/cli/commit/cc06484481b6586c40320836b311ea1395119c47))
+- **organizations:** add commands for listing, creating, updating, and deleting organizations ([#762](https://github.com/sanity-io/cli/pull/762)) ([c2c56ac](https://github.com/sanity-io/cli/commit/c2c56ac5c156feeff535c8cd98375bfb4a7a8a78))
+- **cli:** avoid interactive setup choices in unattended mode ([#1503](https://github.com/sanity-io/cli/pull/1503)) ([6690829](https://github.com/sanity-io/cli/commit/6690829a928d23e4979c6125561313a571f258f9))
+
+  Choose login providers and package managers deterministically when possible, and return usage errors
+  when a choice is required.
+
+- **cli:** support unattended project creation ([#1503](https://github.com/sanity-io/cli/pull/1503)) ([6690829](https://github.com/sanity-io/cli/commit/6690829a928d23e4979c6125561313a571f258f9))
+
+  Require organization flags when selection is ambiguous, validate dataset names as usage errors, and
+  keep dataset creation JSON machine-readable.
+
+- **cli:** support unattended mode for hook commands ([#1501](https://github.com/sanity-io/cli/pull/1501)) ([a7b1ad8](https://github.com/sanity-io/cli/commit/a7b1ad82b04e7a82aecb1d8b1b9397fb64089e80))
+
+  Print webhook creation URLs instead of opening a browser, and require names when deletion or log
+  selection would otherwise prompt.
+
+### Bug Fixes
+
+- **cli-core:** prevent silent SIGABRT (exit 134) in `sanity schemas deploy` and other one-shot studio worker commands ([#1554](https://github.com/sanity-io/cli/pull/1554)) ([9baab95](https://github.com/sanity-io/cli/commit/9baab9594e17ffa7a64a61871d09dbfcaf95b36e))
+
+  With Vite 8, studio bundling runs through rolldown — a native addon with its own thread pool. The studio worker never closed its Vite server, and the main thread called `worker.terminate()` as soon as the worker posted its result, destroying the worker's event loop while rolldown's threads were still live. The next threadsafe-function call then aborted the whole process with no output (reliably on macOS, intermittently on Linux), affecting `schemas deploy`/`extract`/`validate`/`list`/`delete`, `graphql deploy`, `manifest extract`, and `deploy`.
+
+  One-shot studio workers now close their Vite server (bounded by a timeout) before posting any message to the main thread, and the main thread never force-terminates them — settled workers are unref'd and tear down with the process. Errors thrown while loading the studio config (e.g. a broken `sanity.config.ts`) are serialized and posted after cleanup, so the real error surfaces instead of exit 134.
+
+- **workbench:** forward app slug to the dev workbench ([#1537](https://github.com/sanity-io/cli/pull/1537)) ([a2e001c](https://github.com/sanity-io/cli/commit/a2e001c07cefdce2a2c51556a362f966a64c8073))
+- **deps:** update sanity-tooling ([#1419](https://github.com/sanity-io/cli/pull/1419)) ([dfbab41](https://github.com/sanity-io/cli/commit/dfbab41b47d1942c59532e30c5e475b03e1dcabd))
+- **deps:** update oclif-tooling ([#1523](https://github.com/sanity-io/cli/pull/1523)) ([4ad2f44](https://github.com/sanity-io/cli/commit/4ad2f44c60eb202b3e1fd24391612f5535219eee))
+- **deps:** update dependency oxfmt to ^0.59.0 ([#1526](https://github.com/sanity-io/cli/pull/1526)) ([08212ac](https://github.com/sanity-io/cli/commit/08212ac9523f1d084cd13b9d2c43d200e7e8e619))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.5.0
+    - @sanity/cli-core bumped to 2.5.0
+
 ## [7.9.0](https://github.com/sanity-io/cli/compare/cli-v7.8.0...cli-v7.9.0)
 
 _2026-07-15_

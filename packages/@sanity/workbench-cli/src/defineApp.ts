@@ -6,6 +6,13 @@ import {ConfigSchema, InterfaceDeclarationSchema, ServiceDeclarationSchema} from
 const APP_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
 
 /**
+ * Dashboard visibility values. Mirrors `APP_VISIBILITIES` in `@sanity/cli-core`
+ * (which can't be imported here — pulling the barrel into this lean module bloats
+ * the config-load path). Kept in sync by a type test in `defineApp.test.ts`.
+ */
+const APP_VISIBILITIES = ['default', 'unlisted', 'disabled'] as const
+
+/**
  * Internal application discriminator. Sanity-owned singleton apps only;
  * validated by the schema but excluded from the public `DefineAppInput` type.
  */
@@ -105,6 +112,8 @@ export const DefineAppInputSchema = z
           ),
         ),
     ),
+    /** Dashboard visibility of the app. Defaults to `default` when omitted. */
+    visibility: z.optional(z.enum(APP_VISIBILITIES)),
   })
   .check(
     // Studio app views are not implemented yet. A studio that declares `entry`

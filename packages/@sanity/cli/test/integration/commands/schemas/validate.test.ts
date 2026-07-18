@@ -67,4 +67,19 @@ describe('#schema:validate', {timeout: 60 * 1000}, () => {
     expect(stdout).toContain('A type with name "post" is already defined in the schema')
     expect(error?.oclif?.exit).toBe(1)
   })
+
+  test('should surface errors thrown while loading the studio config', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    const configPath = join(cwd, 'sanity.config.ts')
+    const content = await readFile(configPath, 'utf8')
+    await writeFile(configPath, `throw new TypeError('Invalid studio config')\n${content}`)
+
+    const {error, stderr} = await testCommand(SchemaValidate, [])
+
+    expect(stderr).toContain('Validating schema')
+    expect(error?.message).toContain('Worker error: Invalid studio config')
+    expect(error?.oclif?.exit).toBe(1)
+  })
 })

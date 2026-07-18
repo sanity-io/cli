@@ -411,6 +411,56 @@ describe('#deploy app', () => {
     )
   })
 
+  test('ships the sanitized workbench app icon straight to Brett', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+    await writeFile(join(cwd, 'icon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><rect /></svg>')
+
+    mockDeployCoreApp.mockResolvedValue({applicationId: 'app_new'})
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      icon: './icon.svg',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    if (error) throw error
+    expect(mockDeployCoreApp).toHaveBeenCalledWith(
+      expect.objectContaining({icon: expect.stringContaining('<svg')}),
+    )
+  })
+
+  test('fails the deploy when the workbench app icon cannot be read (does not silently skip)', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      icon: './missing-icon.svg',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Could not read icon file')
+    expect(mockDeployCoreApp).not.toHaveBeenCalled()
+  })
+
   test('should PATCH user-application when manifest title differs from existing app title', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
@@ -470,7 +520,7 @@ describe('#deploy app', () => {
 
     if (error) throw error
     expect(stdout).toContain('Updating title from "Existing App" to "New Title From Manifest"')
-    expect(stderr).toContain('Updating application title')
+    expect(stderr).toContain('Updating application')
     expect(stdout).toContain('Success! Application deployed')
   })
 
@@ -517,7 +567,7 @@ describe('#deploy app', () => {
     })
 
     if (error) throw error
-    expect(stderr).not.toContain('Updating application title')
+    expect(stderr).not.toContain('Updating application')
     expect(stdout).toContain('Success! Application deployed')
   })
 

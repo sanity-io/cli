@@ -1,4 +1,4 @@
-import {type ApplicationType} from '@sanity/cli-core'
+import {type ApplicationType, type AppVisibility} from '@sanity/cli-core'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {
@@ -54,6 +54,11 @@ describe('unstable_defineApp', () => {
     expectTypeOf<
       Exclude<WorkbenchApp['applicationType'], undefined>
     >().toEqualTypeOf<ApplicationType>()
+  })
+
+  test("cli-core's `AppVisibility` mirror stays in sync with the schema enum", () => {
+    // The schema mirrors `APP_VISIBILITIES` locally to stay lean; this guards drift.
+    expectTypeOf<Exclude<WorkbenchApp['visibility'], undefined>>().toEqualTypeOf<AppVisibility>()
   })
 })
 
@@ -123,6 +128,24 @@ describe('DefineAppInputSchema (build-time validation)', () => {
         name: 'drop-desk',
         organizationId: 'org-1',
         title: 'Drop',
+      }).success,
+    ).toBe(false)
+  })
+
+  test('accepts a valid visibility, rejecting an out-of-set value', () => {
+    const parsed = DefineAppInputSchema.parse({
+      name: 'drop-desk',
+      organizationId: 'org-1',
+      title: 'Drop',
+      visibility: 'unlisted',
+    })
+    expect(parsed.visibility).toBe('unlisted')
+    expect(
+      DefineAppInputSchema.safeParse({
+        name: 'drop-desk',
+        organizationId: 'org-1',
+        title: 'Drop',
+        visibility: 'hidden',
       }).success,
     ).toBe(false)
   })

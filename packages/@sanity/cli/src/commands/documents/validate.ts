@@ -3,6 +3,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
+import {exitCodes} from '@sanity/cli-core'
 import {ProjectRootNotFoundError} from '@sanity/cli-core/errors'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {type CliConfig} from '@sanity/cli-core/types'
@@ -52,11 +53,12 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
     file: Flags.string({
       description:
-        'Provide a path to either an .ndjson file or a tarball containing an .ndjson file',
+        'Path to an NDJSON file or tar archive containing an NDJSON file (optionally gzip-compressed)',
     }),
     format: Flags.string({
       description:
         'The output format used to print the found validation markers and report progress',
+      options: ['json', 'ndjson', 'pretty'],
     }),
     level: Flags.custom<Level>({
       default: 'warning',
@@ -95,7 +97,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       'project-id': projectId,
       workspace,
     } = flags
-    const unattendedMode = Boolean(flags.yes)
+    const unattendedMode = this.isUnattended()
 
     let workDir: string
     let cliConfig: CliConfig
@@ -111,6 +113,30 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         )
       }
       throw err
+    }
+
+    let ndjsonFilePath
+    if (file) {
+      const filePath = path.resolve(workDir, file)
+
+      let fileStat
+      try {
+        fileStat = await stat(filePath)
+      } catch {
+        return this.output.error(
+          `File not found: ${file}. Pass an existing NDJSON file or tar archive with \`--file <path>\`.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
+
+      if (!fileStat.isFile()) {
+        return this.output.error(
+          `Invalid file path: ${file} is not a file. Pass an NDJSON file or tar archive with \`--file <path>\`.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
+
+      ndjsonFilePath = filePath
     }
 
     if (!unattendedMode) {
@@ -147,33 +173,9 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       })
 
       if (!confirmed) {
-        return this.output.error('User aborted', {exit: 1})
+        this.output.log('Validation cancelled')
+        return this.exit(exitCodes.USER_ABORT)
       }
-    }
-
-    if (format && !(format in reporters)) {
-      const formatter = new Intl.ListFormat('en-US', {
-        style: 'long',
-        type: 'conjunction',
-      })
-      return this.output.error(
-        `Did not recognize format '${format}'. Available formats are ${formatter.format(
-          Object.keys(reporters).map((key) => `'${key}'`),
-        )}`,
-        {exit: 1},
-      )
-    }
-
-    let ndjsonFilePath
-    if (file) {
-      const filePath = path.resolve(workDir, file)
-
-      const st = await stat(filePath)
-      if (!st.isFile()) {
-        return this.output.error(`'--file' must point to a valid ndjson file or tarball`, {exit: 1})
-      }
-
-      ndjsonFilePath = filePath
     }
 
     try {

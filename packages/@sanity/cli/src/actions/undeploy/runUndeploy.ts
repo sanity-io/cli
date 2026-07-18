@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {type Output, subdebug} from '@sanity/cli-core'
+import {exitCodes, type Output, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {
   type UndeployAdapter,
@@ -31,6 +31,7 @@ type UndeployFlags = UndeployCommand['flags']
 
 export interface UndeployOptions {
   flags: UndeployFlags
+  isUnattended: boolean
   output: Output
 }
 
@@ -108,12 +109,20 @@ async function undeployApp(
   }
 
   const {target} = resolution
+  if (!flags.yes && options.isUnattended) {
+    throw new CLIError('Undeploy requires confirmation. Pass --yes to continue.', {
+      exit: exitCodes.USAGE_ERROR,
+    })
+  }
+
   if (!flags.yes) {
     const shouldUndeploy = await confirm({
       default: false,
       message: confirmUndeployMessage(target),
     })
-    if (!shouldUndeploy) return undefined
+    if (!shouldUndeploy) {
+      throw new CLIError('Undeploy cancelled', {exit: exitCodes.USER_ABORT})
+    }
   }
 
   const label = undeployLabel(target, adapter.type)
@@ -214,7 +223,7 @@ function normalizeFailure(
 ): {exit: number; message: string} {
   // Ctrl+C on the confirmation prompt isn't a real failure
   if (error instanceof Error && error.name === 'ExitPromptError') {
-    return {exit: 1, message: 'Undeploy cancelled by user'}
+    return {exit: exitCodes.USER_ABORT, message: 'Undeploy cancelled'}
   }
   // A failed check already carries its own message and exit code
   if (error instanceof CLIError) {

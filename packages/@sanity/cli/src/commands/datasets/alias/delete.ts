@@ -1,5 +1,6 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
@@ -48,6 +49,13 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
     const {args, flags} = await this.parse(DeleteAliasCommand)
     const {force} = flags
 
+    const {apiName, displayName} = processAliasName(args.aliasName)
+
+    const nameError = validateDatasetAliasName(apiName)
+    if (nameError) {
+      this.error(nameError, {exit: exitCodes.USAGE_ERROR})
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -57,13 +65,6 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
           ],
         }),
     })
-
-    const {apiName, displayName} = processAliasName(args.aliasName)
-
-    const nameError = validateDatasetAliasName(apiName)
-    if (nameError) {
-      this.error(nameError, {exit: 1})
-    }
 
     try {
       const aliases = await listAliases(projectId)
@@ -78,6 +79,11 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
       if (force) {
         this.warn(`'--force' used: skipping confirmation, deleting alias "${displayName}"`)
       } else {
+        if (this.isUnattended()) {
+          this.error('Dataset alias deletion requires confirmation. Re-run with `--force`.', {
+            exit: exitCodes.USAGE_ERROR,
+          })
+        }
         await this.confirmDeletion(apiName, existingAlias.datasetName)
       }
 
@@ -85,6 +91,7 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
 
       this.log('Dataset alias deleted successfully')
     } catch (error) {
+      if (error instanceof CLIError) throw error
       const errorMessage = error instanceof Error ? error.message : String(error)
 
       deleteAliasDebug(`Error deleting dataset alias ${args.aliasName}`, error)

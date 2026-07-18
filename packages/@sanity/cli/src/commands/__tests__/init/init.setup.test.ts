@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -87,11 +88,15 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       `--${name2}=${value2} cannot also be provided when using --${name1}`,
     )
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test.each([
-    {flag: 'env', message: 'Env filename (`--env`) must start with `.env`', value: 'invalid.txt'},
+    {
+      flag: 'env',
+      message: 'Env filename (`--env`) must start with `.env`',
+      value: 'invalid.txt',
+    },
     {
       flag: 'visibility',
       message: 'Expected --visibility=opaque to be one of: public, private',
@@ -111,7 +116,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain(message)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('throws error when type argument is passed', async () => {
@@ -207,8 +212,10 @@ describe('#init: oclif command setup', () => {
     })
 
     // Should throw output-path error for non-Next.js projects
-    expect(error?.message).toContain('`--output-path` must be specified in unattended mode')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toBe(
+      'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
+    )
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('does not require `output-path` in unattended mode when `bare` is used', async () => {
@@ -226,7 +233,7 @@ describe('#init: oclif command setup', () => {
 
     // Should NOT throw output-path error — bare mode doesn't need it
     expect(error?.message ?? '').not.toContain(
-      '`--output-path` must be specified in unattended mode',
+      'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
     )
   })
 
@@ -250,10 +257,12 @@ describe('#init: oclif command setup', () => {
       },
     )
 
-    expect(error?.message).toContain(
-      '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
+    expect(error?.message).toBe(
+      'Project is required in unattended mode. Pass it with `--project <id>` or `--project-name <name>`.\n' +
+        'Error: Organization is required when creating a project in unattended mode. ' +
+        'Pass it with `--organization <id>`.',
     )
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('throws error when in unattended mode and `project-name` set without `organization`', async () => {
@@ -272,10 +281,31 @@ describe('#init: oclif command setup', () => {
       },
     )
 
-    expect(error?.message).toContain(
-      '`--project-name` requires `--organization <id>` in unattended mode',
+    expect(error?.message).toBe(
+      'Organization is required when creating a project in unattended mode. ' +
+        'Pass it with `--organization <id>`.',
     )
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('reports all missing unattended options before authentication', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+    const {error} = await testCommand(InitCommand, ['--yes'], {
+      mocks: {
+        ...defaultMocks,
+      },
+    })
+
+    expect(error?.message).toBe(
+      'Output path is required in unattended mode. Pass it with `--output-path <path>`.\n' +
+        'Error: Project is required in unattended mode. ' +
+        'Pass it with `--project <id>` or `--project-name <name>`.\n' +
+        'Error: Organization is required when creating a project in unattended mode. ' +
+        'Pass it with `--organization <id>`.',
+    )
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mocks.getById).not.toHaveBeenCalled()
   })
 
   test('logs properly if app template flag is not valid', async () => {

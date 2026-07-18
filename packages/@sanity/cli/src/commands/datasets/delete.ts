@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, logSymbols} from '@sanity/cli-core/ux'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
@@ -61,12 +61,17 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
 
     const dsError = validateDatasetName(datasetName)
     if (dsError) {
-      this.error(dsError, {exit: 1})
+      this.error(dsError, {exit: exitCodes.USAGE_ERROR})
     }
 
     if (force) {
       this.warn(`'--force' used: skipping confirmation, deleting dataset "${datasetName}"`)
     } else {
+      if (this.isUnattended()) {
+        this.error('Dataset deletion requires confirmation. Re-run with `--force`.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
       try {
         const project = await getProjectById(projectId)
         this.log(
@@ -81,20 +86,16 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
         this.error(`Project retrieval failed: ${err.message}`, {exit: 1})
       }
 
-      try {
-        await input({
-          message:
-            'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
-          validate: (input) => {
-            const trimmed = input.trim()
-            return trimmed === datasetName || 'Incorrect dataset name. Ctrl + C to cancel delete.'
-          },
-        })
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(`${error}`)
-        deleteDatasetDebug(`User cancelled`, err)
-        this.error(`User cancelled`, {exit: 1})
-      }
+      await input({
+        message: `Delete dataset "${datasetName}"?\n  Type the dataset name to confirm:`,
+        validate: (input) => {
+          const trimmed = input.trim()
+          return (
+            trimmed === datasetName ||
+            `Dataset name doesn't match. Enter "${datasetName}" or press Ctrl+C to cancel.`
+          )
+        },
+      })
     }
 
     try {

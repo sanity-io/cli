@@ -87,6 +87,36 @@ describe('deployCoreApp', () => {
 
     expect(appendedFields()).toContainEqual(['isSingleton', 'true'])
   })
+
+  test('sends the icon as a JSON part on create', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_new'})
+    const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
+
+    await deployCoreApp({...coreAppOptions, appId: undefined, icon})
+
+    expect(appendedFields()).toContainEqual(['icon', JSON.stringify(icon)])
+  })
+
+  test('PATCHes the icon after redeploying to an existing appId', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+    const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
+
+    await deployCoreApp({...coreAppOptions, appId: 'app_1', icon})
+
+    expect(mockClient.request.mock.calls[1][0]).toEqual({
+      body: {icon},
+      method: 'PATCH',
+      uri: '/applications/app_1',
+    })
+  })
+
+  test('skips the icon PATCH on redeploy when none is declared', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
+
+    await deployCoreApp({...coreAppOptions, appId: 'app_1'})
+
+    expect(mockClient.request).toHaveBeenCalledTimes(1)
+  })
 })
 
 const studioOptions = {
@@ -137,5 +167,18 @@ describe('deployStudio', () => {
       expect.objectContaining({exit: expect.any(Number)}),
     )
     expect(mockClient.request).not.toHaveBeenCalled()
+  })
+
+  test('PATCHes the icon after redeploying to an existing appId', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+    const icon = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>'
+
+    await deployStudio({...studioOptions, appId: 'app_1', icon, studioHost: undefined})
+
+    expect(mockClient.request.mock.calls[1][0]).toEqual({
+      body: {icon},
+      method: 'PATCH',
+      uri: '/applications/app_1',
+    })
   })
 })

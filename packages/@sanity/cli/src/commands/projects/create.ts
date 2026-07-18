@@ -1,5 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
+import {exitCodes} from '@sanity/cli-core'
 import {subdebug} from '@sanity/cli-core/debug'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {confirm, spinner} from '@sanity/cli-core/ux'
@@ -63,7 +64,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       parse: async (input) => {
         const datasetNameError = validateDatasetName(input)
         if (datasetNameError) {
-          throw new CLIError(datasetNameError, {exit: 2})
+          throw new CLIError(datasetNameError, {exit: exitCodes.USAGE_ERROR})
         }
 
         return input

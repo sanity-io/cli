@@ -1,7 +1,7 @@
 import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
@@ -75,6 +75,7 @@ export async function getApplication(applicationId: string): Promise<Application
 
 /** Create an application and its first deployment in one call. */
 export async function createApplication(options: {
+  icon?: string
   interfaces: readonly BrettInterface[]
   isSingleton?: boolean
   organizationId: string
@@ -84,9 +85,11 @@ export async function createApplication(options: {
   title: string
   type: ApplicationType
   version: string
+  visibility?: AppVisibility
   workspaces?: readonly BrettWorkspace[]
 }): Promise<Application> {
   const {
+    icon,
     interfaces,
     isSingleton,
     organizationId,
@@ -96,6 +99,7 @@ export async function createApplication(options: {
     title,
     type,
     version,
+    visibility,
     workspaces,
   } = options
   const formData = new FormData()
@@ -104,10 +108,31 @@ export async function createApplication(options: {
   formData.append('organizationId', organizationId)
   formData.append('slug', slug)
   if (isSingleton !== undefined) formData.append('isSingleton', String(isSingleton))
+  if (visibility) formData.append('visibility', visibility)
   // Studio config is set once, at create — it's immutable on redeploy.
   if (projectId) appendJson(formData, 'config', {studio: {projectId}})
+  // Application-level JSON part, independent of the deployment.
+  if (icon) appendJson(formData, 'icon', icon)
   appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
   return request(`/applications`, formData)
+}
+
+/** Mutable application fields the deploy flow patches after create. */
+export interface ApplicationUpdate {
+  icon?: string | null
+  title?: string
+}
+
+/**
+ * Patch an application's mutable fields. The deploy endpoint ignores these, so a
+ * redeploy updates them here alongside the new deployment (e.g. a changed icon).
+ */
+export async function updateApplication(
+  applicationId: string,
+  update: ApplicationUpdate,
+): Promise<void> {
+  const client = await getClient()
+  await client.request({body: update, method: 'PATCH', uri: `/applications/${applicationId}`})
 }
 
 /** Deploy a new active version to an existing application. */

@@ -4,7 +4,7 @@
 // build their command-specific view on top of this one brand-check +
 // extraction, so the discrimination lives in exactly one place.
 
-import {type CliConfig} from '@sanity/cli-core'
+import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 
 import {type DefineAppInput, isWorkbenchApp, readConfig, type WorkbenchApp} from './defineApp.js'
 
@@ -35,10 +35,14 @@ export interface ResolvedWorkbenchApp {
   readonly config?: WorkbenchApp['config']
   /** SDK app-view entrypoint, when declared. */
   readonly entry?: string
+  /** Path to the app's icon SVG, resolved and shipped to Brett on deploy. */
+  readonly icon?: string
   /** Explicit singleton flag (a Sanity-owned app); `undefined` when the app doesn't set it. */
   readonly isSingleton?: boolean
   /** Hostname the application is created at on first deploy. */
   readonly slug?: string
+  /** Dashboard visibility declared by the app; `undefined` when unset. */
+  readonly visibility?: AppVisibility
 }
 
 /**
@@ -55,10 +59,12 @@ export function resolveWorkbenchApp(
     applicationType: app.applicationType,
     config: readConfig(app),
     entry: app.entry,
+    icon: app.icon,
     isSingleton: app.isSingleton,
     name: app.name,
     services: app.services ?? [],
     slug: app.slug,
     views: app.views ?? [],
+    visibility: app.visibility,
   }
 }

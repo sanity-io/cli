@@ -4,7 +4,11 @@ import babel from '@rolldown/plugin-babel'
 import {findProjectRoot} from '@sanity/cli-core/config'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
-import {type WorkbenchExposes, workbenchVitePlugins} from '@sanity/workbench-cli/build'
+import {
+  type WorkbenchExposes,
+  workbenchOptimizeDeps,
+  workbenchVitePlugins,
+} from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -254,6 +258,19 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
         clientFiles: ['./.sanity/runtime/app.js'],
       },
     },
+  }
+
+  // Front-load the deps the federation `exposes` reach only via the host's
+  // dynamic imports, which Vite's dep scanner (crawling from the HTML entry)
+  // otherwise misses — see `workbenchOptimizeDeps`. Dev-server only; Vite
+  // ignores `optimizeDeps` at build. Set before the userland `vite` hook so an
+  // app can still extend the list.
+  if (isWorkbenchApp && mode === 'development') {
+    const runtimeDir = path.join(cwd, '.sanity', 'runtime')
+    const appSources = [entries.relativeEntry, entries.relativeConfigLocation]
+      .filter((relativePath): relativePath is string => relativePath !== null)
+      .map((relativePath) => path.resolve(runtimeDir, relativePath))
+    viteConfig.optimizeDeps = workbenchOptimizeDeps({appSources, cwd, exposes})
   }
 
   // Federation builds don't produce a client bundle — the federation

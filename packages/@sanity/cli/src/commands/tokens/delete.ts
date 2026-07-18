@@ -1,10 +1,11 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteToken, getTokens} from '../../services/tokens.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteTokenDebug = subdebug('tokens:delete')
@@ -57,14 +58,25 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(DeleteTokensCommand)
 
-    const unattended = flags.yes
+    const skipConfirmation = flags.yes
+    const unattended = this.isUnattended()
     const {tokenId: givenTokenId} = args
 
-    if (unattended && !givenTokenId) {
-      this.error(
-        'Token ID is required in non-interactive mode. Provide a token ID as an argument.',
-        {exit: 1},
-      )
+    if (unattended) {
+      const errors: string[] = []
+
+      if (!givenTokenId) {
+        errors.push('Token ID is required. Pass it as the `<tokenId>` argument.')
+      }
+      if (!skipConfirmation) {
+        errors.push('Deletion requires confirmation. Pass `--yes` to delete the token.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
     }
 
     // Ensure we have project context
@@ -77,28 +89,27 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
 
     this.projectId = projectId
 
-    let tokenId: string | undefined
+    const tokenId = givenTokenId || (await this.getTokenIdFromList())
+
+    if (!skipConfirmation) {
+      const confirmed = await confirm({
+        default: false,
+        message: `Delete API token "${tokenId}"?`,
+      })
+
+      if (!confirmed) {
+        this.log('API token not deleted')
+        this.exit(exitCodes.USER_ABORT)
+      }
+    }
 
     try {
-      tokenId = givenTokenId || (await this.getTokenIdFromList())
-
-      if (!unattended) {
-        const confirmed = await confirm({
-          default: false,
-          message: `Are you sure you want to delete the token with ID "${tokenId}"?`,
-        })
-
-        if (!confirmed) {
-          this.error('Operation cancelled', {exit: 1})
-        }
-      }
-
       await deleteToken({
         projectId: this.projectId,
         tokenId,
       })
 
-      this.log('Token deleted successfully')
+      this.log('API token deleted')
     } catch (error) {
       if (error instanceof ClientError && error.response.statusCode === 404) {
         this.error(`Token with ID "${tokenId}" not found`, {exit: 1})
@@ -111,10 +122,22 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   }
 
   private async getTokenIdFromList() {
-    const tokens = await getTokens(this.projectId)
+    let tokens: Awaited<ReturnType<typeof getTokens>>
+    try {
+      tokens = await getTokens(this.projectId)
+    } catch (error) {
+      const err = error as Error
+      deleteTokenDebug(`Error fetching tokens for project ${this.projectId}`, err)
+      this.error(
+        `Could not list API tokens:\n${err.message}\nCheck the project ID and your access permissions, then try again.`,
+        {exit: exitCodes.RUNTIME_ERROR},
+      )
+    }
 
     if (tokens.length === 0) {
-      this.error('No tokens found', {exit: 1})
+      this.error('No API tokens found for this project.', {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const choices = tokens.map((token) => ({

@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -19,6 +20,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -99,6 +101,71 @@ describe('#invite', () => {
     expect(stdout).toContain('Invitation sent to test@example.com')
   })
 
+  test('requires email and role in unattended mode', async () => {
+    const missingBoth = await testCommand(UsersInviteCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
+        isInteractive: false,
+      },
+    })
+    expect(missingBoth.error?.message).toBe(
+      'Email address is required. Pass it as the `<email>` argument.\n' +
+        'Error: User role is required. Pass it with `--role <role>`.',
+    )
+    expect(missingBoth.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+
+    const missingEmail = await testCommand(UsersInviteCommand, ['--role', 'developer'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+    expect(missingEmail.error?.message).toContain('<email>')
+    expect(missingEmail.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+
+    const missingRole = await testCommand(UsersInviteCommand, ['test@example.com'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+    expect(missingRole.error?.message).toContain('--role <role>')
+    expect(missingRole.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(input).not.toHaveBeenCalled()
+    expect(select).not.toHaveBeenCalled()
+  })
+
+  test('uses provided values without prompting in unattended mode', async () => {
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/projects/${testProjectId}/roles`,
+    }).reply(200, mockRoles)
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'post',
+      uri: `/invitations/project/${testProjectId}`,
+    }).reply(200, function (_, requestBody) {
+      expect(requestBody).toEqual({email: 'test@example.com', role: 'developer'})
+      return {}
+    })
+
+    const {error, stdout} = await testCommand(
+      UsersInviteCommand,
+      [' test@example.com ', '--role', 'developer'],
+      {mocks: {...defaultMocks, isInteractive: false}},
+    )
+
+    if (error) throw error
+    expect(stdout).toContain('Invitation sent to test@example.com')
+    expect(input).not.toHaveBeenCalled()
+    expect(select).not.toHaveBeenCalled()
+  })
+
+  test('validates an email argument before fetching roles', async () => {
+    const {error} = await testCommand(UsersInviteCommand, ['not-an-email', '--role', 'developer'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('valid email address')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
   test('invites user with email provided via args and role as flag', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
@@ -135,7 +202,7 @@ describe('#invite', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Role name "invalid-role" not found')
     expect(error?.message).toContain('Available roles:')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('exits when project ID is not found', async () => {
@@ -239,7 +306,7 @@ describe('#invite', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Role name "robot" not found')
     expect(error?.message).toContain('Available roles:')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('role names are case insensitive', async () => {

@@ -54,7 +54,7 @@
     "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli*"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.0",
+    "@changesets/cli": "^2.31.1",
     "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.2",
     "@commitlint/types": "^20.4.0",
@@ -64,11 +64,11 @@
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "husky": "^9.1.7",
-    "knip": "^6.26.0",
+    "knip": "^6.27.0",
     "lint-staged": "^16.4.0",
     "oxfmt": "catalog:",
     "rimraf": "catalog:",
-    "turbo": "^2.9.18",
+    "turbo": "^2.10.5",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

@@ -1,7 +1,7 @@
 import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
-import {exitCodes, type Output} from '@sanity/cli-core'
+import {type AppVisibility, exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -10,6 +10,7 @@ import {
   type BrettWorkspace,
   createApplication,
   createDeployment,
+  updateApplication,
 } from '../../services/applications.js'
 
 /**
@@ -20,6 +21,7 @@ import {
  */
 export async function deployCoreApp(options: {
   appId: string | undefined
+  icon?: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
   isSingleton?: boolean
@@ -28,9 +30,11 @@ export async function deployCoreApp(options: {
   sourceDir: string
   title: string
   version: string
+  visibility?: AppVisibility
 }): Promise<{applicationId: string}> {
   const {
     appId,
+    icon,
     interfaces,
     isAutoUpdating,
     isSingleton,
@@ -39,6 +43,7 @@ export async function deployCoreApp(options: {
     sourceDir,
     title,
     version,
+    visibility,
   } = options
   const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
 
@@ -46,11 +51,13 @@ export async function deployCoreApp(options: {
   try {
     if (appId) {
       await createDeployment({applicationId: appId, interfaces, isAutoUpdating, tarball, version})
+      if (icon) await updateApplication(appId, {icon})
       spin.succeed()
       return {applicationId: appId}
     }
 
     const {id} = await createApplication({
+      icon,
       interfaces,
       isSingleton,
       organizationId,
@@ -59,6 +66,7 @@ export async function deployCoreApp(options: {
       title,
       type: 'coreApp',
       version,
+      visibility,
     })
     spin.succeed()
     return {applicationId: id}
@@ -76,6 +84,7 @@ export async function deployCoreApp(options: {
  */
 export async function deployStudio(options: {
   appId: string | undefined
+  icon?: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
   organizationId: string
@@ -89,6 +98,7 @@ export async function deployStudio(options: {
 }): Promise<{applicationId: string}> {
   const {
     appId,
+    icon,
     interfaces,
     isAutoUpdating,
     organizationId,
@@ -113,6 +123,7 @@ export async function deployStudio(options: {
         version,
         workspaces,
       })
+      if (icon) await updateApplication(appId, {icon})
       spin.succeed()
       return {applicationId: appId}
     }
@@ -126,6 +137,7 @@ export async function deployStudio(options: {
     }
 
     const application = await createApplication({
+      icon,
       interfaces,
       organizationId,
       projectId,

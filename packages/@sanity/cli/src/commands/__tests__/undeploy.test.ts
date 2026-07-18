@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {unstable_defineApp, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
@@ -45,6 +46,7 @@ describe('#undeploy', () => {
           api: {projectId: 'test'},
           studioHost: 'my-host',
         },
+        isInteractive: true,
         token: 'test-token',
       },
     })
@@ -75,6 +77,7 @@ describe('#undeploy', () => {
           app: {},
           deployment: {appId: 'core-id'},
         },
+        isInteractive: true,
         token: 'test-token',
       },
     })
@@ -115,6 +118,7 @@ describe('#undeploy', () => {
           app: {},
           deployment: {appId: 'core-id'},
         },
+        isInteractive: true,
         token: 'test-token',
       },
     })
@@ -163,7 +167,7 @@ describe('#undeploy', () => {
 
     vi.mocked(confirm).mockResolvedValueOnce(false)
 
-    await testCommand(UndeployCommand, [], {
+    const {error} = await testCommand(UndeployCommand, [], {
       mocks: {
         cliConfig: {
           api: {projectId: 'test'},
@@ -174,7 +178,27 @@ describe('#undeploy', () => {
       },
     })
 
-    // No delete call should be made since prompt was rejected
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
+  })
+
+  test('requires --yes before prompting in unattended mode', async () => {
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      query: {appHost: 'my-host', appType: 'studio'},
+      uri: '/projects/test/user-applications',
+    }).reply(200, {appHost: 'my-host', id: 'app-id'})
+
+    const {error} = await testCommand(UndeployCommand, [], {
+      mocks: {
+        cliConfig: {api: {projectId: 'test'}, studioHost: 'my-host'},
+        isInteractive: false,
+        token: 'test-token',
+      },
+    })
+
+    expect(error?.message).toContain('Pass --yes to continue')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(confirm).not.toHaveBeenCalled()
   })
 
   test('undeploys if prompt is accepted', async () => {
@@ -533,7 +557,7 @@ describe('#undeploy', () => {
     expect(payload.application.id).toBe('app-id')
   })
 
-  test('--json without --yes undeploys unattended, never prompting', async () => {
+  test('--json without --yes reports the required confirmation as JSON', async () => {
     mockApi({
       apiVersion: 'v2024-08-01',
       query: {appHost: 'my-host', appType: 'studio'},
@@ -543,14 +567,7 @@ describe('#undeploy', () => {
       id: 'app-id',
     })
 
-    mockApi({
-      apiVersion: 'v2024-08-01',
-      method: 'delete',
-      query: {appType: 'studio'},
-      uri: '/user-applications/app-id',
-    }).reply(200)
-
-    const {stdout} = await testCommand(UndeployCommand, ['--json'], {
+    const {error, stdout} = await testCommand(UndeployCommand, ['--json'], {
       mocks: {
         cliConfig: {
           api: {projectId: 'test'},
@@ -562,7 +579,13 @@ describe('#undeploy', () => {
 
     expect(confirm).not.toHaveBeenCalled()
     const payload = JSON.parse(stdout)
-    expect(payload.undeployed).toBe(true)
+    expect(payload).toEqual({
+      error: {
+        message: 'Undeploy requires confirmation. Pass --yes to continue.',
+      },
+      undeployed: false,
+    })
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('workbench app dry run resolves the Brett application', async () => {
