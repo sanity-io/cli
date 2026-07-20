@@ -391,6 +391,29 @@ describe('#deploy app', () => {
     expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
   })
 
+  test('rejects --no-build on a first deploy, whose minted id could not be inlined', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, ['--no-build'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    expect(error).toBeDefined()
+    // Nothing was created — the guard fires before the app record is minted.
+    expect(mockCreateCoreApp).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
   test('a dry run surfaces the configured slug and creates nothing', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd

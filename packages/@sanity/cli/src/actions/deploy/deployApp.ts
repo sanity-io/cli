@@ -137,6 +137,17 @@ async function runAppDeployment(
     ;({application, created: appCreated} = await resolveAppApplication(options, {dryRun, reporter}))
   }
 
+  // A first deploy mints the app id and the build inlines it; --no-build would
+  // ship an existing bundle carrying a different id, so it can't be a first deploy.
+  if (deployApplication && workbench && !appId && !flags.external && !flags.build) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'A first deploy cannot skip the build (--no-build)',
+      solution: 'Drop --no-build so the new application id is inlined into the build',
+      status: 'fail',
+    })
+  }
+
   // Read up front so a bad icon path fails before we create or build.
   const appIcon =
     !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
