@@ -43,22 +43,30 @@ const request = createRequester({
  * streaming starts, the read timeout is reset for every received chunk.
  *
  * @param url - Backup response URL
- * @param destination - Stream that receives the response body
+ * @param createDestination - Creates the stream that receives the response body.
+ *   Deferred so no destination (e.g. an empty file) exists when the request fails.
  * @returns HTTP response status
  * @internal
  */
-export async function downloadStream(url: string, destination: Writable): Promise<number> {
+export async function downloadStream(
+  url: string,
+  createDestination: () => Writable,
+): Promise<number> {
   const abortController = new AbortController()
 
-  let response: StreamResponse
+  const response: StreamResponse = await request({
+    as: 'stream',
+    signal: abortController.signal,
+    url,
+  })
+
+  let destination: Writable
   try {
-    response = await request({
-      as: 'stream',
-      signal: abortController.signal,
-      url,
-    })
+    destination = createDestination()
   } catch (error) {
-    destination.destroy()
+    await response.body.cancel().catch(() => {
+      // Surface the destination error, not the cancellation error.
+    })
     throw error
   }
 

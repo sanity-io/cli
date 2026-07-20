@@ -69,7 +69,9 @@ describe('#downloadStream', () => {
       ),
     )
 
-    const status = await downloadStream('https://example.com/backup', createDestination(chunks))
+    const status = await downloadStream('https://example.com/backup', () =>
+      createDestination(chunks),
+    )
 
     expect(status).toBe(206)
     expect(Buffer.concat(chunks).toString()).toBe('hello world')
@@ -84,15 +86,28 @@ describe('#downloadStream', () => {
     })
   })
 
-  test('destroys the destination when the request fails before streaming', async () => {
-    const destination = createDestination()
+  test('does not create the destination when the request fails', async () => {
+    const createFailedDestination = vi.fn(() => createDestination())
     mockRequest.mockRejectedValue(new Error('Request failed'))
 
-    await expect(downloadStream('https://example.com/backup', destination)).rejects.toThrow(
-      'Request failed',
-    )
+    await expect(
+      downloadStream('https://example.com/backup', createFailedDestination),
+    ).rejects.toThrow('Request failed')
 
-    expect(destination.destroyed).toBe(true)
+    expect(createFailedDestination).not.toHaveBeenCalled()
+  })
+
+  test('cancels the response when creating the destination fails', async () => {
+    const cancel = vi.fn()
+    mockRequest.mockResolvedValue(createResponse(new ReadableStream({cancel})))
+
+    await expect(
+      downloadStream('https://example.com/backup', () => {
+        throw new Error('Destination unavailable')
+      }),
+    ).rejects.toThrow('Destination unavailable')
+
+    expect(cancel).toHaveBeenCalledOnce()
   })
 
   test('starts a separate connection timeout for each retry attempt', async () => {
@@ -140,7 +155,7 @@ describe('#downloadStream', () => {
       ),
     )
 
-    const download = downloadStream('https://example.com/backup', createDestination())
+    const download = downloadStream('https://example.com/backup', () => createDestination())
     const rejection = expect(download).rejects.toThrow(
       'Backup download stalled: no data received for 3 minutes. Try again.',
     )

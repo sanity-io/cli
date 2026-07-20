@@ -1164,6 +1164,9 @@ importers:
       esbuild:
         specifier: ^0.28.1
         version: 0.28.1
+      get-it:
+        specifier: ^9.1.0
+        version: 9.1.0(vitest@4.1.10)
       nock:
         specifier: 'catalog:'
         version: 14.0.15
@@ -4784,8 +4787,8 @@ packages:
       '@sanity/types':
         optional: true
 
-  '@sanity/workbench@0.1.0-alpha.24':
-    resolution: {integrity: sha512-235mR37+z8eg9OQqhUwgkQ4dZnveFHczUTgW2jk81qm1pP6vMlTdEAiKpz1Tq4zU9zRfg2xck51DP1VlkVzdWA==}
+  '@sanity/workbench@0.1.0-alpha.25':
+    resolution: {integrity: sha512-B4TeDPVoLpTm2AlKiRhvwWyiP3Ep3WlYj+uIBl3ZHk2Jg0oLEtJTO7G3JQs9I9e1plx+lBlqxdnXoj02QJcLlQ==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       '@sanity/sdk': ^2.9.0
@@ -13832,10 +13835,9 @@ snapshots:
     optionalDependencies:
       '@sanity/types': 6.5.0-workbench.20260714145319(@types/react@19.2.17)
 
-  '@sanity/workbench@0.1.0-alpha.24(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)':
+  '@sanity/workbench@0.1.0-alpha.25(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)':
     dependencies:
       '@module-federation/runtime': 2.7.0
-      '@sanity/message-protocol': 0.23.0
       '@sanity/sdk': 2.15.0(@types/react@19.2.17)(immer@11.1.8)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4)
       '@sanity/telemetry': 1.1.0(react@19.2.7)
       rxjs: 7.8.2
@@ -18229,7 +18231,7 @@ snapshots:
       '@sanity/ui': 3.3.5(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(styled-components@6.4.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@sanity/util': 6.5.0-workbench.20260714145319(@types/react@19.2.17)
       '@sanity/uuid': 3.0.3
-      '@sanity/workbench': 0.1.0-alpha.24(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)
+      '@sanity/workbench': 0.1.0-alpha.25(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)
       '@sentry/react': 10.65.0(react@19.2.7)
       '@tanstack/react-table': 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/react-virtual': 3.14.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

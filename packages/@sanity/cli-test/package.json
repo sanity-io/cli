@@ -123,6 +123,7 @@
     "@swc/core": "catalog:",
     "ansis": "^4.2.0",
     "esbuild": "^0.28.1",
+    "get-it": "^9.1.0",
     "nock": "catalog:",
     "tinyglobby": "catalog:"
   },

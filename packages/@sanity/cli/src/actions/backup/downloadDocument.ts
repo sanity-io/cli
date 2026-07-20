@@ -11,13 +11,16 @@ import {downloadStream} from './downloadStream.js'
  */
 export async function downloadDocument(url: string): Promise<string> {
   const chunks: Buffer[] = []
-  const destination = new Writable({
-    write(chunk: Buffer, _encoding, callback) {
-      chunks.push(Buffer.from(chunk))
-      callback()
-    },
-  })
-  const status = await downloadStream(url, destination)
+  const status = await downloadStream(
+    url,
+    () =>
+      new Writable({
+        write(chunk: Buffer, _encoding, callback) {
+          chunks.push(Buffer.from(chunk))
+          callback()
+        },
+      }),
+  )
 
   backupDownloadDebug('Received document from %s with status code %d', url, status)
 

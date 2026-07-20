@@ -8,18 +8,11 @@ async function passthroughMiddleware(opts: unknown, next: (opts: unknown) => unk
 export const mockRequest: Mock = vi.fn()
 /** @internal */
 export const createRequester: Mock = vi.fn(() => mockRequest)
+// Re-export the real error class (from get-it directly, since the
+// `@sanity/cli-core/request` module id is the one being mocked) so
+// `instanceof HttpError` checks behave the same under the mock.
 /** @internal */
-export const HttpError = class HttpError extends Error {
-  response: unknown
-  status: number
-  statusText: string
-  constructor(message = 'HTTP Error') {
-    super(message)
-    this.status = 500
-    this.statusText = 'Internal Server Error'
-    this.response = undefined
-  }
-}
+export {HttpError} from 'get-it'
 /** @internal */
 export const debug: Mock = vi.fn(() => passthroughMiddleware)
 /** @internal */

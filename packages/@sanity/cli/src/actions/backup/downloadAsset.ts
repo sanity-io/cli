@@ -25,7 +25,7 @@ export async function downloadAsset(
 
   const assetFilePath = getAssetFilePath(normalizedFileName, fileType, outDir)
 
-  const status = await downloadStream(url, createWriteStream(assetFilePath))
+  const status = await downloadStream(url, () => createWriteStream(assetFilePath))
 
   backupDownloadDebug('Received asset %s with status code %d', normalizedFileName, status)
 }

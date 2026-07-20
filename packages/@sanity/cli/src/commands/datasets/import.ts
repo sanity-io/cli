@@ -42,7 +42,9 @@ async function getUriStream(uri: string): Promise<NodeJS.ReadableStream> {
   const request = createRequester()
 
   try {
-    const response = await request({as: 'stream', url: uri})
+    // No timeout: large dataset exports may stream for longer than get-it's
+    // default request timeout, which would abort the body mid-transfer.
+    const response = await request({as: 'stream', timeout: false, url: uri})
     return nodeReadableFromWeb(response.body)
   } catch (err) {
     throw new Error(`Error fetching source:\n${(err as Error).message}`, {cause: err})

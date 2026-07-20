@@ -131,6 +131,15 @@ describe('#createRequester', () => {
     expect(mockPackageUp).not.toHaveBeenCalled()
   })
 
+  test('detects User-Agent overrides case-insensitively', () => {
+    createRequester({headers: {'uSeR-aGeNt': 'custom-agent'}})
+
+    const headersObj = mockCreateGetItRequester.mock.calls[0][0].headers as Record<string, string>
+    expect(headersObj['uSeR-aGeNt']).toBe('custom-agent')
+    expect(headersObj['User-Agent']).toBeUndefined()
+    expect(mockPackageUp).not.toHaveBeenCalled()
+  })
+
   test('disables debug when set to false', () => {
     createRequester({debug: false})
 
@@ -190,14 +199,18 @@ describe('#createRequester', () => {
 
     expect(mockDebugMiddleware).not.toHaveBeenCalled()
     expect(mockCreateGetItRequester).toHaveBeenCalledWith({
-      as: undefined,
-      base: undefined,
-      fetch: undefined,
       headers: undefined,
       httpErrors: false,
       middleware: [],
-      timeout: undefined,
     })
+  })
+
+  test('forwards unknown get-it options untouched', () => {
+    createRequester({credentials: 'include'})
+
+    expect(mockCreateGetItRequester).toHaveBeenCalledWith(
+      expect.objectContaining({credentials: 'include'}),
+    )
   })
 
   test('throws when package.json cannot be found', () => {

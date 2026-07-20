@@ -4,8 +4,8 @@ import debugIt from 'debug'
 import {up as packageUp} from 'empathic/package'
 import {
   createRequester as createGetItRequester,
-  type FetchFunction,
   type FetchHeaders,
+  type RequesterOptions,
   type RequestFunction,
   type TransformMiddleware,
   type WrappingMiddleware,
@@ -17,35 +17,23 @@ let cachedPkg: {name: string; version: string} | undefined
 /**
  * Options for creating a Sanity CLI requester.
  *
- * Extends get-it v9's requester options with Sanity CLI defaults for
+ * Extends get-it v9's {@link RequesterOptions} with Sanity CLI defaults for
  * User-Agent headers and debug logging.
  *
  * @public
  */
-export type CreateRequesterOptions = {
-  /** Default response format. Per-request `as` overrides this. */
-  as?: 'json' | 'stream' | 'text'
-  /** Base URL prepended to relative request URLs. */
-  base?: string
+export type CreateRequesterOptions = Omit<RequesterOptions, 'headers'> & {
   /**
    * Debug logging middleware. Defaults to enabled with namespace `sanity:cli`.
    * Pass `false` to disable.
    */
   debug?: false | {namespace?: string; verbose?: boolean}
-  /** Custom fetch implementation. */
-  fetch?: FetchFunction
   /**
    * Default headers for all requests.
    * Omitting uses a lazy User-Agent of `@sanity/cli-core@<version>`.
    * Pass `false` to send no default headers.
    */
   headers?: false | Record<string, string>
-  /** When `true` (default), throws `HttpError` for 4xx/5xx responses. */
-  httpErrors?: boolean
-  /** Additional middleware (e.g. `retry()`). */
-  middleware?: Array<TransformMiddleware | WrappingMiddleware>
-  /** Default request timeout in milliseconds. Set to `false` to disable. */
-  timeout?: false | number
 }
 
 /**
@@ -73,25 +61,20 @@ export function createRequester(options?: CreateRequesterOptions): RequestFuncti
 export function createRequester(
   options?: CreateRequesterOptions,
 ): RequestFunction<'json' | 'stream' | 'text' | undefined> {
-  const middleware: Array<TransformMiddleware | WrappingMiddleware> = [
-    ...(options?.middleware ?? []),
-  ]
+  const {debug, headers, middleware = [], ...getItOptions} = options ?? {}
 
-  if (options?.debug !== false) {
+  const resolvedMiddleware: Array<TransformMiddleware | WrappingMiddleware> = [...middleware]
+  if (debug !== false) {
     const debugDefaults = {namespace: 'sanity:cli', verbose: true}
-    const customDebug = typeof options?.debug === 'object' ? options.debug : {}
+    const customDebug = typeof debug === 'object' ? debug : {}
     const {namespace, verbose} = {...debugDefaults, ...customDebug}
-    middleware.push(debugMiddleware({log: debugIt(namespace), verbose}))
+    resolvedMiddleware.push(debugMiddleware({log: debugIt(namespace), verbose}))
   }
 
   return createGetItRequester({
-    as: options?.as,
-    base: options?.base,
-    fetch: options?.fetch,
-    headers: resolveDefaultHeaders(options?.headers),
-    httpErrors: options?.httpErrors,
-    middleware,
-    timeout: options?.timeout,
+    ...getItOptions,
+    headers: resolveDefaultHeaders(headers),
+    middleware: resolvedMiddleware,
   })
 }
 
@@ -108,7 +91,7 @@ function resolveDefaultHeaders(
   }
 
   const customHeaders = typeof headers === 'object' ? headers : {}
-  if (customHeaders['User-Agent'] || customHeaders['user-agent']) {
+  if (Object.keys(customHeaders).some((header) => header.toLowerCase() === 'user-agent')) {
     return customHeaders
   }
 
