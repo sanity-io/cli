@@ -304,6 +304,7 @@ describe('#deploy app', () => {
     const app = unstable_defineApp({
       name: 'workbench-app',
       organizationId,
+      slug: 'workbench-app',
       title: 'Workbench App',
     })
 
@@ -385,30 +386,6 @@ describe('#deploy app', () => {
       url: null,
     })
     expect(mockDeployCoreApp).not.toHaveBeenCalled()
-  })
-
-  test('creates a workbench app at a generated slug when none is set', async () => {
-    const cwd = await testFixture('basic-app')
-    process.cwd = () => cwd
-
-    mockDeployCoreApp.mockResolvedValue({applicationId: 'app_new'})
-
-    const app = unstable_defineApp({
-      entry: './src/App.tsx',
-      name: 'workbench-app',
-      organizationId,
-      title: 'Workbench App',
-    })
-
-    const {error} = await testCommand(DeployCommand, [], {
-      config: {root: cwd},
-      mocks: {cliConfig: {app}},
-    })
-
-    if (error) throw error
-    expect(mockDeployCoreApp).toHaveBeenCalledWith(
-      expect.objectContaining({slug: expect.stringMatching(/^[a-z][a-z0-9]{11}$/)}),
-    )
   })
 
   test('ships the sanitized workbench app icon straight to Brett', async () => {

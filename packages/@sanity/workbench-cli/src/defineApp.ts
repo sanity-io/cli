@@ -89,12 +89,7 @@ export const DefineAppInputSchema = z
           ),
         ),
     ),
-    /**
-     * Hostname the application is created at on first deploy. Generated when
-     * omitted; redeploys target `deployment.appId` and ignore it. SDK apps
-     * only — studios use `studioHost` in sanity.cli.ts.
-     */
-    slug: z.optional(z.string()),
+    slug: z.string('App `slug` is required — the hostname the application is created at on deploy'),
     /** User-facing app title. Wins over studio.config.ts title on merge. */
     title: z.string(),
     /**
@@ -247,6 +242,7 @@ export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): Def
     isSingleton: true,
     name: 'media-library',
     organizationId: input.organizationId,
+    slug: 'media-library',
     title: 'Media Library',
   })
 }
