@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand} from '@sanity/cli-core'
 import {boxen, spinner} from '@sanity/cli-core/ux'
 import {SanityClient} from '@sanity/client'
 import {type OperatorFunction, pipe, scan, tap} from 'rxjs'
@@ -81,6 +81,11 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
 
     let mediaLibraryId = flags['media-library-id']
     if (!mediaLibraryId) {
+      if (this.isUnattended()) {
+        this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
       try {
         mediaLibraryId = await promptForMediaLibrary({mediaLibraries})
       } catch (error) {

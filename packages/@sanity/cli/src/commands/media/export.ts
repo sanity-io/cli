@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
 import prettyMs from 'pretty-ms'
@@ -94,6 +94,11 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
 
     let mediaLibraryId = flags['media-library-id']
     if (!mediaLibraryId) {
+      if (this.isUnattended()) {
+        this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
       try {
         mediaLibraryId = await promptForMediaLibrary({mediaLibraries})
       } catch (error) {
@@ -125,7 +130,9 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
 
     let destinationPath = targetDestination
     if (!destinationPath) {
-      destinationPath = await this.promptForDestination({mediaLibraryId})
+      destinationPath = this.isUnattended()
+        ? path.join(process.cwd(), `${mediaLibraryId}-export.tar.gz`)
+        : await this.promptForDestination({mediaLibraryId})
     }
 
     const outputPath = await this.getOutputPath(destinationPath, mediaLibraryId, flags)
@@ -216,8 +223,8 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
     const finalPathStats = await fs.stat(finalPath).catch(noop)
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
-      this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
-        exit: 1,
+      this.error(`File "${finalPath}" already exists. Pass \`--overwrite\` to replace it.`, {
+        exit: exitCodes.USAGE_ERROR,
       })
     }
 
