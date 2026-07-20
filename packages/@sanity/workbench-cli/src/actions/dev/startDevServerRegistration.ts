@@ -68,10 +68,10 @@ export async function startDevServerRegistration(
   const registration = registerDevServer({
     configs,
     host: appHost,
-    // Keyed by where it's served, not its deployment app id, so a running app
-    // can't collide with its deployed twin. Matches the served bundle's
-    // `__SANITY_APP_ID__` (see `resolveAppId`).
-    id: resolveAppId({host: appHost, port: appPort}),
+    // Keyed by where it's served (not the deployment id), so a running app can't
+    // collide with its deployed twin — on the configured port, not the bound one,
+    // to match `__SANITY_APP_ID__`, compiled before any non-strict shift.
+    id: resolveAppId({host: appHost, port: server.config.server.port ?? appPort}),
     interfaces,
     port: appPort,
     projectId: cliConfig?.api?.projectId,

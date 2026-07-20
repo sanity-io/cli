@@ -23,10 +23,14 @@ vi.mock('../startDevManifestWatcher.js', () => ({
   startDevManifestWatcher: mockStartDevManifestWatcher,
 }))
 
-function mockServer({host, port = 3334}: {host?: boolean | string; port?: number} = {}) {
+function mockServer({
+  boundPort,
+  host,
+  port = 3334,
+}: {boundPort?: number; host?: boolean | string; port?: number} = {}) {
   return {
     config: {server: {host, port}},
-    httpServer: {address: () => ({address: '127.0.0.1', family: 'IPv4', port})},
+    httpServer: {address: () => ({address: '127.0.0.1', family: 'IPv4', port: boundPort ?? port})},
   }
 }
 
@@ -81,6 +85,17 @@ describe('startDevServerRegistration', () => {
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({id: 'localhost-3337'}),
+    )
+  })
+
+  test('keys the id on the configured port, not the shifted bound one', async () => {
+    // strictPort:false can bind a different port than requested; the bundle's
+    // compile-time `__SANITY_APP_ID__` uses the configured port, so the registry
+    // id must too — while it stays reachable at the bound port.
+    await register({server: mockServer({boundPort: 3339, port: 3334}) as any})
+
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({id: 'localhost-3334', port: 3339}),
     )
   })
 
