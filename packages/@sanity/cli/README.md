@@ -113,7 +113,7 @@ Code for sanity cli
 - [`sanity telemetry disable`](#sanity-telemetry-disable)
 - [`sanity telemetry enable`](#sanity-telemetry-enable)
 - [`sanity telemetry status`](#sanity-telemetry-status)
-- [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
+- [`sanity tokens create [LABEL]`](#sanity-tokens-create-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
 - [`sanity typegen generate`](#sanity-typegen-generate)
@@ -3396,13 +3396,13 @@ EXAMPLES
     $ sanity telemetry telemetry status
 ```
 
-## `sanity tokens add [LABEL]`
+## `sanity tokens create [LABEL]`
 
 Create a new API token for the project
 
 ```
 USAGE
-  $ sanity tokens add [LABEL] [-p <id>] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [-p <id>] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
@@ -3421,23 +3421,23 @@ DESCRIPTION
 EXAMPLES
   Create a token with a label
 
-    $ sanity tokens add "My API Token"
+    $ sanity tokens create "My API Token"
 
   Create a token with editor role
 
-    $ sanity tokens add "My API Token" --role=editor
+    $ sanity tokens create "My API Token" --role=editor
 
   Create a token in unattended mode
 
-    $ sanity tokens add "CI Token" --role=editor --yes
+    $ sanity tokens create "CI Token" --role=editor --yes
 
   Output token information as JSON
 
-    $ sanity tokens add "API Token" --json
+    $ sanity tokens create "API Token" --json
 
   Create a token for a specific project
 
-    $ sanity tokens add "My Token" --project-id abc123 --role=editor
+    $ sanity tokens create "My Token" --project-id abc123 --role=editor
 ```
 
 ## `sanity tokens delete [TOKENID]`
