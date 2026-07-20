@@ -807,13 +807,14 @@ Add a CORS origin to the project
 
 ```
 USAGE
-  $ sanity cors add ORIGIN [-p <id>] [--credentials]
+  $ sanity cors add ORIGIN [-p <id>] [--credentials] [-y]
 
 ARGUMENTS
   ORIGIN  Origin to allow (e.g., https://example.com)
 
 FLAGS
-  --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
+  -y, --yes               Confirm risky wildcard origins without prompting
+      --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to add CORS origin to (overrides CLI configuration)
@@ -1806,8 +1807,9 @@ Validate documents in a dataset against the studio schema
 
 ```
 USAGE
-  $ sanity documents validate [-p <id>] [-d <name>] [--file <value>] [--format <value>] [--level error|warning|info]
-    [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
+  $ sanity documents validate [-p <id>] [-d <name>] [--file <value>] [--format json|ndjson|pretty] [--level
+    error|warning|info] [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace
+    <value>] [-y]
 
 FLAGS
   -d, --dataset=<name>                             Override the dataset used. By default, this is derived from the given
@@ -1815,10 +1817,11 @@ FLAGS
   -p, --project-id=<id>                            Override the project ID used. By default, this is derived from the
                                                    given workspace
   -y, --yes                                        Skips the first confirmation prompt
-      --file=<value>                               Provide a path to either an .ndjson file or a tarball containing an
-                                                   .ndjson file
-      --format=<value>                             The output format used to print the found validation markers and
+      --file=<value>                               Path to an NDJSON file or tar archive containing an NDJSON file
+                                                   (optionally gzip-compressed)
+      --format=<option>                            The output format used to print the found validation markers and
                                                    report progress
+                                                   <options: json|ndjson|pretty>
       --level=<option>                             [default: warning] The minimum level reported. Defaults to warning
                                                    <options: error|warning|info>
       --max-custom-validation-concurrency=<value>  [default: 5] Specify how many custom validators can run concurrently
@@ -2529,7 +2532,7 @@ USAGE
 
 FLAGS
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
-  --provider=<providerId>  Log in using the given provider
+  --provider=<providerId>  Log in using a provider ID (google, github, sanity, vercel)
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
   --with-token             Read token from standard input
@@ -2633,7 +2636,11 @@ Create a new aspect definition file
 
 ```
 USAGE
-  $ sanity media create-aspect
+  $ sanity media create-aspect [--name <value>] [--title <value>]
+
+FLAGS
+  --name=<value>   Aspect name. Defaults to the title in camel case
+  --title=<value>  Aspect title
 
 DESCRIPTION
   Create a new aspect definition file
@@ -2657,7 +2664,7 @@ ARGUMENTS
 
 FLAGS
   --media-library-id=<value>  The id of the target media library
-  --yes                       Skip confirmation prompt
+  --yes                       Run without prompts and confirm deletion
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
@@ -3156,10 +3163,11 @@ Delete schema documents by id
 
 ```
 USAGE
-  $ sanity schemas delete --ids <value> [-p <id>] [-d <name>] [--verbose]
+  $ sanity schemas delete --ids <value> [-p <id>] [-d <name>] [--verbose] [-y]
 
 FLAGS
   -d, --dataset=<name>  Delete schemas from a specific dataset
+  -y, --yes             Delete schemas without prompting for confirmation
       --ids=<value>     (required) Comma-separated list of schema ids to delete
       --verbose         Enable verbose logging
 
@@ -3219,11 +3227,12 @@ Extract a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schemas extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
+  $ sanity schemas extract [--enforce-required-fields] [--force] [--format <format>] [--path <value>] [--watch]
     [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
   --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
+  --force                     Overwrite an existing schema file
   --format=<format>           [default: groq-type-nodes] Output format (currently only groq-type-nodes)
   --path=<value>              Optional path to specify destination of the schema file
   --watch                     Enable watch mode to re-extract schema on file changes
@@ -3410,10 +3419,10 @@ ARGUMENTS
 FLAGS
   -y, --yes          Skip prompts and use defaults (unattended mode)
       --json         Output as JSON
-      --role=viewer  Role to assign to the token
+      --role=viewer  Role to assign to the token (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to add token to (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
 
 DESCRIPTION
   Create a new API token for the project
