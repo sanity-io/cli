@@ -272,8 +272,12 @@ describe('authErrors middleware', () => {
 
     expect(onErrorHandler).toBeDefined()
 
-    const error = new Error('Unauthorized') as Error & {response: {body: {statusCode: number}}}
-    error.response = {body: {statusCode: 401}}
+    const error = new Error('Unauthorized') as Error & {
+      response: {body: Record<string, never>}
+      statusCode: number
+    }
+    error.response = {body: {}}
+    error.statusCode = 401
 
     mockIsHttpError.mockReturnValue(true)
 
@@ -286,6 +290,50 @@ describe('authErrors middleware', () => {
     expect(result!.message).toContain('sanity login')
     expect(result!.message).toContain('https://help.sanity.io/cli-errors')
     expect(mockGenerateHelpUrl).toHaveBeenCalledWith('cli-errors')
+  })
+
+  test('links to project members for projectUserNotFoundError', async () => {
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
+
+    let onErrorHandler: ((err: Error | null) => Error | null) | undefined
+    const mockRequester = {
+      use: mockRequesterUse.mockImplementation((middleware: {onError?: typeof onErrorHandler}) => {
+        onErrorHandler = middleware.onError
+      }),
+    }
+    mockRequesterClone.mockReturnValue(mockRequester)
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+
+    await getProjectCliClient({
+      apiVersion: '2021-06-07',
+      projectId: 'test-project',
+    })
+
+    expect(onErrorHandler).toBeDefined()
+
+    const error = new Error('Project user not found') as Error & {
+      response: {
+        body: {error: {type: string}}
+      }
+      statusCode: number
+    }
+    error.response = {
+      body: {
+        error: {type: 'projectUserNotFoundError'},
+      },
+    }
+    error.statusCode = 401
+
+    mockIsHttpError.mockReturnValue(true)
+
+    const result = onErrorHandler!(error)
+
+    expect(result).toBe(error)
+    expect(result?.message).toBe(
+      'Project user not found. Add this account as a project member: https://www.sanity.io/manage/project/test-project/members.',
+    )
+    expect(result?.message).not.toContain('sanity login')
   })
 
   test('returns non-401 HTTP errors unchanged', async () => {
@@ -301,8 +349,12 @@ describe('authErrors middleware', () => {
 
     await getGlobalCliClient({apiVersion: '2021-06-07'})
 
-    const error = new Error('Not Found') as Error & {response: {body: {statusCode: number}}}
-    error.response = {body: {statusCode: 404}}
+    const error = new Error('Not Found') as Error & {
+      response: {body: Record<string, never>}
+      statusCode: number
+    }
+    error.response = {body: {}}
+    error.statusCode = 404
 
     mockIsHttpError.mockReturnValue(true)
 
