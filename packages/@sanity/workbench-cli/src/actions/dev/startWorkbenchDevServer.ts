@@ -124,6 +124,9 @@ export interface StartWorkbenchOptions {
   cliConfig: CliConfig
   httpHost: string | undefined
   httpPort: number
+  /** `dev` renders a live app and honors a local workbench-UI override; `preview`
+   * (`sanity start`) previews a build and loads the deployed workbench UI. */
+  mode: 'development' | 'preview'
   output: Output
   /** Wrap the workbench in React StrictMode; the CLI resolves it (unset collapses to `false`). */
   reactStrictMode: boolean
@@ -144,6 +147,7 @@ export async function startWorkbenchDevServer(
     cliConfig,
     httpHost,
     httpPort: workbenchPort,
+    mode,
     output,
     reactStrictMode,
     workDir,
@@ -196,6 +200,7 @@ export async function startWorkbenchDevServer(
       cacheDir,
       cliConfig,
       httpHost,
+      mode,
       output,
       reactStrictMode,
       workbenchPort,
@@ -229,6 +234,7 @@ interface CreateWorkbenchViteServerOptions {
   cacheDir: string
   cliConfig: CliConfig
   httpHost: string | undefined
+  mode: 'development' | 'preview'
   output: Output
   reactStrictMode: boolean
   workbenchPort: number
@@ -243,9 +249,16 @@ interface CreateWorkbenchViteServerResult {
 async function createWorkbenchViteServer(
   options: CreateWorkbenchViteServerOptions,
 ): Promise<CreateWorkbenchViteServerResult | undefined> {
-  const {cacheDir, cliConfig, httpHost, output, reactStrictMode, workbenchPort, workDir} = options
+  const {cacheDir, cliConfig, httpHost, mode, output, reactStrictMode, workbenchPort, workDir} =
+    options
 
-  const remoteUrl = parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
+  // `preview` loads `.env.development` (the env hook treats only `build`/`deploy`
+  // as production), which points the workbench UI at a local dev server that
+  // isn't running here. Ignore the override and load the deployed UI instead.
+  const remoteUrl =
+    mode === 'preview'
+      ? undefined
+      : parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
 
   const organizationId = resolveOrganizationId(cliConfig)
 

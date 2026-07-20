@@ -42,11 +42,13 @@ describe('checkBuiltOutput', () => {
     expect(mockStat).not.toHaveBeenCalledWith(join(testDir, 'index.html'))
   })
 
-  test('throws when the directory does not exist', async () => {
+  test('tags a missing directory as BUILD_NOT_FOUND', async () => {
     mockStat.mockRejectedValueOnce(enoent())
 
-    await expect(checkBuiltOutput(testDir)).rejects.toThrow(`Directory "${testDir}" does not exist`)
+    const err = await checkBuiltOutput(testDir).catch((e) => e)
 
+    expect(err.message).toContain(`Directory "${testDir}" does not exist`)
+    expect(err.name).toBe('BUILD_NOT_FOUND')
     expect(mockStat).toHaveBeenCalledTimes(1)
   })
 
@@ -58,30 +60,38 @@ describe('checkBuiltOutput', () => {
     expect(mockStat).toHaveBeenCalledTimes(1)
   })
 
-  test('re-throws non-ENOENT errors when checking the directory', async () => {
+  test('re-throws non-ENOENT errors when checking the directory, untagged', async () => {
     const permissionError = new Error('Permission denied') as NodeJS.ErrnoException
     permissionError.code = 'EACCES'
     mockStat.mockRejectedValueOnce(permissionError)
 
-    await expect(checkBuiltOutput(testDir)).rejects.toThrow('Permission denied')
+    const err = await checkBuiltOutput(testDir).catch((e) => e)
+
+    expect(err).toBe(permissionError)
+    expect(err.name).not.toBe('BUILD_NOT_FOUND')
   })
 
-  test('throws when mf-manifest.json does not exist', async () => {
+  test('tags a missing mf-manifest.json as BUILD_NOT_FOUND', async () => {
     mockSourceDirExists()
     mockStat.mockRejectedValueOnce(enoent())
 
-    await expect(checkBuiltOutput(testDir)).rejects.toThrow(`"${manifestPath}" does not exist`)
+    const err = await checkBuiltOutput(testDir).catch((e) => e)
 
+    expect(err.message).toContain(`"${manifestPath}" does not exist`)
+    expect(err.name).toBe('BUILD_NOT_FOUND')
     expect(mockStat).toHaveBeenNthCalledWith(2, manifestPath)
   })
 
-  test('re-throws non-ENOENT errors when checking the manifest', async () => {
+  test('re-throws non-ENOENT errors when checking the manifest, untagged', async () => {
     mockSourceDirExists()
 
     const permissionError = new Error('Permission denied') as NodeJS.ErrnoException
     permissionError.code = 'EACCES'
     mockStat.mockRejectedValueOnce(permissionError)
 
-    await expect(checkBuiltOutput(testDir)).rejects.toThrow('Permission denied')
+    const err = await checkBuiltOutput(testDir).catch((e) => e)
+
+    expect(err).toBe(permissionError)
+    expect(err.name).not.toBe('BUILD_NOT_FOUND')
   })
 })
