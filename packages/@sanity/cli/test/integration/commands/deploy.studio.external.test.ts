@@ -855,6 +855,7 @@ describe('#deploy studio (external)', () => {
       const app = unstable_defineApp({
         name: 'test-studio',
         organizationId: 'org-1',
+        slug: 'test-studio',
         title: 'Test Studio',
       }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
       app.applicationType = 'studio'
