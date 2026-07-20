@@ -51,7 +51,7 @@ export async function deployCoreApp(options: {
   try {
     if (appId) {
       await createDeployment({applicationId: appId, interfaces, isAutoUpdating, tarball, version})
-      if (icon) await updateApplication(appId, {icon})
+      await updateApplication(appId, {title, ...(icon ? {icon} : {})})
       spin.succeed()
       return {applicationId: appId}
     }
@@ -123,7 +123,7 @@ export async function deployStudio(options: {
         version,
         workspaces,
       })
-      if (icon) await updateApplication(appId, {icon})
+      await updateApplication(appId, {title, ...(icon ? {icon} : {})})
       spin.succeed()
       return {applicationId: appId}
     }
