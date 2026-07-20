@@ -1,5 +1,8 @@
+import {access} from 'node:fs/promises'
+
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 
 import {extractSchema} from '../../actions/schema/extractSchema.js'
 import {getExtractOptions} from '../../actions/schema/getExtractOptions.js'
@@ -32,6 +35,9 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
   static override flags = {
     'enforce-required-fields': Flags.boolean({
       description: 'Makes the schema generated treat fields marked as required as non-optional',
+    }),
+    force: Flags.boolean({
+      description: 'Overwrite an existing schema file',
     }),
     format: Flags.string({
       default: 'groq-type-nodes',
@@ -67,6 +73,29 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
       projectRoot,
       schemaExtraction,
     })
+
+    const outputExists = await access(extractOptions.outputPath).then(
+      () => true,
+      () => false,
+    )
+    if (outputExists && !flags.force) {
+      if (this.isUnattended()) {
+        this.error(
+          `Schema file already exists at "${extractOptions.outputPath}". Pass \`--force\` to overwrite it.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
+
+      const shouldOverwrite = await confirm({
+        default: false,
+        message: `Schema file already exists at "${extractOptions.outputPath}". Overwrite it?`,
+      })
+
+      if (!shouldOverwrite) {
+        this.output.log('Schema extraction cancelled')
+        return this.exit(exitCodes.USER_ABORT)
+      }
+    }
 
     if (flags.watch) {
       return watchExtractSchema({

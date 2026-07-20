@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {isInteractive, type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
@@ -13,12 +13,14 @@ export async function resolveApiGeneration({
   index,
   output,
   specifiedGeneration,
+  unattended,
 }: {
   currentGeneration?: string
   force?: boolean
   index: number
   output: Output
   specifiedGeneration?: string
+  unattended: boolean
 }): Promise<string | undefined> {
   // a) If no API is currently deployed:
   //    use the specificed one from config, or use whichever generation is the latest
@@ -37,13 +39,13 @@ export async function resolveApiGeneration({
   }
 
   if (specifiedGeneration && specifiedGeneration !== currentGeneration) {
-    if (!force && !isInteractive()) {
+    if (!force && unattended) {
       throw new CLIError(
         oneline`
         Specified generation (${specifiedGeneration}) for API at index ${index} differs from the one currently deployed (${currentGeneration}).
-        Re-run the command with \`--force\` to force deployment.
+        Pass \`--force\` to continue.
       `,
-        {exit: 1},
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
@@ -58,7 +60,11 @@ export async function resolveApiGeneration({
         message: 'Are you sure you want to deploy?',
       }))
 
-    return confirmDeploy ? specifiedGeneration : undefined
+    if (!confirmDeploy) {
+      return undefined
+    }
+
+    return specifiedGeneration
   }
 
   if (specifiedGeneration) {

@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
@@ -119,34 +119,34 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
     if (!dataset) {
       this.error(
-        'Dataset is required. Specify it with --dataset or configure it in your project.',
+        'Dataset is required. Pass it with `--dataset <name>` or configure it in your project.',
         {
-          exit: 1,
+          exit: exitCodes.USAGE_ERROR,
         },
       )
     }
 
     // Confirm deletion unless --force is used
     if (!force) {
+      if (this.isUnattended()) {
+        this.error('GraphQL API undeploy requires confirmation. Pass `--force` to continue.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
+
       const confirmMessage =
         tag === 'default'
-          ? `Are you absolutely sure you want to delete the current GraphQL API connected to the "${dataset}" dataset in project ${projectId}?`
-          : `Are you absolutely sure you want to delete the GraphQL API connected to the "${dataset}" dataset in project ${projectId}, tagged "${tag}"?`
+          ? `Delete the GraphQL API for dataset "${dataset}" in project ${projectId}?`
+          : `Delete the GraphQL API for dataset "${dataset}" in project ${projectId} with tag "${tag}"?`
 
-      try {
-        const confirmed = await confirm({
-          default: false,
-          message: confirmMessage,
-        })
+      const confirmed = await confirm({
+        default: false,
+        message: confirmMessage,
+      })
 
-        if (!confirmed) {
-          this.log('Operation cancelled')
-          return
-        }
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(`${error}`)
-        undeployGraphqlDebug('User cancelled', err)
-        this.error('Operation cancelled', {exit: 1})
+      if (!confirmed) {
+        this.log('GraphQL API undeploy cancelled')
+        this.exit(exitCodes.USER_ABORT)
       }
     }
 

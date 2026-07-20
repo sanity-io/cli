@@ -1,4 +1,5 @@
 import {getCliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
@@ -162,7 +163,7 @@ describe('#schema:list', {timeout: 60 * 1000}, () => {
     const {error} = await testCommand(ListSchemaCommand, ['--id', id])
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('throws an error if no schemas are found', async () => {
@@ -212,6 +213,28 @@ describe('#schema:list', {timeout: 60 * 1000}, () => {
     const {stdout} = await testCommand(ListSchemaCommand, [])
 
     expect(stdout).toContain('↳ Failed to fetch schema from "test":\n  Bad request')
+  })
+
+  test('writes JSON diagnostics to stderr without corrupting stdout', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: `/projects/${projectId}/datasets/test/schemas`,
+    }).reply(400, {error: 'Bad request'})
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: `/projects/${projectId}/datasets/staging/schemas`,
+    }).reply(200, [
+      {
+        _createdAt: '2025-05-28T18:49:44Z',
+        _id: '_.schemas.staging',
+        workspace: {name: 'staging'},
+      },
+    ])
+
+    const {stderr, stdout} = await testCommand(ListSchemaCommand, ['--json'])
+
+    expect(JSON.parse(stdout)).toEqual([expect.objectContaining({_id: '_.schemas.staging'})])
+    expect(stderr).toContain('Failed to fetch schema from "test"')
   })
 
   test('prints warning if schema request fails due to permissions', async () => {
