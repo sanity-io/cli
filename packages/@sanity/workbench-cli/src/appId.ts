@@ -45,6 +45,7 @@ export function resolveAppId(
         services: canonical(app.exposes?.services),
         views: canonical(app.exposes?.views),
       }),
+      'hex',
     )
   }
   return `${source.host}-${source.port}`
