@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.5.1](https://github.com/sanity-io/cli/compare/cli-core-v2.5.0...cli-core-v2.5.1)
+
+_2026-07-20_
+
+### Bug Fixes
+
+- link to project members page when projectUserNotFoundError is thrown ([#1567](https://github.com/sanity-io/cli/pull/1567)) ([9a4b509](https://github.com/sanity-io/cli/commit/9a4b50985a0671a42cf9e6c43ef8df9c083d8a02))
+
+  `projectUserNotFoundError` errors now include a link to the project members page, where you can update access to the project to resolve the error.
+
 ## [2.5.0](https://github.com/sanity-io/cli/compare/cli-core-v2.4.0...cli-core-v2.5.0)
 
 _2026-07-17_

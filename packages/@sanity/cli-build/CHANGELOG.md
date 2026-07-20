@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.1.1](https://github.com/sanity-io/cli/compare/cli-build-v4.1.0...cli-build-v4.1.1)
+
+_2026-07-20_
+
+### Bug Fixes
+
+- **workbench:** pre-bundle interface deps in the dev server ([#1557](https://github.com/sanity-io/cli/pull/1557)) ([3522ae7](https://github.com/sanity-io/cli/commit/3522ae7cf4bbd475a2a9d84a300b471bc58870cb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.6.0
+    - @sanity/cli-core bumped to 2.5.1
+
 ## [4.1.0](https://github.com/sanity-io/cli/compare/cli-build-v4.0.0...cli-build-v4.1.0)
 
 _2026-07-15_
