@@ -823,6 +823,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.7.0(jiti@2.7.0)
+      get-it:
+        specifier: ^9.1.0
+        version: 9.1.0(vitest@4.1.10)
       jsdom:
         specifier: 'catalog:'
         version: 29.1.1(@noble/hashes@2.2.0)

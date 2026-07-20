@@ -1,17 +1,18 @@
 import {Writable} from 'node:stream'
 
-import {
-  type BufferedResponse,
-  type CreateRequesterOptions,
-  type RequestOptions,
-  type StreamResponse,
-  type WrappingMiddleware,
-} from '@sanity/cli-core/request'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {type CreateRequesterOptions, type FetchFunction} from '@sanity/cli-core/request'
+import {createMockFetch} from 'get-it/mock'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {downloadStream} from './downloadStream.js'
 
-const mockRequest = vi.hoisted(() => vi.fn<(options: RequestOptions) => Promise<StreamResponse>>())
+import 'get-it/vitest'
+
+// The requester is created at module scope, so swap the fetch implementation
+// through a ref: get-it/mock for transport-level tests, and a hand-rolled
+// FetchFunction where the mock cannot express the scenario (stalled bodies,
+// observing response body cancellation).
+const fetchRef = vi.hoisted(() => ({current: undefined as FetchFunction | undefined}))
 const requesterOptions = vi.hoisted(() => ({
   current: undefined as CreateRequesterOptions | undefined,
 }))
@@ -22,21 +23,36 @@ vi.mock('@sanity/cli-core/request', async (importOriginal) => {
     ...actual,
     createRequester: (options: CreateRequesterOptions) => {
       requesterOptions.current = options
-      return mockRequest
+      return actual.createRequester({
+        ...options,
+        fetch: (url, init) => {
+          if (!fetchRef.current) throw new Error('No fetch configured for this test')
+          return fetchRef.current(url, init)
+        },
+      })
     },
   }
 })
 
 const CONNECTION_TIMEOUT = 15 * 1000
 const READ_TIMEOUT = 3 * 60 * 1000
+const RETRY_ATTEMPTS = 6 // 1 initial + 5 default retries
 
-function createResponse(body: ReadableStream<Uint8Array>, status = 200): StreamResponse {
-  return {
+const mock = createMockFetch()
+
+/** Builds a FetchFunction returning a streaming body the mock cannot express. */
+function createStreamingFetch(body: ReadableStream<Uint8Array>): FetchFunction {
+  return async (url) => ({
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
     body,
     headers: new Headers(),
-    status,
+    ok: true,
+    redirected: false,
+    status: 200,
     statusText: 'OK',
-  }
+    text: () => Promise.resolve(''),
+    url,
+  })
 }
 
 function createDestination(chunks: Buffer[] = []): Writable {
@@ -49,25 +65,18 @@ function createDestination(chunks: Buffer[] = []): Writable {
 }
 
 describe('#downloadStream', () => {
+  beforeEach(() => {
+    fetchRef.current = mock.fetch
+  })
+
   afterEach(() => {
-    mockRequest.mockReset()
+    mock.clear()
     vi.useRealTimers()
   })
 
   test('streams the response body into the destination', async () => {
     const chunks: Buffer[] = []
-    mockRequest.mockResolvedValue(
-      createResponse(
-        new ReadableStream({
-          start(controller) {
-            controller.enqueue(new TextEncoder().encode('hello'))
-            controller.enqueue(new TextEncoder().encode(' world'))
-            controller.close()
-          },
-        }),
-        206,
-      ),
-    )
+    mock.on('GET', 'https://example.com/backup').respond({body: 'hello world', status: 206})
 
     const status = await downloadStream('https://example.com/backup', () =>
       createDestination(chunks),
@@ -75,11 +84,8 @@ describe('#downloadStream', () => {
 
     expect(status).toBe(206)
     expect(Buffer.concat(chunks).toString()).toBe('hello world')
-    expect(mockRequest).toHaveBeenCalledWith({
-      as: 'stream',
-      signal: expect.any(AbortSignal),
-      url: 'https://example.com/backup',
-    })
+    expect(mock).toHaveReceivedRequest('GET', 'https://example.com/backup')
+    expect(mock).toHaveConsumedAllMocks()
     expect(requesterOptions.current).toMatchObject({
       middleware: [expect.any(Function), expect.any(Function)],
       timeout: false,
@@ -88,18 +94,18 @@ describe('#downloadStream', () => {
 
   test('does not create the destination when the request fails', async () => {
     const createFailedDestination = vi.fn(() => createDestination())
-    mockRequest.mockRejectedValue(new Error('Request failed'))
+    mock.on('GET', 'https://example.com/backup').respond({status: 500})
 
     await expect(
       downloadStream('https://example.com/backup', createFailedDestination),
-    ).rejects.toThrow('Request failed')
+    ).rejects.toMatchObject({name: 'HttpError', status: 500})
 
     expect(createFailedDestination).not.toHaveBeenCalled()
   })
 
   test('cancels the response when creating the destination fails', async () => {
     const cancel = vi.fn()
-    mockRequest.mockResolvedValue(createResponse(new ReadableStream({cancel})))
+    fetchRef.current = createStreamingFetch(new ReadableStream({cancel}))
 
     await expect(
       downloadStream('https://example.com/backup', () => {
@@ -112,48 +118,40 @@ describe('#downloadStream', () => {
 
   test('starts a separate connection timeout for each retry attempt', async () => {
     vi.useFakeTimers()
-    const next = vi.fn<(options: RequestOptions) => Promise<BufferedResponse>>()
-    next.mockImplementation(
-      ({signal}) =>
-        new Promise((_resolve, reject) => {
-          signal?.addEventListener('abort', () => reject(signal.reason), {once: true})
-        }),
+    // Each attempt waits on a "server" that responds slower than the
+    // connection deadline, so every attempt times out and is retried.
+    mock
+      .on('GET', 'https://example.com/backup')
+      .respondPersist({body: 'never delivered', delay: CONNECTION_TIMEOUT * 4, status: 200})
+
+    const startedAt = Date.now()
+    let rejectedAt = startedAt
+    const download = downloadStream('https://example.com/backup', () => createDestination()).catch(
+      (error: unknown) => {
+        rejectedAt = Date.now()
+        throw error
+      },
     )
-    const connectionTimeout = requesterOptions.current?.middleware?.[1] as
-      | WrappingMiddleware
-      | undefined
-    if (!connectionTimeout) throw new Error('Expected connection timeout middleware')
-
-    const options = {url: 'https://example.com/backup'}
-    const firstAttempt = connectionTimeout(options, next)
-    const firstRejection = expect(firstAttempt).rejects.toMatchObject({
+    const rejection = expect(download).rejects.toMatchObject({
       code: 'ETIMEDOUT',
       message: 'Backup download timed out before receiving a response. Try again.',
     })
-    await vi.advanceTimersByTimeAsync(CONNECTION_TIMEOUT)
-    await firstRejection
 
-    const secondAttempt = connectionTimeout(options, next)
-    const secondRejection = expect(secondAttempt).rejects.toMatchObject({
-      code: 'ETIMEDOUT',
-      message: 'Backup download timed out before receiving a response. Try again.',
-    })
-    await vi.advanceTimersByTimeAsync(CONNECTION_TIMEOUT - 1)
-    expect(next.mock.calls[1]?.[0].signal?.aborted).toBe(false)
-    await vi.advanceTimersByTimeAsync(1)
-    await secondRejection
+    // Each attempt runs its full 15s deadline plus retry backoff in between.
+    for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+      await vi.advanceTimersByTimeAsync(CONNECTION_TIMEOUT + 5000)
+    }
+
+    await rejection
+    expect(mock).toHaveReceivedRequestTimes('GET', 'https://example.com/backup', RETRY_ATTEMPTS)
+    // With a single shared deadline, the download would reject after ~15s.
+    expect(rejectedAt - startedAt).toBeGreaterThanOrEqual(RETRY_ATTEMPTS * CONNECTION_TIMEOUT)
   })
 
   test('aborts and cancels the response when no data arrives before the read timeout', async () => {
     vi.useFakeTimers()
     const cancel = vi.fn()
-    mockRequest.mockResolvedValue(
-      createResponse(
-        new ReadableStream({
-          cancel,
-        }),
-      ),
-    )
+    fetchRef.current = createStreamingFetch(new ReadableStream({cancel}))
 
     const download = downloadStream('https://example.com/backup', () => createDestination())
     const rejection = expect(download).rejects.toThrow(
