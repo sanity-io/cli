@@ -121,12 +121,10 @@ export async function createApplication(options: {
 export interface ApplicationUpdate {
   icon?: string | null
   title?: string
+  visibility?: AppVisibility
 }
 
-/**
- * Patch an application's mutable fields. The deploy endpoint ignores these, so a
- * redeploy syncs the title (and icon) from config here alongside the new deployment.
- */
+// Patch an application's mutable fields.
 export async function updateApplication(
   applicationId: string,
   update: ApplicationUpdate,
