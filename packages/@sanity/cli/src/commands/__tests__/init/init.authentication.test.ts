@@ -2,6 +2,7 @@ import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {LOGIN_REQUIRED_MESSAGE} from '../../../actions/auth/login/loginInstructions.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init.js'
@@ -204,9 +205,7 @@ describe('#init: authentication', () => {
       },
     })
 
-    expect(error?.message).toContain(
-      'Must be logged in to run this command in unattended mode, run `sanity login`',
-    )
+    expect(error?.message).toContain(LOGIN_REQUIRED_MESSAGE)
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -243,7 +242,7 @@ describe('#init: authentication', () => {
     mockGetById.mockRejectedValueOnce(createHttpError(401, 'Unauthorized'))
     mockLogin.mockRejectedValueOnce(new Error('No authentication providers found'))
 
-    const {error} = await testCommand(InitCommand, [], {
+    const {error, stderr} = await testCommand(InitCommand, [], {
       mocks: {
         ...defaultMocks,
         isInteractive: true,
@@ -252,5 +251,7 @@ describe('#init: authentication', () => {
 
     expect(error?.message).toBe('Login failed: No authentication providers found')
     expect(error?.oclif?.exit).toBe(1)
+    expect(stderr).toContain('No valid authentication credentials found')
+    expect(stderr).toContain('sanity login --provider <providerId> --no-open')
   })
 })

@@ -20,6 +20,7 @@ import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
 import {getProviderName} from '../auth/getProviderName.js'
 import {login} from '../auth/login/login.js'
+import {LOGIN_REQUIRED_MESSAGE} from '../auth/login/loginInstructions.js'
 import {detectAvailableEditors} from '../mcp/detectAvailableEditors.js'
 import {setupMCP} from '../mcp/setupMCP.js'
 import {setupSkills} from '../skills/setupSkills.js'
@@ -396,13 +397,11 @@ async function ensureAuthenticated(
   }
 
   if (options.unattended) {
-    throw new InitError(
-      'Must be logged in to run this command in unattended mode, run `sanity login`',
-      1,
-    )
+    throw new InitError(LOGIN_REQUIRED_MESSAGE, exitCodes.RUNTIME_ERROR)
   }
 
   trace.log({step: 'login'})
+  output.warn(LOGIN_REQUIRED_MESSAGE)
 
   try {
     await login({
