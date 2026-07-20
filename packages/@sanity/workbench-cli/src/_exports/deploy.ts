@@ -11,6 +11,7 @@ export {
 } from '../actions/deploy/deployConfig.js'
 export {
   createCoreApp,
+  type CreatedApplication,
   createStudio,
   deployWorkbenchApp,
 } from '../actions/deploy/deployWorkbenchApp.js'

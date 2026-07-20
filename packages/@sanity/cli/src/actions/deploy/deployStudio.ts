@@ -132,8 +132,9 @@ async function runStudioDeployment(
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
   let applicationId = appId
   let applicationCreated = false
+  let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
-    ;({applicationId} = await createStudio({
+    ;({applicationId, rollback: rollbackApp} = await createStudio({
       organizationId,
       projectId,
       slug: workbench.slug,
@@ -142,91 +143,98 @@ async function runStudioDeployment(
     applicationCreated = true
   }
 
-  await checkBuild(reporter, {
-    build: () =>
-      buildStudio({
-        applicationId: workbench ? applicationId : undefined,
-        autoUpdatesEnabled: isAutoUpdating,
-        calledFromDeploy: true,
-        cliConfig,
-        flags,
-        outDir: sourceDir,
-        output,
-        workDir,
-      }),
-    skipReason: studioBuildSkipReason({build: flags.build, isExternal}),
-    successMessage: 'Studio built',
-  })
-
-  if (!isExternal) {
-    await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
-  }
-
-  // Report the exposes deploying with the studio, both modes. External studios
-  // host their own bundle, so nothing registers.
-  const exposes = workbench && !isExternal ? reportExposes(reporter, workbench) : []
-
-  // Dry run stops here — everything below mutates.
-  if (dryRun) return
-
-  // A real deploy has already exited if anything failed; landing here without a
-  // resolved version means the deploy target was never resolved.
-  if (!version) return
-
-  const studioManifest = await uploadStudioSchema(options, {isExternal})
-  // The studio was created (or resolved from `deployment.appId`) before the
-  // build, so this only ships the deployment; plain studios use user-applications.
-  if (workbench && !isExternal && organizationId && applicationId) {
-    await deployWorkbenchApp({
-      applicationId,
-      icon: appIcon,
-      interfaces: buildExposes(workbench, {
-        appName: workbench.name,
-        appTitle,
-        exposesAppView: true,
-        version,
-      }),
-      isAutoUpdating,
-      label: 'Deploying to sanity.studio',
-      sourceDir,
-      title: appTitle,
-      version,
-      workspaces: toWorkspaces(studioManifest),
+  // A record created above is stranded at its slug (and blocks retries) if any
+  // step before it fully deploys fails, so undo the creation on failure.
+  try {
+    await checkBuild(reporter, {
+      build: () =>
+        buildStudio({
+          applicationId: workbench ? applicationId : undefined,
+          autoUpdatesEnabled: isAutoUpdating,
+          calledFromDeploy: true,
+          cliConfig,
+          flags,
+          outDir: sourceDir,
+          output,
+          workDir,
+        }),
+      skipReason: studioBuildSkipReason({build: flags.build, isExternal}),
+      successMessage: 'Studio built',
     })
-    const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
-    logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
+
+    if (!isExternal) {
+      await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
+    }
+
+    // Report the exposes deploying with the studio, both modes. External studios
+    // host their own bundle, so nothing registers.
+    const exposes = workbench && !isExternal ? reportExposes(reporter, workbench) : []
+
+    // Dry run stops here — everything below mutates.
+    if (dryRun) return
+
+    // A real deploy has already exited if anything failed; landing here without a
+    // resolved version means the deploy target was never resolved.
+    if (!version) return
+
+    const studioManifest = await uploadStudioSchema(options, {isExternal})
+    // The studio was created (or resolved from `deployment.appId`) before the
+    // build, so this only ships the deployment; plain studios use user-applications.
+    if (workbench && !isExternal && organizationId && applicationId) {
+      await deployWorkbenchApp({
+        applicationId,
+        icon: appIcon,
+        interfaces: buildExposes(workbench, {
+          appName: workbench.name,
+          appTitle,
+          exposesAppView: true,
+          version,
+        }),
+        isAutoUpdating,
+        label: 'Deploying to sanity.studio',
+        sourceDir,
+        title: appTitle,
+        version,
+        workspaces: toWorkspaces(studioManifest),
+      })
+      const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
+      logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
+      return {
+        applicationType: 'studio',
+        applicationVersion: version,
+        ...(exposes.length > 0 ? {exposes} : {}),
+        target: {
+          action: applicationCreated ? 'create' : 'update',
+          applicationId,
+          title: appTitle,
+          url,
+        },
+      }
+    }
+
+    if (!application) return
+    const location = await shipStudioDeployment({
+      application,
+      isAutoUpdating,
+      isExternal,
+      options,
+      studioManifest,
+      version,
+    })
+
     return {
       applicationType: 'studio',
       applicationVersion: version,
-      ...(exposes.length > 0 ? {exposes} : {}),
       target: {
-        action: applicationCreated ? 'create' : 'update',
-        applicationId,
-        title: appTitle,
-        url,
+        action: studioCreated ? 'create' : 'update',
+        applicationId: application.id,
+        title: application.title ?? null,
+        url: location,
       },
     }
-  }
-
-  if (!application) return
-  const location = await shipStudioDeployment({
-    application,
-    isAutoUpdating,
-    isExternal,
-    options,
-    studioManifest,
-    version,
-  })
-
-  return {
-    applicationType: 'studio',
-    applicationVersion: version,
-    target: {
-      action: studioCreated ? 'create' : 'update',
-      applicationId: application.id,
-      title: application.title ?? null,
-      url: location,
-    },
+  } catch (err) {
+    await rollbackApp?.()
+    throw err
   }
 }
 

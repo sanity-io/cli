@@ -10,12 +10,24 @@ import {
   type BrettWorkspace,
   createApplication,
   createDeployment,
+  deleteApplication,
   updateApplication,
 } from '../../services/applications.js'
 
 /**
- * Create a coreApp record (no deployment) and return its id, so the CLI can
- * build with it before shipping the first deployment. First deploy only.
+ * A freshly created application record: its id, plus a way to undo the creation.
+ * The caller builds and deploys with the id, and calls `rollback` if a later
+ * step fails so the record isn't stranded at its slug.
+ * @internal
+ */
+export interface CreatedApplication {
+  applicationId: string
+  rollback: () => Promise<void>
+}
+
+/**
+ * Create a coreApp record (no deployment), so the CLI can build with its id
+ * before shipping the first deployment. First deploy only.
  * @internal
  */
 export async function createCoreApp(options: {
@@ -24,12 +36,12 @@ export async function createCoreApp(options: {
   slug: string
   title: string
   visibility?: AppVisibility
-}): Promise<{applicationId: string}> {
+}): Promise<CreatedApplication> {
   const spin = spinner('Creating application...').start()
   try {
     const {id} = await createApplication({...options, type: 'coreApp'})
     spin.succeed()
-    return {applicationId: id}
+    return {applicationId: id, rollback: () => deleteApplication(id)}
   } catch (error) {
     spin.fail()
     throw error
@@ -37,7 +49,7 @@ export async function createCoreApp(options: {
 }
 
 /**
- * Create a studio record (no deployment) and return its id.
+ * Create a studio record (no deployment).
  * @internal
  */
 export async function createStudio(options: {
@@ -45,12 +57,12 @@ export async function createStudio(options: {
   projectId: string | undefined
   slug: string
   title: string
-}): Promise<{applicationId: string}> {
+}): Promise<CreatedApplication> {
   const spin = spinner('Creating studio...').start()
   try {
     const {id} = await createApplication({...options, type: 'studio'})
     spin.succeed()
-    return {applicationId: id}
+    return {applicationId: id, rollback: () => deleteApplication(id)}
   } catch (error) {
     spin.fail()
     throw error

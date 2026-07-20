@@ -49,7 +49,7 @@ describe('createCoreApp', () => {
 
     expect(
       await createCoreApp({organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk'}),
-    ).toEqual({applicationId: 'app_new'})
+    ).toMatchObject({applicationId: 'app_new'})
     expect(mockClient.request.mock.calls[0][0]).toMatchObject({
       method: 'POST',
       uri: '/applications',
@@ -81,6 +81,22 @@ describe('createCoreApp', () => {
 
     expect(appendedFields()).toContainEqual(['visibility', 'unlisted'])
   })
+
+  test('rollback deletes the record it just created', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_new'}).mockResolvedValueOnce(undefined)
+
+    const {rollback} = await createCoreApp({
+      organizationId: 'org-1',
+      slug: 'abc123',
+      title: 'Drop Desk',
+    })
+    await rollback()
+
+    expect(mockClient.request).toHaveBeenLastCalledWith({
+      method: 'DELETE',
+      uri: '/applications/app_new',
+    })
+  })
 })
 
 describe('createStudio', () => {
@@ -94,7 +110,7 @@ describe('createStudio', () => {
         slug: 'my-studio',
         title: 'My Studio',
       }),
-    ).toEqual({applicationId: 'studio_new'})
+    ).toMatchObject({applicationId: 'studio_new'})
     expect(mockClient.request.mock.calls[0][0]).toMatchObject({
       method: 'POST',
       uri: '/applications',

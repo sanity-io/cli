@@ -365,6 +365,32 @@ describe('#deploy app', () => {
     })
   })
 
+  test('rolls back a freshly created app when the build fails, so its slug is free to retry', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const rollback = vi.fn()
+    mockCreateCoreApp.mockResolvedValue({applicationId: 'app_new', rollback})
+    mockBuildApp.mockRejectedValueOnce(new Error('build blew up'))
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    expect(error).toBeDefined()
+    expect(rollback).toHaveBeenCalledTimes(1)
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
   test('a dry run surfaces the configured slug and creates nothing', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
