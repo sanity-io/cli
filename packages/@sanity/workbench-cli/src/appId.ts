@@ -2,6 +2,13 @@ import {hash} from 'node:crypto'
 
 import {type ResolvedWorkbenchApp, type WorkbenchExposes} from './resolveWorkbenchApp.js'
 
+/**
+ * File the build writes into its output, carrying the id compiled into the
+ * bundle. `sanity start` serves a build without recompiling, so it reads this
+ * instead of recomputing — a deploy inlines the API id, not the shape hash.
+ */
+export const SANITY_APP_ID_FILE = 'sanity-app-id.txt'
+
 /** The declared shape hashed into a build id — the app's identity, not its code. */
 export interface BuildAppIdentity {
   name: string
