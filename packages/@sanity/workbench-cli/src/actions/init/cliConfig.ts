@@ -13,6 +13,7 @@ export default defineCliConfig({
   app: unstable_defineApp({
     name: '%name%',
     title: '%title%',
+    slug: '%slug%',
     organizationId: '%organizationId%',
     entry: '%entry%',
   }),
@@ -34,6 +35,7 @@ export default defineCliConfig({
   app: unstable_defineApp({
     name: '%name%',
     title: '%title%',
+    slug: '%slug%',
     organizationId: '%organizationId%',
   }),
   deployment: {

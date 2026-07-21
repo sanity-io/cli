@@ -58,6 +58,8 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     expect(cliConfig).toContain('unstable_defineApp')
     expect(cliConfig).toContain(projectId)
     expect(cliConfig).toContain('organizationId')
+    // `slug` is pre-filled, defaulted from the name/title
+    expect(cliConfig).toMatch(/slug: '[a-z0-9-]+'/)
   })
 
   test('scaffolds an SDK app whose sanity.cli.ts opts into workbench', async () => {
@@ -93,5 +95,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     expect(cliConfig).toContain('unstable_defineApp')
     expect(cliConfig).toContain('entry')
     expect(cliConfig).toContain(orgId)
+    // `slug` is pre-filled, defaulted from the name/title
+    expect(cliConfig).toMatch(/slug: '[a-z0-9-]+'/)
   })
 })

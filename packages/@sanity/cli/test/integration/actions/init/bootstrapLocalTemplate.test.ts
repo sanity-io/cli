@@ -207,6 +207,8 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
     expect(cliConfig).toContain(`name: 'my-studio'`)
     expect(cliConfig).toContain(`title: 'My Studio'`)
+    // `slug` defaults from the entered name/title, slugified
+    expect(cliConfig).toContain(`slug: 'my-studio'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`projectId: 'abc123'`)
     // Studios brand without an entry — studio app views aren't implemented yet
@@ -238,6 +240,8 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
     expect(cliConfig).toContain(`name: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`title: 'My App'`)
+    // `slug` defaults from the entered name/title, slugified
+    expect(cliConfig).toContain(`slug: 'my-app'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`entry: './src/App.tsx'`)
   })
