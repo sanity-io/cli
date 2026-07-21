@@ -5,15 +5,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'packages/@sanity/cli/src/commands/**'
-      - '!packages/@sanity/cli/src/commands/**/__tests__/**'
-      - 'packages/@sanity/cli/oclif.config.js'
-      - 'packages/@sanity/cli/package.json'
-      - 'packages/@sanity/cli/src/SanityHelp.ts'
-      - 'packages/@sanity/cli/src/topicAliases.ts'
-      - 'packages/@sanity/cli/src/util/organizationAliases.ts'
-      - 'packages/@sanity/cli/src/util/sharedFlags.ts'
 
 concurrency:
   group: ${{ github.workflow }}
@@ -52,6 +43,7 @@ jobs:
         run: pnpm --filter @sanity/cli readme
 
       - name: Format README
+
         run: npx oxfmt packages/@sanity/cli/README.md
 
       - name: Create Pull Request
