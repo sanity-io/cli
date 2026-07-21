@@ -114,7 +114,7 @@ Code for sanity cli
 - [`sanity telemetry disable`](#sanity-telemetry-disable)
 - [`sanity telemetry enable`](#sanity-telemetry-enable)
 - [`sanity telemetry status`](#sanity-telemetry-status)
-- [`sanity tokens create [LABEL]`](#sanity-tokens-create-label)
+- [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
 - [`sanity typegen generate`](#sanity-typegen-generate)
@@ -2616,7 +2616,7 @@ USAGE
 
 FLAGS
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
-  --provider=<providerId>  Log in using a provider ID (google, github, sanity, vercel)
+  --provider=<providerId>  Log in using the given provider
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
   --with-token             Read token from standard input
@@ -2720,11 +2720,7 @@ Create a new aspect definition file
 
 ```
 USAGE
-  $ sanity media create-aspect [--name <value>] [--title <value>]
-
-FLAGS
-  --name=<value>   Aspect name. Defaults to the title in camel case
-  --title=<value>  Aspect title
+  $ sanity media create-aspect
 
 DESCRIPTION
   Create a new aspect definition file
@@ -2748,7 +2744,7 @@ ARGUMENTS
 
 FLAGS
   --media-library-id=<value>  The id of the target media library
-  --yes                       Run without prompts and confirm deletion
+  --yes                       Skip confirmation prompt
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
@@ -3247,11 +3243,10 @@ Delete schema documents by id
 
 ```
 USAGE
-  $ sanity schemas delete --ids <value> [-p <id>] [-d <name>] [--verbose] [-y]
+  $ sanity schemas delete --ids <value> [-p <id>] [-d <name>] [--verbose]
 
 FLAGS
   -d, --dataset=<name>  Delete schemas from a specific dataset
-  -y, --yes             Delete schemas without prompting for confirmation
       --ids=<value>     (required) Comma-separated list of schema ids to delete
       --verbose         Enable verbose logging
 
@@ -3311,12 +3306,11 @@ Extract a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schemas extract [--enforce-required-fields] [--force] [--format <format>] [--path <value>] [--watch]
+  $ sanity schemas extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
     [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
   --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
-  --force                     Overwrite an existing schema file
   --format=<format>           [default: groq-type-nodes] Output format (currently only groq-type-nodes)
   --path=<value>              Optional path to specify destination of the schema file
   --watch                     Enable watch mode to re-extract schema on file changes
@@ -3489,13 +3483,13 @@ EXAMPLES
     $ sanity telemetry telemetry status
 ```
 
-## `sanity tokens create [LABEL]`
+## `sanity tokens add [LABEL]`
 
 Create a new API token for the project
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--json] [--role viewer] [-y]
+  $ sanity tokens add [LABEL] [-p <id>] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
@@ -3506,7 +3500,7 @@ FLAGS
       --role=viewer  Role to assign to the token (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to add token to (overrides CLI configuration)
 
 DESCRIPTION
   Create a new API token for the project
@@ -3514,23 +3508,23 @@ DESCRIPTION
 EXAMPLES
   Create a token with a label
 
-    $ sanity tokens create "My API Token"
+    $ sanity tokens add "My API Token"
 
   Create a token with editor role
 
-    $ sanity tokens create "My API Token" --role=editor
+    $ sanity tokens add "My API Token" --role=editor
 
   Create a token in unattended mode
 
-    $ sanity tokens create "CI Token" --role=editor --yes
+    $ sanity tokens add "CI Token" --role=editor --yes
 
   Output token information as JSON
 
-    $ sanity tokens create "API Token" --json
+    $ sanity tokens add "API Token" --json
 
   Create a token for a specific project
 
-    $ sanity tokens create "My Token" --project-id abc123 --role=editor
+    $ sanity tokens add "My Token" --project-id abc123 --role=editor
 ```
 
 ## `sanity tokens delete [TOKENID]`

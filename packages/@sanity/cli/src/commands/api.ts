@@ -39,8 +39,10 @@ is chosen based on the specs' routing information.
 
 The default request method is GET, or POST when fields or --input are
 provided. For GET/HEAD requests, fields are sent as query parameters;
-otherwise they are combined into a JSON request body. The response body is
-written to stdout.
+otherwise they are combined into a JSON request body. Request bodies are
+sent with "Content-Type: application/json" unless a Content-Type header is
+provided with -H (recommended for binary --input bodies). The response body
+is written to stdout.
 
 Requests are authenticated with the token from "sanity login". To use a
 specific token instead - for example in CI or when the CLI is not logged in
@@ -120,7 +122,8 @@ no token at all.`
       description: 'Include the HTTP response status and headers in the output',
     }),
     input: Flags.string({
-      description: 'Read the raw request body from a file (use "-" for stdin)',
+      description:
+        'Read the raw request body from a file (use "-" for stdin). Sent as application/json unless a Content-Type header is provided',
       exclusive: ['field', 'raw-field'],
       helpValue: '<file>',
     }),

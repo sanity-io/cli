@@ -157,8 +157,35 @@ describe('resolveEndpoint', () => {
     })
   })
 
-  test('prefers the global host when an API is served on both', () => {
+  test('prefers the global host when an API is served on both, regardless of entry order', () => {
     expect(resolveEndpoint({endpoint: 'applications', routes})).toMatchObject({host: 'global'})
+    expect(resolveEndpoint({endpoint: 'applications', routes: routes.toReversed()})).toMatchObject({
+      host: 'global',
+    })
+  })
+
+  test('keeps the first entry on same-host score ties', () => {
+    const tied: ApiRouteEntry[] = [
+      {
+        defaultApiVersion: 'v2025-02-19',
+        host: 'global',
+        pathPatterns: ['projects/{projectId}/datasets/{dataset}/copy'],
+        slug: 'copy',
+        title: 'Copy API',
+      },
+      {
+        defaultApiVersion: 'v2021-06-07',
+        host: 'global',
+        pathPatterns: ['projects/{projectId}/datasets/{name}/copy'],
+        slug: 'projects-api',
+        title: 'Projects API',
+      },
+    ]
+
+    expect(resolveEndpoint({endpoint: 'projects/p/datasets/d/copy', routes: tied})).toMatchObject({
+      apiVersion: 'v2025-02-19',
+      matchedSlug: 'copy',
+    })
   })
 
   test('defaults unmatched paths to the global host and default version', () => {

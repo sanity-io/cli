@@ -167,8 +167,9 @@ interface RouteMatch {
  *
  * Patterns are compared segment by segment: literal matches score higher than
  * placeholder matches, and a literal mismatch disqualifies the pattern. On
- * equal scores the global host wins (APIs served on both hosts don't need a
- * project ID there).
+ * equal scores across hosts the global host wins (APIs served on both hosts
+ * don't need a project ID there); on equal scores within the same host the
+ * first entry wins, keeping the result independent of later entries.
  */
 function matchRoutes(segments: string[], routes: ApiRouteEntry[]): RouteMatch | undefined {
   let best: RouteMatch | undefined
@@ -178,7 +179,9 @@ function matchRoutes(segments: string[], routes: ApiRouteEntry[]): RouteMatch | 
       const score = scorePattern(segments, pattern.split('/'))
       if (score === 0) continue
       const isBetter =
-        !best || score > best.score || (score === best.score && entry.host === 'global')
+        !best ||
+        score > best.score ||
+        (score === best.score && best.host === 'project' && entry.host === 'global')
       if (isBetter) {
         best = {
           defaultApiVersion: entry.defaultApiVersion,
