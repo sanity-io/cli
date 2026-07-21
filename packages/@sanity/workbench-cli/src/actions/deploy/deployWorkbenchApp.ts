@@ -51,7 +51,11 @@ export async function deployCoreApp(options: {
   try {
     if (appId) {
       await createDeployment({applicationId: appId, interfaces, isAutoUpdating, tarball, version})
-      await updateApplication(appId, {title, ...(icon ? {icon} : {})})
+      await updateApplication(appId, {
+        title,
+        ...(icon ? {icon} : {}),
+        ...(visibility ? {visibility} : {}),
+      })
       spin.succeed()
       return {applicationId: appId}
     }
