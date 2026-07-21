@@ -171,6 +171,11 @@ DESCRIPTION
   otherwise they are combined into a JSON request body. The response body is
   written to stdout.
 
+  Requests are authenticated with the token from "sanity login". To use a
+  specific token instead - for example in CI or when the CLI is not logged in
+  - set the SANITY_AUTH_TOKEN environment variable. Pass --anonymous to send
+  no token at all.
+
 EXAMPLES
   Get the current user
 
@@ -195,6 +200,10 @@ EXAMPLES
   Include the response status and headers, pinning the API version
 
     $ sanity api jobs/123 --include --api-version v2025-02-19
+
+  Authenticate with a specific token instead of the logged-in session
+
+    SANITY_AUTH_TOKEN=<token> sanity api users/me
 ```
 
 ## `sanity backups disable [DATASET]`
