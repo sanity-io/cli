@@ -8,8 +8,9 @@ import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   buildExposes,
+  createCoreApp,
   deployConfig,
-  deployCoreApp as deployWorkbenchCoreApp,
+  deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
   resolveInstallationId,
@@ -32,7 +33,7 @@ import {
   resolveTitleUpdate,
 } from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest} from '../manifest/types.js'
-import {createUserApplication, generateAppSlug} from './createUserApplication.js'
+import {createUserApplication} from './createUserApplication.js'
 import {
   checkAppId,
   checkAppTarget,
@@ -136,180 +137,227 @@ async function runAppDeployment(
     ;({application, created: appCreated} = await resolveAppApplication(options, {dryRun, reporter}))
   }
 
-  await checkBuild(reporter, {
-    build: () =>
-      buildApp({
-        autoUpdatesEnabled: isAutoUpdating,
-        calledFromDeploy: true,
-        cliConfig,
-        flags,
-        outDir: sourceDir,
-        output,
-        workDir,
-      }),
-    skipReason: flags.build
-      ? undefined
-      : 'Build skipped (--no-build) — validating existing output directory',
-    successMessage: 'App built',
-  })
+  // A first deploy mints the app id and the build inlines it; --no-build would
+  // ship an existing bundle carrying a different id, so it can't be a first deploy.
+  if (deployApplication && workbench && !appId && !flags.external && !flags.build) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'A first deploy cannot skip the build (--no-build)',
+      solution: 'Drop --no-build so the new application id is inlined into the build',
+      status: 'fail',
+    })
+  }
 
-  await verifyOutputDir({isWorkbenchApp: workbench !== null, reporter, sourceDir})
+  // Read up front so a bad icon path fails before we create or build.
+  const appIcon =
+    !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
 
-  // Workbench apps ship their icon straight to Brett (below) and don't read the
-  // core-app manifest; only plain core-apps do. Manifests aren't strictly
-  // essential, so a failure warns and continues.
-  let manifest: CoreAppManifest | undefined
-  if (!workbench) {
-    try {
-      manifest = await extractCoreAppManifest({workDir})
-    } catch (err) {
-      deployDebug('Error extracting app manifest', err)
+  // Create the app before the build so the bundle carries its real id. A
+  // redeploy already has it from `deployment.appId`; a dry run skips creation.
+  let applicationId = appId
+  let applicationCreated = false
+  let rollbackApp: (() => Promise<void>) | undefined
+  if (!dryRun && deployApplication && workbench && organizationId && !applicationId) {
+    ;({applicationId, rollback: rollbackApp} = await createCoreApp({
+      isSingleton: workbench.isSingleton,
+      organizationId,
+      slug: workbench.slug,
+      title: appTitle,
+      visibility: workbench.visibility,
+    }))
+    applicationCreated = true
+  }
+
+  // A record created above is stranded at its slug (and blocks retries) if any
+  // step before it fully deploys fails, so undo the creation on failure.
+  try {
+    await checkBuild(reporter, {
+      build: () =>
+        buildApp({
+          applicationId: workbench ? applicationId : undefined,
+          autoUpdatesEnabled: isAutoUpdating,
+          calledFromDeploy: true,
+          cliConfig,
+          flags,
+          outDir: sourceDir,
+          output,
+          workDir,
+        }),
+      skipReason: flags.build
+        ? undefined
+        : 'Build skipped (--no-build) — validating existing output directory',
+      successMessage: 'App built',
+    })
+
+    await verifyOutputDir({isWorkbenchApp: workbench !== null, reporter, sourceDir})
+
+    // Workbench apps ship their icon straight to Brett (below) and don't read the
+    // core-app manifest; only plain core-apps do. Manifests aren't strictly
+    // essential, so a failure warns and continues.
+    let manifest: CoreAppManifest | undefined
+    if (!workbench) {
+      try {
+        manifest = await extractCoreAppManifest({workDir})
+      } catch (err) {
+        deployDebug('Error extracting app manifest', err)
+        reporter.report({
+          message: `Error extracting app manifest: ${getErrorMessage(err)}`,
+          status: 'warn',
+        })
+      }
+    }
+
+    // Resolve the installation in both modes so the report — dry-run and real —
+    // shows whether the config is deployable; a missing one fails the deploy here.
+    let installationId: string | undefined
+    let config: string | undefined
+    const configAppType = workbench?.config?.appType
+    if (deploySingletonConfig && organizationId && workbench?.config && configAppType) {
+      installationId = await resolveInstallationId({appType: configAppType, organizationId})
+      config = summarizeConfig(workbench.config)
+      reporter.report(
+        installationId
+          ? {config, message: config, status: 'pass'}
+          : {
+              exitCode: exitCodes.USAGE_ERROR,
+              message: `No active "${configAppType}" installation for organization "${organizationId}"`,
+              solution:
+                'Install the Media Library for the organization before deploying its config',
+              status: 'fail',
+            },
+      )
+    }
+
+    // Report the exposes deploying with the application, both modes.
+    const exposes = deployApplication && workbench ? reportExposes(reporter, workbench) : []
+
+    // Surface the app's explicit singleton flag when set, both modes.
+    if (deployApplication && workbench?.isSingleton !== undefined) {
       reporter.report({
-        message: `Error extracting app manifest: ${getErrorMessage(err)}`,
-        status: 'warn',
+        isSingleton: workbench.isSingleton,
+        message: `Singleton: ${workbench.isSingleton}`,
+        status: 'pass',
       })
     }
-  }
 
-  // Resolve the installation in both modes so the report — dry-run and real —
-  // shows whether the config is deployable; a missing one fails the deploy here.
-  let installationId: string | undefined
-  let config: string | undefined
-  const configAppType = workbench?.config?.appType
-  if (deploySingletonConfig && organizationId && workbench?.config && configAppType) {
-    installationId = await resolveInstallationId({appType: configAppType, organizationId})
-    config = summarizeConfig(workbench.config)
-    reporter.report(
-      installationId
-        ? {config, message: config, status: 'pass'}
-        : {
-            exitCode: exitCodes.USAGE_ERROR,
-            message: `No active "${configAppType}" installation for organization "${organizationId}"`,
-            solution: 'Install the Media Library for the organization before deploying its config',
-            status: 'fail',
-          },
-    )
-  }
+    // Applied after the app is live (see below) so a failed deploy never leaves
+    // the org's installation config without its application.
+    const deployApplicationConfig = async (): Promise<void> => {
+      if (installationId && version && configAppType && organizationId) {
+        await deployConfig({
+          appType: configAppType,
+          installationId,
+          organizationId,
+          output,
+          sourceDir,
+          version,
+        })
+      }
+    }
 
-  // Report the exposes deploying with the application, both modes.
-  const exposes = deployApplication && workbench ? reportExposes(reporter, workbench) : []
+    // Dry run stops here — everything below mutates.
+    if (dryRun) return
 
-  // Surface the app's explicit singleton flag when set, both modes.
-  if (deployApplication && workbench?.isSingleton !== undefined) {
-    reporter.report({
-      isSingleton: workbench.isSingleton,
-      message: `Singleton: ${workbench.isSingleton}`,
-      status: 'pass',
-    })
-  }
+    // A config-only singleton ships no application, only its config.
+    if (!deployApplication) {
+      await deployApplicationConfig()
+      if (installationId && version) {
+        return {
+          applicationType: 'coreApp',
+          applicationVersion: version,
+          ...(config ? {config} : {}),
+          installationId,
+          target: null,
+        }
+      }
+      return
+    }
 
-  // Dry run stops here — everything below mutates.
-  if (dryRun) return
+    // A real deploy already exited on a version-resolution failure; this narrows the type.
+    if (!version) return
 
-  if (installationId && version && configAppType && organizationId) {
-    await deployConfig({
-      appType: configAppType,
-      installationId,
-      organizationId,
-      output,
-      sourceDir,
-      version,
-    })
-  }
-
-  // A config-only singleton ships no application, only its config.
-  if (!deployApplication) {
-    if (installationId && version) {
+    // The app was created (or resolved from `deployment.appId`) before the build,
+    // so this only ships the deployment; plain coreApps use user-applications below.
+    if (workbench && organizationId && applicationId) {
+      await deployWorkbenchApp({
+        applicationId,
+        icon: appIcon,
+        interfaces: buildExposes(workbench, {
+          appName: workbench.name,
+          appTitle,
+          exposesAppView: workbench.entry !== undefined,
+          version,
+        }),
+        isAutoUpdating,
+        // Once the deployment is live, a metadata-sync or later config failure
+        // must not delete the app.
+        onDeployed: () => {
+          rollbackApp = undefined
+        },
+        sourceDir,
+        title: appTitle,
+        version,
+        visibility: workbench.visibility,
+      })
+      await deployApplicationConfig()
+      const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
+      logAppDeployed({
+        applicationId,
+        cliConfig,
+        created: applicationCreated,
+        organizationId,
+        output,
+        title: appTitle,
+        url,
+      })
       return {
         applicationType: 'coreApp',
         applicationVersion: version,
-        ...(config ? {config} : {}),
-        installationId,
-        target: null,
+        ...(exposes.length > 0 ? {exposes} : {}),
+        ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
+        target: {
+          action: applicationCreated ? 'create' : 'update',
+          applicationId,
+          // A redeploy targets an existing app; only a create reports the slug.
+          ...(applicationCreated ? {slug: workbench.slug} : {}),
+          title: appTitle,
+          url,
+        },
       }
     }
-    return
-  }
 
-  // A real deploy already exited on a version-resolution failure; this narrows the type.
-  if (!version) return
+    // A real deploy has already exited if anything failed; landing here without a
+    // resolved application means the deploy target was never resolved.
+    if (!application) return
 
-  // Workbench apps deploy to Brett; plain coreApps use user-applications.
-  if (workbench && organizationId) {
-    const appId = getAppId(cliConfig)
-    const slug = workbench.slug ?? generateAppSlug()
-    const {applicationId} = await deployWorkbenchCoreApp({
-      appId,
-      icon: workbench.icon ? await readIconFromPath(workDir, workbench.icon) : undefined,
-      interfaces: buildExposes(workbench, {
-        appName: workbench.name,
-        appTitle,
-        exposesAppView: workbench.entry !== undefined,
-        version,
-      }),
-      isAutoUpdating,
-      isSingleton: workbench.isSingleton,
-      organizationId,
-      slug,
-      sourceDir,
-      title: appTitle,
-      version,
-      visibility: workbench.visibility,
-    })
-    const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
-    logAppDeployed({
-      applicationId,
-      cliConfig,
-      created: !appId,
-      organizationId,
+    application = await syncApplicationMetadata({
+      application,
+      manifest,
       output,
-      title: appTitle,
-      url,
+      visibility: cliConfig.app?.visibility,
+    })
+    await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
+    logAppDeployed({
+      applicationId: application.id,
+      cliConfig,
+      created: appCreated,
+      organizationId: application.organizationId,
+      output,
+      title: application.title,
     })
     return {
       applicationType: 'coreApp',
       applicationVersion: version,
-      ...(exposes.length > 0 ? {exposes} : {}),
-      ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
       target: {
-        action: appId ? 'update' : 'create',
-        applicationId,
-        // A redeploy ignores the slug, so only a create reports the one it used.
-        ...(appId ? {} : {slug}),
-        title: appTitle,
-        url,
+        action: appCreated ? 'create' : 'update',
+        applicationId: application.id,
+        title: application.title ?? null,
+        url: getCoreAppUrl(application.organizationId, application.id),
       },
     }
-  }
-
-  // A real deploy has already exited if anything failed; landing here without a
-  // resolved application means the deploy target was never resolved.
-  if (!application) return
-
-  application = await syncApplicationMetadata({
-    application,
-    manifest,
-    output,
-    visibility: cliConfig.app?.visibility,
-  })
-  await shipAppDeployment({application, isAutoUpdating, manifest, sourceDir, version})
-  logAppDeployed({
-    applicationId: application.id,
-    cliConfig,
-    created: appCreated,
-    organizationId: application.organizationId,
-    output,
-    title: application.title,
-  })
-  return {
-    applicationType: 'coreApp',
-    applicationVersion: version,
-    target: {
-      action: appCreated ? 'create' : 'update',
-      applicationId: application.id,
-      title: application.title ?? null,
-      url: getCoreAppUrl(application.organizationId, application.id),
-    },
+  } catch (err) {
+    await rollbackApp?.()
+    throw err
   }
 }
 

@@ -1,7 +1,11 @@
+import {readFile} from 'node:fs/promises'
+import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {type CliConfig, findProjectRoot, type Output} from '@sanity/cli-core'
 
+import {buildAppId, SANITY_APP_ID_FILE} from '../../appId.js'
+import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {deriveConfigs, deriveInterfaces} from '../dev/deriveInterfaces.js'
 import {type DevServerManifest, registerDevServer} from '../dev/registry.js'
@@ -90,11 +94,16 @@ export async function startWorkbenchPreview(
     // out of workbench-cli.
     checkForDeprecatedAppId()
     const configPath = (await findProjectRoot(workDir)).path
+    const workbench = resolveWorkbenchApp(cliConfig)
+    // Read the id the build inlined so start matches it even for a deploy build
+    // (which carries the API id, not the shape hash); fall back for older builds.
+    const inlinedId = await readInlinedAppId(outDir)
     const registration = registerDevServer({
       configs: deriveConfigs(cliConfig.app),
       host: remote.host,
-      // A local app is identified by where it's served, matching `sanity dev`.
-      id: `${remote.host}-${remote.port}`,
+      // `start` serves a build, so it advertises the build's inlined id (matching
+      // the bundle's `__SANITY_APP_ID__`), not the dev host-port.
+      id: workbench ? (inlinedId ?? buildAppId(workbench)) : `${remote.host}-${remote.port}`,
       interfaces: deriveInterfaces(cliConfig.app, {isApp}),
       manifest: await extractManifest({configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),
@@ -122,4 +131,13 @@ export async function startWorkbenchPreview(
   installSignalHandlers()
 
   return {close}
+}
+
+/** The id the build inlined into its bundle, or undefined when absent. */
+async function readInlinedAppId(outDir: string): Promise<string | undefined> {
+  try {
+    return (await readFile(path.join(outDir, SANITY_APP_ID_FILE), 'utf8')).trim() || undefined
+  } catch {
+    return undefined
+  }
 }

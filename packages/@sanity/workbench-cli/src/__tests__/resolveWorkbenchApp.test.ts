@@ -32,6 +32,7 @@ describe('resolveWorkbenchApp', () => {
       entry: undefined,
       isSingleton: undefined,
       name: 'my-app',
+      organizationId: 'org-123',
       services: [],
       slug: 'my-app',
       views: [],

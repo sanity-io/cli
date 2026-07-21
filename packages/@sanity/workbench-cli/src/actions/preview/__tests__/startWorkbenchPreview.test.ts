@@ -1,5 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {buildAppId} from '../../../appId.js'
+import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
 import {
   createMockOutput,
   mockWorkbenchServer,
@@ -11,7 +13,12 @@ const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockServeBuiltApplication = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
+const mockReadFile = vi.hoisted(() => vi.fn())
 
+vi.mock('node:fs/promises', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('node:fs/promises')>()),
+  readFile: mockReadFile,
+}))
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   findProjectRoot: mockFindProjectRoot,
@@ -53,6 +60,8 @@ describe('startWorkbenchPreview', () => {
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockFindProjectRoot.mockResolvedValue({path: '/tmp/sanity-project/sanity.cli.ts'})
     mockExtractManifest.mockResolvedValue({title: 'Test App'})
+    // Default: no id file in the build output, so start falls back to the hash.
+    mockReadFile.mockRejectedValue(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
   })
 
   afterEach(() => {
@@ -97,7 +106,8 @@ describe('startWorkbenchPreview', () => {
       expect(mockRegisterDevServer).toHaveBeenCalledWith(
         expect.objectContaining({
           host: 'localhost',
-          id: 'localhost-3334',
+          // `start` advertises the build id (matching the bundle), not host-port.
+          id: buildAppId(resolveWorkbenchApp(workbenchCliConfig())!),
           manifest: {title: 'Test App'},
           port: 3334,
           type: 'coreApp',
@@ -109,6 +119,17 @@ describe('startWorkbenchPreview', () => {
       await run({isApp: false})
 
       expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'studio'}))
+    })
+
+    test('advertises the id the build inlined, so a deploy build (API id) still matches', async () => {
+      // A deploy build carries the applications-API id, which start can't recompute.
+      mockReadFile.mockResolvedValue('app_deployed_id\n')
+
+      await run()
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({id: 'app_deployed_id'}),
+      )
     })
   })
 

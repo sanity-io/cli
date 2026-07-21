@@ -38,7 +38,6 @@ const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
 
 function run(overrides: Partial<StartWorkbenchDevOptions> = {}) {
   return startWorkbenchDev({
-    appId: undefined,
     cacheDir: '/tmp/sanity-project/.sanity/vite',
     checkForDeprecatedAppId: mockCheckForDeprecatedAppId,
     cliConfig: workbenchCliConfig(),
@@ -136,12 +135,11 @@ describe('startWorkbenchDev', () => {
       const server = mockAppServer({port: 3334})
       mockStartAppServer.mockResolvedValue(server)
 
-      await run({appId: 'app-abc', isApp: true})
+      await run({isApp: true})
 
       expect(mockCheckForDeprecatedAppId).toHaveBeenCalled()
       expect(mockStartDevServerRegistration).toHaveBeenCalledWith(
         expect.objectContaining({
-          appId: 'app-abc',
           extractManifest: mockExtractManifest,
           isApp: true,
           server: server.server,

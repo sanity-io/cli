@@ -363,7 +363,7 @@ describe('checkStudioTarget (workbench backend)', () => {
     const target = await checkStudioTarget(reporter, {
       appId: 'app-1',
       isWorkbenchApp: true,
-      studioHost: undefined,
+      slug: 'my-studio',
     })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
@@ -380,7 +380,7 @@ describe('checkStudioTarget (workbench backend)', () => {
     await checkStudioTarget(reporter, {
       appId: undefined,
       isWorkbenchApp: true,
-      studioHost: 'my-studio',
+      slug: 'my-studio',
       title: 'New Studio',
     })
 
@@ -389,19 +389,6 @@ describe('checkStudioTarget (workbench backend)', () => {
     expect(reporter.results[0]?.message).toContain('titled "New Studio"')
     expect(reporter.results[0]?.target?.url).toBeNull()
     expect(mockGetApplication).not.toHaveBeenCalled()
-  })
-
-  test('no appId and no studioHost → usage-error fail check', async () => {
-    const reporter = createCollectingReporter<DeployCheck>()
-
-    await checkStudioTarget(reporter, {
-      appId: undefined,
-      isWorkbenchApp: true,
-      studioHost: undefined,
-    })
-
-    expect(reporter.results[0]).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
-    expect(reporter.results[0]?.solution).toContain('studioHost')
   })
 })
 

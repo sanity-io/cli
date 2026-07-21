@@ -16,7 +16,8 @@ import {dirIsEmptyOrNonExistent} from '../../../src/util/dirIsEmptyOrNonExistent
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
-const mockDeployCoreApp = vi.hoisted(() => vi.fn())
+const mockCreateCoreApp = vi.hoisted(() => vi.fn())
+const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -37,7 +38,8 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   checkBuiltOutput: mockCheckBuiltOutput,
-  deployCoreApp: mockDeployCoreApp,
+  createCoreApp: mockCreateCoreApp,
+  deployWorkbenchApp: mockDeployWorkbenchApp,
 }))
 
 vi.mock(
@@ -326,11 +328,11 @@ describe('#deploy app', () => {
     expect(mockCheckDir).not.toHaveBeenCalled()
   })
 
-  test('creates a workbench app at the configured slug and reports it in --json', async () => {
+  test('creates the app at the configured slug, then deploys, and reports it in --json', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    mockDeployCoreApp.mockResolvedValue({applicationId: 'app_new'})
+    mockCreateCoreApp.mockResolvedValue({applicationId: 'app_new'})
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',
@@ -346,8 +348,13 @@ describe('#deploy app', () => {
     })
 
     if (error) throw error
-    expect(mockDeployCoreApp).toHaveBeenCalledWith(
+    // The app is created before the build so the bundle carries its real id,
+    // then that id ships the deployment.
+    expect(mockCreateCoreApp).toHaveBeenCalledWith(
       expect.objectContaining({slug: 'drop-desk-host'}),
+    )
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'app_new'}),
     )
     const result = JSON.parse(stdout)
     expect(result.deployed).toBe(true)
@@ -358,7 +365,56 @@ describe('#deploy app', () => {
     })
   })
 
-  test('a dry run surfaces the configured slug in the report and --json target', async () => {
+  test('rolls back a freshly created app when the build fails, so its slug is free to retry', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const rollback = vi.fn()
+    mockCreateCoreApp.mockResolvedValue({applicationId: 'app_new', rollback})
+    mockBuildApp.mockRejectedValueOnce(new Error('build blew up'))
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    expect(error).toBeDefined()
+    expect(rollback).toHaveBeenCalledTimes(1)
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
+  test('rejects --no-build on a first deploy, whose minted id could not be inlined', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, ['--no-build'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app}},
+    })
+
+    expect(error).toBeDefined()
+    // Nothing was created — the guard fires before the app record is minted.
+    expect(mockCreateCoreApp).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
+  test('a dry run surfaces the configured slug and creates nothing', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
@@ -385,7 +441,41 @@ describe('#deploy app', () => {
       title: 'Workbench App',
       url: null,
     })
-    expect(mockDeployCoreApp).not.toHaveBeenCalled()
+    expect(mockCreateCoreApp).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
+  test('a redeploy skips creation and deploys to the configured appId', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    // The configured appId is validated against the applications API before build.
+    mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
+      id: 'app_existing',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+      type: 'coreApp',
+    })
+
+    const app = unstable_defineApp({
+      entry: './src/App.tsx',
+      name: 'workbench-app',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
+    })
+
+    if (error) throw error
+    expect(mockCreateCoreApp).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'app_existing'}),
+    )
   })
 
   test('ships the sanitized workbench app icon straight to Brett', async () => {
@@ -393,7 +483,7 @@ describe('#deploy app', () => {
     process.cwd = () => cwd
     await writeFile(join(cwd, 'icon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><rect /></svg>')
 
-    mockDeployCoreApp.mockResolvedValue({applicationId: 'app_new'})
+    mockCreateCoreApp.mockResolvedValue({applicationId: 'app_new'})
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',
@@ -410,7 +500,8 @@ describe('#deploy app', () => {
     })
 
     if (error) throw error
-    expect(mockDeployCoreApp).toHaveBeenCalledWith(
+    // The icon syncs with the deployment, whether the app was just created or not.
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({icon: expect.stringContaining('<svg')}),
     )
   })
@@ -435,7 +526,9 @@ describe('#deploy app', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Could not read icon file')
-    expect(mockDeployCoreApp).not.toHaveBeenCalled()
+    // The icon is read before the app is created, so a bad path fails fast.
+    expect(mockCreateCoreApp).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
   })
 
   test('should PATCH user-application when manifest title differs from existing app title', async () => {

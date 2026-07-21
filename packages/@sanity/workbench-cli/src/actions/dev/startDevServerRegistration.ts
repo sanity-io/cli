@@ -1,14 +1,13 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
+import {resolveAppId} from '../../appId.js'
 import {deriveConfigs, deriveInterfaces} from './deriveInterfaces.js'
 import {trackExposesSet} from './exposesSetId.js'
 import {type DevServerManifest, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
-  /** Resolved app id for the registry entry; the caller owns id resolution and the deprecation check. */
-  appId: string | undefined
   cliConfig: CliConfig
   /**
    * Extract the project manifest to inline into the registry. The caller owns the
@@ -57,8 +56,7 @@ function serverAddress(server: ViteDevServer) {
 export async function startDevServerRegistration(
   options: DevServerRegistrationOptions,
 ): Promise<DevServerRegistrationHandle> {
-  const {appId, cliConfig, extractManifest, isApp, onInterfaceSetChange, output, server, workDir} =
-    options
+  const {cliConfig, extractManifest, isApp, onInterfaceSetChange, output, server, workDir} = options
 
   const {host: appHost, port: appPort} = serverAddress(server)
 
@@ -70,7 +68,10 @@ export async function startDevServerRegistration(
   const registration = registerDevServer({
     configs,
     host: appHost,
-    id: appId,
+    // Keyed by where it's served (not the deployment id), so a running app can't
+    // collide with its deployed twin — on the configured port, not the bound one,
+    // to match `__SANITY_APP_ID__`, compiled before any non-strict shift.
+    id: resolveAppId({host: appHost, port: server.config.server.port ?? appPort}),
     interfaces,
     port: appPort,
     projectId: cliConfig?.api?.projectId,

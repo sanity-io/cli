@@ -71,7 +71,6 @@ describe('devAction', () => {
 
   describe('workbench projects', () => {
     test('delegates to startWorkbenchDev with the injected CLI-domain pieces', async () => {
-      mockGetAppId.mockReturnValue('app-abc')
       const orchestratorClose = vi.fn().mockResolvedValue(undefined)
       mockStartWorkbenchDev.mockResolvedValue({close: orchestratorClose})
 
@@ -80,7 +79,6 @@ describe('devAction', () => {
       expect(mockStartStudioDevServer).not.toHaveBeenCalled()
       expect(mockStartWorkbenchDev).toHaveBeenCalledWith(
         expect.objectContaining({
-          appId: 'app-abc',
           cacheDir: expect.stringMatching(/\/vite$/),
           checkForDeprecatedAppId: expect.any(Function),
           extractManifest: expect.any(Function),
