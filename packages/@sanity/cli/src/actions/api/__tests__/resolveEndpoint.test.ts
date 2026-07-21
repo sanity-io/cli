@@ -231,6 +231,17 @@ describe('resolveEndpoint', () => {
     ).toMatchObject({host: 'global'})
   })
 
+  test('keeps the matched spec version when forcing a host it is served on', () => {
+    expect(resolveEndpoint({endpoint: 'projects', forceHost: 'global', routes})).toMatchObject({
+      apiVersion: 'v2021-06-07',
+      host: 'global',
+      matchedSlug: 'projects-api',
+    })
+    expect(
+      resolveEndpoint({endpoint: 'applications', forceHost: 'project', projectId: 'p', routes}),
+    ).toMatchObject({host: 'project', matchedSlug: 'applications-api', projectId: 'p'})
+  })
+
   test('passes through full URLs on Sanity API hosts', () => {
     expect(
       resolveEndpoint({

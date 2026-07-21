@@ -18,7 +18,7 @@ export interface ResolveEndpointOptions {
   /** Dataset used to fill `{dataset}` / `{datasetName}` placeholders. */
   dataset?: string
 
-  /** Force a host family (`--global` / `--project-hosted`), skipping route matching. */
+  /** Force a host family (`--global` / `--project-hosted`), restricting route matching to it. */
   forceHost?: ApiHost
 
   /** Project ID used to fill `{projectId}` placeholders and project-hosted requests. */
@@ -117,9 +117,10 @@ export function resolveEndpoint(options: ResolveEndpointOptions): ResolvedEndpoi
     )
   }
 
-  // Match against the (unsubstituted) user segments so that literal values
-  // provided in place of placeholders still match the spec patterns.
-  const match = forceHost ? undefined : matchRoutes(substituted, routes)
+  // Forcing a host restricts matching to specs served on that host, so the
+  // matched spec's default API version still applies when one exists there.
+  const candidates = forceHost ? routes.filter((entry) => entry.host === forceHost) : routes
+  const match = matchRoutes(substituted, candidates)
   const host = forceHost ?? match?.host ?? 'global'
 
   if (host === 'project' && !projectId) {
