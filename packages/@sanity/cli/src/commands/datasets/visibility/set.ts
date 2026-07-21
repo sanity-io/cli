@@ -15,11 +15,10 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
       description: 'The name of the dataset to set visibility for',
       required: true,
     }),
-    mode: Args.string({
+    mode: Args.option({
       description: 'The visibility mode to set',
-      options: ['public', 'private'],
-      required: true,
-    }),
+      options: ['public', 'private'] as const,
+    })({required: true}),
   }
 
   static override description = 'Set the visibility of a dataset'
@@ -92,7 +91,7 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
 
     try {
       await editDatasetAcl({
-        aclMode: mode as 'private' | 'public',
+        aclMode: mode,
         datasetName: dataset,
         projectId,
       })

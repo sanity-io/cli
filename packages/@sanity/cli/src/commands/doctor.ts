@@ -30,12 +30,10 @@ const MESSAGE_SYMBOLS: Record<MessageType, string> = {
 
 export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
   static override args = {
-    checks: Args.string({
+    checks: Args.option({
       description: 'Checks to enable (defaults to all)',
-      multiple: true,
-      options: [...KNOWN_CHECKS],
-      required: false,
-    }),
+      options: KNOWN_CHECKS,
+    })({multiple: true, required: false}),
   }
 
   static override description = 'Run diagnostics on your Sanity project'
@@ -137,13 +135,10 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
   }
 }
 
-function getChecks(checkNames: string[] | undefined): Array<DoctorCheck> {
+function getChecks(checkNames: DoctorCheckName[] | undefined): Array<DoctorCheck> {
   if (!checkNames || checkNames.length === 0) {
     return Object.values(doctorChecks)
   }
 
-  // oclif validates args against `options: [...KNOWN_CHECKS]` before run(),
-  // so all names are guaranteed valid DoctorCheckName values.
-  // See: https://github.com/oclif/core/issues/1234 (options don't narrow types)
-  return (checkNames as DoctorCheckName[]).map((check) => doctorChecks[check])
+  return checkNames.map((check) => doctorChecks[check])
 }
