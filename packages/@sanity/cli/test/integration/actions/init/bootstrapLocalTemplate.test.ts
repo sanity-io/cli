@@ -6,8 +6,6 @@ import {type Output} from '@sanity/cli-core'
 import {spinner, spinnerStart, spinnerSucceed} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {resolveLatestVersions} from '../../../../src/util/resolveLatestVersions.js'
-
 vi.mock('../../../../src/util/resolveLatestVersions.js', () => ({
   resolveLatestVersions: vi.fn().mockImplementation(async (deps: Record<string, string>) => {
     const resolved: Record<string, string> = {}
@@ -107,81 +105,6 @@ describe('bootstrapLocalTemplate (workbench)', () => {
   afterEach(async () => {
     await rm(tmp, {force: true, recursive: true})
     vi.clearAllMocks()
-  })
-
-  test('overrides the `sanity` dependency with the `workbench` dist-tag when workbench is enabled', async () => {
-    await bootstrapLocalTemplate({
-      output: makeOutput(),
-      outputPath: tmp,
-      packageName: 'my-studio',
-      templateName: 'clean',
-      useTypeScript: true,
-      variables: {
-        autoUpdates: false,
-        dataset: 'production',
-        organizationId: 'org1',
-        projectId: 'abc123',
-        projectName: 'My Studio',
-        workbench: true,
-      },
-    })
-
-    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
-
-    expect(resolveLatestVersions).toHaveBeenCalledOnce()
-    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
-    expect(resolvedDeps.sanity).toBe('workbench')
-
-    const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
-    expect(pkgJson.dependencies.sanity).toBe('1.0.0')
-  })
-
-  test('keeps the `sanity` dependency on the `latest` dist-tag when workbench is disabled', async () => {
-    await bootstrapLocalTemplate({
-      output: makeOutput(),
-      outputPath: tmp,
-      packageName: 'my-studio',
-      templateName: 'clean',
-      useTypeScript: true,
-      variables: {
-        autoUpdates: false,
-        dataset: 'production',
-        organizationId: 'org1',
-        projectId: 'abc123',
-        projectName: 'My Studio',
-        workbench: false,
-      },
-    })
-
-    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
-
-    expect(resolveLatestVersions).toHaveBeenCalledOnce()
-    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
-    expect(resolvedDeps.sanity).toBe('latest')
-  })
-
-  test('overrides the `sanity` devDependency for app templates when workbench is enabled', async () => {
-    await bootstrapLocalTemplate({
-      output: makeOutput(),
-      outputPath: tmp,
-      packageName: 'my-app',
-      templateName: 'app-quickstart',
-      useTypeScript: true,
-      variables: {
-        autoUpdates: false,
-        dataset: 'production',
-        organizationId: 'org1',
-        projectId: 'abc123',
-        projectName: 'my-app',
-        workbench: true,
-      },
-    })
-
-    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
-
-    expect(resolveLatestVersions).toHaveBeenCalledOnce()
-    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
-    expect(resolvedDeps.sanity).toBe('workbench')
   })
 
   test('scaffolds a studio sanity.cli.ts branded with unstable_defineApp', async () => {

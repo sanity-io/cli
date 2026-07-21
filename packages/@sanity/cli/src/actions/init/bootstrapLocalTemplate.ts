@@ -89,9 +89,6 @@ export async function bootstrapLocalTemplate(
     ...(isAppTemplate ? sdkAppDependencies.devDependencies : studioDependencies.devDependencies),
     ...template.dependencies,
     ...template.devDependencies,
-    // `unstable_defineApp` (re-exported via `sanity/cli`) only exists on the
-    // workbench dist-tag of `sanity`.
-    ...(variables.workbench && {sanity: 'workbench'}),
   })
   spin.succeed()
 
