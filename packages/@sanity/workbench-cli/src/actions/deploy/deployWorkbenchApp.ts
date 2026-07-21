@@ -74,6 +74,10 @@ export async function createStudio(options: {
  * then sync its mutable metadata (`title`, and `icon`/`visibility` when set)
  * from config. The deploy endpoint ignores these, so a redeploy patches them
  * here alongside the new deployment.
+ *
+ * `onDeployed` fires the instant the deployment is live, before the metadata
+ * sync — so a caller can disarm a create-time rollback that must not delete an
+ * application once it has an active deployment.
  * @internal
  */
 export async function deployWorkbenchApp(options: {
@@ -82,6 +86,7 @@ export async function deployWorkbenchApp(options: {
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
   label?: string
+  onDeployed?: () => void
   sourceDir: string
   title: string
   version: string
@@ -94,6 +99,7 @@ export async function deployWorkbenchApp(options: {
     interfaces,
     isAutoUpdating,
     label = 'Deploying...',
+    onDeployed,
     sourceDir,
     title,
     version,
@@ -112,6 +118,7 @@ export async function deployWorkbenchApp(options: {
       version,
       workspaces,
     })
+    onDeployed?.()
     await updateApplication(applicationId, {
       title,
       ...(icon ? {icon} : {}),

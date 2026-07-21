@@ -203,6 +203,11 @@ async function runStudioDeployment(
         }),
         isAutoUpdating,
         label: 'Deploying to sanity.studio',
+        // Once the deployment is live, a metadata-sync failure must not delete
+        // the studio.
+        onDeployed: () => {
+          rollbackApp = undefined
+        },
         sourceDir,
         title: appTitle,
         version,

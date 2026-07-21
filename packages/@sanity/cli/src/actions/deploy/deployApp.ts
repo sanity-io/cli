@@ -289,13 +289,16 @@ async function runAppDeployment(
           version,
         }),
         isAutoUpdating,
+        // Once the deployment is live, a metadata-sync or later config failure
+        // must not delete the app.
+        onDeployed: () => {
+          rollbackApp = undefined
+        },
         sourceDir,
         title: appTitle,
         version,
         visibility: workbench.visibility,
       })
-      // The app is live; a later config failure must not roll it back.
-      rollbackApp = undefined
       await deployApplicationConfig()
       const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
       logAppDeployed({

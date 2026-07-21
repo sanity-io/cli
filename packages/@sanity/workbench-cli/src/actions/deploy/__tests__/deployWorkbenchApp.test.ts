@@ -226,4 +226,47 @@ describe('deployWorkbenchApp', () => {
       uri: '/applications/app_1',
     })
   })
+
+  test('fires onDeployed before syncing metadata, so a failed sync cannot roll back', async () => {
+    mockClient.request
+      .mockResolvedValueOnce({id: 'dep_1'})
+      .mockRejectedValueOnce(new Error('patch failed'))
+    const onDeployed = vi.fn(() => {
+      // The metadata PATCH must not have run yet when the app is declared live.
+      expect(mockClient.request).toHaveBeenCalledTimes(1)
+    })
+
+    await expect(
+      deployWorkbenchApp({
+        applicationId: 'app_1',
+        interfaces,
+        isAutoUpdating: false,
+        onDeployed,
+        sourceDir: '/tmp/build/app',
+        title: 'Drop Desk',
+        version: '1.0.0',
+      }),
+    ).rejects.toThrow('patch failed')
+
+    expect(onDeployed).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not fire onDeployed when the deployment fails', async () => {
+    mockClient.request.mockRejectedValueOnce(new Error('deploy failed'))
+    const onDeployed = vi.fn()
+
+    await expect(
+      deployWorkbenchApp({
+        applicationId: 'app_1',
+        interfaces,
+        isAutoUpdating: false,
+        onDeployed,
+        sourceDir: '/tmp/build/app',
+        title: 'Drop Desk',
+        version: '1.0.0',
+      }),
+    ).rejects.toThrow('deploy failed')
+
+    expect(onDeployed).not.toHaveBeenCalled()
+  })
 })
