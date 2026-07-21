@@ -106,9 +106,13 @@ function parseServerUrl(
 /**
  * Normalize an OpenAPI path template into version-less path segments, plus the
  * API version if one was embedded in the path (eg `/v2024-07-01/access/...`).
+ *
+ * Some specs carry a stray query marker in the path key (eg `/foo/{id}?`) -
+ * anything from `?` on is not part of the path and is dropped.
  */
 function normalizePathSegments(path: string): {segments: string[]; version?: string} {
-  const segments = path.split('/').filter((segment) => segment !== '')
+  const [pathPart = ''] = path.split('?')
+  const segments = pathPart.split('/').filter((segment) => segment !== '')
   let version: string | undefined
 
   if (segments[0] === '{apiVersion}') {

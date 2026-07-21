@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs'
-import {text} from 'node:stream/consumers'
+import {buffer} from 'node:stream/consumers'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
@@ -147,10 +147,11 @@ no token at all.`
 
   /**
    * Read the raw body for `--input`, or the content referenced by a `@-`
-   * field value. Extracted so tests can substitute stdin.
+   * field value. Returns raw bytes so binary bodies survive unmodified.
+   * Extracted so tests can substitute stdin.
    */
-  protected readStdin(): Promise<string> {
-    return text(process.stdin)
+  protected readStdin(): Promise<Buffer> {
+    return buffer(process.stdin)
   }
 
   public async run(): Promise<void> {
@@ -176,7 +177,7 @@ no token at all.`
       fields: flags.field,
       rawFields: flags['raw-field'],
       readFile: (path) => readFileSync(path, 'utf8'),
-      stdin,
+      stdin: stdin?.toString('utf8'),
     })
     const hasFields = Object.keys(fields).length > 0
 
@@ -236,12 +237,13 @@ no token at all.`
     fields: Record<string, FieldValue>,
     hasFields: boolean,
     useQueryFields: boolean,
-    stdin: string | undefined,
-  ): Promise<string | unknown | undefined> {
+    stdin: Buffer | undefined,
+  ): Promise<Buffer | unknown | undefined> {
     if (flags.input !== undefined) {
       if (flags.input === '-') return stdin
       try {
-        return readFileSync(flags.input, 'utf8')
+        // Read raw bytes - `--input` bodies may be binary (eg asset uploads)
+        return readFileSync(flags.input)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         throw new ApiUsageError(`Failed to read --input file "${flags.input}": ${message}`)
@@ -264,7 +266,7 @@ no token at all.`
   private async resolveStdin(flags: {
     field?: string[]
     input?: string
-  }): Promise<string | undefined> {
+  }): Promise<Buffer | undefined> {
     const needsStdin =
       flags.input === '-' || (flags.field ?? []).some((field) => field.endsWith('=@-'))
     return needsStdin ? this.readStdin() : undefined

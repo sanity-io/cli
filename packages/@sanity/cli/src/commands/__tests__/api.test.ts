@@ -21,8 +21,16 @@ const PROJECT_HOST = `https://${testProjectId}.api.sanity.io`
 const TAG = 'sanity.cli.api'
 
 class StdinApiCommand extends ApiCommand {
-  protected override readStdin(): Promise<string> {
-    return Promise.resolve('{"from": "stdin"}')
+  protected override readStdin(): Promise<Buffer> {
+    return Promise.resolve(Buffer.from('{"from": "stdin"}'))
+  }
+}
+
+const binaryBody = Buffer.from([0xff, 0xd8, 0x00, 0x01, 0xfe, 0x80])
+
+class BinaryStdinApiCommand extends ApiCommand {
+  protected override readStdin(): Promise<Buffer> {
+    return Promise.resolve(binaryBody)
   }
 }
 
@@ -137,6 +145,19 @@ describe('#api', () => {
     await testCommand(StdinApiCommand, ['data/mutate/{dataset}', '--input', '-'], {
       mocks: defaultMocks,
     })
+  })
+
+  test('sends binary --input bodies byte-for-byte', async () => {
+    nock(GLOBAL_HOST)
+      .post('/v2025-02-19/some/endpoint', (body) => body === binaryBody.toString('hex'))
+      .query({tag: TAG})
+      .reply(200, {ok: true}, {'Content-Type': 'application/json'})
+
+    await testCommand(
+      BinaryStdinApiCommand,
+      ['some/endpoint', '--input', '-', '-H', 'Content-Type: application/octet-stream'],
+      {mocks: defaultMocks},
+    )
   })
 
   test('sends custom headers', async () => {

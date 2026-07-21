@@ -106,6 +106,23 @@ describe('distillApiRoutes', () => {
     })
   })
 
+  test('drops stray query markers from path templates', () => {
+    const routes = distillApiRoutes([
+      {
+        document: {
+          paths: {'/user-applications/auto-update-version/{userApplicationId}?': {}},
+          servers: [{url: 'https://api.sanity.io'}],
+        },
+        slug: 'applications-api',
+        title: 'Applications API',
+      },
+    ])
+
+    expect(routes[0]).toMatchObject({
+      pathPatterns: ['user-applications/auto-update-version/{userApplicationId}'],
+    })
+  })
+
   test('strips a leading {apiVersion} placeholder from path templates', () => {
     const routes = distillApiRoutes([
       {

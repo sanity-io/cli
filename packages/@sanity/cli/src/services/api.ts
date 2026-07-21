@@ -15,8 +15,8 @@ export interface PerformApiRequestOptions {
   /** The resolved request target. */
   resolved: ResolvedEndpoint
 
-  /** Request body: objects are JSON-serialized, strings are sent verbatim. */
-  body?: string | unknown
+  /** Request body: objects are JSON-serialized; strings and raw byte buffers are sent verbatim. */
+  body?: Buffer | string | unknown
 
   /** Extra request headers. A user-provided `Authorization` header wins over the CLI token. */
   headers?: Record<string, string>
@@ -63,8 +63,8 @@ export async function performApiRequest(options: PerformApiRequestOptions): Prom
   const requestHeaders: Record<string, string> = {}
   if (token) requestHeaders.Authorization = `Bearer ${token}`
 
-  let requestBody: string | undefined
-  if (typeof body === 'string') {
+  let requestBody: Buffer | string | undefined
+  if (typeof body === 'string' || Buffer.isBuffer(body)) {
     requestBody = body
   } else if (body !== undefined) {
     requestBody = JSON.stringify(body)
