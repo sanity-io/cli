@@ -233,7 +233,15 @@ describe('resolveEndpoint', () => {
     ).toThrow(/Refusing to send/)
   })
 
+  test('refuses full URLs over plain http', () => {
+    expect(() =>
+      resolveEndpoint({endpoint: 'http://abc123.api.sanity.io/v1/users/me', routes}),
+    ).toThrow(/only https/)
+  })
+
   test('throws a usage error for empty paths', () => {
     expect(() => resolveEndpoint({endpoint: '/', routes})).toThrow(/empty/)
+    expect(() => resolveEndpoint({endpoint: 'v2025-02-19', routes})).toThrow(/empty/)
+    expect(() => resolveEndpoint({endpoint: '{apiVersion}', routes})).toThrow(/empty/)
   })
 })

@@ -75,17 +75,20 @@ export function resolveEndpoint(options: ResolveEndpointOptions): ResolvedEndpoi
   const query = parseQueryString(queryParts.join('?'))
 
   const segments = pathPart.split('/').filter((segment) => segment !== '')
-  if (segments.length === 0) {
-    throw new ApiUsageError('Endpoint path is empty')
-  }
 
   // An API version embedded in the path (eg `v2021-06-07/projects`) is peeled
   // off and re-applied as the version segment of the final URL.
   let embeddedVersion: string | undefined
   if (segments[0] === '{apiVersion}') {
     segments.shift()
-  } else if (API_VERSION_SEGMENT_RE.test(segments[0])) {
+  } else if (segments.length > 0 && API_VERSION_SEGMENT_RE.test(segments[0])) {
     embeddedVersion = segments.shift()
+  }
+
+  // Checked after version peeling so a bare version (eg `v2025-02-19`) is
+  // also rejected as an empty path.
+  if (segments.length === 0) {
+    throw new ApiUsageError('Endpoint path is empty')
   }
 
   const unresolved: string[] = []
@@ -140,6 +143,13 @@ function resolveUrlEndpoint(endpoint: string): ResolvedEndpoint {
     url = new URL(endpoint)
   } catch {
     throw new ApiUsageError(`Invalid URL "${endpoint}"`)
+  }
+
+  // Never put the token on the wire unencrypted
+  if (url.protocol !== 'https:') {
+    throw new ApiUsageError(
+      `Refusing to send requests over "${url.protocol}//" - only https:// URLs are supported`,
+    )
   }
 
   if (!ALLOWED_URL_HOST_RE.test(url.hostname)) {
