@@ -26,6 +26,7 @@ interface GenerateCliConfigOptions {
   isWorkbenchApp: boolean
   name: string
   projectId: string
+  slug: string
   title: string
 
   organizationId?: string
