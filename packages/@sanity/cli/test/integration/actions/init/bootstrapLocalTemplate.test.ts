@@ -240,10 +240,38 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
     expect(cliConfig).toContain(`name: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`title: 'My App'`)
-    // `slug` defaults from the entered name/title, slugified
-    expect(cliConfig).toContain(`slug: 'my-app'`)
+    // App init derives `slug` from the output directory too, same as `name`
+    expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`entry: './src/App.tsx'`)
+  })
+
+  test('falls back to a non-empty slug when the name slugifies to nothing', async () => {
+    await bootstrapLocalTemplate({
+      output: makeOutput(),
+      // A fully non-latin project name slugifies to '' — and so does the
+      // pre-slugified package name derived from it upstream.
+      outputPath: tmp,
+      packageName: '',
+      templateName: 'clean',
+      useTypeScript: true,
+      variables: {
+        autoUpdates: false,
+        dataset: 'production',
+        organizationId: 'org1',
+        projectId: 'abc123',
+        projectName: '日本語プロジェクト',
+        workbench: true,
+      },
+    })
+
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
+
+    const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
+    expect(cliConfig).toContain(`title: '日本語プロジェクト'`)
+    // An empty `slug` would fail app config validation — the constant kicks in
+    expect(cliConfig).not.toContain(`slug: ''`)
+    expect(cliConfig).toContain(`slug: 'sanity-app'`)
   })
 
   test('scaffolds the plain sanity.cli.ts when workbench is disabled', async () => {

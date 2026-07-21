@@ -95,7 +95,10 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     expect(cliConfig).toContain('unstable_defineApp')
     expect(cliConfig).toContain('entry')
     expect(cliConfig).toContain(orgId)
-    // `slug` is pre-filled, defaulted from the name/title
-    expect(cliConfig).toMatch(/slug: '[a-z0-9-]+'/)
+    // `slug` is pre-filled — app init derives it from the output directory,
+    // same as the package name
+    const pkgJson = JSON.parse(readFileSync(`${tmp.path}/package.json`, 'utf8'))
+    expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
+    expect(pkgJson.name).toMatch(/^[a-z0-9-]+$/)
   })
 })
