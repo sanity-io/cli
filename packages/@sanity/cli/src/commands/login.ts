@@ -2,7 +2,7 @@ import {text} from 'node:stream/consumers'
 
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {login} from '../actions/auth/login/login.js'
 import {LOGIN_PROVIDER_IDS} from '../actions/auth/login/loginInstructions.js'
@@ -80,7 +80,7 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       this.log('Login successful')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Login failed: ${message}`, {exit: 1})
+      this.error(`Login failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

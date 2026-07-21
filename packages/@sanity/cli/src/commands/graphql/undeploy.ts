@@ -82,7 +82,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       const apiDef = apiDefs.find((def) => def.id === apiFlag)
 
       if (!apiDef) {
-        this.error(`GraphQL API "${apiFlag}" not found`, {exit: 1})
+        this.error(`GraphQL API "${apiFlag}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       projectId = apiDef.projectId
@@ -161,7 +161,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(`${error}`)
       undeployGraphqlDebug(`Error deleting GraphQL API for ${dataset}/${tag}`, err)
-      this.error(`GraphQL API deletion failed:\n${err.message}`, {exit: 1})
+      this.error(`GraphQL API deletion failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

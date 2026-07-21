@@ -233,7 +233,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     copyDatasetDebug('Attaching to copy job %s', jobId)
 
     if (jobId.trim() === '') {
-      return this.output.error('Please supply a valid jobId', {exit: 1})
+      return this.output.error('Please supply a valid jobId', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     try {
@@ -242,7 +242,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to attach to copy job: %s', message, error)
-      return this.output.error(`Failed to attach to copy job: ${message}`, {exit: 1})
+      return this.output.error(`Failed to attach to copy job: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -271,7 +271,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to fetch datasets: %s', message, error)
-      return this.output.error(`Failed to fetch datasets: ${message}`, {exit: 1})
+      return this.output.error(`Failed to fetch datasets: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const datasetNames = new Set(datasetsResponse.map((ds) => ds.name))
@@ -284,7 +284,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
 
     if (!datasetNames.has(sourceDataset)) {
-      return this.output.error(`Source dataset "${sourceDataset}" doesn't exist`, {exit: 1})
+      return this.output.error(`Source dataset "${sourceDataset}" doesn't exist`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // Get and validate target dataset
@@ -301,7 +301,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
 
     if (datasetNames.has(targetDataset)) {
-      return this.output.error(`Target dataset "${targetDataset}" already exists`, {exit: 1})
+      return this.output.error(`Target dataset "${targetDataset}" already exists`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // Start the copy job
@@ -335,7 +335,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Dataset copying failed: %s', message, error)
-      return this.output.error(`Dataset copying failed: ${message}`, {exit: 1})
+      return this.output.error(`Dataset copying failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -361,7 +361,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to list dataset copy jobs: %s', message, error)
-      return this.output.error(`Failed to list dataset copy jobs: ${message}`, {exit: 1})
+      return this.output.error(`Failed to list dataset copy jobs: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 

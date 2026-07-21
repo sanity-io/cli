@@ -122,7 +122,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       const errorText = organization
         ? `Failed to retrieve organization ${organization}`
         : 'Failed to retrieve an organization'
-      return this.output.error(`${errorText}: ${error}`, {exit: 1})
+      return this.output.error(`${errorText}: ${error}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const spin = spinner('Creating project').start()
@@ -139,7 +139,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     } catch (error) {
       spin.fail()
       debug(`Failed to create project: ${error}`)
-      return this.output.error(`Failed to create project: ${error}`, {exit: 1})
+      return this.output.error(`Failed to create project: ${error}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     let newDataset: DatasetResponse | undefined

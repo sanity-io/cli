@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {type DoctorCheckName, doctorChecks, KNOWN_CHECKS} from '../actions/doctor/checks/index.js'
@@ -69,7 +69,7 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
     try {
       checks = getChecks(argv)
     } catch (err) {
-      return this.output.error(err instanceof Error ? err.message : String(err), {exit: 2})
+      return this.output.error(err instanceof Error ? err.message : String(err), {exit: exitCodes.USAGE_ERROR})
     }
     const cwd = process.cwd()
 
@@ -91,7 +91,7 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
 
     // Exit with error code if any checks failed
     if (results.summary.errors > 0) {
-      return this.exit(1)
+      return this.exit(exitCodes.RUNTIME_ERROR)
     }
   }
 

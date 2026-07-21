@@ -119,7 +119,7 @@ export class DocsReadCommand extends SanityCommand<typeof DocsReadCommand> {
       this.log(content)
     } catch (error) {
       this.error(error instanceof Error ? error.message : 'Failed to read article', {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
   }

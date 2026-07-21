@@ -83,7 +83,7 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
       } catch (error) {
         const err = error instanceof Error ? error : new Error(`${error}`)
         deleteDatasetDebug(`Error getting project ${projectId}`, err)
-        this.error(`Project retrieval failed: ${err.message}`, {exit: 1})
+        this.error(`Project retrieval failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       await input({
@@ -104,7 +104,7 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
     } catch (error) {
       const err = error instanceof Error ? error : new Error(`${error}`)
       deleteDatasetDebug(`Error deleting dataset ${datasetName}`, err)
-      this.error(`Dataset deletion failed: ${err.message}`, {exit: 1})
+      this.error(`Dataset deletion failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

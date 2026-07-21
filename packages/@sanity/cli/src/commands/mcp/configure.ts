@@ -1,4 +1,4 @@
-import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, toError} from '@sanity/cli-core/errors'
 
 import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
@@ -32,11 +32,11 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       if (error instanceof LoginError) {
         this.error(
           `Failed to verify authentication credentials: ${error.message}. Try running \`sanity login\`.`,
-          {exit: 1},
+          {exit: exitCodes.RUNTIME_ERROR},
         )
       }
 
-      this.error(`Failed to check authentication: ${getErrorMessage(error)}`, {exit: 1})
+      this.error(`Failed to check authentication: ${getErrorMessage(error)}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     try {
@@ -59,7 +59,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       }
     } catch (error) {
       trace.error(toError(error))
-      this.error(getErrorMessage(error), {exit: 1})
+      this.error(getErrorMessage(error), {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

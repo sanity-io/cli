@@ -1,4 +1,4 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {Table} from 'console-table-printer'
 
@@ -25,7 +25,7 @@ export class ListOrganizationsCommand extends SanityCommand<typeof ListOrganizat
       organizations = await listOrganizations()
     } catch (error) {
       listOrgsDebug('Error listing organizations', error)
-      this.error(`Failed to list organizations: ${getErrorMessage(error)}`, {exit: 1})
+      this.error(`Failed to list organizations: ${getErrorMessage(error)}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (organizations.length === 0) {

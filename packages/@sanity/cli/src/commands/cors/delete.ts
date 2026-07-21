@@ -67,7 +67,7 @@ export class Delete extends SanityCommand<typeof Delete> {
     } catch (error) {
       const err = error as Error
       deleteCorsDebug(`Error deleting CORS origin ${originId} for project ${projectId}`, err)
-      this.error(`Origin deletion failed:\n${err.message}`, {exit: 1})
+      this.error(`Origin deletion failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -81,11 +81,11 @@ export class Delete extends SanityCommand<typeof Delete> {
     } catch (error) {
       const err = error as Error
       deleteCorsDebug(`Error fetching CORS origins for project ${projectId}`, err)
-      this.error(`Failed to fetch CORS origins:\n${err.message}`, {exit: 1})
+      this.error(`Failed to fetch CORS origins:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (origins.length === 0) {
-      this.error('No CORS origins configured for this project.', {exit: 1})
+      this.error('No CORS origins configured for this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // If origin is specified, find it in the list
@@ -96,7 +96,7 @@ export class Delete extends SanityCommand<typeof Delete> {
       )
 
       if (!selectedOrigin) {
-        this.error(`Origin "${specifiedOrigin}" not found`, {exit: 1})
+        this.error(`Origin "${specifiedOrigin}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       return selectedOrigin.id

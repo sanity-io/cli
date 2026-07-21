@@ -108,7 +108,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       const docs = await projectClient.fetch(query)
 
       if (!docs) {
-        this.error('Query returned no results', {exit: 1})
+        this.error('Query returned no results', {exit: exitCodes.RUNTIME_ERROR})
       }
 
       // Output the query results
@@ -127,7 +127,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
         ? `Invalid GROQ query syntax: ${err.message}`
         : `Failed to run query: ${err.message}`
 
-      this.error(`${errorMsg}\nQuery: ${query}`, {exit: 1})
+      this.error(`${errorMsg}\nQuery: ${query}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

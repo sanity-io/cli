@@ -109,7 +109,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       if (err instanceof ProjectRootNotFoundError) {
         return this.output.error(
           'This command must be run from within a Sanity project directory (requires studio schema for validation)',
-          {exit: 1},
+          {exit: exitCodes.RUNTIME_ERROR},
         )
       }
       throw err
@@ -200,10 +200,10 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       })
 
       if (overallLevel === 'error') {
-        return this.exit(1)
+        return this.exit(exitCodes.RUNTIME_ERROR)
       }
     } catch (err) {
-      return this.output.error(err instanceof Error ? err.message : String(err), {exit: 1})
+      return this.output.error(err instanceof Error ? err.message : String(err), {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

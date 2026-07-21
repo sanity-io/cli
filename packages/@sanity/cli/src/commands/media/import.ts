@@ -70,13 +70,13 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       this.error(
         `Failed to list media libraries:\n${error instanceof Error ? error.message : error}`,
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }
 
     if (mediaLibraries.length === 0) {
-      this.error('No active media libraries found in this project', {exit: 1})
+      this.error('No active media libraries found in this project', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     let mediaLibraryId = flags['media-library-id']
@@ -93,14 +93,14 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
         this.error(
           `Failed to select media library:\n${error instanceof Error ? error.message : error}`,
           {
-            exit: 1,
+            exit: exitCodes.RUNTIME_ERROR,
           },
         )
       }
     }
 
     if (!mediaLibraries.some((library) => library.id === mediaLibraryId)) {
-      this.error(`Media library with id "${mediaLibraryId}" not found`, {exit: 1})
+      this.error(`Media library with id "${mediaLibraryId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const projectClient = await getProjectCliClient({
@@ -165,10 +165,10 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       process.once('SIGINT', () => {
         subscription.unsubscribe()
         spin.fail('Import interrupted.')
-        process.exit(130)
+        process.exit(exitCodes.SIGINT)
       })
     }).catch((error) => {
-      this.error(styleText('red', error.message), {exit: 1})
+      this.error(styleText('red', error.message), {exit: exitCodes.RUNTIME_ERROR})
     })
   }
 

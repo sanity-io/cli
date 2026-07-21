@@ -92,12 +92,12 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
         error.validation.length > 0
       ) {
         this.output.log(formatSchemaValidation(error.validation))
-        this.exit(1)
+        this.exit(exitCodes.RUNTIME_ERROR)
       }
 
       schemasDeployDebug('Failed to deploy schemas', error)
       const errorMessage = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to deploy schemas:\n${errorMessage}`, {exit: 1})
+      this.error(`Failed to deploy schemas:\n${errorMessage}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

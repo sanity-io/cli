@@ -64,11 +64,11 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       disableBackupDebug(`Failed to list datasets: ${message}`, error)
-      this.error(`Failed to list datasets: ${message}`, {exit: 1})
+      this.error(`Failed to list datasets: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (datasets.length === 0) {
-      this.error('No datasets found in this project.', {exit: 1})
+      this.error('No datasets found in this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (dataset) {
@@ -93,7 +93,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       disableBackupDebug(`Failed to disable backup for dataset`, error)
-      this.error(`Disabling dataset backup failed: ${message}`, {exit: 1})
+      this.error(`Disabling dataset backup failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -111,7 +111,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     } catch (error) {
       const err = error as Error
       disableBackupDebug(`Error fetching datasets`, err)
-      this.error(`Failed to fetch datasets:\n${err.message}`, {exit: 1})
+      this.error(`Failed to fetch datasets:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

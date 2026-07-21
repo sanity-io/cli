@@ -1,6 +1,6 @@
 import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 
@@ -47,20 +47,20 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
 
     const defaultRole = defaultRoleFlag?.trim()
     if (defaultRole === '') {
-      this.error('Default role cannot be empty', {exit: 1})
+      this.error('Default role cannot be empty', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     let name: string
     if (nameFlag === undefined) {
       if (this.isUnattended()) {
-        this.error('Organization name is required. Provide it with the --name flag.', {exit: 1})
+        this.error('Organization name is required. Provide it with the --name flag.', {exit: exitCodes.RUNTIME_ERROR})
       }
       name = await promptForOrganizationName()
     } else {
       const trimmedName = nameFlag.trim()
       const validation = validateOrganizationName(trimmedName)
       if (validation !== true) {
-        this.error(validation, {exit: 1})
+        this.error(validation, {exit: exitCodes.RUNTIME_ERROR})
       }
       name = trimmedName
     }
@@ -75,7 +75,7 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
       spin.fail()
       createOrgDebug('Error creating organization', error)
       this.error(`Failed to create organization: ${getErrorMessage(error)}`, {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
   }

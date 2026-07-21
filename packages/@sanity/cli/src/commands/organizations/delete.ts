@@ -2,7 +2,7 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {input, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
@@ -61,9 +61,9 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
       spin.fail()
       deleteOrgDebug('Error deleting organization', error)
       if (isHttpError(error) && error.statusCode === 404) {
-        this.error(`Organization "${organizationId}" not found`, {exit: 1})
+        this.error(`Organization "${organizationId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
-      this.error(`Failed to delete organization: ${getErrorMessage(error)}`, {exit: 1})
+      this.error(`Failed to delete organization: ${getErrorMessage(error)}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -76,9 +76,9 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
       const err = error instanceof Error ? error : new Error(`${error}`)
       deleteOrgDebug(`Error getting organization ${organizationId}`, err)
       if (isHttpError(error) && error.statusCode === 404) {
-        this.error(`Organization "${organizationId}" not found`, {exit: 1})
+        this.error(`Organization "${organizationId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
-      this.error(`Organization retrieval failed: ${err.message}`, {exit: 1})
+      this.error(`Organization retrieval failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     this.log(
@@ -103,7 +103,7 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
     } catch (error) {
       const err = error instanceof Error ? error : new Error(`${error}`)
       deleteOrgDebug(`User cancelled`, err)
-      this.error(`User cancelled`, {exit: 1})
+      this.error(`User cancelled`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

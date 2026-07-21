@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {Table} from 'console-table-printer'
 
@@ -58,7 +58,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     } catch (error) {
       const message = getErrorMessage(error)
       listTokenDebug(`Error fetching tokens for project ${projectId}`, error)
-      this.error(`Token list retrieval failed:\n${message}`, {exit: 1})
+      this.error(`Token list retrieval failed:\n${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (outputJson) {

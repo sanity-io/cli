@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deployApp} from '../actions/deploy/deployApp.js'
@@ -126,7 +126,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
           }))
 
         if (!shouldProceed) {
-          this.output.error('Cancelled.', {exit: 1})
+          this.output.error('Cancelled.', {exit: exitCodes.RUNTIME_ERROR})
         }
       }
 

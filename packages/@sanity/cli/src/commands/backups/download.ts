@@ -130,11 +130,11 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       backupDownloadDebug(`Failed to list datasets: ${message}`, error)
-      this.error(`Failed to list datasets: ${message}`, {exit: 1})
+      this.error(`Failed to list datasets: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (datasets.length === 0) {
-      this.error('No datasets found in this project.', {exit: 1})
+      this.error('No datasets found in this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (dataset) {
@@ -230,7 +230,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       progressSpinner.fail()
       const message = error instanceof Error ? error.message : String(error)
       backupDownloadDebug(`Downloading dataset backup failed: ${message}`, error)
-      this.error(`Downloading dataset backup failed: ${message}`, {exit: 1})
+      this.error(`Downloading dataset backup failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     docOutStream.end()
@@ -247,7 +247,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       progressSpinner.fail()
       const message = err instanceof Error ? err.message : String(err)
       backupDownloadDebug(`Archiving backup failed: ${message}`, err)
-      this.error(`Archiving backup failed: ${message}`, {exit: 1})
+      this.error(`Archiving backup failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     progressSpinner.set({
@@ -286,7 +286,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
   ): Promise<DownloadBackupOptions> {
     const err = validateDatasetName(datasetName)
     if (err) {
-      this.error(err, {exit: 1})
+      this.error(err, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const backupId = String(
@@ -354,7 +354,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       })
 
       if (!response?.backups?.length) {
-        this.error('No backups found', {exit: 1})
+        this.error('No backups found', {exit: exitCodes.RUNTIME_ERROR})
       }
 
       const backupIdChoices = response.backups.map((backup: BackupItem) => ({
@@ -374,7 +374,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       backupDownloadDebug(`Failed to fetch backups for dataset ${datasetName}: ${message}`, err)
-      this.error(`Failed to fetch backups for dataset ${datasetName}: ${message}`, {exit: 1})
+      this.error(`Failed to fetch backups for dataset ${datasetName}: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

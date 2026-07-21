@@ -98,7 +98,7 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
       roles = (await getProjectRoles(projectId)).filter((role) => role.appliesToUsers)
     } catch (error) {
       usersInviteDebug('Error fetching roles', error)
-      this.error('Error fetching roles', {exit: 1})
+      this.error('Error fetching roles', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const email = normalizedEmail || (await this.promptForEmail())
@@ -119,10 +119,10 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     } catch (error) {
       usersInviteDebug(`Error inviting user`, error)
       if ((error as Error & {statusCode: number}).statusCode === 402) {
-        this.error(QUOTA_ERROR_MESSAGE, {exit: 1})
+        this.error(QUOTA_ERROR_MESSAGE, {exit: exitCodes.RUNTIME_ERROR})
       }
 
-      this.error(`Error inviting user`, {exit: 1})
+      this.error(`Error inviting user`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 

@@ -130,7 +130,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     } catch (error) {
       exportDebug('Error listing datasets', error)
       this.error(`Failed to list datasets:\n${error instanceof Error ? error.message : error}`, {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
 
@@ -179,7 +179,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
 
     // Verify existence of dataset before trying to export from it
     if (!datasets.some((set) => set.name === dataset)) {
-      this.error(`Dataset with name "${dataset}" not found`, {exit: 1})
+      this.error(`Dataset with name "${dataset}" not found`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     this.log(
@@ -204,7 +204,7 @@ dataset: ${dataset.padEnd(46)}`,
 
     const outputPath = await this.getOutputPath(destinationPath, dataset, flags)
     if (!outputPath) {
-      this.error('Cancelled', {exit: 1})
+      this.error('Cancelled', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // Prepare export options
@@ -233,7 +233,7 @@ dataset: ${dataset.padEnd(46)}`,
       fail()
       const err = error instanceof Error ? error : new Error(String(error))
       exportDebug('Export failed', err)
-      this.error(`Export failed: ${err.message}`, {exit: 1})
+      this.error(`Export failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -293,12 +293,12 @@ dataset: ${dataset.padEnd(46)}`,
           this.error(
             `Permission denied: Cannot create directory "${createPath}". Please check write permissions.`,
             {
-              exit: 1,
+              exit: exitCodes.RUNTIME_ERROR,
             },
           )
         } else {
           this.error(`Failed to create directory "${createPath}": ${err.message}`, {
-            exit: 1,
+            exit: exitCodes.RUNTIME_ERROR,
           })
         }
       }

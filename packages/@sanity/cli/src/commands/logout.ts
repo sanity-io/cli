@@ -1,4 +1,4 @@
-import {getCliToken, getUserConfig, SanityCommand, setCliUserConfig} from '@sanity/cli-core'
+import {exitCodes, getCliToken, getUserConfig, SanityCommand, setCliUserConfig} from '@sanity/cli-core'
 import {isHttpError} from '@sanity/client'
 
 import {logout} from '../services/auth.js'
@@ -28,7 +28,7 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
         return
       }
       const err = error instanceof Error ? error : new Error(`${error}`)
-      this.error(`Failed to logout: ${err.message}`, {exit: 1})
+      this.error(`Failed to logout: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
