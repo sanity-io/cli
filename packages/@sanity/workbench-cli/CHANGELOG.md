@@ -1,5 +1,18 @@
 # @sanity/workbench-cli
 
+## [1.7.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.6.0...workbench-cli-v1.7.0)
+
+_2026-07-21_
+
+### Features
+
+- **workbench:** centralize app id generation ([#1540](https://github.com/sanity-io/cli/pull/1540)) ([abc8897](https://github.com/sanity-io/cli/commit/abc88976b631a7f47bb0071ec37d59ff0e7fe5dd))
+
+### Bug Fixes
+
+- **init:** pre-fill workbench app slug from the entered name/title ([#1574](https://github.com/sanity-io/cli/pull/1574)) ([a66212c](https://github.com/sanity-io/cli/commit/a66212cb4330dc040ea9f856f1976aca21f85c1e))
+- **workbench:** sync app visibility on redeploy ([#1565](https://github.com/sanity-io/cli/pull/1565)) ([a41c5a4](https://github.com/sanity-io/cli/commit/a41c5a436ba292ae13e5e7138f53599f01b0745e))
+
 ## [1.6.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.5.0...workbench-cli-v1.6.0)
 
 _2026-07-20_
