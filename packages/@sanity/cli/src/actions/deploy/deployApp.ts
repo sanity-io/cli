@@ -240,22 +240,27 @@ async function runAppDeployment(
       })
     }
 
+    // Applied after the app is live (see below) so a failed deploy never leaves
+    // the org's installation config without its application.
+    const deployApplicationConfig = async (): Promise<void> => {
+      if (installationId && version && configAppType && organizationId) {
+        await deployConfig({
+          appType: configAppType,
+          installationId,
+          organizationId,
+          output,
+          sourceDir,
+          version,
+        })
+      }
+    }
+
     // Dry run stops here — everything below mutates.
     if (dryRun) return
 
-    if (installationId && version && configAppType && organizationId) {
-      await deployConfig({
-        appType: configAppType,
-        installationId,
-        organizationId,
-        output,
-        sourceDir,
-        version,
-      })
-    }
-
     // A config-only singleton ships no application, only its config.
     if (!deployApplication) {
+      await deployApplicationConfig()
       if (installationId && version) {
         return {
           applicationType: 'coreApp',
@@ -288,6 +293,9 @@ async function runAppDeployment(
         title: appTitle,
         version,
       })
+      // The app is live; a later config failure must not roll it back.
+      rollbackApp = undefined
+      await deployApplicationConfig()
       const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
       logAppDeployed({
         applicationId,
