@@ -71,7 +71,9 @@ export async function createStudio(options: {
 
 /**
  * Ship a deployment to an already-created (or `deployment.appId`) application,
- * then sync its mutable metadata (`title`, and `icon` when set) from config.
+ * then sync its mutable metadata (`title`, and `icon`/`visibility` when set)
+ * from config. The deploy endpoint ignores these, so a redeploy patches them
+ * here alongside the new deployment.
  * @internal
  */
 export async function deployWorkbenchApp(options: {
@@ -83,6 +85,7 @@ export async function deployWorkbenchApp(options: {
   sourceDir: string
   title: string
   version: string
+  visibility?: AppVisibility
   workspaces?: readonly BrettWorkspace[]
 }): Promise<void> {
   const {
@@ -94,6 +97,7 @@ export async function deployWorkbenchApp(options: {
     sourceDir,
     title,
     version,
+    visibility,
     workspaces,
   } = options
   const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
@@ -108,7 +112,11 @@ export async function deployWorkbenchApp(options: {
       version,
       workspaces,
     })
-    await updateApplication(applicationId, {title, ...(icon ? {icon} : {})})
+    await updateApplication(applicationId, {
+      title,
+      ...(icon ? {icon} : {}),
+      ...(visibility ? {visibility} : {}),
+    })
     spin.succeed()
   } catch (error) {
     spin.clear()

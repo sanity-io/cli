@@ -292,6 +292,7 @@ async function runAppDeployment(
         sourceDir,
         title: appTitle,
         version,
+        visibility: workbench.visibility,
       })
       // The app is live; a later config failure must not roll it back.
       rollbackApp = undefined

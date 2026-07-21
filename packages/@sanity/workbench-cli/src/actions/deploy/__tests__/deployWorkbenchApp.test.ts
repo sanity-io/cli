@@ -210,7 +210,15 @@ describe('deployWorkbenchApp', () => {
   test('syncs visibility on redeploy when declared', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
-    await deployCoreApp({...coreAppOptions, appId: 'app_1', visibility: 'unlisted'})
+    await deployWorkbenchApp({
+      applicationId: 'app_1',
+      interfaces,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+      visibility: 'unlisted',
+    })
 
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {title: 'Drop Desk', visibility: 'unlisted'},
