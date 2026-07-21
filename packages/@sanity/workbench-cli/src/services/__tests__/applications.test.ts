@@ -28,7 +28,14 @@ const interfaces: BrettInterface[] = [
   {moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
 ]
 const workspaces: BrettWorkspace[] = [
-  {basePath: '/', dataset: 'production', name: 'default', projectId: 'proj-1', title: 'Default'},
+  {
+    basePath: '/',
+    dataset: 'production',
+    name: 'default',
+    projectId: 'proj-1',
+    schemaDescriptorId: 'desc-1',
+    title: 'Default',
+  },
 ]
 
 /** The (name, value) pairs a call appended to its FormData. */
@@ -68,7 +75,7 @@ describe('getApplication', () => {
 })
 
 describe('createApplication', () => {
-  test('POSTs a coreApp create without deployment parts or studio config', async () => {
+  test('POSTs a coreApp create as JSON, without deployment parts or studio config', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 
     await createApplication({
@@ -78,27 +85,16 @@ describe('createApplication', () => {
       type: 'coreApp',
     })
 
-    const post = mockClient.request.mock.calls[0][0]
-    expect(post).toMatchObject({method: 'POST', uri: '/applications'})
-    expect(post.headers['content-type']).toMatch(/multipart\/form-data/)
-
-    const fields = appendedFields()
-    expect(fields).toContainEqual(['type', 'coreApp'])
-    expect(fields).toContainEqual(['title', 'Drop Desk'])
-    expect(fields).toContainEqual(['organizationId', 'org-1'])
-    expect(fields).toContainEqual(['slug', 'abc123'])
-    // Create carries no deployment — those parts ride the first createDeployment.
-    const names = fields.map(([name]) => name)
-    expect(names).not.toContain('version')
-    expect(names).not.toContain('interfaces')
-    expect(names).not.toContain('tarball')
-    expect(names).not.toContain('config')
-    expect(names).not.toContain('workspaces')
-    // isSingleton is opt-in; a regular create omits it.
-    expect(names).not.toContain('isSingleton')
+    // A record-only create is a plain JSON POST — no multipart, no deployment
+    // parts (version/interfaces/tarball/workspaces), no config, no isSingleton.
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk', type: 'coreApp'},
+      method: 'POST',
+      uri: '/applications',
+    })
   })
 
-  test('appends visibility on create when set, omits it when unset', async () => {
+  test('includes visibility on create when set, omits it when unset', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
     await createApplication({
       organizationId: 'org-1',
@@ -107,9 +103,8 @@ describe('createApplication', () => {
       type: 'coreApp',
       visibility: 'unlisted',
     })
-    expect(appendedFields()).toContainEqual(['visibility', 'unlisted'])
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({visibility: 'unlisted'})
 
-    appendSpy.mockClear()
     mockClient.request.mockResolvedValueOnce({id: 'app_2'})
     await createApplication({
       organizationId: 'org-1',
@@ -117,7 +112,7 @@ describe('createApplication', () => {
       title: 'Drop Desk',
       type: 'coreApp',
     })
-    expect(appendedFields().map(([name]) => name)).not.toContain('visibility')
+    expect(mockClient.request.mock.calls[1][0].body).not.toHaveProperty('visibility')
   })
 
   test('flags a singleton create when isSingleton is set', async () => {
@@ -131,10 +126,10 @@ describe('createApplication', () => {
       type: 'coreApp',
     })
 
-    expect(appendedFields()).toContainEqual(['isSingleton', 'true'])
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({isSingleton: true})
   })
 
-  test('sends studio config as a JSON part for a studio create', async () => {
+  test('sends studio config for a studio create, no workspaces', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 
     await createApplication({
@@ -145,11 +140,10 @@ describe('createApplication', () => {
       type: 'studio',
     })
 
-    const fields = appendedFields()
-    expect(fields).toContainEqual(['type', 'studio'])
-    expect(fields).toContainEqual(['config', JSON.stringify({studio: {projectId: 'proj-1'}})])
+    const {body} = mockClient.request.mock.calls[0][0]
     // Workspaces are deployment data — they ride createDeployment, not create.
-    expect(fields.map(([name]) => name)).not.toContain('workspaces')
+    expect(body).toMatchObject({config: {studio: {projectId: 'proj-1'}}, type: 'studio'})
+    expect(body).not.toHaveProperty('workspaces')
   })
 })
 

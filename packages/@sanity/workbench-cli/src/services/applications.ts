@@ -39,6 +39,8 @@ export type BrettInterface =
 export interface BrettWorkspace {
   dataset: string
   projectId: string
+  /** Lexicon schema descriptor id; Brett requires one per workspace. */
+  schemaDescriptorId: string
 
   basePath?: string
   icon?: string
@@ -87,16 +89,21 @@ export async function createApplication(options: {
   visibility?: AppVisibility
 }): Promise<Application> {
   const {isSingleton, organizationId, projectId, slug, title, type, visibility} = options
-  const formData = new FormData()
-  formData.append('type', type)
-  formData.append('title', title)
-  formData.append('organizationId', organizationId)
-  formData.append('slug', slug)
-  if (isSingleton !== undefined) formData.append('isSingleton', String(isSingleton))
-  if (visibility) formData.append('visibility', visibility)
-  // Studio config is set once, at create — it's immutable on redeploy.
-  if (projectId) appendJson(formData, 'config', {studio: {projectId}})
-  return request(`/applications`, formData)
+  const client = await getClient()
+  return client.request({
+    body: {
+      organizationId,
+      slug,
+      title,
+      type,
+      ...(isSingleton === undefined ? {} : {isSingleton}),
+      ...(visibility ? {visibility} : {}),
+      // Studio config is set once, at create — it's immutable on redeploy.
+      ...(projectId ? {config: {studio: {projectId}}} : {}),
+    },
+    method: 'POST',
+    uri: `/applications`,
+  })
 }
 
 /** Mutable application fields the deploy flow patches after create. */

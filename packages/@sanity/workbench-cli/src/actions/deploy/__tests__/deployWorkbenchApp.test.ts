@@ -23,7 +23,14 @@ const interfaces: BrettInterface[] = [
   {metadata: null, moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
 ]
 const workspaces: BrettWorkspace[] = [
-  {basePath: '/', dataset: 'production', name: 'default', projectId: 'proj-1', title: 'Default'},
+  {
+    basePath: '/',
+    dataset: 'production',
+    name: 'default',
+    projectId: 'proj-1',
+    schemaDescriptorId: 'desc-1',
+    title: 'Default',
+  },
 ]
 const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
 
@@ -44,21 +51,18 @@ afterEach(() => {
 })
 
 describe('createCoreApp', () => {
-  test('creates a coreApp at the given slug and returns the id', async () => {
+  test('creates a coreApp at the given slug as JSON, carrying no deployment', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_new'})
 
     expect(
       await createCoreApp({organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk'}),
     ).toMatchObject({applicationId: 'app_new'})
-    expect(mockClient.request.mock.calls[0][0]).toMatchObject({
+    // A record-only create is a plain JSON POST (no multipart, no tarball).
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk', type: 'coreApp'},
       method: 'POST',
       uri: '/applications',
     })
-    const fields = appendedFields()
-    expect(fields).toContainEqual(['type', 'coreApp'])
-    expect(fields).toContainEqual(['slug', 'abc123'])
-    // Create carries no deployment.
-    expect(fields.map(([name]) => name)).not.toContain('tarball')
   })
 
   test('forwards isSingleton when creating a singleton core app', async () => {
@@ -66,10 +70,10 @@ describe('createCoreApp', () => {
 
     await createCoreApp({isSingleton: true, organizationId: 'org-1', slug: 'ml', title: 'Media'})
 
-    expect(appendedFields()).toContainEqual(['isSingleton', 'true'])
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({isSingleton: true})
   })
 
-  test('forwards visibility as a create-time part', async () => {
+  test('forwards visibility as a create-time field', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_new'})
 
     await createCoreApp({
@@ -79,7 +83,7 @@ describe('createCoreApp', () => {
       visibility: 'unlisted',
     })
 
-    expect(appendedFields()).toContainEqual(['visibility', 'unlisted'])
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({visibility: 'unlisted'})
   })
 
   test('rollback deletes the record it just created', async () => {
@@ -111,14 +115,17 @@ describe('createStudio', () => {
         title: 'My Studio',
       }),
     ).toMatchObject({applicationId: 'studio_new'})
-    expect(mockClient.request.mock.calls[0][0]).toMatchObject({
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {
+        config: {studio: {projectId: 'proj-1'}},
+        organizationId: 'org-1',
+        slug: 'my-studio',
+        title: 'My Studio',
+        type: 'studio',
+      },
       method: 'POST',
       uri: '/applications',
     })
-    const fields = appendedFields()
-    expect(fields).toContainEqual(['type', 'studio'])
-    expect(fields).toContainEqual(['slug', 'my-studio'])
-    expect(fields).toContainEqual(['config', JSON.stringify({studio: {projectId: 'proj-1'}})])
   })
 })
 

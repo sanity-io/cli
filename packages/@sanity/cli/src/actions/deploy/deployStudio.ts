@@ -421,6 +421,7 @@ function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
     icon: workspace.icon,
     name: workspace.name,
     projectId: workspace.projectId,
+    schemaDescriptorId: workspace.schemaDescriptorId,
     subtitle: workspace.subtitle,
     title: workspace.title,
   }))
