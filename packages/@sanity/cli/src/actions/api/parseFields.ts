@@ -68,7 +68,9 @@ export function fieldsToQuery(
  */
 export function parseFields(options: ParseFieldsOptions): Record<string, FieldValue> {
   const {fields = [], rawFields = [], readFile, stdin} = options
-  const result: Record<string, FieldValue> = {}
+  // Null-prototype containers keep user-supplied keys like `__proto__` or
+  // `toString` ordinary own properties: nothing to pollute, nothing inherited.
+  const result: Record<string, FieldValue> = Object.create(null)
 
   for (const raw of rawFields) {
     const {key, value} = splitField(raw, '--raw-field')
@@ -154,7 +156,7 @@ function setField(target: Record<string, FieldValue>, key: string, value: FieldV
         container.push(value)
         return
       }
-      const next: FieldValue = nextIsArray ? [] : {}
+      const next: FieldValue = nextIsArray ? [] : Object.create(null)
       container.push(next)
       container = next as FieldValue[] | Record<string, FieldValue>
       continue
@@ -165,16 +167,16 @@ function setField(target: Record<string, FieldValue>, key: string, value: FieldV
     }
 
     if (isLast) {
-      if (segment in container) {
+      if (Object.hasOwn(container, segment)) {
         throw new ApiUsageError(`Field "${key}" conflicts with an earlier field`)
       }
       container[segment] = value
       return
     }
 
-    const existing = container[segment]
+    const existing = Object.hasOwn(container, segment) ? container[segment] : undefined
     if (existing === undefined) {
-      container[segment] = nextIsArray ? [] : {}
+      container[segment] = nextIsArray ? [] : Object.create(null)
     } else if (typeof existing !== 'object' || existing === null) {
       throw new ApiUsageError(`Field "${key}" conflicts with an earlier field`)
     }

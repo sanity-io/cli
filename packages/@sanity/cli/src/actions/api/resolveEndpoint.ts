@@ -231,7 +231,9 @@ function scorePattern(segments: string[], patternSegments: string[]): number {
 }
 
 function parseQueryString(queryString: string): Record<string, string | string[]> {
-  const query: Record<string, string | string[]> = {}
+  // Null-prototype so user-supplied keys like `__proto__` are ordinary own
+  // properties instead of prototype accessors.
+  const query: Record<string, string | string[]> = Object.create(null)
   if (queryString === '') return query
 
   for (const [key, value] of new URLSearchParams(queryString)) {

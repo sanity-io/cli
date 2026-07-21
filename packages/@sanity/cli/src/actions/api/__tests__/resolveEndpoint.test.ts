@@ -128,6 +128,11 @@ describe('resolveEndpoint', () => {
     expect(resolved.query).toEqual({perspective: ['raw', 'drafts'], query: '*'})
   })
 
+  test('treats __proto__ query parameters as ordinary keys', () => {
+    const resolved = resolveEndpoint({endpoint: 'projects?__proto__=x&a=1', routes})
+    expect(resolved.query).toEqual({['__proto__']: 'x', a: '1'})
+  })
+
   test('peels an API version embedded in the path', () => {
     const resolved = resolveEndpoint({endpoint: 'v2024-01-01/projects', routes})
     expect(resolved).toMatchObject({apiVersion: 'v2024-01-01', path: 'projects'})

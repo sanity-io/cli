@@ -88,6 +88,21 @@ describe('parseFields', () => {
   test('throws on malformed bracket keys', () => {
     expect(() => parseFields({fields: ['a[b=1']})).toThrow(ApiUsageError)
   })
+
+  test('treats __proto__ as an ordinary key without polluting prototypes', () => {
+    const result = parseFields({fields: ['__proto__[polluted]=1', 'safe=2']})
+
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+    expect(JSON.stringify(result)).toBe('{"__proto__":{"polluted":1},"safe":2}')
+  })
+
+  test('supports field keys that shadow inherited object properties', () => {
+    expect(parseFields({fields: ['toString=a', 'constructor=b', 'hasOwnProperty=c']})).toEqual({
+      constructor: 'b',
+      hasOwnProperty: 'c',
+      toString: 'a',
+    })
+  })
 })
 
 describe('fieldsToQuery', () => {
