@@ -1,1 +1,16 @@
+if ! git diff --cached --quiet -- \
+  packages/@sanity/cli/src/commands \
+  ':(exclude)packages/@sanity/cli/src/commands/**/__tests__/**' \
+  packages/@sanity/cli/oclif.config.js \
+  packages/@sanity/cli/package.json \
+  packages/@sanity/cli/src/SanityHelp.ts \
+  packages/@sanity/cli/src/topicAliases.ts \
+  packages/@sanity/cli/src/util/organizationAliases.ts \
+  packages/@sanity/cli/src/util/sharedFlags.ts
+then
+  pnpm exec turbo run build --filter=@sanity/cli...
+  pnpm --filter @sanity/cli readme
+  git add packages/@sanity/cli/README.md
+fi
+
 npx lint-staged

@@ -14,20 +14,9 @@ on:
       - 'packages/@sanity/cli/src/topicAliases.ts'
       - 'packages/@sanity/cli/src/util/organizationAliases.ts'
       - 'packages/@sanity/cli/src/util/sharedFlags.ts'
-  pull_request:
-    types: [opened, synchronize]
-    paths:
-      - 'packages/@sanity/cli/src/commands/**'
-      - '!packages/@sanity/cli/src/commands/**/__tests__/**'
-      - 'packages/@sanity/cli/oclif.config.js'
-      - 'packages/@sanity/cli/package.json'
-      - 'packages/@sanity/cli/src/SanityHelp.ts'
-      - 'packages/@sanity/cli/src/topicAliases.ts'
-      - 'packages/@sanity/cli/src/util/organizationAliases.ts'
-      - 'packages/@sanity/cli/src/util/sharedFlags.ts'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 permissions:
@@ -35,10 +24,6 @@ permissions:
 
 jobs:
   update-readme:
-    if: >-
-      github.event_name != 'pull_request' ||
-      (github.event.pull_request.head.repo.full_name == github.repository &&
-      !startsWith(github.event.pull_request.head.ref, 'renovate/'))
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -53,7 +38,6 @@ jobs:
 
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           token: ${{ steps.generate_token.outputs.token }}
 
       - name: Setup Environment
@@ -70,25 +54,7 @@ jobs:
       - name: Format README
         run: npx oxfmt packages/@sanity/cli/README.md
 
-      - name: Commit README to feature branch
-        if: github.event_name == 'pull_request' || github.ref_name != github.event.repository.default_branch
-        env:
-          BRANCH_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
-          BRANCH_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          git add packages/@sanity/cli/README.md
-          if git diff --cached --quiet; then
-            echo 'CLI README is already up to date'
-            exit 0
-          fi
-
-          git config user.name 'squiggler-app[bot]'
-          git config user.email '265501495+squiggler-app[bot]@users.noreply.github.com'
-          git commit -m 'chore: update CLI README'
-          git push --force-with-lease="${BRANCH_REF}:${BRANCH_SHA}" origin "HEAD:${BRANCH_REF}"
-
       - name: Create Pull Request
-        if: github.ref_name == github.event.repository.default_branch
         id: create-pr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
