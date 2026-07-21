@@ -124,7 +124,7 @@ export async function bootstrapLocalTemplate(
   const title = variables.projectName || packageJsonName
   // Default the workbench app `slug` (the hostname the application is created
   // at on deploy) from the entered name/title, slugified.
-  const slug = slugify(title) || packageJsonName
+  const slug = slugify(title)
 
   // Now create a package manifest (`package.json`) with the merged dependencies
   spin = spinner('Creating default project files').start()
