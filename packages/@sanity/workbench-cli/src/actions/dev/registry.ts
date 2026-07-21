@@ -90,7 +90,9 @@ const devServerManifestSchema = z.object({
   configs: z.optional(
     z.array(
       z.object({
-        // Identifies the owning app when it has no app id (singletons).
+        // The config's format. The workbench maps it to a slug to match this
+        // config to its app — a local dev server or a deployed installation. An
+        // app id joins it once an org can install several apps of one type.
         appType: z.optional(z.string()),
         fields: z.array(
           z.object({
