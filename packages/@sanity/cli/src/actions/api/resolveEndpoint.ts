@@ -209,6 +209,7 @@ function matchRoutes(segments: string[], routes: ApiRouteEntry[]): RouteMatch | 
 function scorePattern(segments: string[], patternSegments: string[]): number {
   const length = Math.min(segments.length, patternSegments.length)
   let score = 0
+  let literalMatches = 0
 
   for (let index = 0; index < length; index++) {
     const patternSegment = patternSegments[index]
@@ -216,14 +217,15 @@ function scorePattern(segments: string[], patternSegments: string[]): number {
       score += 1
     } else if (patternSegment === segments[index]) {
       score += 2
+      literalMatches += 1
     } else {
       return 0
     }
   }
 
-  // Require at least one literal segment match so a pattern like
-  // `{libraryId}/...` can't capture arbitrary paths.
-  if (score < 2) return 0
+  // Require at least one literal segment match so a placeholder-only pattern
+  // like `{resourceType}/{resourceId}` can't capture arbitrary paths.
+  if (literalMatches === 0) return 0
 
   // Prefer patterns the request path consumes completely over patterns that
   // merely share a prefix with it.

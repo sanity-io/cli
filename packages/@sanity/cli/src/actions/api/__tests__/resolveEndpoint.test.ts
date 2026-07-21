@@ -169,6 +169,24 @@ describe('resolveEndpoint', () => {
     })
   })
 
+  test('never matches placeholder-only patterns', () => {
+    const greedy: ApiRouteEntry[] = [
+      {
+        defaultApiVersion: 'v2030-01-01',
+        host: 'project',
+        pathPatterns: ['{resourceType}/{resourceId}', '{id}'],
+        slug: 'greedy',
+        title: 'Greedy API',
+      },
+    ]
+
+    expect(resolveEndpoint({endpoint: 'users/me', routes: greedy})).toMatchObject({
+      apiVersion: API_DEFAULT_VERSION,
+      host: 'global',
+      matchedSlug: undefined,
+    })
+  })
+
   test('keeps the first entry on same-host score ties', () => {
     const tied: ApiRouteEntry[] = [
       {
