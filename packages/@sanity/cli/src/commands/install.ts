@@ -24,13 +24,9 @@ export class Install extends SanityCommand<typeof Install> {
     '<%= config.bin %> <%= command.id %> some-package another-package',
   ]
 
-  static strict = false
-
   public async run(): Promise<void> {
-    const {argv} = await this.parse(Install)
-    // Oclif doesn't support multiple arguments
-    // so we need to parse the arguments manually
-    const packages = argv as string[]
+    const {args} = await this.parse(Install)
+    const packages = args.packages ?? []
     const root = await this.getProjectRoot()
     const workDir = root.directory
 
