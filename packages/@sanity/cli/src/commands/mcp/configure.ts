@@ -36,7 +36,9 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
         )
       }
 
-      this.error(`Failed to check authentication: ${getErrorMessage(error)}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`Failed to check authentication: ${getErrorMessage(error)}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     try {

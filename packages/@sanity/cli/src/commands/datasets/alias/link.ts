@@ -147,7 +147,9 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
       }
 
       if (existingAlias.datasetName === targetDataset) {
-        this.error(`Dataset alias ${displayName} already linked to ${targetDataset}`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Dataset alias ${displayName} already linked to ${targetDataset}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       if (existingAlias.datasetName && !force) {

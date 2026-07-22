@@ -118,7 +118,9 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
           this.error('--after date must be before --before', {exit: exitCodes.RUNTIME_ERROR})
         }
       } catch (err) {
-        this.error(`Parsing date flags: ${err instanceof Error ? err.message : err}`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Parsing date flags: ${err instanceof Error ? err.message : err}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
     }
 

@@ -158,7 +158,9 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     const apiVersion = ensureApiVersionFormat(flags['api-version'] ?? DEFAULT_API_VERSION)
 
     if ((dataset && !project) || (project && !dataset)) {
-      this.error('If either --dataset or --project is provided, both must be provided', {exit: exitCodes.RUNTIME_ERROR})
+      this.error('If either --dataset or --project is provided, both must be provided', {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     if (!project && !projectId) {
@@ -214,7 +216,9 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     const migration: Migration = mod.default
 
     if (fromExport && !dry) {
-      this.error('Can only dry run migrations from a dataset export file', {exit: exitCodes.RUNTIME_ERROR})
+      this.error('Can only dry run migrations from a dataset export file', {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const concurrency = flags.concurrency
@@ -226,7 +230,9 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       }
 
       if (concurrency < 1) {
-        this.error(`Concurrency must be a positive number, got ${concurrency}`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Concurrency must be a positive number, got ${concurrency}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
     }
 

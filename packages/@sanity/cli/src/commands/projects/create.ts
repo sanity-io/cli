@@ -139,7 +139,9 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     } catch (error) {
       spin.fail()
       debug(`Failed to create project: ${error}`)
-      return this.output.error(`Failed to create project: ${error}`, {exit: exitCodes.RUNTIME_ERROR})
+      return this.output.error(`Failed to create project: ${error}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     let newDataset: DatasetResponse | undefined

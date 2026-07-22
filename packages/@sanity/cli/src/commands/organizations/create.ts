@@ -53,7 +53,9 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
     let name: string
     if (nameFlag === undefined) {
       if (this.isUnattended()) {
-        this.error('Organization name is required. Provide it with the --name flag.', {exit: exitCodes.RUNTIME_ERROR})
+        this.error('Organization name is required. Provide it with the --name flag.', {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
       name = await promptForOrganizationName()
     } else {

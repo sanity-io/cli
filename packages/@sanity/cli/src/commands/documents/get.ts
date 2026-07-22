@@ -85,7 +85,9 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
       const doc = await projectClient.getDocument(documentId)
 
       if (!doc) {
-        this.error(`Document "${documentId}" not found in dataset "${targetDataset}"`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Document "${documentId}" not found in dataset "${targetDataset}"`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // Output the document

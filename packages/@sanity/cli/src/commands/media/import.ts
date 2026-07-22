@@ -100,7 +100,9 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
     }
 
     if (!mediaLibraries.some((library) => library.id === mediaLibraryId)) {
-      this.error(`Media library with id "${mediaLibraryId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`Media library with id "${mediaLibraryId}" not found`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const projectClient = await getProjectCliClient({

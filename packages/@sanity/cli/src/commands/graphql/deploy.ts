@@ -200,7 +200,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         }
 
         if (apiIds.has(apiDef.id)) {
-          this.error(`Multiple GraphQL APIs with the same ID found (${apiDef.id})`, {exit: exitCodes.RUNTIME_ERROR})
+          this.error(`Multiple GraphQL APIs with the same ID found (${apiDef.id})`, {
+            exit: exitCodes.RUNTIME_ERROR,
+          })
         }
 
         apiIds.add(apiDef.id)
@@ -266,7 +268,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       } catch (err) {
         debug('Failed to get current GraphQL schema properties', err)
         spin.fail()
-        this.error('Failed to get current GraphQL schema properties', {exit: exitCodes.RUNTIME_ERROR})
+        this.error('Failed to get current GraphQL schema properties', {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // CLI flag takes precedence over configuration
@@ -289,7 +293,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
       if (!this.isRecognizedApiGeneration(generation)) {
         spin.fail()
-        this.error(`Unknown API generation "${generation}" for API at index ${index}`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Unknown API generation "${generation}" for API at index ${index}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       const enablePlayground = await this.shouldEnablePlayground({
@@ -324,7 +330,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         debug('validateGraphQLAPI error', err)
         const validationError = get(err, 'response.body.validationError')
         spin.fail()
-        this.error(validationError ?? 'Failed to validate GraphQL API', {exit: exitCodes.RUNTIME_ERROR})
+        this.error(validationError ?? 'Failed to validate GraphQL API', {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // when the result is not valid and there are breaking changes afoot!
@@ -448,7 +456,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     const {validationError} = valid
     if (validationError) {
       spin.fail()
-      this.error(`GraphQL schema is not valid:\n\n${validationError}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`GraphQL schema is not valid:\n\n${validationError}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const {breakingChanges, dangerousChanges} = this.filterChanges(valid)

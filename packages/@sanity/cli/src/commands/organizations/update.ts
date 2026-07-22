@@ -99,7 +99,9 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
       if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Organization "${organizationId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
-      this.error(`Failed to update organization: ${getErrorMessage(error)}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`Failed to update organization: ${getErrorMessage(error)}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 }

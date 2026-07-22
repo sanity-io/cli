@@ -1,4 +1,10 @@
-import {exitCodes, getCliToken, getUserConfig, SanityCommand, setCliUserConfig} from '@sanity/cli-core'
+import {
+  exitCodes,
+  getCliToken,
+  getUserConfig,
+  SanityCommand,
+  setCliUserConfig,
+} from '@sanity/cli-core'
 import {isHttpError} from '@sanity/client'
 
 import {logout} from '../services/auth.js'

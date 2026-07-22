@@ -137,7 +137,9 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
       await mkdir(destDir, {recursive: true})
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to create migration directory: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`Failed to create migration directory: ${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     try {

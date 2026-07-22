@@ -143,7 +143,9 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       // Check if we found the requested aspect (when not using --all)
       if (!all && result.valid.length === 0 && result.invalid.length === 0) {
         this.log()
-        this.error(`Could not find aspect: ${styleText('bold', aspectName ?? '')}`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Could not find aspect: ${styleText('bold', aspectName ?? '')}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // Deploy valid aspects

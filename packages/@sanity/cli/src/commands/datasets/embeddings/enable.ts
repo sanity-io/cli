@@ -134,7 +134,9 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         spin.fail('Failed while waiting for embeddings.')
-        this.error(`Failed while waiting for embeddings: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Failed while waiting for embeddings: ${message}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
       debug(`Poll status: ${settings.status}, next interval: ${Math.round(interval)}ms`)
 
@@ -145,13 +147,17 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
 
       if (settings.status !== 'updating') {
         spin.fail(`Unexpected status: ${settings.status}`)
-        this.error(`Embeddings entered unexpected status: ${settings.status}`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Embeddings entered unexpected status: ${settings.status}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       spin.text = 'Still processing...'
     }
 
     spin.fail('Timed out waiting for embeddings.')
-    this.error('Timed out. Check status with: sanity dataset embeddings status', {exit: exitCodes.RUNTIME_ERROR})
+    this.error('Timed out. Check status with: sanity dataset embeddings status', {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   }
 }

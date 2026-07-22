@@ -294,7 +294,9 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
             `Import failed due to unicode replacement characters in the data.\n${(err as Error).message}\n\nIf you are certain you want to proceed with the import despite potentially corrupt data, re-run the import with the \`--allow-replacement-characters\` flag set.`,
             {exit: exitCodes.RUNTIME_ERROR},
           )
-        : this.output.error((err as Error).stack || (err as Error).message, {exit: exitCodes.RUNTIME_ERROR})
+        : this.output.error((err as Error).stack || (err as Error).message, {
+            exit: exitCodes.RUNTIME_ERROR,
+          })
     }
   }
 

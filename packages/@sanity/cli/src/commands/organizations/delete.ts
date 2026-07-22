@@ -63,7 +63,9 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
       if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Organization "${organizationId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
-      this.error(`Failed to delete organization: ${getErrorMessage(error)}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`Failed to delete organization: ${getErrorMessage(error)}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 

@@ -203,7 +203,9 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         return this.exit(exitCodes.RUNTIME_ERROR)
       }
     } catch (err) {
-      return this.output.error(err instanceof Error ? err.message : String(err), {exit: exitCodes.RUNTIME_ERROR})
+      return this.output.error(err instanceof Error ? err.message : String(err), {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 }

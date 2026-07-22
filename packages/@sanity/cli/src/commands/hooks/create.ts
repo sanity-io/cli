@@ -41,7 +41,9 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
     } catch (error) {
       const err = error as Error
       createHookDebug(`Error fetching project info for project ${projectId}`, err)
-      this.error(`Failed to fetch project information:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`Failed to fetch project information:\n${err.message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const organizationId = projectInfo.organizationId || 'personal'

@@ -122,7 +122,9 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       }
 
       if (existingAliases.includes(aliasName)) {
-        this.error(`Dataset alias "${aliasOutputName}" already exists`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Dataset alias "${aliasOutputName}" already exists`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       const targetDataset =

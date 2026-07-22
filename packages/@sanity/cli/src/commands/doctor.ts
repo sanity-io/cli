@@ -69,7 +69,9 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
     try {
       checks = getChecks(argv)
     } catch (err) {
-      return this.output.error(err instanceof Error ? err.message : String(err), {exit: exitCodes.USAGE_ERROR})
+      return this.output.error(err instanceof Error ? err.message : String(err), {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
     const cwd = process.cwd()
 

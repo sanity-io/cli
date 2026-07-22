@@ -374,7 +374,9 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       backupDownloadDebug(`Failed to fetch backups for dataset ${datasetName}: ${message}`, err)
-      this.error(`Failed to fetch backups for dataset ${datasetName}: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`Failed to fetch backups for dataset ${datasetName}: ${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 }

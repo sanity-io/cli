@@ -96,7 +96,9 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
       }
 
       if (!linkedAlias.datasetName) {
-        this.error(`Dataset alias "${displayName}" is not linked to a dataset`, {exit: exitCodes.RUNTIME_ERROR})
+        this.error(`Dataset alias "${displayName}" is not linked to a dataset`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       if (force) {

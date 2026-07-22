@@ -43,7 +43,9 @@ export class List extends SanityCommand<typeof List> {
       const err = error as Error
 
       listCorsDebug(`Error fetching CORS origins for project ${projectId}`, err)
-      this.error(`CORS origins list retrieval failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`CORS origins list retrieval failed:\n${err.message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     if (origins.length === 0) {

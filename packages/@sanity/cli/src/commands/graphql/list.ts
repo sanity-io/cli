@@ -46,7 +46,9 @@ export class List extends SanityCommand<typeof List> {
       const message = error instanceof Error ? error.message : String(error)
 
       listGraphQLDebug(`Error fetching GraphQL endpoints for project ${projectId}`, error)
-      this.error(`GraphQL endpoints list retrieval failed:\n${message}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`GraphQL endpoints list retrieval failed:\n${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     if (!endpoints || endpoints.length === 0) {
