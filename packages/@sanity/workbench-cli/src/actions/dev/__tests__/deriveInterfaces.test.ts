@@ -188,18 +188,18 @@ describe('deriveInterfaces', () => {
 })
 
 describe('deriveConfigs', () => {
-  test('returns [] for a non-branded app', () => {
-    expect(deriveConfigs({title: 'Plain'} as CliConfig['app'])).toEqual([])
-    expect(deriveConfigs(undefined)).toEqual([])
+  test('returns [] for a non-branded app', async () => {
+    await expect(deriveConfigs({title: 'Plain'} as CliConfig['app'])).resolves.toEqual([])
+    await expect(deriveConfigs(undefined)).resolves.toEqual([])
   })
 
-  test('[] for an app with no config', () => {
-    expect(
+  test('[] for an app with no config', async () => {
+    await expect(
       deriveConfigs(workbenchApp({views: [{name: 'feed', src: './f.tsx', type: 'panel'}]})),
-    ).toEqual([])
+    ).resolves.toEqual([])
   })
 
-  test('forwards the serializable config on the wire, keeping `src` as each field entry', () => {
+  test('forwards the serializable config on the wire, keeping `src` as each field entry', async () => {
     const app = workbenchApp({
       config: {
         appType: 'media-library',
@@ -210,7 +210,7 @@ describe('deriveConfigs', () => {
       },
       isSingleton: true,
     })
-    expect(deriveConfigs(app)).toEqual([
+    await expect(deriveConfigs(app)).resolves.toEqual([
       {
         appType: 'media-library',
         fields: [
@@ -224,7 +224,7 @@ describe('deriveConfigs', () => {
     ])
   })
 
-  test('id is stable for the same config and changes when the config changes', () => {
+  test('id is stable for the same config and changes when the config changes', async () => {
     const config = {
       appType: 'media-library' as const,
       fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
@@ -234,11 +234,11 @@ describe('deriveConfigs', () => {
       config: {...config, fields: [{...config.fields[0]!, title: 'Edited'}]},
       isSingleton: true,
     })
-    expect(deriveConfigs(app)[0]?.id).toBe(deriveConfigs(app)[0]?.id)
-    expect(deriveConfigs(edited)[0]?.id).not.toBe(deriveConfigs(app)[0]?.id)
+    expect((await deriveConfigs(app))[0]?.id).toBe((await deriveConfigs(app))[0]?.id)
+    expect((await deriveConfigs(edited))[0]?.id).not.toBe((await deriveConfigs(app))[0]?.id)
   })
 
-  test("forwards the config's appType discriminator (assigns the singleton, no app id)", () => {
+  test("forwards the config's appType discriminator (assigns the singleton, no app id)", async () => {
     const app = workbenchApp({
       applicationType: 'media-library',
       config: {
@@ -247,17 +247,17 @@ describe('deriveConfigs', () => {
       },
       isSingleton: true,
     })
-    expect(deriveConfigs(app)[0]?.appType).toBe('media-library')
+    expect((await deriveConfigs(app))[0]?.appType).toBe('media-library')
   })
 
-  test('rejects an config on a non-singleton app', () => {
+  test('rejects an config on a non-singleton app', async () => {
     const app = workbenchApp({
       config: {
         appType: 'media-library',
         fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
       },
     })
-    expect(() => deriveConfigs(app)).toThrow(/only supported for singleton apps/)
+    await expect(deriveConfigs(app)).rejects.toThrow(/only supported for singleton apps/)
   })
 })
 

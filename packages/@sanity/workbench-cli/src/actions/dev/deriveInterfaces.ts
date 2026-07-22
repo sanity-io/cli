@@ -1,5 +1,3 @@
-import {hash} from 'node:crypto'
-
 import {type CliConfig} from '@sanity/cli-core'
 
 import {
@@ -106,7 +104,7 @@ export function deriveConfigEntries(config: DevServerConfig): {name: string; src
  * and the workbench keys change detection on it. `version` is the config
  * contract version the generated module exports, known before the module runs.
  */
-export function deriveConfigs(app: CliConfig['app']): DevServerConfig[] {
+export async function deriveConfigs(app: CliConfig['app']): Promise<DevServerConfig[]> {
   if (!isWorkbenchApp(app)) return []
   const config = readConfig(app)
   if (!config) return []
@@ -121,5 +119,16 @@ export function deriveConfigs(app: CliConfig['app']): DevServerConfig[] {
     moduleName: app.name,
     version: MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
   }
-  return [{...entry, id: hash('sha1', JSON.stringify(entry))}]
+  return [{...entry, id: await contentHash(JSON.stringify(entry))}]
+}
+
+/**
+ * SHA-256 of a string, as hex, via the Web Crypto API — available in both Node
+ * and the browser. `node:crypto` can't be used: the Vite dev server's dep scan
+ * pulls this module into the browser graph.
+ */
+async function contentHash(input: string): Promise<string> {
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }

@@ -1,6 +1,4 @@
-import {hash} from 'node:crypto'
-
-import {type ResolvedWorkbenchApp, type WorkbenchExposes} from './resolveWorkbenchApp.js'
+import {type ResolvedWorkbenchApp} from './resolveWorkbenchApp.js'
 
 /**
  * File the build writes into its output, carrying the id compiled into the
@@ -9,60 +7,37 @@ import {type ResolvedWorkbenchApp, type WorkbenchExposes} from './resolveWorkben
  */
 export const SANITY_APP_ID_FILE = 'sanity-app-id.txt'
 
-/** The declared shape hashed into a build id — the app's identity, not its code. */
-export interface BuildAppIdentity {
-  name: string
-  organizationId: string
-
-  entry?: string
-  exposes?: WorkbenchExposes
-}
-
 /**
- * Mints the id the workbench keys everything on (React keys, panel ownership, the
- * message bus, and the bundle's `__SANITY_APP_ID__`). Each run mode derives it
- * differently so a running dev app, a local build, and a deployed twin can't
- * share one: `sanity dev` uses the bound address, `sanity build`/`start` a hash
- * of the declared shape. `sanity deploy` resolves its own id from the
- * applications API, so it isn't handled here.
+ * The dev id for a workbench app — the address the server bound. `sanity dev`
+ * keys on where the app is served so a running app can't collide with its
+ * deployed twin. Sync and dependency-free: it's re-exported from the package's
+ * browser-facing entry, so it must not pull in `node:crypto`.
  */
-export function resolveAppId(
-  source: {app: BuildAppIdentity} | {host: string; port: number},
-): string {
-  if ('app' in source) {
-    const {app} = source
-    const canonical = (
-      interfaces: ReadonlyArray<{name: string; src: string; type: string}> | undefined,
-    ): Array<[string, string, string]> =>
-      (interfaces ?? []).map((i): [string, string, string] => [i.type, i.name, i.src]).toSorted()
-    return hash(
-      'sha1',
-      JSON.stringify({
-        config: app.exposes?.config ?? null,
-        entry: app.entry ?? null,
-        name: app.name,
-        organizationId: app.organizationId,
-        services: canonical(app.exposes?.services),
-        views: canonical(app.exposes?.views),
-      }),
-      'hex',
-    )
-  }
+export function resolveAppId(source: {host: string; port: number}): string {
   return `${source.host}-${source.port}`
 }
 
 /**
- * The `build`/`start` id for a workbench app — a hash of its declared shape.
- * Shared so the bundle inlined by `sanity build` and the registry entry advertised
- * by `sanity start` resolve to the same id.
+ * The `build`/`start` id — a hash of the app's declared shape (its identity, not
+ * its code), so the bundle inlined by `sanity build` and the registry entry
+ * advertised by `sanity start` resolve to the same id. Hashed with the Web Crypto
+ * API rather than `node:crypto` for parity with `resolveAppId`'s browser-safe
+ * home. `sanity deploy` resolves its own id from the applications API.
  */
-export function buildAppId(app: ResolvedWorkbenchApp): string {
-  return resolveAppId({
-    app: {
-      entry: app.entry,
-      exposes: {config: app.config, services: app.services, views: app.views},
-      name: app.name,
-      organizationId: app.organizationId,
-    },
+export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
+  const canonical = (
+    interfaces: ReadonlyArray<{name: string; src: string; type: string}> | undefined,
+  ): Array<[string, string, string]> =>
+    (interfaces ?? []).map((i): [string, string, string] => [i.type, i.name, i.src]).toSorted()
+  const shape = JSON.stringify({
+    config: app.config ?? null,
+    entry: app.entry ?? null,
+    name: app.name,
+    organizationId: app.organizationId,
+    services: canonical(app.services),
+    views: canonical(app.views),
   })
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(shape))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }

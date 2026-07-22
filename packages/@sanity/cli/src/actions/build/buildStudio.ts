@@ -67,7 +67,9 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     vite: cliConfig.vite,
     // Shared with deploy: it passes the resolved application id (minted by the
     // API on a first deploy) to inline; a plain build has none, so it hashes the shape.
-    workbenchAppId: workbench ? (options.applicationId ?? buildAppId(workbench)) : undefined,
+    workbenchAppId: workbench
+      ? (options.applicationId ?? (await buildAppId(workbench)))
+      : undefined,
     workDir,
   })
 }
