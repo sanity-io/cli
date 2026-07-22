@@ -1,5 +1,19 @@
 # Change Log
 
+## [7.12.1](https://github.com/sanity-io/cli/compare/cli-v7.12.0...cli-v7.12.1)
+
+_2026-07-22_
+
+### Bug Fixes
+
+- **workbench:** derive config id with Web Crypto ([#1575](https://github.com/sanity-io/cli/pull/1575)) ([d3e59eb](https://github.com/sanity-io/cli/commit/d3e59eb08ac3746fc03db6ddedf60fef5f47244c))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.7.1
+
 ## [7.12.0](https://github.com/sanity-io/cli/compare/cli-v7.11.0...cli-v7.12.0)
 
 _2026-07-21_
