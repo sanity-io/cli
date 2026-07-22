@@ -74,8 +74,11 @@ export async function performApiRequest(options: PerformApiRequestOptions): Prom
 
   const {token, url} = await resolveRequestTarget(resolved, unauthenticated, providedToken)
 
+  // Header names are case-insensitive - keyed lowercase so a user-provided
+  // header (eg `-H 'authorization: ...'`) replaces the default regardless of
+  // how either side is cased.
   const requestHeaders: Record<string, string> = {}
-  if (token) requestHeaders.Authorization = `Bearer ${token}`
+  if (token) requestHeaders.authorization = `Bearer ${token}`
 
   let requestBody: Buffer | string | undefined
   if (typeof body === 'string' || Buffer.isBuffer(body)) {
@@ -84,11 +87,11 @@ export async function performApiRequest(options: PerformApiRequestOptions): Prom
     requestBody = body
   } else if (body !== undefined) {
     requestBody = JSON.stringify(body)
-    requestHeaders['Content-Type'] = 'application/json'
+    requestHeaders['content-type'] = 'application/json'
   }
 
   for (const [key, value] of Object.entries(headers)) {
-    requestHeaders[key] = value
+    requestHeaders[key.toLowerCase()] = value
   }
 
   const request = createRequester({

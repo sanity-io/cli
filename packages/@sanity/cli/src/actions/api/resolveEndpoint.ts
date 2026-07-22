@@ -94,14 +94,18 @@ export function resolveEndpoint(options: ResolveEndpointOptions): ResolvedEndpoi
   }
 
   const unresolved: string[] = []
-  const substituted = segments.map((segment) => {
+  const substituted = segments.map((segment, index) => {
     const placeholder = PLACEHOLDER_RE.exec(segment)?.[1]
     if (!placeholder) return segment
     if (placeholder === 'projectId') {
       if (!projectId) throw new ProjectIdRequiredError()
       return projectId
     }
-    if (placeholder === 'dataset' || placeholder === 'datasetName') {
+    // The projects spec names the dataset placeholder `{name}` (eg
+    // `projects/{projectId}/datasets/{name}`) - only that context is a
+    // dataset; `{name}` elsewhere (eg video renditions) stays unresolved.
+    const isDatasetName = placeholder === 'name' && segments[index - 1] === 'datasets'
+    if (placeholder === 'dataset' || placeholder === 'datasetName' || isDatasetName) {
       if (!dataset) {
         throw new ApiUsageError(
           `Unable to resolve {${placeholder}} - provide a dataset with --dataset or configure one in sanity.cli.ts`,

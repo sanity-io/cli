@@ -182,6 +182,17 @@ describe('#api', () => {
     await testCommand(ApiCommand, ['some/endpoint', '-H', 'X-Custom: yes'], {mocks: defaultMocks})
   })
 
+  test('a user-provided authorization header wins regardless of casing', async () => {
+    nock(GLOBAL_HOST, {reqheaders: {authorization: 'Bearer override'}})
+      .get('/v2025-02-19/some/endpoint')
+      .query({tag: TAG})
+      .reply(200, {}, {'Content-Type': 'application/json'})
+
+    await testCommand(ApiCommand, ['some/endpoint', '-H', 'Authorization: Bearer override'], {
+      mocks: defaultMocks,
+    })
+  })
+
   test('authenticates with --token instead of the logged-in user token', async () => {
     nock(GLOBAL_HOST, {reqheaders: {authorization: 'Bearer flag-token'}})
       .get('/v2025-02-19/some/endpoint')

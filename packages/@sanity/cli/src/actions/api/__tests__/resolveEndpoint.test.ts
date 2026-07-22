@@ -115,6 +115,22 @@ describe('resolveEndpoint', () => {
     ).toThrow(ApiUsageError)
   })
 
+  test('fills {name} from the dataset when it follows a datasets segment', () => {
+    const resolved = resolveEndpoint({
+      dataset: 'production',
+      endpoint: 'projects/{projectId}/datasets/{name}/copy',
+      projectId: 'abc123',
+      routes,
+    })
+    expect(resolved).toMatchObject({path: 'projects/abc123/datasets/production/copy'})
+  })
+
+  test('leaves {name} unresolved outside a datasets context', () => {
+    expect(() =>
+      resolveEndpoint({dataset: 'production', endpoint: 'renditions/{name}', routes}),
+    ).toThrow(/\{name\}/)
+  })
+
   test('throws a usage error for unknown placeholders', () => {
     expect(() => resolveEndpoint({endpoint: 'jobs/{jobId}', routes})).toThrow(/\{jobId\}/)
   })
