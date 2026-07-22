@@ -206,6 +206,7 @@ describe('#init: authentication', () => {
     })
 
     expect(error?.message).toContain(LOGIN_REQUIRED_MESSAGE)
+    expect(error?.message).toContain('run `sanity new` to create a project without logging in')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -213,7 +214,7 @@ describe('#init: authentication', () => {
     mockGetById.mockRejectedValueOnce(createHttpError(401, 'Unauthorized'))
 
     setupInitSuccessMocks()
-    const {error} = await testCommand(
+    const {error, stdout} = await testCommand(
       InitCommand,
       [
         '--dataset=test',
@@ -235,6 +236,8 @@ describe('#init: authentication', () => {
     )
 
     if (error) throw error
+    expect(stdout).toContain('Two ways to start')
+    expect(stdout).toContain('claim it within 72 hours')
     expect(mockLogin).toHaveBeenCalled()
   })
 

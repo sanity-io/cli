@@ -32,6 +32,7 @@ import {InitError} from './initError.js'
 import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {initNextJs} from './initNextJs.js'
 import {initStudio} from './initStudio.js'
+import {renderNewCommandBanner} from './newCommandBanner.js'
 import {getPlan} from './plan/getPlan.js'
 import {createProjectFromName} from './project/createProjectFromName.js'
 import {getProjectDetails} from './project/getProjectDetails.js'
@@ -397,11 +398,18 @@ async function ensureAuthenticated(
   }
 
   if (options.unattended) {
-    throw new InitError(LOGIN_REQUIRED_MESSAGE, exitCodes.RUNTIME_ERROR)
+    throw new InitError(
+      `${LOGIN_REQUIRED_MESSAGE}\n\n` +
+        'Alternatively, run `sanity new` to create a project without logging in — ' +
+        'you can claim it with a Sanity account later. See `sanity new --help`.',
+      exitCodes.RUNTIME_ERROR,
+    )
   }
 
   trace.log({step: 'login'})
   output.warn(LOGIN_REQUIRED_MESSAGE)
+
+  renderNewCommandBanner(output)
 
   try {
     await login({

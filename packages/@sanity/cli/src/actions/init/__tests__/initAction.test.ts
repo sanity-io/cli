@@ -201,7 +201,8 @@ describe('initAction (direct)', () => {
 
     expect(caughtError).toBeInstanceOf(InitError)
     const initError = caughtError as InitError
-    expect(initError.message).toBe(LOGIN_REQUIRED_MESSAGE)
+    expect(initError.message).toContain(LOGIN_REQUIRED_MESSAGE)
+    expect(initError.message).toContain('run `sanity new` to create a project without logging in')
     expect(initError.exitCode).toBe(1)
   })
 })
