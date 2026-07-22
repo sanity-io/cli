@@ -123,7 +123,7 @@ export class Add extends SanityCommand<typeof Add> {
       const err = error as Error
 
       addCorsDebug(`Error adding CORS origin`, err)
-      this.error(`CORS origin addition failed:\n${err.message}`, {exit: 1})
+      this.error(`CORS origin addition failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 

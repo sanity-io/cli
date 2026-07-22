@@ -1,4 +1,4 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasetAliases, listDatasets} from '../../services/datasets.js'
@@ -45,7 +45,7 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
     if (datasets.status === 'rejected') {
       const err = datasets.reason as Error
       listDatasetDebug(`Error listing datasets for project ${projectId}`, err)
-      this.error(`Dataset list retrieval failed: ${err.message}`, {exit: 1})
+      this.error(`Dataset list retrieval failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const datasetList = datasets.value

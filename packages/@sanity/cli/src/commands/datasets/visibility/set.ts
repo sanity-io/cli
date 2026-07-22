@@ -70,13 +70,13 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       setDatasetVisibilityDebug(`Failed to list datasets: ${message}`, error)
-      this.error(`Failed to list datasets: ${message}`, {exit: 1})
+      this.error(`Failed to list datasets: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const current = datasets.find((curr: {name: string}) => curr.name === dataset)
 
     if (!current) {
-      this.error(`Dataset "${dataset}" not found`, {exit: 1})
+      this.error(`Dataset "${dataset}" not found`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (current.aclMode === mode) {
@@ -99,7 +99,7 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       setDatasetVisibilityDebug(`Failed to edit dataset: ${message}`, error)
-      this.error(`Failed to edit dataset: ${message}`, {exit: 1})
+      this.error(`Failed to edit dataset: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
     this.log('Dataset visibility changed')
   }

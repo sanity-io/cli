@@ -219,7 +219,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
           const message = error instanceof Error ? error.message : String(error)
           importDebug(`Failed to create dataset ${newDatasetName}: ${message}`, error)
           return this.output.error(`Failed to create dataset ${newDatasetName}: ${message}`, {
-            exit: 1,
+            exit: exitCodes.RUNTIME_ERROR,
           })
         }
       }
@@ -292,9 +292,11 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       return (err as Error).name === 'ReplacementCharError'
         ? this.output.error(
             `Import failed due to unicode replacement characters in the data.\n${(err as Error).message}\n\nIf you are certain you want to proceed with the import despite potentially corrupt data, re-run the import with the \`--allow-replacement-characters\` flag set.`,
-            {exit: 1},
+            {exit: exitCodes.RUNTIME_ERROR},
           )
-        : this.output.error((err as Error).stack || (err as Error).message, {exit: 1})
+        : this.output.error((err as Error).stack || (err as Error).message, {
+            exit: exitCodes.RUNTIME_ERROR,
+          })
     }
   }
 

@@ -65,13 +65,13 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       enableBackupDebug(`Failed to list datasets: ${message}`, error)
-      this.error(`Failed to list datasets: ${message}`, {exit: 1})
+      this.error(`Failed to list datasets: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const hasProduction = datasets.some((dataset) => dataset.name === 'production')
 
     if (datasets.length === 0) {
-      this.error('No datasets found in this project.', {exit: 1})
+      this.error('No datasets found in this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (dataset) {
@@ -97,7 +97,9 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           enableBackupDebug(`Failed to create dataset ${newDatasetName}: ${message}`, error)
-          this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {exit: 1})
+          this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {
+            exit: exitCodes.RUNTIME_ERROR,
+          })
         }
       }
     }
@@ -120,7 +122,7 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       enableBackupDebug(`Failed to enable backup for dataset`, error)
-      this.error(`Enabling dataset backup failed: ${message}`, {exit: 1})
+      this.error(`Enabling dataset backup failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

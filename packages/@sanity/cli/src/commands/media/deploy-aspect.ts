@@ -84,7 +84,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       if (err instanceof ProjectRootNotFoundError) {
         this.error(
           'This command must be run from within a Sanity project directory (requires media library configuration)',
-          {exit: 1},
+          {exit: exitCodes.RUNTIME_ERROR},
         )
       }
       throw err
@@ -92,7 +92,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
     const mediaLibrary = getMediaLibraryConfig(cliConfig)
 
     if (!mediaLibrary?.aspectsPath) {
-      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: 1})
+      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
@@ -143,7 +143,9 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       // Check if we found the requested aspect (when not using --all)
       if (!all && result.valid.length === 0 && result.invalid.length === 0) {
         this.log()
-        this.error(`Could not find aspect: ${styleText('bold', aspectName ?? '')}`, {exit: 1})
+        this.error(`Could not find aspect: ${styleText('bold', aspectName ?? '')}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // Deploy valid aspects
@@ -186,7 +188,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       this.error(
         styleText('bold', 'Failed to deploy aspects') + `\n\n${styleText('red', err.message)}`,
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }

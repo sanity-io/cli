@@ -69,7 +69,7 @@ export class Delete extends SanityCommand<typeof Delete> {
     } catch (error) {
       const err = error as Error
       deleteHookDebug(`Error deleting hook ${hookId} for project ${projectId}`, err)
-      this.error(`Hook deletion failed:\n${err.message}`, {exit: 1})
+      this.error(`Hook deletion failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -83,11 +83,11 @@ export class Delete extends SanityCommand<typeof Delete> {
     } catch (error) {
       const err = error as Error
       deleteHookDebug(`Error fetching hooks for project ${projectId}`, err)
-      this.error(`Failed to fetch hooks:\n${err.message}`, {exit: 1})
+      this.error(`Failed to fetch hooks:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (hooks.length === 0) {
-      this.error('No hooks configured for this project.', {exit: 1})
+      this.error('No hooks configured for this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // If hook name is specified, find it in the list
@@ -96,7 +96,7 @@ export class Delete extends SanityCommand<typeof Delete> {
       const selectedHook = hooks.find((hook) => hook.name.toLowerCase() === specifiedNameLower)
 
       if (!selectedHook) {
-        this.error(`Hook with name "${specifiedName}" not found`, {exit: 1})
+        this.error(`Hook with name "${specifiedName}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       return selectedHook.id

@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {type CliConfig, SanityCommand} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, SanityCommand} from '@sanity/cli-core'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {devAction} from '../actions/dev/devAction.js'
@@ -81,7 +81,7 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
       this.output.error(
         styleText(['red', 'bgBlack'], `Failed to start dev server: ${error.message}`),
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }

@@ -1,5 +1,6 @@
 import {Flags} from '@oclif/core'
 import {subdebug} from '@sanity/cli-core/debug'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {validateAction} from '../../actions/schema/validateAction.js'
@@ -71,7 +72,7 @@ export class SchemaValidate extends SanityCommand<typeof SchemaValidate> {
       debug('Error validating schema', error)
       return this.output.error(
         `Error validating schema: ${error instanceof Error ? error.message : String(error)}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
   }

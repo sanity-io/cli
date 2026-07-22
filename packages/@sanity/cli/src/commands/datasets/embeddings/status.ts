@@ -1,6 +1,6 @@
 import {Args} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
@@ -59,7 +59,7 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
       if (error instanceof CLIError) throw error
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to resolve dataset: ${message}`, error)
-      this.error(message, {exit: 1})
+      this.error(message, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     try {
@@ -74,7 +74,7 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to get embeddings settings: ${message}`, error)
-      this.error(`Failed to get embeddings settings: ${message}`, {exit: 1})
+      this.error(`Failed to get embeddings settings: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

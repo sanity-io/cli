@@ -1,4 +1,4 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, toError} from '@sanity/cli-core/errors'
 
 import {configureSkills} from '../../actions/skills/configureSkills.js'
@@ -37,7 +37,7 @@ export class InstallSkillsCommand extends SanityCommand<typeof InstallSkillsComm
     } catch (error) {
       debug('Skills installation failed: %O', error)
       trace.error(toError(error))
-      this.error(getErrorMessage(error), {exit: 1})
+      this.error(getErrorMessage(error), {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

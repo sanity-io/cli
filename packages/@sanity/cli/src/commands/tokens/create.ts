@@ -117,7 +117,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       const err = error as Error
 
       tokensCreateDebug(`Error creating token for project ${projectId}`, err)
-      this.error(`Token creation failed:\n${err.message}`, {exit: 1})
+      this.error(`Token creation failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -152,7 +152,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     tokensCreateDebug('Robot roles', {robotRoles})
 
     if (robotRoles.length === 0) {
-      this.error('No roles available for tokens', {exit: 1})
+      this.error('No roles available for tokens', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const selectedRoleName = await select({

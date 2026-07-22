@@ -112,12 +112,12 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       this.log('API token deleted')
     } catch (error) {
       if (error instanceof ClientError && error.response.statusCode === 404) {
-        this.error(`Token with ID "${tokenId}" not found`, {exit: 1})
+        this.error(`Token with ID "${tokenId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       const err = error as Error
       deleteTokenDebug(`Error deleting token`, err)
-      this.error(`Token deletion failed:\n${err.message}`, {exit: 1})
+      this.error(`Token deletion failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 

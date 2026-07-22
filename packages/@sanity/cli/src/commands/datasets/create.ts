@@ -104,11 +104,11 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       createDatasetDebug(`Failed to fetch project data: ${message}`, error)
-      this.error(`Failed to fetch project data: ${message}`, {exit: 1})
+      this.error(`Failed to fetch project data: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (datasets.includes(datasetName)) {
-      this.error(`Dataset "${datasetName}" already exists`, {exit: 1})
+      this.error(`Dataset "${datasetName}" already exists`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const canCreatePrivate = projectFeatures.includes('privateDataset')
@@ -127,7 +127,7 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to create dataset: ${message}`, {exit: 1})
+      this.error(`Failed to create dataset: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

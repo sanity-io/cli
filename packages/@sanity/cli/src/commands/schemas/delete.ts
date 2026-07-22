@@ -108,13 +108,13 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       })
     } catch (error) {
       if (error instanceof CLIError) {
-        this.error(error.message, {exit: 1})
+        this.error(error.message, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       deleteSchemaDebug('Error deleting schemas', error)
       this.error(
         `Failed to delete schemas: ${error instanceof Error ? error.message : String(error)}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
   }

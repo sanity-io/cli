@@ -32,7 +32,7 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
     const cliConfig = await this.getCliConfig()
     const mediaLibrary = getMediaLibraryConfig(cliConfig)
     if (mediaLibrary?.aspectsPath === undefined) {
-      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: 1})
+      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const title =
@@ -68,7 +68,7 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
       )
       if (destinationPathExists) {
         this.error(`A file already exists at ${styleText('bold', relativeDestinationPath)}`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
       }
 
@@ -97,7 +97,7 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       createAspectDebug('Failed to create aspect', error)
-      this.error(`Failed to create aspect: ${message}`, {exit: 1})
+      this.error(`Failed to create aspect: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

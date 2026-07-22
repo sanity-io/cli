@@ -2,7 +2,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import {
   type APIConfig,
@@ -117,7 +117,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
           this.error(
             `Failed to list migrations: ${error instanceof Error ? error.message : String(error)}`,
-            {exit: 1},
+            {exit: exitCodes.RUNTIME_ERROR},
           )
         }
       }
@@ -127,7 +127,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
         this.log(
           `Run ${styleText('green', '`sanity migration create <NAME>`')} to create a new migration`,
         )
-        this.exit(1)
+        this.exit(exitCodes.RUNTIME_ERROR)
       }
 
       const table = new Table({
@@ -144,7 +144,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       table.printTable()
       this.log('\nRun `sanity migration run <ID>` to run a migration')
 
-      this.exit(1)
+      this.exit(exitCodes.RUNTIME_ERROR)
     }
 
     const cliConfig = await this.getCliConfig()
@@ -158,20 +158,22 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     const apiVersion = ensureApiVersionFormat(flags['api-version'] ?? DEFAULT_API_VERSION)
 
     if ((dataset && !project) || (project && !dataset)) {
-      this.error('If either --dataset or --project is provided, both must be provided', {exit: 1})
+      this.error('If either --dataset or --project is provided, both must be provided', {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     if (!project && !projectId) {
       this.error(
         'sanity.cli.js does not contain a project identifier ("api.projectId") and no --project option was provided.',
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
 
     if (!dataset && !datasetFromConfig) {
       this.error(
         'sanity.cli.js does not contain a dataset identifier ("api.dataset") and no --dataset option was provided.',
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
 
@@ -184,7 +186,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
         `Found multiple migrations for "${id}" in ${styleText('cyan', migrationsDirectoryPath)}: \n - ${candidates
           .map((candidate) => path.relative(migrationsDirectoryPath, candidate.absolutePath))
           .join('\n - ')}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
 
@@ -195,7 +197,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
  Tried the following files:\n - ${candidates
    .map((candidate) => path.relative(migrationsDirectoryPath, candidate.absolutePath))
    .join('\n - ')}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
 
@@ -206,7 +208,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       this.error(
         'Named "up"/"down" migration exports are not supported at this time, please export your migration as the default export',
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }
@@ -214,19 +216,23 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     const migration: Migration = mod.default
 
     if (fromExport && !dry) {
-      this.error('Can only dry run migrations from a dataset export file', {exit: 1})
+      this.error('Can only dry run migrations from a dataset export file', {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const concurrency = flags.concurrency
     if (concurrency !== undefined) {
       if (concurrency > MAX_MUTATION_CONCURRENCY) {
         this.error(`Concurrency exceeds the maximum allowed value of ${MAX_MUTATION_CONCURRENCY}`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
       }
 
       if (concurrency < 1) {
-        this.error(`Concurrency must be a positive number, got ${concurrency}`, {exit: 1})
+        this.error(`Concurrency must be a positive number, got ${concurrency}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
     }
 
@@ -360,7 +366,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
 
     if (!response) {
       runMigrationDebug('User aborted migration')
-      this.exit(1)
+      this.exit(exitCodes.RUNTIME_ERROR)
     }
   }
 }

@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
 import {resolveMigrations} from '../../actions/migration/resolveMigrations.js'
@@ -59,7 +59,7 @@ export class ListMigrationCommand extends SanityCommand<typeof ListMigrationComm
       this.error(
         `List migrations failed: ${error instanceof Error ? error.message : String(error)}`,
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }

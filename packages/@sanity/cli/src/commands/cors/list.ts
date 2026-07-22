@@ -1,4 +1,4 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {type CorsOrigin, listCorsOrigins} from '../../services/cors.js'
@@ -43,7 +43,9 @@ export class List extends SanityCommand<typeof List> {
       const err = error as Error
 
       listCorsDebug(`Error fetching CORS origins for project ${projectId}`, err)
-      this.error(`CORS origins list retrieval failed:\n${err.message}`, {exit: 1})
+      this.error(`CORS origins list retrieval failed:\n${err.message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     if (origins.length === 0) {

@@ -83,13 +83,13 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
       this.error(
         `Failed to list media libraries:\n${error instanceof Error ? error.message : error}`,
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }
 
     if (mediaLibraries.length === 0) {
-      this.error('No active media libraries found in this project', {exit: 1})
+      this.error('No active media libraries found in this project', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     let mediaLibraryId = flags['media-library-id']
@@ -106,14 +106,16 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
         this.error(
           `Failed to select media library:\n${error instanceof Error ? error.message : error}`,
           {
-            exit: 1,
+            exit: exitCodes.RUNTIME_ERROR,
           },
         )
       }
     }
 
     if (!mediaLibraries.some((library) => library.id === mediaLibraryId)) {
-      this.error(`Media library with id "${mediaLibraryId}" not found`, {exit: 1})
+      this.error(`Media library with id "${mediaLibraryId}" not found`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     this.log(
@@ -137,7 +139,7 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
 
     const outputPath = await this.getOutputPath(destinationPath, mediaLibraryId, flags)
     if (!outputPath) {
-      this.error('Cancelled', {exit: 1})
+      this.error('Cancelled', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const {fail, onProgress, succeed} = this.createProgressHandler()
@@ -159,7 +161,7 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
       fail()
       const err = error instanceof Error ? error : new Error(String(error))
       exportDebug('Export failed', err)
-      this.error(`Export failed: ${err.message}`, {exit: 1})
+      this.error(`Export failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -212,7 +214,7 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
         this.error(`Failed to create directory "${createPath}": ${err.message}`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
       }
     }

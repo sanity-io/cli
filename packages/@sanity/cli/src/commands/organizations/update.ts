@@ -1,6 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
@@ -68,7 +68,7 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
       const trimmedName = name.trim()
       const validation = validateOrganizationName(trimmedName)
       if (validation !== true) {
-        this.error(validation, {exit: 1})
+        this.error(validation, {exit: exitCodes.RUNTIME_ERROR})
       }
       params.name = trimmedName
     }
@@ -76,14 +76,14 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
       const trimmedSlug = slug.trim()
       const slugValidation = validateOrganizationSlug(trimmedSlug)
       if (slugValidation !== true) {
-        this.error(slugValidation, {exit: 1})
+        this.error(slugValidation, {exit: exitCodes.RUNTIME_ERROR})
       }
       params.slug = trimmedSlug
     }
     if (defaultRole !== undefined) {
       const trimmedRole = defaultRole.trim()
       if (trimmedRole === '') {
-        this.error('Default role cannot be empty', {exit: 1})
+        this.error('Default role cannot be empty', {exit: exitCodes.RUNTIME_ERROR})
       }
       params.defaultRoleName = trimmedRole
     }
@@ -97,9 +97,11 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
       spin.fail()
       updateOrgDebug('Error updating organization', error)
       if (isHttpError(error) && error.statusCode === 404) {
-        this.error(`Organization "${organizationId}" not found`, {exit: 1})
+        this.error(`Organization "${organizationId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
-      this.error(`Failed to update organization: ${getErrorMessage(error)}`, {exit: 1})
+      this.error(`Failed to update organization: ${getErrorMessage(error)}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 }

@@ -109,7 +109,7 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
         styleText('bold', 'Failed to delete aspect') +
           `\n  - ${aspectName}\n\n${styleText('red', err.message)}`,
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }

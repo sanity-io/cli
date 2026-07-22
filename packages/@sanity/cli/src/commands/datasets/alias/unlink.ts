@@ -92,11 +92,13 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
       // get the current alias from the remote alias list
       const linkedAlias = aliases.find((elem) => elem.name === apiName)
       if (!linkedAlias) {
-        this.error(`Dataset alias "${displayName}" does not exist`, {exit: 1})
+        this.error(`Dataset alias "${displayName}" does not exist`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       if (!linkedAlias.datasetName) {
-        this.error(`Dataset alias "${displayName}" is not linked to a dataset`, {exit: 1})
+        this.error(`Dataset alias "${displayName}" is not linked to a dataset`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       if (force) {
@@ -117,7 +119,7 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
       unlinkAliasDebug('Error unlinking dataset alias', error)
       this.error(
         `Dataset alias unlink failed: ${error instanceof Error ? error.message : String(error)}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
   }

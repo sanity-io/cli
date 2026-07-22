@@ -83,7 +83,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       schemasListDebug('Failed to list schemas', error)
 
       const errorMessage = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to list schemas:\n${errorMessage}`, {exit: 1})
+      this.error(`Failed to list schemas:\n${errorMessage}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

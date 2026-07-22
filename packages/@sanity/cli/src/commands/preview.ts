@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {previewAction} from '../actions/preview/previewAction.js'
 import {type PreviewServer} from '../server/previewServer.js'
@@ -57,7 +57,7 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
 
       const message = error instanceof Error ? error.message : String(error)
       this.output.error(`Failed to start preview server: ${message}`, {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
         suggestions,
       })
     }
