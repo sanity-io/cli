@@ -1,10 +1,16 @@
+import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {getUserConfig} from '@sanity/cli-core'
 import {subdebug} from '@sanity/cli-core/debug'
 import {logSymbols} from '@sanity/cli-core/ux'
 
-import {lookupClaimState, type MintedProject} from '../services/mintProject.js'
+import {
+  lookupClaimState,
+  lookupClaimStateViaProject,
+  type MintedProject,
+} from '../services/mintProject.js'
+import {readEnvValues} from './envFile.js'
 
 const debug = subdebug('claimNudges')
 
@@ -138,7 +144,8 @@ export function forgetMintedProject(projectId: string): boolean {
 /**
  * Compact line rendering, deliberately not a box: developers ad-blind banner boxes the way they
  * gloss over sponsored search results, and a reminder that gets skimmed past protects nothing.
- * Tiers escalate through color and copy in a constant three-line footprint (plus the agent CTA).
+ * Tiers escalate through color and copy in a constant footprint,
+ * one sentence per line — each line carries exactly one idea.
  */
 function renderNudge(record: UnclaimedProjectRecord, tier: number, msLeft: number): string {
   const timeLeft = humanizeMsLeft(msLeft)
@@ -156,32 +163,57 @@ function renderNudge(record: UnclaimedProjectRecord, tier: number, msLeft: numbe
         : `${urgent ? '🚨' : '⏰'} Project ${record.projectId} expires in ${timeLeft}`
   const body =
     tier === 1
-      ? `It is deleted at ${record.expiresAt} unless claimed. Claiming is free and keeps everything.`
+      ? `It is deleted at ${record.expiresAt} unless claimed.`
       : tier === 2
-        ? `After ${record.expiresAt}, the project and everything in it is deleted. Claiming is free and keeps everything.`
-        : `All content, schema, and tokens in this project are permanently deleted at ${record.expiresAt}. Claiming is free and keeps everything.`
+        ? `After ${record.expiresAt}, the project and everything in it is deleted.`
+        : `All content, schema, and tokens in this project are permanently deleted at ${record.expiresAt}.`
   const bell = tier >= 4 ? '\u0007' : ''
   return (
     bell +
     `${styleText(['bold', urgent ? 'red' : 'yellow'], headline)}\n` +
     `${body}\n` +
-    `Claim it now: ${styleText('cyan', record.claimUrl)}\n` +
+    `Claiming is free and keeps everything.\n` +
+    `Claim it now: ${styleText(['cyan', 'underline'], record.claimUrl)}\n` +
     agentCta
   )
 }
 
 /**
- * Check the registry of minted-but-unclaimed projects and emit at most one reminder for the most
- * urgent project whose nudge tier has advanced since it was last shown. Called from the prerun
- * hook on every CLI invocation; must never throw and stays network-free unless a nudge is due.
+ * The ambient reminder: a single dim line for the project the current directory points at,
+ * emitted on every invocation (no dedupe marker, no network) — deliberately stateless, and
+ * quiet enough that repetition reads as ambient status rather than an alarm to tune out.
+ */
+function renderAmbientLine(record: UnclaimedProjectRecord, msLeft: number): string {
+  // URL on its own line: keeps the human-facing sentence short, and the link easy to spot/click.
+  return (
+    styleText(
+      'dim',
+      `⏳ Unclaimed Sanity project ${record.projectId} expires in ${humanizeMsLeft(msLeft)} — claim it to keep it:`,
+    ) + `\n${styleText(['cyan', 'underline'], record.claimUrl)}`
+  )
+}
+
+/**
+ * Check the registry of minted-but-unclaimed projects and emit at most one reminder per
+ * invocation. Called from the prerun hook on every CLI invocation; must never throw and stays
+ * network-free unless a tiered nudge is due.
  *
- * Before nudging, the claim state is verified against the provision API (fail-open on network
- * errors): claimed projects get a one-time confirmation and are dropped from the registry,
- * expired projects get a one-time notice and are dropped as well.
+ * Two reminder shapes share the single slot, most-urgent first:
+ * 1. The tiered waterfall — a project whose nudge tier advanced since it was last shown, at most
+ *    once per tier. Before nudging, the claim state is verified against the provision API
+ *    (fail-open on network errors): claimed projects get a one-time confirmation and are dropped
+ *    from the registry, expired projects get a one-time notice and are dropped as well.
+ * 2. The ambient line — when nothing else fired and `cwd`'s `.env` holds both a registered
+ *    project and its robot token, one stateless dim line on every invocation. No dedupe, and no
+ *    cached world-state: every render is verified first through the budget-free project-host
+ *    org read, so the line can never call a claimed project unclaimed. Only a network failure
+ *    falls back to the ledger's local expiry data; a missing token skips the line entirely
+ *    (verification would be impossible, and the post-claim handoff removes exactly that token).
  */
 export async function runClaimNudges(
   write: (line: string) => void,
   now: number = Date.now(),
+  cwd: string = process.cwd(),
 ): Promise<void> {
   const records = readRecords()
   const all = Object.values(records)
@@ -189,12 +221,33 @@ export async function runClaimNudges(
 
   // Blank-line padding around every announcement so it never sits flush against the output of
   // the command it rides along with.
-  const announce = (message: string) => write(`\n${message}\n`)
+  let announced = false
+  const announce = (message: string) => {
+    announced = true
+    write(`\n${message}\n`)
+  }
 
   let dirty = false
   // Ids this pass changed — the final write merges exactly these over a fresh read, so records
   // written by another process while this pass awaited a lookup are never clobbered.
   const touched = new Set<string>()
+
+  const announceClaimed = (record: UnclaimedProjectRecord) => {
+    announce(
+      `${logSymbols.success} Sanity project ${record.projectId} has been claimed — it's yours to keep.`,
+    )
+    delete records[record.projectId]
+    touched.add(record.projectId)
+    dirty = true
+  }
+  const announceExpired = (record: UnclaimedProjectRecord) => {
+    announce(
+      `⌛ Unclaimed Sanity project ${record.projectId} has expired. Run \`sanity new\` to mint a new one — where old credentials remain in .env, the guard will walk you through it.`,
+    )
+    delete records[record.projectId]
+    touched.add(record.projectId)
+    dirty = true
+  }
 
   // Locally expired projects: verify against the API before the farewell — the user may have
   // claimed since the last run, and announcing a claimed project as "expired" is worse than no
@@ -206,12 +259,7 @@ export async function runClaimNudges(
     if (new Date(record.expiresAt).getTime() - now > 0) continue
     const lookup = await lookupClaimState(record.claimToken)
     if (lookup?.state === 'claimed') {
-      announce(
-        `${logSymbols.success} Sanity project ${record.projectId} has been claimed — it's yours to keep.`,
-      )
-      delete records[record.projectId]
-      touched.add(record.projectId)
-      dirty = true
+      announceClaimed(record)
     } else if (lookup?.state === 'claimable') {
       if (lookup.expiresAt) {
         records[record.projectId] = {...record, expiresAt: lookup.expiresAt}
@@ -242,19 +290,9 @@ export async function runClaimNudges(
     const lookup = await lookupClaimState(record.claimToken)
 
     if (lookup?.state === 'claimed') {
-      announce(
-        `${logSymbols.success} Sanity project ${record.projectId} has been claimed — it's yours to keep.`,
-      )
-      delete records[record.projectId]
-      touched.add(record.projectId)
-      dirty = true
+      announceClaimed(record)
     } else if (lookup?.state === 'expired') {
-      announce(
-        `⌛ Unclaimed Sanity project ${record.projectId} has expired. Run \`sanity new\` to mint a new one — where old credentials remain in .env, the guard will walk you through it.`,
-      )
-      delete records[record.projectId]
-      touched.add(record.projectId)
-      dirty = true
+      announceExpired(record)
     } else {
       // Claimable — or lookup failed, in which case we fail open on local expiry data. When the
       // server supplied a fresh expiry (window extended or shortened), trust it over the local
@@ -272,6 +310,34 @@ export async function runClaimNudges(
       }
       touched.add(record.projectId)
       dirty = true
+    }
+  }
+
+  // The ambient line for the directory's own project, when the slot is still free.
+  if (!announced) {
+    const env = readEnvValues(path.join(cwd, '.env'), ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID'])
+    const record = env.SANITY_PROJECT_ID ? records[env.SANITY_PROJECT_ID] : undefined
+    if (record && env.SANITY_AUTH_TOKEN) {
+      // No token, no line: a minted directory always has the robot token (this CLI wrote it), so
+      // its absence means a hand-edited file or the post-claim handoff ("login, then remove
+      // SANITY_AUTH_TOKEN") — states where verification is impossible and a ledger-only line
+      // could call a claimed project unclaimed. The tiered waterfall still covers real
+      // unclaimed projects; silence here costs nothing.
+      const msLeft = new Date(record.expiresAt).getTime() - now
+      if (msLeft > 0) {
+        // No cached world-state: verify through the project host (budget-free org read with the
+        // directory's own robot token) before rendering, so the line can never call a claimed
+        // project unclaimed. Undefined = network failure → fail open on the ledger.
+        const state = await lookupClaimStateViaProject(record.projectId, env.SANITY_AUTH_TOKEN)
+        if (state === 'claimed') {
+          announceClaimed(record)
+        } else if (state === 'expired') {
+          announceExpired(record)
+        } else {
+          // Announced like every other reminder, so it gets the same blank-line padding.
+          announce(renderAmbientLine(record, msLeft))
+        }
+      }
     }
   }
 

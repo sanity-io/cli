@@ -76,6 +76,46 @@ export async function lookupClaimState(
 }
 
 /**
+ * Claim-state check via the **project-scoped host** as the robot: an `organizationId` of
+ * `oSystemUnclaimed` ⇔ still unclaimed. Authoritative anywhere the robot token exists and —
+ * unlike the provision `lookup`, which draws from the 20/h provisioning budget — free to run on
+ * every render. A 404 means the project is gone: reaped after expiry. A 401 only proves this
+ * token was rejected — the project may be live with the token revoked or rotated — so it fails
+ * open (`undefined`) rather than letting callers erase a possibly-claimable record; a truly
+ * reaped project still resolves via the local clock and the provision lookup's swept-token
+ * contract. Network failures also return `undefined`.
+ */
+export async function lookupClaimStateViaProject(
+  projectId: string,
+  robotToken: string,
+  options?: {timeoutMs?: number},
+): Promise<ClaimState | undefined> {
+  const override = process.env.SANITY_API_HOST
+  const base = override
+    ? override.replace(/\/$/, '')
+    : `https://${projectId}.api.sanity.${isStaging() ? 'work' : 'io'}`
+  const url = `${base}/v2026-05-04/projects/${projectId}`
+  debug('checking claim state via project host at %s', url)
+
+  try {
+    const response = await fetch(url, {
+      headers: {Authorization: `Bearer ${robotToken}`},
+      signal: AbortSignal.timeout(options?.timeoutMs ?? 1500),
+    })
+    if (response.status === 404) return 'expired'
+    if (response.status === 401) return undefined
+    if (!response.ok) return undefined
+
+    const data = (await response.json()) as {organizationId?: string}
+    if (!data.organizationId) return undefined
+    return data.organizationId === 'oSystemUnclaimed' ? 'claimable' : 'claimed'
+  } catch (err) {
+    debug('project claim-state check failed: %s', err)
+    return undefined
+  }
+}
+
+/**
  * Mint an unclaimed Sanity project via the unauthenticated provision endpoint, returning a
  * scoped robot token and a claim URL:
  * `POST <apiHost>/<version>/provision` with `{resourceType:'project', displayName}`.

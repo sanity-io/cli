@@ -1,6 +1,10 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {mintUnclaimedProject, PROVISION_API_VERSION} from '../mintProject.js'
+import {
+  lookupClaimStateViaProject,
+  mintUnclaimedProject,
+  PROVISION_API_VERSION,
+} from '../mintProject.js'
 
 const mockFetch = vi.fn()
 
@@ -139,6 +143,66 @@ describe('#mintUnclaimedProject', () => {
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
       'Mint response is missing claimApiUrl, claimUrl, token',
+    )
+  })
+})
+
+describe('#lookupClaimStateViaProject', () => {
+  test('reads the org id from the project host as the robot', async () => {
+    mockFetch.mockResolvedValue({
+      json: async () => ({organizationId: 'oSystemUnclaimed'}),
+      ok: true,
+      status: 200,
+    })
+
+    await expect(lookupClaimStateViaProject('abc123', 'sk-robot')).resolves.toBe('claimable')
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://abc123.api.sanity.io/v2026-05-04/projects/abc123',
+      expect.objectContaining({headers: {Authorization: 'Bearer sk-robot'}}),
+    )
+  })
+
+  test('a real organization id means the project was claimed', async () => {
+    mockFetch.mockResolvedValue({
+      json: async () => ({organizationId: 'ocREALORG'}),
+      ok: true,
+      status: 200,
+    })
+
+    await expect(lookupClaimStateViaProject('abc123', 'sk-robot')).resolves.toBe('claimed')
+  })
+
+  test('404 means the project was reaped', async () => {
+    mockFetch.mockResolvedValue({ok: false, status: 404})
+    await expect(lookupClaimStateViaProject('abc123', 'sk-robot')).resolves.toBe('expired')
+  })
+
+  test('401 fails open — a rejected token is not proof the project is gone', async () => {
+    mockFetch.mockResolvedValue({ok: false, status: 401})
+    await expect(lookupClaimStateViaProject('abc123', 'sk-robot')).resolves.toBeUndefined()
+  })
+
+  test('fails open on other HTTP errors and on network failure', async () => {
+    mockFetch.mockResolvedValue({ok: false, status: 500})
+    await expect(lookupClaimStateViaProject('abc123', 'sk-robot')).resolves.toBeUndefined()
+
+    mockFetch.mockRejectedValue(new Error('offline'))
+    await expect(lookupClaimStateViaProject('abc123', 'sk-robot')).resolves.toBeUndefined()
+  })
+
+  test('honors the SANITY_API_HOST override', async () => {
+    vi.stubEnv('SANITY_API_HOST', 'http://localhost:4321')
+    mockFetch.mockResolvedValue({
+      json: async () => ({organizationId: 'oSystemUnclaimed'}),
+      ok: true,
+      status: 200,
+    })
+
+    await lookupClaimStateViaProject('abc123', 'sk-robot')
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:4321/v2026-05-04/projects/abc123',
+      expect.anything(),
     )
   })
 })

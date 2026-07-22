@@ -1,7 +1,11 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
 import {getUserConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {lookupClaimState} from '../../services/mintProject.js'
+import {lookupClaimState, lookupClaimStateViaProject} from '../../services/mintProject.js'
 import {
   forgetMintedProject,
   recordMintedProject,
@@ -19,10 +23,12 @@ vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
 })
 vi.mock('../../services/mintProject.js', () => ({
   lookupClaimState: vi.fn(),
+  lookupClaimStateViaProject: vi.fn(),
 }))
 
 const mockGetUserConfig = vi.mocked(getUserConfig)
 const mockLookupClaimState = vi.mocked(lookupClaimState)
+const mockLookupViaProject = vi.mocked(lookupClaimStateViaProject)
 
 const HOUR = 3_600_000
 const NOW = new Date('2026-07-15T12:00:00.000Z').getTime()
@@ -47,9 +53,10 @@ function storedRecords(): Record<string, UnclaimedProjectRecord> {
   return (store[UNCLAIMED_PROJECTS_CONFIG_KEY] ?? {}) as Record<string, UnclaimedProjectRecord>
 }
 
-async function run(now = NOW): Promise<string> {
+/** Default cwd has no .env, so the ambient line stays out of waterfall-focused tests. */
+async function run(now = NOW, cwd = '/nonexistent-claim-nudges-cwd'): Promise<string> {
   const write = vi.fn()
-  await runClaimNudges(write, now)
+  await runClaimNudges(write, now, cwd)
   return write.mock.calls.map(([line]) => String(line)).join('\n')
 }
 
@@ -221,6 +228,10 @@ describe('#runClaimNudges', () => {
     expect(first).toContain('expires in about 47 hours')
     expect(first).toContain('https://www.sanity.io/claim/some-token')
     expect(first).not.toContain('╭') // compact lines, never a box
+    // One sentence per line: consequence, cost, and CTA each get their own.
+    expect(first).toMatch(
+      /unless claimed\.\nClaiming is free and keeps everything\.\nClaim it now:/,
+    )
     expect(storedRecords().abc123.lastNudgeTier).toBe(1)
 
     expect(await run()).toBe('')
@@ -375,5 +386,131 @@ describe('#runClaimNudges', () => {
     expect(output).not.toContain('later00')
     expect(storedRecords().sooner0.lastNudgeTier).toBe(3)
     expect(storedRecords().later00.lastNudgeTier).toBeUndefined()
+  })
+})
+
+describe('#runClaimNudges ambient directory reminder', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sanity-nudge-cwd-'))
+  })
+
+  afterEach(() => {
+    fs.rmSync(dir, {force: true, recursive: true})
+  })
+
+  test('emits a stateless line on every run in a minted directory', async () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-robot"\n',
+    )
+    // Above every tier threshold, so the waterfall stays silent.
+    seedRecord({expiresAt: new Date(NOW + 60 * HOUR).toISOString()})
+    mockLookupViaProject.mockResolvedValue('claimable')
+
+    const first = await run(NOW, dir)
+    expect(first).toContain('Unclaimed Sanity project abc123 expires in about 60 hours')
+    expect(first).toContain('https://www.sanity.io/claim/some-token')
+    // Blank-line padded, with the URL on its own line below the sentence.
+    expect(first.startsWith('\n')).toBe(true)
+    expect(first).toMatch(/claim it to keep it:.*\n.*https:\/\/www\.sanity\.io\/claim/)
+    expect(first).not.toContain('╭')
+    // No dedupe marker written — the line repeats on the very next run.
+    expect(storedRecords().abc123.lastNudgeTier).toBeUndefined()
+    expect(await run(NOW, dir)).toBe(first)
+    expect(mockLookupClaimState).not.toHaveBeenCalled()
+  })
+
+  test('yields the slot when a tiered nudge fires in the same invocation', async () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-robot"\n',
+    )
+    seedRecord({expiresAt: new Date(NOW + 47 * HOUR).toISOString()})
+
+    const output = await run(NOW, dir)
+
+    expect(output).toContain('⏳ Claim your Sanity project')
+    expect(output).not.toContain('claim it to keep it:')
+  })
+
+  test('stays quiet when the robot token is gone from .env (post-claim handoff)', async () => {
+    // The claim handoff says "login, then remove SANITY_AUTH_TOKEN" — the project id stays
+    // behind. Verification is impossible without the token, so no line renders: a ledger-only
+    // render here would call the freshly claimed project unclaimed on every command.
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+    seedRecord({expiresAt: new Date(NOW + 60 * HOUR).toISOString()})
+
+    expect(await run(NOW, dir)).toBe('')
+    expect(mockLookupViaProject).not.toHaveBeenCalled()
+  })
+
+  test('stays quiet when the directory points at an unregistered project', async () => {
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="someone-elses"\n')
+    seedRecord({expiresAt: new Date(NOW + 60 * HOUR).toISOString()})
+
+    expect(await run(NOW, dir)).toBe('')
+  })
+
+  test('stays quiet in directories without a .env', async () => {
+    seedRecord({expiresAt: new Date(NOW + 60 * HOUR).toISOString()})
+
+    expect(await run(NOW, dir)).toBe('')
+  })
+
+  test('verifies every render through the project host when the robot token is present', async () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-robot"\n',
+    )
+    seedRecord({expiresAt: new Date(NOW + 60 * HOUR).toISOString()})
+    mockLookupViaProject.mockResolvedValue('claimable')
+
+    const output = await run(NOW, dir)
+
+    expect(mockLookupViaProject).toHaveBeenCalledWith('abc123', 'sk-robot')
+    expect(output).toContain('Unclaimed Sanity project abc123')
+  })
+
+  test('claimed per the org read: congratulates once and drops the record', async () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-robot"\n',
+    )
+    seedRecord({expiresAt: new Date(NOW + 60 * HOUR).toISOString()})
+    mockLookupViaProject.mockResolvedValue('claimed')
+
+    const output = await run(NOW, dir)
+
+    expect(output).toContain('has been claimed')
+    expect(output).not.toContain('claim it to keep it:')
+    expect(storedRecords().abc123).toBeUndefined()
+    expect(await run(NOW, dir)).toBe('')
+  })
+
+  test('expired per the org read: notes it once and drops the record', async () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-robot"\n',
+    )
+    seedRecord({expiresAt: new Date(NOW + 60 * HOUR).toISOString()})
+    mockLookupViaProject.mockResolvedValue('expired')
+
+    const output = await run(NOW, dir)
+
+    expect(output).toContain('has expired')
+    expect(storedRecords().abc123).toBeUndefined()
+  })
+
+  test('fails open to the ledger when the org read is unavailable', async () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-robot"\n',
+    )
+    seedRecord({expiresAt: new Date(NOW + 60 * HOUR).toISOString()})
+    mockLookupViaProject.mockResolvedValue(undefined)
+
+    expect(await run(NOW, dir)).toContain('Unclaimed Sanity project abc123')
   })
 })
