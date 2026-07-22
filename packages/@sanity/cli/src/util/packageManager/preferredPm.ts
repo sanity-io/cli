@@ -11,10 +11,13 @@ import {toForwardSlashes} from '../toForwardSlashes.js'
 type DetectablePackageManager = 'bun' | 'npm' | 'pnpm' | 'yarn'
 
 /**
- * Detects the preferred package manager for a project by examining lock files,
- * workspace configurations, and node_modules markers.
+ * Detects the preferred package manager for a project by examining the corepack
+ * `packageManager` field, lock files, workspace configurations, and node_modules markers.
  */
 export function preferredPm(pkgPath: string): DetectablePackageManager | null {
+  const fromPackageManagerField = detectFromPackageManagerField(pkgPath)
+  if (fromPackageManagerField) return fromPackageManagerField
+
   const fromLockFile = detectFromLockFile(pkgPath)
   if (fromLockFile) return fromLockFile
 
@@ -27,13 +30,35 @@ export function preferredPm(pkgPath: string): DetectablePackageManager | null {
   return detectFromNodeModules(pkgPath)
 }
 
+/**
+ * Detects the package manager from the corepack `packageManager` field in the
+ * package.json at `dir`, e.g. `"pnpm@9.1.2"` or `"yarn@4.1.0+sha224.…"`.
+ * An explicit declaration is the strongest signal of intent, so it takes
+ * precedence over lock files. Malformed values and unknown names are ignored.
+ */
+function detectFromPackageManagerField(dir: string): DetectablePackageManager | null {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))
+    const packageManager = manifest?.packageManager
+    if (typeof packageManager !== 'string') return null
+    const match = packageManager.match(/^(npm|pnpm|yarn|bun)@\d/)
+    return match ? (match[1] as DetectablePackageManager) : null
+  } catch {
+    // missing or malformed package.json — fall through to other detection strategies
+    return null
+  }
+}
+
 function detectFromLockFile(dir: string): DetectablePackageManager | null {
-  if (fs.existsSync(path.join(dir, 'package-lock.json'))) return 'npm'
   if (fs.existsSync(path.join(dir, 'yarn.lock'))) return 'yarn'
   if (fs.existsSync(path.join(dir, 'pnpm-lock.yaml'))) return 'pnpm'
   if (fs.existsSync(path.join(dir, 'shrinkwrap.yaml'))) return 'pnpm'
   if (fs.existsSync(path.join(dir, 'bun.lockb')) || fs.existsSync(path.join(dir, 'bun.lock')))
     return 'bun'
+  // npm is checked last: it is already the ecosystem-wide fallback, so when multiple
+  // lockfiles coexist (e.g. a stray package-lock.json left behind by a one-off
+  // `npm install`), the non-npm lockfile is the stronger signal of intent.
+  if (fs.existsSync(path.join(dir, 'package-lock.json'))) return 'npm'
   return null
 }
 
@@ -80,7 +105,7 @@ function detectFromWorkspaceRoot(pkgPath: string): DetectablePackageManager | nu
           const matchDir = packageDir === dir ? resolvedPkgPath : packageDir
           const relativePath = toForwardSlashes(path.relative(dir, matchDir))
           if (relativePath === '' || picomatch.isMatch(relativePath, workspaces)) {
-            return detectFromLockFile(dir) ?? 'yarn'
+            return detectFromPackageManagerField(dir) ?? detectFromLockFile(dir) ?? 'yarn'
           }
         }
       } catch {
