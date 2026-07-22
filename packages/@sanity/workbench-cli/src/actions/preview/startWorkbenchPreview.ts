@@ -98,12 +98,16 @@ export async function startWorkbenchPreview(
     // Read the id the build inlined so start matches it even for a deploy build
     // (which carries the API id, not the shape hash); fall back for older builds.
     const inlinedId = await readInlinedAppId(outDir)
+    const configs = await deriveConfigs(cliConfig.app)
+    // `start` serves a build, so it advertises the build's inlined id (matching
+    // the bundle's `__SANITY_APP_ID__`), not the dev host-port.
+    const id = workbench
+      ? (inlinedId ?? (await buildAppId(workbench)))
+      : `${remote.host}-${remote.port}`
     const registration = registerDevServer({
-      configs: deriveConfigs(cliConfig.app),
+      configs,
       host: remote.host,
-      // `start` serves a build, so it advertises the build's inlined id (matching
-      // the bundle's `__SANITY_APP_ID__`), not the dev host-port.
-      id: workbench ? (inlinedId ?? buildAppId(workbench)) : `${remote.host}-${remote.port}`,
+      id,
       interfaces: deriveInterfaces(cliConfig.app, {isApp}),
       manifest: await extractManifest({configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),

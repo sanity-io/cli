@@ -1,62 +1,59 @@
 import {describe, expect, test} from 'vitest'
 
-import {type BuildAppIdentity, resolveAppId} from '../appId.js'
+import {buildAppId, resolveAppId} from '../appId.js'
+import {type ResolvedWorkbenchApp} from '../resolveWorkbenchApp.js'
 
 describe('resolveAppId', () => {
-  const app: BuildAppIdentity = {
-    entry: './src/App.tsx',
-    exposes: {
-      services: [{name: 'unread', src: './src/worker.ts', type: 'worker'}],
-      views: [{name: 'feed', src: './src/feed.tsx', type: 'panel'}],
-    },
-    name: 'drop-desk',
-    organizationId: 'org-1',
-  }
-
   test('dev: the host and port the server bound', () => {
     expect(resolveAppId({host: 'localhost', port: 3333})).toBe('localhost-3333')
     expect(resolveAppId({host: '0.0.0.0', port: 8080})).toBe('0.0.0.0-8080')
   })
+})
 
-  test('build: deterministic for the same declared shape', () => {
-    expect(resolveAppId({app})).toBe(resolveAppId({app}))
+describe('buildAppId', () => {
+  const app: ResolvedWorkbenchApp = {
+    entry: './src/App.tsx',
+    name: 'drop-desk',
+    organizationId: 'org-1',
+    services: [{name: 'unread', src: './src/worker.ts', type: 'worker'}],
+    slug: 'drop-desk',
+    views: [{name: 'feed', src: './src/feed.tsx', type: 'panel'}],
+  }
+
+  test('deterministic for the same declared shape', async () => {
+    expect(await buildAppId(app)).toBe(await buildAppId(app))
   })
 
-  test('build: ignores interface order', () => {
-    const reordered: BuildAppIdentity = {
+  test('ignores interface order', async () => {
+    const reordered: ResolvedWorkbenchApp = {
       ...app,
-      exposes: {
-        views: [
-          {name: 'b', src: './b.tsx', type: 'panel'},
-          {name: 'a', src: './a.tsx', type: 'panel'},
-        ],
-      },
+      views: [
+        {name: 'b', src: './b.tsx', type: 'panel'},
+        {name: 'a', src: './a.tsx', type: 'panel'},
+      ],
     }
-    const forward: BuildAppIdentity = {
+    const forward: ResolvedWorkbenchApp = {
       ...app,
-      exposes: {
-        views: [
-          {name: 'a', src: './a.tsx', type: 'panel'},
-          {name: 'b', src: './b.tsx', type: 'panel'},
-        ],
-      },
+      views: [
+        {name: 'a', src: './a.tsx', type: 'panel'},
+        {name: 'b', src: './b.tsx', type: 'panel'},
+      ],
     }
-    expect(resolveAppId({app: reordered})).toBe(resolveAppId({app: forward}))
+    expect(await buildAppId(reordered)).toBe(await buildAppId(forward))
   })
 
-  test('build: changes when the declared shape changes', () => {
-    expect(resolveAppId({app})).not.toBe(resolveAppId({app: {...app, name: 'other'}}))
-    expect(resolveAppId({app})).not.toBe(resolveAppId({app: {...app, organizationId: 'org-2'}}))
-    expect(resolveAppId({app})).not.toBe(resolveAppId({app: {...app, entry: './src/Other.tsx'}}))
-    expect(resolveAppId({app})).not.toBe(
-      resolveAppId({
-        app: {...app, exposes: {views: [{name: 'feed', src: './moved.tsx', type: 'panel'}]}},
-      }),
+  test('changes when the declared shape changes', async () => {
+    const base = await buildAppId(app)
+    expect(base).not.toBe(await buildAppId({...app, name: 'other'}))
+    expect(base).not.toBe(await buildAppId({...app, organizationId: 'org-2'}))
+    expect(base).not.toBe(await buildAppId({...app, entry: './src/Other.tsx'}))
+    expect(base).not.toBe(
+      await buildAppId({...app, views: [{name: 'feed', src: './moved.tsx', type: 'panel'}]}),
     )
   })
 
-  test('build: never collides with a dev host-port', () => {
-    const id = resolveAppId({app})
+  test('never collides with a dev host-port', async () => {
+    const id = await buildAppId(app)
     expect(id).not.toBe(resolveAppId({host: 'localhost', port: 3333}))
     expect(id).not.toContain('-')
   })

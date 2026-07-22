@@ -63,7 +63,7 @@ export async function startDevServerRegistration(
   // Forwarded alongside (not inside) the manifest so the workbench renders local
   // panels/workers and reads the configs without a deploy.
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
-  const configs = deriveConfigs(cliConfig.app)
+  const configs = await deriveConfigs(cliConfig.app)
 
   const registration = registerDevServer({
     configs,
@@ -87,7 +87,7 @@ export async function startDevServerRegistration(
     extract: async (params) => {
       const app = (await getCliConfigUncached(params.workDir)).app
       return {
-        configs: deriveConfigs(app),
+        configs: await deriveConfigs(app),
         interfaces: deriveInterfaces(app, {isApp}),
         manifest: await extractManifest(params),
       }

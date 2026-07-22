@@ -107,7 +107,7 @@ describe('startWorkbenchPreview', () => {
         expect.objectContaining({
           host: 'localhost',
           // `start` advertises the build id (matching the bundle), not host-port.
-          id: buildAppId(resolveWorkbenchApp(workbenchCliConfig())!),
+          id: await buildAppId(resolveWorkbenchApp(workbenchCliConfig())!),
           manifest: {title: 'Test App'},
           port: 3334,
           type: 'coreApp',
