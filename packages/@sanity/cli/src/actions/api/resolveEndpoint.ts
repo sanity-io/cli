@@ -1,3 +1,5 @@
+import {parse} from 'node:querystring'
+
 import {API_DEFAULT_VERSION, API_VERSION_SEGMENT_RE} from './constants.js'
 import {ApiUsageError, ProjectIdRequiredError} from './errors.js'
 import {type ApiHost, type ApiRouteEntry} from './types.js'
@@ -234,21 +236,9 @@ function scorePattern(segments: string[], patternSegments: string[]): number {
 }
 
 function parseQueryString(queryString: string): Record<string, string | string[]> {
-  // Null-prototype so user-supplied keys like `__proto__` are ordinary own
-  // properties instead of prototype accessors.
-  const query: Record<string, string | string[]> = Object.create(null)
-  if (queryString === '') return query
-
-  for (const [key, value] of new URLSearchParams(queryString)) {
-    const existing = query[key]
-    if (existing === undefined) {
-      query[key] = value
-    } else if (Array.isArray(existing)) {
-      existing.push(value)
-    } else {
-      query[key] = [existing, value]
-    }
-  }
-
-  return query
+  // node:querystring collects repeated keys into arrays and returns a
+  // null-prototype object, so user-supplied keys like `__proto__` stay
+  // ordinary own properties. Parsed values are never `undefined`, hence the
+  // narrowing cast.
+  return parse(queryString) as Record<string, string | string[]>
 }

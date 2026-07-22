@@ -18,9 +18,9 @@
 
 /* eslint-disable no-console */
 import {readFileSync, writeFileSync} from 'node:fs'
-import {dirname, join} from 'node:path'
+import {join} from 'node:path'
 import {setTimeout as sleep} from 'node:timers/promises'
-import {fileURLToPath} from 'node:url'
+import {parseArgs} from 'node:util'
 
 import pMap from 'p-map'
 
@@ -28,13 +28,7 @@ import {OPENAPI_SPEC_INDEX_URL} from '../src/actions/api/constants.ts'
 import {distillApiRoutes, type SpecSource} from '../src/actions/api/distillApiRoutes.ts'
 import {type ApiRouteEntry, type OpenApiDocument} from '../src/actions/api/types.ts'
 
-const OUTPUT_PATH = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'src',
-  'generated',
-  'apiRoutes.ts',
-)
+const OUTPUT_PATH = join(import.meta.dirname, '..', 'src', 'generated', 'apiRoutes.ts')
 
 const FETCH_TIMEOUT_MS = 30_000
 const FETCH_ATTEMPTS = 3
@@ -111,43 +105,33 @@ export const apiRoutes: ApiRouteEntry[] = ${serialized}
 `
 }
 
-async function main(): Promise<void> {
-  const checkOnly = process.argv.includes('--check')
+const {values: args} = parseArgs({options: {check: {default: false, type: 'boolean'}}})
 
-  const sources = await fetchSpecSources()
-  const routes = distillApiRoutes(sources)
-  if (routes.length === 0) {
-    throw new Error(
-      `Distilled API routing manifest is empty (${sources.length} specs fetched) - refusing to write an empty endpoint list`,
-    )
+const sources = await fetchSpecSources()
+const routes = distillApiRoutes(sources)
+if (routes.length === 0) {
+  throw new Error(
+    `Distilled API routing manifest is empty (${sources.length} specs fetched) - refusing to write an empty endpoint list`,
+  )
+}
+const rendered = renderManifest(routes)
+
+if (args.check) {
+  let existing = ''
+  try {
+    existing = readFileSync(OUTPUT_PATH, 'utf8')
+  } catch {
+    // Missing file is stale by definition
   }
-  const rendered = renderManifest(routes)
-
-  if (checkOnly) {
-    let existing = ''
-    try {
-      existing = readFileSync(OUTPUT_PATH, 'utf8')
-    } catch {
-      // Missing file is stale by definition
-    }
-    if (existing === rendered) {
-      console.log('API routing manifest is up to date.')
-      return
-    }
+  if (existing === rendered) {
+    console.log('API routing manifest is up to date.')
+  } else {
     console.error(
       `API routing manifest is stale. Run "pnpm generate:api-routes" and commit the result.`,
     )
     process.exitCode = 1
-    return
   }
-
+} else {
   writeFileSync(OUTPUT_PATH, rendered)
   console.log(`Wrote ${routes.length} route entries to ${OUTPUT_PATH}`)
-}
-
-try {
-  await main()
-} catch (error) {
-  console.error(error)
-  process.exitCode = 1
 }

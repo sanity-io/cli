@@ -24,6 +24,9 @@ export interface PerformApiRequestOptions {
   /** Extra query parameters, merged with those from the endpoint argument. */
   query?: Record<string, string | string[]>
 
+  /** Explicit API token, used instead of the logged-in user's token. */
+  token?: string
+
   /** Send the request without an authorization token. */
   unauthenticated?: boolean
 }
@@ -37,6 +40,9 @@ export interface ApiResponse {
   body: unknown
 
   headers: Record<string, string>
+
+  /** Whether `body` was parsed from a JSON response. */
+  jsonBody: boolean
 
   /** The raw response body text. */
   rawBody: string
@@ -56,20 +62,28 @@ export interface ApiResponse {
  * (status, headers, non-JSON bodies) can be passed through unfiltered.
  */
 export async function performApiRequest(options: PerformApiRequestOptions): Promise<ApiResponse> {
-  const {body, headers = {}, method, query = {}, resolved, unauthenticated = false} = options
+  const {
+    body,
+    headers = {},
+    method,
+    query = {},
+    resolved,
+    token: providedToken,
+    unauthenticated = false,
+  } = options
 
-  const {token, url} = await resolveRequestTarget(resolved, unauthenticated)
+  const {token, url} = await resolveRequestTarget(resolved, unauthenticated, providedToken)
 
   const requestHeaders: Record<string, string> = {}
   if (token) requestHeaders.Authorization = `Bearer ${token}`
 
   let requestBody: Buffer | string | undefined
   if (typeof body === 'string' || Buffer.isBuffer(body)) {
+    // Raw bodies (--input) pass through without a default Content-Type - the
+    // caller knows the media type, we don't (gh api behaves the same way)
     requestBody = body
   } else if (body !== undefined) {
     requestBody = JSON.stringify(body)
-  }
-  if (requestBody !== undefined) {
     requestHeaders['Content-Type'] = 'application/json'
   }
 
@@ -92,10 +106,12 @@ export async function performApiRequest(options: PerformApiRequestOptions): Prom
   })
 
   const rawBody = typeof response.body === 'string' ? response.body : String(response.body ?? '')
+  const parsed = parseBody(rawBody, response.headers['content-type'])
 
   return {
-    body: parseBody(rawBody, response.headers['content-type']),
+    body: parsed.body,
     headers: response.headers,
+    jsonBody: parsed.jsonBody,
     rawBody,
     statusCode: response.statusCode,
     statusMessage: response.statusMessage,
@@ -106,9 +122,10 @@ export async function performApiRequest(options: PerformApiRequestOptions): Prom
 async function resolveRequestTarget(
   resolved: ResolvedEndpoint,
   unauthenticated: boolean,
+  providedToken?: string,
 ): Promise<{token?: string; url: string}> {
   if (resolved.kind === 'url') {
-    const token = unauthenticated ? undefined : await getCliToken()
+    const token = unauthenticated ? undefined : providedToken || (await getCliToken())
     if (!token && !unauthenticated) {
       throw new Error('You must login first - run "sanity login"')
     }
@@ -123,10 +140,12 @@ async function resolveRequestTarget(
           apiVersion: resolved.apiVersion,
           projectId: resolved.projectId as string,
           requireUser: !unauthenticated,
+          token: providedToken,
         })
       : await getGlobalCliClient({
           apiVersion: resolved.apiVersion,
           requireUser: !unauthenticated,
+          token: providedToken,
           unauthenticated,
         })
 
@@ -135,13 +154,16 @@ async function resolveRequestTarget(
   return {token, url: client.getUrl(resolved.path)}
 }
 
-function parseBody(rawBody: string, contentType: string | undefined): unknown {
+function parseBody(
+  rawBody: string,
+  contentType: string | undefined,
+): {body: unknown; jsonBody: boolean} {
   if (rawBody === '' || !contentType || !/\bjson\b/.test(contentType)) {
-    return rawBody
+    return {body: rawBody, jsonBody: false}
   }
   try {
-    return JSON.parse(rawBody)
+    return {body: JSON.parse(rawBody), jsonBody: true}
   } catch {
-    return rawBody
+    return {body: rawBody, jsonBody: false}
   }
 }

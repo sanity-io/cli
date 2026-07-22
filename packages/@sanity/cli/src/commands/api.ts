@@ -1,9 +1,10 @@
 import {readFileSync} from 'node:fs'
+import {readFile} from 'node:fs/promises'
 import {buffer} from 'node:stream/consumers'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {colorizeJson, SanityCommand, subdebug} from '@sanity/cli-core'
+import {colorizeJson, exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {ApiUsageError, ProjectIdRequiredError} from '../actions/api/errors.js'
 import {fieldsToQuery, type FieldValue, parseFields} from '../actions/api/parseFields.js'
@@ -39,15 +40,15 @@ is chosen based on the specs' routing information.
 
 The default request method is GET, or POST when fields or --input are
 provided. For GET/HEAD requests, fields are sent as query parameters;
-otherwise they are combined into a JSON request body. Request bodies are
-sent with "Content-Type: application/json" unless a Content-Type header is
-provided with -H (recommended for binary --input bodies). The response body
-is written to stdout.
+otherwise they are combined into a JSON request body sent with
+"Content-Type: application/json". Raw --input bodies are sent without a
+default Content-Type - provide one with -H when the API requires it. The
+response body is written to stdout.
 
 Requests are authenticated with the token from "sanity login". To use a
 specific token instead - for example in CI or when the CLI is not logged in
-- set the SANITY_AUTH_TOKEN environment variable. Pass --anonymous to send
-no token at all.`
+- pass --token or set the SANITY_AUTH_TOKEN environment variable. Pass
+--anonymous to send no token at all.`
 
   static override examples = [
     {
@@ -68,7 +69,7 @@ no token at all.`
       description: 'Send a JSON body built from typed fields',
     },
     {
-      command: `echo '{"mutations": []}' | <%= config.bin %> <%= command.id %> 'data/mutate/{dataset}' --input -`,
+      command: `echo '{"mutations": []}' | <%= config.bin %> <%= command.id %> 'data/mutate/{dataset}' --input - -H 'Content-Type: application/json'`,
       description: 'Send a raw request body from stdin',
     },
     {
@@ -123,7 +124,7 @@ no token at all.`
     }),
     input: Flags.string({
       description:
-        'Read the raw request body from a file (use "-" for stdin). Sent as application/json unless a Content-Type header is provided',
+        'Read the raw request body from a file (use "-" for stdin). Sent without a default Content-Type - provide one with -H when the API requires it',
       exclusive: ['field', 'raw-field'],
       helpValue: '<file>',
     }),
@@ -146,6 +147,12 @@ no token at all.`
       helpValue: '<key=value>',
       multiple: true,
     }),
+    token: Flags.string({
+      char: 't',
+      description: 'API token to authenticate with, instead of the logged-in user token',
+      exclusive: ['anonymous'],
+      helpValue: '<token>',
+    }),
   }
 
   /**
@@ -164,7 +171,7 @@ no token at all.`
       await this.performRequest(args.endpoint, flags)
     } catch (error) {
       if (error instanceof ApiUsageError) {
-        this.error(error.message, {exit: 2})
+        this.error(error.message, {exit: exitCodes.USAGE_ERROR})
       }
       throw error
     }
@@ -199,6 +206,7 @@ no token at all.`
       method,
       query,
       resolved,
+      token: flags.token,
       unauthenticated: flags.anonymous,
     })
 
@@ -212,7 +220,7 @@ no token at all.`
         response.statusCode === 401 && !flags.anonymous
           ? `. You may need to login again with ${styleText('cyan', 'sanity login')}`
           : ''
-      this.error(`${statusLine}${loginHint}`, {exit: 1})
+      this.error(`${statusLine}${loginHint}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -227,8 +235,8 @@ no token at all.`
       this.log('')
     }
 
-    if (typeof response.body === 'string') {
-      if (response.body !== '') this.log(response.body)
+    if (!response.jsonBody) {
+      if (response.rawBody !== '') this.log(response.rawBody)
       return
     }
 
@@ -246,7 +254,7 @@ no token at all.`
       if (flags.input === '-') return stdin
       try {
         // Read raw bytes - `--input` bodies may be binary (eg asset uploads)
-        return readFileSync(flags.input)
+        return await readFile(flags.input)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         throw new ApiUsageError(`Failed to read --input file "${flags.input}": ${message}`)
@@ -314,7 +322,8 @@ no token at all.`
 }
 
 function parseHeaders(headerFlags: string[]): Record<string, string> {
-  const headers: Record<string, string> = {}
+  // Null-prototype for the same reason as the field containers in parseFields
+  const headers: Record<string, string> = Object.create(null)
 
   for (const header of headerFlags) {
     const separatorIndex = header.indexOf(':')

@@ -100,9 +100,9 @@ describe('#api', () => {
   })
 
   test('sends fields as a JSON body and defaults to POST', async () => {
-    nock(PROJECT_HOST)
+    nock(PROJECT_HOST, {reqheaders: {'content-type': 'application/json'}})
       .post('/v2025-02-19/data/mutate/production', {
-        mutations: [{create: {_type: 'movie'}}, {patch: {id: 'movie-1'}}],
+        mutations: [{create: {_type: 'movie'}}, {create: {_type: 'book'}}],
         returnIds: true,
       })
       .query({tag: TAG})
@@ -115,7 +115,7 @@ describe('#api', () => {
         '-F',
         'mutations[][create][_type]=movie',
         '-F',
-        'mutations[][patch][id]=movie-1',
+        'mutations[][create][_type]=book',
         '-F',
         'returnIds=true',
       ],
@@ -136,8 +136,8 @@ describe('#api', () => {
     })
   })
 
-  test('sends a raw body from stdin with --input -', async () => {
-    nock(PROJECT_HOST)
+  test('sends a raw body from stdin with --input -, without a default content-type', async () => {
+    nock(PROJECT_HOST, {badheaders: ['content-type']})
       .post('/v2025-02-19/data/mutate/production', '{"from": "stdin"}')
       .query({tag: TAG})
       .reply(200, {ok: true}, {'Content-Type': 'application/json'})
@@ -145,6 +145,19 @@ describe('#api', () => {
     await testCommand(StdinApiCommand, ['data/mutate/{dataset}', '--input', '-'], {
       mocks: defaultMocks,
     })
+  })
+
+  test('sends --input bodies with a content-type provided via -H', async () => {
+    nock(PROJECT_HOST, {reqheaders: {'content-type': 'application/json'}})
+      .post('/v2025-02-19/data/mutate/production', '{"from": "stdin"}')
+      .query({tag: TAG})
+      .reply(200, {ok: true}, {'Content-Type': 'application/json'})
+
+    await testCommand(
+      StdinApiCommand,
+      ['data/mutate/{dataset}', '--input', '-', '-H', 'Content-Type: application/json'],
+      {mocks: defaultMocks},
+    )
   })
 
   test('sends binary --input bodies byte-for-byte', async () => {
@@ -167,6 +180,17 @@ describe('#api', () => {
       .reply(200, {}, {'Content-Type': 'application/json'})
 
     await testCommand(ApiCommand, ['some/endpoint', '-H', 'X-Custom: yes'], {mocks: defaultMocks})
+  })
+
+  test('authenticates with --token instead of the logged-in user token', async () => {
+    nock(GLOBAL_HOST, {reqheaders: {authorization: 'Bearer flag-token'}})
+      .get('/v2025-02-19/some/endpoint')
+      .query({tag: TAG})
+      .reply(200, {}, {'Content-Type': 'application/json'})
+
+    await testCommand(ApiCommand, ['some/endpoint', '--token', 'flag-token'], {
+      mocks: defaultMocks,
+    })
   })
 
   test('omits the authorization header with --anonymous', async () => {
@@ -214,6 +238,17 @@ describe('#api', () => {
     const {stdout} = await testCommand(ApiCommand, ['some/endpoint'], {mocks: defaultMocks})
 
     expect(stdout.trim()).toBe('plain text response')
+  })
+
+  test('prints JSON string responses as JSON', async () => {
+    nock(GLOBAL_HOST)
+      .get('/v2025-02-19/some/endpoint')
+      .query({tag: TAG})
+      .reply(200, '"hello"', {'Content-Type': 'application/json'})
+
+    const {stdout} = await testCommand(ApiCommand, ['some/endpoint'], {mocks: defaultMocks})
+
+    expect(stdout.trim()).toBe('"hello"')
   })
 
   test('prints the status line and headers with --include', async () => {

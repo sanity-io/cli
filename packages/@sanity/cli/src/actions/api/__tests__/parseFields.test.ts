@@ -59,14 +59,72 @@ describe('parseFields', () => {
     expect(parseFields({fields: ['ids[]=1', 'ids[]=2']})).toEqual({ids: [1, 2]})
   })
 
+  test('declares an empty array with a bare key[]', () => {
+    expect(parseFields({rawFields: ['empty[]']})).toEqual({empty: []})
+    expect(parseFields({fields: ['empty[]']})).toEqual({empty: []})
+  })
+
   test('builds objects inside arrays', () => {
     expect(parseFields({fields: ['items[][id]=1']})).toEqual({items: [{id: 1}]})
   })
 
-  test('each [] appends a new array element', () => {
+  test('fills the current array element until a key repeats', () => {
+    expect(
+      parseFields({
+        rawFields: [
+          'labels[][name]=bug',
+          'labels[][color]=red',
+          'labels[][name]=feature',
+          'labels[][color]=green',
+        ],
+      }),
+    ).toEqual({
+      labels: [
+        {color: 'red', name: 'bug'},
+        {color: 'green', name: 'feature'},
+      ],
+    })
+  })
+
+  test('starts a new array element when a key repeats', () => {
     expect(parseFields({fields: ['items[][id]=1', 'items[][id]=2']})).toEqual({
       items: [{id: 1}, {id: 2}],
     })
+  })
+
+  test('keeps filling nested arrays of the current array element', () => {
+    expect(
+      parseFields({
+        rawFields: [
+          'labels[][name]=bug',
+          'labels[][colorOptions][]=red',
+          'labels[][colorOptions][]=blue',
+          'labels[][name]=feature',
+          'labels[][colorOptions][]=green',
+        ],
+      }),
+    ).toEqual({
+      labels: [
+        {colorOptions: ['red', 'blue'], name: 'bug'},
+        {colorOptions: ['green'], name: 'feature'},
+      ],
+    })
+  })
+
+  test('builds deeply nested objects inside arrays', () => {
+    expect(parseFields({rawFields: ['nested[][key1][key2][key3]=value']})).toEqual({
+      nested: [{key1: {key2: {key3: 'value'}}}],
+    })
+  })
+
+  test('starts a new array element after a scalar element', () => {
+    expect(parseFields({rawFields: ['robots[]=Hubot', 'robots[][name]=Dependabot']})).toEqual({
+      robots: ['Hubot', {name: 'Dependabot'}],
+    })
+  })
+
+  test('keeps @-prefixed raw field values literal', () => {
+    expect(parseFields({rawFields: ['location=@work']})).toEqual({location: '@work'})
   })
 
   test('throws on duplicate keys', () => {
@@ -75,6 +133,13 @@ describe('parseFields', () => {
 
   test('throws when nesting conflicts with a scalar', () => {
     expect(() => parseFields({fields: ['a=1', 'a[b]=2']})).toThrow(/conflicts/)
+  })
+
+  test('throws when array and non-array uses conflict', () => {
+    expect(() => parseFields({rawFields: ['a[]=1', 'a=2']})).toThrow(/conflicts/)
+    expect(() => parseFields({rawFields: ['a=1', 'a[]=2']})).toThrow(/conflicts/)
+    expect(() => parseFields({rawFields: ['a[b]=1', 'a[]=2']})).toThrow(/conflicts/)
+    expect(() => parseFields({rawFields: ['a[]=1', 'a[b]=2']})).toThrow(/conflicts/)
   })
 
   test('throws on missing "=" separator', () => {
