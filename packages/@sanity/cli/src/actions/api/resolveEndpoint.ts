@@ -178,7 +178,8 @@ interface RouteMatch {
 /**
  * Find the route entry whose path pattern best matches the request segments.
  *
- * Patterns are compared segment by segment: literal matches score higher than
+ * A pattern only matches when the request path consumes it completely, and
+ * segments are compared pairwise: literal matches score higher than
  * placeholder matches, and a literal mismatch disqualifies the pattern. On
  * equal scores across hosts the global host wins (APIs served on both hosts
  * don't need a project ID there); on equal scores within the same host the
@@ -210,12 +211,15 @@ function matchRoutes(segments: string[], routes: ApiRouteEntry[]): RouteMatch | 
 }
 
 function scorePattern(segments: string[], patternSegments: string[]): number {
-  const length = Math.min(segments.length, patternSegments.length)
+  // A pattern only matches when the request path consumes it completely - a
+  // request that is a mere prefix of a longer pattern (eg `data` vs
+  // `data/query/{dataset}`) must not inherit that route's host or version.
+  if (patternSegments.length > segments.length) return 0
+
   let score = 0
   let literalMatches = 0
 
-  for (let index = 0; index < length; index++) {
-    const patternSegment = patternSegments[index]
+  for (const [index, patternSegment] of patternSegments.entries()) {
     if (PLACEHOLDER_RE.test(patternSegment)) {
       score += 1
     } else if (patternSegment === segments[index]) {
@@ -228,11 +232,7 @@ function scorePattern(segments: string[], patternSegments: string[]): number {
 
   // Require at least one literal segment match so a placeholder-only pattern
   // like `{resourceType}/{resourceId}` can't capture arbitrary paths.
-  if (literalMatches === 0) return 0
-
-  // Prefer patterns the request path consumes completely over patterns that
-  // merely share a prefix with it.
-  return patternSegments.length <= segments.length ? score + 1 : score
+  return literalMatches === 0 ? 0 : score
 }
 
 function parseQueryString(queryString: string): Record<string, string | string[]> {

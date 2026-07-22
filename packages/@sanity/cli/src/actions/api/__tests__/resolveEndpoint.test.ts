@@ -222,6 +222,24 @@ describe('resolveEndpoint', () => {
     })
   })
 
+  test('never matches requests that are mere prefixes of longer patterns', () => {
+    // `data` / `data/query` are prefixes of the project-hosted
+    // `data/query/{dataset}` pattern - they must fall back to the global
+    // host (and not demand a project ID) instead of inheriting its route.
+    expect(resolveEndpoint({endpoint: 'data', routes})).toEqual({
+      apiVersion: API_DEFAULT_VERSION,
+      host: 'global',
+      kind: 'path',
+      matchedSlug: undefined,
+      path: 'data',
+      query: {},
+    })
+    expect(resolveEndpoint({endpoint: 'data/query', routes})).toMatchObject({
+      host: 'global',
+      matchedSlug: undefined,
+    })
+  })
+
   test('honors a forced host', () => {
     expect(
       resolveEndpoint({endpoint: 'projects', forceHost: 'project', projectId: 'p', routes}),
