@@ -55,11 +55,13 @@
     "access": "public"
   },
   "scripts": {
+    "prebuild": "pnpm run generate:api-routes",
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "postbuild": "pnpm run manifest:generate && pnpm run check:topic-aliases",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:topic-aliases": "tsx scripts/check-topic-aliases.ts",
     "check:types": "tsc --noEmit",
+    "generate:api-routes": "tsx scripts/generate-api-routes.ts",
     "lint": "eslint .",
     "manifest:generate": "oclif manifest",
     "manifest:remove": "rimraf oclif.manifest.json",

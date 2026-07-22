@@ -13,6 +13,7 @@ Code for sanity cli
 
   <!-- commands -->
 
+- [`sanity api ENDPOINT`](#sanity-api-endpoint)
 - [`sanity backups disable [DATASET]`](#sanity-backups-disable-dataset)
 - [`sanity backups download [DATASET]`](#sanity-backups-download-dataset)
 - [`sanity backups enable [DATASET]`](#sanity-backups-enable-dataset)
@@ -121,6 +122,93 @@ Code for sanity cli
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
+
+## `sanity api ENDPOINT`
+
+Make an authenticated HTTP request to a Sanity API
+
+```
+USAGE
+  $ sanity api ENDPOINT [-p <id>] [-d <name>] [--api-version <version>] [--global | --project-hosted] [-H
+    <key:value>...] [-i] [--input <file> | -F <key=value>... | -f <key=value>...] [-X <method>] [--pretty] [-t <token> |
+    --anonymous]
+
+ARGUMENTS
+  ENDPOINT  API path (eg "projects" or "data/query/{dataset}"), optionally with placeholders, or a full
+            https://*.api.sanity.io URL
+
+FLAGS
+  -F, --field=<key=value>...      Add a typed parameter (key=value): true/false/null and numbers are converted, @file
+                                  reads the value from a file, @- from stdin
+  -H, --header=<key:value>...     Add an HTTP request header (key: value)
+  -X, --method=<method>           HTTP method to use (default GET, or POST when fields or --input are provided)
+  -f, --raw-field=<key=value>...  Add a string parameter (key=value)
+  -i, --include                   Include the HTTP response status and headers in the output
+  -t, --token=<token>             API token to authenticate with, instead of the logged-in user token
+      --anonymous                 Send the request without an authorization token
+      --api-version=<version>     API version to use (eg v2025-02-19). Defaults to a version embedded in the endpoint
+                                  path, or the version from the matching OpenAPI spec
+      --global                    Force the request to the global API host (api.sanity.io)
+      --input=<file>              Read the raw request body from a file (use "-" for stdin). Sent without a default
+                                  Content-Type - provide one with -H when the API requires it
+      --pretty                    Colorize JSON output
+      --project-hosted            Force the request to the project API host (<projectId>.api.sanity.io)
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>   Dataset for {dataset} placeholders (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID for {projectId} placeholders and project-hosted APIs (overrides CLI configuration)
+
+DESCRIPTION
+  Make an authenticated HTTP request to a Sanity API
+
+  The endpoint argument is an API path as documented in the published OpenAPI
+  specifications - list them with "sanity openapi list" and inspect one with
+  "sanity openapi get <slug>". Paths can be copied verbatim from the specs:
+  {projectId} and {dataset} placeholders are filled in from flags or the CLI
+  configuration, and the API host (api.sanity.io or <projectId>.api.sanity.io)
+  is chosen based on the specs' routing information.
+
+  The default request method is GET, or POST when fields or --input are
+  provided. For GET/HEAD requests, fields are sent as query parameters;
+  otherwise they are combined into a JSON request body sent with
+  "Content-Type: application/json". Raw --input bodies are sent without a
+  default Content-Type - provide one with -H when the API requires it. The
+  response body is written to stdout.
+
+  Requests are authenticated with the token from "sanity login". To use a
+  specific token instead - for example in CI or when the CLI is not logged in
+  - pass --token or set the SANITY_AUTH_TOKEN environment variable. Pass
+  --anonymous to send no token at all.
+
+EXAMPLES
+  Get the current user
+
+    $ sanity api users/me
+
+  Get the current project (placeholder filled from CLI config)
+
+    $ sanity api projects/{projectId}
+
+  Run a GROQ query against the project host
+
+    $ sanity api 'data/query/{dataset}' -f query='*[_type == "movie"][0..2]'
+
+  Send a JSON body built from typed fields
+
+    $ sanity api projects/{projectId} -X PATCH -F displayName="My project"
+
+  Send a raw request body from stdin
+
+    echo '{"mutations": []}' | sanity api 'data/mutate/{dataset}' --input - -H 'Content-Type: application/json'
+
+  Include the response status and headers, pinning the API version
+
+    $ sanity api jobs/123 --include --api-version v2025-02-19
+
+  Authenticate with a specific token instead of the logged-in session
+
+    SANITY_AUTH_TOKEN=<token> sanity api users/me
+```
 
 ## `sanity backups disable [DATASET]`
 
