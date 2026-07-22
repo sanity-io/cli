@@ -114,7 +114,7 @@ Code for sanity cli
 - [`sanity telemetry disable`](#sanity-telemetry-disable)
 - [`sanity telemetry enable`](#sanity-telemetry-enable)
 - [`sanity telemetry status`](#sanity-telemetry-status)
-- [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
+- [`sanity tokens create [LABEL]`](#sanity-tokens-create-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
 - [`sanity typegen generate`](#sanity-typegen-generate)
@@ -129,9 +129,9 @@ Make an authenticated HTTP request to a Sanity API
 
 ```
 USAGE
-  $ sanity api ENDPOINT [-p <id>] [-d <name>] [--anonymous] [--api-version <version>] [--global |
-    --project-hosted] [-H <key:value>...] [-i] [--input <file> | -F <key=value>... | -f <key=value>...] [-X <method>]
-    [--pretty]
+  $ sanity api ENDPOINT [-p <id>] [-d <name>] [--api-version <version>] [--global | --project-hosted] [-H
+    <key:value>...] [-i] [--input <file> | -F <key=value>... | -f <key=value>...] [-X <method>] [--pretty] [-t <token> |
+    --anonymous]
 
 ARGUMENTS
   ENDPOINT  API path (eg "projects" or "data/query/{dataset}"), optionally with placeholders, or a full
@@ -144,11 +144,13 @@ FLAGS
   -X, --method=<method>           HTTP method to use (default GET, or POST when fields or --input are provided)
   -f, --raw-field=<key=value>...  Add a string parameter (key=value)
   -i, --include                   Include the HTTP response status and headers in the output
+  -t, --token=<token>             API token to authenticate with, instead of the logged-in user token
       --anonymous                 Send the request without an authorization token
       --api-version=<version>     API version to use (eg v2025-02-19). Defaults to a version embedded in the endpoint
                                   path, or the version from the matching OpenAPI spec
       --global                    Force the request to the global API host (api.sanity.io)
-      --input=<file>              Read the raw request body from a file (use "-" for stdin)
+      --input=<file>              Read the raw request body from a file (use "-" for stdin). Sent without a default
+                                  Content-Type - provide one with -H when the API requires it
       --pretty                    Colorize JSON output
       --project-hosted            Force the request to the project API host (<projectId>.api.sanity.io)
 
@@ -168,13 +170,15 @@ DESCRIPTION
 
   The default request method is GET, or POST when fields or --input are
   provided. For GET/HEAD requests, fields are sent as query parameters;
-  otherwise they are combined into a JSON request body. The response body is
-  written to stdout.
+  otherwise they are combined into a JSON request body sent with
+  "Content-Type: application/json". Raw --input bodies are sent without a
+  default Content-Type - provide one with -H when the API requires it. The
+  response body is written to stdout.
 
   Requests are authenticated with the token from "sanity login". To use a
   specific token instead - for example in CI or when the CLI is not logged in
-  - set the SANITY_AUTH_TOKEN environment variable. Pass --anonymous to send
-  no token at all.
+  - pass --token or set the SANITY_AUTH_TOKEN environment variable. Pass
+  --anonymous to send no token at all.
 
 EXAMPLES
   Get the current user
@@ -195,7 +199,7 @@ EXAMPLES
 
   Send a raw request body from stdin
 
-    echo '{"mutations": []}' | sanity api 'data/mutate/{dataset}' --input -
+    echo '{"mutations": []}' | sanity api 'data/mutate/{dataset}' --input - -H 'Content-Type: application/json'
 
   Include the response status and headers, pinning the API version
 
@@ -2616,7 +2620,7 @@ USAGE
 
 FLAGS
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
-  --provider=<providerId>  Log in using the given provider
+  --provider=<providerId>  Log in using a provider ID (google, github, sanity, vercel)
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
   --with-token             Read token from standard input
@@ -2720,7 +2724,11 @@ Create a new aspect definition file
 
 ```
 USAGE
-  $ sanity media create-aspect
+  $ sanity media create-aspect [--name <value>] [--title <value>]
+
+FLAGS
+  --name=<value>   Aspect name. Defaults to the title in camel case
+  --title=<value>  Aspect title
 
 DESCRIPTION
   Create a new aspect definition file
@@ -2744,7 +2752,7 @@ ARGUMENTS
 
 FLAGS
   --media-library-id=<value>  The id of the target media library
-  --yes                       Skip confirmation prompt
+  --yes                       Run without prompts and confirm deletion
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
@@ -3243,10 +3251,11 @@ Delete schema documents by id
 
 ```
 USAGE
-  $ sanity schemas delete --ids <value> [-p <id>] [-d <name>] [--verbose]
+  $ sanity schemas delete --ids <value> [-p <id>] [-d <name>] [--verbose] [-y]
 
 FLAGS
   -d, --dataset=<name>  Delete schemas from a specific dataset
+  -y, --yes             Delete schemas without prompting for confirmation
       --ids=<value>     (required) Comma-separated list of schema ids to delete
       --verbose         Enable verbose logging
 
@@ -3306,11 +3315,12 @@ Extract a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schemas extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
+  $ sanity schemas extract [--enforce-required-fields] [--force] [--format <format>] [--path <value>] [--watch]
     [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
   --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
+  --force                     Overwrite an existing schema file
   --format=<format>           [default: groq-type-nodes] Output format (currently only groq-type-nodes)
   --path=<value>              Optional path to specify destination of the schema file
   --watch                     Enable watch mode to re-extract schema on file changes
@@ -3483,13 +3493,13 @@ EXAMPLES
     $ sanity telemetry telemetry status
 ```
 
-## `sanity tokens add [LABEL]`
+## `sanity tokens create [LABEL]`
 
 Create a new API token for the project
 
 ```
 USAGE
-  $ sanity tokens add [LABEL] [-p <id>] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [-p <id>] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
@@ -3500,7 +3510,7 @@ FLAGS
       --role=viewer  Role to assign to the token (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to add token to (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
 
 DESCRIPTION
   Create a new API token for the project
@@ -3508,23 +3518,23 @@ DESCRIPTION
 EXAMPLES
   Create a token with a label
 
-    $ sanity tokens add "My API Token"
+    $ sanity tokens create "My API Token"
 
   Create a token with editor role
 
-    $ sanity tokens add "My API Token" --role=editor
+    $ sanity tokens create "My API Token" --role=editor
 
   Create a token in unattended mode
 
-    $ sanity tokens add "CI Token" --role=editor --yes
+    $ sanity tokens create "CI Token" --role=editor --yes
 
   Output token information as JSON
 
-    $ sanity tokens add "API Token" --json
+    $ sanity tokens create "API Token" --json
 
   Create a token for a specific project
 
-    $ sanity tokens add "My Token" --project-id abc123 --role=editor
+    $ sanity tokens create "My Token" --project-id abc123 --role=editor
 ```
 
 ## `sanity tokens delete [TOKENID]`
