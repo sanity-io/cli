@@ -4,7 +4,7 @@ import {
   compareDependencyVersions,
   buildStudio as internalBuildStudio,
 } from '@sanity/cli-build/_internal/build'
-import { logSymbols, select, spinner} from '@sanity/cli-core/ux'
+import {logSymbols, select, spinner} from '@sanity/cli-core/ux'
 import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
