@@ -1,3 +1,4 @@
+import {contentHash} from './contentHash.js'
 import {type ResolvedWorkbenchApp} from './resolveWorkbenchApp.js'
 
 /**
@@ -20,24 +21,25 @@ export function resolveAppId(source: {host: string; port: number}): string {
 /**
  * The `build`/`start` id — a hash of the app's declared shape (its identity, not
  * its code), so the bundle inlined by `sanity build` and the registry entry
- * advertised by `sanity start` resolve to the same id. Hashed with the Web Crypto
- * API rather than `node:crypto` for parity with `resolveAppId`'s browser-safe
- * home. `sanity deploy` resolves its own id from the applications API.
+ * advertised by `sanity start` resolve to the same id. `sanity deploy` resolves
+ * its own id from the applications API.
  */
 export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
-  const canonical = (
-    interfaces: ReadonlyArray<{name: string; src: string; type: string}> | undefined,
-  ): Array<[string, string, string]> =>
-    (interfaces ?? []).map((i): [string, string, string] => [i.type, i.name, i.src]).toSorted()
-  const shape = JSON.stringify({
-    config: app.config ?? null,
-    entry: app.entry ?? null,
-    name: app.name,
-    organizationId: app.organizationId,
-    services: canonical(app.services),
-    views: canonical(app.views),
-  })
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(shape))
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return contentHash(
+    JSON.stringify({
+      config: app.config ?? null,
+      entry: app.entry ?? null,
+      name: app.name,
+      organizationId: app.organizationId,
+      services: canonicalInterfaces(app.services),
+      views: canonicalInterfaces(app.views),
+    }),
+  )
+}
+
+/** Sort interfaces to `[type, name, src]` tuples so ordering never shifts the id. */
+function canonicalInterfaces(
+  interfaces: ReadonlyArray<{name: string; src: string; type: string}> | undefined,
+): Array<[string, string, string]> {
+  return (interfaces ?? []).map((i): [string, string, string] => [i.type, i.name, i.src]).toSorted()
 }
