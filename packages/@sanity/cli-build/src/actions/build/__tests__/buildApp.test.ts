@@ -1,10 +1,11 @@
 import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {buildApp, type BuildOptions} from '../buildApp.js'
+import {buildApp, type BuildAppEventListener, type BuildOptions} from '../buildApp.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
+  eventListenerOverrides?: Partial<BuildAppEventListener>,
 ): BuildOptions {
   return {
     appId: undefined,
@@ -18,6 +19,11 @@ function buildOptions(
       return ''
     },
     entry: undefined,
+    eventListener: {
+      async onPreReleaseInInteractiveAutoUpdate() {},
+      onPreReleaseInNonInteractiveAutoUpdate() {},
+      ...eventListenerOverrides,
+    },
     isWorkbenchApp: false,
     minify: true,
     outDir: '/tmp/dist',

@@ -1,10 +1,7 @@
-import {styleText} from 'node:util'
-
-import {type Output} from '@sanity/cli-core/types'
 import {isInteractive} from '@sanity/cli-core/util'
-import {select} from '@sanity/cli-core/ux'
 
 import {type UnresolvedPrerelease} from '../../util/compareDependencyVersions.js'
+import {type BuildStudioEventListener} from './buildStudio.js'
 
 /**
  * Handle prerelease versions that cannot be resolved by the auto-updates CDN.
@@ -15,11 +12,13 @@ import {type UnresolvedPrerelease} from '../../util/compareDependencyVersions.js
  * Does not return if the build should be cancelled (exits via `output.error`).
  */
 export async function handlePrereleaseVersions({
-  output,
+  onPreReleaseInInteractiveAutoUpdate,
+  onPreReleaseInNonInteractiveAutoUpdate,
   unattendedMode,
   unresolvedPrerelease,
 }: {
-  output: Output
+  onPreReleaseInInteractiveAutoUpdate: BuildStudioEventListener['onPreReleaseInInteractiveAutoUpdate']
+  onPreReleaseInNonInteractiveAutoUpdate: BuildStudioEventListener['onPreReleaseInNonInteractiveAutoUpdate']
   unattendedMode: boolean
   unresolvedPrerelease: UnresolvedPrerelease[]
 }): Promise<void> {
@@ -30,33 +29,14 @@ export async function handlePrereleaseVersions({
     `switch to a non-prerelease version locally and deploy again.`
 
   if (unattendedMode || !isInteractive()) {
-    output.error(
-      `${prereleaseMessage}\n\n` +
+    onPreReleaseInNonInteractiveAutoUpdate({
+      message:
+        `${prereleaseMessage}\n\n` +
         `Cannot build with auto-updates in unattended mode when using prerelease versions. ` +
         `Either switch to a non-prerelease version, or use --no-auto-updates to build without auto-updates.`,
-      {exit: 1},
-    )
-    // output.error with exit: 1 throws, but TypeScript doesn't know that
+    })
     return
   }
 
-  const choice = await select({
-    choices: [
-      {
-        name: 'Disable auto-updates for this build and continue',
-        value: 'disable-auto-updates',
-      },
-      {name: 'Cancel build', value: 'cancel'},
-    ],
-    default: 'disable-auto-updates',
-    message: styleText('yellow', prereleaseMessage),
-  })
-
-  if (choice === 'cancel') {
-    output.error('Declined to continue with build', {exit: 1})
-    // output.error with exit: 1 throws, but TypeScript doesn't know that
-    return
-  }
-
-  output.warn('Auto-updates disabled for this build')
+  await onPreReleaseInInteractiveAutoUpdate({prereleaseMessage})
 }

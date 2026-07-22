@@ -2,11 +2,12 @@ import {type Output} from '@sanity/cli-core/types'
 import {DefinedTelemetryTrace} from '@sanity/telemetry'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type BuildOptions, buildStudio} from '../buildStudio.js'
+import {type BuildOptions, buildStudio, BuildStudioEventListener} from '../buildStudio.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
+  eventListenerOverrides?: Partial<BuildStudioEventListener>,
 ): BuildOptions {
   return {
     appId: undefined,
@@ -18,6 +19,29 @@ function buildOptions(
     determineBasePath() {
       return ''
     },
+    eventListener: {
+      onBuildEnd() {},
+      onBuildFail() {},
+      onBuildStart() {},
+      onCleanOutputDirEnd() {},
+      onCleanOutputDirStart() {},
+      onIncompatibleDeclaredStyledComponentsVersionRange() {},
+      onIncompatibleInstalledStyledComponentsVersionRange() {},
+      async onInteractiveNonDefaultOutputDir() {
+        return {shouldClean: false}
+      },
+      onInvalidStyledComponentsVersionRange() {},
+      onNoDeclaredStyledComponentsVersion() {},
+      onNoInstalledSanityVersion() {},
+      onNoInstalledStyledComponentsVersion() {},
+      async onPreReleaseInInteractiveAutoUpdate() {},
+      onPreReleaseInNonInteractiveAutoUpdate() {},
+      async onVersionMismatchInInteractiveAutoUpdate() {
+        return {stopBuild: false}
+      },
+      onVersionMismatchInNonInteractiveAutoUpdate() {},
+      ...eventListenerOverrides,
+    },
     isApp: false,
     isWorkbenchApp: false,
     minify: true,
@@ -27,16 +51,12 @@ function buildOptions(
     sourceMap: true,
     stats: true,
     unattendedMode: false,
-    async upgradePackages() {},
     vite: undefined,
     workDir: '/tmp',
     ...overrides,
   }
 }
 
-const mockedSelect = vi.hoisted(() => vi.fn())
-const mockedSpinner = vi.hoisted(() => vi.fn())
-const mockedConfirm = vi.hoisted(() => vi.fn())
 const mockGetStudioEnvironmentVariables = vi.hoisted(() => vi.fn().mockReturnValue({}))
 const mockedIsInteractive = vi.hoisted(() => vi.fn())
 const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
@@ -87,17 +107,6 @@ vi.mock(import('@sanity/cli-core/util'), () => ({
   isInteractive: mockedIsInteractive,
 }))
 
-vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
-  const original = await importOriginal()
-  mockedSpinner.mockImplementation(original.spinner)
-  return {
-    ...original,
-    confirm: mockedConfirm,
-    select: mockedSelect,
-    spinner: mockedSpinner,
-  }
-})
-
 function createMockOutput(): Output {
   return {
     error: vi.fn(),
@@ -110,8 +119,6 @@ describe('#buildStudio', () => {
   beforeEach(() => {
     mockedBuildStaticFiles.mockResolvedValue({chunks: []})
     mockedIsInteractive.mockReturnValue(true)
-    mockedConfirm.mockResolvedValue(true)
-    mockedSelect.mockResolvedValue('upgrade-and-proceed')
   })
 
   afterEach(() => {
@@ -124,209 +131,215 @@ describe('#buildStudio', () => {
     mockedBuildStaticFiles.mockImplementation(() => {
       throw new Error('build static files error')
     })
+    const onBuildFail = vi.fn()
 
-    await buildStudio(buildOptions({output, unattendedMode: true}))
+    await buildStudio(buildOptions({output, unattendedMode: true}, {onBuildFail}))
 
-    expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to build Sanity Studio'),
-      {exit: 1},
-    )
+    expect(onBuildFail).toHaveBeenCalledWith({
+      message: expect.stringContaining('Failed to build Sanity Studio'),
+    })
   })
 
   test('should prompt for directory cleanup with custom output dir and confirm', async () => {
     const output = createMockOutput()
 
-    const customDir = 'custom-output'
-    await buildStudio(buildOptions({outDir: customDir, output}))
+    const onInteractiveNonDefaultOutputDir = vi.fn().mockResolvedValue({shouldClean: true})
+    const onCleanOutputDirStart = vi.fn()
 
-    expect(mockedConfirm).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('Do you want to delete the existing directory'),
-      }),
+    const customDir = 'custom-output'
+    await buildStudio(
+      buildOptions(
+        {outDir: customDir, output},
+        {
+          onCleanOutputDirStart,
+          onInteractiveNonDefaultOutputDir,
+        },
+      ),
     )
-    expect(mockedSpinner).toHaveBeenCalledWith('Clean output folder')
+
+    expect(onInteractiveNonDefaultOutputDir).toHaveBeenCalledWith({
+      message: expect.stringContaining('Do you want to delete the existing directory'),
+    })
+    expect(onCleanOutputDirStart).toHaveBeenCalledWith({message: 'Clean output folder'})
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
   test('should skip cleanup when user declines directory cleanup prompt', async () => {
     const output = createMockOutput()
 
-    mockedConfirm.mockResolvedValue(false)
+    const onCleanOutputDirStart = vi.fn()
+    const onInteractiveNonDefaultOutputDir = vi.fn().mockResolvedValue({shouldClean: false})
 
     const customDir = 'custom-output'
-    await buildStudio(buildOptions({outDir: customDir, output}))
+    await buildStudio(
+      buildOptions(
+        {outDir: customDir, output},
+        {onCleanOutputDirStart, onInteractiveNonDefaultOutputDir},
+      ),
+    )
 
-    expect(mockedSpinner).not.toHaveBeenCalledWith('Clean output folder')
+    expect(onCleanOutputDirStart).not.toHaveBeenCalled()
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
   test('should exit when user selects "cancel" for version diff', async () => {
     const output = createMockOutput()
 
-    mockedSelect.mockResolvedValue('cancel')
+    const onBuildStart = vi.fn()
+    const onVersionMismatchInInteractiveAutoUpdate = vi.fn().mockResolvedValue({stopBuild: true})
 
-    let upgradePackagesCalled = false
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
-          unresolvedPrerelease: [],
-        }),
-        output,
-        async upgradePackages() {
-          upgradePackagesCalled = true
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+            unresolvedPrerelease: [],
+          }),
+          output,
         },
-      }),
+        {
+          onBuildStart,
+          onVersionMismatchInInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(mockedSelect).toHaveBeenCalled()
-    expect(output.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
-    expect(upgradePackagesCalled).toBeFalsy()
+    expect(onVersionMismatchInInteractiveAutoUpdate).toHaveBeenCalled()
+    expect(onBuildStart).not.toHaveBeenCalled()
   })
 
   test('should upgrade packages when user selects "upgrade" only', async () => {
     const output = createMockOutput()
 
-    const mockedUpgradePackages = vi.fn()
-    mockedSelect.mockResolvedValue('upgrade')
+    const onVersionMismatchInInteractiveAutoUpdate = vi.fn().mockResolvedValue({stopBuild: true})
 
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
-          unresolvedPrerelease: [],
-        }),
-        output,
-        upgradePackages: mockedUpgradePackages,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+            unresolvedPrerelease: [],
+          }),
+          output,
+        },
+        {
+          onVersionMismatchInInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(mockedSelect).toHaveBeenCalled()
-    expect(mockedUpgradePackages).toHaveBeenCalledWith(
-      expect.objectContaining({
-        packages: [['sanity', '3.1.0']],
-      }),
-    )
+    expect(onVersionMismatchInInteractiveAutoUpdate).toHaveBeenCalled()
     expect(mockedBuildStaticFiles).not.toHaveBeenCalled()
-  })
-
-  test('should continue without upgrading when user selects "continue"', async () => {
-    const output = createMockOutput()
-
-    const mockedUpgradePackages = vi.fn()
-    mockedSelect.mockResolvedValue('continue')
-
-    await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
-          unresolvedPrerelease: [],
-        }),
-        output,
-      }),
-    )
-
-    expect(mockedUpgradePackages).not.toHaveBeenCalled()
-    expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
   test('should upgrade and build when user selects "upgrade-and-proceed"', async () => {
     const output = createMockOutput()
 
-    const mockedUpgradePackages = vi.fn()
-    mockedSelect.mockResolvedValue('upgrade-and-proceed')
+    const onVersionMismatchInInteractiveAutoUpdate = vi.fn().mockResolvedValue({stopBuild: false})
 
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
-          unresolvedPrerelease: [],
-        }),
-        output,
-        upgradePackages: mockedUpgradePackages,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+            unresolvedPrerelease: [],
+          }),
+          output,
+        },
+        {
+          onVersionMismatchInInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(mockedUpgradePackages).toHaveBeenCalledWith(
-      expect.objectContaining({
-        packages: [['sanity', '3.1.0']],
-      }),
-    )
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
   test('should error in unattended mode when prerelease versions are detected', async () => {
     const output = createMockOutput()
 
+    const onPreReleaseInNonInteractiveAutoUpdate = vi.fn()
+    const onPreReleaseInInteractiveAutoUpdate = vi.fn()
+
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [],
-          unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
-        }),
-        output,
-        unattendedMode: true,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+          }),
+          output,
+          unattendedMode: true,
+        },
+        {
+          onPreReleaseInInteractiveAutoUpdate,
+          onPreReleaseInNonInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
-      exit: 1,
+    expect(onPreReleaseInNonInteractiveAutoUpdate).toHaveBeenCalledWith({
+      message: expect.stringContaining('prerelease versions'),
     })
-    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('--no-auto-updates'), {
-      exit: 1,
-    })
-    expect(mockedSelect).not.toHaveBeenCalled()
+    expect(onPreReleaseInInteractiveAutoUpdate).not.toHaveBeenCalled()
   })
 
   test('should exit when user selects "cancel" for prerelease prompt', async () => {
     const output = createMockOutput()
 
-    mockedSelect.mockResolvedValue('cancel')
+    const onPreReleaseInInteractiveAutoUpdate = vi.fn()
 
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [],
-          unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
-        }),
-        output,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+          }),
+          output,
+        },
+        {
+          onPreReleaseInInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(output.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
+    expect(onPreReleaseInInteractiveAutoUpdate).toHaveBeenCalled()
   })
 
   test('should build without auto-updates when user selects "disable-auto-updates" for prerelease', async () => {
     const output = createMockOutput()
 
-    const mockedUpgradePackages = vi.fn()
-    mockedSelect.mockResolvedValue('disable-auto-updates')
+    const onBuildStart = vi.fn()
+    const onPreReleaseInInteractiveAutoUpdate = vi.fn()
 
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [],
-          unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
-        }),
-        output,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+          }),
+          output,
+        },
+        {
+          onBuildStart,
+          onPreReleaseInInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(output.warn).toHaveBeenCalledWith('Auto-updates disabled for this build')
-    expect(mockedSpinner).toHaveBeenCalledWith('Build Sanity Studio')
-
-    // Should not have shown the version mismatch prompt
-    expect(mockedUpgradePackages).not.toHaveBeenCalled()
+    expect(onPreReleaseInInteractiveAutoUpdate).toHaveBeenCalled()
+    expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
   })
 
-  test('outputs included environment variables', async () => {
+  test('outputs include environment variables', async () => {
     const output = createMockOutput()
 
     mockGetStudioEnvironmentVariables.mockImplementation(() => ({
@@ -343,46 +356,63 @@ describe('#buildStudio', () => {
     const output = createMockOutput()
 
     // First select call is for prerelease prompt
-    mockedSelect.mockResolvedValue('disable-auto-updates')
-    const mockedUpgradePackages = vi.fn()
+    const onBuildStart = vi.fn()
+    const onPreReleaseInInteractiveAutoUpdate = vi.fn()
+    const onVersionMismatchInInteractiveAutoUpdate = vi.fn()
 
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [{installed: '3.0.0', pkg: '@sanity/vision', remote: '3.1.0'}],
-          unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
-        }),
-        output,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [{installed: '3.0.0', pkg: '@sanity/vision', remote: '3.1.0'}],
+            unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+          }),
+          output,
+        },
+        {
+          onBuildStart,
+          onPreReleaseInInteractiveAutoUpdate,
+          onVersionMismatchInInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(mockedSpinner).toHaveBeenCalledWith('Build Sanity Studio')
-    // select should only be called once (for the prerelease prompt), not twice
-    expect(mockedSelect).toHaveBeenCalledTimes(1)
-    expect(mockedUpgradePackages).not.toHaveBeenCalled()
+    expect(onPreReleaseInInteractiveAutoUpdate).toHaveBeenCalled()
+    expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
+    expect(onVersionMismatchInInteractiveAutoUpdate).not.toHaveBeenCalled()
   })
 
   test('should skip version prompt in unattended mode and show warning', async () => {
     const output = createMockOutput()
 
+    const onBuildStart = vi.fn()
+    const onVersionMismatchInNonInteractiveAutoUpdate = vi.fn()
+
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
-          unresolvedPrerelease: [],
-        }),
-        output,
-        unattendedMode: true,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+            unresolvedPrerelease: [],
+          }),
+          output,
+          unattendedMode: true,
+        },
+        {
+          onBuildStart,
+          onVersionMismatchInNonInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(mockedSelect).not.toHaveBeenCalled()
-    expect(output.warn).toHaveBeenCalledWith(
-      expect.stringContaining('local version: 3.0.0, runtime version: 3.1.0'),
-    )
-    expect(mockedSpinner).toHaveBeenCalledWith('Build Sanity Studio')
+    expect(onVersionMismatchInNonInteractiveAutoUpdate).toHaveBeenCalledWith({
+      versionMismatchWarning: expect.stringContaining(
+        'local version: 3.0.0, runtime version: 3.1.0',
+      ),
+    })
+    expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
   })
 
   test('should skip version prompt in non-interactive mode and show warning', async () => {
@@ -390,22 +420,32 @@ describe('#buildStudio', () => {
 
     mockedIsInteractive.mockReturnValue(false)
 
+    const onBuildStart = vi.fn()
+    const onVersionMismatchInNonInteractiveAutoUpdate = vi.fn()
+
     await buildStudio(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
-          unresolvedPrerelease: [],
-        }),
-        output,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+            unresolvedPrerelease: [],
+          }),
+          output,
+        },
+        {
+          onBuildStart,
+          onVersionMismatchInNonInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(mockedSelect).not.toHaveBeenCalled()
-    expect(output.warn).toHaveBeenCalledWith(
-      expect.stringContaining('local version: 3.0.0, runtime version: 3.1.0'),
-    )
-    expect(mockedSpinner).toHaveBeenCalledWith('Build Sanity Studio')
+    expect(onVersionMismatchInNonInteractiveAutoUpdate).toHaveBeenCalledWith({
+      versionMismatchWarning: expect.stringContaining(
+        'local version: 3.0.0, runtime version: 3.1.0',
+      ),
+    })
+    expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
   })
 
   test('passes a vision entry with cssFile when @sanity/vision is installed locally', async () => {

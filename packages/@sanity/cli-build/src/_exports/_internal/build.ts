@@ -1,6 +1,6 @@
-export {buildApp} from '../../actions/build/buildApp.js'
+export {buildApp, type BuildAppEventListener} from '../../actions/build/buildApp.js'
 export {buildStaticFiles} from '../../actions/build/buildStaticFiles.js'
-export {buildStudio} from '../../actions/build/buildStudio.js'
+export {buildStudio, type BuildStudioEventListener} from '../../actions/build/buildStudio.js'
 export {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
 export {checkStudioDependencyVersions} from '../../actions/build/checkStudioDependencyVersions.js'
 export {extendViteConfigWithUserConfig, getViteConfig} from '../../actions/build/getViteConfig.js'
