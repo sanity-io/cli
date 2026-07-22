@@ -7,9 +7,9 @@ import {promptForProject} from '../../prompts/promptForProject.js'
 import {createToken, getTokenRoles} from '../../services/tokens.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
-const tokensAddDebug = subdebug('tokens:add')
+const tokensCreateDebug = subdebug('tokens:create')
 
-export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
+export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand> {
   static override args = {
     label: Args.string({
       description: 'Label for the new token',
@@ -44,7 +44,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to add token to',
+      description: 'Project ID to create token in',
       semantics: 'override',
     }),
     json: Flags.boolean({
@@ -62,10 +62,10 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     }),
   }
 
-  static override hiddenAliases: string[] = ['token:add']
+  static override hiddenAliases: string[] = ['tokens:add', 'token:add', 'token:create']
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(AddTokenCommand)
+    const {args, flags} = await this.parse(CreateTokenCommand)
     const {label: givenLabel} = args
     const {json, role} = flags
 
@@ -91,7 +91,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
       : this.promptForRole(projectId))
 
     try {
-      tokensAddDebug(`Creating token for project ${projectId}`, {
+      tokensCreateDebug(`Creating token for project ${projectId}`, {
         label,
         roleName,
       })
@@ -116,8 +116,8 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     } catch (error) {
       const err = error as Error
 
-      tokensAddDebug(`Error creating token for project ${projectId}`, err)
-      this.error(`Token creation failed:\n${err.message}`, {exit: 1})
+      tokensCreateDebug(`Error creating token for project ${projectId}`, err)
+      this.error(`Token creation failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -149,10 +149,10 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     const roles = await getTokenRoles(projectId)
     const robotRoles = roles.filter((role) => role.appliesToRobots)
 
-    tokensAddDebug('Robot roles', {robotRoles})
+    tokensCreateDebug('Robot roles', {robotRoles})
 
     if (robotRoles.length === 0) {
-      this.error('No roles available for tokens', {exit: 1})
+      this.error('No roles available for tokens', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const selectedRoleName = await select({

@@ -6,8 +6,6 @@ import {type Output} from '@sanity/cli-core'
 import {spinner, spinnerStart, spinnerSucceed} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {resolveLatestVersions} from '../../../../src/util/resolveLatestVersions.js'
-
 vi.mock('../../../../src/util/resolveLatestVersions.js', () => ({
   resolveLatestVersions: vi.fn().mockImplementation(async (deps: Record<string, string>) => {
     const resolved: Record<string, string> = {}
@@ -109,81 +107,6 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     vi.clearAllMocks()
   })
 
-  test('overrides the `sanity` dependency with the `workbench` dist-tag when workbench is enabled', async () => {
-    await bootstrapLocalTemplate({
-      output: makeOutput(),
-      outputPath: tmp,
-      packageName: 'my-studio',
-      templateName: 'clean',
-      useTypeScript: true,
-      variables: {
-        autoUpdates: false,
-        dataset: 'production',
-        organizationId: 'org1',
-        projectId: 'abc123',
-        projectName: 'My Studio',
-        workbench: true,
-      },
-    })
-
-    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
-
-    expect(resolveLatestVersions).toHaveBeenCalledOnce()
-    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
-    expect(resolvedDeps.sanity).toBe('workbench')
-
-    const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
-    expect(pkgJson.dependencies.sanity).toBe('1.0.0')
-  })
-
-  test('keeps the `sanity` dependency on the `latest` dist-tag when workbench is disabled', async () => {
-    await bootstrapLocalTemplate({
-      output: makeOutput(),
-      outputPath: tmp,
-      packageName: 'my-studio',
-      templateName: 'clean',
-      useTypeScript: true,
-      variables: {
-        autoUpdates: false,
-        dataset: 'production',
-        organizationId: 'org1',
-        projectId: 'abc123',
-        projectName: 'My Studio',
-        workbench: false,
-      },
-    })
-
-    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
-
-    expect(resolveLatestVersions).toHaveBeenCalledOnce()
-    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
-    expect(resolvedDeps.sanity).toBe('latest')
-  })
-
-  test('overrides the `sanity` devDependency for app templates when workbench is enabled', async () => {
-    await bootstrapLocalTemplate({
-      output: makeOutput(),
-      outputPath: tmp,
-      packageName: 'my-app',
-      templateName: 'app-quickstart',
-      useTypeScript: true,
-      variables: {
-        autoUpdates: false,
-        dataset: 'production',
-        organizationId: 'org1',
-        projectId: 'abc123',
-        projectName: 'my-app',
-        workbench: true,
-      },
-    })
-
-    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
-
-    expect(resolveLatestVersions).toHaveBeenCalledOnce()
-    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
-    expect(resolvedDeps.sanity).toBe('workbench')
-  })
-
   test('scaffolds a studio sanity.cli.ts branded with unstable_defineApp', async () => {
     await bootstrapLocalTemplate({
       output: makeOutput(),
@@ -207,6 +130,8 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
     expect(cliConfig).toContain(`name: 'my-studio'`)
     expect(cliConfig).toContain(`title: 'My Studio'`)
+    // `slug` defaults from the entered name/title, slugified
+    expect(cliConfig).toContain(`slug: 'my-studio'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`projectId: 'abc123'`)
     // Studios brand without an entry — studio app views aren't implemented yet
@@ -238,8 +163,38 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
     expect(cliConfig).toContain(`name: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`title: 'My App'`)
+    // App init derives `slug` from the output directory too, same as `name`
+    expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`entry: './src/App.tsx'`)
+  })
+
+  test('falls back to a non-empty slug when the name slugifies to nothing', async () => {
+    await bootstrapLocalTemplate({
+      output: makeOutput(),
+      // A fully non-latin project name slugifies to '' — and so does the
+      // pre-slugified package name derived from it upstream.
+      outputPath: tmp,
+      packageName: '',
+      templateName: 'clean',
+      useTypeScript: true,
+      variables: {
+        autoUpdates: false,
+        dataset: 'production',
+        organizationId: 'org1',
+        projectId: 'abc123',
+        projectName: '日本語プロジェクト',
+        workbench: true,
+      },
+    })
+
+    expect(spinnerSucceed).toHaveBeenCalledTimes(3)
+
+    const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
+    expect(cliConfig).toContain(`title: '日本語プロジェクト'`)
+    // An empty `slug` would fail app config validation — the constant kicks in
+    expect(cliConfig).not.toContain(`slug: ''`)
+    expect(cliConfig).toContain(`slug: 'sanity-app'`)
   })
 
   test('scaffolds the plain sanity.cli.ts when workbench is disabled', async () => {

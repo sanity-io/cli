@@ -1,7 +1,13 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {type CliConfig, ProjectRootNotFoundError, SanityCommand, subdebug} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  exitCodes,
+  ProjectRootNotFoundError,
+  SanityCommand,
+  subdebug,
+} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 
@@ -59,14 +65,16 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
     // Validation: must provide either aspect name or --all flag
     if (!all && !aspectName) {
       this.error(
-        'Specify an aspect name, or use the `--all` option to deploy all aspect definitions.',
-        {exit: 1},
+        'Aspect name is required. Pass it as the `<aspectName>` argument, or pass `--all`.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
     // Validation: cannot provide both aspect name and --all flag
     if (all && aspectName) {
-      this.error('Specified both an aspect name and `--all`.', {exit: 1})
+      this.error('Specify either the `<aspectName>` argument or `--all`, but not both.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     let cliConfig: CliConfig
@@ -76,7 +84,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       if (err instanceof ProjectRootNotFoundError) {
         this.error(
           'This command must be run from within a Sanity project directory (requires media library configuration)',
-          {exit: 1},
+          {exit: exitCodes.RUNTIME_ERROR},
         )
       }
       throw err
@@ -84,10 +92,16 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
     const mediaLibrary = getMediaLibraryConfig(cliConfig)
 
     if (!mediaLibrary?.aspectsPath) {
-      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: 1})
+      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+
+    if (!mediaLibraryIdFlag && this.isUnattended()) {
+      this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
+    }
 
     try {
       // Determine target media library
@@ -129,7 +143,9 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       // Check if we found the requested aspect (when not using --all)
       if (!all && result.valid.length === 0 && result.invalid.length === 0) {
         this.log()
-        this.error(`Could not find aspect: ${styleText('bold', aspectName ?? '')}`, {exit: 1})
+        this.error(`Could not find aspect: ${styleText('bold', aspectName ?? '')}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // Deploy valid aspects
@@ -172,7 +188,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       this.error(
         styleText('bold', 'Failed to deploy aspects') + `\n\n${styleText('red', err.message)}`,
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }

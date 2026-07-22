@@ -2,7 +2,8 @@ import fs, {access, mkdir} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {Flags} from '@oclif/core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {createPublishedId} from '@sanity/id-utils'
 import camelCase from 'lodash-es/camelCase.js'
@@ -22,23 +23,37 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
     },
   ]
 
+  static override flags = {
+    name: Flags.string({description: 'Aspect name. Defaults to the title in camel case'}),
+    title: Flags.string({description: 'Aspect title'}),
+  }
+
   public async run(): Promise<void> {
     const cliConfig = await this.getCliConfig()
     const mediaLibrary = getMediaLibraryConfig(cliConfig)
     if (mediaLibrary?.aspectsPath === undefined) {
-      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: 1})
+      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: exitCodes.RUNTIME_ERROR})
     }
 
+    const title =
+      this.flags.title ??
+      (this.isUnattended()
+        ? this.error('Aspect title is required. Pass it with `--title <title>`.', {
+            exit: exitCodes.USAGE_ERROR,
+          })
+        : await input({message: 'Title'}))
+
+    const defaultName = createPublishedId(camelCase(title))
+    const name =
+      this.flags.name ??
+      (this.isUnattended()
+        ? defaultName
+        : await input({
+            default: defaultName,
+            message: 'Name',
+          }))
+
     try {
-      const title = await input({
-        message: 'Title',
-      })
-
-      const name = await input({
-        default: createPublishedId(camelCase(title)),
-        message: 'Name',
-      })
-
       const safeName = createPublishedId(camelCase(name))
       const destinationPath = path.resolve(mediaLibrary.aspectsPath, `${safeName}.ts`)
       const relativeDestinationPath = path.relative(process.cwd(), destinationPath)
@@ -53,7 +68,7 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
       )
       if (destinationPathExists) {
         this.error(`A file already exists at ${styleText('bold', relativeDestinationPath)}`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
       }
 
@@ -82,7 +97,7 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       createAspectDebug('Failed to create aspect', error)
-      this.error(`Failed to create aspect: ${message}`, {exit: 1})
+      this.error(`Failed to create aspect: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

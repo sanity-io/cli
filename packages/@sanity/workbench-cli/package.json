@@ -1,6 +1,6 @@
 {
   "name": "@sanity/workbench-cli",
-  "version": "1.5.0",
+  "version": "1.7.1",
   "description": "Internal implementation detail of the Sanity CLI's unstable workbench support. Not intended for direct use.",
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
@@ -38,6 +38,10 @@
     "./init": {
       "source": "./src/_exports/init.ts",
       "default": "./dist/_exports/init.js"
+    },
+    "./preview": {
+      "source": "./src/_exports/preview.ts",
+      "default": "./dist/_exports/preview.js"
     },
     "./undeploy": {
       "source": "./src/_exports/undeploy.ts",

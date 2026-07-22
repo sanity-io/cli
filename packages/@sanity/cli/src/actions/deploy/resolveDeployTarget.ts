@@ -174,21 +174,20 @@ export async function resolveWorkbenchApp({
 }
 
 /**
- * The studio counterpart to {@link resolveWorkbenchApp}: a configured
- * `studioHost` would create that hostname, and without one a deploy would prompt.
+ * The studio counterpart to {@link resolveWorkbenchApp}: a redeploy targets
+ * `deployment.appId`, a first deploy creates the studio at its `slug`.
  *
  * @internal
  */
 export async function resolveWorkbenchStudio({
   appId,
-  studioHost,
+  slug,
 }: {
   appId: string | undefined
-  studioHost: string | undefined
+  slug: string
 }): Promise<StudioDeployTargetResolution> {
   if (appId) return resolveAppById(appId)
-  if (studioHost) return {appHost: studioHost, type: 'would-create'}
-  return {existing: [], type: 'needs-input'}
+  return {appHost: slug, type: 'would-create'}
 }
 
 async function resolveAppById(

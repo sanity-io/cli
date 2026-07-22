@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {createMockOutput, DEV_FLAGS as FLAGS} from '../../__tests__/testHelpers.js'
+import {createMockOutput, DEV_FLAGS as FLAGS, workbenchApp} from '../../__tests__/testHelpers.js'
 import {getDevServerConfig} from '../getDevServerConfig.js'
 
 vi.mock('@sanity/cli-core/ux', () => ({
@@ -15,6 +15,25 @@ vi.mock('@sanity/cli-core/ux', () => ({
 describe('getDevServerConfig', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
+  })
+
+  test('inlines the workbench app id as `${host}-${port}`, and omits it for a plain project', () => {
+    const workbench = getDevServerConfig({
+      cliConfig: {app: workbenchApp()} as CliConfig,
+      flags: FLAGS,
+      httpPort: 3333,
+      output: createMockOutput(),
+      workDir: '/tmp',
+    })
+    expect(workbench.workbenchAppId).toBe('localhost-3333')
+
+    const plain = getDevServerConfig({
+      cliConfig: {},
+      flags: FLAGS,
+      output: createMockOutput(),
+      workDir: '/tmp',
+    })
+    expect(plain.workbenchAppId).toBeUndefined()
   })
 
   test('should warn when both SANITY_STUDIO_BASEPATH env var and config basePath are set', () => {

@@ -123,7 +123,7 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
         const availableAliases = aliases.map((a) => `~${a.name}`).join(', ')
         this.error(
           `Dataset alias "${displayName}" does not exist. Available aliases: ${availableAliases}`,
-          {exit: 1},
+          {exit: exitCodes.RUNTIME_ERROR},
         )
       }
 
@@ -136,18 +136,20 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
           : null)
 
       if (!targetDataset) {
-        this.error('No datasets available to link to', {exit: 1})
+        this.error('No datasets available to link to', {exit: exitCodes.RUNTIME_ERROR})
       }
 
       if (!datasets.includes(targetDataset)) {
         this.error(
           `Dataset "${targetDataset}" does not exist. Available datasets: ${datasets.join(', ')}`,
-          {exit: 1},
+          {exit: exitCodes.RUNTIME_ERROR},
         )
       }
 
       if (existingAlias.datasetName === targetDataset) {
-        this.error(`Dataset alias ${displayName} already linked to ${targetDataset}`, {exit: 1})
+        this.error(`Dataset alias ${displayName} already linked to ${targetDataset}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       if (existingAlias.datasetName && !force) {
@@ -169,7 +171,7 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
       linkAliasDebug(`Error linking dataset alias`, error)
       this.error(
         `Dataset alias linking failed: ${error instanceof Error ? error.message : String(error)}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
   }

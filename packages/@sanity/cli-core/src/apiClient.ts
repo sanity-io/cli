@@ -12,6 +12,7 @@ import {
 
 import {getCliToken} from './config/cli/cliUserConfig.js'
 import {generateHelpUrl} from './util/generateHelpUrl.js'
+import {getSanityUrl} from './util/getSanityUrl.js'
 
 const apiHosts: Record<string, string | undefined> = {
   staging: 'https://api.sanity.work',
@@ -126,7 +127,7 @@ export async function getProjectCliClient({
   ...config
 }: ProjectCliClientOptions): Promise<SanityClient> {
   const requester = defaultRequester.clone()
-  requester.use(authErrors())
+  requester.use(authErrors(config.projectId))
 
   const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production'
 
@@ -160,21 +161,40 @@ export async function getProjectCliClient({
  * @returns get-it middleware with `onError` handler
  * @internal
  */
-function authErrors() {
+function authErrors(projectId?: string) {
   return {
     onError: (err: Error | null) => {
       if (!err || !isReqResError(err)) {
         return err
       }
 
-      const statusCode = isHttpError(err) && err.response.body.statusCode
+      const statusCode = isHttpError(err) && err.statusCode
       if (statusCode === 401) {
+        if (projectId && isProjectUserNotFoundError(err.response.body)) {
+          err.message = `${err.message}. Add this account as a project member: ${getSanityUrl(`/manage/project/${encodeURIComponent(projectId)}/members`)}.`
+          return err
+        }
+
         err.message = `${err.message}. You may need to login again with ${styleText('cyan', 'sanity login')}.\nFor more information, see ${generateHelpUrl('cli-errors')}.`
       }
 
       return err
     },
   }
+}
+
+function isProjectUserNotFoundError(
+  body: unknown,
+): body is {error: {type: 'projectUserNotFoundError'}} {
+  if (typeof body !== 'object' || body === null || !('error' in body)) return false
+
+  const {error} = body
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    error.type === 'projectUserNotFoundError'
+  )
 }
 
 function isReqResError(err: Error): err is ClientError | ServerError {

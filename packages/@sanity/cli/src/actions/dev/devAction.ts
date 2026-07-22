@@ -2,7 +2,7 @@ import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {type CliConfig} from '@sanity/cli-core'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
-import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
+import {checkForDeprecatedAppId} from '../../util/appId.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
 import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
@@ -44,7 +44,6 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     // eslint-disable-next-line no-restricted-syntax
     const {startWorkbenchDev} = await import('@sanity/workbench-cli/dev')
     return startWorkbenchDev({
-      appId: getAppId(cliConfig),
       cacheDir: `${SANITY_CACHE_DIR}/vite`,
       checkForDeprecatedAppId: () => checkForDeprecatedAppId({cliConfig, output}),
       cliConfig,

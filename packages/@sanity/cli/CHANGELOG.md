@@ -1,5 +1,109 @@
 # Change Log
 
+## [7.12.1](https://github.com/sanity-io/cli/compare/cli-v7.12.0...cli-v7.12.1)
+
+_2026-07-22_
+
+### Bug Fixes
+
+- **workbench:** derive config id with Web Crypto ([#1575](https://github.com/sanity-io/cli/pull/1575)) ([d3e59eb](https://github.com/sanity-io/cli/commit/d3e59eb08ac3746fc03db6ddedf60fef5f47244c))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.7.1
+
+## [7.12.0](https://github.com/sanity-io/cli/compare/cli-v7.11.0...cli-v7.12.0)
+
+_2026-07-21_
+
+### Features
+
+- **workbench:** centralize app id generation ([#1540](https://github.com/sanity-io/cli/pull/1540)) ([abc8897](https://github.com/sanity-io/cli/commit/abc88976b631a7f47bb0071ec37d59ff0e7fe5dd))
+
+### Bug Fixes
+
+- **cli:** scaffold workbench apps with sanity@latest ([#1573](https://github.com/sanity-io/cli/pull/1573)) ([5a196bf](https://github.com/sanity-io/cli/commit/5a196bfc35f3c31ee6772596685c95a866f6eeb9))
+- **init:** pre-fill workbench app slug from the entered name/title ([#1574](https://github.com/sanity-io/cli/pull/1574)) ([a66212c](https://github.com/sanity-io/cli/commit/a66212cb4330dc040ea9f856f1976aca21f85c1e))
+- **workbench:** sync app visibility on redeploy ([#1565](https://github.com/sanity-io/cli/pull/1565)) ([a41c5a4](https://github.com/sanity-io/cli/commit/a41c5a436ba292ae13e5e7138f53599f01b0745e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.7.0
+
+## [7.11.0](https://github.com/sanity-io/cli/compare/cli-v7.10.0...cli-v7.11.0)
+
+_2026-07-20_
+
+### Features
+
+- **cli:** support unattended mode for media library commands ([#1502](https://github.com/sanity-io/cli/pull/1502)) ([73750ab](https://github.com/sanity-io/cli/commit/73750aba22cf9ce193715c6810798b1b72316319))
+
+  Add flags for aspect names and titles, accept media library IDs without prompting, require confirmation
+  for destructive actions, and default export destinations.
+
+- **cli:** support unattended mode for GraphQL and schema commands ([#1500](https://github.com/sanity-io/cli/pull/1500)) ([57e1813](https://github.com/sanity-io/cli/commit/57e1813cbe8b51f6ac3d88f416d28592aa7b6b08))
+
+  Require `--force` or `--yes` for confirmation-gated operations, keep schema JSON machine-readable,
+  and distinguish usage errors from cancellations.
+
+- **cli:** rename tokens add to tokens create ([#1566](https://github.com/sanity-io/cli/pull/1566)) ([c613cc6](https://github.com/sanity-io/cli/commit/c613cc6f44d1829e38526fb71fc71ef2f05986ee))
+
+  Rename the `sanity tokens add` command to `sanity tokens create`, while preserving the old alias for backward compatibility.
+
+- **cli:** require confirmation for unattended undeploys ([#1504](https://github.com/sanity-io/cli/pull/1504)) ([e55f659](https://github.com/sanity-io/cli/commit/e55f659292d40754d8895e240f73bdfd4a36dc3c))
+
+  Require `--yes` instead of treating non-interactive or JSON output as consent, distinguish usage
+  errors from cancellations, and keep JSON errors machine-readable.
+
+- **cli:** support unattended mode in document commands ([#1499](https://github.com/sanity-io/cli/pull/1499)) ([0f82b3d](https://github.com/sanity-io/cli/commit/0f82b3d5858eab64782ab826e2a7acf95d64e918))
+
+  Require file input instead of opening an editor, skip validation confirmations, and distinguish usage
+  errors from cancellations.
+
+- **workbench:** make `slug` required ([#1564](https://github.com/sanity-io/cli/pull/1564)) ([e5c9360](https://github.com/sanity-io/cli/commit/e5c93600265b9da1407b59eddf79d54103771b92))
+- **cli:** support unattended mode in advanced dataset commands ([#1498](https://github.com/sanity-io/cli/pull/1498)) ([fb5247c](https://github.com/sanity-io/cli/commit/fb5247cab0aff4f51b806a7cc6b9fcff005682de))
+
+  Return usage errors instead of prompting for missing alias, dataset, confirmation, or embeddings
+  values, while allowing unlinked aliases without a target dataset.
+
+- **cli:** support unattended mode for admin commands ([#1496](https://github.com/sanity-io/cli/pull/1496)) ([3ff6c1f](https://github.com/sanity-io/cli/commit/3ff6c1f8670d6155e56afd42a6560f37c9ef4ae5))
+
+  Add deterministic defaults and required flags for CORS, token, and user commands that previously
+  prompted.
+
+### Bug Fixes
+
+- **cli:** provide actionable login guidance ([#1562](https://github.com/sanity-io/cli/pull/1562)) ([6343fc5](https://github.com/sanity-io/cli/commit/6343fc5642c65843f675a0b8a7ec75e229c332d8))
+
+  Show token, provider, and SSO login commands when authentication is required, and list accepted
+  provider IDs in `sanity login --help`.
+
+- **cli:** support unattended mode in dataset lifecycle commands ([#1497](https://github.com/sanity-io/cli/pull/1497)) ([1e4332b](https://github.com/sanity-io/cli/commit/1e4332bd28d06be8c656775ea00302d4c2e4d36c))
+
+  Use deterministic export and backup paths, and return usage errors instead of prompting for missing
+  input or overwrite confirmation.
+
+- **workbench:** deploy icons for workbench apps and studios ([#1518](https://github.com/sanity-io/cli/pull/1518)) ([20d9ff2](https://github.com/sanity-io/cli/commit/20d9ff2a8c774532e64877e79080350dc7ec1fda))
+- move migration topic into CLI ([#1322](https://github.com/sanity-io/cli/pull/1322)) ([8c94e22](https://github.com/sanity-io/cli/commit/8c94e22b427fa8e995a6ed8a077a87bc6f6c5319))
+- **init:** report all missing unattended options ([#1536](https://github.com/sanity-io/cli/pull/1536)) ([b683ef1](https://github.com/sanity-io/cli/commit/b683ef164bb77f6926ecd39cda9bc88e2eae7297))
+
+  Validate output path, project selection, and organization prerequisites together so unattended
+  `sanity init` runs report every applicable usage error in one pass.
+
+- **workbench:** serve built apps with `sanity start` ([#1547](https://github.com/sanity-io/cli/pull/1547)) ([6012a04](https://github.com/sanity-io/cli/commit/6012a049f3db217f7a286d681bbeac5cba495aca))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.6.0
+    - @sanity/cli-core bumped to 2.5.1
+    - @sanity/cli-build bumped to 4.1.1
+
 ## [7.10.0](https://github.com/sanity-io/cli/compare/cli-v7.9.0...cli-v7.10.0)
 
 _2026-07-17_

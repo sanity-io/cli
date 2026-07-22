@@ -18,7 +18,12 @@ describe('resolveWorkbenchApp', () => {
 
   test('resolves a branded app with defaulted views/services and no singleton flag', () => {
     const config = asConfig(
-      unstable_defineApp({name: 'my-app', organizationId: 'org-123', title: 'My App'}),
+      unstable_defineApp({
+        name: 'my-app',
+        organizationId: 'org-123',
+        slug: 'my-app',
+        title: 'My App',
+      }),
     )
 
     expect(resolveWorkbenchApp(config)).toEqual({
@@ -27,7 +32,9 @@ describe('resolveWorkbenchApp', () => {
       entry: undefined,
       isSingleton: undefined,
       name: 'my-app',
+      organizationId: 'org-123',
       services: [],
+      slug: 'my-app',
       views: [],
     })
   })

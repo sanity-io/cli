@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {isWorkbenchApp, resolveAppId} from '@sanity/workbench-cli'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
 import {determineIsApp} from '../../../util/determineIsApp.js'
@@ -73,6 +73,11 @@ export function getDevServerConfig({
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
-    workbenchAppId: isWorkbenchApp(app) ? app.name : undefined,
+    // Inline the same id the dev registry advertises so the app's bus identity
+    // matches how the workbench addresses it. The registry re-reads the bound
+    // port if a non-strict shift moves it.
+    workbenchAppId: isWorkbenchApp(app)
+      ? resolveAppId({host: baseConfig.httpHost, port: httpPort ?? baseConfig.httpPort})
+      : undefined,
   }
 }

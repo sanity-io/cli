@@ -2,7 +2,7 @@ import {
   compareDependencyVersions,
   buildApp as internalBuildApp,
 } from '@sanity/cli-build/_internal/build'
-import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
+import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
@@ -21,6 +21,9 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   // `views`/`services` live on the branded `unstable_defineApp` result, not the
   // legacy `app` config object — resolve the workbench capability to read them.
   const workbench = resolveWorkbenchApp(cliConfig)
+  const exposes = workbench
+    ? {config: workbench.config, services: workbench.services, views: workbench.views}
+    : undefined
 
   const appId = getAppId(cliConfig)
 
@@ -39,13 +42,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: app?.entry,
-    exposes: workbench
-      ? {
-          config: workbench.config,
-          services: workbench.services,
-          views: workbench.views,
-        }
-      : undefined,
+    exposes,
     isWorkbenchApp: !!workbench,
     minify: flags.minify,
     outDir,
@@ -56,7 +53,11 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     stats: flags.stats,
     unattendedMode: flags.yes,
     vite: cliConfig.vite,
-    workbenchAppId: workbench?.name,
+    // Shared with deploy: it passes the resolved application id (minted by the
+    // API on a first deploy) to inline; a plain build has none, so it hashes the shape.
+    workbenchAppId: workbench
+      ? (options.applicationId ?? (await buildAppId(workbench)))
+      : undefined,
     workDir,
   })
 }

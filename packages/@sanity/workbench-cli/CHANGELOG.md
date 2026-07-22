@@ -1,5 +1,48 @@
 # @sanity/workbench-cli
 
+## [1.7.1](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.0...workbench-cli-v1.7.1)
+
+_2026-07-22_
+
+### Bug Fixes
+
+- **workbench:** derive config id with Web Crypto ([#1575](https://github.com/sanity-io/cli/pull/1575)) ([d3e59eb](https://github.com/sanity-io/cli/commit/d3e59eb08ac3746fc03db6ddedf60fef5f47244c))
+
+## [1.7.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.6.0...workbench-cli-v1.7.0)
+
+_2026-07-21_
+
+### Features
+
+- **workbench:** centralize app id generation ([#1540](https://github.com/sanity-io/cli/pull/1540)) ([abc8897](https://github.com/sanity-io/cli/commit/abc88976b631a7f47bb0071ec37d59ff0e7fe5dd))
+
+### Bug Fixes
+
+- **init:** pre-fill workbench app slug from the entered name/title ([#1574](https://github.com/sanity-io/cli/pull/1574)) ([a66212c](https://github.com/sanity-io/cli/commit/a66212cb4330dc040ea9f856f1976aca21f85c1e))
+- **workbench:** sync app visibility on redeploy ([#1565](https://github.com/sanity-io/cli/pull/1565)) ([a41c5a4](https://github.com/sanity-io/cli/commit/a41c5a436ba292ae13e5e7138f53599f01b0745e))
+
+## [1.6.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.5.0...workbench-cli-v1.6.0)
+
+_2026-07-20_
+
+### Features
+
+- **workbench:** make `slug` required ([#1564](https://github.com/sanity-io/cli/pull/1564)) ([e5c9360](https://github.com/sanity-io/cli/commit/e5c93600265b9da1407b59eddf79d54103771b92))
+
+### Bug Fixes
+
+- **workbench:** deploy icons for workbench apps and studios ([#1518](https://github.com/sanity-io/cli/pull/1518)) ([20d9ff2](https://github.com/sanity-io/cli/commit/20d9ff2a8c774532e64877e79080350dc7ec1fda))
+- **deps:** update dependency @module-federation/vite to v1.18.1 ([#1563](https://github.com/sanity-io/cli/pull/1563)) ([3061bfa](https://github.com/sanity-io/cli/commit/3061bfa6c18b6ff2411c295ac2630438b5f3208f))
+- **workbench:** sync app title on redeploy ([#1520](https://github.com/sanity-io/cli/pull/1520)) ([a4a9907](https://github.com/sanity-io/cli/commit/a4a9907b15f9ee9e62dcc3f1379d850208494461))
+- **workbench:** pre-bundle interface deps in the dev server ([#1557](https://github.com/sanity-io/cli/pull/1557)) ([3522ae7](https://github.com/sanity-io/cli/commit/3522ae7cf4bbd475a2a9d84a300b471bc58870cb))
+- **workbench:** serve built apps with `sanity start` ([#1547](https://github.com/sanity-io/cli/pull/1547)) ([6012a04](https://github.com/sanity-io/cli/commit/6012a049f3db217f7a286d681bbeac5cba495aca))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.5.1
+
 ## [1.5.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.4.0...workbench-cli-v1.5.0)
 
 _2026-07-17_

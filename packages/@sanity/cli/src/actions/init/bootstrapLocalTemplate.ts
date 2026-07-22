@@ -89,9 +89,6 @@ export async function bootstrapLocalTemplate(
     ...(isAppTemplate ? sdkAppDependencies.devDependencies : studioDependencies.devDependencies),
     ...template.dependencies,
     ...template.devDependencies,
-    // `unstable_defineApp` (re-exported via `sanity/cli`) only exists on the
-    // workbench dist-tag of `sanity`.
-    ...(variables.workbench && {sanity: 'workbench'}),
   })
   spin.succeed()
 
@@ -118,10 +115,18 @@ export async function bootstrapLocalTemplate(
    * Currently app init doesn't ask for a name, so we use the last part of the path
    */
   if (isAppTemplate) {
-    packageJsonName = deburr(path.basename(outputPath).toLowerCase())
-      .replaceAll(/\s+/g, '-')
-      .replaceAll(/[^a-z0-9-]/g, '')
+    packageJsonName = slugify(path.basename(outputPath))
   }
+
+  const title = variables.projectName || packageJsonName
+  // Default the workbench app `slug` (the hostname the application is created
+  // at on deploy). App init never asks for a name (`variables.projectName` is
+  // just the cwd basename there), so apps follow their identity — the
+  // output-path basename (`packageJsonName`) — while studios slug the entered
+  // project name. Fall back to a constant when the source slugifies to
+  // nothing (e.g. a fully non-latin name): an empty `slug` fails app config
+  // validation, which is exactly what pre-filling it is meant to avoid.
+  const slug = (isAppTemplate ? packageJsonName : slugify(title)) || 'sanity-app'
 
   // Now create a package manifest (`package.json`) with the merged dependencies
   spin = spinner('Creating default project files').start()
@@ -147,7 +152,8 @@ export async function bootstrapLocalTemplate(
         isWorkbenchApp: variables.workbench,
         name: packageJsonName,
         organizationId: variables.organizationId,
-        title: variables.projectName || packageJsonName,
+        slug,
+        title,
       })
     : createCliConfig({
         autoUpdates: variables.autoUpdates,
@@ -156,7 +162,8 @@ export async function bootstrapLocalTemplate(
         name: packageJsonName,
         organizationId: variables.organizationId,
         projectId: variables.projectId,
-        title: variables.projectName || packageJsonName,
+        slug,
+        title,
       })
 
   // Write non-template files to disc
@@ -208,4 +215,11 @@ export async function bootstrapLocalTemplate(
 
 function toTypeScriptPath(originalPath: string): string {
   return originalPath.replace(/\.js$/, '.ts')
+}
+
+/** Lowercase, deburred, spaces to hyphens, everything else stripped. */
+function slugify(value: string): string {
+  return deburr(value.toLowerCase())
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/[^a-z0-9-]/g, '')
 }

@@ -180,9 +180,9 @@ catch (error: any) { }
 
 Commands use a small set of exit codes aligned with oclif defaults and Unix convention.
 
-- **0 - Success**: Command completed normally. Implicit when `run()` returns without throwing. Only use `this.exit(0)` when you need to short-circuit early on a successful path.
-- **1 - Runtime error**: Something went wrong during execution that is not the user's fault. API failures, network errors, missing project config, file system errors, unexpected state. Use `this.output.error(message, {exit: 1})`.
-- **2 - Usage error**: The user provided invalid input to the CLI itself. Bad arguments, unknown flags, invalid flag values, failing input validation. This is oclif's default for `this.output.error()` and all parse errors, so omitting the `exit` option also gives you 2. Use `this.output.error(message, {exit: 2})` or `this.output.error(message)`.
+- **0 - Success**: Command completed normally. Implicit when `run()` returns without throwing. Only use `this.exit(exitCodes.SUCCESS)` when you need to short-circuit early on a successful path.
+- **1 - Runtime error**: Something went wrong during execution that is not the user's fault. API failures, network errors, missing project config, file system errors, unexpected state. Use `this.output.error(message, {exit: exitCodes.RUNTIME_ERROR})`.
+- **2 - Usage error**: The user provided invalid input to the CLI itself. Bad arguments, unknown flags, invalid flag values, failing input validation. This is oclif's default for `this.output.error()` and all parse errors, so omitting the `exit` option also gives you 2. Use `this.output.error(message, {exit: exitCodes.USAGE_ERROR})` or `this.output.error(message)`.
 - **3 - User abort**: The user declined a confirmation prompt or otherwise chose not to proceed. The command didn't fail, but it also didn't complete its intended action. Use `this.exit(exitCodes.USER_ABORT)`. Import `exitCodes` from `@sanity/cli-core`.
 - **130 - User abort (signal)**: The user cancelled via Ctrl+C or dismissed a prompt without answering. Handled automatically by `SanityCommand.catch()` - commands should not set this manually.
 
@@ -197,7 +197,7 @@ Commands use a small set of exit codes aligned with oclif defaults and Unix conv
 
 ### In Practice
 
-- For `this.output.error()`: pass `{exit: 1}` for runtime errors, `{exit: 2}` (or omit) for usage errors.
+- For `this.output.error()`: pass `{exit: exitCodes.RUNTIME_ERROR}` for runtime errors, `{exit: exitCodes.USAGE_ERROR}` (or omit) for usage errors.
 - For user-declined prompts: `this.exit(exitCodes.USER_ABORT)` after logging a message like "Deploy cancelled."
 - For custom error classes extending `CLIError`: set `exit` in the constructor options.
 - For `this.exit()`: only use for early termination (exit 0 for success, exit 1 for programmatic failure like `doctor` checks failing).
@@ -379,7 +379,7 @@ Sanity CLI commands all extend from the `SanityCommand` class, which provides se
 ### Basic Command Structure
 
 ```typescript
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Args, Flags, type FlagInput} from '@oclif/core'
 
 const debug = subdebug('namespace:command')
@@ -430,7 +430,7 @@ export class MyCommand extends SanityCommand<typeof MyCommand> {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
       debug('Operation failed', error)
-      this.output.error(`Failed: ${message}`, {exit: 1})
+      this.output.error(`Failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }
@@ -439,7 +439,7 @@ export class MyCommand extends SanityCommand<typeof MyCommand> {
 ### Error Handling Pattern
 
 ```typescript
-import {subdebug} from '@sanity/cli-core'
+import {exitCodes, subdebug} from '@sanity/cli-core'
 
 const debug = subdebug('feature:action')
 
@@ -452,7 +452,7 @@ try {
 
   // Show user-friendly message
   const message = error instanceof Error ? error.message : 'Unknown error'
-  this.output.error(`User-facing message: ${message}`, {exit: 1})
+  this.output.error(`User-facing message: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
 }
 ```
 

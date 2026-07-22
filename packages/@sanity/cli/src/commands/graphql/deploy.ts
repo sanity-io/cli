@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {isInteractive, SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import get from 'lodash-es/get.js'
 
@@ -125,11 +125,11 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       if (error instanceof SchemaError) {
         debug('Schema validation errors: %O', error.problemGroups)
         error.print(this.output)
-        this.error('Fix the schema errors above and try again', {exit: 1})
+        this.error('Fix the schema errors above and try again', {exit: exitCodes.RUNTIME_ERROR})
       }
       debug('Failed to resolve GraphQL APIs: %O', error)
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to resolve GraphQL APIs: ${message}`, {exit: 1})
+      this.error(`Failed to resolve GraphQL APIs: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const hasMultipleApis = flags.api ? flags.api.length > 1 : apiDefs.length > 1
@@ -148,13 +148,21 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
       if (flags.force) {
         this.warn(`--force specified, continuing...`)
+      } else if (this.isUnattended()) {
+        this.error(
+          'Flag overrides for multiple APIs require confirmation. Pass `--force` to continue.',
+          {
+            exit: exitCodes.USAGE_ERROR,
+          },
+        )
       } else {
         const confirmed = await confirm({
           default: false,
           message: 'Continue with flag overrides for all APIs?',
         })
         if (!confirmed) {
-          this.error('Operation cancelled', {exit: 1})
+          this.log('GraphQL deployment cancelled')
+          this.exit(exitCodes.USER_ABORT)
         }
       }
     }
@@ -164,7 +172,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
     for (const apiId of onlyApis || []) {
       if (!apiDefs.some((apiDef) => apiDef.id === apiId)) {
-        this.error(`GraphQL API with id "${apiId}" not found`, {exit: 1})
+        this.error(`GraphQL API with id "${apiId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
     }
 
@@ -179,7 +187,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       const {apiName} = this.getApiIdentifiers(apiDef, datasetFlag, tagFlag)
       if (apiNames.has(apiName)) {
         this.error(`Multiple GraphQL APIs with the same dataset and tag found (${apiName})`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
       }
 
@@ -187,12 +195,14 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         if (!apiIdRegex.test(apiDef.id)) {
           this.error(
             `Invalid GraphQL API id "${apiDef.id}" - only a-z, 0-9, underscore and dashes are allowed`,
-            {exit: 1},
+            {exit: exitCodes.RUNTIME_ERROR},
           )
         }
 
         if (apiIds.has(apiDef.id)) {
-          this.error(`Multiple GraphQL APIs with the same ID found (${apiDef.id})`, {exit: 1})
+          this.error(`Multiple GraphQL APIs with the same ID found (${apiDef.id})`, {
+            exit: exitCodes.RUNTIME_ERROR,
+          })
         }
 
         apiIds.add(apiDef.id)
@@ -219,7 +229,10 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
       if (!dataset) {
         spin.fail()
-        this.error(`No dataset specified for API at index ${index}`, {exit: 1})
+        this.error(
+          `Dataset is required for API at index ${index}. Pass it with \`--dataset <name>\` or configure a dataset for the API.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
       }
 
       // Handle extraction errors early (computed in worker), before network calls and prompts.
@@ -255,7 +268,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       } catch (err) {
         debug('Failed to get current GraphQL schema properties', err)
         spin.fail()
-        this.error('Failed to get current GraphQL schema properties', {exit: 1})
+        this.error('Failed to get current GraphQL schema properties', {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // CLI flag takes precedence over configuration
@@ -267,17 +282,20 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         index,
         output: this.output,
         specifiedGeneration,
+        unattended: this.isUnattended(),
       })
 
       if (!generation) {
-        // User cancelled
-        spin.fail()
-        continue
+        spin.stop()
+        this.log('GraphQL deployment cancelled')
+        this.exit(exitCodes.USER_ABORT)
       }
 
       if (!this.isRecognizedApiGeneration(generation)) {
         spin.fail()
-        this.error(`Unknown API generation "${generation}" for API at index ${index}`, {exit: 1})
+        this.error(`Unknown API generation "${generation}" for API at index ${index}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       const enablePlayground = await this.shouldEnablePlayground({
@@ -296,7 +314,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         debug('Failed to generate schema', err)
         spin.fail()
         const message = err instanceof Error ? err.message : 'Unknown error'
-        this.error(`Failed to generate schema: ${message}`, {exit: 1})
+        this.error(`Failed to generate schema: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       let valid: ValidationResponse | undefined
@@ -312,7 +330,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         debug('validateGraphQLAPI error', err)
         const validationError = get(err, 'response.body.validationError')
         spin.fail()
-        this.error(validationError ?? 'Failed to validate GraphQL API', {exit: 1})
+        this.error(validationError ?? 'Failed to validate GraphQL API', {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // when the result is not valid and there are breaking changes afoot!
@@ -325,12 +345,12 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
           continue
         }
 
-        if (!isInteractive()) {
+        if (this.isUnattended()) {
           spin.fail()
           this.renderBreakingChanges(valid)
           this.error(
-            'Dangerous changes found - falling back. Re-run the command with the `--force` flag to force deployment.',
-            {exit: 1},
+            'GraphQL deployment requires confirmation because the schema contains dangerous changes. Pass `--force` to continue.',
+            {exit: exitCodes.USAGE_ERROR},
           )
         }
 
@@ -342,8 +362,8 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         })
 
         if (!shouldDeploy) {
-          spin.fail()
-          continue
+          this.log('GraphQL deployment cancelled')
+          this.exit(exitCodes.USER_ABORT)
         }
 
         spin.succeed()
@@ -401,12 +421,12 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       } catch (error) {
         spin.fail()
         debug('Failed to deploy GraphQL API', error)
-        this.error('Failed to deploy GraphQL API', {exit: 1})
+        this.error('Failed to deploy GraphQL API', {exit: exitCodes.RUNTIME_ERROR})
       }
     }
 
     if (hasErrors) {
-      this.exit(1)
+      this.exit(exitCodes.RUNTIME_ERROR)
     }
   }
 
@@ -436,7 +456,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     const {validationError} = valid
     if (validationError) {
       spin.fail()
-      this.error(`GraphQL schema is not valid:\n\n${validationError}`, {exit: 1})
+      this.error(`GraphQL schema is not valid:\n\n${validationError}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const {breakingChanges, dangerousChanges} = this.filterChanges(valid)
@@ -508,7 +530,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     }
 
     // If no API is deployed, default to true if non-interactive
-    if (!isInteractive()) {
+    if (this.isUnattended()) {
       return true
     }
 

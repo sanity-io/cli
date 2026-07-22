@@ -64,7 +64,7 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
     const ids = [id, ...argv.slice(1)].filter(Boolean) as string[]
 
     if (ids.length === 0) {
-      this.error('Document ID must be specified', {exit: 1})
+      this.error('Document ID must be specified', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // Get project configuration (may not exist when running outside a project directory)
@@ -105,7 +105,7 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
         this.error(
           `${notFound.length === 1 ? 'Document' : 'Documents'} not found: ${notFound.join(', ')}`,
           {
-            exit: 1,
+            exit: exitCodes.RUNTIME_ERROR,
           },
         )
       }
@@ -115,7 +115,7 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
       this.error(
         `Failed to delete ${ids.length} ${ids.length === 1 ? 'document' : 'documents'}: ${err.message}`,
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }

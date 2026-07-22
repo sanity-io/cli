@@ -39,6 +39,8 @@ export type BrettInterface =
 export interface BrettWorkspace {
   dataset: string
   projectId: string
+  /** Lexicon schema descriptor id; Brett requires one per workspace. */
+  schemaDescriptorId: string
 
   basePath?: string
   icon?: string
@@ -73,60 +75,45 @@ export async function getApplication(applicationId: string): Promise<Application
   }
 }
 
-/** Create an application and its first deployment in one call. */
+/**
+ * Create an application record (no deployment), so the CLI can build with the
+ * returned id, then ship it via {@link createDeployment}.
+ */
 export async function createApplication(options: {
-  icon?: string
-  interfaces: readonly BrettInterface[]
   isSingleton?: boolean
   organizationId: string
   projectId?: string
   slug: string
-  tarball: Gzip
   title: string
   type: ApplicationType
-  version: string
   visibility?: AppVisibility
-  workspaces?: readonly BrettWorkspace[]
 }): Promise<Application> {
-  const {
-    icon,
-    interfaces,
-    isSingleton,
-    organizationId,
-    projectId,
-    slug,
-    tarball,
-    title,
-    type,
-    version,
-    visibility,
-    workspaces,
-  } = options
-  const formData = new FormData()
-  formData.append('type', type)
-  formData.append('title', title)
-  formData.append('organizationId', organizationId)
-  formData.append('slug', slug)
-  if (isSingleton !== undefined) formData.append('isSingleton', String(isSingleton))
-  if (visibility) formData.append('visibility', visibility)
-  // Studio config is set once, at create — it's immutable on redeploy.
-  if (projectId) appendJson(formData, 'config', {studio: {projectId}})
-  // Application-level JSON part, independent of the deployment.
-  if (icon) appendJson(formData, 'icon', icon)
-  appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
-  return request(`/applications`, formData)
+  const {isSingleton, organizationId, projectId, slug, title, type, visibility} = options
+  const client = await getClient()
+  return client.request({
+    body: {
+      organizationId,
+      slug,
+      title,
+      type,
+      ...(isSingleton === undefined ? {} : {isSingleton}),
+      ...(visibility ? {visibility} : {}),
+      // Studio config is set once, at create — it's immutable on redeploy.
+      ...(projectId ? {config: {studio: {projectId}}} : {}),
+    },
+    method: 'POST',
+    uri: `/applications`,
+  })
 }
 
 /** Mutable application fields the deploy flow patches after create. */
 export interface ApplicationUpdate {
   icon?: string | null
   title?: string
+  visibility?: AppVisibility
 }
 
-/**
- * Patch an application's mutable fields. The deploy endpoint ignores these, so a
- * redeploy updates them here alongside the new deployment (e.g. a changed icon).
- */
+// Patch an application's mutable fields.
 export async function updateApplication(
   applicationId: string,
   update: ApplicationUpdate,

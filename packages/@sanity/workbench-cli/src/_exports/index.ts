@@ -1,3 +1,4 @@
+export {resolveAppId} from '../appId.js'
 export type {InterfaceType, ServiceType} from '../contract.js'
 export {isWorkbenchApp, unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
 export type {

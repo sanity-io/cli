@@ -8,7 +8,8 @@ import {spinner} from '@sanity/cli-core/ux'
 import {
   type BrettWorkspace,
   buildExposes,
-  deployStudio as deployWorkbenchStudio,
+  createStudio,
+  deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
 } from '@sanity/workbench-cli/deploy'
@@ -111,7 +112,7 @@ async function runStudioDeployment(
     await checkStudioTarget(reporter, {
       appId,
       isWorkbenchApp: true,
-      studioHost: cliConfig.studioHost,
+      slug: workbench.slug,
       title: appTitle,
     })
   } else {
@@ -121,92 +122,135 @@ async function runStudioDeployment(
     }))
   }
 
-  await checkBuild(reporter, {
-    build: () =>
-      buildStudio({
-        autoUpdatesEnabled: isAutoUpdating,
-        calledFromDeploy: true,
-        cliConfig,
-        flags,
-        outDir: sourceDir,
-        output,
-        workDir,
-      }),
-    skipReason: studioBuildSkipReason({build: flags.build, isExternal}),
-    successMessage: 'Studio built',
-  })
-
-  if (!isExternal) {
-    await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
+  // A first deploy mints the app id and the build inlines it; --no-build would
+  // ship an existing bundle carrying a different id, so it can't be a first deploy.
+  if (workbench && !isExternal && !appId && !flags.build) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'A first deploy cannot skip the build (--no-build)',
+      solution: 'Drop --no-build so the new application id is inlined into the build',
+      status: 'fail',
+    })
   }
 
-  // Report the exposes deploying with the studio, both modes. External studios
-  // host their own bundle, so nothing registers.
-  const exposes = workbench && !isExternal ? reportExposes(reporter, workbench) : []
+  // Read up front so a bad icon path fails before we create or build.
+  const appIcon =
+    !dryRun && !isExternal && workbench?.icon
+      ? await readIconFromPath(workDir, workbench.icon)
+      : undefined
 
-  // Dry run stops here — everything below mutates.
-  if (dryRun) return
-
-  // A real deploy has already exited if anything failed; landing here without a
-  // resolved version means the deploy target was never resolved.
-  if (!version) return
-
-  const studioManifest = await uploadStudioSchema(options, {isExternal})
-  // Workbench studios deploy to Brett; plain studios use user-applications.
-  if (workbench && !isExternal && organizationId) {
-    const {applicationId} = await deployWorkbenchStudio({
-      appId,
-      icon: workbench.icon ? await readIconFromPath(workDir, workbench.icon) : undefined,
-      interfaces: buildExposes(workbench, {
-        appName: workbench.name,
-        appTitle,
-        exposesAppView: true,
-        version,
-      }),
-      isAutoUpdating,
+  // Create the studio before the build so the bundle carries its real id. A
+  // redeploy already has it from `deployment.appId`; a dry run skips creation.
+  let applicationId = appId
+  let applicationCreated = false
+  let rollbackApp: (() => Promise<void>) | undefined
+  if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
+    ;({applicationId, rollback: rollbackApp} = await createStudio({
       organizationId,
-      output,
       projectId,
-      sourceDir,
-      studioHost: cliConfig.studioHost,
+      slug: workbench.slug,
       title: appTitle,
-      version,
-      workspaces: toWorkspaces(studioManifest),
+    }))
+    applicationCreated = true
+  }
+
+  // A record created above is stranded at its slug (and blocks retries) if any
+  // step before it fully deploys fails, so undo the creation on failure.
+  try {
+    await checkBuild(reporter, {
+      build: () =>
+        buildStudio({
+          applicationId: workbench ? applicationId : undefined,
+          autoUpdatesEnabled: isAutoUpdating,
+          calledFromDeploy: true,
+          cliConfig,
+          flags,
+          outDir: sourceDir,
+          output,
+          workDir,
+        }),
+      skipReason: studioBuildSkipReason({build: flags.build, isExternal}),
+      successMessage: 'Studio built',
     })
-    const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
-    logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
+
+    if (!isExternal) {
+      await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
+    }
+
+    // Report the exposes deploying with the studio, both modes. External studios
+    // host their own bundle, so nothing registers.
+    const exposes = workbench && !isExternal ? reportExposes(reporter, workbench) : []
+
+    // Dry run stops here — everything below mutates.
+    if (dryRun) return
+
+    // A real deploy has already exited if anything failed; landing here without a
+    // resolved version means the deploy target was never resolved.
+    if (!version) return
+
+    const studioManifest = await uploadStudioSchema(options, {isExternal})
+    // The studio was created (or resolved from `deployment.appId`) before the
+    // build, so this only ships the deployment; plain studios use user-applications.
+    if (workbench && !isExternal && organizationId && applicationId) {
+      await deployWorkbenchApp({
+        applicationId,
+        icon: appIcon,
+        interfaces: buildExposes(workbench, {
+          appName: workbench.name,
+          appTitle,
+          exposesAppView: true,
+          version,
+        }),
+        isAutoUpdating,
+        label: 'Deploying to sanity.studio',
+        // Once the deployment is live, a metadata-sync failure must not delete
+        // the studio.
+        onDeployed: () => {
+          rollbackApp = undefined
+        },
+        sourceDir,
+        title: appTitle,
+        version,
+        workspaces: toWorkspaces(studioManifest),
+      })
+      const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
+      logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
+      return {
+        applicationType: 'studio',
+        applicationVersion: version,
+        ...(exposes.length > 0 ? {exposes} : {}),
+        target: {
+          action: applicationCreated ? 'create' : 'update',
+          applicationId,
+          title: appTitle,
+          url,
+        },
+      }
+    }
+
+    if (!application) return
+    const location = await shipStudioDeployment({
+      application,
+      isAutoUpdating,
+      isExternal,
+      options,
+      studioManifest,
+      version,
+    })
+
     return {
       applicationType: 'studio',
       applicationVersion: version,
-      ...(exposes.length > 0 ? {exposes} : {}),
       target: {
-        action: appId ? 'update' : 'create',
-        applicationId,
-        title: appTitle,
-        url,
+        action: studioCreated ? 'create' : 'update',
+        applicationId: application.id,
+        title: application.title ?? null,
+        url: location,
       },
     }
-  }
-
-  if (!application) return
-  const location = await shipStudioDeployment({
-    application,
-    isAutoUpdating,
-    isExternal,
-    options,
-    studioManifest,
-    version,
-  })
-
-  return {
-    applicationType: 'studio',
-    applicationVersion: version,
-    target: {
-      action: studioCreated ? 'create' : 'update',
-      applicationId: application.id,
-      title: application.title ?? null,
-      url: location,
-    },
+  } catch (err) {
+    await rollbackApp?.()
+    throw err
   }
 }
 
@@ -382,6 +426,7 @@ function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
     icon: workspace.icon,
     name: workspace.name,
     projectId: workspace.projectId,
+    schemaDescriptorId: workspace.schemaDescriptorId,
     subtitle: workspace.subtitle,
     title: workspace.title,
   }))

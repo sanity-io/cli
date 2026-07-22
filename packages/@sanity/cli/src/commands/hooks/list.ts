@@ -1,4 +1,4 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {type Hook} from '../../actions/hook/types'
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -45,7 +45,7 @@ export class List extends SanityCommand<typeof List> {
       const err = error as Error
 
       listHookDebug(`Error fetching hooks for project ${projectId}`, err)
-      this.error(`Hook list retrieval failed:\n${err.message}`, {exit: 1})
+      this.error(`Hook list retrieval failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     for (const hook of hooks) {

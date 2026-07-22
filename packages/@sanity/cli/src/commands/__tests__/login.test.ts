@@ -7,6 +7,7 @@ import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {startServerForTokenCallback} from '../../actions/auth/authServer.js'
+import {LOGIN_PROVIDER_IDS} from '../../actions/auth/login/loginInstructions.js'
 import {AUTH_API_VERSION} from '../../services/auth.js'
 import {USERS_API_VERSION} from '../../services/user.js'
 import {canLaunchBrowser} from '../../util/canLaunchBrowser.js'
@@ -213,6 +214,10 @@ describe('#login', {timeout: 10_000}, () => {
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'pending mocks').toEqual([])
+  })
+
+  test('documents the supported provider IDs', () => {
+    expect(LoginCommand.flags.provider.description).toContain(LOGIN_PROVIDER_IDS.join(', '))
   })
 
   describe('Token Login', () => {

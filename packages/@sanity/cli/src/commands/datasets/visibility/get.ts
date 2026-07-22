@@ -58,12 +58,12 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
       getDebug(`Error listing datasets`, error)
       this.error(
         `Failed to list datasets: ${error instanceof Error ? error.message : String(error)}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
 
     if (!current) {
-      this.error(`Dataset not found: ${dataset}`, {exit: 1})
+      this.error(`Dataset not found: ${dataset}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     this.log(current.aclMode)

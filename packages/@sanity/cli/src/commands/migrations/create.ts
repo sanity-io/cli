@@ -3,7 +3,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Args} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 
 import {MIGRATIONS_DIRECTORY} from '../../actions/migration/constants.js'
@@ -77,7 +77,7 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
         `Could not derive a valid migration name from title ${JSON.stringify(
           title,
         )}. Use a title that contains at least one letter or number.`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
 
@@ -137,14 +137,16 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
       await mkdir(destDir, {recursive: true})
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to create migration directory: ${message}`, {exit: 1})
+      this.error(`Failed to create migration directory: ${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     try {
       await writeFile(definitionFile, renderedTemplate)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to create migration file: ${message}`, {exit: 1})
+      this.error(`Failed to create migration file: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     return true

@@ -152,7 +152,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       } catch (error) {
         const err = error as Error
         createDocumentDebug(`Error creating documents from file ${file}`, err)
-        this.error(`Failed to create documents: ${err.message}`, {exit: 1})
+        this.error(`Failed to create documents: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
       }
     }
 
@@ -216,7 +216,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     } catch (error) {
       const err = error as Error
       createDocumentDebug('Error in editor workflow', err)
-      this.error(`Failed to create documents: ${err.message}`, {exit: 1})
+      this.error(`Failed to create documents: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -297,7 +297,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       if (error.message.includes('already exists')) {
         errorMessage += '\nPerhaps you want to use `--replace` or `--missing`?'
       }
-      this.error(errorMessage, {exit: 1})
+      this.error(errorMessage, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 

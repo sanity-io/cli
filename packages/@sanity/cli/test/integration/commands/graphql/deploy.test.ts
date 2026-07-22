@@ -1,4 +1,5 @@
 import {getCliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -7,15 +8,6 @@ import {GraphQLDeployCommand} from '../../../../src/commands/graphql/deploy.js'
 import {GRAPHQL_API_VERSION} from '../../../../src/services/graphql.js'
 
 const mockConfirm = vi.hoisted(() => vi.fn())
-const mockIsInteractive = vi.hoisted(() => vi.fn())
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    isInteractive: mockIsInteractive,
-  }
-})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
@@ -172,7 +164,6 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
   })
 
   test('prompts for playground in interactive mode for new deployment', async () => {
-    mockIsInteractive.mockReturnValue(true)
     mockConfirm.mockResolvedValue(true)
 
     nock(`https://${projectId}.api.sanity.io`)
@@ -201,6 +192,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, [], {
       config: {root: cwd},
+      mocks: {isInteractive: true},
     })
 
     if (error) throw error
@@ -249,7 +241,6 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
   })
 
   test('prompts and allows user to decline dangerous changes', async () => {
-    mockIsInteractive.mockReturnValue(true)
     mockConfirm.mockResolvedValue(false)
 
     nock(`https://${projectId}.api.sanity.io`)
@@ -275,10 +266,13 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       validationError: null,
     })
 
-    const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, [])
+    const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, [], {
+      mocks: {isInteractive: true},
+    })
 
-    if (error) throw error
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     expect(stdout).toContain('Found BREAKING changes')
+    expect(stdout).toContain('GraphQL deployment cancelled')
     expect(stderr).not.toContain('Deployed!')
     expect(mockConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -345,7 +339,6 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
   })
 
   test('renders dangerousChanges in output', async () => {
-    mockIsInteractive.mockReturnValue(true)
     mockConfirm.mockResolvedValue(false)
 
     nock(`https://${projectId}.api.sanity.io`)
@@ -375,16 +368,17 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       validationError: null,
     })
 
-    const {error, stdout} = await testCommand(GraphQLDeployCommand, [])
+    const {error, stdout} = await testCommand(GraphQLDeployCommand, [], {
+      mocks: {isInteractive: true},
+    })
 
-    if (error) throw error
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
     expect(stdout).toContain('Found potentially dangerous changes from previous schema')
     expect(stdout).toContain('Field "count" changed type from "Int" to "String"')
     expect(stdout).toContain('Enum value "ACTIVE" was added')
   })
 
   test('prompts and allows user to accept dangerous changes in interactive mode', async () => {
-    mockIsInteractive.mockReturnValue(true)
     mockConfirm.mockResolvedValue(true) // User accepts the dangerous changes
 
     nock(`https://${projectId}.api.sanity.io`)
@@ -419,7 +413,9 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       location: `/v1/graphql/${dataset}/default`,
     })
 
-    const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, [])
+    const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, [], {
+      mocks: {isInteractive: true},
+    })
 
     if (error) throw error
     expect(stdout).toContain('Found BREAKING changes')

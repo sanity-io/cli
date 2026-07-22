@@ -8,6 +8,7 @@ import {
   getRegisteredServers,
   readWorkbenchLock,
   registerDevServer,
+  runRegistryExitCleanupForTesting,
   watchRegistry,
 } from '../registry.js'
 import {FakeFsWatcher} from './devTestHelpers.js'
@@ -344,5 +345,41 @@ describe('readWorkbenchLock', () => {
 
     expect(readWorkbenchLock()).toBeUndefined()
     expect(fsMock.module.existsSync(lockPath())).toBe(false)
+  })
+})
+
+// Vite's own SIGTERM handler can `process.exit()` before the async teardown
+// releases anything, so both the entry and lock also clean up synchronously on
+// the process `exit` event.
+describe('exit backstop', () => {
+  test('removes the registry entry when the process exits without a release', () => {
+    registerDevServer({host: 'localhost', port: 3334, type: 'studio', workDir: '/tmp/project'})
+    expect(fsMock.module.existsSync(manifestPath())).toBe(true)
+
+    runRegistryExitCleanupForTesting()
+
+    expect(fsMock.module.existsSync(manifestPath())).toBe(false)
+  })
+
+  test('removes the workbench lock when the process exits without a release', () => {
+    acquireWorkbenchLock({host: 'localhost', port: 3333})
+    expect(fsMock.module.existsSync(lockPath())).toBe(true)
+
+    runRegistryExitCleanupForTesting()
+
+    expect(fsMock.module.existsSync(lockPath())).toBe(false)
+  })
+
+  test('leaves a lock reacquired by a successor untouched', () => {
+    acquireWorkbenchLock({host: 'localhost', port: 3333})
+    // A different process now owns the lock file.
+    fsMock.files.set(
+      lockPath(),
+      JSON.stringify({host: 'localhost', pid: 4242, port: 3333, startedAt: '', version: 1}),
+    )
+
+    runRegistryExitCleanupForTesting()
+
+    expect(readJson(lockPath()).pid).toBe(4242)
   })
 })

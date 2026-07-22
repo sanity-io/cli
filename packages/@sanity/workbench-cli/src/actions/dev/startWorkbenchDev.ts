@@ -2,6 +2,7 @@ import {styleText} from 'node:util'
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
 
+import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
@@ -10,22 +11,7 @@ import {
   startWorkbenchRemoteCoordinator,
 } from './startWorkbenchDevServer.js'
 
-/** How long teardown runs before re-raising the signal to force-exit — enough for
- * Vite/watchers to close, short enough not to strand a backgrounded process. */
-const SHUTDOWN_GRACE_MS = 5000
-
-// Bind-only addresses ('0.0.0.0', '::') aren't routable in every browser (notably
-// Windows); the displayed URL falls back to localhost. The bind address is untouched.
-function toDisplayHost(host: string | undefined): string {
-  if (!host || host === '0.0.0.0' || host === '::' || host === '[::]') {
-    return 'localhost'
-  }
-  return host
-}
-
 export interface StartWorkbenchDevOptions {
-  /** Resolved app id for the registry entry (the CLI owns id resolution). */
-  appId: string | undefined
   /** Directory for the workbench Vite server's dependency cache. */
   cacheDir: string
   /** CLI-domain `app.id`/`deployment.appId` deprecation check, run before registering. */
@@ -64,7 +50,6 @@ export async function startWorkbenchDev(
   options: StartWorkbenchDevOptions,
 ): Promise<{close: () => Promise<void>}> {
   const {
-    appId,
     cacheDir,
     checkForDeprecatedAppId,
     cliConfig,
@@ -100,18 +85,14 @@ export async function startWorkbenchDev(
 
   // Unwound in reverse on any failure or on close(): the watcher stops before
   // the app server, and the supervisor waits out an in-flight rebuild.
-  const closers: Array<() => Promise<void>> = []
-  const disposeAll = async () => {
-    for (const close of closers.splice(0).toReversed()) {
-      await close().catch(() => {})
-    }
-  }
+  const {close, closers, installSignalHandlers} = createServerLifecycle()
 
   const workbench = await startWorkbenchDevServer({
     cacheDir,
     cliConfig,
     httpHost,
     httpPort,
+    mode: 'development',
     output,
     reactStrictMode,
     workDir,
@@ -123,22 +104,12 @@ export async function startWorkbenchDev(
   const appPort = workbench.workbenchAvailable ? workbench.workbenchPort + 1 : httpPort
   const announceUrl = !workbench.workbenchAvailable
 
-  let closing: Promise<void> | undefined
-  const close = () => {
-    closing ??= (async () => {
-      process.off('SIGINT', onSignal)
-      process.off('SIGTERM', onSignal)
-      await disposeAll()
-    })()
-    return closing
-  }
-
   const supervised = await startAppServerSupervisor({
     cliConfig,
     start: (config) => startAppServer({announceUrl, cliConfig: config, httpPort: appPort}),
     workDir,
   }).catch(async (err) => {
-    await disposeAll()
+    await close()
     throw err
   })
 
@@ -154,7 +125,6 @@ export async function startWorkbenchDev(
     // The deprecated-id check and manifest extractor are CLI-domain, injected here.
     checkForDeprecatedAppId()
     const registration = await startDevServerRegistration({
-      appId,
       cliConfig,
       extractManifest,
       isApp,
@@ -167,7 +137,7 @@ export async function startWorkbenchDev(
   } catch (err) {
     // Registration runs after both servers are up; a failure here would leak the
     // workbench lock and dev servers without this teardown.
-    await disposeAll()
+    await close()
     throw err
   }
 
@@ -180,20 +150,7 @@ export async function startWorkbenchDev(
     )
   }
 
-  // Trapping the signal disables Node's default exit, and a finished teardown
-  // doesn't guarantee an empty event loop (keep-alive sockets, an extraction
-  // worker mid-run) — so re-raise after teardown to restore conventional signal
-  // exit semantics. A backstop timer force-exits if teardown wedges.
-  function onSignal(signal: NodeJS.Signals) {
-    const graceTimer = setTimeout(() => process.kill(process.pid, signal), SHUTDOWN_GRACE_MS)
-    graceTimer.unref()
-    void close().finally(() => {
-      clearTimeout(graceTimer)
-      process.kill(process.pid, signal)
-    })
-  }
-  process.once('SIGINT', onSignal)
-  process.once('SIGTERM', onSignal)
+  installSignalHandlers()
 
   return {close}
 }

@@ -21,6 +21,26 @@ import {AppInterfaceMetadataSchema} from '../../contract.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
+/**
+ * The dev-server registry: how a running `sanity dev` / `sanity start` process
+ * advertises itself so the workbench on this machine can find and load it.
+ *
+ * Two kinds of file under `~/.sanity/dev-servers/` do the coordinating:
+ *
+ *   - `<pid>.json` — one per running app/studio server, holding where it's served
+ *     plus its inlined manifest and interfaces. The workbench reads these to
+ *     discover and render local apps. Written by `registerDevServer`, watched by
+ *     `watchRegistry`.
+ *   - `workbench.lock` — a single machine-wide lock, so only one workbench shell
+ *     runs at a time and later `dev`s register into it instead of starting their
+ *     own. Managed by `acquireWorkbenchLock` / `readWorkbenchLock`.
+ *
+ * Both files belong to the process that created them and must not outlive it.
+ * Three things keep that true: an explicit `release()` on clean shutdown, an
+ * `exit` backstop for abrupt exits (`unlinkOnProcessExit`), and a dead-pid prune
+ * on read (`isOurProcess`) that clears whatever a crashed process left behind.
+ */
+
 const devDebug = subdebug('dev')
 
 /** Bump when the manifest/lock shape changes in a breaking way. */
@@ -132,6 +152,47 @@ function getRegistryDir(): string {
   return join(getSanityDataDir(), 'dev-servers')
 }
 
+// One shared `exit` listener drives every registered cleanup, so N locks/entries
+// don't each add a listener and trip Node's MaxListeners warning.
+const exitCleanups = new Set<() => void>()
+let exitListenerInstalled = false
+
+function runExitCleanups(): void {
+  for (const cleanup of exitCleanups) cleanup()
+}
+
+/** Exercise the exit backstop in tests without terminating the process; not part
+ * of the package's public surface. */
+export const runRegistryExitCleanupForTesting = runExitCleanups
+
+/**
+ * Delete a registry file synchronously on process exit, as a backstop for abrupt
+ * termination. Vite installs its own SIGTERM handler that calls `process.exit()`,
+ * which can outrun the async server teardown and leave the lock or registry entry
+ * behind — a stray dev-server that lingers until the dead-pid prune clears it. The
+ * `exit` event only runs synchronous work, hence `unlinkSync`. `ownedByUs` guards
+ * the shared lock so a successor that reacquired it isn't wiped. Returns a
+ * detacher to call after a clean release.
+ */
+function unlinkOnProcessExit(filePath: string, ownedByUs: () => boolean): () => void {
+  const cleanup = () => {
+    if (!ownedByUs()) return
+    try {
+      unlinkSync(filePath)
+    } catch {
+      // The file may already have been removed during shutdown.
+    }
+  }
+  exitCleanups.add(cleanup)
+
+  if (!exitListenerInstalled) {
+    exitListenerInstalled = true
+    process.once('exit', runExitCleanups)
+  }
+
+  return () => exitCleanups.delete(cleanup)
+}
+
 interface DevServerRegistration {
   /** Remove the registry entry. */
   release: () => void
@@ -170,9 +231,13 @@ export function registerDevServer(
   // without this, the update would re-create the registry entry and leak.
   let released = false
 
+  // The file is pid-named, so it's always ours to remove on exit.
+  const detachExitCleanup = unlinkOnProcessExit(filePath, () => !released)
+
   return {
     release() {
       released = true
+      detachExitCleanup()
       try {
         unlinkSync(filePath)
       } catch {
@@ -367,8 +432,24 @@ export function acquireWorkbenchLock(
   try {
     writeFileSync(lockPath, JSON.stringify(lockData), {flag: 'wx'})
     devDebug('Workbench lock acquired')
+
+    let released = false
+    // Only wipe the lock on exit if it's still ours — a successor that reacquired
+    // it after our own release must not be clobbered.
+    const detachExitCleanup = unlinkOnProcessExit(lockPath, () => {
+      if (released) return false
+      try {
+        const disk = parseLockContents(readFileSync(lockPath, 'utf8'))
+        return disk?.pid === process.pid && disk.startedAt === startedAt
+      } catch {
+        return false
+      }
+    })
+
     return {
       release() {
+        released = true
+        detachExitCleanup()
         try {
           unlinkSync(lockPath)
         } catch {

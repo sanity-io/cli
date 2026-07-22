@@ -72,7 +72,7 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
 
       if (!existingAlias) {
         this.error(`Dataset alias "${displayName}" does not exist`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
       }
 
@@ -95,7 +95,7 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
       const errorMessage = error instanceof Error ? error.message : String(error)
 
       deleteAliasDebug(`Error deleting dataset alias ${args.aliasName}`, error)
-      this.error(`Dataset alias deletion failed: ${errorMessage}`, {exit: 1})
+      this.error(`Dataset alias deletion failed: ${errorMessage}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 

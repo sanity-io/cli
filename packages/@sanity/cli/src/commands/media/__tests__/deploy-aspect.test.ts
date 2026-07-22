@@ -1,6 +1,7 @@
 import {basename} from 'node:path'
 
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {
@@ -55,6 +56,7 @@ const defaultMocks = {
       aspectsPath: convertToSystemPath('/test/project/aspects'),
     },
   },
+  isInteractive: true,
   projectRoot: {
     directory: convertToSystemPath('/test/project'),
     path: convertToSystemPath('/test/project/sanity.config.ts'),
@@ -184,18 +186,18 @@ describe('#media:deploy-aspect', () => {
       args: [],
       description: 'neither aspect name nor --all flag is provided',
       expectedError:
-        'Specify an aspect name, or use the `--all` option to deploy all aspect definitions.',
+        'Aspect name is required. Pass it as the `<aspectName>` argument, or pass `--all`.',
     },
     {
       args: ['myAspect', '--all'],
       description: 'both aspect name and --all flag are provided',
-      expectedError: 'Specified both an aspect name and `--all`.',
+      expectedError: 'Specify either the `<aspectName>` argument or `--all`, but not both.',
     },
   ])('should error if $description', async ({args, expectedError}) => {
     const {error} = await testCommand(MediaDeployAspectCommand, args, {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('errors when run outside a Sanity project directory', async () => {
@@ -284,6 +286,16 @@ describe('#media:deploy-aspect', () => {
     expect(stdout).toContain('✓')
     expect(stdout).toContain('Deployed 1 aspect')
     expect(stdout).toContain('myAspect')
+  })
+
+  test('requires a media library ID in unattended mode', async () => {
+    const {error} = await testCommand(MediaDeployAspectCommand, ['myAspect'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('should deploy all aspects with --all flag', async () => {

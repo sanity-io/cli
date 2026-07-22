@@ -1,7 +1,7 @@
 import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
-import {type AppVisibility, exitCodes, type Output} from '@sanity/cli-core'
+import {type AppVisibility} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -10,148 +10,123 @@ import {
   type BrettWorkspace,
   createApplication,
   createDeployment,
+  deleteApplication,
   updateApplication,
 } from '../../services/applications.js'
 
 /**
- * Deploy a workbench coreApp through Brett: redeploy when `appId` is set,
- * otherwise create the application at `slug`. Returns the application id for the
- * shell to report.
+ * A freshly created application record: its id, plus a way to undo the creation.
+ * The caller builds and deploys with the id, and calls `rollback` if a later
+ * step fails so the record isn't stranded at its slug.
  * @internal
  */
-export async function deployCoreApp(options: {
-  appId: string | undefined
-  icon?: string
-  interfaces: readonly BrettInterface[]
-  isAutoUpdating: boolean
+export interface CreatedApplication {
+  applicationId: string
+  rollback: () => Promise<void>
+}
+
+/**
+ * Create a coreApp record (no deployment), so the CLI can build with its id
+ * before shipping the first deployment. First deploy only.
+ * @internal
+ */
+export async function createCoreApp(options: {
   isSingleton?: boolean
   organizationId: string
   slug: string
-  sourceDir: string
   title: string
-  version: string
   visibility?: AppVisibility
-}): Promise<{applicationId: string}> {
-  const {
-    appId,
-    icon,
-    interfaces,
-    isAutoUpdating,
-    isSingleton,
-    organizationId,
-    slug,
-    sourceDir,
-    title,
-    version,
-    visibility,
-  } = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
-
-  const spin = spinner('Deploying...').start()
+}): Promise<CreatedApplication> {
+  const spin = spinner('Creating application...').start()
   try {
-    if (appId) {
-      await createDeployment({applicationId: appId, interfaces, isAutoUpdating, tarball, version})
-      if (icon) await updateApplication(appId, {icon})
-      spin.succeed()
-      return {applicationId: appId}
-    }
-
-    const {id} = await createApplication({
-      icon,
-      interfaces,
-      isSingleton,
-      organizationId,
-      slug,
-      tarball,
-      title,
-      type: 'coreApp',
-      version,
-      visibility,
-    })
+    const {id} = await createApplication({...options, type: 'coreApp'})
     spin.succeed()
-    return {applicationId: id}
+    return {applicationId: id, rollback: () => deleteApplication(id)}
   } catch (error) {
-    spin.clear()
+    spin.fail()
     throw error
   }
 }
 
 /**
- * Deploy a workbench studio through Brett: redeploy when `appId` is set,
- * otherwise create the studio at `studioHost`. Returns the application id for
- * the shell to report; a missing `studioHost` on create is a usage error.
+ * Create a studio record (no deployment).
  * @internal
  */
-export async function deployStudio(options: {
-  appId: string | undefined
+export async function createStudio(options: {
+  organizationId: string
+  projectId: string | undefined
+  slug: string
+  title: string
+}): Promise<CreatedApplication> {
+  const spin = spinner('Creating studio...').start()
+  try {
+    const {id} = await createApplication({...options, type: 'studio'})
+    spin.succeed()
+    return {applicationId: id, rollback: () => deleteApplication(id)}
+  } catch (error) {
+    spin.fail()
+    throw error
+  }
+}
+
+/**
+ * Ship a deployment to an already-created (or `deployment.appId`) application,
+ * then sync its mutable metadata (`title`, and `icon`/`visibility` when set)
+ * from config. The deploy endpoint ignores these, so a redeploy patches them
+ * here alongside the new deployment.
+ *
+ * `onDeployed` fires the instant the deployment is live, before the metadata
+ * sync — so a caller can disarm a create-time rollback that must not delete an
+ * application once it has an active deployment.
+ * @internal
+ */
+export async function deployWorkbenchApp(options: {
+  applicationId: string
   icon?: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
-  organizationId: string
-  output: Output
-  projectId: string | undefined
+  label?: string
+  onDeployed?: () => void
   sourceDir: string
-  studioHost: string | undefined
   title: string
   version: string
-  workspaces: readonly BrettWorkspace[]
-}): Promise<{applicationId: string}> {
+  visibility?: AppVisibility
+  workspaces?: readonly BrettWorkspace[]
+}): Promise<void> {
   const {
-    appId,
+    applicationId,
     icon,
     interfaces,
     isAutoUpdating,
-    organizationId,
-    output,
-    projectId,
+    label = 'Deploying...',
+    onDeployed,
     sourceDir,
-    studioHost,
     title,
     version,
+    visibility,
     workspaces,
   } = options
   const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
 
-  const spin = spinner('Deploying to sanity.studio').start()
+  const spin = spinner(label).start()
   try {
-    if (appId) {
-      await createDeployment({
-        applicationId: appId,
-        interfaces,
-        isAutoUpdating,
-        tarball,
-        version,
-        workspaces,
-      })
-      if (icon) await updateApplication(appId, {icon})
-      spin.succeed()
-      return {applicationId: appId}
-    }
-
-    if (!studioHost) {
-      spin.fail()
-      return output.error(
-        'No studio hostname configured. Set `studioHost` in sanity.cli.ts to create a studio.',
-        {exit: exitCodes.USAGE_ERROR},
-      )
-    }
-
-    const application = await createApplication({
-      icon,
+    await createDeployment({
+      applicationId,
       interfaces,
-      organizationId,
-      projectId,
-      slug: studioHost,
+      isAutoUpdating,
       tarball,
-      title,
-      type: 'studio',
       version,
       workspaces,
     })
+    onDeployed?.()
+    await updateApplication(applicationId, {
+      title,
+      ...(icon ? {icon} : {}),
+      ...(visibility ? {visibility} : {}),
+    })
     spin.succeed()
-    return {applicationId: application.id}
   } catch (error) {
-    spin.fail()
+    spin.clear()
     throw error
   }
 }

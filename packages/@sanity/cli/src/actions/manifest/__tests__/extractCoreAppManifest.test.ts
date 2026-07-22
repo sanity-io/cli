@@ -87,16 +87,6 @@ describe('extractCoreAppManifest', () => {
     expect(result).toEqual({slug: 'my-slug', title: 'My App', version: '1'})
   })
 
-  test('omits slug when a workbench app declares none', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      app: unstable_defineApp({name: 'my-app', organizationId: 'org-1', title: 'My App'}),
-    } as never)
-
-    const result = await extractCoreAppManifest({workDir: '/project'})
-
-    expect(result).not.toHaveProperty('slug')
-  })
-
   test('does not forward slug for a non-workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: {organizationId: 'org-1', slug: 'my-slug', title: 'My App'},

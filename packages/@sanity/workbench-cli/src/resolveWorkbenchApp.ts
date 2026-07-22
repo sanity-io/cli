@@ -23,8 +23,13 @@ export interface WorkbenchExposes {
 export interface ResolvedWorkbenchApp {
   /** The app's unique `name` from `unstable_defineApp`. */
   readonly name: string
+  /** Organization that owns the app — part of its build-id identity. */
+  readonly organizationId: string
   /** Background worker services the app declares. */
   readonly services: NonNullable<DefineAppInput['services']>
+
+  /** Hostname the application is created at on first deploy. */
+  readonly slug: string
 
   /** Dock panel views the app declares. */
   readonly views: NonNullable<DefineAppInput['views']>
@@ -39,8 +44,6 @@ export interface ResolvedWorkbenchApp {
   readonly icon?: string
   /** Explicit singleton flag (a Sanity-owned app); `undefined` when the app doesn't set it. */
   readonly isSingleton?: boolean
-  /** Hostname the application is created at on first deploy. */
-  readonly slug?: string
   /** Dashboard visibility declared by the app; `undefined` when unset. */
   readonly visibility?: AppVisibility
 }
@@ -62,6 +65,7 @@ export function resolveWorkbenchApp(
     icon: app.icon,
     isSingleton: app.isSingleton,
     name: app.name,
+    organizationId: app.organizationId,
     services: app.services ?? [],
     slug: app.slug,
     views: app.views ?? [],
