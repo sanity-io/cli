@@ -12,7 +12,8 @@ type DetectablePackageManager = 'bun' | 'npm' | 'pnpm' | 'yarn'
 
 /**
  * Detects the preferred package manager for a project by examining the corepack
- * `packageManager` field, lock files, workspace configurations, and node_modules markers.
+ * `packageManager` field, the `devEngines.packageManager` declaration, lock files,
+ * workspace configurations, and node_modules markers.
  */
 export function preferredPm(pkgPath: string): DetectablePackageManager | null {
   const fromPackageManagerField = detectFromPackageManagerField(pkgPath)
@@ -32,21 +33,40 @@ export function preferredPm(pkgPath: string): DetectablePackageManager | null {
 
 /**
  * Detects the package manager from the corepack `packageManager` field in the
- * package.json at `dir`, e.g. `"pnpm@9.1.2"` or `"yarn@4.1.0+sha224.…"`.
- * An explicit declaration is the strongest signal of intent, so it takes
- * precedence over lock files. Malformed values and unknown names are ignored.
+ * package.json at `dir`, e.g. `"pnpm@9.1.2"` or `"yarn@4.1.0+sha224.…"`, falling
+ * back to the `devEngines.packageManager` declaration. An explicit declaration
+ * is the strongest signal of intent, so it takes precedence over lock files.
+ * Malformed values and unknown names are ignored.
  */
 function detectFromPackageManagerField(dir: string): DetectablePackageManager | null {
   try {
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))
     const packageManager = manifest?.packageManager
-    if (typeof packageManager !== 'string') return null
-    const match = packageManager.match(/^(npm|pnpm|yarn|bun)@\d/)
-    return match ? (match[1] as DetectablePackageManager) : null
+    if (typeof packageManager === 'string') {
+      const match = packageManager.match(/^(npm|pnpm|yarn|bun)@\d/)
+      if (match) return match[1] as DetectablePackageManager
+    }
+    return detectFromDevEngines(manifest?.devEngines)
   } catch {
     // missing or malformed package.json — fall through to other detection strategies
     return null
   }
+}
+
+/**
+ * Detects the package manager from a `devEngines.packageManager` declaration
+ * (https://docs.npmjs.com/cli/configuring-npm/package-json#devengines).
+ * The field is an object (`{name: 'pnpm', …}`) or an array of such objects,
+ * in which case the first entry wins. Malformed shapes and unknown names are ignored.
+ */
+function detectFromDevEngines(devEngines: unknown): DetectablePackageManager | null {
+  if (!devEngines || typeof devEngines !== 'object') return null
+  const packageManager = (devEngines as Record<string, unknown>).packageManager
+  const entry = Array.isArray(packageManager) ? packageManager[0] : packageManager
+  if (!entry || typeof entry !== 'object') return null
+  const name = (entry as Record<string, unknown>).name
+  if (name === 'npm' || name === 'pnpm' || name === 'yarn' || name === 'bun') return name
+  return null
 }
 
 function detectFromLockFile(dir: string): DetectablePackageManager | null {
@@ -59,6 +79,7 @@ function detectFromLockFile(dir: string): DetectablePackageManager | null {
   // lockfiles coexist (e.g. a stray package-lock.json left behind by a one-off
   // `npm install`), the non-npm lockfile is the stronger signal of intent.
   if (fs.existsSync(path.join(dir, 'package-lock.json'))) return 'npm'
+  if (fs.existsSync(path.join(dir, 'npm-shrinkwrap.json'))) return 'npm'
   return null
 }
 

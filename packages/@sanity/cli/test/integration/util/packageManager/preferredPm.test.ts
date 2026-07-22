@@ -64,6 +64,17 @@ describe('preferredPm', () => {
       fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
       expect(preferredPm(tmpDir)).toBe('npm')
     })
+
+    it('returns npm when npm-shrinkwrap.json is the only lock file', () => {
+      fs.writeFileSync(path.join(tmpDir, 'npm-shrinkwrap.json'), '{}')
+      expect(preferredPm(tmpDir)).toBe('npm')
+    })
+
+    it('prioritizes pnpm-lock.yaml over a stray npm-shrinkwrap.json', () => {
+      fs.writeFileSync(path.join(tmpDir, 'npm-shrinkwrap.json'), '{}')
+      fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '')
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
   })
 
   describe('packageManager field detection', () => {
@@ -107,6 +118,60 @@ describe('preferredPm', () => {
       fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({packageManager: 'pnpm'}))
       fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '')
       expect(preferredPm(tmpDir)).toBe('yarn')
+    })
+
+    it('returns the package manager declared in devEngines.packageManager', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: {name: 'pnpm'}}}),
+      )
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('prioritizes the packageManager field over devEngines when both are present', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({
+          devEngines: {packageManager: {name: 'yarn'}},
+          packageManager: 'pnpm@9.1.2',
+        }),
+      )
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('prioritizes devEngines.packageManager over package-lock.json', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: {name: 'yarn'}}}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
+      expect(preferredPm(tmpDir)).toBe('yarn')
+    })
+
+    it('uses the first entry when devEngines.packageManager is an array', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: [{name: 'bun'}, {name: 'yarn'}]}}),
+      )
+      expect(preferredPm(tmpDir)).toBe('bun')
+    })
+
+    it('ignores malformed devEngines shapes and falls back to lock files', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: 'pnpm'}}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '')
+      expect(preferredPm(tmpDir)).toBe('yarn')
+    })
+
+    it('ignores unknown devEngines package manager names', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: {name: 'not-a-real-pm'}}}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '')
+      expect(preferredPm(tmpDir)).toBe('pnpm')
     })
 
     it('prioritizes the workspace root packageManager field over its lock file', () => {
