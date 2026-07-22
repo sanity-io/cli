@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
-import {appendEnvValues} from '../envFile.js'
+import {appendEnvValues, readEnvValues} from '../envFile.js'
 
 let dir: string
 
@@ -99,5 +99,42 @@ describe('appendEnvValues', () => {
 
     expect(result).toEqual({created: false, skippedKeys: ['SANITY_PROJECT_ID'], wroteKeys: []})
     expect(fs.readFileSync(envPath, 'utf8')).toBe(original)
+  })
+})
+
+describe('readEnvValues', () => {
+  test('returns an empty object when the file is missing', () => {
+    expect(readEnvValues(path.join(dir, '.env'), ['SANITY_PROJECT_ID'])).toEqual({})
+  })
+
+  test('matches the runtime env grammar: quotes, comments, export, empties, last-wins', () => {
+    // One tripwire for the dotenv dependency: these are the grammar behaviors the guardrail
+    // relies on. If a dotenv major bump ever changes one, this fails before the guard can lie.
+    const envPath = path.join(dir, '.env')
+    fs.writeFileSync(
+      envPath,
+      'SANITY_PROJECT_ID="shadowed"\n' +
+        "SANITY_DATASET='pro#duction' # inline note\n" +
+        'export SANITY_AUTH_TOKEN=sk-token # robot\n' +
+        'SANITY_PROJECT_ID="abc123" # minted 2026-07-22\n' +
+        'SANITY_CLAIM_URL=\n',
+    )
+
+    expect(
+      readEnvValues(envPath, [
+        'SANITY_AUTH_TOKEN',
+        'SANITY_DATASET',
+        'SANITY_PROJECT_ID',
+        'SANITY_CLAIM_URL',
+      ]),
+    ).toEqual({
+      // export prefix accepted, unquoted inline comment stripped:
+      SANITY_AUTH_TOKEN: 'sk-token',
+      // quoted: `#` inside the quotes is data, the comment after them is not:
+      SANITY_DATASET: 'pro#duction',
+      // duplicate keys: the last assignment wins, exactly like the runtime injection:
+      SANITY_PROJECT_ID: 'abc123',
+      // SANITY_CLAIM_URL: empty value → omitted entirely
+    })
   })
 })

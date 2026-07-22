@@ -105,6 +105,36 @@ export function recordMintedProject(minted: MintedProject): void {
   }
 }
 
+/** Look up the ledger record for a minted project, if this machine minted it. */
+export function getMintedProjectRecord(projectId: string): UnclaimedProjectRecord | undefined {
+  try {
+    return readRecords()[projectId]
+  } catch (err) {
+    debug('failed to read minted project record: %s', err)
+    return undefined
+  }
+}
+
+/**
+ * Drop a minted project from the ledger — used when a re-mint supersedes a verified-expired
+ * project, so nudges never point at the dead one. Never throws; returns whether the ledger no
+ * longer holds the record. A `false` matters to the expired-recovery lane: the surviving record
+ * re-authorizes the auto-proceed, so a blind re-run spends another mint — callers surface that
+ * instead of looping silently (sandboxed harnesses with a read-only $HOME hit exactly this).
+ */
+export function forgetMintedProject(projectId: string): boolean {
+  try {
+    const records = readRecords()
+    if (!(projectId in records)) return true
+    delete records[projectId]
+    writeRecords(records)
+    return true
+  } catch (err) {
+    debug('failed to forget minted project: %s', err)
+    return false
+  }
+}
+
 /**
  * Compact line rendering, deliberately not a box: developers ad-blind banner boxes the way they
  * gloss over sponsored search results, and a reminder that gets skimmed past protects nothing.

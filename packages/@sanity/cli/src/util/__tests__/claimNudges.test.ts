@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {lookupClaimState} from '../../services/mintProject.js'
 import {
+  forgetMintedProject,
   recordMintedProject,
   runClaimNudges,
   UNCLAIMED_PROJECTS_CONFIG_KEY,
@@ -111,6 +112,34 @@ describe('#recordMintedProject', () => {
         token: 'x',
       }),
     ).not.toThrow()
+  })
+})
+
+describe('#forgetMintedProject', () => {
+  test('reports success, including when the record is already gone', () => {
+    seedRecord()
+
+    expect(forgetMintedProject('abc123')).toBe(true)
+    expect(storedRecords().abc123).toBeUndefined()
+    // Idempotent: nothing left to forget is still "the ledger no longer holds it".
+    expect(forgetMintedProject('abc123')).toBe(true)
+  })
+
+  test('reports failure on an unwritable config, so callers can surface it', () => {
+    // The expired-recovery lane warns on `false`: a surviving record re-authorizes the
+    // auto-proceed, and a silent failure would let a blind retry loop drain the mint budget.
+    seedRecord()
+    mockGetUserConfig.mockReturnValue({
+      delete: () => {
+        throw new Error('EACCES: permission denied')
+      },
+      get: (key: string) => store[key],
+      set: () => {
+        throw new Error('EACCES: permission denied')
+      },
+    } as never)
+
+    expect(forgetMintedProject('abc123')).toBe(false)
   })
 })
 
