@@ -5,6 +5,7 @@ import {NewCommand} from '../../new.js'
 import {MintProjectCommand} from '../mint.js'
 
 const mockMintUnclaimedProject = vi.hoisted(() => vi.fn())
+const mockRecordMintedProject = vi.hoisted(() => vi.fn())
 const mockAppendEnvValues = vi.hoisted(() => vi.fn())
 const mockInput = vi.hoisted(() => vi.fn())
 
@@ -25,6 +26,9 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
 })
 vi.mock('../../../services/mintProject.js', () => ({
   mintUnclaimedProject: mockMintUnclaimedProject,
+}))
+vi.mock('../../../util/claimNudges.js', () => ({
+  recordMintedProject: mockRecordMintedProject,
 }))
 vi.mock('../../../util/envFile.js', () => ({
   appendEnvValues: mockAppendEnvValues,
@@ -76,6 +80,7 @@ describe('#projects:mint', () => {
     await MintProjectCommand.run(['My New Project'])
 
     expect(mockMintUnclaimedProject).toHaveBeenCalledWith({displayName: 'My New Project'})
+    expect(mockRecordMintedProject).toHaveBeenCalledWith(mockMinted)
     expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
 
     const lines = loggedLines()

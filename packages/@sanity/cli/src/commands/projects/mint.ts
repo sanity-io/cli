@@ -7,6 +7,7 @@ import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {input} from '@sanity/cli-core/ux'
 
 import {mintUnclaimedProject} from '../../services/mintProject.js'
+import {recordMintedProject} from '../../util/claimNudges.js'
 import {appendEnvValues} from '../../util/envFile.js'
 import {createFlow} from '../../util/flowOutput.js'
 import {renderNewCommandSplash} from '../../util/newCommandSplash.js'
@@ -138,6 +139,9 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       throw err
     }
     spin?.succeed('Project minted!')
+
+    // Remember the mint so later CLI invocations can nudge toward claiming before expiry.
+    recordMintedProject(minted)
 
     flow.gap()
     flow.result(`Project ID: ${styleText('cyan', minted.resourceId)}`)
