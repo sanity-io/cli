@@ -4,6 +4,7 @@ import path from 'node:path'
 import {CLITelemetryStore} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {
+  configDefinition,
   type GenerationResult,
   runTypegenGenerate,
   type TypeGenConfig,
@@ -17,12 +18,6 @@ import picomatch from 'picomatch'
 import {type Plugin} from 'vite'
 
 import {toForwardSlashes} from '../../util/toForwardSlashes.js'
-
-/**
- * Default glob patterns to watch for query file changes.
- * Covers common source directory naming conventions.
- */
-const DEFAULT_QUERY_PATTERNS = ['./src/**/*.{ts,tsx,js,jsx}', './app/**/*.{ts,tsx,js,jsx}']
 
 /** Default debounce delay in milliseconds */
 const DEFAULT_DEBOUNCE_MS = 1000
@@ -85,14 +80,9 @@ interface TypegenPluginOptions {
 export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
   const {config: inputConfig, output = console, telemetryLogger, workDir} = options
 
-  // Apply defaults to config
-  const config: TypeGenConfig = {
-    formatGeneratedCode: inputConfig.formatGeneratedCode ?? false,
-    generates: inputConfig.generates ?? 'sanity.types.ts',
-    overloadClientMethods: inputConfig.overloadClientMethods ?? false,
-    path: inputConfig.path ?? DEFAULT_QUERY_PATTERNS,
-    schema: inputConfig.schema ?? 'schema.json',
-  }
+  // Apply defaults through the same schema as `sanity typegen generate`,
+  // so watch mode and manual generation produce identical output
+  const config: TypeGenConfig = configDefinition.parse(inputConfig)
 
   // Build query patterns from config
   const queryPatterns = Array.isArray(config.path) ? config.path : [config.path]
