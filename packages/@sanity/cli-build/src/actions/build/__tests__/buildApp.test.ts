@@ -39,7 +39,6 @@ function buildOptions(
 }
 
 const mockedConfirm = vi.hoisted(() => vi.fn())
-const mockedSelect = vi.hoisted(() => vi.fn())
 const mockedSpinner = vi.hoisted(() => vi.fn())
 const mockGetAppEnvironmentVariables = vi.hoisted(() => vi.fn().mockReturnValue({}))
 const mockedIsInteractive = vi.hoisted(() => vi.fn(() => true))
@@ -82,7 +81,6 @@ vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
   return {
     ...original,
     confirm: mockedConfirm,
-    select: mockedSelect,
     spinner: mockedSpinner,
   }
 })
@@ -100,7 +98,6 @@ describe('#buildApp', () => {
     mockedBuildStaticFiles.mockResolvedValue({chunks: []})
     mockedIsInteractive.mockReturnValue(true)
     mockedConfirm.mockResolvedValue(true)
-    mockedSelect.mockResolvedValue('disable-auto-updates')
     mockedGetLocalPackageVersion.mockResolvedValue('1.0.0')
     mockedResolveWorkbenchApp.mockReturnValue({})
   })
@@ -223,63 +220,55 @@ describe('#buildApp', () => {
   test('should error in unattended mode when prerelease versions are detected', async () => {
     const output = createMockOutput()
 
-    await buildApp(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [],
-          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-        }),
-        output,
-        unattendedMode: true,
-      }),
-    )
-
-    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
-      exit: 1,
-    })
-    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('--no-auto-updates'), {
-      exit: 1,
-    })
-    expect(mockedSelect).not.toHaveBeenCalled()
-  })
-
-  test('should exit when user selects "cancel" for prerelease prompt', async () => {
-    const output = createMockOutput()
-
-    mockedSelect.mockResolvedValue('cancel')
+    const onPreReleaseInInteractiveAutoUpdate = vi.fn()
+    const onPreReleaseInNonInteractiveAutoUpdate = vi.fn()
 
     await buildApp(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [],
-          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-        }),
-        output,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+          }),
+          output,
+          unattendedMode: true,
+        },
+        {
+          onPreReleaseInInteractiveAutoUpdate,
+          onPreReleaseInNonInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(output.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
+    expect(onPreReleaseInNonInteractiveAutoUpdate).toHaveBeenCalledWith({
+      message: expect.stringContaining('prerelease versions'),
+    })
+    expect(onPreReleaseInInteractiveAutoUpdate).not.toHaveBeenCalled()
   })
 
   test('should build without auto-updates when user selects "disable-auto-updates" for prerelease', async () => {
     const output = createMockOutput()
 
-    mockedSelect.mockResolvedValue('disable-auto-updates')
+    const onPreReleaseInInteractiveAutoUpdate = vi.fn()
 
     await buildApp(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [],
-          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-        }),
-        output,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+          }),
+          output,
+        },
+        {
+          onPreReleaseInInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(output.warn).toHaveBeenCalledWith('Auto-updates disabled for this build')
+    expect(onPreReleaseInInteractiveAutoUpdate).toHaveBeenCalled()
     expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
@@ -287,22 +276,26 @@ describe('#buildApp', () => {
   test('should skip version mismatch prompt after disabling auto-updates for prerelease', async () => {
     const output = createMockOutput()
 
-    mockedSelect.mockResolvedValue('disable-auto-updates')
+    const onPreReleaseInInteractiveAutoUpdate = vi.fn()
 
     await buildApp(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk', remote: '1.1.0'}],
-          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-        }),
-        output,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [{installed: '1.0.0', pkg: '@sanity/sdk', remote: '1.1.0'}],
+            unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+          }),
+          output,
+        },
+        {
+          onPreReleaseInInteractiveAutoUpdate,
+        },
+      ),
     )
 
     expect(mockedSpinner).toHaveBeenCalledWith('Building Sanity application')
-    // select should only be called once (for the prerelease prompt), not twice
-    expect(mockedSelect).toHaveBeenCalledTimes(1)
+    expect(onPreReleaseInInteractiveAutoUpdate).toHaveBeenCalled()
     // confirm for version mismatch should not have been called
     expect(mockedConfirm).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -358,24 +351,30 @@ describe('#buildApp', () => {
 
     mockedIsInteractive.mockReturnValue(false)
 
+    const onPreReleaseInInteractiveAutoUpdate = vi.fn()
+    const onPreReleaseInNonInteractiveAutoUpdate = vi.fn()
+
     await buildApp(
-      buildOptions({
-        autoUpdatesEnabled: true,
-        compareDependencyVersions: async () => ({
-          mismatched: [],
-          unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
-        }),
-        output,
-      }),
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unresolvedPrerelease: [{pkg: '@sanity/sdk-react', version: '1.0.0-alpha.1'}],
+          }),
+          output,
+        },
+        {
+          onPreReleaseInInteractiveAutoUpdate,
+          onPreReleaseInNonInteractiveAutoUpdate,
+        },
+      ),
     )
 
-    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('prerelease versions'), {
-      exit: 1,
+    expect(onPreReleaseInNonInteractiveAutoUpdate).toHaveBeenCalledWith({
+      message: expect.stringContaining('prerelease versions'),
     })
-    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('--no-auto-updates'), {
-      exit: 1,
-    })
-    expect(mockedSelect).not.toHaveBeenCalled()
+    expect(onPreReleaseInInteractiveAutoUpdate).not.toHaveBeenCalled()
   })
 
   test('should check appId when auto-updates are ebnabled', async () => {
