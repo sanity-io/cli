@@ -1010,6 +1010,9 @@ importers:
       debug:
         specifier: 'catalog:'
         version: 4.4.3(supports-color@8.1.1)
+      dotenv:
+        specifier: 'catalog:'
+        version: 17.4.2
       empathic:
         specifier: 'catalog:'
         version: 2.0.1

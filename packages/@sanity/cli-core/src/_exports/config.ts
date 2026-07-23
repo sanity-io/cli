@@ -14,6 +14,10 @@ export {
   type ConfigStore,
   type TypeGenConfig,
 } from '../config/cli/types/cliConfig.js'
+export {
+  resolveMintedProjectToken,
+  UNCLAIMED_PROJECTS_CONFIG_KEY,
+} from '../config/cli/unclaimedProjects.js'
 export {isWorkbenchApp, parseWorkbenchCliConfig} from '../config/cli/workbenchApp.js'
 export {findProjectRoot} from '../config/findProjectRoot.js'
 export {findProjectRootSync} from '../config/findProjectRootSync.js'
