@@ -7,6 +7,7 @@
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 
 import {type DefineAppInput, isWorkbenchApp, readConfig, type WorkbenchApp} from './defineApp.js'
+import {validateWorkbenchApp} from './validateWorkbenchApp.js'
 
 /**
  * Bundled so adding a declaration family touches this type and the artifact
@@ -57,6 +58,8 @@ export function resolveWorkbenchApp(
 ): ResolvedWorkbenchApp | null {
   const app = cliConfig?.app
   if (!isWorkbenchApp(app)) return null
+
+  validateWorkbenchApp(app)
 
   return {
     applicationType: app.applicationType,

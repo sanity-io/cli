@@ -2,6 +2,7 @@ import {type ApplicationType, type AppVisibility} from '@sanity/cli-core'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {
+  type DefineAppInput,
   DefineAppInputSchema,
   type DefineAppResult,
   type DockGroup,
@@ -270,6 +271,23 @@ describe('type surface', () => {
     expectTypeOf<DefineAppResult>().not.toHaveProperty('applicationType')
     expectTypeOf<DefineAppResult>().not.toHaveProperty('isSingleton')
     expectTypeOf<DefineAppResult>().not.toHaveProperty('config')
+  })
+})
+
+describe('interface union (entry vs views)', () => {
+  type Base = {name: string; organizationId: string; slug: string; title: string}
+  type PanelView = {name: string; src: string; type: 'panel'}
+
+  test('allows an app entry without panel views', () => {
+    expectTypeOf<Base & {entry: string}>().toExtend<DefineAppInput>()
+  })
+
+  test('allows panel views without an app entry', () => {
+    expectTypeOf<Base & {views: PanelView[]}>().toExtend<DefineAppInput>()
+  })
+
+  test('rejects declaring an app entry and panel views together', () => {
+    expectTypeOf<Base & {entry: string; views: PanelView[]}>().not.toExtend<DefineAppInput>()
   })
 })
 

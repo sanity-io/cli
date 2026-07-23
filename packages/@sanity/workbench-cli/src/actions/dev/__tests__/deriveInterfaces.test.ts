@@ -60,13 +60,20 @@ describe('deriveInterfaces', () => {
   })
 
   test('stamps the moduleId a deploy would, so a local interface resolves like a deployed one', () => {
-    const app = workbenchApp({
-      entry: './src/App.tsx',
+    const panelApp = workbenchApp({
       services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
       views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
     })
-    expect(deriveInterfaces(app, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
+    expect(deriveInterfaces(panelApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
       'views/feed',
+      'services/unread',
+    ])
+
+    const entryApp = workbenchApp({
+      entry: './src/App.tsx',
+      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+    })
+    expect(deriveInterfaces(entryApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
       'services/unread',
       'App',
     ])
@@ -75,7 +82,7 @@ describe('deriveInterfaces', () => {
   test('carries null metadata on every interface (not yet populated)', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
+      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})?.every((iface) => iface.metadata === null)).toBe(
       true,
@@ -88,9 +95,8 @@ describe('deriveInterfaces', () => {
     expect(result?.some((iface) => iface.type === 'app')).toBe(false)
   })
 
-  test('combines views, services, and the app view (in that order)', () => {
+  test('orders a panel view ahead of services', () => {
     const app = workbenchApp({
-      entry: './src/App.tsx',
       name: 'my-app',
       services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
       views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
@@ -116,6 +122,26 @@ describe('deriveInterfaces', () => {
         type: 'worker',
         version: '1',
       },
+    ])
+  })
+
+  test('places the app view after services', () => {
+    const app = workbenchApp({
+      entry: './src/App.tsx',
+      name: 'my-app',
+      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'my-app-worker-unread',
+        metadata: null,
+        moduleId: 'services/unread',
+        name: 'unread',
+        src: './src/service.ts',
+        title: 'unread',
+        type: 'worker',
+        version: '1',
+      },
       {
         id: 'my-app-app-my-app',
         metadata: null,
@@ -130,14 +156,31 @@ describe('deriveInterfaces', () => {
 
   test('derives a unique id per interface, disambiguating a view and service that share a name', () => {
     const app = workbenchApp({
-      entry: './src/App.tsx',
       name: 'my-app',
       services: [{name: 'sync', src: './src/sync.ts', type: 'worker'}],
       views: [{name: 'sync', src: './src/SyncPanel.tsx', type: 'panel'}],
     })
     const ids = deriveInterfaces(app, {isApp: true})?.map((iface) => iface.id) ?? []
-    expect(ids).toEqual(['my-app-panel-sync', 'my-app-worker-sync', 'my-app-app-my-app'])
+    expect(ids).toEqual(['my-app-panel-sync', 'my-app-worker-sync'])
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  test('rejects an app that declares both an entry and panel views', () => {
+    const app = workbenchApp({
+      entry: './src/App.tsx',
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
+    })
+    expect(() => deriveInterfaces(app, {isApp: true})).toThrow('cannot expose both an app view')
+  })
+
+  test('rejects an app that declares more than one panel view', () => {
+    const app = workbenchApp({
+      views: [
+        {name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'},
+        {name: 'inbox', src: './src/InboxPanel.tsx', type: 'panel'},
+      ],
+    })
+    expect(() => deriveInterfaces(app, {isApp: true})).toThrow('at most one panel view')
   })
 
   test('does not put the config in the interface set', () => {
