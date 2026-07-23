@@ -1,5 +1,23 @@
 # Change Log
 
+## [7.13.0](https://github.com/sanity-io/cli/compare/cli-v7.12.1...cli-v7.13.0)
+
+_2026-07-23_
+
+### Features
+
+- add `sanity api` command for direct HTTP API access ([#1561](https://github.com/sanity-io/cli/pull/1561)) ([f6fd22c](https://github.com/sanity-io/cli/commit/f6fd22ccd40bb8346e8ecdb5e0cfe54d62f54823))
+
+### Bug Fixes
+
+- Move all user interactivity (except for a couple of log outputs) out of cli-build so that we can customize how events are handled in the Runtime CLI. ([#1585](https://github.com/sanity-io/cli/pull/1585)) ([98ae742](https://github.com/sanity-io/cli/commit/98ae742572f6da3e332d059d24216a46914c419c))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 5.0.0
+
 ## [7.12.1](https://github.com/sanity-io/cli/compare/cli-v7.12.0...cli-v7.12.1)
 
 _2026-07-22_

@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.0.0](https://github.com/sanity-io/cli/compare/cli-build-v4.1.1...cli-build-v5.0.0)
+
+_2026-07-23_
+
+### ⚠ BREAKING CHANGES
+
+- Move all user interactivity (except for a couple of log outputs) out of cli-build so that we can customize how events are handled in the Runtime CLI. ([#1585](https://github.com/sanity-io/cli/pull/1585)) ([98ae742](https://github.com/sanity-io/cli/commit/98ae742572f6da3e332d059d24216a46914c419c))
+
 ## [4.1.1](https://github.com/sanity-io/cli/compare/cli-build-v4.1.0...cli-build-v4.1.1)
 
 _2026-07-20_
