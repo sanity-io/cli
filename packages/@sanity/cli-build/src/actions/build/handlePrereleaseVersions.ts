@@ -3,6 +3,8 @@ import {isInteractive} from '@sanity/cli-core/util'
 import {type UnresolvedPrerelease} from '../../util/compareDependencyVersions.js'
 import {type BuildStudioEventListener} from './buildStudio.js'
 
+const noop = async () => {}
+
 /**
  * Handle prerelease versions that cannot be resolved by the auto-updates CDN.
  *
@@ -17,11 +19,14 @@ export async function handlePrereleaseVersions({
   unattendedMode,
   unresolvedPrerelease,
 }: {
-  onPreReleaseInInteractiveAutoUpdate: BuildStudioEventListener['onPreReleaseInInteractiveAutoUpdate']
-  onPreReleaseInNonInteractiveAutoUpdate: BuildStudioEventListener['onPreReleaseInNonInteractiveAutoUpdate']
+  onPreReleaseInInteractiveAutoUpdate?: BuildStudioEventListener['onPreReleaseInInteractiveAutoUpdate']
+  onPreReleaseInNonInteractiveAutoUpdate?: BuildStudioEventListener['onPreReleaseInNonInteractiveAutoUpdate']
   unattendedMode: boolean
   unresolvedPrerelease: UnresolvedPrerelease[]
 }): Promise<void> {
+  onPreReleaseInInteractiveAutoUpdate ??= noop
+  onPreReleaseInNonInteractiveAutoUpdate ??= noop
+
   const prereleaseMessage =
     `The following packages are using prerelease versions not yet available on the auto-updates CDN:\n\n` +
     `${unresolvedPrerelease.map((mod) => ` - ${mod.pkg} (${mod.version})`).join('\n')}\n\n` +

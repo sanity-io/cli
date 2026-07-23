@@ -4,7 +4,7 @@ import {
   compareDependencyVersions,
   buildStudio as internalBuildStudio,
 } from '@sanity/cli-build/_internal/build'
-import {logSymbols, select, spinner} from '@sanity/cli-core/ux'
+import {confirm, logSymbols, select, spinner} from '@sanity/cli-core/ux'
 import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
@@ -102,6 +102,13 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
         if (!cleanOutputDirSpinner) {
           cleanOutputDirSpinner = spinner(message).start()
         }
+      },
+      async onInteractiveNonDefaultOutputDir({message}: {message: string}) {
+        const shouldClean = await confirm({
+          default: true,
+          message,
+        })
+        return {shouldClean}
       },
       async onVersionMismatchInInteractiveAutoUpdate({mismatched, versionMismatchWarning}) {
         const choice = await select({

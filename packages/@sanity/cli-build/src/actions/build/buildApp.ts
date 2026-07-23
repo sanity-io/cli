@@ -32,7 +32,7 @@ export interface BuildOptions {
   ) => Promise<CompareDependencyVersionsResult>
   determineBasePath: () => string
   entry: string | undefined
-  eventListener: BuildAppEventListener
+  eventListener: Partial<BuildAppEventListener>
   isWorkbenchApp: boolean
   minify: boolean
   outDir: string | undefined

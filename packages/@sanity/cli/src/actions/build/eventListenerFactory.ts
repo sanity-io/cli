@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Output} from '@sanity/cli-core'
-import {confirm, select} from '@sanity/cli-core/ux'
+import {select} from '@sanity/cli-core/ux'
 
 /**
  * Creates check dependency event handlers that are shared between buildStudio and startStudioDevServer.
@@ -13,13 +13,6 @@ export function checkDependenciesEventListenerFactory(output: Output) {
     },
     onIncompatibleInstalledStyledComponentsVersionRange({message}: {message: string}) {
       output.warn(message)
-    },
-    async onInteractiveNonDefaultOutputDir({message}: {message: string}) {
-      const shouldClean = await confirm({
-        default: true,
-        message,
-      })
-      return {shouldClean}
     },
     onInvalidStyledComponentsVersionRange({message}: {message: string}) {
       output.error(message, {exit: 1})

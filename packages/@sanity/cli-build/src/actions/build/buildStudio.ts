@@ -53,7 +53,7 @@ export interface BuildOptions {
     packages: {name: string; version: string}[],
   ) => Promise<CompareDependencyVersionsResult>
   determineBasePath: () => string
-  eventListener: BuildStudioEventListener
+  eventListener: Partial<BuildStudioEventListener>
   isApp: boolean
   isWorkbenchApp: boolean
   minify: boolean
@@ -166,16 +166,21 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
         `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
         `${mismatched.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}`
 
+      const {
+        onVersionMismatchInInteractiveAutoUpdate = () => ({stopBuild: true}),
+        onVersionMismatchInNonInteractiveAutoUpdate = () => {},
+      } = eventListener
+
       // If it is non-interactive or in unattended mode, we don't want to prompt
       if (isInteractive() && !unattendedMode) {
-        const {stopBuild} = await eventListener.onVersionMismatchInInteractiveAutoUpdate({
+        const {stopBuild} = await onVersionMismatchInInteractiveAutoUpdate({
           mismatched,
           versionMismatchWarning,
         })
         if (stopBuild) return
       } else {
         // if non-interactive or unattended, just show the warning
-        eventListener.onVersionMismatchInNonInteractiveAutoUpdate({versionMismatchWarning})
+        onVersionMismatchInNonInteractiveAutoUpdate({versionMismatchWarning})
       }
     }
   }
@@ -191,7 +196,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   let shouldClean = true
   if (outputDir !== defaultOutputDir && !unattendedMode && isInteractive()) {
-    ;({shouldClean} = await eventListener.onInteractiveNonDefaultOutputDir({
+    const {onInteractiveNonDefaultOutputDir = () => ({shouldClean: true})} = eventListener
+    ;({shouldClean} = await onInteractiveNonDefaultOutputDir({
       message: `Do you want to delete the existing directory (${outputDir}) first?`,
     }))
   }
@@ -204,18 +210,21 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   }
 
   if (shouldClean) {
+    const {onCleanOutputDirEnd = () => {}, onCleanOutputDirStart = () => {}} = eventListener
     timer.start('cleanOutputFolder')
-    eventListener.onCleanOutputDirStart({message: 'Clean output folder'})
+    onCleanOutputDirStart({message: 'Clean output folder'})
 
     await rm(outputDir, {force: true, recursive: true})
     const cleanDuration = timer.end('cleanOutputFolder')
 
-    eventListener.onCleanOutputDirEnd({
+    onCleanOutputDirEnd({
       message: `Clean output folder (${cleanDuration.toFixed(0)}ms)`,
     })
   }
 
-  eventListener.onBuildStart({message: `Build Sanity Studio`})
+  const {onBuildEnd = () => {}, onBuildFail = () => {}, onBuildStart = () => {}} = eventListener
+
+  onBuildStart({message: `Build Sanity Studio`})
 
   const trace = getCliTelemetry().trace(StudioBuildTrace)
   trace.start()
@@ -254,7 +263,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     })
     const buildDuration = timer.end('bundleStudio')
 
-    eventListener.onBuildEnd({message: `Build Sanity Studio (${buildDuration.toFixed(0)}ms)`})
+    onBuildEnd({message: `Build Sanity Studio (${buildDuration.toFixed(0)}ms)`})
 
     trace.complete()
     if (stats) {
@@ -265,7 +274,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     trace.error(error)
     const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity Studio`, {error})
-    eventListener.onBuildFail({message: `Failed to build Sanity Studio: ${message}`})
+    onBuildFail({message: `Failed to build Sanity Studio: ${message}`})
     return
   }
 }
