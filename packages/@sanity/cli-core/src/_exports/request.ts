@@ -1,21 +1,19 @@
-export {createRequester, type MiddlewareOptions} from '../request/createRequester.js'
+export {createRequester, type CreateRequesterOptions} from '../request/createRequester.js'
+export {nodeReadableFromWeb} from '../request/nodeReadableFromWeb.js'
 
-// Re-export get-it types used by consumers of createRequester
-export {type Requester} from 'get-it'
-
-// Re-export non-default middleware from get-it for use alongside createRequester.
-// Default middleware (httpErrors, headers, debug, promise) are applied automatically
-// by createRequester and don't need to be imported separately.
+// Re-export get-it types and helpers used by consumers of createRequester
 export {
-  agent,
-  base,
-  injectResponse,
-  jsonRequest,
-  jsonResponse,
-  keepAlive,
-  observable,
-  progress,
-  proxy,
-  retry,
-  urlEncoded,
-} from 'get-it/middleware'
+  type BufferedResponse,
+  type FetchFunction,
+  HttpError,
+  type JsonResponse,
+  type RequestFunction,
+  type RequestOptions,
+  type StreamResponse,
+  type TextResponse,
+  type TransformMiddleware,
+  type WrappingMiddleware,
+} from 'get-it'
+
+// Re-export middleware still available in get-it v9
+export {debug, retry} from 'get-it/middleware'

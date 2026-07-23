@@ -23,7 +23,7 @@ export interface CompareDependencyVersionsResult {
 }
 
 const defaultRequester = createRequester({
-  middleware: {httpErrors: false, promise: {onlyBody: false}},
+  httpErrors: false,
 })
 
 interface CompareDependencyVersionsOptions {
@@ -110,8 +110,8 @@ async function getRemoteResolvedVersion(url: string): Promise<string | null> {
   let response
   try {
     response = await defaultRequester({
-      maxRedirects: 0,
       method: 'HEAD',
+      redirect: 'manual',
       url,
     })
   } catch (err) {
@@ -120,17 +120,17 @@ async function getRemoteResolvedVersion(url: string): Promise<string | null> {
   }
 
   // 302 is expected, but lets also handle 2xx
-  if (response.statusCode < 400) {
-    const resolved = response.headers['x-resolved-version']
+  if (response.status < 400) {
+    const resolved = response.headers.get('x-resolved-version')
     if (!resolved) {
       throw new Error(`Missing 'x-resolved-version' header on response from HEAD ${url}`)
     }
     return resolved
   }
 
-  if (response.statusCode === 404) {
+  if (response.status === 404) {
     return null
   }
 
-  throw new Error(`Unexpected HTTP response: ${response.statusCode} ${response.statusMessage}`)
+  throw new Error(`Unexpected HTTP response: ${response.status} ${response.statusText}`)
 }

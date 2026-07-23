@@ -17,6 +17,14 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
 vi.mock('@sanity/cli-core/request', async () => import('@sanity/cli-test/mocks/cli-core/request'))
 
+function mockHeadResponse(status: number, headers: Record<string, string> = {}, statusText = '') {
+  return {
+    headers: new Headers(headers),
+    status,
+    statusText,
+  }
+}
+
 const autoUpdatePackages = [
   {name: 'sanity', version: '1.0.0'},
   {name: '@sanity/vision', version: '1.0.0'},
@@ -33,10 +41,7 @@ describe('compareDependencyVersions', () => {
   })
   describe('for studio', () => {
     it('should return empty mismatched array if versions match', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
@@ -55,10 +60,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should return one item in mismatched array if versions mismatches for one pkg', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -82,10 +84,7 @@ describe('compareDependencyVersions', () => {
       ])
     })
     it('should return multiple items in mismatched array if versions mismatches for more pkg', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -115,10 +114,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should warn if the user's package.json version is greater then remote", async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.50.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -143,10 +139,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should read from user's package.json if resolveFrom fails to find package.json in node_modules", async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.20.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.20.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -180,10 +173,7 @@ describe('compareDependencyVersions', () => {
 
   describe('for app', () => {
     it('should return empty mismatched array if versions match', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '0.1.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '0.1.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -203,10 +193,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should return one item in mismatched array if versions mismatches for one pkg', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '0.1.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '0.1.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -230,10 +217,7 @@ describe('compareDependencyVersions', () => {
       ])
     })
     it('should return multiple items in mismatched array if versions mismatches for more pkg', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '0.2.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '0.2.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -263,10 +247,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should warn if the user's package.json version is greater then remote", async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '0.1.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '0.1.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -296,10 +277,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should read from user's package.json if resolveFrom fails to find package.json in node_modules", async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '0.1.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '0.1.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -347,10 +325,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should throw when response is missing the 'x-resolved-version' header", async () => {
-      mockRequest.mockResolvedValue({
-        headers: {},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302))
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {sanity: '^3.40.0'},
         devDependencies: {},
@@ -364,11 +339,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should throw when response has an unexpected HTTP status code', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {},
-        statusCode: 500,
-        statusMessage: 'Internal Server Error',
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(500, {}, 'Internal Server Error'))
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {sanity: '^3.40.0'},
         devDependencies: {},
@@ -384,10 +355,7 @@ describe('compareDependencyVersions', () => {
 
   describe('undeclared packages', () => {
     it('should skip packages not declared in the local package.json', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
@@ -408,10 +376,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should still report mismatches for declared packages when others are undeclared', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
@@ -436,10 +401,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should throw when a declared package has an unparseable local version', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValueOnce(null)
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
@@ -458,10 +420,7 @@ describe('compareDependencyVersions', () => {
 
   describe('module URL selection', () => {
     it('should use the default module endpoint when no appId is provided', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {sanity: '^3.40.0'},
@@ -478,10 +437,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should use the app-specific module endpoint when appId is provided', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {'x-resolved-version': '3.40.0'},
-        statusCode: 302,
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
       mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {sanity: '^3.40.0'},
@@ -502,11 +458,7 @@ describe('compareDependencyVersions', () => {
 
   describe('prerelease version handling', () => {
     it('should return prerelease package in unresolvedPrerelease when remote returns 404', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {},
-        statusCode: 404,
-        statusMessage: 'Not Found',
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(404, {}, 'Not Found'))
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {sanity: '^5.11.1-alpha.14'},
         devDependencies: {},
@@ -524,11 +476,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should throw for non-prerelease package when remote returns 404', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {},
-        statusCode: 404,
-        statusMessage: 'Not Found',
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(404, {}, 'Not Found'))
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {sanity: '^3.40.0'},
         devDependencies: {},
@@ -545,15 +493,8 @@ describe('compareDependencyVersions', () => {
       // First call (sanity with prerelease) returns 404
       // Second call (@sanity/vision with normal version) returns resolved version
       mockRequest
-        .mockResolvedValueOnce({
-          headers: {},
-          statusCode: 404,
-          statusMessage: 'Not Found',
-        })
-        .mockResolvedValueOnce({
-          headers: {'x-resolved-version': '3.40.0'},
-          statusCode: 302,
-        })
+        .mockResolvedValueOnce(mockHeadResponse(404, {}, 'Not Found'))
+        .mockResolvedValueOnce(mockHeadResponse(302, {'x-resolved-version': '3.40.0'}))
 
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -585,11 +526,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should handle multiple prerelease packages with 404', async () => {
-      mockRequest.mockResolvedValue({
-        headers: {},
-        statusCode: 404,
-        statusMessage: 'Not Found',
-      })
+      mockRequest.mockResolvedValue(mockHeadResponse(404, {}, 'Not Found'))
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
           '@sanity/vision': '^5.11.1-beta.1',

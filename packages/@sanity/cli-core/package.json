@@ -121,7 +121,7 @@
     "boxen": "^8.0.1",
     "debug": "catalog:",
     "empathic": "catalog:",
-    "get-it": "^8.8.0",
+    "get-it": "^9.1.0",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
     "jiti": "^2.7.0",

@@ -1,32 +1,21 @@
 import {type Mock, vi} from 'vitest'
+
+async function passthroughMiddleware(opts: unknown, next: (opts: unknown) => unknown) {
+  return next(opts)
+}
+
 /** @internal */
 export const mockRequest: Mock = vi.fn()
 /** @internal */
 export const createRequester: Mock = vi.fn(() => mockRequest)
-// get-it/middleware mocks
+// Re-export the real error class (from get-it directly, since the
+// `@sanity/cli-core/request` module id is the one being mocked) so
+// `instanceof HttpError` checks behave the same under the mock.
 /** @internal */
-export const agent: Mock = vi.fn(() => ({finalizeOptions: vi.fn()}))
+export {HttpError} from 'get-it'
 /** @internal */
-export const base: Mock = vi.fn(() => ({processOptions: vi.fn()}))
+export const debug: Mock = vi.fn(() => passthroughMiddleware)
 /** @internal */
-export const injectResponse: Mock = vi.fn(() => ({interceptRequest: vi.fn()}))
+export const retry: Mock = vi.fn(() => passthroughMiddleware)
 /** @internal */
-export const jsonRequest: Mock = vi.fn(() => ({processOptions: vi.fn()}))
-/** @internal */
-export const jsonResponse: Mock = vi.fn(() => ({onResponse: vi.fn(), processOptions: vi.fn()}))
-/** @internal */
-export const keepAlive: Mock = vi.fn()
-/** @internal */
-export const observable: Mock = vi.fn(() => ({onReturn: vi.fn()}))
-/** @internal */
-export const progress: Mock = vi.fn(() => ({
-  onHeaders: vi.fn(),
-  onRequest: vi.fn(),
-  onResponse: vi.fn(),
-}))
-/** @internal */
-export const proxy: Mock = vi.fn(() => ({processOptions: vi.fn()}))
-/** @internal */
-export const retry: Mock = vi.fn(() => ({onError: vi.fn()}))
-/** @internal */
-export const urlEncoded: Mock = vi.fn(() => ({processOptions: vi.fn()}))
+export const nodeReadableFromWeb: Mock = vi.fn((stream: unknown) => stream)

@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
-import {createRequester} from '@sanity/cli-core/request'
+import {createRequester, nodeReadableFromWeb} from '@sanity/cli-core/request'
 import {spinner} from '@sanity/cli-core/ux'
 import {sanityImport} from '@sanity/import'
 import prettyMs from 'pretty-ms'
@@ -39,13 +39,13 @@ function getAssetsBase(source: string): string | undefined {
 }
 
 async function getUriStream(uri: string): Promise<NodeJS.ReadableStream> {
-  const request = createRequester({
-    middleware: {promise: {onlyBody: false}},
-  })
+  const request = createRequester()
 
   try {
-    const response = (await request({stream: true, url: uri})) as {body: NodeJS.ReadableStream}
-    return response.body
+    // No timeout: large dataset exports may stream for longer than get-it's
+    // default request timeout, which would abort the body mid-transfer.
+    const response = await request({as: 'stream', timeout: false, url: uri})
+    return nodeReadableFromWeb(response.body)
   } catch (err) {
     throw new Error(`Error fetching source:\n${(err as Error).message}`, {cause: err})
   }
