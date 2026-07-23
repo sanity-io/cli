@@ -1,4 +1,4 @@
-import {Command, Help, Interfaces} from '@oclif/core'
+import {Command, CommandHelp, Help, Interfaces} from '@oclif/core'
 import {getBinCommand, getRunningPackageManager} from '@sanity/cli-core/package-manager'
 
 import {topicAliases} from './topicAliases.js'
@@ -48,6 +48,12 @@ export default class SanityHelp extends Help {
 
   protected formatTopic(topic: Interfaces.Topic): string {
     return prefixBinName(super.formatTopic(topic))
+  }
+
+  protected override getCommandHelpClass(command: Command.Loadable): CommandHelp {
+    const commandHelp = super.getCommandHelpClass(command)
+    if (command.id === 'login') commandHelp.opts.flagSortOrder = 'none'
+    return commandHelp
   }
 
   async showHelp(argv: string[]): Promise<void> {
