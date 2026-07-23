@@ -1,9 +1,11 @@
 import path from 'node:path'
 
 import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core/package-manager'
-import {type Output, type PackageJson} from '@sanity/cli-core/types'
+import {type PackageJson} from '@sanity/cli-core/types'
 import {oneline} from 'oneline'
 import {minVersion, satisfies, type SemVer} from 'semver'
+
+import {type BuildStudioEventListener} from './buildStudio'
 
 const defaultStudioManifestProps: Partial<PackageJson> = {
   name: 'studio',
@@ -14,13 +16,21 @@ interface CheckResult {
   installedSanityVersion: string
 }
 
-interface CheckRequiredDependenciesOptions {
+export interface CheckRequiredDependenciesOptions {
   isApp: boolean
-  output: Output
   workDir: string
+
+  onIncompatibleDeclaredStyledComponentsVersionRange?: BuildStudioEventListener['onIncompatibleDeclaredStyledComponentsVersionRange']
+  onIncompatibleInstalledStyledComponentsVersionRange?: BuildStudioEventListener['onIncompatibleInstalledStyledComponentsVersionRange']
+  onInvalidStyledComponentsVersionRange?: BuildStudioEventListener['onInvalidStyledComponentsVersionRange']
+  onNoDeclaredStyledComponentsVersion?: BuildStudioEventListener['onNoDeclaredStyledComponentsVersion']
+  onNoInstalledSanityVersion?: BuildStudioEventListener['onNoInstalledSanityVersion']
+  onNoInstalledStyledComponentsVersion?: BuildStudioEventListener['onNoInstalledStyledComponentsVersion']
 }
 
 const styledComponentsVersionRange = '^6.1.15'
+
+const noop = async () => {}
 
 /**
  * Checks that the studio has declared and installed the required dependencies
@@ -36,12 +46,21 @@ const styledComponentsVersionRange = '^6.1.15'
 export async function checkRequiredDependencies(
   options: CheckRequiredDependenciesOptions,
 ): Promise<CheckResult> {
-  const {isApp, output, workDir: studioPath} = options
+  const {isApp, workDir: studioPath} = options
   // currently there's no check needed for core apps,
   // but this should be removed once they are more mature
   if (isApp) {
     return {installedSanityVersion: ''}
   }
+
+  const {
+    onIncompatibleDeclaredStyledComponentsVersionRange = noop,
+    onIncompatibleInstalledStyledComponentsVersionRange = noop,
+    onInvalidStyledComponentsVersionRange = noop,
+    onNoDeclaredStyledComponentsVersion = noop,
+    onNoInstalledSanityVersion = noop,
+    onNoInstalledStyledComponentsVersion = noop,
+  } = options
 
   const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
     await Promise.all([
@@ -57,7 +76,7 @@ export async function checkRequiredDependencies(
 
   // Retrieve the version of the 'sanity' dependency
   if (!installedSanityVersion) {
-    output.error('Failed to read the installed sanity version.', {exit: 1})
+    onNoInstalledSanityVersion({message: 'Failed to read the installed sanity version.'})
     return {installedSanityVersion: ''}
   }
 
@@ -69,13 +88,12 @@ export async function checkRequiredDependencies(
     studioPackageManifest?.devDependencies?.['styled-components']
 
   if (!declaredStyledComponentsVersion) {
-    output.error(
-      oneline`
+    onNoDeclaredStyledComponentsVersion({
+      message: oneline`
       Declared dependency \`styled-components\` is not installed - run
       \`npm install\`, \`yarn install\` or \`pnpm install\` to install it before re-running this command.
     `,
-      {exit: 1},
-    )
+    })
     return {installedSanityVersion}
   }
 
@@ -91,13 +109,12 @@ export async function checkRequiredDependencies(
   }
 
   if (!minDeclaredStyledComponentsVersion && !isStyledComponentsVersionRangeInCatalog) {
-    output.error(
-      oneline`
+    onInvalidStyledComponentsVersionRange({
+      message: oneline`
       Declared dependency \`styled-components\` has an invalid version range:
       \`${declaredStyledComponentsVersion}\`.
     `,
-      {exit: 1},
-    )
+    })
     return {installedSanityVersion}
   }
 
@@ -112,33 +129,36 @@ export async function checkRequiredDependencies(
     isComparableRange(declaredStyledComponentsVersion) &&
     !satisfies(minDeclaredStyledComponentsVersion!, wantedStyledComponentsVersionRange)
   ) {
-    output.warn(oneline`
+    onIncompatibleDeclaredStyledComponentsVersionRange({
+      message: oneline`
       Declared version of styled-components (${declaredStyledComponentsVersion})
       is not compatible with the version required by sanity (${wantedStyledComponentsVersionRange}).
       This might cause problems!
-    `)
+    `,
+    })
   }
 
   // Ensure the studio has _installed_ a version of `styled-components`
   if (!installedStyledComponentsVersion) {
-    output.error(
-      oneline`
+    onNoInstalledStyledComponentsVersion({
+      message: oneline`
       Declared dependency \`styled-components\` is not installed - run
       \`npm install\`, \`yarn install\` or \`pnpm install\` to install it before re-running this command.
     `,
-      {exit: 1},
-    )
+    })
     return {installedSanityVersion}
   }
 
   // The studio should have an _installed_ version of `styled-components`, and it should
   // be semver compatible with the version specified in `sanity` peer dependencies.
   if (!satisfies(installedStyledComponentsVersion, wantedStyledComponentsVersionRange)) {
-    output.warn(oneline`
+    onIncompatibleInstalledStyledComponentsVersionRange({
+      message: oneline`
       Installed version of styled-components (${installedStyledComponentsVersion})
       is not compatible with the version required by sanity (${wantedStyledComponentsVersionRange}).
       This might cause problems!
-    `)
+    `,
+    })
   }
 
   return {installedSanityVersion}

@@ -1,33 +1,49 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
-import {styleText} from 'node:util'
 
 import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type Output, type UserViteConfig} from '@sanity/cli-core/types'
 import {isInteractive} from '@sanity/cli-core/util'
-import {
-  confirm,
-  getTimer,
-  logSymbols,
-  select,
-  spinner,
-  type SpinnerInstance,
-} from '@sanity/cli-core/ux'
+import {getTimer, logSymbols} from '@sanity/cli-core/ux'
 import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
-import {CompareDependencyVersionsResult} from '../../util/compareDependencyVersions.js'
+import {
+  CompareDependencyVersions,
+  CompareDependencyVersionsResult,
+} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
+import {type BuildEventListener, type MessageFunc} from './eventListener.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
+
+export interface BuildStudioEventListener extends BuildEventListener {
+  onBuildEnd: MessageFunc
+  onBuildFail: MessageFunc
+  onBuildStart: MessageFunc
+  onCleanOutputDirEnd: MessageFunc
+  onCleanOutputDirStart: MessageFunc
+  onIncompatibleDeclaredStyledComponentsVersionRange: MessageFunc
+  onIncompatibleInstalledStyledComponentsVersionRange: MessageFunc
+  onInteractiveNonDefaultOutputDir({message}: {message: string}): Promise<{shouldClean: boolean}>
+  onInvalidStyledComponentsVersionRange: MessageFunc
+  onNoDeclaredStyledComponentsVersion: MessageFunc
+  onNoInstalledSanityVersion: MessageFunc
+  onNoInstalledStyledComponentsVersion: MessageFunc
+  onVersionMismatchInInteractiveAutoUpdate(params: {
+    mismatched: CompareDependencyVersions[]
+    versionMismatchWarning: string
+  }): Promise<{stopBuild: boolean}>
+  onVersionMismatchInNonInteractiveAutoUpdate(params: {versionMismatchWarning: string}): void
+}
 
 export interface BuildOptions {
   appId: string | undefined
@@ -37,6 +53,7 @@ export interface BuildOptions {
     packages: {name: string; version: string}[],
   ) => Promise<CompareDependencyVersionsResult>
   determineBasePath: () => string
+  eventListener: Partial<BuildStudioEventListener>
   isApp: boolean
   isWorkbenchApp: boolean
   minify: boolean
@@ -47,7 +64,6 @@ export interface BuildOptions {
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
-  upgradePackages(options: {packages: [name: string, version: string][]}): Promise<void>
   vite: UserViteConfig | undefined
   workDir: string
 
@@ -68,6 +84,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   const {
     appId,
     determineBasePath,
+    eventListener,
     exposes,
     isApp,
     minify,
@@ -78,7 +95,6 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     sourceMap,
     stats,
     unattendedMode,
-    upgradePackages,
     vite,
     workDir,
   } = options
@@ -91,8 +107,9 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   // thus we want to exit early
   const {installedSanityVersion} = await checkRequiredDependencies({
     isApp,
-    output,
     workDir,
+
+    ...eventListener,
   })
 
   let autoUpdatesEnabled = options.autoUpdatesEnabled
@@ -132,7 +149,12 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       await options.compareDependencyVersions(sanityDependencies)
 
     if (unresolvedPrerelease.length > 0) {
-      await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
+      await handlePrereleaseVersions({
+        unattendedMode,
+        unresolvedPrerelease,
+
+        ...eventListener,
+      })
       autoUpdatesImports = {}
       autoUpdatesCssUrls = []
       autoUpdatesEnabled = false
@@ -144,48 +166,21 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
         `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
         `${mismatched.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}`
 
+      const {
+        onVersionMismatchInInteractiveAutoUpdate = () => ({stopBuild: true}),
+        onVersionMismatchInNonInteractiveAutoUpdate = () => {},
+      } = eventListener
+
       // If it is non-interactive or in unattended mode, we don't want to prompt
       if (isInteractive() && !unattendedMode) {
-        const choice = await select({
-          choices: [
-            {
-              name: `Upgrade local versions (recommended). You will need to run the build command again`,
-              value: 'upgrade',
-            },
-            {
-              name: `Upgrade and proceed with build`,
-              value: 'upgrade-and-proceed',
-            },
-            {
-              name: `Continue anyway`,
-              value: 'continue',
-            },
-            {name: 'Cancel', value: 'cancel'},
-          ],
-          default: 'upgrade',
-          message: styleText(
-            'yellow',
-            `${logSymbols.warning} ${versionMismatchWarning}\n\nDo you want to upgrade local versions before deploying?`,
-          ),
+        const {stopBuild} = await onVersionMismatchInInteractiveAutoUpdate({
+          mismatched,
+          versionMismatchWarning,
         })
-
-        if (choice === 'cancel') {
-          output.error('Declined to continue with build', {exit: 1})
-          return
-        }
-
-        if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
-          await upgradePackages({
-            packages: mismatched.map((res) => [res.pkg, res.remote]),
-          })
-
-          if (choice === 'upgrade') {
-            return
-          }
-        }
+        if (stopBuild) return
       } else {
         // if non-interactive or unattended, just show the warning
-        output.warn(versionMismatchWarning)
+        onVersionMismatchInNonInteractiveAutoUpdate({versionMismatchWarning})
       }
     }
   }
@@ -201,10 +196,10 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   let shouldClean = true
   if (outputDir !== defaultOutputDir && !unattendedMode && isInteractive()) {
-    shouldClean = await confirm({
-      default: true,
+    const {onInteractiveNonDefaultOutputDir = () => ({shouldClean: true})} = eventListener
+    ;({shouldClean} = await onInteractiveNonDefaultOutputDir({
       message: `Do you want to delete the existing directory (${outputDir}) first?`,
-    })
+    }))
   }
 
   // Determine base path for built studio
@@ -214,17 +209,22 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     output.log(`${logSymbols.info} Building with schema extraction enabled`)
   }
 
-  let spin: SpinnerInstance
   if (shouldClean) {
+    const {onCleanOutputDirEnd = () => {}, onCleanOutputDirStart = () => {}} = eventListener
     timer.start('cleanOutputFolder')
-    spin = spinner('Clean output folder').start()
+    onCleanOutputDirStart({message: 'Clean output folder'})
+
     await rm(outputDir, {force: true, recursive: true})
     const cleanDuration = timer.end('cleanOutputFolder')
-    spin.text = `Clean output folder (${cleanDuration.toFixed(0)}ms)`
-    spin.succeed()
+
+    onCleanOutputDirEnd({
+      message: `Clean output folder (${cleanDuration.toFixed(0)}ms)`,
+    })
   }
 
-  spin = spinner(`Build Sanity Studio`).start()
+  const {onBuildEnd = () => {}, onBuildFail = () => {}, onBuildStart = () => {}} = eventListener
+
+  onBuildStart({message: `Build Sanity Studio`})
 
   const trace = getCliTelemetry().trace(StudioBuildTrace)
   trace.start()
@@ -263,8 +263,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     })
     const buildDuration = timer.end('bundleStudio')
 
-    spin.text = `Build Sanity Studio (${buildDuration.toFixed(0)}ms)`
-    spin.succeed()
+    onBuildEnd({message: `Build Sanity Studio (${buildDuration.toFixed(0)}ms)`})
 
     trace.complete()
     if (stats) {
@@ -272,10 +271,10 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
     }
   } catch (error) {
-    spin.fail()
     trace.error(error)
     const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity Studio`, {error})
-    output.error(`Failed to build Sanity Studio: ${message}`, {exit: 1})
+    onBuildFail({message: `Failed to build Sanity Studio: ${message}`})
+    return
   }
 }
