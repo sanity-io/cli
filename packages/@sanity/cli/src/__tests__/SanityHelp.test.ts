@@ -1,10 +1,32 @@
+import {type Command, type Interfaces} from '@oclif/core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {
+import SanityHelp, {
   prefixBinName,
   replaceInitWithCreateCommand,
   resolveTopicAliasInArgv,
 } from '../SanityHelp.js'
+
+class TestSanityHelp extends SanityHelp {
+  getFlagSortOrder(commandId: string) {
+    const command = {id: commandId} as Command.Loadable
+    return this.getCommandHelpClass(command).opts.flagSortOrder
+  }
+}
+
+const testConfig = {topicSeparator: ':'} as Interfaces.Config
+
+describe('getCommandHelpClass', () => {
+  test('preserves flag definition order for login help', () => {
+    const help = new TestSanityHelp(testConfig, {flagSortOrder: 'alphabetical'})
+    expect(help.getFlagSortOrder('login')).toBe('none')
+  })
+
+  test('retains the configured flag order for other commands', () => {
+    const help = new TestSanityHelp(testConfig, {flagSortOrder: 'alphabetical'})
+    expect(help.getFlagSortOrder('build')).toBe('alphabetical')
+  })
+})
 
 describe('prefixBinName', () => {
   afterEach(() => {

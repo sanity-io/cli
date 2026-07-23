@@ -15,6 +15,10 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       description: 'Log in using default settings',
     },
     {
+      command: '<%= config.bin %> <%= command.id %> --with-token < token.txt',
+      description: 'Log in using a token from standard input',
+    },
+    {
       command: '<%= config.bin %> <%= command.id %> --provider github --no-open',
       description: 'Login with GitHub provider, but do not open a browser window automatically',
     },
@@ -27,12 +31,13 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
         '<%= config.bin %> <%= command.id %> --sso my-organization --sso-provider "Okta SSO"',
       description: 'Log in using a specific SSO provider within an organization',
     },
-    {
-      command: '<%= config.bin %> <%= command.id %> --with-token < token.txt',
-      description: 'Log in using a token from standard input',
-    },
   ]
   static override flags = {
+    'with-token': Flags.boolean({
+      description: 'Read token from standard input',
+      exclusive: ['provider', 'sso'],
+    }),
+    // eslint-disable-next-line perfectionist/sort-objects -- Keep token login first in generated usage.
     experimental: Flags.boolean({
       default: false,
       hidden: true,
@@ -56,10 +61,6 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       dependsOn: ['sso'],
       description: 'Select a specific SSO provider by name (use with --sso)',
       helpValue: '<name>',
-    }),
-    'with-token': Flags.boolean({
-      description: 'Read token from standard input',
-      exclusive: ['provider', 'sso'],
     }),
   } satisfies FlagInput
 
