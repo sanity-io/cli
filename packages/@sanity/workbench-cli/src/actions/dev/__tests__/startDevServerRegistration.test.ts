@@ -107,6 +107,29 @@ describe('startDevServerRegistration', () => {
     )
   })
 
+  test('logs an invalid config and keeps the dev server running', async () => {
+    const output = createMockOutput()
+    const handle = await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          views: [
+            {name: 'feed', src: './src/Feed.tsx', type: 'panel'},
+            {name: 'inbox', src: './src/Inbox.tsx', type: 'panel'},
+          ],
+        }),
+      }),
+      output,
+    })
+
+    // Registration still completed rather than throwing.
+    expect(handle.close).toBeInstanceOf(Function)
+    expect(mockRegisterDevServer).toHaveBeenCalled()
+    // All errors are reported in a single message, not one warning at a time.
+    expect(output.warn).toHaveBeenCalledTimes(1)
+    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('at most one panel view'))
+    expect(output.error).not.toHaveBeenCalled()
+  })
+
   test('omits projectId when api.projectId is not configured', async () => {
     await register()
 

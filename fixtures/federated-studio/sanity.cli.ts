@@ -10,6 +10,8 @@ export default defineCliConfig({
   app: unstable_defineApp({
     name: 'federated-studio',
     organizationId: 'oSyH1iET5',
+    slug: 'federated-studio',
+    title: 'Federated Studio',
   }),
   deployment: {
     autoUpdates: true,
