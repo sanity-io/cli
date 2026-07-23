@@ -8,6 +8,9 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteCorsDebug = subdebug('cors:delete')
 
+/**
+ * @internal
+ */
 export class Delete extends SanityCommand<typeof Delete> {
   static override args = {
     origin: Args.string({

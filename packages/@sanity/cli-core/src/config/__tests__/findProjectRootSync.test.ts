@@ -2,6 +2,7 @@ import {join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {runWithCliExecutionContext} from '../../executionContext'
 import {findProjectRootSync} from '../findProjectRootSync'
 
 function convertToSystemPath(unixPath: string): string {
@@ -143,5 +144,20 @@ describe('findProjectRootSync', () => {
     expect(() => findProjectRootSync(mockCwd)).toThrow(
       `Found 'sanity.json' at ${convertToSystemPath('/mock/project/path')} - Sanity Studio < v3 is no longer supported`,
     )
+  })
+
+  test('throws without touching the filesystem when an execution context is active', async () => {
+    const {existsSync} = await import('node:fs')
+
+    // A config file is present, but the guard must reject before looking
+    vi.mocked(existsSync).mockReturnValue(true)
+
+    runWithCliExecutionContext({token: 'test-token'}, () => {
+      expect(() => findProjectRootSync(mockCwd)).toThrow(
+        'Project root resolution from the filesystem is disabled for programmatic invocations',
+      )
+    })
+
+    expect(existsSync).not.toHaveBeenCalled()
   })
 })

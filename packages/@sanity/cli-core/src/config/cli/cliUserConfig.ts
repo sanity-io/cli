@@ -4,6 +4,7 @@ import {dirname, join as joinPath} from 'node:path'
 import {z} from 'zod/mini'
 
 import {debug} from '../../_exports/debug.js'
+import {getCliExecutionContext} from '../../executionContext.js'
 import {getSanityConfigDir} from '../../util/getSanityConfigDir.js'
 import {readJsonFileSync} from '../../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
@@ -25,6 +26,15 @@ export const _internals = {
  * @internal
  */
 export async function getCliToken(): Promise<string | undefined> {
+  // A per-invocation execution context token (e.g. per-request from an MCP
+  // server) takes precedence and must bypass the process-wide cache entirely:
+  // reading the cache would leak another invocation's token, and writing it
+  // would leak this one's.
+  const contextToken = getCliExecutionContext()?.token
+  if (contextToken) {
+    return contextToken
+  }
+
   const cached = getCachedToken()
   if (cached !== undefined) {
     return cached

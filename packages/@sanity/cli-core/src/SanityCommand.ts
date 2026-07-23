@@ -1,4 +1,4 @@
-import {styleText} from 'node:util'
+import {format, styleText} from 'node:util'
 
 import {Command, Interfaces} from '@oclif/core'
 import {type CommandError} from '@oclif/core/interfaces'
@@ -16,6 +16,7 @@ import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
+import {getCliExecutionContext} from './executionContext.js'
 import {exitCodes} from './exitCodes.js'
 import {getCliTelemetry, reportCliTraceError} from './telemetry/getCliTelemetry.js'
 import {type CLITelemetryStore} from './telemetry/types.js'
@@ -248,6 +249,46 @@ export abstract class SanityCommand<T extends typeof Command>
   }
 
   /**
+   * Write to stdout — or, when running under an execution context (e.g. from
+   * an MCP server), to the context's `stdout` sink. Mirrors oclif's `log`
+   * semantics: suppressed when `--json` is enabled, printf-style formatting.
+   */
+  public override log(message = '', ...args: unknown[]): void {
+    const context = getCliExecutionContext()
+    if (!context?.stdout) {
+      super.log(message, ...args)
+      return
+    }
+    if (!this.jsonEnabled()) context.stdout(format(message, ...args))
+  }
+
+  /**
+   * Pretty-print JSON to stdout — or plain (un-colorized) JSON to the
+   * execution context's `stdout` sink, so programmatic callers don't have to
+   * strip ANSI codes.
+   */
+  public override logJson(json: unknown): void {
+    const context = getCliExecutionContext()
+    if (!context?.stdout) {
+      super.logJson(json)
+      return
+    }
+    context.stdout(JSON.stringify(json, null, 2))
+  }
+
+  /**
+   * Like `log`, but for stderr / the context's `stderr` sink.
+   */
+  public override logToStderr(message = '', ...args: unknown[]): void {
+    const context = getCliExecutionContext()
+    if (!context?.stderr) {
+      super.logToStderr(message, ...args)
+      return
+    }
+    if (!this.jsonEnabled()) context.stderr(format(message, ...args))
+  }
+
+  /**
    * Resolver for checking if the terminal is interactive. Override in tests to provide mock values.
    *
    * @returns Whether the terminal is interactive.
@@ -271,5 +312,19 @@ export abstract class SanityCommand<T extends typeof Command>
       if (!(err instanceof ProjectRootNotFoundError)) throw err
       return {}
     }
+  }
+
+  /**
+   * Emit a warning — routed to the execution context's `stderr` sink when one
+   * is active, otherwise through oclif's standard warning printer.
+   */
+  public override warn(input: Error | string): Error | string {
+    const context = getCliExecutionContext()
+    if (!context?.stderr) return super.warn(input)
+
+    if (!this.jsonEnabled()) {
+      context.stderr(`Warning: ${input instanceof Error ? input.message : input}`)
+    }
+    return input
   }
 }

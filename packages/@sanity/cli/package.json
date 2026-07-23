@@ -45,6 +45,10 @@
       "source": "./src/exports/_internal.ts",
       "default": "./dist/exports/_internal.js"
     },
+    "./commands": {
+      "source": "./src/exports/commands.ts",
+      "default": "./dist/exports/commands.js"
+    },
     "./runtime": {
       "source": "./src/exports/runtime.ts",
       "default": "./dist/exports/runtime.js"

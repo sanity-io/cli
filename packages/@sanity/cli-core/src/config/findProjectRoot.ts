@@ -1,4 +1,5 @@
 import {ProjectRootNotFoundError} from '../errors/ProjectRootNotFoundError.js'
+import {getCliExecutionContext} from '../executionContext.js'
 import {findAppConfigPath} from './util/findAppConfigPath.js'
 import {tryFindStudioConfigPath} from './util/findStudioConfigPath.js'
 import {
@@ -19,6 +20,17 @@ import {
  * @internal
  */
 export async function findProjectRoot(cwd: string): Promise<ProjectRootResult> {
+  // Programmatic invocations (execution context active) must never resolve
+  // project context from the host's filesystem: walking up from the host
+  // process's cwd could pick up an unrelated Sanity project, and resolving the
+  // CLI config from it would even execute that project's `sanity.cli.ts`.
+  // Callers must provide explicit flags (e.g. `--project-id`) instead.
+  if (getCliExecutionContext()) {
+    throw new ProjectRootNotFoundError(
+      'Project root resolution from the filesystem is disabled for programmatic invocations',
+    )
+  }
+
   try {
     // First try to find a studio project root, looks for `sanity.config.(ts|js)`
     const studioProjectRoot = await resolveProjectRootForStudio(cwd)

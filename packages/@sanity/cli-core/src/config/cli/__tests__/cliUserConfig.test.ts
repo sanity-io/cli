@@ -2,6 +2,7 @@ import {mkdirSync} from 'node:fs'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {runWithCliExecutionContext} from '../../../executionContext.js'
 import {readJsonFileSync} from '../../../util/readJsonFileSync'
 import {writeJsonFileSync} from '../../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedToken, setCachedToken} from '../cliTokenCache.js'
@@ -34,6 +35,9 @@ describe('cliUserConfig', () => {
   describe('getCliToken()', () => {
     beforeEach(() => {
       mockGetCliUserConfig.mockReturnValue('mock-token')
+      // clearAllMocks() does not reset implementations, so make the cache
+      // state explicit for every test
+      vi.mocked(getCachedToken).mockReturnValue(undefined)
     })
     afterEach(() => {
       vi.unstubAllEnvs()
@@ -94,6 +98,28 @@ describe('cliUserConfig', () => {
       vi.stubEnv('SANITY_AUTH_TOKEN', '  trimmed-token  ')
       const token = await getCliToken()
       expect(token).toBe('trimmed-token')
+    })
+
+    test('should prefer execution context token over env, config and cache', async () => {
+      vi.mocked(getCachedToken).mockReturnValue('cached-token')
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+
+      const token = await runWithCliExecutionContext({token: 'context-token'}, () => getCliToken())
+
+      expect(token).toBe('context-token')
+      // The context token must never touch the process-wide cache: reading it
+      // could leak another invocation's token, writing it would leak this one's
+      expect(vi.mocked(getCachedToken)).not.toHaveBeenCalled()
+      expect(vi.mocked(setCachedToken)).not.toHaveBeenCalled()
+      expect(mockGetCliUserConfig).not.toHaveBeenCalled()
+    })
+
+    test('execution context without token falls back to normal resolution', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+
+      const token = await runWithCliExecutionContext({}, () => getCliToken())
+
+      expect(token).toBe('env-token')
     })
 
     test('should re-read after clearCliTokenCache', async () => {

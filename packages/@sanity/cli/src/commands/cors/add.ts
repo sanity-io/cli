@@ -4,6 +4,7 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
@@ -14,6 +15,9 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const addCorsDebug = subdebug('cors:add')
 
+/**
+ * @internal
+ */
 export class Add extends SanityCommand<typeof Add> {
   static override args = {
     origin: Args.string({
@@ -72,14 +76,19 @@ export class Add extends SanityCommand<typeof Add> {
         }),
     })
 
-    // Check if the origin argument looks like a file path and warn
-    try {
-      const isFile = fs.existsSync(path.join(process.cwd(), args.origin))
-      if (isFile) {
-        this.warn(`Origin "${args.origin}?" Remember to quote values (sanity cors add "*")`)
+    // Check if the origin argument looks like a file path and warn. This only
+    // makes sense for shell usage (unquoted globs expanding to filenames), so
+    // programmatic invocations skip it — they must never probe the host's
+    // filesystem.
+    if (!getCliExecutionContext()) {
+      try {
+        const isFile = fs.existsSync(path.join(process.cwd(), args.origin))
+        if (isFile) {
+          this.warn(`Origin "${args.origin}?" Remember to quote values (sanity cors add "*")`)
+        }
+      } catch {
+        // Ignore errors checking if it's a file
       }
-    } catch {
-      // Ignore errors checking if it's a file
     }
 
     const filteredOrigin = await filterAndValidateOrigin(origin, this.output)
