@@ -154,6 +154,9 @@ export const mcpPolicy: CommandPolicySet = {
   // Executes local migration code that may perform arbitrary document mutations.
   'migrations:run': deny,
 
+  // Writes credentials to ./.env and scaffolds a local project (alias of projects mint).
+  new: deny,
+
   // --web opens a browser on the machine running the MCP server.
   'openapi:get': conditionalDenyFlags('web'),
   'openapi:list': conditionalDenyFlags('web'),
@@ -169,6 +172,8 @@ export const mcpPolicy: CommandPolicySet = {
 
   'projects:create': allow,
   'projects:list': allow,
+  // Writes credentials to ./.env and scaffolds a local project.
+  'projects:mint': deny,
 
   // Loads the local Studio configuration to resolve the datasets containing each schema.
   'schemas:delete': deny,
