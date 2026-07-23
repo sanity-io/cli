@@ -2,7 +2,6 @@ import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {LOGIN_REQUIRED_MESSAGE} from '../../../actions/auth/login/loginInstructions.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init.js'
@@ -54,6 +53,13 @@ vi.mock('../../../util/detectFramework.js', () => ({
     name: 'Next.js',
     slug: 'nextjs',
   }),
+}))
+
+// Isolate from any ambient .env in the working directory: init only reads it to tailor the
+// not-logged-in hint, and a developer's local .env must not steer these auth assertions.
+vi.mock('../../../util/envFile.js', () => ({
+  GUARDED_ENV_KEYS: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID', 'SANITY_CLAIM_URL'],
+  readEnvValues: vi.fn(() => ({})),
 }))
 
 vi.mock('../../../actions/auth/login/login.js', () => ({
@@ -205,7 +211,8 @@ describe('#init: authentication', () => {
       },
     })
 
-    expect(error?.message).toContain(LOGIN_REQUIRED_MESSAGE)
+    expect(error?.message).toContain('Not logged in. Run `sanity login` to authenticate')
+    expect(error?.message).toContain('run `sanity new` to create a project without logging in')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -213,7 +220,7 @@ describe('#init: authentication', () => {
     mockGetById.mockRejectedValueOnce(createHttpError(401, 'Unauthorized'))
 
     setupInitSuccessMocks()
-    const {error} = await testCommand(
+    const {error, stdout} = await testCommand(
       InitCommand,
       [
         '--dataset=test',
@@ -235,6 +242,8 @@ describe('#init: authentication', () => {
     )
 
     if (error) throw error
+    expect(stdout).toContain('Two ways to start')
+    expect(stdout).toContain('claim it within 72 hours')
     expect(mockLogin).toHaveBeenCalled()
   })
 

@@ -19,6 +19,12 @@ vi.mock('../../../util/readJsonFileSync.js')
 vi.mock('../../../util/writeJsonFileSync.js')
 vi.mock('node:fs')
 
+const mockResolveMintedProjectToken = vi.hoisted(() => vi.fn())
+vi.mock('../unclaimedProjects.js', () => ({
+  resolveMintedProjectToken: mockResolveMintedProjectToken,
+  UNCLAIMED_PROJECTS_CONFIG_KEY: 'unclaimedProjects',
+}))
+
 const mockGetCliUserConfig = vi.spyOn(_internals, 'getCliUserConfig')
 
 describe('cliUserConfig', () => {
@@ -34,6 +40,8 @@ describe('cliUserConfig', () => {
   describe('getCliToken()', () => {
     beforeEach(() => {
       mockGetCliUserConfig.mockReturnValue('mock-token')
+      // No minted ledger token by default — tests that want one opt in.
+      mockResolveMintedProjectToken.mockReturnValue(undefined)
     })
     afterEach(() => {
       vi.unstubAllEnvs()
@@ -54,6 +62,25 @@ describe('cliUserConfig', () => {
       const token = await getCliToken()
       expect(token).toBe('config-token')
       expect(mockGetCliUserConfig).toHaveBeenCalledWith('authToken')
+    })
+
+    test('should return the ledger token when no env token is set, ahead of the login session', async () => {
+      mockResolveMintedProjectToken.mockReturnValue('ledger-token')
+
+      const token = await getCliToken()
+      expect(token).toBe('ledger-token')
+      expect(vi.mocked(setCachedToken)).toHaveBeenCalledWith('ledger-token')
+      // The ledger tier short-circuits before the stored login session is consulted.
+      expect(mockGetCliUserConfig).not.toHaveBeenCalled()
+    })
+
+    test('should prefer the env token over the ledger token', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+      mockResolveMintedProjectToken.mockReturnValue('ledger-token')
+
+      const token = await getCliToken()
+      expect(token).toBe('env-token')
+      expect(mockResolveMintedProjectToken).not.toHaveBeenCalled()
     })
 
     test('should return undefined if no token is available', async () => {
@@ -292,6 +319,13 @@ describe('cliUserConfig', () => {
       expect(clearCliTokenCache).toHaveBeenCalled()
     })
 
+    test('set invalidates token cache when key is the minted-project ledger', () => {
+      // getCliToken resolves the robot token from this key, so a write must drop the cache.
+      const store = getUserConfig()
+      store.set('unclaimedProjects', {abc123: {token: 'sk-robot'}})
+      expect(clearCliTokenCache).toHaveBeenCalled()
+    })
+
     test('set does not invalidate token cache for other keys', () => {
       const store = getUserConfig()
       store.set('telemetryConsent', 'granted')
@@ -333,6 +367,14 @@ describe('cliUserConfig', () => {
       vi.mocked(readJsonFileSync).mockReturnValueOnce({authToken: 'old-token'})
       const store = getUserConfig()
       store.delete('authToken')
+      expect(clearCliTokenCache).toHaveBeenCalled()
+    })
+
+    test('delete invalidates token cache when key is the minted-project ledger', () => {
+      // Dropping a claimed project must not leave its robot token cached for the process.
+      vi.mocked(readJsonFileSync).mockReturnValueOnce({unclaimedProjects: {abc123: {token: 'x'}}})
+      const store = getUserConfig()
+      store.delete('unclaimedProjects')
       expect(clearCliTokenCache).toHaveBeenCalled()
     })
 

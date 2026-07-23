@@ -120,6 +120,7 @@
     "@sanity/client": "catalog:",
     "boxen": "^8.0.1",
     "debug": "catalog:",
+    "dotenv": "catalog:",
     "empathic": "catalog:",
     "get-it": "^8.8.0",
     "get-tsconfig": "catalog:",

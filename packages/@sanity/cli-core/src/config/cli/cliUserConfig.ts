@@ -9,6 +9,7 @@ import {readJsonFileSync} from '../../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedToken, setCachedToken} from './cliTokenCache.js'
 import {type ConfigStore} from './types/cliConfig.js'
+import {resolveMintedProjectToken, UNCLAIMED_PROJECTS_CONFIG_KEY} from './unclaimedProjects.js'
 
 // Re-export so existing consumers don't break
 export {clearCliTokenCache} from './cliTokenCache.js'
@@ -35,6 +36,20 @@ export async function getCliToken(): Promise<string | undefined> {
     const trimmed = token.trim()
     setCachedToken(trimmed)
     return trimmed
+  }
+
+  // A minted directory carries only its (non-secret) project id in `.env`; the robot token lives
+  // in the ledger. This resolves it without env injection, which never runs before a config file
+  // exists — the gap that stops `sanity init` authenticating in a freshly minted directory.
+  let mintedToken: string | undefined
+  try {
+    mintedToken = resolveMintedProjectToken(getUserConfig().get(UNCLAIMED_PROJECTS_CONFIG_KEY))
+  } catch {
+    // Fall through to the login session.
+  }
+  if (mintedToken) {
+    setCachedToken(mintedToken)
+    return mintedToken
   }
 
   const configToken = _internals.getCliUserConfig('authToken')
@@ -99,6 +114,16 @@ export function getCliUserConfig(prop: 'authToken'): string | undefined {
 }
 
 /**
+ * Keys whose writes must invalidate the in-process token cache, because `getCliToken` resolves
+ * from them: the stored login session (`authToken`) and the minted-project ledger. Without this,
+ * dropping a claimed project from the ledger leaves the robot token cached for the rest of the
+ * process, breaking the post-claim handoff to the logged-in user.
+ */
+function affectsToken(key: string): boolean {
+  return key === 'authToken' || key === UNCLAIMED_PROJECTS_CONFIG_KEY
+}
+
+/**
  * Get a key-value store backed by the CLI user configuration file
  * (`~/.config/sanity/config.json`).
  *
@@ -126,7 +151,7 @@ export function getUserConfig(): ConfigStore {
       const configPath = getCliUserConfigPath()
       mkdirSync(dirname(configPath), {recursive: true})
       writeJsonFileSync(configPath, {...config, [key]: value}, {pretty: true})
-      if (key === 'authToken') clearCliTokenCache()
+      if (affectsToken(key)) clearCliTokenCache()
     },
 
     // No mkdirSync needed: if readConfig() succeeded the directory already exists.
@@ -135,7 +160,7 @@ export function getUserConfig(): ConfigStore {
       if (!(key in config)) return
       const {[key]: _, ...rest} = config
       writeJsonFileSync(getCliUserConfigPath(), rest, {pretty: true})
-      if (key === 'authToken') clearCliTokenCache()
+      if (affectsToken(key)) clearCliTokenCache()
     },
   }
 }
