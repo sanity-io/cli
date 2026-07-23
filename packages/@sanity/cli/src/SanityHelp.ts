@@ -52,7 +52,9 @@ export default class SanityHelp extends Help {
 
   protected override getCommandHelpClass(command: Command.Loadable): CommandHelp {
     const commandHelp = super.getCommandHelpClass(command)
-    if (command.id === 'login') commandHelp.opts.flagSortOrder = 'none'
+    if (command.id === 'login') {
+      commandHelp.opts = {...commandHelp.opts, flagSortOrder: 'none'}
+    }
     return commandHelp
   }
 
