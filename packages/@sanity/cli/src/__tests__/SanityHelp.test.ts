@@ -17,13 +17,10 @@ class TestSanityHelp extends SanityHelp {
 const testConfig = {topicSeparator: ':'} as Interfaces.Config
 
 describe('getCommandHelpClass', () => {
-  test('preserves flag definition order for login help', () => {
+  test('preserves flag definition order only for login help', () => {
     const help = new TestSanityHelp(testConfig, {flagSortOrder: 'alphabetical'})
-    expect(help.getFlagSortOrder('login')).toBe('none')
-  })
 
-  test('retains the configured flag order for other commands', () => {
-    const help = new TestSanityHelp(testConfig, {flagSortOrder: 'alphabetical'})
+    expect(help.getFlagSortOrder('login')).toBe('none')
     expect(help.getFlagSortOrder('build')).toBe('alphabetical')
   })
 })
