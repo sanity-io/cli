@@ -1,3 +1,4 @@
+import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {
@@ -14,7 +15,9 @@ import deburr from 'lodash-es/deburr.js'
 import {promptForConfigFiles} from '../../prompts/init/nextjs.js'
 import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
+import {getMintedProjectRecord} from '../../util/claimNudges.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
+import {GUARDED_ENV_KEYS, readEnvValues} from '../../util/envFile.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
@@ -32,6 +35,7 @@ import {InitError} from './initError.js'
 import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {initNextJs} from './initNextJs.js'
 import {initStudio} from './initStudio.js'
+import {renderNewCommandBanner} from './newCommandBanner.js'
 import {getPlan} from './plan/getPlan.js'
 import {createProjectFromName} from './project/createProjectFromName.js'
 import {getProjectDetails} from './project/getProjectDetails.js'
@@ -381,6 +385,16 @@ function checkFlagsInUnattendedMode(
   }
 }
 
+// A robot token from `sanity new` has no display name — greeting it as "logged in as null"
+// reads as a bug. Name the identity for what it is instead.
+function renderAuthenticatedAs(output: InitContext['output'], user: SanityOrgUser): void {
+  output.log(
+    user.email
+      ? `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`
+      : `${logSymbols.success} Authenticated with a project token`,
+  )
+}
+
 async function ensureAuthenticated(
   options: InitOptions,
   output: InitContext['output'],
@@ -390,18 +404,44 @@ async function ensureAuthenticated(
 
   if (user) {
     trace.log({alreadyLoggedIn: true, step: 'login'})
-    output.log(
-      `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
-    )
+    renderAuthenticatedAs(output, user)
     return {user}
   }
 
+  // `sanity new`'s remint guard refuses whenever any guarded `.env` key is present, so wherever
+  // that's the case we must not steer the user toward `sanity new` — it would dead-end. A ledger
+  // record narrows that further to a *known* unclaimed mint (a bare SANITY_PROJECT_ID is also
+  // written by `sanity init --env` and survives a claim), which earns more specific guidance.
+  const guardedEnv = readEnvValues(path.join(process.cwd(), '.env'), [...GUARDED_ENV_KEYS])
+  const hasGuardedKeys = GUARDED_ENV_KEYS.some((key) => guardedEnv[key] !== undefined)
+  const mintedRecord = guardedEnv.SANITY_PROJECT_ID
+    ? getMintedProjectRecord(guardedEnv.SANITY_PROJECT_ID)
+    : undefined
+
   if (options.unattended) {
-    throw new InitError(LOGIN_REQUIRED_MESSAGE, exitCodes.RUNTIME_ERROR)
+    let message: string
+    if (mintedRecord) {
+      message =
+        `This directory has an unclaimed Sanity project (${guardedEnv.SANITY_PROJECT_ID}) but its ` +
+        "token isn't available here. Set SANITY_AUTH_TOKEN from its .env, or claim the project, then re-run."
+    } else if (hasGuardedKeys) {
+      message =
+        'Not logged in, and this directory already has Sanity credentials in .env. Set ' +
+        'SANITY_AUTH_TOKEN, or run in a different directory, then re-run.'
+    } else {
+      message =
+        'Not logged in. Run `sanity login` to authenticate, then re-run this command. ' +
+        'Alternatively, run `sanity new` to create a project without logging in — ' +
+        'you can claim it with a Sanity account later. See `sanity new --help`.'
+    }
+    throw new InitError(message, exitCodes.RUNTIME_ERROR)
   }
 
   trace.log({step: 'login'})
   output.warn(LOGIN_REQUIRED_MESSAGE)
+
+  // Suppressed wherever `sanity new` would be refused (any guarded `.env` key present).
+  if (!hasGuardedKeys) renderNewCommandBanner(output)
 
   try {
     await login({
@@ -415,8 +455,6 @@ async function ensureAuthenticated(
 
   const loggedInUser = await getCliUser()
 
-  output.log(
-    `${logSymbols.success} You are logged in as ${loggedInUser.email} using ${getProviderName(loggedInUser.provider)}`,
-  )
+  renderAuthenticatedAs(output, loggedInUser)
   return {user: loggedInUser}
 }
