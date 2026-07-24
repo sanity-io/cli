@@ -29,6 +29,7 @@ describe('sanityEnvironmentPlugin', () => {
 
     expect(config.environments.client).toBeUndefined()
     expect(config.environments.federation.build.emptyOutDir).toBe(false)
+    expect(config.environments.federation.build.assetsDir).toBe('static')
     expect(await buildOrder(config)).toEqual(['federation-env'])
   })
 
