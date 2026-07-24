@@ -1,10 +1,26 @@
 import {subdebug} from '@sanity/cli-core/debug'
+import {createRequester} from '@sanity/cli-core/request'
 import {isStaging} from '@sanity/cli-core/util'
 
 const debug = subdebug('projects:mint')
 
 /** Provision API version — see the unauthenticated mint-and-claim endpoint. */
 export const PROVISION_API_VERSION = 'v2026-06-23'
+
+// The claim-state lookups branch on status codes (404/401 are meaningful answers, not failures),
+// so non-2xx responses must be returned rather than thrown.
+const request = createRequester({middleware: {httpErrors: false, promise: {onlyBody: false}}})
+
+const isOk = (statusCode: number) => statusCode >= 200 && statusCode < 300
+
+function parseJsonBody(body: unknown): unknown {
+  if (typeof body !== 'string') return body
+  try {
+    return JSON.parse(body)
+  } catch {
+    return undefined
+  }
+}
 
 export interface MintedProject {
   /** Project-scoped API host, e.g. `<id>.api.sanity.io`. */
@@ -57,13 +73,13 @@ export async function lookupClaimState(
   debug('looking up claim state at %s', url)
 
   try {
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(options?.timeoutMs ?? 1500),
-    })
-    if (!response.ok) return undefined
+    const response = await request({timeout: options?.timeoutMs ?? 500, url})
+    if (!isOk(response.statusCode)) return undefined
 
-    const data = (await response.json()) as {expiresAt?: string | null; state?: ClaimState}
-    if (data.state !== 'claimable' && data.state !== 'claimed' && data.state !== 'expired') {
+    const data = parseJsonBody(response.body) as
+      | {expiresAt?: string | null; state?: ClaimState}
+      | undefined
+    if (data?.state !== 'claimable' && data?.state !== 'claimed' && data?.state !== 'expired') {
       return undefined
     }
     return {expiresAt: data.expiresAt ?? null, state: data.state}
@@ -90,18 +106,19 @@ export async function lookupClaimStateViaProject(
   debug('checking claim state via project host at %s', url)
 
   try {
-    const response = await fetch(url, {
+    const response = await request({
       headers: {Authorization: `Bearer ${robotToken}`},
-      signal: AbortSignal.timeout(options?.timeoutMs ?? 1500),
+      timeout: options?.timeoutMs ?? 500,
+      url,
     })
-    if (response.status === 404) return 'expired'
+    if (response.statusCode === 404) return 'expired'
     // 401 is a definitive rejection of the robot token (not a fail-open network error): report it
     // so the caller can drop the dead ledger entry, which otherwise keeps outranking a login session.
-    if (response.status === 401) return 'revoked'
-    if (!response.ok) return undefined
+    if (response.statusCode === 401) return 'revoked'
+    if (!isOk(response.statusCode)) return undefined
 
-    const data = (await response.json()) as {organizationId?: string}
-    if (!data.organizationId) return undefined
+    const data = parseJsonBody(response.body) as {organizationId?: string} | undefined
+    if (!data?.organizationId) return undefined
     return data.organizationId === 'oSystemUnclaimed' ? 'claimable' : 'claimed'
   } catch (err) {
     debug('project claim-state check failed: %s', err)
@@ -123,25 +140,30 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
   const url = `${getProvisionApiBase()}/${PROVISION_API_VERSION}/provision`
   debug('minting unclaimed project at %s', url)
 
-  const response = await fetch(url, {
+  const response = await request({
     body: JSON.stringify({displayName, resourceType: 'project'}),
     headers: {'Content-Type': 'application/json'},
     method: 'POST',
+    url,
   })
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`Mint failed (HTTP ${response.status}): ${body || response.statusText}`)
+  if (response.statusCode === 404) {
+    throw new Error(
+      'Minting new projects is currently disabled. Try again later, or run `sanity login` and `sanity init` to create a project.',
+    )
+  }
+  if (response.statusCode === 429) {
+    throw new Error('Mint rate limit reached for this machine. Try again in an hour.')
+  }
+  if (!isOk(response.statusCode)) {
+    const body = typeof response.body === 'string' ? response.body : ''
+    throw new Error(`Mint failed (HTTP ${response.statusCode}): ${body || response.statusMessage}`)
   }
 
-  const data = (await response.json()) as ProvisionResponse
+  const data = parseJsonBody(response.body) as ProvisionResponse | undefined
 
-  // Mint may 404 (kill switch off) or 429 (rate limited) and return no claim token.
   if (!data?.claimToken) {
-    throw new Error(
-      'Mint did not return a claim token (provisioning disabled, or rate limited). ' +
-        'See the provision API response.',
-    )
+    throw new Error('Mint response did not include a claim token; see the provision API response.')
   }
 
   const minted = {
@@ -159,7 +181,7 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
     .map(([key]) => key)
   if (missing.length > 0) {
     throw new Error(
-      `Mint response is missing ${missing.join(', ')} — see the provision API response.`,
+      `Mint response is missing ${missing.join(', ')}; see the provision API response.`,
     )
   }
   return minted as MintedProject

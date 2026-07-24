@@ -34,7 +34,8 @@ vi.mock('../../../services/mintProject.js', () => ({
   lookupClaimState: mockLookupClaimState,
   mintUnclaimedProject: mockMintUnclaimedProject,
 }))
-vi.mock('../../../util/claimNudges.js', () => ({
+vi.mock('../../../util/claimNudges.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../util/claimNudges.js')>()),
   forgetMintedProject: mockForgetMintedProject,
   getMintedProjectRecord: mockGetMintedProjectRecord,
   recordMintedProject: mockRecordMintedProject,
@@ -123,10 +124,9 @@ describe('#projects:mint', () => {
     expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
 
     const lines = loggedLines()
-    // The splash renders first: squiggle art plus full link URLs.
+    // The splash renders first: squiggle art alone, no links.
     expect(lines).toContain('@@@@')
-    expect(lines).toContain('https://sanity.new')
-    expect(lines).toContain('https://sanity.io/learn')
+    expect(lines).not.toContain('https://sanity.io/learn')
     expect(lines).toContain("Let's get you set up with a Sanity project.")
     // The --yes hint is redundant when the run is already non-interactive.
     expect(lines).not.toContain('--yes')
@@ -137,7 +137,15 @@ describe('#projects:mint', () => {
     // Without a TTY the spinner degrades to plain rail lines through the same log sink.
     expect(lines).toContain('Minting your project...')
     expect(lines).toContain('Project minted')
-    expect(lines).toContain('Happy coding')
+    // Direct claim messaging: exact deadline, deletion consequence, and the agent handoff.
+    expect(lines).toContain('You must claim this project within 72 hours')
+    expect(lines).toContain('or your project will be deleted')
+    expect(lines).toContain("Project credentials keep working after you've claimed")
+    expect(lines).toContain('If an agent is running this, surface the full claim URL to the user.')
+    expect(lines).toContain('They need to click this link to claim the project before it expires.')
+    expect(lines).toContain(
+      'Tell your agent to fetch https://sanity.new for instructions on what to do next.',
+    )
   })
 
   test('appends credentials and claim context to .env in a fresh directory', async () => {

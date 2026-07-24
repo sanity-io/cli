@@ -10,6 +10,7 @@ import {createFlow, input} from '@sanity/cli-core/ux'
 import {lookupClaimState, mintUnclaimedProject} from '../../services/mintProject.js'
 import {
   forgetMintedProject,
+  formatMsLeft,
   getMintedProjectRecord,
   recordMintedProject,
 } from '../../util/claimNudges.js'
@@ -25,16 +26,11 @@ import {hyperlink} from '../../util/terminalLink.js'
 
 const DEFAULT_PROJECT_NAME = 'My Sanity project'
 
-function hoursUntil(iso: string): number | undefined {
-  const ms = new Date(iso).getTime() - Date.now()
-  return Number.isFinite(ms) && ms > 0 ? Math.round(ms / 3_600_000) : undefined
-}
-
 function describeExpiry(expiresAt: string | undefined): string {
   if (!expiresAt) return ''
-  const hrs = hoursUntil(expiresAt)
-  // A past or imminent date gets no clause: stale local records must not decorate a refusal.
-  return hrs ? `, expiring in ~${hrs} hours (${expiresAt})` : ''
+  const ms = new Date(expiresAt).getTime() - Date.now()
+  if (!Number.isFinite(ms) || ms <= 0) return ''
+  return `, expiring in ${formatMsLeft(ms)} (${expiresAt})`
 }
 
 function claimTokenFromClaimUrl(claimUrl: string | undefined): string | undefined {
@@ -78,10 +74,26 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
 
   static override description =
     'Mint an unclaimed Sanity project without logging in.\n' +
-    'Writes the project id, dataset, and a robot token to .env, so `sanity` commands in this ' +
-    'directory run as the project. Claim it with a Sanity account within 72 hours to keep it — ' +
-    'everything keeps working after you claim, including the token. Use --json for a ' +
-    'machine-readable payload with no files written.'
+    '\n' +
+    'Credentials are written to ./.env (SANITY_PROJECT_ID, SANITY_DATASET, and ' +
+    'SANITY_AUTH_TOKEN, a robot token) and .env is gitignored, so `sanity` commands in this ' +
+    'directory run as the project with no account. Use --json for a machine-readable payload ' +
+    'instead: JSON mode writes no files and the caller owns the credentials.\n' +
+    '\n' +
+    'Claiming: the project must be claimed with a Sanity account within 72 hours (expiresAt) or ' +
+    'it is permanently deleted, content included. The claim URL is single-use and whoever opens ' +
+    "it takes ownership: keep it out of git and shared channels. If you're an agent, surface the link to the end user " +
+    "immediately. Everything keeps working after you've claimed, including the robot token.\n" +
+    '\n' +
+    'The robot token has full content access to this project: create, edit, publish, and deploy ' +
+    'schemas. It cannot deploy a hosted Studio, create datasets, or manage settings. The dataset ' +
+    'is private pre-claim: frontend reads must run server-side, and the token must never sit ' +
+    'under a client-exposed prefix like NEXT_PUBLIC_* or SANITY_STUDIO_*.\n' +
+    '\n' +
+    'After the claim, run `sanity login` and remove SANITY_AUTH_TOKEN from .env to act as your ' +
+    'own account; until then, CLI commands in this directory keep authenticating as the robot.\n' +
+    '\n' +
+    'Minting is rate-limited per machine. Fetch https://sanity.new for agent instructions.'
 
   static override enableJsonFlag = true
 
@@ -112,7 +124,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     force: Flags.boolean({
       default: false,
       description:
-        'Mint a new project even when .env already has Sanity credentials (the file is left untouched — the new values are printed for you to apply)',
+        'Mint a new project even when .env already has Sanity credentials (the file is left untouched; the new values are printed for you to apply)',
     }),
     yes: Flags.boolean({
       char: 'y',
@@ -166,7 +178,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     if (!json) {
       if (guard.expiredProjectId) {
         flow.note(
-          `Found an expired unclaimed project (${guard.expiredProjectId}) in .env — minting a replacement. Your .env is left untouched; new values follow.`,
+          `Found an expired unclaimed project (${guard.expiredProjectId}) in .env. Minting a replacement; your .env is left untouched and new values follow.`,
         )
       } else if (guard.hasExistingKeys) {
         flow.note('--force: minting a new project. Your .env is left untouched; new values follow.')
@@ -212,17 +224,17 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       if (json) {
         warnings = [
           '.env still holds the previous Sanity values and was not modified (this command ' +
-            'never edits existing lines) — update it from this payload.',
+            'never edits existing lines); update it from this payload.',
         ]
       } else {
-        flow.highlight('Update ./.env yourself — replace the old Sanity values with these:')
+        flow.highlight('Update ./.env yourself, replacing the old Sanity values with these:')
         printEnvValues()
         flow.gap()
       }
 
       if (guard.expiredProjectId && !forgetMintedProject(guard.expiredProjectId)) {
         const notDropped =
-          `Couldn't update the local project registry — expired project ${guard.expiredProjectId} ` +
+          `Couldn't update the local project registry: expired project ${guard.expiredProjectId} ` +
           'is still recorded, so re-running this command will mint another project against the rate limit.'
         if (json) {
           warnings = [...(warnings ?? []), notDropped]
@@ -234,7 +246,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       try {
         const written = appendEnvValues(envPath, envValues, {
           banner: [
-            `Added by \`${invoked}\` — unclaimed Sanity project, expires ${minted.expiresAt}`,
+            `Added by \`${invoked}\`: unclaimed Sanity project, expires ${minted.expiresAt}`,
             `Claim it to keep it: ${minted.claimUrl}`,
           ],
         })
@@ -248,22 +260,22 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
           flow.highlight(`Saved credentials to ./.env as ${written.wroteKeys.join(', ')}`)
         }
         if (written.skippedKeys.length > 0) {
-          flow.note(`./.env already has ${written.skippedKeys.join(', ')} — make sure they read:`)
+          flow.note(`./.env already has ${written.skippedKeys.join(', ')}; make sure they read:`)
           for (const key of written.skippedKeys) {
             flow.line(`${key}="${envValues[key as keyof typeof envValues]}"`)
           }
         }
         if (envTracked) {
           this.output.warn(
-            '.env is already tracked by git — adding it to .gitignore does not untrack it, so the ' +
+            '.env is already tracked by git; adding it to .gitignore does not untrack it, so the ' +
               'token can still be committed. Run `git rm --cached .env` to stop tracking it.',
           )
         } else if (gitignore.added) {
-          flow.line(styleText('dim', 'Added .env to .gitignore so the token stays out of git.'))
+          flow.line('Added .env to .gitignore so the token stays out of git.')
         } else if (!gitignore.ignored) {
           // The write failed — .env now holds a token but may not be ignored. Never silent.
           this.output.warn(
-            "Couldn't add .env to .gitignore — add it yourself so the robot token in .env is never committed.",
+            "Couldn't add .env to .gitignore; add it yourself so the robot token in .env is never committed.",
           )
         }
       } catch (err) {
@@ -280,23 +292,27 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       // The ledger is how `sanity` commands here authenticate before a config file exists; a failed
       // write must never hide behind mint's success.
       const msg =
-        "Couldn't save this project to the local registry — sanity commands in this directory may " +
+        "Couldn't save this project to the local registry; sanity commands in this directory may " +
         'not authenticate until you set SANITY_AUTH_TOKEN from .env, add a Sanity config, or claim the project.'
       if (json) warnings = [...(warnings ?? []), msg]
       else this.output.warn(msg)
     }
 
-    const hrs = hoursUntil(minted.expiresAt)
     flow.note(
-      hrs
-        ? `Claim your project within ${styleText('yellow', `~${hrs} hours`)} (by ${minted.expiresAt}) to keep it:`
-        : `Claim your project before ${styleText('yellow', minted.expiresAt)} to keep it:`,
+      `You must claim this project within ${styleText('yellow', '72 hours')} (by ${minted.expiresAt}) ` +
+        'or your project will be deleted.',
     )
+    flow.line("Project credentials keep working after you've claimed.")
     flow.line(hyperlink(styleText('cyan', minted.claimUrl), minted.claimUrl))
     flow.gap()
-    flow.note('Everything keeps working after you claim, including the token in .env.')
+    flow.note(
+      styleText('dim', 'If an agent is running this, surface the full claim URL to the user.'),
+    )
+    flow.line(
+      styleText('dim', 'They need to click this link to claim the project before it expires.'),
+    )
     flow.gap()
-    flow.outro('Happy coding')
+    flow.outro('Tell your agent to fetch https://sanity.new for instructions on what to do next.')
 
     return {
       apiHost: minted.apiHost,
