@@ -120,8 +120,8 @@ minimumReleaseAgeExclude:
   - 'jiti@2.7.0'
   # Renovate security update: turbo@2.9.14
   - turbo@2.9.14
-  # Renovate security update: tar@7.5.16
-  - tar@7.5.16
+  # Renovate security update: tar@7.5.16 || 7.5.19
+  - tar@7.5.16 || 7.5.19
   # Renovate security update: esbuild@0.28.1
   - esbuild@0.28.1
   # Renovate security update: form-data@4.0.6
