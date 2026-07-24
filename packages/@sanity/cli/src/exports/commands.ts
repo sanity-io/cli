@@ -15,9 +15,8 @@
  * })
  * ```
  *
- * The command classes and `loadCliCommandConfig` are also exported for hosts
- * that want to invoke a specific command directly via `Command.run(argv, config)`
- * inside their own `runWithCliExecutionContext` wrapper.
+ * The command classes themselves are deliberately not exported: going through
+ * {@link runSanityCli} is the only supported way to invoke them in-process.
  */
 import {fileURLToPath} from 'node:url'
 
@@ -186,8 +185,3 @@ export async function runSanityCli({
     process.exitCode = previousExitCode
   }
 }
-
-export {Add as CorsAdd} from '../commands/cors/add.js'
-export {Delete as CorsDelete} from '../commands/cors/delete.js'
-export {List as CorsList} from '../commands/cors/list.js'
-export {List as ProjectsList} from '../commands/projects/list.js'
