@@ -128,14 +128,24 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   // `<root>/index.html`. Sanity has no such file — it serves a virtual document
   // rewritten to `.sanity/runtime/index.html` — so point the bundler at the real
   // runtime HTML, otherwise the build fails with UNRESOLVED_ENTRY.
+  //
+  // Also force `strictExecutionOrder` so shared chunks cannot evaluate before the
+  // entry chunk's react-refresh preamble (which otherwise throws
+  // "@vitejs/plugin-react can't detect preamble").
+  // See https://github.com/vitejs/vite-plugin-react/issues/1191
   if (bundledDev) {
+    const existingRolldown = viteConfig.build?.rolldownOptions
+    const existingOutput = existingRolldown?.output
     viteConfig = {
       ...viteConfig,
       build: {
         ...viteConfig.build,
         rolldownOptions: {
-          ...viteConfig.build?.rolldownOptions,
+          ...existingRolldown,
           input: path.join(cwd, '.sanity', 'runtime', 'index.html'),
+          output: Array.isArray(existingOutput)
+            ? existingOutput.map((entry) => ({...entry, strictExecutionOrder: true}))
+            : {...existingOutput, strictExecutionOrder: true},
         },
       },
       experimental: {...viteConfig.experimental, bundledDev: true},

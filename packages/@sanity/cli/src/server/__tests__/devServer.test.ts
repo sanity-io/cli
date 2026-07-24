@@ -76,6 +76,45 @@ describe('startDevServer', () => {
     )
   })
 
+  test('sets strictExecutionOrder when bundledDev is set', async () => {
+    await startDevServer(baseOptions({bundledDev: true}))
+
+    const passedConfig = mockCreateServer.mock.calls[0][0]
+    // Without this, shared chunks can evaluate before the entry chunk's
+    // react-refresh preamble and throw "@vitejs/plugin-react can't detect preamble".
+    expect(passedConfig.build.rolldownOptions.output).toEqual({strictExecutionOrder: true})
+  })
+
+  test('preserves existing rolldown output options when enabling strictExecutionOrder', async () => {
+    mockGetViteConfig.mockResolvedValue({
+      build: {rolldownOptions: {output: {exports: 'named'}}},
+      configFile: false,
+    })
+
+    await startDevServer(baseOptions({bundledDev: true}))
+
+    const passedConfig = mockCreateServer.mock.calls[0][0]
+    expect(passedConfig.build.rolldownOptions.output).toEqual({
+      exports: 'named',
+      strictExecutionOrder: true,
+    })
+  })
+
+  test('applies strictExecutionOrder to each entry when rolldown output is an array', async () => {
+    mockGetViteConfig.mockResolvedValue({
+      build: {rolldownOptions: {output: [{exports: 'named'}, {format: 'es'}]}},
+      configFile: false,
+    })
+
+    await startDevServer(baseOptions({bundledDev: true}))
+
+    const passedConfig = mockCreateServer.mock.calls[0][0]
+    expect(passedConfig.build.rolldownOptions.output).toEqual([
+      {exports: 'named', strictExecutionOrder: true},
+      {format: 'es', strictExecutionOrder: true},
+    ])
+  })
+
   test('does not touch experimental or build options when bundledDev is off', async () => {
     await startDevServer(baseOptions({bundledDev: false}))
 
@@ -105,6 +144,9 @@ describe('startDevServer', () => {
     expect(mockExtendViteConfigWithUserConfig).toHaveBeenCalledOnce()
     const configPassedToExtend = mockExtendViteConfigWithUserConfig.mock.calls[0][1]
     expect(configPassedToExtend.experimental).toEqual({bundledDev: true})
+    expect(configPassedToExtend.build.rolldownOptions.output).toEqual({
+      strictExecutionOrder: true,
+    })
 
     // ...and createServer receives the user-extended result.
     const passedConfig = mockCreateServer.mock.calls[0][0]
