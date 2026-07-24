@@ -110,6 +110,12 @@ extract` matches; `typegen generate` reaches the same boundary error
    module hooks — `jsdom` is now `ssr.external` in studioWorkerLoader (also
    an upstream win: stops piping ~10MB of jsdom through the Vite transform on
    every studio config read).
+10. Found by live UAT (not the harness — nothing imports it, so link-check
+    can't see it): `bootstrapLocalTemplate` and `codemod` located the package
+    root via fixed-depth `path.resolve(import.meta.dirname, '../../..')`,
+    which points one level too high when the module is hoisted into
+    `_chunks/` — `sanity init` failed to bootstrap templates. Fixed with
+    `package-directory` walk-up (depth-independent).
 
 ## Source changes this depends on (in this branch)
 

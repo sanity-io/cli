@@ -4,6 +4,7 @@ import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {packageDirectorySync} from 'package-directory'
 
 import {codemods} from '../actions/codemods/index.js'
 import {type CodeMod} from '../actions/codemods/types.js'
@@ -94,8 +95,12 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
     // which folders to ignore - eg `dist`, `coverage` or whatever
     const hasGitIgnore = existsSync(path.join(workDir, '.gitignore'))
 
-    // Build the CLI command arguments
-    const cliRoot = path.resolve(import.meta.dirname, '../..')
+    // Build the CLI command arguments. Walk up to the package root instead of
+    // a fixed-depth relative path — module depth differs in bundled dists.
+    const cliRoot = packageDirectorySync({cwd: import.meta.dirname})
+    if (!cliRoot) {
+      throw new Error('Unable to resolve @sanity/cli package root for codemods')
+    }
     const modPath = path.resolve(path.join(cliRoot, 'codemods', mod.filename))
     const cmdArgs = [
       'jscodeshift',
