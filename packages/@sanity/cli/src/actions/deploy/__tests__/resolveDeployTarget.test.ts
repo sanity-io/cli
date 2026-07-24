@@ -1,6 +1,22 @@
-import {describe, expect, test} from 'vitest'
+import {getApplication, listApplications} from '@sanity/workbench-cli/deploy'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {resolveAppDeployTarget, resolveStudioDeployTarget} from '../resolveDeployTarget.js'
+import {
+  resolveAppDeployTarget,
+  resolveStudioDeployTarget,
+  resolveWorkbenchApp,
+} from '../resolveDeployTarget.js'
+
+vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  getApplication: vi.fn(),
+  listApplications: vi.fn(),
+}))
+
+const mockGetApplication = vi.mocked(getApplication)
+const mockListApplications = vi.mocked(listApplications)
+
+beforeEach(() => vi.clearAllMocks())
 
 // These cases all short-circuit before any user-application lookup — they cover
 // the host/URL validation and the missing-config guards, no API access needed.
@@ -114,5 +130,68 @@ describe('resolveAppDeployTarget', () => {
     const result = await resolveAppDeployTarget({appId: undefined, organizationId: undefined})
 
     expect(result).toEqual({message: 'app.organizationId is missing', type: 'blocked'})
+  })
+})
+
+describe('resolveWorkbenchApp', () => {
+  const app = {
+    id: 'app-1',
+    organizationId: 'org-1',
+    slug: 'agent',
+    title: 'Agent',
+    type: 'coreApp' as const,
+  }
+
+  test('a configured appId is looked up by id, no org listing', async () => {
+    mockGetApplication.mockResolvedValue(app)
+
+    const result = await resolveWorkbenchApp({
+      appId: 'app-1',
+      organizationId: 'org-1',
+      slug: 'agent',
+    })
+
+    expect(result).toMatchObject({application: {id: 'app-1'}, type: 'found'})
+    expect(mockListApplications).not.toHaveBeenCalled()
+  })
+
+  test('no appId, slug free in the org → would-create', async () => {
+    mockListApplications.mockResolvedValue([{...app, slug: 'other'}])
+
+    const result = await resolveWorkbenchApp({
+      appId: undefined,
+      organizationId: 'org-1',
+      slug: 'agent',
+    })
+
+    expect(result).toEqual({type: 'would-create'})
+  })
+
+  test('no appId, slug already taken → slug-taken carries the existing app id', async () => {
+    mockListApplications.mockResolvedValue([app])
+
+    const result = await resolveWorkbenchApp({
+      appId: undefined,
+      organizationId: 'org-1',
+      slug: 'agent',
+    })
+
+    expect(result).toEqual({
+      existing: {
+        appHost: 'agent',
+        id: 'app-1',
+        organizationId: 'org-1',
+        title: 'Agent',
+        url: 'https://org-1.sanity.run/application/app-1',
+      },
+      type: 'slug-taken',
+    })
+  })
+
+  test('no appId and no org → would-create without listing', async () => {
+    const result = await resolveWorkbenchApp({appId: undefined, slug: 'agent'})
+
+    expect(result).toEqual({type: 'would-create'})
+    expect(mockListApplications).not.toHaveBeenCalled()
   })
 })
