@@ -5,6 +5,7 @@ import {styleText} from 'node:util'
 import {Output, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import deburr from 'lodash-es/deburr.js'
+import {packageDirectory} from 'package-directory'
 
 import {copy} from '../../util/copy.js'
 import {resolveLatestVersions} from '../../util/resolveLatestVersions.js'
@@ -37,8 +38,13 @@ export async function bootstrapLocalTemplate(
   opts: BootstrapLocalOptions,
 ): Promise<ProjectTemplate> {
   const {output, outputPath, packageName, templateName, useTypeScript, variables} = opts
-  // packages/@sanity/cli/src/actions/init/ -> packages/@sanity/cli/src/action -> packages/@sanity/cli/src/
-  const cliRoot = path.resolve(import.meta.dirname, '../../..')
+  // Walk up to the package root instead of a fixed-depth relative path: this
+  // module's on-disk depth differs between the source tree, the built dist,
+  // and bundled distributions that hoist it into a shared chunk.
+  const cliRoot = await packageDirectory({cwd: import.meta.dirname})
+  if (!cliRoot) {
+    throw new Error('Unable to resolve @sanity/cli package root for templates')
+  }
   const templatesDir = path.join(cliRoot, 'templates')
   const sourceDir = path.join(templatesDir, templateName)
   const sharedDir = path.join(templatesDir, 'shared')
