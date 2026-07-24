@@ -23,7 +23,7 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
     const envToken = process.env.SANITY_AUTH_TOKEN?.trim()
     if (envToken) {
       this.warn(
-        'SANITY_AUTH_TOKEN is set in the environment (often via ./.env) — logging out cannot end it. Remove that variable to stop acting as its identity.',
+        'SANITY_AUTH_TOKEN is set in the environment (often via ./.env). Logging out cannot end it. Remove that variable to stop acting as its identity.',
       )
     }
 
@@ -36,7 +36,7 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
     const mintedRecord = SANITY_PROJECT_ID ? getMintedProjectRecord(SANITY_PROJECT_ID) : undefined
     if (mintedRecord) {
       this.warn(
-        `This directory acts as unclaimed Sanity project ${SANITY_PROJECT_ID} via a stored robot token — logout cannot end that. Claim the project, or run sanity elsewhere, to stop acting as it.`,
+        `This directory acts as unclaimed Sanity project ${SANITY_PROJECT_ID} via a stored robot token. Logout cannot end that. Claim the project, or run sanity elsewhere, to stop acting as it.`,
       )
     }
 
@@ -63,7 +63,7 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
       // local credentials so a retry is possible.
       if (isHttpError(error)) {
         this.error(
-          `Failed to logout (HTTP ${error.response.statusCode}). Your local session was kept — try again shortly.`,
+          `Failed to logout (HTTP ${error.response.statusCode}). Your local session was kept; try again shortly.`,
           {exit: exitCodes.RUNTIME_ERROR},
         )
       }

@@ -33,6 +33,21 @@ vi.mock('@sanity/cli-core/ux', async () => {
 // Mock browser launching
 vi.mock('open')
 
+// The outranked-session warnings read the cwd `.env` and the unclaimed-projects ledger. Both
+// are real machine state, so pin them to be inert unless a test opts in.
+const mockReadEnvValues = vi.hoisted(() => vi.fn().mockReturnValue({}))
+const mockGetMintedProjectRecord = vi.hoisted(() => vi.fn().mockReturnValue(undefined))
+
+vi.mock('../../util/envFile.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../util/envFile.js')>()),
+  readEnvValues: mockReadEnvValues,
+}))
+
+vi.mock('../../util/claimNudges.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../util/claimNudges.js')>()),
+  getMintedProjectRecord: mockGetMintedProjectRecord,
+}))
+
 // Mock platform detection
 vi.mock('../../util/canLaunchBrowser.js', () => ({
   canLaunchBrowser: vi.fn().mockReturnValue(true),
@@ -196,6 +211,22 @@ function mockSingleProviderLogin(sessionId = 'test-session-id') {
 function testTokenLogin(token: string) {
   mockStdin(token)
   return testCommand(LoginCommand, ['--with-token'])
+}
+
+function mockValidTokenLogin(token: string) {
+  mockedGetCliToken.mockResolvedValue('')
+  mockApi({
+    apiVersion: USERS_API_VERSION,
+    method: 'get',
+    uri: '/users/me',
+  })
+    .matchHeader('authorization', `Bearer ${token}`)
+    .reply(200, {
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+      provider: 'github',
+    })
 }
 
 describe('#login', {timeout: 10_000}, () => {
@@ -467,6 +498,49 @@ describe('#login', {timeout: 10_000}, () => {
       if (error) throw error
       expect(stderr).not.toContain('Failed to invalidate previous session')
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'same-token')
+    })
+  })
+
+  describe('Outranked Session Warnings', () => {
+    test('warns when SANITY_AUTH_TOKEN outranks the fresh session', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+      mockValidTokenLogin('valid-token')
+
+      const {error, stderr, stdout} = await testTokenLogin('valid-token')
+
+      if (error) throw error
+      expect(stdout).toContain('Login successful')
+      expect(stderr).toContain('SANITY_AUTH_TOKEN is set in the environment')
+      expect(stderr).toContain('It outranks this login session')
+    })
+
+    test('warns when the directory acts as an unclaimed minted project', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', '')
+      mockReadEnvValues.mockReturnValueOnce({SANITY_PROJECT_ID: 'abc123'})
+      mockGetMintedProjectRecord.mockReturnValueOnce({
+        claimToken: 'claim-token',
+        claimUrl: 'https://www.sanity.io/claim/some-token',
+        expiresAt: '2099-01-01T00:00:00.000Z',
+        mintedAt: '2026-07-24T00:00:00.000Z',
+        projectId: 'abc123',
+      })
+      mockValidTokenLogin('valid-token')
+
+      const {error, stderr} = await testTokenLogin('valid-token')
+
+      if (error) throw error
+      expect(stderr).toContain('unclaimed Sanity project abc123')
+      expect(stderr).toContain('outranks this login session')
+    })
+
+    test('stays quiet when nothing outranks the session', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', '')
+      mockValidTokenLogin('valid-token')
+
+      const {error, stderr} = await testTokenLogin('valid-token')
+
+      if (error) throw error
+      expect(stderr).not.toContain('outranks this login session')
     })
   })
 

@@ -125,11 +125,15 @@ describe('#logout', () => {
     vi.stubEnv('SANITY_AUTH_TOKEN', 'sk-robot-token')
     mockedGetCliUserConfig.mockReturnValueOnce('session-token')
 
+    // Matching the Authorization header proves the session token hit /auth/logout; sending the
+    // env token there is the exact leak the command guards against.
     mockApi({
       apiVersion: AUTH_API_VERSION,
       method: 'post',
       uri: '/auth/logout',
-    }).reply(200)
+    })
+      .matchHeader('authorization', 'Bearer session-token')
+      .reply(200)
 
     const {stderr, stdout} = await testCommand(LogoutCommand)
 

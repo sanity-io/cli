@@ -48,9 +48,10 @@ export async function getCliToken(): Promise<string | undefined> {
     return trimmed
   }
 
-  // A minted directory carries only its (non-secret) project id in `.env`; the robot token lives
-  // in the ledger. This resolves it without env injection, which never runs before a config file
-  // exists — the gap that stops `sanity init` authenticating in a freshly minted directory.
+  // A minted directory carries the robot token in both `.env` (for the app runtime) and the
+  // ledger. This resolves it from the ledger, keyed by the `.env` project id, because env
+  // injection never runs before a config file exists — the gap that stops `sanity init`
+  // authenticating in a freshly minted directory.
   let mintedToken: string | undefined
   try {
     mintedToken = resolveMintedProjectToken(getUserConfig().get(UNCLAIMED_PROJECTS_CONFIG_KEY))

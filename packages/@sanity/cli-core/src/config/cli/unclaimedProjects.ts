@@ -22,8 +22,10 @@ function readEnvFileValue(cwd: string, key: string): string | undefined {
 /**
  * Resolve the robot token for the minted project the current directory points at, given the
  * ledger `records` (the `unclaimedProjects` config value). Lets the CLI authenticate in a freshly
- * minted directory that has no config file — where env injection never runs. The token is owned
- * by the ledger, not `.env`: `.env` only carries the non-secret project id. Never throws.
+ * minted directory that has no config file — where env injection never runs. Mint writes the same
+ * token into `.env` for the app runtime (which is why `.env` must stay gitignored); the CLI
+ * resolves it from the ledger instead because env injection never runs before a config file
+ * exists, and `.env` is user-mutable. Never throws.
  */
 export function resolveMintedProjectToken(
   records: unknown,
