@@ -212,7 +212,7 @@ describe('#init: authentication', () => {
     })
 
     expect(error?.message).toContain('Not logged in. Run `sanity login` to authenticate')
-    expect(error?.message).toContain('run `sanity new` to create a project without logging in')
+    expect(error?.message).toContain('To create a project without logging in, run `sanity new`')
     expect(error?.oclif?.exit).toBe(1)
   })
 

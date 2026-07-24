@@ -425,8 +425,9 @@ async function ensureAuthenticated(
     } else {
       message =
         'Not logged in. Run `sanity login` to authenticate, then re-run this command. ' +
-        'Alternatively, run `sanity new` to create a project without logging in — ' +
-        'you can claim it with a Sanity account later. See `sanity new --help`.'
+        'To create a project without logging in, run `sanity new` (use --json for ' +
+        'machine-readable output) and claim it with a Sanity account within 72 hours to keep it. ' +
+        'Fetch https://sanity.new to learn more.'
     }
     throw new InitError(message, exitCodes.RUNTIME_ERROR)
   }

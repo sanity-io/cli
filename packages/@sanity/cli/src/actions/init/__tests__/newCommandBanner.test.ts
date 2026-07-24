@@ -28,8 +28,15 @@ describe('#renderNewCommandBanner', () => {
     expect(banner).toContain('sanity init')
     expect(banner).toContain('sanity new')
     expect(banner).toContain('claim it within 72 hours')
-    expect(banner).toContain('https://sanity.new')
     expect(banner).toContain('╭') // boxed — the one-time signpost keeps its box
+    // The agent lines sit below the box, unboxed, in the shared "If an agent is running this"
+    // voice.
+    const boxEnd = banner.indexOf('╰')
+    expect(banner.indexOf('If an agent is running this, use `sanity new --json`')).toBeGreaterThan(
+      boxEnd,
+    )
+    expect(banner.indexOf('https://sanity.new')).toBeGreaterThan(boxEnd)
+    expect(banner).toContain('Fetch https://sanity.new to learn more.')
     expect(banner.startsWith('\n')).toBe(true)
     expect(banner.endsWith('\n')).toBe(true)
   })

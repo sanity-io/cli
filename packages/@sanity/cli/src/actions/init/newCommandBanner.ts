@@ -13,10 +13,9 @@ export function renderNewCommandBanner(output: InitContext['output']): void {
     boxen(
       `${styleText('bold', 'Two ways to start')}
 
-${styleText('cyan', 'sanity init')}  Log in and set up a Studio ${styleText('dim', "(you're here)")}
-${styleText('cyan', 'sanity new')}   No login — mint a project now, claim it within 72 hours
-
-Learn how it works: ${link(SANITY_NEW_URL, SANITY_NEW_URL)}`,
+${styleText('cyan', 'sanity init')}  Log in or sign up and make a new project ${styleText('dim', "(you're here)")}
+${styleText('cyan', 'sanity new')}   Create a project without an account.
+             Sign up and claim it within 72 hours to keep it.`,
       {
         borderColor: 'cyan',
         borderStyle: 'round',
@@ -24,5 +23,13 @@ Learn how it works: ${link(SANITY_NEW_URL, SANITY_NEW_URL)}`,
       },
     ),
   )
+  output.log('')
+  output.log(
+    styleText(
+      'dim',
+      'If an agent is running this, use `sanity new --json` to create a project programmatically.',
+    ),
+  )
+  output.log(styleText('dim', `Fetch ${link(SANITY_NEW_URL, SANITY_NEW_URL)} to learn more.`))
   output.log('')
 }
