@@ -226,6 +226,23 @@ export function describeAppTarget(
         status: 'fail',
       }
     }
+    // A deployment with no `appId` collides with an app already at this slug —
+    // point at the existing app's id so a redeploy targets it instead of failing.
+    case 'slug-taken': {
+      const {existing: application} = resolution
+      return {
+        exitCode: exitCodes.USAGE_ERROR,
+        message: `An application already exists at slug "${application.appHost}" in this organization (app ID ${application.id})`,
+        solution: `Add \`deployment: {appId: '${application.id}'}\` to sanity.cli.ts to redeploy it`,
+        status: 'fail',
+        target: {
+          action: 'update',
+          applicationId: application.id,
+          title: application.title,
+          url: application.url ?? null,
+        },
+      }
+    }
     // Without --title, creating an app needs a prompt no unattended run can answer
     case 'would-create': {
       if (title) {
@@ -266,7 +283,13 @@ export function describeAppTargetError(err: unknown, organizationId: string | un
 export async function checkAppTarget(
   reporter: DeployCheckReporter,
   options:
-    | {appId: string | undefined; isWorkbenchApp: true; slug?: string; title?: string}
+    | {
+        appId: string | undefined
+        isWorkbenchApp: true
+        organizationId?: string
+        slug?: string
+        title?: string
+      }
     | {
         appId: string | undefined
         isWorkbenchApp?: false
@@ -276,12 +299,13 @@ export async function checkAppTarget(
 ): Promise<DeployTarget | null> {
   const {title} = options
   if (options.isWorkbenchApp) {
-    const {appId, slug} = options
+    const {appId, organizationId, slug} = options
     return runStep(reporter, {
       debug: deployDebug,
       name: 'target',
       work: async () => {
-        const check = describeAppTarget(await resolveWorkbenchApp({appId}), {slug, title})
+        const resolution = await resolveWorkbenchApp({appId, organizationId, slug})
+        const check = describeAppTarget(resolution, {slug, title})
         reporter.report(check)
         return check.target ?? null
       },

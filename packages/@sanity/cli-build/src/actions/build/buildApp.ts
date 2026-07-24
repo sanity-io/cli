@@ -15,11 +15,13 @@ import {CompareDependencyVersionsResult} from '../../util/compareDependencyVersi
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
+import {BuildEventListener} from './eventListener.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
 
+export type BuildAppEventListener = BuildEventListener
 export interface BuildOptions {
   appId: string | undefined
   appTitle: string | undefined
@@ -30,6 +32,7 @@ export interface BuildOptions {
   ) => Promise<CompareDependencyVersionsResult>
   determineBasePath: () => string
   entry: string | undefined
+  eventListener: Partial<BuildAppEventListener>
   isWorkbenchApp: boolean
   minify: boolean
   outDir: string | undefined
@@ -55,7 +58,7 @@ export interface BuildOptions {
 export async function buildApp(options: BuildOptions): Promise<void> {
   buildDebug(`Building app`)
 
-  const {appId, determineBasePath, outDir, output, workDir} = options
+  const {appId, determineBasePath, eventListener, outDir, output, workDir} = options
   let {autoUpdatesEnabled} = options
   const unattendedMode = options.unattendedMode
 
@@ -106,7 +109,13 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       await options.compareDependencyVersions(autoUpdatedPackages)
 
     if (unresolvedPrerelease.length > 0) {
-      await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
+      await handlePrereleaseVersions({
+        onPreReleaseInInteractiveAutoUpdate: eventListener.onPreReleaseInInteractiveAutoUpdate,
+        onPreReleaseInNonInteractiveAutoUpdate:
+          eventListener.onPreReleaseInNonInteractiveAutoUpdate,
+        unattendedMode,
+        unresolvedPrerelease,
+      })
       autoUpdatesImports = {}
       autoUpdatesCssUrls = []
       autoUpdatesEnabled = false

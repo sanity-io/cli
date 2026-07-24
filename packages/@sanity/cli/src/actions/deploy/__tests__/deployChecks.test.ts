@@ -13,6 +13,7 @@ import {
   checkAutoUpdates,
   checkStudioTarget,
   type DeployCheck,
+  describeAppTarget,
 } from '../deployChecks.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from '../resolveDeployTarget.js'
 import {type DeployFlags} from '../types.js'
@@ -351,6 +352,33 @@ describe('checkAppTarget (workbench backend)', () => {
       slug: 'drop-desk',
       title: 'New App',
       url: null,
+    })
+  })
+})
+
+describe('describeAppTarget', () => {
+  test('slug-taken → fail names the existing app id and how to reuse it', () => {
+    const check = describeAppTarget({
+      existing: {
+        appHost: 'agent',
+        id: 'existing-1',
+        organizationId: 'org-1',
+        title: 'Agent',
+        url: 'https://org-1.sanity.run/application/existing-1',
+      },
+      type: 'slug-taken',
+    })
+
+    expect(check).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
+    expect(check.message).toContain('already exists at slug "agent"')
+    expect(check.message).toContain('existing-1')
+    expect(check.solution).toContain("appId: 'existing-1'")
+    // The resolved app id is machine-readable in the target too, for --json.
+    expect(check.target).toEqual({
+      action: 'update',
+      applicationId: 'existing-1',
+      title: 'Agent',
+      url: 'https://org-1.sanity.run/application/existing-1',
     })
   })
 })

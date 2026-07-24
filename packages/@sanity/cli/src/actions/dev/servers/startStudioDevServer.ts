@@ -16,6 +16,7 @@ import {getProjectById} from '../../../services/projects.js'
 import {getAppId} from '../../../util/appId.js'
 import {getPackageManagerChoice} from '../../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../../util/packageManager/upgradePackages.js'
+import {checkDependenciesEventListenerFactory} from '../../build/eventListenerFactory.js'
 import {shouldAutoUpdate} from '../../build/shouldAutoUpdate.js'
 import {devDebug} from '../devDebug.js'
 import {type DevActionOptions, type StartDevServerResult} from '../types.js'
@@ -36,7 +37,10 @@ export async function startStudioDevServer(
   // Check studio dependency versions
   await checkStudioDependencyVersions(workDir, output)
 
-  const {installedSanityVersion} = await checkRequiredDependencies(options)
+  const {installedSanityVersion} = await checkRequiredDependencies({
+    ...options,
+    ...checkDependenciesEventListenerFactory(output),
+  })
 
   // Check if auto-updates are enabled
   const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})

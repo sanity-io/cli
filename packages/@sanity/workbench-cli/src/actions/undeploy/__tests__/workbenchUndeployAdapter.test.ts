@@ -22,6 +22,7 @@ function workbenchApp(): DeployableWorkbenchApp {
     app: unstable_defineApp({
       name: 'my-app',
       organizationId: 'org-1',
+      slug: 'my-app',
       title: 'My App',
       views: [{name: 'insights', src: './src/Insights.tsx', title: 'Insights', type: 'panel'}],
     }),

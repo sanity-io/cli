@@ -1,4 +1,4 @@
-import {getApplication, getApplicationUrl} from '@sanity/workbench-cli/deploy'
+import {getApplication, getApplicationUrl, listApplications} from '@sanity/workbench-cli/deploy'
 
 import {
   getUserApplication,
@@ -51,6 +51,7 @@ export type StudioDeployTargetResolution<App = DeployTargetApp> =
 
 export type AppDeployTargetResolution<App = DeployTargetCoreApp> =
   | CommonDeployTargetResolution<App>
+  | {existing: App; type: 'slug-taken'}
   | {type: 'would-create'}
 
 /**
@@ -162,15 +163,40 @@ export async function resolveAppDeployTarget(options: {
 
 /**
  * The dry-run counterpart to a workbench app's create-on-deploy: a configured
- * `appId` is looked up read-only, otherwise a coreApp would be created.
+ * `appId` is looked up read-only. Without one, a first deploy would create the
+ * app at its slug — but if the org already holds an app at that slug (a
+ * singleton redeployed without `deployment.appId`), a create would fail, so the
+ * existing app is resolved instead and the report points at its id.
  * @internal
  */
 export async function resolveWorkbenchApp({
   appId,
+  organizationId,
+  slug,
 }: {
   appId: string | undefined
+  organizationId?: string
+  slug?: string
 }): Promise<AppDeployTargetResolution> {
-  return appId ? resolveAppById(appId) : {type: 'would-create'}
+  if (appId) return resolveAppById(appId)
+
+  if (organizationId && slug) {
+    const existing = (await listApplications(organizationId)).find((app) => app.slug === slug)
+    if (existing) {
+      return {
+        existing: {
+          appHost: existing.slug ?? '',
+          id: existing.id,
+          organizationId: existing.organizationId,
+          title: existing.title,
+          url: getApplicationUrl(existing),
+        },
+        type: 'slug-taken',
+      }
+    }
+  }
+
+  return {type: 'would-create'}
 }
 
 /**

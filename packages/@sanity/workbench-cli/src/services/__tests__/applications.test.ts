@@ -13,6 +13,7 @@ import {
   getApplication,
   getApplicationUrl,
   getWorkbenchUrl,
+  listApplications,
   updateApplication,
 } from '../applications.js'
 
@@ -71,6 +72,23 @@ describe('getApplication', () => {
   test('rethrows any non-404 error', async () => {
     mockClient.request.mockRejectedValueOnce({statusCode: 500})
     await expect(getApplication('app_1')).rejects.toMatchObject({statusCode: 500})
+  })
+})
+
+describe('listApplications', () => {
+  test('GETs the organization’s applications in one page (limit=none)', async () => {
+    const apps = [
+      {id: 'app_1', organizationId: 'org-1', slug: 'agent', title: 'Agent', type: 'coreApp'},
+      {id: 'app_2', organizationId: 'org-1', slug: 'media-library', title: 'ML', type: 'coreApp'},
+    ]
+    mockClient.request.mockResolvedValueOnce({data: apps})
+
+    expect(await listApplications('org-1')).toEqual(apps)
+    expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
+    expect(mockClient.request).toHaveBeenCalledWith({
+      query: {limit: 'none', organizationId: 'org-1'},
+      uri: '/applications',
+    })
   })
 })
 

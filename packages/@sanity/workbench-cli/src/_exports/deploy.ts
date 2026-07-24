@@ -23,4 +23,5 @@ export {
   getApplication,
   getApplicationUrl,
   getWorkbenchUrl,
+  listApplications,
 } from '../services/applications.js'
