@@ -2,10 +2,12 @@ import {
   getLocalPackageVersion as mockGetLocalPackageVersion,
   readPackageJson as mockReadPackageJson,
 } from '@sanity/cli-test/mocks/cli-core/package-manager'
-import {createMockOutput} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {checkRequiredDependencies} from '../checkRequiredDependencies'
+import {
+  checkRequiredDependencies,
+  CheckRequiredDependenciesOptions,
+} from '../checkRequiredDependencies'
 
 vi.mock('semver', {spy: true})
 
@@ -14,20 +16,35 @@ vi.mock(
   () => import('@sanity/cli-test/mocks/cli-core/package-manager'),
 )
 
-describe('#checkRequiredDependencies', () => {
-  const workDir = '/tmp/test-studio'
-  const mockOutput = createMockOutput()
+const handler = ({message}: {message: string}) => {
+  throw new Error(`Unhandled event: ${message}`)
+}
 
+function buildOptions(
+  isApp: boolean,
+  overrides?: Partial<CheckRequiredDependenciesOptions>,
+): CheckRequiredDependenciesOptions {
+  return {
+    isApp,
+    onIncompatibleDeclaredStyledComponentsVersionRange: handler,
+    onIncompatibleInstalledStyledComponentsVersionRange: handler,
+    onInvalidStyledComponentsVersionRange: handler,
+    onNoDeclaredStyledComponentsVersion: handler,
+    onNoInstalledSanityVersion: handler,
+    onNoInstalledStyledComponentsVersion: handler,
+    workDir: '/tmp/test-studio',
+
+    ...overrides,
+  }
+}
+
+describe('#checkRequiredDependencies', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   test('should return early if the project is an app', async () => {
-    const result = await checkRequiredDependencies({
-      isApp: true,
-      output: mockOutput,
-      workDir,
-    })
+    const result = await checkRequiredDependencies(buildOptions(true))
     expect(result).toEqual({installedSanityVersion: ''})
     expect(mockReadPackageJson).not.toHaveBeenCalled()
   })
@@ -46,14 +63,13 @@ describe('#checkRequiredDependencies', () => {
       return '6.1.15'
     })
 
-    const result = await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const mockNoInstalledSanityVersion = vi.fn()
+    const result = await checkRequiredDependencies(
+      buildOptions(false, {onNoInstalledSanityVersion: mockNoInstalledSanityVersion}),
+    )
 
-    expect(mockOutput.error).toHaveBeenCalledWith('Failed to read the installed sanity version.', {
-      exit: 1,
+    expect(mockNoInstalledSanityVersion).toHaveBeenCalledWith({
+      message: 'Failed to read the installed sanity version.',
     })
     expect(result).toEqual({installedSanityVersion: ''})
   })
@@ -72,16 +88,16 @@ describe('#checkRequiredDependencies', () => {
       return null // styled-components not installed
     })
 
-    const result = await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
-
-    expect(mockOutput.error).toHaveBeenCalledWith(
-      expect.stringContaining('Declared dependency `styled-components` is not installed'),
-      {exit: 1},
+    const mockNoDeclaredStyledComponentsVersion = vi.fn()
+    const result = await checkRequiredDependencies(
+      buildOptions(false, {
+        onNoDeclaredStyledComponentsVersion: mockNoDeclaredStyledComponentsVersion,
+      }),
     )
+
+    expect(mockNoDeclaredStyledComponentsVersion).toHaveBeenCalledWith({
+      message: expect.stringContaining('Declared dependency `styled-components` is not installed'),
+    })
     expect(result).toEqual({installedSanityVersion: '3.0.0'})
   })
 
@@ -94,18 +110,18 @@ describe('#checkRequiredDependencies', () => {
     })
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0') // for sanity
 
-    const result = await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const mockInvalidStyledComponentsVersionRange = vi.fn()
+    const result = await checkRequiredDependencies(
+      buildOptions(false, {
+        onInvalidStyledComponentsVersionRange: mockInvalidStyledComponentsVersionRange,
+      }),
+    )
 
-    expect(mockOutput.error).toHaveBeenCalledWith(
-      expect.stringContaining(
+    expect(mockInvalidStyledComponentsVersionRange).toHaveBeenCalledWith({
+      message: expect.stringContaining(
         'Declared dependency `styled-components` has an invalid version range: `some-invalid-range`',
       ),
-      {exit: 1},
-    )
+    })
     expect(result).toEqual({installedSanityVersion: '3.0.0'})
   })
 
@@ -118,17 +134,16 @@ describe('#checkRequiredDependencies', () => {
     })
     mockGetLocalPackageVersion.mockResolvedValue('6.1.15')
 
-    await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const onIncompatibleDeclaredStyledComponentsVersionRange = vi.fn()
+    await checkRequiredDependencies(
+      buildOptions(false, {onIncompatibleDeclaredStyledComponentsVersionRange}),
+    )
 
-    expect(mockOutput.warn).toHaveBeenCalledWith(
-      expect.stringContaining(
+    expect(onIncompatibleDeclaredStyledComponentsVersionRange).toHaveBeenCalledWith({
+      message: expect.stringContaining(
         'Declared version of styled-components (^5.0.0) is not compatible with the version required by sanity (^6.1.15)',
       ),
-    )
+    })
   })
 
   test('should not warn on complex but valid styled-components version range', async () => {
@@ -140,13 +155,12 @@ describe('#checkRequiredDependencies', () => {
     })
     mockGetLocalPackageVersion.mockResolvedValue('6.1.15')
 
-    await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const onIncompatibleDeclaredStyledComponentsVersionRange = vi.fn()
+    await checkRequiredDependencies(
+      buildOptions(false, {onIncompatibleDeclaredStyledComponentsVersionRange}),
+    )
 
-    expect(mockOutput.warn).not.toHaveBeenCalled()
+    expect(onIncompatibleDeclaredStyledComponentsVersionRange).not.toHaveBeenCalled()
   })
 
   test('should call output.error and return sanity version if styled-components is declared but not installed', async () => {
@@ -163,16 +177,14 @@ describe('#checkRequiredDependencies', () => {
       return '3.0.0' // sanity version
     })
 
-    const result = await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
-
-    expect(mockOutput.error).toHaveBeenCalledWith(
-      expect.stringContaining('Declared dependency `styled-components` is not installed'),
-      {exit: 1},
+    const onNoInstalledStyledComponentsVersion = vi.fn()
+    const result = await checkRequiredDependencies(
+      buildOptions(false, {onNoInstalledStyledComponentsVersion}),
     )
+
+    expect(onNoInstalledStyledComponentsVersion).toHaveBeenCalledWith({
+      message: expect.stringContaining('Declared dependency `styled-components` is not installed'),
+    })
     expect(result).toEqual({installedSanityVersion: '3.0.0'})
   })
 
@@ -190,17 +202,16 @@ describe('#checkRequiredDependencies', () => {
       return '3.0.0' // sanity version
     })
 
-    await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const onIncompatibleInstalledStyledComponentsVersionRange = vi.fn()
+    await checkRequiredDependencies(
+      buildOptions(false, {onIncompatibleInstalledStyledComponentsVersionRange}),
+    )
 
-    expect(mockOutput.warn).toHaveBeenCalledWith(
-      expect.stringContaining(
+    expect(onIncompatibleInstalledStyledComponentsVersionRange).toHaveBeenCalledWith({
+      message: expect.stringContaining(
         'Installed version of styled-components (5.3.6) is not compatible with the version required by sanity (^6.1.15)',
       ),
-    )
+    })
   })
 
   test('should not error on catalog: prefix for styled-components version', async () => {
@@ -216,15 +227,9 @@ describe('#checkRequiredDependencies', () => {
       return null
     })
 
-    const result = await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const result = await checkRequiredDependencies(buildOptions(false))
 
     expect(result).toEqual({installedSanityVersion: '3.2.0'})
-    expect(mockOutput.error).not.toHaveBeenCalled()
-    expect(mockOutput.warn).not.toHaveBeenCalled()
   })
 
   test('should not warn on version comparison when using catalog: prefix', async () => {
@@ -240,15 +245,9 @@ describe('#checkRequiredDependencies', () => {
       return null
     })
 
-    const result = await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const result = await checkRequiredDependencies(buildOptions(false))
 
     expect(result).toEqual({installedSanityVersion: '3.2.0'})
-    expect(mockOutput.error).not.toHaveBeenCalled()
-    expect(mockOutput.warn).not.toHaveBeenCalled()
   })
 
   test('should still warn on incompatible installed version when using catalog: prefix', async () => {
@@ -264,18 +263,16 @@ describe('#checkRequiredDependencies', () => {
       return null
     })
 
-    await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const onIncompatibleInstalledStyledComponentsVersionRange = vi.fn()
+    await checkRequiredDependencies(
+      buildOptions(false, {onIncompatibleInstalledStyledComponentsVersionRange}),
+    )
 
-    expect(mockOutput.error).not.toHaveBeenCalled()
-    expect(mockOutput.warn).toHaveBeenCalledWith(
-      expect.stringContaining(
+    expect(onIncompatibleInstalledStyledComponentsVersionRange).toHaveBeenCalledWith({
+      message: expect.stringContaining(
         'Installed version of styled-components (5.3.6) is not compatible with the version required by sanity (^6.1.15)',
       ),
-    )
+    })
   })
 
   test('should succeed on happy path', async () => {
@@ -292,13 +289,8 @@ describe('#checkRequiredDependencies', () => {
       return null
     })
 
-    const result = await checkRequiredDependencies({
-      isApp: false,
-      output: mockOutput,
-      workDir,
-    })
+    const result = await checkRequiredDependencies(buildOptions(false))
 
     expect(result).toEqual({installedSanityVersion: '3.2.0'})
-    expect(mockOutput.warn).not.toHaveBeenCalled()
   })
 })

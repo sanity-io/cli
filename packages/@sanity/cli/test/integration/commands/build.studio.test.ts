@@ -113,7 +113,6 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       const distFiles = await readdir(join(cwd, 'dist'))
 
       expect(distFiles).not.toContain('index.html')
-      expect(distFiles).not.toContain('static')
       expect(distFiles).not.toContain('vendor')
 
       // Remote entry stays unhashed so the manifest can reference a stable name
@@ -124,9 +123,11 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       expect(manifest).toHaveProperty('id')
       expect(manifest).toHaveProperty('name')
 
-      // Chunks themselves are hashed
-      expect(distFiles).toContain('assets')
-      const assetFiles = await readdir(join(cwd, 'dist', 'assets'))
+      // Hashed chunks are emitted to the `static` dir (assetsDir), not the Vite
+      // default `assets` — this keeps federation output aligned with the studio
+      // static layout the deploy/serve tooling expects.
+      expect(distFiles).toContain('static')
+      const assetFiles = await readdir(join(cwd, 'dist', 'static'))
       expect(assetFiles.some((f) => /^remote-entry-.+\.js$/.test(f))).toBe(true)
 
       // The build output must satisfy the deploy gate: `sanity deploy` runs

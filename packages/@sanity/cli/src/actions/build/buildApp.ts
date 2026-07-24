@@ -7,6 +7,7 @@ import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 import {getAppId} from '../../util/appId.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {determineBasePath} from './determineBasePath.js'
+import {preReleaseEventListenerFactory} from './eventListenerFactory.js'
 import {type BuildOptions} from './types.js'
 
 /**
@@ -59,5 +60,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       ? (options.applicationId ?? (await buildAppId(workbench)))
       : undefined,
     workDir,
+
+    eventListener: preReleaseEventListenerFactory(output),
   })
 }

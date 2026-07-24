@@ -47,6 +47,7 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
             : {}),
           [FEDERATION_DIR_NAME]: {
             build: {
+              assetsDir: 'static',
               copyPublicDir: false,
               emptyOutDir: false,
               outDir: `dist`,
