@@ -2,6 +2,7 @@ import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-cor
 import {type ViteDevServer} from 'vite'
 
 import {resolveAppId} from '../../appId.js'
+import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs, deriveInterfaces} from './deriveInterfaces.js'
 import {trackExposesSet} from './exposesSetId.js'
 import {type DevServerManifest, registerDevServer} from './registry.js'
@@ -38,6 +39,18 @@ interface DevServerRegistrationHandle {
   close: () => Promise<void>
 }
 
+/**
+ * Log any config validation errors without aborting. Unlike build and deploy,
+ * dev stays up on an invalid config so the author sees the errors and fixes them
+ * live on the next save.
+ */
+function reportConfigErrors(app: CliConfig['app'], output: Output): void {
+  const errors = validateWorkbenchApp(app)
+  if (errors.length === 0) return
+  // `output.error` exits the process; `warn` keeps the dev server alive.
+  output.warn(formatWorkbenchAppErrors(errors))
+}
+
 /** The address the server actually bound — the live socket, which can differ from the configured port under non-strict ports. */
 function serverAddress(server: ViteDevServer) {
   const resolvedHost = server.config.server.host
@@ -59,6 +72,8 @@ export async function startDevServerRegistration(
   const {cliConfig, extractManifest, isApp, onInterfaceSetChange, output, server, workDir} = options
 
   const {host: appHost, port: appPort} = serverAddress(server)
+
+  reportConfigErrors(cliConfig.app, output)
 
   // Forwarded alongside (not inside) the manifest so the workbench renders local
   // panels/workers and reads the configs without a deploy.
@@ -86,6 +101,7 @@ export async function startDevServerRegistration(
     // so omitting would wipe the registered set.
     extract: async (params) => {
       const app = (await getCliConfigUncached(params.workDir)).app
+      reportConfigErrors(app, output)
       return {
         configs: await deriveConfigs(app),
         interfaces: deriveInterfaces(app, {isApp}),
