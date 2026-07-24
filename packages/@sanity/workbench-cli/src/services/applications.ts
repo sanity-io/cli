@@ -75,6 +75,16 @@ export async function getApplication(applicationId: string): Promise<Application
   }
 }
 
+/** Every application in an organization, in one page (`limit=none`). */
+export async function listApplications(organizationId: string): Promise<Application[]> {
+  const client = await getClient()
+  const {data}: {data: Application[]} = await client.request({
+    query: {limit: 'none', organizationId},
+    uri: '/applications',
+  })
+  return data
+}
+
 /**
  * Create an application record (no deployment), so the CLI can build with the
  * returned id, then ship it via {@link createDeployment}.

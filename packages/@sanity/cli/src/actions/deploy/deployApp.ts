@@ -130,6 +130,7 @@ async function runAppDeployment(
     await checkAppTarget(reporter, {
       appId,
       isWorkbenchApp: true,
+      organizationId,
       slug: workbench.slug,
       title: appTitle,
     })
