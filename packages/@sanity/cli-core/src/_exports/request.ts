@@ -11,6 +11,8 @@ export {
   type RequestOptions,
   type StreamResponse,
   type TextResponse,
+  TimeoutError,
+  type TimeoutOptions,
   type TransformMiddleware,
   type WrappingMiddleware,
 } from 'get-it'

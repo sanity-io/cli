@@ -6,34 +6,18 @@ import {
   nodeReadableFromWeb,
   retry,
   type StreamResponse,
-  type WrappingMiddleware,
+  TimeoutError,
 } from '@sanity/cli-core/request'
 
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
 const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
 
-const connectionTimeout: WrappingMiddleware = async (options, next) => {
-  const connectionController = new AbortController()
-  const connectionTimer = setTimeout(() => {
-    const error = new Error('Backup download timed out before receiving a response. Try again.')
-    Object.assign(error, {code: 'ETIMEDOUT'})
-    connectionController.abort(error)
-  }, CONNECTION_TIMEOUT)
-  connectionTimer.unref()
-
-  const signal = options.signal
-    ? AbortSignal.any([options.signal, connectionController.signal])
-    : connectionController.signal
-  try {
-    return await next({...options, signal})
-  } finally {
-    clearTimeout(connectionTimer)
-  }
-}
-
 const request = createRequester({
-  middleware: [retry(), connectionTimeout],
-  timeout: false,
+  middleware: [retry()],
+  // Fresh 15s headers deadline per retry attempt (TimeoutError is retried for
+  // GET). No total deadline: the body phase is governed by the idle read
+  // timeout below, which resets on every received chunk.
+  timeout: {headers: CONNECTION_TIMEOUT, total: false},
 })
 
 /**
@@ -54,11 +38,21 @@ export async function downloadStream(
 ): Promise<number> {
   const abortController = new AbortController()
 
-  const response: StreamResponse = await request({
-    as: 'stream',
-    signal: abortController.signal,
-    url,
-  })
+  let response: StreamResponse
+  try {
+    response = await request({
+      as: 'stream',
+      signal: abortController.signal,
+      url,
+    })
+  } catch (error) {
+    if (error instanceof TimeoutError) {
+      throw new Error('Backup download timed out before receiving a response. Try again.', {
+        cause: error,
+      })
+    }
+    throw error
+  }
 
   let destination: Writable
   try {
