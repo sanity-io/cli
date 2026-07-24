@@ -7,6 +7,7 @@ import {
   VIEW_CONTRACT_VERSION,
 } from '../../contract.js'
 import {isWorkbenchApp, readConfig} from '../../defineApp.js'
+import {validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {type DevServerManifest} from './registry.js'
 
 /** One forwarded interface record on the dev-server registry entry. */
@@ -27,6 +28,8 @@ export function deriveInterfaces(
   options: {isApp: boolean},
 ): DevServerInterface[] | undefined {
   if (!isWorkbenchApp(app)) return undefined
+
+  validateWorkbenchApp(app)
 
   if (!options.isApp && app.entry !== undefined) {
     throw new Error('App views for studios are not implemented yet')

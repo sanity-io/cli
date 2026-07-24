@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
+import {type DefineAppInput, unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
 import {resolveWorkbenchApp} from '../resolveWorkbenchApp.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig
@@ -39,7 +39,7 @@ describe('resolveWorkbenchApp', () => {
     })
   })
 
-  test('passes through declared views, services, entry, slug, and visibility', () => {
+  test('passes through a declared app entry, services, slug, and visibility', () => {
     const config = asConfig(
       unstable_defineApp({
         entry: './src/App.tsx',
@@ -48,19 +48,48 @@ describe('resolveWorkbenchApp', () => {
         services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
         slug: 'my-app-host',
         title: 'My App',
-        views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
         visibility: 'unlisted',
       }),
     )
 
-    const resolved = resolveWorkbenchApp(config)
-    expect(resolved).toMatchObject({
+    expect(resolveWorkbenchApp(config)).toMatchObject({
       entry: './src/App.tsx',
       services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
       slug: 'my-app-host',
-      views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
       visibility: 'unlisted',
     })
+  })
+
+  test('passes through declared panel views and services', () => {
+    const config = asConfig(
+      unstable_defineApp({
+        name: 'my-app',
+        organizationId: 'org-123',
+        services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
+        slug: 'my-app-host',
+        title: 'My App',
+        views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
+      }),
+    )
+
+    expect(resolveWorkbenchApp(config)).toMatchObject({
+      services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
+      views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
+    })
+  })
+
+  test('throws when an app declares both an entry and panel views', () => {
+    const config = asConfig(
+      unstable_defineApp({
+        entry: './src/App.tsx',
+        name: 'my-app',
+        organizationId: 'org-123',
+        title: 'My App',
+        views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
+      } as unknown as DefineAppInput),
+    )
+
+    expect(() => resolveWorkbenchApp(config)).toThrow('cannot expose both an app view')
   })
 
   test('resolves a media library singleton and its config', () => {
