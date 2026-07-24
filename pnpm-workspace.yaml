@@ -20,7 +20,7 @@ catalog:
   publint: ^0.3.21
 
   # GROQ
-  groq-js: ^1.30.3
+  groq-js: ^2.0.0
 
   # Sanity
   sanity: ^6.5.0

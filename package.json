@@ -86,7 +86,8 @@
       "node-pty"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*"
+      "@sanity/cli": "workspace:*",
+      "groq-js": "^2.0.0"
     }
   }
 }

@@ -87,9 +87,6 @@ catalogs:
     get-tsconfig:
       specifier: ^4.14.0
       version: 4.14.0
-    groq-js:
-      specifier: ^1.30.3
-      version: 1.30.3
     import-meta-resolve:
       specifier: ^4.2.0
       version: 4.2.0
@@ -157,6 +154,7 @@ catalogs:
 overrides:
   '@sanity/client': ^7.23.2
   '@sanity/cli': workspace:*
+  groq-js: ^2.0.0
 
 importers:
 
@@ -586,8 +584,8 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0(@types/react@19.2.17)(xstate@5.32.4)
       '@sanity/runtime-cli':
-        specifier: ^17.1.0
-        version: 17.1.0(@types/node@22.20.0)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0)
+        specifier: ^17.2.0
+        version: 17.2.0(@types/node@22.20.0)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0)
       '@sanity/schema':
         specifier: 'catalog:'
         version: 6.5.0(@types/react@19.2.17)
@@ -637,8 +635,8 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1
       groq-js:
-        specifier: 'catalog:'
-        version: 1.30.3
+        specifier: ^2.0.0
+        version: 2.0.0
       gunzip-maybe:
         specifier: ^1.4.2
         version: 1.4.2
@@ -1377,6 +1375,10 @@ packages:
 
   '@architect/inventory@6.0.0':
     resolution: {integrity: sha512-PQRC730De8lCYA+QMHpFjtf/i4iPjBSL8JvC5c9DQarnCPwf1/cLaCqJdGMVmlU7J1q7EgfIRHMUwLUdnq2ADg==}
+    engines: {node: '>=22'}
+
+  '@architect/inventory@6.1.0':
+    resolution: {integrity: sha512-8+0SfwnAmyYR91nyM5VnBnv5uGE5uMhVbIAtkJUOyk68+oH2lcoWc8DfFPYSLREvSYg9f/eYQC63adksFMUmkw==}
     engines: {node: '>=22'}
 
   '@architect/parser@8.0.1':
@@ -4505,6 +4507,10 @@ packages:
     resolution: {integrity: sha512-mWgAMVq9VaKUrEs7FmBbYFRBa5YvNb4FUjHOh2Ie05Qzhqlv90UX8o4fWMZPANhoebu36zridWs0B0tgGi+2Tw==}
     engines: {node: '>=20'}
 
+  '@sanity/blueprints@0.22.0':
+    resolution: {integrity: sha512-6uro8kbYkoDDYob0RmKj3mqpA6FBQWL6vSGXNvbL5jQM89HWvl9EcCWia7+aiVMGM7icD7kR0QljgrGHC/VagA==}
+    engines: {node: '>=20'}
+
   '@sanity/browserslist-config@1.0.5':
     resolution: {integrity: sha512-so+/UtCge8t1jq509hH0otbbptRz0zM/Aa0dh5MhMD7HGT6n2igWIL2VWH/9QR9e77Jn3dJsjz23mW1WCxT+sg==}
 
@@ -4695,8 +4701,8 @@ packages:
       prismjs:
         optional: true
 
-  '@sanity/runtime-cli@17.1.0':
-    resolution: {integrity: sha512-2Se6htjIs+/oLzoN7uI191sO4w0OySP8nCGiX6YxN0j2j74LR9EKPb21+Qqu7Vup1c8hiaggUXR+xmaCFQ7m6g==}
+  '@sanity/runtime-cli@17.2.0':
+    resolution: {integrity: sha512-QJ0AUsQ10xb7nVzklvdqYTmmidGKigqhVpYNeRNvTngzTHj3p36ayIFLxgYLt/M9jzJSXIo+AJ4ZVTT5CporaA==}
     engines: {node: '>=22.12'}
     hasBin: true
 
@@ -4784,8 +4790,8 @@ packages:
       '@sanity/types':
         optional: true
 
-  '@sanity/workbench@0.1.0-alpha.25':
-    resolution: {integrity: sha512-B4TeDPVoLpTm2AlKiRhvwWyiP3Ep3WlYj+uIBl3ZHk2Jg0oLEtJTO7G3JQs9I9e1plx+lBlqxdnXoj02QJcLlQ==}
+  '@sanity/workbench@0.1.0-alpha.29':
+    resolution: {integrity: sha512-INlBm+rhlQQu0Gd2DZXnPJgPzdE84YUx6z/gSjVdugTvLi5Ay/Edf3CBX4yuH284/7aR05h/OMbWyA0XU2AMKQ==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       '@sanity/sdk': ^2.9.0
@@ -5717,9 +5723,9 @@ packages:
     resolution: {integrity: sha512-x0HvcHqVJNTPk/Bw8JbLWlWoo6Wwnsug0fnYYro1HBrjxZ3G7/AZk7Ahv8JwDe1uIcz8eBqvu86FuF1POiG7vQ==}
     engines: {node: '>=6.0'}
 
-  adm-zip@0.5.17:
-    resolution: {integrity: sha512-+Ut8d9LLqwEvHHJl1+PIHqoyDxFgVN847JTVM3Izi3xHDWPE4UtzzXysMZQs64DMcrJfBeS/uoEP4AD3HQHnQQ==}
-    engines: {node: '>=12.0'}
+  adm-zip@0.6.0:
+    resolution: {integrity: sha512-XleryMhbuksdKtofnWZ9Sk+4CUTbms4Mb/EU32SZwToAyZ5RgVos/ki8n+yr0LWHOGKuakbXTuuYNHLQjhddgg==}
+    engines: {node: '>=14.0'}
 
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
@@ -7051,9 +7057,9 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  groq-js@1.30.3:
-    resolution: {integrity: sha512-X3Zppy8KO/mDLSu5RylcO9zON+IwxV6y6aeIWsfNNBz0PaRboUmsTVgk3Zndqp9TgWCTFvCk+Z2W0uu0R3i5DA==}
-    engines: {node: '>= 14'}
+  groq-js@2.0.0:
+    resolution: {integrity: sha512-kj56ZjnOFbgDt91zYwQ10jsVUtVGJqAKfRbAir0EvTK84O5ZsSyc0rDEm2P3jmAJkxs4X1DOG8vtaYJQIA/XCA==}
+    engines: {node: '>=22.12'}
 
   groq@3.88.1-typegen-experimental.0:
     resolution: {integrity: sha512-6TZD6H1y3P7zk0BQharjFa7BOivV9nFL6KKVZbRZRH0yOSSyu2xHglTO48b1/2mCEdYoBQpvE7rjCDUf6XmQYQ==}
@@ -8054,6 +8060,10 @@ packages:
 
   ora@9.4.0:
     resolution: {integrity: sha512-84cglkRILFxdtA8hAvLNdMrtBpPNBTrQ9/ulg0FA7xLMnD6mifv+enAIeRmvtv+WgdCE+LPGOfQmtJRrVaIVhQ==}
+    engines: {node: '>=20'}
+
+  ora@9.4.1:
+    resolution: {integrity: sha512-6VlU9MLXbjVQD04AZCMX28hVtA5bUoadvUqO76MUCVA0ilwJbMiHsITRPfyVm6p/BC0Av/BXMujx39WCe1LEqw==}
     engines: {node: '>=20'}
 
   os-homedir@1.0.2:
@@ -9440,6 +9450,10 @@ packages:
     resolution: {integrity: sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
+  verkit@0.1.2:
+    resolution: {integrity: sha512-WqkT8n3hqizuCu71W3bUzf5fjBmkbXcudsehe/NbxA8PgqoKnSOY5K0Ba2ckg1qaRaSpSz7as/n9K1R9JXjQKg==}
+    engines: {node: '>=18.12.0'}
+
   vite-node@6.0.0:
     resolution: {integrity: sha512-oj4PVrT+pDh6GYf5wfUXkcZyekYS8kKPfLPXVl8qe324Ec6l4K2DUKNadRbZ3LQl0qGcDz+PyOo7ZAh00Y+JjQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -9627,6 +9641,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.21.1:
+    resolution: {integrity: sha512-+0NTnW77fFN/DjQi6k/Sq/Yvk4Sgajw7urW8V+asjXnRgDs9gyGkdb7EzgfhA4goXsRIZKE28fzIXBHEzhuiWw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   wsl-utils@0.3.1:
     resolution: {integrity: sha512-g/eziiSUNBSsdDJtCLB8bdYEUMj4jR7AGeUo96p/3dTafgjHhpF4RiCFPiRILwjQoDXx5MqkBr4fwWtR3Ky4Wg==}
     engines: {node: '>=20'}
@@ -9782,6 +9808,14 @@ snapshots:
       esquery: 1.6.0
 
   '@architect/inventory@6.0.0':
+    dependencies:
+      '@architect/asap': 7.0.10
+      '@architect/parser': 8.0.1
+      '@architect/utils': 6.0.3
+      '@aws-lite/client': 0.23.7
+      '@aws-lite/ssm': 0.2.5
+
+  '@architect/inventory@6.1.0':
     dependencies:
       '@architect/asap': 7.0.10
       '@architect/parser': 8.0.1
@@ -12708,7 +12742,6 @@ snapshots:
       '@sanity/types': 6.5.0(@types/react@19.2.17)
     transitivePeerDependencies:
       - '@types/react'
-      - supports-color
 
   '@portabletext/schema@2.2.3': {}
 
@@ -13086,6 +13119,8 @@ snapshots:
 
   '@sanity/blueprints@0.20.2': {}
 
+  '@sanity/blueprints@0.22.0': {}
+
   '@sanity/browserslist-config@1.0.5': {}
 
   '@sanity/client@7.23.2':
@@ -13146,7 +13181,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       globby: 11.1.0
       groq: 6.1.0
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       json5: 2.2.3
       lodash-es: 4.18.1
       prettier: 3.9.5
@@ -13314,7 +13349,7 @@ snapshots:
       console-table-printer: 2.16.1
       debug: 4.4.3(supports-color@8.1.1)
       fast-fifo: 1.3.2
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       p-map: 7.0.4
     transitivePeerDependencies:
       - '@types/react'
@@ -13330,7 +13365,7 @@ snapshots:
       arrify: 3.0.0
       debug: 4.4.3(supports-color@8.1.1)
       fast-fifo: 1.3.2
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       p-map: 7.0.4
     transitivePeerDependencies:
       - '@types/react'
@@ -13516,29 +13551,31 @@ snapshots:
 
   '@sanity/prism-groq@1.1.2': {}
 
-  '@sanity/runtime-cli@17.1.0(@types/node@22.20.0)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0)':
+  '@sanity/runtime-cli@17.2.0(@types/node@22.20.0)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0)':
     dependencies:
       '@architect/hydrate': 6.0.2
-      '@architect/inventory': 6.0.0
+      '@architect/inventory': 6.1.0
       '@inquirer/prompts': 8.5.2(@types/node@22.20.0)
       '@oclif/core': 4.11.14
       '@oclif/plugin-help': 6.2.53
       '@sanity-labs/design-tokens': 0.0.2-alpha.4
-      '@sanity/blueprints': 0.20.2
+      '@sanity/blueprints': 0.22.0
       '@sanity/blueprints-parser': 0.4.0
       '@sanity/client': 7.23.2
-      adm-zip: 0.5.17
+      adm-zip: 0.6.0
       array-treeify: 0.1.5
       cardinal: 2.1.1
       empathic: 2.0.1
       eventsource: 4.1.0
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       jiti: 2.7.0
       mime-types: 3.0.2
-      ora: 9.4.0
+      ora: 9.4.1
+      signal-exit: 4.1.0
+      strip-ansi: 7.2.0
       tar-stream: 3.2.0
       vite: 8.1.5(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0)
-      ws: 8.21.0
+      ws: 8.21.1
       xdg-basedir: 5.1.0
     transitivePeerDependencies:
       - '@types/node'
@@ -13553,7 +13590,6 @@ snapshots:
       - sass-embedded
       - stylus
       - sugarss
-      - supports-color
       - terser
       - tsx
       - utf-8-validate
@@ -13566,14 +13602,13 @@ snapshots:
       '@sanity/types': 6.5.0(@types/react@19.2.17)
       arrify: 3.0.0
       get-it: 8.8.0
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       humanize-list: 1.0.1
       leven: 4.1.0
       lodash-es: 4.18.1
       object-inspect: 1.13.4
     transitivePeerDependencies:
       - '@types/react'
-      - supports-color
 
   '@sanity/schema@6.5.0-workbench.20260714145319(@types/react@19.2.17)':
     dependencies:
@@ -13582,14 +13617,13 @@ snapshots:
       '@sanity/types': 6.5.0-workbench.20260714145319(@types/react@19.2.17)
       arrify: 3.0.0
       get-it: 8.8.0
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       humanize-list: 1.0.1
       leven: 4.1.0
       lodash-es: 4.18.1
       object-inspect: 1.13.4
     transitivePeerDependencies:
       - '@types/react'
-      - supports-color
 
   '@sanity/sdk-react@2.14.1(@types/react@19.2.17)(immer@11.1.8)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4)':
     dependencies:
@@ -13606,7 +13640,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - immer
-      - supports-color
       - use-sync-external-store
       - xstate
 
@@ -13625,7 +13658,7 @@ snapshots:
       '@sanity/telemetry': 1.1.0(react@19.2.7)
       '@sanity/types': 6.5.0(@types/react@19.2.17)
       groq: 3.88.1-typegen-experimental.0
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       reselect: 5.2.0
       rxjs: 7.8.2
       zustand: 5.0.13(@types/react@19.2.17)(immer@11.1.8)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
@@ -13633,7 +13666,6 @@ snapshots:
       - '@types/react'
       - immer
       - react
-      - supports-color
       - use-sync-external-store
       - xstate
 
@@ -13652,7 +13684,7 @@ snapshots:
       '@sanity/telemetry': 1.1.0(react@19.2.7)
       '@sanity/types': 6.5.0(@types/react@19.2.17)
       groq: 3.88.1-typegen-experimental.0
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       reselect: 5.2.0
       rxjs: 7.8.2
       zustand: 5.0.13(@types/react@19.2.17)(immer@11.1.8)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
@@ -13660,7 +13692,6 @@ snapshots:
       - '@types/react'
       - immer
       - react
-      - supports-color
       - use-sync-external-store
       - xstate
 
@@ -13793,13 +13824,13 @@ snapshots:
     optionalDependencies:
       '@sanity/types': 6.5.0-workbench.20260714145319(@types/react@19.2.17)
 
-  '@sanity/workbench@0.1.0-alpha.25(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)':
+  '@sanity/workbench@0.1.0-alpha.29(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)':
     dependencies:
       '@module-federation/runtime': 2.8.0
       '@sanity/sdk': 2.15.0(@types/react@19.2.17)(immer@11.1.8)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4)
       '@sanity/telemetry': 1.1.0(react@19.2.7)
       rxjs: 7.8.2
-      semver: 7.8.5
+      verkit: 0.1.2
       xstate: 5.32.4
       zod: 4.4.3
     transitivePeerDependencies:
@@ -14740,7 +14771,7 @@ snapshots:
 
   adm-zip@0.5.10: {}
 
-  adm-zip@0.5.17: {}
+  adm-zip@0.6.0: {}
 
   agent-base@7.1.4: {}
 
@@ -16142,11 +16173,9 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  groq-js@1.30.3:
+  groq-js@2.0.0:
     dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
-    transitivePeerDependencies:
-      - supports-color
+      obug: 2.1.3
 
   groq@3.88.1-typegen-experimental.0: {}
 
@@ -17088,6 +17117,17 @@ snapshots:
       stdin-discarder: 0.3.2
       string-width: 8.2.1
 
+  ora@9.4.1:
+    dependencies:
+      chalk: 5.6.2
+      cli-cursor: 5.0.0
+      cli-spinners: 3.4.0
+      is-interactive: 2.0.0
+      is-unicode-supported: 2.1.0
+      log-symbols: 7.0.1
+      stdin-discarder: 0.3.2
+      string-width: 8.2.1
+
   os-homedir@1.0.2: {}
 
   outdent@0.5.0: {}
@@ -17928,7 +17968,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       exif-component: 1.0.1
       fast-deep-equal: 3.1.3
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       history: 5.3.0
       i18next: 26.3.6(typescript@6.0.3)
       is-hotkey-esm: 1.0.0
@@ -18052,7 +18092,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       exif-component: 1.0.1
       fast-deep-equal: 3.1.3
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       history: 5.3.0
       i18next: 26.3.6(typescript@6.0.3)
       is-hotkey-esm: 1.0.0
@@ -18165,7 +18205,7 @@ snapshots:
       '@sanity/ui': 3.3.5(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(styled-components@6.4.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@sanity/util': 6.5.0-workbench.20260714145319(@types/react@19.2.17)
       '@sanity/uuid': 3.0.3
-      '@sanity/workbench': 0.1.0-alpha.25(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)
+      '@sanity/workbench': 0.1.0-alpha.29(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)
       '@sentry/react': 10.65.0(react@19.2.7)
       '@tanstack/react-table': 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/react-virtual': 3.14.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -18177,7 +18217,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       exif-component: 1.0.1
       fast-deep-equal: 3.1.3
-      groq-js: 1.30.3
+      groq-js: 2.0.0
       history: 5.3.0
       i18next: 26.3.6(typescript@6.0.3)
       is-hotkey-esm: 1.0.0
@@ -18905,6 +18945,8 @@ snapshots:
 
   validate-npm-package-name@5.0.1: {}
 
+  verkit@0.1.2: {}
+
   vite-node@6.0.0(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0):
     dependencies:
       cac: 7.0.0
@@ -19100,6 +19142,8 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.21.0: {}
+
+  ws@8.21.1: {}
 
   wsl-utils@0.3.1:
     dependencies:
