@@ -3,6 +3,7 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {type RequireProps} from '../../types.js'
 import {isRecord} from '../../util/isRecord.js'
+import {jitToolchainExecArgv} from '../../util/jitToolchainExecArgv.js'
 import {promisifyWorker} from '../../util/promisifyWorker.js'
 import {
   deserializeStudioWorkerError,
@@ -128,6 +129,7 @@ export function createStudioWorker(filePath: URL, options: StudioWorkerTaskOptio
   }
 
   return new Worker(new URL('studioWorkerLoader.worker.js', import.meta.url), {
+    execArgv: jitToolchainExecArgv(),
     ...options,
     env: {
       ...(isRecord(options.env) ? options.env : process.env),

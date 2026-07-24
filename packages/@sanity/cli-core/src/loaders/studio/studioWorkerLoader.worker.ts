@@ -103,6 +103,15 @@ const defaultViteConfig: InlineConfig = {
   },
   ssr: {
     /**
+     * Except jsdom: it is loaded by the browser-stub environment, is huge
+     * (~10MB of CJS that gains nothing from the Vite pipeline), and must be
+     * resolved by Node itself so distributions that provide it outside the
+     * task-file graph (e.g. the bundled CLI's toolchain resolution hook) keep
+     * working — Vite's resolver does not consult Node module customization
+     * hooks.
+     */
+    external: ['jsdom'],
+    /**
      * We don't want to externalize any dependencies, we want everything to run thru vite.
      * Especially for CJS compatibility, etc.
      */

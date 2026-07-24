@@ -1,6 +1,7 @@
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {subdebug} from '../_exports/debug.js'
+import {jitToolchainExecArgv} from './jitToolchainExecArgv.js'
 
 const debug = subdebug('promisifyWorker')
 
@@ -41,6 +42,9 @@ export function promisifyWorker<T = unknown>(
   options?: PromisifyWorkerOptions,
 ): Promise<T> {
   const {terminateOnSettle = true, timeout, ...workerOptions} = options ?? {}
+  if (!workerOptions.execArgv) {
+    workerOptions.execArgv = jitToolchainExecArgv()
+  }
   const worker = new Worker(filePath, workerOptions)
 
   const fileName = `[${filePath.pathname}]`
