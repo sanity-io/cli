@@ -4,19 +4,23 @@
  * operations — no filesystem access, no interactive-only flows — are
  * invokable here.
  *
- * Most hosts should use {@link runSanityCli}, which handles arg parsing,
- * command dispatch, per-invocation auth, and output capture:
+ * {@link invokeSanityCli} handles arg parsing,
+ * command dispatch, per-invocation auth, and output capture.
  * ```ts
- * import {runSanityCli} from '@sanity/cli/commands'
+ * import {invokeSanityCli} from '@sanity/cli/invokeSanityCli'
  *
- * const {exitCode, output} = await runSanityCli({
+ * const {exitCode, output} = await invokeSanityCli({
  *   args: 'cors list --project-id abc123',
  *   token: extra.authInfo.token,
  * })
  * ```
  *
  * The command classes themselves are deliberately not exported: going through
- * {@link runSanityCli} is the only supported way to invoke them in-process.
+ * {@link invokeSanityCli} is the only supported way to invoke them in-process.
+ *
+ * Help works like the regular CLI, scoped to the invokable surface: `--help`
+ * (or `help` / `-h`) renders root help listing the invokable topics, and a
+ * subject (`cors --help`, `cors list --help`) renders topic or command help.
  */
 import {fileURLToPath} from 'node:url'
 
@@ -24,11 +28,9 @@ import {Config} from '@oclif/core'
 import {CLI_TELEMETRY_SYMBOL, exitCodes, noopLogger, setCliTelemetry} from '@sanity/cli-core'
 import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 
-import {Add as CorsAdd} from '../commands/cors/add.js'
-import {Delete as CorsDelete} from '../commands/cors/delete.js'
-import {List as CorsList} from '../commands/cors/list.js'
-import {List as ProjectsList} from '../commands/projects/list.js'
-import {tokenizeCliArgs} from '../util/tokenizeCliArgs.js'
+import {tokenizeCliArgs} from '../../util/tokenizeCliArgs.js'
+import {isHelpRequest, renderInvokableHelp} from './help.js'
+import {type InvokableCommand, invokableCommands} from './InvokableCommands.js'
 
 /**
  * Load the oclif `Config` for this package, needed as the second argument to
@@ -37,29 +39,20 @@ import {tokenizeCliArgs} from '../util/tokenizeCliArgs.js'
  *
  * @internal
  */
-export function loadCliCommandConfig(): Promise<Config> {
+function loadCliCommandConfig(): Promise<Config> {
   // Resolves to the package root from both src/exports (dev) and dist/exports (built)
   return Config.load(fileURLToPath(new URL('../..', import.meta.url)))
 }
 
-/**
- * Minimal structural type for an invokable oclif command class.
- */
-interface InvokableCommand {
-  run(argv: string[], config: Config): Promise<unknown>
+function unknownCommandResult(argv: string[]): InvokeSanityCliResult {
+  return {
+    exitCode: exitCodes.USAGE_ERROR,
+    output: [
+      `Unknown or unsupported command: ${argv.slice(0, 2).join(' ') || '(none)'}`,
+      `Available commands: ${[...invokableCommands.keys()].join(', ')}`,
+    ].join('\n'),
+  }
 }
-
-/**
- * Dispatch table from command id to command class. This doubles as the
- * allowlist: anything not in this table cannot be invoked through
- * {@link runSanityCli}.
- */
-const invokableCommands: ReadonlyMap<string, InvokableCommand> = new Map<string, InvokableCommand>([
-  ['cors add', CorsAdd],
-  ['cors delete', CorsDelete],
-  ['cors list', CorsList],
-  ['projects list', ProjectsList],
-])
 
 function resolveCommand(argv: string[]): {argv: string[]; command: InvokableCommand} | undefined {
   // Accept both separator styles: `cors list` and `cors:list`
@@ -76,7 +69,7 @@ function resolveCommand(argv: string[]): {argv: string[]; command: InvokableComm
 /**
  * @internal
  */
-export interface RunSanityCliOptions {
+export interface InvokeSanityCliOptions {
   /**
    * Arguments after `sanity` (a leading `sanity` token is tolerated), either
    * as a single string — shell-style quoting is supported, but no shell is
@@ -101,7 +94,7 @@ export interface RunSanityCliOptions {
 /**
  * @internal
  */
-export interface RunSanityCliResult {
+export interface InvokeSanityCliResult {
   /** `0` on success, the command's exit code otherwise. */
   exitCode: number
 
@@ -120,11 +113,13 @@ let cachedConfig: Promise<Config> | undefined
  *
  * @internal
  */
-export async function runSanityCli({
+export async function invokeSanityCli({
   args,
   config,
   token,
-}: RunSanityCliOptions): Promise<RunSanityCliResult> {
+}: InvokeSanityCliOptions): Promise<InvokeSanityCliResult> {
+  const resolvedConfig = config ?? (await (cachedConfig ??= loadCliCommandConfig()))
+
   // Commands log through the global telemetry store; default it to a noop
   // store so embedding hosts need no telemetry wiring (and see no warnings),
   // without clobbering a store the host may have installed itself.
@@ -143,16 +138,32 @@ export async function runSanityCli({
   }
   if (argv[0] === 'sanity') argv = argv.slice(1)
 
-  const resolved = resolveCommand(argv)
-  if (!resolved) {
-    return {
-      exitCode: exitCodes.USAGE_ERROR,
-      output: [
-        `Unknown or unsupported command: ${argv.slice(0, 2).join(' ') || '(none)'}`,
-        `Available commands: ${[...invokableCommands.keys()].join(', ')}`,
-      ].join('\n'),
+  // Help requests are routed through oclif's help system, scoped to the
+  // invokable surface: root help for a bare request, topic/command help when
+  // a subject is given. Non-invokable subjects get the standard
+  // unknown-command response (identical to a truly unknown command, so hosts
+  // can't probe the full CLI surface through help), and a help request never
+  // executes a command.
+  if (isHelpRequest(argv)) {
+    try {
+      // Drop a leading `help` so the rest is the subject, and present `-h` as
+      // `--help`, the only help flag oclif's subject resolution recognizes
+      const helpArgv = (argv[0] === 'help' ? argv.slice(1) : argv).map((token) =>
+        token === '-h' ? '--help' : token,
+      )
+      const output = await renderInvokableHelp(resolvedConfig, helpArgv)
+      if (output !== undefined) return {exitCode: exitCodes.SUCCESS, output}
+      return unknownCommandResult(helpArgv.filter((token) => token !== '--help'))
+    } catch (err) {
+      return {
+        exitCode: exitCodes.RUNTIME_ERROR,
+        output: err instanceof Error ? err.message : String(err),
+      }
     }
   }
+
+  const resolved = resolveCommand(argv)
+  if (!resolved) return unknownCommandResult(argv)
 
   const output: string[] = []
   const sink = (line: string) => output.push(line)
@@ -161,14 +172,12 @@ export async function runSanityCli({
   // it so a failed invocation can't change the host process's exit status.
   const previousExitCode = process.exitCode
   try {
-    const oclifConfig = config ?? (await (cachedConfig ??= loadCliCommandConfig()))
-
     await runWithCliExecutionContext({stderr: sink, stdout: sink, token}, () =>
-      resolved.command.run(resolved.argv, oclifConfig),
+      resolved.command.run(resolved.argv, resolvedConfig),
     )
     return {exitCode: exitCodes.SUCCESS, output: output.join('\n')}
   } catch (err) {
-    const exit = (err as {oclif?: {exit?: false | number}}).oclif?.exit
+    const exit = err.oclif?.exit
 
     // `this.exit(0)` throws an ExitError but is a successful outcome
     if (exit === exitCodes.SUCCESS) {
