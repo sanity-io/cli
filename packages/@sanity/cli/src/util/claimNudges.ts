@@ -1,4 +1,3 @@
-import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {getUserConfig, UNCLAIMED_PROJECTS_CONFIG_KEY} from '@sanity/cli-core'
@@ -10,7 +9,6 @@ import {
   lookupClaimStateViaProject,
   type MintedProject,
 } from '../services/mintProject.js'
-import {readEnvValues} from './envFile.js'
 
 const debug = subdebug('claimNudges')
 
@@ -21,33 +19,19 @@ export interface UnclaimedProjectRecord {
   mintedAt: string
   projectId: string
 
-  /** Highest nudge tier already shown. */
-  lastNudgeTier?: number
-
   /** Robot token, used to read claim state as a function of organization membership. */
   token?: string
 }
 
-const NUDGE_TIERS = [
-  {ms: 48 * 3_600_000, tier: 1},
-  {ms: 24 * 3_600_000, tier: 2},
-  {ms: 8 * 3_600_000, tier: 3},
-  {ms: 2 * 3_600_000, tier: 4},
-] as const
+const unit = (n: number, name: string) => `${n} ${name}${n === 1 ? '' : 's'}`
 
-function tierFor(msLeft: number): number {
-  let current = 0
-  for (const {ms, tier} of NUDGE_TIERS) {
-    if (msLeft <= ms) current = tier
-  }
-  return current
-}
-
-function humanizeMsLeft(msLeft: number): string {
-  const minutes = Math.max(Math.round(msLeft / 60_000), 1)
-  if (minutes < 120) return `about ${minutes} minutes`
-  const hours = Math.round(minutes / 60)
-  return `about ${hours} hours`
+export function formatMsLeft(msLeft: number): string {
+  const totalMinutes = Math.max(Math.floor(msLeft / 60_000), 1)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours === 0) return unit(minutes, 'minute')
+  if (minutes === 0) return unit(hours, 'hour')
+  return `${unit(hours, 'hour')} ${unit(minutes, 'minute')}`
 }
 
 function isWellFormed(record: unknown): record is UnclaimedProjectRecord {
@@ -129,64 +113,67 @@ export function forgetMintedProject(projectId: string): boolean {
   }
 }
 
-function renderNudge(record: UnclaimedProjectRecord, tier: number, msLeft: number): string {
-  const timeLeft = humanizeMsLeft(msLeft)
-  const agentCta = styleText(
-    'dim',
-    'AI agents: surface this claim link to your human now — it cannot be recovered after expiry.',
-  )
+function renderReminder(
+  record: UnclaimedProjectRecord,
+  msLeft: number,
+  {solo = true} = {},
+): string {
+  const agentCta =
+    styleText('dim', 'If an agent is running this, surface the full claim URL to the user.') +
+    '\n' +
+    styleText('dim', 'They need to click this link to claim the project before it expires.')
 
-  const urgent = tier >= 3
-  const headline =
-    tier === 1
-      ? `⏳ Claim your Sanity project — ${record.projectId} expires in ${timeLeft}`
-      : tier >= 4
-        ? `🚨 Final reminder — project ${record.projectId} expires in ${timeLeft}`
-        : `${urgent ? '🚨' : '⏰'} Project ${record.projectId} expires in ${timeLeft}`
-  const bell = tier >= 4 ? '' : ''
-  return (
-    bell +
+  const urgent = msLeft <= 24 * 3_600_000
+  const headline = `Unclaimed Sanity project ${record.projectId} expires in ${formatMsLeft(msLeft)}`
+  const base =
     `${styleText(['bold', urgent ? 'red' : 'yellow'], headline)}\n` +
+    `Claim it now: there's no downside to claiming early, and everything keeps working, including the token in .env.\n` +
+    styleText(['cyan', 'underline'], record.claimUrl)
+  if (!solo) return base
+  return (
+    `${base}\n\n` +
     `Everything in it is permanently deleted at ${record.expiresAt} unless you claim it.\n` +
-    `Claiming is free and keeps everything working, including the token in .env.\n` +
-    `Claim it now: ${styleText(['cyan', 'underline'], record.claimUrl)}\n` +
     agentCta
   )
 }
 
-function renderAmbientLine(record: UnclaimedProjectRecord, msLeft: number): string {
+function renderAggregateReminder(live: Array<{msLeft: number; record: UnclaimedProjectRecord}>) {
+  const header =
+    live.length === 1
+      ? '1 more unclaimed Sanity project, permanently deleted at its deadline unless you claim it:'
+      : `${live.length} more unclaimed Sanity projects, each permanently deleted at its deadline unless you claim it:`
+  const lines = live.map(
+    ({msLeft, record}) =>
+      `${styleText('cyan', record.projectId)} expires in ${formatMsLeft(msLeft)}: ${styleText(['cyan', 'underline'], record.claimUrl)}`,
+  )
   return (
-    styleText(
-      'dim',
-      `⏳ Unclaimed Sanity project ${record.projectId} expires in ${humanizeMsLeft(msLeft)} — claim it to keep it:`,
-    ) + `\n${styleText(['cyan', 'underline'], record.claimUrl)}`
+    `${header}\n\n` +
+    `${lines.join('\n')}\n\n` +
+    styleText('dim', 'If an agent is running this, surface every claim URL above to the user.') +
+    '\n' +
+    styleText('dim', 'They need to click each link to claim its project before it expires.')
   )
 }
 
 const claimedMessage = (record: UnclaimedProjectRecord): string =>
-  `${logSymbols.success} Sanity project ${record.projectId} has been claimed — it's yours to keep.`
+  // The robot token stays in `.env` after claim; let the user know.
+  `${logSymbols.success} Sanity project ${record.projectId} has been claimed. It's yours to keep.\n` +
+  `CLI commands here still authenticate with the robot token in .env. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from .env to act as yourself.`
 const expiredMessage = (record: UnclaimedProjectRecord): string =>
-  // `--force`: the expired credentials are still in `.env`, so a plain `sanity new` is refused by
-  // the remint guard (it won't overwrite them) — `--force` mints a replacement and leaves `.env`
-  // for you to update.
-  `⌛ Unclaimed Sanity project ${record.projectId} expired on ${record.expiresAt}. Run \`sanity new --force\` to mint a replacement.`
+  // `--force` mints a replacement and leaves `.env` for you to update.
+  `Unclaimed Sanity project ${record.projectId} expired on ${record.expiresAt} and has been deleted. Run \`sanity new --force\` to mint a replacement, and claim it within 72 hours to keep it.`
 const revokedMessage = (record: UnclaimedProjectRecord): string =>
-  // Removing SANITY_AUTH_TOKEN matters once a Sanity config exists: `.env` is auto-injected and the
-  // dead token would otherwise outrank the new login session in getCliToken.
-  `⚠ Sanity project ${record.projectId}'s token is no longer valid. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from .env to act as yourself.`
+  // The dead token is no longer valid; let the user know.
+  `${logSymbols.warning} Sanity project ${record.projectId}'s token is no longer valid. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from .env to act as yourself.`
 
 export async function runClaimNudges(
   write: (line: string) => void,
   now: number = Date.now(),
-  cwd: string = process.cwd(),
 ): Promise<void> {
   const records = readRecords()
   if (Object.keys(records).length === 0) return
 
-  let announced = false
-
   const announce = (message: string) => {
-    announced = true
     write(`\n${message}\n`)
   }
 
@@ -196,123 +183,55 @@ export async function runClaimNudges(
     touched.add(projectId)
   }
 
-  const announceClaimed = (record: UnclaimedProjectRecord) => {
-    announce(claimedMessage(record))
-    drop(record.projectId)
-  }
-  const announceExpired = (record: UnclaimedProjectRecord) => {
-    announce(expiredMessage(record))
-    drop(record.projectId)
-  }
-  // A revoked token is dead weight in the ledger and, for the cwd project, actively blocks login by
-  // outranking the session in getCliToken — so drop it wherever it's seen.
-  const announceRevoked = (record: UnclaimedProjectRecord) => {
-    announce(revokedMessage(record))
-    drop(record.projectId)
-  }
-
-  // Fall back to local clock when unverifiable. Memoized so a project checked in one slot is not
-  // looked up again in another within the same run.
-  const confirmed = new Map<string, ClaimState | undefined>()
+  // Fall back to the local clock when unverifiable.
   const confirm = async (record: UnclaimedProjectRecord): Promise<ClaimState | undefined> => {
     if (!record.token) return undefined
-    if (confirmed.has(record.projectId)) return confirmed.get(record.projectId)
-    const state = await lookupClaimStateViaProject(record.projectId, record.token, {timeoutMs: 500})
-    confirmed.set(record.projectId, state)
-    return state
+    return lookupClaimStateViaProject(record.projectId, record.token)
   }
 
-  for (const record of Object.values(records)) {
-    if (new Date(record.expiresAt).getTime() > now) continue
-    const state = await confirm(record)
-    switch (state) {
-      case 'claimable': {
-        continue
-        break
-      }
-      case 'claimed': {
-        announceClaimed(record)
-        break
-      }
-      case 'revoked': {
-        announceRevoked(record)
-        break
-      }
-      default: {
-        announceExpired(record)
-      }
-    }
-  }
+  const live: Array<{msLeft: number; record: UnclaimedProjectRecord}> = []
+  const entries = Object.values(records)
+  const states = await Promise.all(entries.map((record) => confirm(record)))
 
-  // The most urgent live project whose tier advanced since its last shown nudge.
-  const due = Object.values(records)
-    .map((record) => ({msLeft: new Date(record.expiresAt).getTime() - now, record}))
-    .filter(({msLeft, record}) => msLeft > 0 && tierFor(msLeft) > (record.lastNudgeTier ?? 0))
-    .toSorted((a, b) => a.msLeft - b.msLeft)[0]
-
-  if (!announced && due) {
-    const {msLeft, record} = due
-    const state = await confirm(record)
+  for (const [index, record] of entries.entries()) {
+    const msLeft = new Date(record.expiresAt).getTime() - now
+    const state = states[index]
     switch (state) {
       case 'claimed': {
-        announceClaimed(record)
+        announce(claimedMessage(record))
+        drop(record.projectId)
         break
       }
       case 'expired': {
-        announceExpired(record)
+        announce(expiredMessage(record))
+        drop(record.projectId)
         break
       }
       case 'revoked': {
-        announceRevoked(record)
+        announce(revokedMessage(record))
+        drop(record.projectId)
         break
       }
       default: {
-        const tier = tierFor(msLeft)
-        announce(renderNudge(record, tier, msLeft))
-        records[record.projectId] = {...record, lastNudgeTier: tier}
-        touched.add(record.projectId)
+        if (msLeft > 0) {
+          live.push({msLeft, record})
+        } else if (state !== 'claimable') {
+          announce(expiredMessage(record))
+          drop(record.projectId)
+        }
+        // Locally expired but confirmed claimable (clock skew or an extended window): keep the
+        // record quietly and let the next run re-check.
       }
     }
   }
 
-  // The directory's own project governs auth here — its ledger token can outrank a login session
-  // in getCliToken — so always verify it and drop a claimed/expired record, even when another
-  // project already took the single announce slot. Only the ambient line itself waits for the slot.
-  {
-    const {SANITY_PROJECT_ID} = readEnvValues(path.join(cwd, '.env'), ['SANITY_PROJECT_ID'])
-    const record = SANITY_PROJECT_ID ? records[SANITY_PROJECT_ID] : undefined
-    if (record) {
-      const msLeft = new Date(record.expiresAt).getTime() - now
-      if (msLeft > 0) {
-        const state = await confirm(record)
-        switch (state) {
-          case 'claimed': {
-            drop(record.projectId)
-            if (!announced) announce(claimedMessage(record))
-
-            break
-          }
-          case 'expired': {
-            drop(record.projectId)
-            if (!announced) announce(expiredMessage(record))
-
-            break
-          }
-          case 'revoked': {
-            // Drop the dead token so getCliToken falls through to the login session.
-            drop(record.projectId)
-            if (!announced) announce(revokedMessage(record))
-
-            break
-          }
-          default: {
-            if (!announced) {
-              announce(renderAmbientLine(record, msLeft))
-            }
-          }
-        }
-      }
-    }
+  live.sort((a, b) => a.msLeft - b.msLeft)
+  const [lead, ...rest] = live
+  if (lead && rest.length === 0) {
+    announce(renderReminder(lead.record, lead.msLeft))
+  } else if (lead) {
+    announce(renderReminder(lead.record, lead.msLeft, {solo: false}))
+    announce(renderAggregateReminder(rest))
   }
 
   if (touched.size > 0) {
