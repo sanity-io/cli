@@ -1,5 +1,13 @@
 # @sanity/workbench-cli
 
+## [1.7.2](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.1...workbench-cli-v1.7.2)
+
+_2026-07-24_
+
+### Bug Fixes
+
+- **workbench:** output federation static assets to static dir ([#1594](https://github.com/sanity-io/cli/pull/1594)) ([643f3d4](https://github.com/sanity-io/cli/commit/643f3d471fc913d4a66b5c18f8e73ec48eea0075))
+
 ## [1.7.1](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.0...workbench-cli-v1.7.1)
 
 _2026-07-22_

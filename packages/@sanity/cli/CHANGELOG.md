@@ -1,5 +1,20 @@
 # Change Log
 
+## [7.13.1](https://github.com/sanity-io/cli/compare/cli-v7.13.0...cli-v7.13.1)
+
+_2026-07-24_
+
+### Bug Fixes
+
+- **cli:** auto-set strictExecutionOrder when unstable_bundledDev is enabled ([#1591](https://github.com/sanity-io/cli/pull/1591)) ([ff14024](https://github.com/sanity-io/cli/commit/ff1402422883d6444698a39230a62465bdd124d6))
+- **workbench:** output federation static assets to static dir ([#1594](https://github.com/sanity-io/cli/pull/1594)) ([643f3d4](https://github.com/sanity-io/cli/commit/643f3d471fc913d4a66b5c18f8e73ec48eea0075))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.7.2
+
 ## [7.13.0](https://github.com/sanity-io/cli/compare/cli-v7.12.1...cli-v7.13.0)
 
 _2026-07-23_
