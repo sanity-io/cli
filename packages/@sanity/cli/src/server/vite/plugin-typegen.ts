@@ -3,19 +3,14 @@ import path from 'node:path'
 
 import {CLITelemetryStore} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
-import {
-  type GenerationResult,
-  runTypegenGenerate,
-  type TypeGenConfig,
-  TypegenWatchModeTrace,
-  TypesGeneratedTrace,
-} from '@sanity/codegen'
+import {type GenerationResult, type TypeGenConfig} from '@sanity/codegen'
 import debounce from 'lodash-es/debounce.js'
 import mean from 'lodash-es/mean.js'
 import once from 'lodash-es/once.js'
 import picomatch from 'picomatch'
 import {type Plugin} from 'vite'
 
+import {loadOnDemand} from '../../util/loadOnDemand.js'
 import {toForwardSlashes} from '../../util/toForwardSlashes.js'
 
 /**
@@ -85,6 +80,20 @@ interface TypegenPluginOptions {
 export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
   const {config: inputConfig, output = console, telemetryLogger, workDir} = options
 
+  // @sanity/codegen drags the full babel + typescript tree (~73MB) and is not in
+  // the bundled CLI's base install. Load it on first use — from the CLI/project
+  // if present, else the shared cache (installed once) — and memoize so the
+  // dev/build lifecycle hooks share a single load.
+  let codegenModule: Promise<typeof import('@sanity/codegen')> | undefined
+  function loadCodegen() {
+    if (!codegenModule) {
+      codegenModule = loadOnDemand<typeof import('@sanity/codegen')>('@sanity/codegen', (message) =>
+        output.info(logSymbols.info, message),
+      )
+    }
+    return codegenModule
+  }
+
   // Apply defaults to config
   const config: TypeGenConfig = {
     formatGeneratedCode: inputConfig.formatGeneratedCode ?? false,
@@ -137,6 +146,7 @@ export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
         return null
       }
 
+      const {runTypegenGenerate} = await loadCodegen()
       const result = await runTypegenGenerate({
         config,
         workDir,
@@ -196,9 +206,19 @@ export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
     },
 
     configureServer(server) {
-      const trace = telemetryLogger?.trace(TypegenWatchModeTrace)
-      trace?.start()
-      trace?.log({step: 'started'})
+      const codegenReady = loadCodegen()
+      // The watch-mode telemetry trace class also comes from @sanity/codegen;
+      // acquire it once the load resolves, without blocking registration
+      let trace:
+        | {complete(): void; log(data: Record<string, unknown>): void; start(): void}
+        | undefined
+      const traceReady = telemetryLogger
+        ? codegenReady.then(({TypegenWatchModeTrace}) => {
+            trace = telemetryLogger.trace(TypegenWatchModeTrace)
+            trace.start()
+            trace.log({step: 'started'})
+          })
+        : Promise.resolve()
 
       // Build absolute patterns for query files
       const absoluteQueryPatterns = queryPatterns.map((pattern) =>
@@ -225,16 +245,19 @@ export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
         // Cancel any pending debounced extractions
         debouncedGenerate.cancel()
 
-        if (trace) {
-          trace.log({
-            averageGenerationDuration: mean(stats.successfulDurations) || 0,
-            generationFailedCount: stats.failedCount,
-            generationSuccessfulCount: stats.successfulDurations.length,
-            step: 'stopped',
-            watcherDuration: Date.now() - startTime,
-          })
-          trace.complete()
-        }
+        // If telemetry is on, flush the trace once its class has finished loading
+        void traceReady.then(() => {
+          if (trace) {
+            trace.log({
+              averageGenerationDuration: mean(stats.successfulDurations) || 0,
+              generationFailedCount: stats.failedCount,
+              generationSuccessfulCount: stats.successfulDurations.length,
+              step: 'stopped',
+              watcherDuration: Date.now() - startTime,
+            })
+            trace.complete()
+          }
+        })
 
         // Clean up process listeners (must always run, not just when trace exists)
         process.off('SIGTERM', onClose)
@@ -279,6 +302,7 @@ export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
 
       // Only log telemetry if generation completed successfully
       if (result && telemetryLogger) {
+        const {TypesGeneratedTrace} = await loadCodegen()
         const trace = telemetryLogger.trace(TypesGeneratedTrace)
         trace.start()
         trace.log({

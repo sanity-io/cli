@@ -13,6 +13,9 @@ const baseConfig = {
     '.changeset/changelog.mjs',
     // Generated test fixture copies (gitignored, populated during test runs)
     'packages/@sanity/cli-test/fixtures/**',
+    // Standalone experimental publish pipeline + validation harnesses, run
+    // directly with node (see scripts/bundle-experiment/README.md)
+    'scripts/bundle-experiment/**',
   ],
   workspaces: {
     'fixtures/*': {

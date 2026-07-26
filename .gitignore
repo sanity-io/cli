@@ -49,6 +49,10 @@ yarn-error.log*
 coverage/
 .vitest-reports/
 
+# Bundled-distribution experiment build output (scripts/bundle-experiment)
+.bundle-stage/
+.bundle-stage-safe/
+
 # Claude
 .claude/*
 !.claude/settings.json

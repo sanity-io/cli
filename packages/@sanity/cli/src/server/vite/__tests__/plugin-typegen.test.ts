@@ -20,19 +20,23 @@ const telemetryLogger = {
   trace: vi.fn().mockReturnValue(traceMock),
 } as unknown as CLITelemetryStore
 
-// Mock the @sanity/codegen module
-vi.mock('@sanity/codegen', async (importOriginal) => ({
-  ...(await importOriginal()),
-  runTypegenGenerate: vi.fn().mockResolvedValue({
-    code: '',
-    emptyUnionTypeNodesGenerated: 0,
-    filesWithErrors: 0,
-    queriesCount: 5,
-    queryFilesCount: 3,
-    schemaTypesCount: 10,
-    typeNodesGenerated: 15,
-    unknownTypeNodesGenerated: 0,
-  }),
+// @sanity/codegen is loaded on demand via loadOnDemand. Mock that boundary with
+// a plain resolved promise so generation settles as a deterministic microtask
+// under fake timers — a real dynamic import() would not.
+const {codegenMock, runTypegenGenerateMock} = vi.hoisted(() => {
+  const runTypegenGenerateMock = vi.fn()
+  return {
+    codegenMock: {
+      runTypegenGenerate: runTypegenGenerateMock,
+      TypegenWatchModeTrace: class TypegenWatchModeTrace {},
+      TypesGeneratedTrace: class TypesGeneratedTrace {},
+    },
+    runTypegenGenerateMock,
+  }
+})
+
+vi.mock('../../../util/loadOnDemand.js', () => ({
+  loadOnDemand: vi.fn().mockResolvedValue(codegenMock),
 }))
 
 // Mock fs.existsSync
@@ -47,8 +51,7 @@ describe('sanityTypegenPlugin', () => {
 
   beforeEach(async () => {
     vi.useFakeTimers()
-    const codegenModule = await import('@sanity/codegen')
-    runTypegenGenerate = vi.mocked(codegenModule.runTypegenGenerate)
+    runTypegenGenerate = runTypegenGenerateMock
     runTypegenGenerate.mockReset()
     runTypegenGenerate.mockResolvedValue({
       code: '',
@@ -317,6 +320,11 @@ describe('sanityTypegenPlugin', () => {
       watcher: typeof watcher
     }) => void
     configureServer({httpServer, watcher})
+
+    // The trace class is loaded on demand from @sanity/codegen, so the trace is
+    // acquired a microtask after configureServer returns (watcher registration
+    // is not blocked on it). Flush before asserting.
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(telemetryLogger.trace).toHaveBeenCalled()
     expect(traceMock.start).toHaveBeenCalled()
