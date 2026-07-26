@@ -103,6 +103,12 @@ const defaultViteConfig: InlineConfig = {
   },
   ssr: {
     /**
+     * Except jsdom: the browser-stub environment loads it, it is huge (~10MB of
+     * CJS that gains nothing from the Vite pipeline), and marking it external
+     * keeps it out of Vite's transform — Node resolves it directly instead.
+     */
+    external: ['jsdom'],
+    /**
      * We don't want to externalize any dependencies, we want everything to run thru vite.
      * Especially for CJS compatibility, etc.
      */

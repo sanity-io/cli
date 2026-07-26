@@ -18,5 +18,5 @@
   },
   "isModule": true,
   "sourceMaps": true,
-  "exclude": ["\\.test\\.ts$", "__tests__"]
+  "exclude": ["\\.test\\.ts$", "__tests__", "\\.worker\\.js$"]
 }
