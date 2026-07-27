@@ -1,4 +1,4 @@
-import {allow, CommandPolicySet, conditional, deny} from './policy'
+import {allow, type CommandPolicySet, conditional, deny} from './policy.js'
 
 /**
  * MCP programmatic mode disables local project/config discovery (see the CLI

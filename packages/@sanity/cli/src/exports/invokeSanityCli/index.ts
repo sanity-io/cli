@@ -1,8 +1,8 @@
 /**
  * Programmatic (in-process) invocation of CLI commands, e.g. from an MCP
  * server. The invokable surface is governed by a per-source command policy
- * (see ./policy.ts): every CLI command is explicitly allowed, denied, or
- * allowed conditionally on the parsed invocation.
+ * (see ./commandPolicies): every CLI command is explicitly allowed, denied,
+ * or allowed conditionally on the parsed invocation.
  *
  * {@link invokeSanityCli} handles arg parsing, policy enforcement, command
  * dispatch, per-invocation auth, and output capture.
@@ -36,8 +36,6 @@ import {isHelpRequest, renderInvokableHelp} from './help.js'
  * Load the oclif `Config` for this package, needed to resolve, load, and run
  * commands. Loading it once and reusing it across invocations avoids
  * re-reading the command manifest per call.
- *
- * @internal
  */
 function loadCliCommandConfig(): Promise<Config> {
   // Resolves to the package root from both src/exports (dev) and dist/exports (built)

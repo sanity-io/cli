@@ -15,9 +15,6 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const addCorsDebug = subdebug('cors:add')
 
-/**
- * @internal
- */
 export class Add extends SanityCommand<typeof Add> {
   static override args = {
     origin: Args.string({

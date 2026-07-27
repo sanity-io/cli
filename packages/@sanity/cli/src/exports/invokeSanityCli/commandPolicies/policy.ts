@@ -11,7 +11,7 @@
  */
 
 /** The parsed command invocation a conditional policy is evaluated against. */
-export interface Invocation {
+interface Invocation {
   args: Readonly<Record<string, unknown>>
   flags: Readonly<Record<string, unknown>>
 }

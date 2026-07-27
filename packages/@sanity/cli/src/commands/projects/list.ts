@@ -12,9 +12,6 @@ const sortFields = ['id', 'members', 'name', 'url', 'created']
 
 const projectsDebug = subdebug('projects')
 
-/**
- * @internal
- */
 export class List extends SanityCommand<typeof List> {
   static override description = 'List your projects'
   static override examples = [
