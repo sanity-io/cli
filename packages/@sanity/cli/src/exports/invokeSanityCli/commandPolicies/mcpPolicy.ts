@@ -1,4 +1,4 @@
-import {allow, type CommandPolicySet, deny, denyFlags} from './policy.js'
+import {allow, type CommandPolicySet, conditionalDenyFlags, deny} from './policy.js'
 
 /**
  * MCP programmatic mode disables local project/config discovery (see the CLI
@@ -61,7 +61,7 @@ export const mcpPolicy: CommandPolicySet = {
   // Opens a browser on the machine running the MCP server.
   'docs:browse': deny,
   // --web opens a browser on the machine running the MCP server.
-  'docs:read': denyFlags('web'),
+  'docs:read': conditionalDenyFlags('web'),
   'docs:search': allow,
 
   // Reads and executes local project configuration for diagnostics.
@@ -82,7 +82,7 @@ export const mcpPolicy: CommandPolicySet = {
   'graphql:deploy': deny,
   'graphql:list': allow,
   // --api loads GraphQL definitions from the local project; explicit project/dataset flags are safe.
-  'graphql:undeploy': denyFlags('api'),
+  'graphql:undeploy': conditionalDenyFlags('api'),
 
   'hooks:attempt': allow,
   'hooks:create': allow,
@@ -132,8 +132,8 @@ export const mcpPolicy: CommandPolicySet = {
   'migrations:run': deny,
 
   // --web opens a browser on the machine running the MCP server.
-  'openapi:get': denyFlags('web'),
-  'openapi:list': denyFlags('web'),
+  'openapi:get': conditionalDenyFlags('web'),
+  'openapi:list': conditionalDenyFlags('web'),
 
   'organizations:create': allow,
   'organizations:delete': allow,
