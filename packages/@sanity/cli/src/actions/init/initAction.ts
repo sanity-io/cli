@@ -18,7 +18,7 @@ import {detectFrameworkRecord} from '../../util/detectFramework.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
-import {getProviderName} from '../auth/getProviderName.js'
+import {getProviderName, getUserDisplayName} from '../auth/getProviderName.js'
 import {login} from '../auth/login/login.js'
 import {LOGIN_REQUIRED_MESSAGE} from '../auth/login/loginInstructions.js'
 import {detectAvailableEditors} from '../mcp/detectAvailableEditors.js'
@@ -391,7 +391,7 @@ async function ensureAuthenticated(
   if (user) {
     trace.log({alreadyLoggedIn: true, step: 'login'})
     output.log(
-      `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
+      `${logSymbols.success} You are logged in as ${getUserDisplayName(user)} using ${getProviderName(user.provider)}`,
     )
     return {user}
   }
@@ -416,7 +416,7 @@ async function ensureAuthenticated(
   const loggedInUser = await getCliUser()
 
   output.log(
-    `${logSymbols.success} You are logged in as ${loggedInUser.email} using ${getProviderName(loggedInUser.provider)}`,
+    `${logSymbols.success} You are logged in as ${getUserDisplayName(loggedInUser)} using ${getProviderName(loggedInUser.provider)}`,
   )
   return {user: loggedInUser}
 }

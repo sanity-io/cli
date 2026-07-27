@@ -231,7 +231,7 @@ export class Debug extends SanityCommand<typeof Debug> {
 
     const padTo = 8 // "Provider" is the longest key
     this.log(formatKeyValue('Name', user.name, {padTo}))
-    this.log(formatKeyValue('Email', user.email, {padTo}))
+    this.log(formatKeyValue('Email', user.email ?? '(none)', {padTo}))
     this.log(formatKeyValue('ID', user.id, {padTo}))
     this.log(formatKeyValue('Provider', user.provider, {padTo}))
     this.log('')
