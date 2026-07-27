@@ -20,8 +20,6 @@
  * (or `help` / `-h`) renders root help listing the invokable topics, and a
  * subject (`cors --help`, `cors list --help`) renders topic or command help.
  */
-import {fileURLToPath} from 'node:url'
-
 import {Config, Parser} from '@oclif/core'
 import {normalizeArgv} from '@oclif/core/help'
 import {CLI_TELEMETRY_SYMBOL, exitCodes, noopLogger, setCliTelemetry} from '@sanity/cli-core'
@@ -38,8 +36,7 @@ import {isHelpRequest, renderInvokableHelp} from './help.js'
  * re-reading the command manifest per call.
  */
 function loadCliCommandConfig(): Promise<Config> {
-  // Resolves to the package root from both src/exports (dev) and dist/exports (built)
-  return Config.load(fileURLToPath(new URL('../..', import.meta.url)))
+  return Config.load(import.meta.url)
 }
 
 function unknownCommandResult(argv: string[], policySet: CommandPolicySet): InvokeSanityCliResult {
@@ -207,9 +204,6 @@ export async function invokeSanityCli({
   const output: string[] = []
   const sink = (line: string) => output.push(line)
 
-  // oclif's error handling sets `process.exitCode` as a side effect; restore
-  // it so a failed invocation can't change the host process's exit status.
-  const previousExitCode = process.exitCode
   try {
     await runWithCliExecutionContext({stderr: sink, stdout: sink, token}, () =>
       CommandClass.run(commandArgv, resolvedConfig),
@@ -229,7 +223,5 @@ export async function invokeSanityCli({
       exitCode: typeof exit === 'number' ? exit : exitCodes.RUNTIME_ERROR,
       output: output.join('\n'),
     }
-  } finally {
-    process.exitCode = previousExitCode
   }
 }

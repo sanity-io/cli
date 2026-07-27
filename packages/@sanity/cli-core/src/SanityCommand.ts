@@ -113,6 +113,17 @@ export abstract class SanityCommand<T extends typeof Command>
 
     // In other cases, we _do_ want to report the error
     reportCliTraceError(err)
+
+    // oclif's base `catch` sets `process.exitCode` as a side effect
+    // we do not want to write to the host's own exit status.
+    if (getCliExecutionContext()) {
+      if (this.jsonEnabled()) {
+        this.logJson(this.toErrorJson(err))
+        return
+      }
+      throw err
+    }
+
     return super.catch(err)
   }
 

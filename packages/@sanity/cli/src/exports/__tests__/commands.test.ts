@@ -67,6 +67,18 @@ describe('invokeSanityCli', () => {
     expect(policyIds).toEqual(commandIds)
   })
 
+  test('resolves its own oclif config by default, without a config override', async () => {
+    // Regression test: `loadCliCommandConfig` must resolve this package's own
+    // root (where package.json and the oclif manifest live), not some other
+    // ancestor directory, when a caller doesn't supply `config` (as every
+    // other test in this file does).
+    const result = await invokeSanityCli({args: '--help', source: 'mcp', token: 'user-token'})
+
+    expect(result.exitCode).toBe(0)
+    expect(result.output).toContain('USAGE')
+    expect(result.output).toContain('Manage CORS origins for your project')
+  })
+
   test('runs a command from string args, using the provided token', async () => {
     mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
       .matchHeader('authorization', 'Bearer user-token')

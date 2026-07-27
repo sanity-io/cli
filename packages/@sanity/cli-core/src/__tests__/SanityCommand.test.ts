@@ -238,4 +238,55 @@ describe('SanityCommand', () => {
       }
     })
   })
+
+  describe('catch (error handling)', () => {
+    test('under an execution context, a command failure does not touch process.exitCode', async () => {
+      const previousExitCode = process.exitCode
+      const cmdClass = createMockedRunCommand({
+        run: async () => {
+          throw new Error('kaboom')
+        },
+      })
+
+      await expect(
+        runWithCliExecutionContext({stderr: () => {}, stdout: () => {}}, () => cmdClass.run([])),
+      ).rejects.toThrow('kaboom')
+
+      expect(process.exitCode).toBe(previousExitCode)
+    })
+
+    test('without an execution context, a command failure still sets process.exitCode as before', async () => {
+      const previousExitCode = process.exitCode
+      const cmdClass = createMockedRunCommand({
+        run: async () => {
+          throw new Error('kaboom')
+        },
+      })
+
+      try {
+        await expect(cmdClass.run([])).rejects.toThrow('kaboom')
+        expect(process.exitCode).toBe(1)
+      } finally {
+        process.exitCode = previousExitCode
+      }
+    })
+
+    test('under an execution context with --json, the error is logged as JSON instead of thrown', async () => {
+      const out: string[] = []
+      const previousExitCode = process.exitCode
+      const cmdClass = createMockedRunCommand({
+        run: async () => {
+          throw new Error('kaboom')
+        },
+      })
+      cmdClass.enableJsonFlag = true
+
+      await runWithCliExecutionContext({stderr: () => {}, stdout: (line) => out.push(line)}, () =>
+        cmdClass.run(['--json']),
+      )
+
+      expect(out.join('\n')).toContain('kaboom')
+      expect(process.exitCode).toBe(previousExitCode)
+    })
+  })
 })
