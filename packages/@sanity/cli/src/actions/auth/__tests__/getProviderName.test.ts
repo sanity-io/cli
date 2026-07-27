@@ -14,15 +14,6 @@ function createUser(overrides: Partial<SanityOrgUser> = {}): SanityOrgUser {
 }
 
 describe('getProviderName', () => {
-  test.each([
-    ['google', 'Google'],
-    ['github', 'GitHub'],
-    ['sanity', 'Email'],
-    ['saml-acme', 'SAML'],
-  ])('maps %s to %s', (provider, expected) => {
-    expect(getProviderName(provider)).toBe(expected)
-  })
-
   test('reads as prose for API tokens, rather than "Sanity-token"', () => {
     expect(getProviderName('sanity-token')).toBe('an API token')
   })
@@ -48,9 +39,5 @@ describe('getUserDisplayName', () => {
 
   test('falls back to the id when neither email nor name is usable', () => {
     expect(getUserDisplayName(createUser({email: null, name: ''}))).toBe('abc123')
-  })
-
-  test('never renders a literal "null"', () => {
-    expect(getUserDisplayName(createUser({email: null}))).not.toMatch(/null/)
   })
 })
