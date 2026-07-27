@@ -6,7 +6,7 @@ import {FEDERATION_DIR_NAME, FEDERATION_FILE_NAME} from '../constants.js'
 /**
  * @internal
  */
-export interface FederationOptions extends Pick<ModuleFederationOptions, 'exposes'> {
+export interface FederationOptions extends Pick<ModuleFederationOptions, 'exposes' | 'shared'> {
   /**
    * namespace of the federation build, used as the global variable name for the exposed modules
    * e.g `@acme/studio` would then allow you to import modules like `import ("@acme/studio/Button")`
@@ -15,7 +15,7 @@ export interface FederationOptions extends Pick<ModuleFederationOptions, 'expose
   name: string
 }
 
-export function sanityModuleFederation({exposes, name}: FederationOptions): PluginOption {
+export function sanityModuleFederation({exposes, name, shared}: FederationOptions): PluginOption {
   const mfPlugins = moduleFederation({
     dev: {
       disableDynamicRemoteTypeHints: true,
@@ -37,13 +37,13 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     // Resolves the remote entry path relative to the manifest rather than the
     // host origin.
     publicPath: 'auto',
-    // @module-federation/vite auto-shares every package.json dependency
-    // that exposes an `exports` field. That breaks for workspace packages with
-    // subpath-only exports (no `.` entry) like `@sanity/cli-build` and
-    // `@sanity/workbench`, because vite tries to resolve them as bare imports
-    // and fails. Workbench remotes manage runtime sharing through the host's
-    // federation runtime, so we opt out of auto-share entirely.
-    shared: {},
+    // Never left undefined: that turns on upstream auto-share, which shares every
+    // package.json dependency exposing an `exports` field as a singleton. It
+    // resolves each key as a bare import, so subpath-only-exports packages like
+    // `@sanity/cli-build` fail the build, and it forces version unification on
+    // remotes that are deployed independently. `deriveSharedDependencies` picks
+    // the keys instead.
+    shared: shared ?? {},
   })
 
   // module-federation delivers its dts plugin as a Promise resolving to an

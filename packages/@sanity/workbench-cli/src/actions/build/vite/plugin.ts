@@ -14,6 +14,7 @@ import {
   type FederationRuntimeOptions,
   sanityFederationRuntime,
 } from './plugins/plugin-sanity-federation-runtime.js'
+import {deriveSharedDependencies} from './shared-dependencies.js'
 
 interface FederationPluginOptionsBase extends Omit<Partial<FederationOptions>, 'exposes'> {
   exposes?: WorkbenchExposes
@@ -123,6 +124,10 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     sanityEnvironmentPlugin({clientInput, input: entryPath}),
     sanityFederationRuntime(runtimeOptions),
     sanityExtensionArtifacts({artifacts}),
-    sanityModuleFederation({exposes: federationExposes, name}),
+    sanityModuleFederation({
+      exposes: federationExposes,
+      name,
+      shared: pkgJson && deriveSharedDependencies({pkgJson, projectDir: workDir}),
+    }),
   ]
 }
