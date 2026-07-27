@@ -37,7 +37,6 @@ const knownTopicsWithoutAliases: Set<string> = new Set([
   'openapi',
   'skills',
   'telemetry',
-  'typegen',
 ])
 
 // Topics provided by oclif plugins (not in our manifest, but resolved at runtime).

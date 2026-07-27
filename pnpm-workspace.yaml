@@ -28,7 +28,7 @@ catalog:
   '@sanity/types': ^6.5.0
   '@sanity/schema': ^6.5.0
   '@sanity/client': ^7.23.2
-  '@sanity/codegen': ^8.0.0
+  '@sanity/codegen': ^7.0.3
   '@sanity/telemetry': ^1.1.0
 
   # Build & Development Tools
