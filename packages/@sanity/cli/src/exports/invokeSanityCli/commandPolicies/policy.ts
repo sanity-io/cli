@@ -16,7 +16,7 @@ interface Invocation {
   flags: Readonly<Record<string, unknown>>
 }
 
-export type InvocationPolicy = (invocation: Invocation) => boolean
+type InvocationPolicy = (invocation: Invocation) => boolean
 
 export interface CommandPolicy {
   kind: 'allow' | 'conditional' | 'deny'
