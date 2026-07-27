@@ -1,0 +1,5 @@
+---
+"@sanity/cli": patch
+---
+
+fix(cli): honor packageManager field and check package-lock.json last when detecting package manager

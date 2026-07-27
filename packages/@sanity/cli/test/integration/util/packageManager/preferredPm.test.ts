@@ -48,10 +48,151 @@ describe('preferredPm', () => {
       expect(preferredPm(tmpDir)).toBe('bun')
     })
 
-    it('prioritizes package-lock.json over yarn.lock', () => {
+    it('prioritizes yarn.lock over a stray package-lock.json', () => {
       fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
       fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '')
+      expect(preferredPm(tmpDir)).toBe('yarn')
+    })
+
+    it('prioritizes pnpm-lock.yaml over a stray package-lock.json', () => {
+      fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
+      fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '')
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('returns npm when package-lock.json is the only lock file', () => {
+      fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
       expect(preferredPm(tmpDir)).toBe('npm')
+    })
+
+    it('returns npm when npm-shrinkwrap.json is the only lock file', () => {
+      fs.writeFileSync(path.join(tmpDir, 'npm-shrinkwrap.json'), '{}')
+      expect(preferredPm(tmpDir)).toBe('npm')
+    })
+
+    it('prioritizes pnpm-lock.yaml over a stray npm-shrinkwrap.json', () => {
+      fs.writeFileSync(path.join(tmpDir, 'npm-shrinkwrap.json'), '{}')
+      fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '')
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+  })
+
+  describe('packageManager field detection', () => {
+    it('prioritizes the packageManager field over package-lock.json', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({packageManager: 'pnpm@9.1.2'}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('returns yarn for a packageManager field with a hash suffix', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({
+          packageManager: 'yarn@4.1.0+sha224.fd21d9eb5fba020083811af1d4953acc21eeb9f6',
+        }),
+      )
+      expect(preferredPm(tmpDir)).toBe('yarn')
+    })
+
+    it('returns bun for a bun packageManager field', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({packageManager: 'bun@1.1.0'}),
+      )
+      expect(preferredPm(tmpDir)).toBe('bun')
+    })
+
+    it('ignores a malformed packageManager field and falls back to lock files', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({packageManager: 'not-a-real-pm@1.0.0'}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '')
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('accepts a packageManager field without a version', () => {
+      fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({packageManager: 'pnpm'}))
+      fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '')
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('returns the package manager declared in devEngines.packageManager', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: {name: 'pnpm'}}}),
+      )
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('prioritizes the packageManager field over devEngines when both are present', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({
+          devEngines: {packageManager: {name: 'yarn'}},
+          packageManager: 'pnpm@9.1.2',
+        }),
+      )
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('prioritizes devEngines.packageManager over package-lock.json', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: {name: 'yarn'}}}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
+      expect(preferredPm(tmpDir)).toBe('yarn')
+    })
+
+    it('uses a single entry when devEngines.packageManager is an array', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: [{name: 'bun'}]}}),
+      )
+      expect(preferredPm(tmpDir)).toBe('bun')
+    })
+
+    it('ignores multiple alternatives in a devEngines.packageManager array', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: [{name: 'bun'}, {name: 'yarn'}]}}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
+      expect(preferredPm(tmpDir)).toBe('npm')
+    })
+
+    it('ignores malformed devEngines shapes and falls back to lock files', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: 'pnpm'}}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '')
+      expect(preferredPm(tmpDir)).toBe('yarn')
+    })
+
+    it('ignores unknown devEngines package manager names', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({devEngines: {packageManager: {name: 'not-a-real-pm'}}}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '')
+      expect(preferredPm(tmpDir)).toBe('pnpm')
+    })
+
+    it('prioritizes the workspace root packageManager field over its lock file', () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({packageManager: 'yarn@4.1.0', workspaces: ['packages/*']}),
+      )
+      fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '')
+      const childDir = path.join(tmpDir, 'packages', 'child')
+      fs.mkdirSync(childDir, {recursive: true})
+      fs.writeFileSync(path.join(childDir, 'package.json'), JSON.stringify({name: 'child'}))
+      expect(preferredPm(childDir)).toBe('yarn')
     })
   })
 
