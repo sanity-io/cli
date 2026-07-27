@@ -9,8 +9,6 @@ const description = `
 List all schemas in the current dataset.
 
 Note: This command is experimental and subject to change.
-
-Regenerates a manifest file by default. To reuse an existing manifest, use --no-extract-manifest.
 `.trim()
 
 export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
@@ -36,24 +34,12 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   ]
 
   static override flags = {
-    'extract-manifest': Flags.boolean({
-      allowNo: true,
-      default: true,
-      description: 'Regenerate manifest before listing (use --no-extract-manifest to skip)',
-      hidden: true,
-    }),
     id: Flags.string({
       description: 'Fetch a single schema by id',
       helpValue: '<schema_id>',
     }),
     json: Flags.boolean({
       description: 'Get schema as json',
-    }),
-    'manifest-dir': Flags.directory({
-      default: './dist/static',
-      description: 'Directory containing manifest file',
-      helpValue: '<directory>',
-      hidden: true,
     }),
   }
 

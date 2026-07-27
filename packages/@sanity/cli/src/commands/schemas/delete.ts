@@ -34,20 +34,9 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       description: 'Delete schemas from a specific dataset',
       semantics: 'specify',
     }),
-    'extract-manifest': Flags.boolean({
-      allowNo: true,
-      default: true,
-      description: 'Generate manifest file (disable with --no-extract-manifest)',
-      hidden: true,
-    }),
     ids: Flags.string({
       description: 'Comma-separated list of schema ids to delete',
       required: true,
-    }),
-    'manifest-dir': Flags.directory({
-      default: './dist/static',
-      description: 'Directory containing manifest file',
-      hidden: true,
     }),
     verbose: Flags.boolean({
       default: false,
