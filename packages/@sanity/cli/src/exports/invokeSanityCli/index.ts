@@ -195,9 +195,16 @@ export async function invokeSanityCli({
   }
 
   if (!policy.validate(invocation)) {
+    const displayId = commandId.replaceAll(':', ' ')
+    const usedDeniedFlags = (policy.deniedFlags ?? []).filter(
+      (name) => invocation.flags[name] !== undefined && invocation.flags[name] !== false,
+    )
     return {
       exitCode: exitCodes.USAGE_ERROR,
-      output: `This invocation of \`${commandId.replaceAll(':', ' ')}\` is not supported here`,
+      output:
+        usedDeniedFlags.length > 0
+          ? `The ${usedDeniedFlags.map((name) => `--${name}`).join(', ')} flag is not supported here for \`${displayId}\``
+          : `This invocation of \`${displayId}\` is not supported here`,
     }
   }
 

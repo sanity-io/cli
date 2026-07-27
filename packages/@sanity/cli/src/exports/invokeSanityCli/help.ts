@@ -1,6 +1,6 @@
 import {type Command, type Config, Help, type Interfaces} from '@oclif/core'
 
-import {type CommandPolicySet} from './commandPolicies/policy.js'
+import {type CommandPolicy, type CommandPolicySet} from './commandPolicies/policy.js'
 
 /** Command ids a policy exposes: entries that are not denied. */
 function visibleCommandIds(policySet: CommandPolicySet): Set<string> {
@@ -27,6 +27,40 @@ function visibleTopicNames(commandIds: Set<string>): Set<string> {
 class NotInvokableError extends Error {}
 
 /**
+ * A copy of `command` without the policy's denied flags, and without examples
+ * that use them (under any spelling: `--web`, `--w`, `-w`), so rendered help
+ * only advertises invocations the policy accepts.
+ */
+function withoutDeniedFlags(command: Command.Loadable, policy?: CommandPolicy): Command.Loadable {
+  const denied = policy?.deniedFlags
+  if (!denied?.length) return {...command}
+
+  const flags = {...command.flags}
+  const spellings: string[] = []
+  for (const name of denied) {
+    const definition = flags[name]
+    if (!definition) continue
+    spellings.push(`--${name}`)
+    if (definition.char) spellings.push(`-${definition.char}`)
+    for (const alias of definition.aliases ?? []) spellings.push(`--${alias}`, `-${alias}`)
+    delete flags[name]
+  }
+
+  const usesDeniedFlag = (example: Command.Example) => {
+    const text = typeof example === 'string' ? example : example.command
+    return spellings.some((spelling) =>
+      new RegExp(String.raw`(^|\s)${spelling}(=|\s|$)`).test(text ?? ''),
+    )
+  }
+
+  return {
+    ...command,
+    examples: command.examples?.filter((example) => !usesDeniedFlag(example)),
+    flags,
+  }
+}
+
+/**
  * oclif help renderer scoped to a policy's command surface. Subject
  * resolution (root vs topic vs command help) is oclif's own; the policy is
  * enforced at the rendering entry points so the rest of the CLI stays
@@ -40,10 +74,12 @@ class InvokableHelp extends Help {
   public readonly lines: string[] = []
 
   private readonly commandIds: Set<string>
+  private readonly policySet: CommandPolicySet
   private readonly topicNames: Set<string>
 
   constructor(config: Config, policySet: CommandPolicySet) {
     super(config, {stripAnsi: true})
+    this.policySet = policySet
     this.commandIds = visibleCommandIds(policySet)
     this.topicNames = visibleTopicNames(this.commandIds)
   }
@@ -72,7 +108,7 @@ class InvokableHelp extends Help {
 
   public override async showCommandHelp(command: Command.Loadable): Promise<void> {
     if (!this.commandIds.has(command.id)) throw new NotInvokableError(command.id)
-    return super.showCommandHelp({...command})
+    return super.showCommandHelp(withoutDeniedFlags(command, this.policySet[command.id]))
   }
 
   protected override async showTopicHelp(topic: Interfaces.Topic): Promise<void> {

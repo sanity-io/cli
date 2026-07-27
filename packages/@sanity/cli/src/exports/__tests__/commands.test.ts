@@ -275,13 +275,14 @@ describe('invokeSanityCli', () => {
   })
 
   test.each([
-    'docs read /docs/studio/installation --web', // --web opens a browser on the host
-    'graphql undeploy --api ios --force', // --api loads local GraphQL definitions
-  ])('`%s` is refused by a conditional policy', async (args) => {
+    ['docs read /docs/studio/installation --web', '--web'], // --web opens a browser on the host
+    ['graphql undeploy --api ios --force', '--api'], // --api loads local GraphQL definitions
+  ])('`%s` is refused by a conditional policy naming the flag', async (args, deniedFlag) => {
     const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.output).toContain('is not supported here')
+    expect(result.output).toContain(deniedFlag)
   })
 
   test('conditional policies see parsed flags, not raw tokens', async () => {
@@ -357,6 +358,19 @@ describe('invokeSanityCli', () => {
       expect(result.output).toContain('--project-id')
     },
   )
+
+  test.each([
+    ['docs read --help', '--web'],
+    ['graphql undeploy --help', '--api'],
+  ])('`%s` omits the policy-denied %s flag', async (args, deniedFlag) => {
+    // Help must not advertise surface the policy refuses: the flag disappears
+    // from FLAGS/USAGE and examples demonstrating it are dropped.
+    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+
+    expect(result.exitCode).toBe(0)
+    expect(result.output).toContain('USAGE')
+    expect(result.output).not.toContain(deniedFlag)
+  })
 
   test('help output is stable across invocations sharing a config', async () => {
     // Regression: oclif's help formatters rewrite command ids in place
