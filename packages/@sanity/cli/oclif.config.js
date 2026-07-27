@@ -12,9 +12,6 @@ export default {
       './dist/hooks/prerun/warnings.js',
     ],
   },
-  // Note: do not add '@sanity/migrate' or '@sanity/codegen' here. Their
-  // `migrations` and `typegen` commands now ship natively (see commands/); re-adding
-  // either plugin would register duplicate command ids.
   plugins: ['@oclif/plugin-help', '@sanity/runtime-cli'],
   topics: {
     backups: {description: 'Manage dataset backups'},
