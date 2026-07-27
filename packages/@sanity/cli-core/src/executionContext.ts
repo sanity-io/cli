@@ -42,7 +42,17 @@ export interface CliExecutionContext {
   token?: string
 }
 
-const storage = new AsyncLocalStorage<CliExecutionContext>()
+// Anchored on globalThis (same pattern as CLI_TELEMETRY_SYMBOL) so that the
+// context survives dual module instances: an embedding host may import this
+// module from source (e.g. via vitest or a bundler) while oclif loads command
+// classes from dist, and both must observe the same AsyncLocalStorage.
+const STORAGE_SYMBOL = Symbol.for('sanity.cli.executionContext')
+
+const globalStorage = globalThis as {
+  [STORAGE_SYMBOL]?: AsyncLocalStorage<CliExecutionContext>
+}
+
+const storage = (globalStorage[STORAGE_SYMBOL] ??= new AsyncLocalStorage<CliExecutionContext>())
 
 /**
  * Run `fn` with the given execution context active. The context is visible

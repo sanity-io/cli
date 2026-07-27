@@ -1,41 +1,41 @@
 /**
  * Programmatic (in-process) invocation of CLI commands, e.g. from an MCP
- * server. This is a curated allowlist: only commands that are pure API
- * operations — no filesystem access, no interactive-only flows — are
- * invokable here.
+ * server. The invokable surface is governed by a per-source command policy
+ * (see ./policy.ts): every CLI command is explicitly allowed, denied, or
+ * allowed conditionally on the parsed invocation.
  *
- * {@link invokeSanityCli} handles arg parsing,
- * command dispatch, per-invocation auth, and output capture.
+ * {@link invokeSanityCli} handles arg parsing, policy enforcement, command
+ * dispatch, per-invocation auth, and output capture.
  * ```ts
  * import {invokeSanityCli} from '@sanity/cli/invokeSanityCli'
  *
  * const {exitCode, output} = await invokeSanityCli({
  *   args: 'cors list --project-id abc123',
+ *   source: 'mcp',
  *   token: extra.authInfo.token,
  * })
  * ```
  *
- * The command classes themselves are deliberately not exported: going through
- * {@link invokeSanityCli} is the only supported way to invoke them in-process.
- *
- * Help works like the regular CLI, scoped to the invokable surface: `--help`
+ * Help works like the regular CLI, scoped to the source's policy: `--help`
  * (or `help` / `-h`) renders root help listing the invokable topics, and a
  * subject (`cors --help`, `cors list --help`) renders topic or command help.
  */
 import {fileURLToPath} from 'node:url'
 
-import {Config} from '@oclif/core'
+import {Config, Parser} from '@oclif/core'
+import {normalizeArgv} from '@oclif/core/help'
 import {CLI_TELEMETRY_SYMBOL, exitCodes, noopLogger, setCliTelemetry} from '@sanity/cli-core'
 import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 
 import {tokenizeCliArgs} from '../../util/tokenizeCliArgs.js'
+import {commandPolicies} from './commandPolicies/index.js'
+import {type CommandPolicySet, deny, type InvocationSource} from './commandPolicies/policy.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
-import {type InvokableCommand, invokableCommands} from './InvokableCommands.js'
 
 /**
- * Load the oclif `Config` for this package, needed as the second argument to
- * `Command.run(argv, config)`. Loading it once and reusing it across
- * invocations avoids re-reading the command manifest per call.
+ * Load the oclif `Config` for this package, needed to resolve, load, and run
+ * commands. Loading it once and reusing it across invocations avoids
+ * re-reading the command manifest per call.
  *
  * @internal
  */
@@ -44,26 +44,18 @@ function loadCliCommandConfig(): Promise<Config> {
   return Config.load(fileURLToPath(new URL('../..', import.meta.url)))
 }
 
-function unknownCommandResult(argv: string[]): InvokeSanityCliResult {
+function unknownCommandResult(argv: string[], policySet: CommandPolicySet): InvokeSanityCliResult {
+  const available = Object.entries(policySet)
+    .filter(([, policy]) => policy.kind !== 'deny')
+    .map(([id]) => id.replaceAll(':', ' '))
+    .toSorted()
   return {
     exitCode: exitCodes.USAGE_ERROR,
     output: [
       `Unknown or unsupported command: ${argv.slice(0, 2).join(' ') || '(none)'}`,
-      `Available commands: ${[...invokableCommands.keys()].join(', ')}`,
+      `Available commands: ${available.join(', ')}`,
     ].join('\n'),
   }
-}
-
-function resolveCommand(argv: string[]): {argv: string[]; command: InvokableCommand} | undefined {
-  // Accept both separator styles: `cors list` and `cors:list`
-  const tokens = argv[0]?.includes(':') ? [...argv[0].split(':'), ...argv.slice(1)] : argv
-
-  // Longest command id first, so future single-token commands can coexist
-  for (const idLength of [2, 1]) {
-    const command = invokableCommands.get(tokens.slice(0, idLength).join(' '))
-    if (command) return {argv: tokens.slice(idLength), command}
-  }
-  return undefined
 }
 
 /**
@@ -76,6 +68,12 @@ export interface InvokeSanityCliOptions {
    * ever executed — or as a pre-split argv array.
    */
   args: string | string[]
+
+  /**
+   * Where this invocation originates. Selects the command policy to enforce:
+   * which commands are invokable and which invocations of them are permitted.
+   */
+  source: InvocationSource
 
   /**
    * Auth token for this invocation. Scoped to this call via the CLI execution
@@ -105,7 +103,7 @@ export interface InvokeSanityCliResult {
 let cachedConfig: Promise<Config> | undefined
 
 /**
- * Run an allowlisted CLI command in-process and capture its result.
+ * Run a policy-permitted CLI command in-process and capture its result.
  *
  * Command-level failures (unknown command, bad flags, API errors) are
  * reported through `exitCode`/`output` rather than thrown, so callers can
@@ -116,9 +114,11 @@ let cachedConfig: Promise<Config> | undefined
 export async function invokeSanityCli({
   args,
   config,
+  source,
   token,
 }: InvokeSanityCliOptions): Promise<InvokeSanityCliResult> {
   const resolvedConfig = config ?? (await (cachedConfig ??= loadCliCommandConfig()))
+  const policySet = commandPolicies[source]
 
   // Commands log through the global telemetry store; default it to a noop
   // store so embedding hosts need no telemetry wiring (and see no warnings),
@@ -139,11 +139,11 @@ export async function invokeSanityCli({
   if (argv[0] === 'sanity') argv = argv.slice(1)
 
   // Help requests are routed through oclif's help system, scoped to the
-  // invokable surface: root help for a bare request, topic/command help when
-  // a subject is given. Non-invokable subjects get the standard
-  // unknown-command response (identical to a truly unknown command, so hosts
-  // can't probe the full CLI surface through help), and a help request never
-  // executes a command.
+  // source's policy: root help for a bare request, topic/command help when a
+  // subject is given. Denied subjects get the standard unknown-command
+  // response (identical to a truly unknown command, so hosts can't probe the
+  // full CLI surface through help), and a help request never executes a
+  // command.
   if (isHelpRequest(argv)) {
     try {
       // Drop a leading `help` so the rest is the subject, and present `-h` as
@@ -151,9 +151,12 @@ export async function invokeSanityCli({
       const helpArgv = (argv[0] === 'help' ? argv.slice(1) : argv).map((token) =>
         token === '-h' ? '--help' : token,
       )
-      const output = await renderInvokableHelp(resolvedConfig, helpArgv)
+      const output = await renderInvokableHelp(resolvedConfig, helpArgv, policySet)
       if (output !== undefined) return {exitCode: exitCodes.SUCCESS, output}
-      return unknownCommandResult(helpArgv.filter((token) => token !== '--help'))
+      return unknownCommandResult(
+        helpArgv.filter((token) => token !== '--help'),
+        policySet,
+      )
     } catch (err) {
       return {
         exitCode: exitCodes.RUNTIME_ERROR,
@@ -162,8 +165,46 @@ export async function invokeSanityCli({
     }
   }
 
-  const resolved = resolveCommand(argv)
-  if (!resolved) return unknownCommandResult(argv)
+  // Resolve the command id the same way oclif's dispatch would (collating
+  // space-separated topics, accepting colon-separated ids as-is), then apply
+  // the policy. Denied and uncategorized ids fail closed, indistinguishable
+  // from commands that don't exist.
+  const [commandId = '', ...commandArgv] = normalizeArgv(resolvedConfig, argv)
+  const policy = policySet[commandId] ?? deny
+  const commandDefinition =
+    policy.kind === 'deny' ? undefined : resolvedConfig.findCommand(commandId)
+  if (!commandDefinition) return unknownCommandResult(argv, policySet)
+
+  const CommandClass = await commandDefinition.load()
+
+  // Parse with the command's real definitions (without executing anything) so
+  // conditional policies are evaluated against typed args/flags, not tokens.
+  let invocation: {args: Record<string, unknown>; flags: Record<string, unknown>}
+  try {
+    const parsed = await Parser.parse(commandArgv, {
+      args: CommandClass.args,
+      baseFlags: CommandClass.baseFlags,
+      enableJsonFlag: CommandClass.enableJsonFlag,
+      flags: CommandClass.flags,
+      strict: CommandClass.strict,
+    })
+    invocation = {
+      args: parsed.args as Record<string, unknown>,
+      flags: parsed.flags as Record<string, unknown>,
+    }
+  } catch (err) {
+    return {
+      exitCode: exitCodes.USAGE_ERROR,
+      output: err instanceof Error ? err.message : String(err),
+    }
+  }
+
+  if (!policy.validate(invocation)) {
+    return {
+      exitCode: exitCodes.USAGE_ERROR,
+      output: `This invocation of \`${commandId.replaceAll(':', ' ')}\` is not supported here`,
+    }
+  }
 
   const output: string[] = []
   const sink = (line: string) => output.push(line)
@@ -173,7 +214,7 @@ export async function invokeSanityCli({
   const previousExitCode = process.exitCode
   try {
     await runWithCliExecutionContext({stderr: sink, stdout: sink, token}, () =>
-      resolved.command.run(resolved.argv, resolvedConfig),
+      CommandClass.run(commandArgv, resolvedConfig),
     )
     return {exitCode: exitCodes.SUCCESS, output: output.join('\n')}
   } catch (err) {
