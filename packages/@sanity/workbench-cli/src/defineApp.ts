@@ -30,9 +30,7 @@ const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user']
 export type DockGroup = z.output<typeof DockGroupSchema>
 
 /**
- * Runtime-validation schema for `unstable_defineApp`. Validates the full shape
- * including the internal `applicationType`; the user-facing `DefineAppInput`
- * type below omits that field.
+ * Runtime-validation schema for `unstable_defineApp`.
  * @internal
  */
 export const DefineAppInputSchema = z
@@ -55,7 +53,7 @@ export const DefineAppInputSchema = z
      * derives the app's navigable `app` view from it. SDK apps only — setting it
      * on a studio is rejected (studio app views are not yet implemented).
      */
-    entry: z.optional(z.string()),
+    entry: z.optional(z.string("must be a path to the app's entry file")),
     /** Dock group to render in. Defaults to `dock.applications` when omitted. */
     group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
@@ -73,15 +71,10 @@ export const DefineAppInputSchema = z
     ),
     /** Sort position within the group, ascending. Defaults to `100` when omitted. */
     priority: z.optional(z.number()),
-    /**
-     * Background services the app runs (e.g. a `worker` emitting dock badges).
-     * Metadata only — built into worker artifacts and persisted to the
-     * application service on deploy, not into the app manifest. Service `name`s
-     * must be unique within the app.
-     */
+    /** Background services the app runs (e.g. a `worker` emitting dock badges). */
     services: z.optional(
       z
-        .array(ServiceDeclarationSchema)
+        .array(ServiceDeclarationSchema, 'must be an array of services')
         .check(
           z.refine(
             (services) => new Set(services.map((service) => service.name)).size === services.length,
@@ -92,14 +85,10 @@ export const DefineAppInputSchema = z
     slug: z.string('App `slug` is required — the hostname the application is created at on deploy'),
     /** User-facing app title. Wins over studio.config.ts title on merge. */
     title: z.string(),
-    /**
-     * Views the app exposes (e.g. dock panels). Metadata only — built into
-     * render artifacts and persisted to the application service on deploy, not
-     * into the app manifest. View `name`s must be unique within the app.
-     */
+    /** Views the app exposes (e.g. dock panels). */
     views: z.optional(
       z
-        .array(InterfaceDeclarationSchema)
+        .array(InterfaceDeclarationSchema, 'must be an array of panels')
         .check(
           z.refine(
             (views) => new Set(views.map((view) => view.name)).size === views.length,
@@ -128,18 +117,36 @@ export const DefineAppInputSchema = z
       path: ['config'],
     }),
   )
+  .check(
+    // An app exposes one interface kind: an app view (`entry`) or panels.
+    z.refine(
+      (input) => !(input.entry !== undefined && (input.views?.length ?? 0) > 0),
+      'An app cannot expose both an app view (`entry`) and panel views. Declare one or the other.',
+    ),
+  )
+  .check(
+    z.refine(
+      (input) => (input.views?.length ?? 0) <= 1,
+      'An app can expose at most one panel view.',
+    ),
+  )
 
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
  * `applicationType`, `isSingleton`, and `config` — validated by the
  * schema but not part of the public surface (Sanity-owned apps set them via
- * `@ts-expect-error`).
+ * `@ts-expect-error`). A union so an app declares an app `entry` or `views`,
+ * never both.
  * @public
  */
 export type DefineAppInput = Omit<
   z.output<typeof DefineAppInputSchema>,
-  'applicationType' | 'config' | 'isSingleton'
->
+  'applicationType' | 'config' | 'entry' | 'isSingleton' | 'views'
+> &
+  (
+    | {entry?: never; views?: NonNullable<z.output<typeof DefineAppInputSchema>['views']>}
+    | {entry?: string; views?: never}
+  )
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy
@@ -154,9 +161,7 @@ const WORKBENCH_APP: unique symbol = Symbol.for('sanity.workbench.defineApp')
  * input plus the internal brand — users only ever see `DefineAppInput`.
  * @public
  */
-export interface DefineAppResult extends DefineAppInput {
-  readonly [WORKBENCH_APP]: true
-}
+export type DefineAppResult = DefineAppInput & {readonly [WORKBENCH_APP]: true}
 
 /**
  * A branded app as the CLI reads it — the full schema shape, including the

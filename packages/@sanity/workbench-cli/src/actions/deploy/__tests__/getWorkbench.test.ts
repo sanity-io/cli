@@ -16,6 +16,7 @@ function workbench(overrides: Partial<DefineAppInput> = {}) {
   const app = unstable_defineApp({
     name: 'test-app',
     organizationId: 'org-id',
+    slug: 'test-app',
     title: 'Test App',
     ...overrides,
   })
@@ -42,13 +43,16 @@ describe('getWorkbench', () => {
 
   test('exposes the declared interfaces off the branded app', () => {
     const resolved = workbench({
-      entry: './src/App.tsx',
-      services: [{name: 'services/sync', src: './src/sync.ts', type: 'worker'}],
-      views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}],
+      services: [{name: 'sync', src: './src/sync.ts', type: 'worker'}],
+      views: [{name: 'panel', src: './src/panel.tsx', type: 'panel'}],
     })
-    expect(resolved.entry).toBe('./src/App.tsx')
     expect(resolved.views).toHaveLength(1)
     expect(resolved.services).toHaveLength(1)
+  })
+
+  test('exposes an entry app off the branded app', () => {
+    const resolved = workbench({entry: './src/App.tsx'})
+    expect(resolved.entry).toBe('./src/App.tsx')
   })
 
   test('exposes the config off a branded media library', () => {
@@ -85,7 +89,7 @@ describe('assertDeployable', () => {
   test('passes when the app declares a view', () => {
     expect(() =>
       workbench({
-        views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}],
+        views: [{name: 'panel', src: './src/panel.tsx', type: 'panel'}],
       }).assertDeployable(),
     ).not.toThrow()
   })
@@ -93,7 +97,7 @@ describe('assertDeployable', () => {
   test('passes when the app declares a service', () => {
     expect(() =>
       workbench({
-        services: [{name: 'services/sync', src: './src/sync.ts', type: 'worker'}],
+        services: [{name: 'sync', src: './src/sync.ts', type: 'worker'}],
       }).assertDeployable(),
     ).not.toThrow()
   })
@@ -128,7 +132,7 @@ describe('deploySingletonConfig / hasInterfaces', () => {
 
   test('a non-singleton app never deploys a config, and reports its interfaces', () => {
     const resolved = workbench({
-      views: [{name: 'views/panel', src: './src/panel.tsx', type: 'panel'}],
+      views: [{name: 'panel', src: './src/panel.tsx', type: 'panel'}],
     })
     expect(resolved.deploySingletonConfig).toBe(false)
     expect(resolved.hasInterfaces).toBe(true)

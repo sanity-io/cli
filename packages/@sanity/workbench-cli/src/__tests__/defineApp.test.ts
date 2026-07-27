@@ -2,6 +2,7 @@ import {type ApplicationType, type AppVisibility} from '@sanity/cli-core'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {
+  type DefineAppInput,
   DefineAppInputSchema,
   type DefineAppResult,
   type DockGroup,
@@ -232,6 +233,34 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(dupes.error?.issues[0]?.message).toMatch(/unique/)
   })
 
+  test('rejects declaring both an entry and panel views', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        entry: './src/App.tsx',
+        views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}],
+      }),
+    )
+    expect(result.success).toBe(false)
+    expect(result.error?.issues.some((issue) => /cannot expose both/.test(issue.message))).toBe(
+      true,
+    )
+  })
+
+  test('rejects more than one panel view', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        views: [
+          {name: 'feed', src: './src/a.tsx', type: 'panel'},
+          {name: 'inbox', src: './src/b.tsx', type: 'panel'},
+        ],
+      }),
+    )
+    expect(result.success).toBe(false)
+    expect(result.error?.issues.some((issue) => /at most one panel view/.test(issue.message))).toBe(
+      true,
+    )
+  })
+
   test('rejects `entry` on a studio with a not-yet-implemented error', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({applicationType: 'studio', entry: './src/App.tsx'}),
@@ -270,6 +299,23 @@ describe('type surface', () => {
     expectTypeOf<DefineAppResult>().not.toHaveProperty('applicationType')
     expectTypeOf<DefineAppResult>().not.toHaveProperty('isSingleton')
     expectTypeOf<DefineAppResult>().not.toHaveProperty('config')
+  })
+})
+
+describe('interface union (entry vs views)', () => {
+  type Base = {name: string; organizationId: string; slug: string; title: string}
+  type PanelView = {name: string; src: string; type: 'panel'}
+
+  test('allows an app entry without panel views', () => {
+    expectTypeOf<Base & {entry: string}>().toExtend<DefineAppInput>()
+  })
+
+  test('allows panel views without an app entry', () => {
+    expectTypeOf<Base & {views: PanelView[]}>().toExtend<DefineAppInput>()
+  })
+
+  test('rejects declaring an app entry and panel views together', () => {
+    expectTypeOf<Base & {entry: string; views: PanelView[]}>().not.toExtend<DefineAppInput>()
   })
 })
 
