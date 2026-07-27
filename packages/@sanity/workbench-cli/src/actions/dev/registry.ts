@@ -106,9 +106,9 @@ const devServerManifestSchema = z.object({
         // The app's `unstable_defineApp` name — the module-federation alias the
         // workbench loads this config's live values from.
         moduleName: z.optional(z.string()),
-        // Config contract version the generated module exports, so the
-        // workbench knows what it can resolve before loading the module.
-        version: z.number(),
+        // The version the workbench federates this config's module under —
+        // a string, like the one Brett returns on a deployed `activeConfig`.
+        version: z.string(),
       }),
     ),
   ),
