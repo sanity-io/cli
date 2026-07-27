@@ -7,7 +7,7 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {CORS_API_VERSION} from '../../services/cors.js'
-import {commandPolicies} from '../invokeSanityCli/commandPolicies/policy.js'
+import {commandPolicies} from '../invokeSanityCli/commandPolicies/index.js'
 import {invokeSanityCli} from '../invokeSanityCli/index.js'
 
 const projectId = 'test-project'
