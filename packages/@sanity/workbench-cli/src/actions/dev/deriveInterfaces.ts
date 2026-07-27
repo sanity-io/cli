@@ -101,8 +101,8 @@ export function deriveConfigEntries(config: DevServerConfig): {name: string; src
  * repoint rebuilds. `appType` routes the config to the singleton (no app id to
  * key on). `id` is a content hash of the entry — it fills the
  * installation-config id slot deployed apps get from the applications API,
- * and the workbench keys change detection on it. `version` is the config
- * contract version the generated module exports, known before the module runs.
+ * and the workbench keys change detection on it. `version` is a string, like
+ * the one Brett returns on a deployed `activeConfig`.
  */
 export async function deriveConfigs(app: CliConfig['app']): Promise<DevServerConfig[]> {
   if (!isWorkbenchApp(app)) return []
@@ -117,7 +117,7 @@ export async function deriveConfigs(app: CliConfig['app']): Promise<DevServerCon
       title: field.title,
     })),
     moduleName: app.name,
-    version: MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
+    version: String(MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION),
   }
   return [{...entry, id: await contentHash(JSON.stringify(entry))}]
 }

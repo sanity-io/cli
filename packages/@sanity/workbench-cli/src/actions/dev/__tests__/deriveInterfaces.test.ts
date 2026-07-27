@@ -258,7 +258,7 @@ describe('deriveConfigs', () => {
         ],
         id: expect.any(String),
         moduleName: 'test-app',
-        version: 1,
+        version: '1',
       },
     ])
   })
@@ -310,7 +310,7 @@ describe('deriveConfigEntries', () => {
           {name: 'language', src: './src/language.ts', title: 'Language'},
         ],
         id: 'cfg-hash',
-        version: 1,
+        version: '1',
       }),
     ).toEqual([
       {name: 'description', src: './src/description.ts'},
@@ -320,13 +320,13 @@ describe('deriveConfigEntries', () => {
 
   test('an empty field set yields no entries', () => {
     expect(
-      deriveConfigEntries({appType: 'media-library', fields: [], id: 'cfg-hash', version: 1}),
+      deriveConfigEntries({appType: 'media-library', fields: [], id: 'cfg-hash', version: '1'}),
     ).toEqual([])
   })
 
   test('throws on an app type it cannot handle', () => {
     expect(() =>
-      deriveConfigEntries({appType: 'core-app', fields: [], id: 'cfg-hash', version: 1}),
+      deriveConfigEntries({appType: 'core-app', fields: [], id: 'cfg-hash', version: '1'}),
     ).toThrow(/unknown config appType: core-app/i)
   })
 })
