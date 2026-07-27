@@ -87,8 +87,7 @@
       "node-pty"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*",
-      "@sanity/codegen": "link:../codegen"
+      "@sanity/cli": "workspace:*"
     }
   }
 }
