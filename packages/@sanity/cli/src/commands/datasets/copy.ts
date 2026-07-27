@@ -258,6 +258,15 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     const skipHistory = Boolean(flags['skip-history'])
     const skipContentReleases = Boolean(flags['skip-content-releases'])
 
+    // Surfaced before any prompting so the flag is still actionable: a copy job
+    // can't be canceled once started, so mentioning it after the job kicks off
+    // leaves nothing to decide.
+    if (!skipHistory) {
+      this.output.log(
+        `Note: You can run this command with flag '--skip-history'. The flag will reduce copy time in larger datasets.`,
+      )
+    }
+
     // Get and validate source dataset
     let sourceDataset = args.source
     if (sourceDataset) {
@@ -317,12 +326,6 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       this.output.log(
         `Copying dataset ${styleText('green', sourceDataset)} to ${styleText('green', targetDataset)}...`,
       )
-
-      if (!skipHistory) {
-        this.output.log(
-          `Note: You can run this command with flag '--skip-history'. The flag will reduce copy time in larger datasets.`,
-        )
-      }
 
       const response = await copyDataset({
         projectId,
