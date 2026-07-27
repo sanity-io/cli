@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
-import {getUserConfig, UNCLAIMED_PROJECTS_CONFIG_KEY} from '@sanity/cli-core'
+import {getUserConfig} from '@sanity/cli-core'
+import {UNCLAIMED_PROJECTS_CONFIG_KEY} from '@sanity/cli-core/config'
 import {subdebug} from '@sanity/cli-core/debug'
 import {logSymbols} from '@sanity/cli-core/ux'
 
@@ -177,10 +178,10 @@ export async function runClaimNudges(
     write(`\n${message}\n`)
   }
 
-  const touched = new Set<string>()
+  const dropped = new Set<string>()
   const drop = (projectId: string) => {
     delete records[projectId]
-    touched.add(projectId)
+    dropped.add(projectId)
   }
 
   // Fall back to the local clock when unverifiable.
@@ -234,14 +235,12 @@ export async function runClaimNudges(
     announce(renderAggregateReminder(rest))
   }
 
-  if (touched.size > 0) {
+  if (dropped.size > 0) {
+    // Re-read so a sibling process's writes survive; only the ids we dropped are removed.
     const fresh = readRecords()
-    for (const id of touched) {
-      if (id in records) fresh[id] = records[id]
-      else delete fresh[id]
-    }
+    for (const id of dropped) delete fresh[id]
     writeRecords(fresh)
   }
 }
 
-export {UNCLAIMED_PROJECTS_CONFIG_KEY} from '@sanity/cli-core'
+export {UNCLAIMED_PROJECTS_CONFIG_KEY} from '@sanity/cli-core/config'
