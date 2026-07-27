@@ -207,7 +207,11 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       const {config: typegenConfig, workDir} = await this.getConfig()
       trace.start()
 
-      const {promise, resolve} = Promise.withResolvers<void>()
+      // Prefer Promise.withResolvers once TS lib includes ES2024 PromiseConstructor.
+      let resolveWatcher: () => void
+      const watcherDone = new Promise<void>((resolve) => {
+        resolveWatcher = resolve
+      })
 
       const typegenWatcher = runTypegenWatcher({
         config: typegenConfig,
@@ -225,13 +229,13 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         trace.complete()
 
         await typegenWatcher.stop()
-        resolve()
+        resolveWatcher()
       })
 
       process.on('SIGINT', stop)
       process.on('SIGTERM', stop)
 
-      await promise
+      await watcherDone
     } catch (error) {
       debug(error)
       trace.error(error as Error)

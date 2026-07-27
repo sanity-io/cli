@@ -9,10 +9,10 @@ import {
   percent,
 } from '../reportTypegenProgress.js'
 
-function createSpinMock() {
+function createSpinMock({isSpinning = true}: {isSpinning?: boolean} = {}) {
   const spin = {
     fail: vi.fn(),
-    isSpinning: true,
+    isSpinning,
     start: vi.fn(),
     succeed: vi.fn(),
     text: '',
@@ -99,8 +99,7 @@ describe('createTypegenProgressReporter', () => {
   })
 
   test('surfaces per-file errors and formatting failures', () => {
-    const spin = createSpinMock()
-    spin.isSpinning = false
+    const spin = createSpinMock({isSpinning: false})
     const onProgress = createTypegenProgressReporter(spin, {
       generates: './out.ts',
       schemaPath: './schema.json',
