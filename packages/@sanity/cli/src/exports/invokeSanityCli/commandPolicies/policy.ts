@@ -35,22 +35,16 @@ export const allow: CommandPolicy = {kind: 'allow', validate: () => true}
 /** No invocation of the command is safe. Behaves like an unknown command. */
 export const deny: CommandPolicy = {kind: 'deny', validate: () => false}
 
-/** A conditional policy that allows or denies based on the invocation. */
-export function conditional(validate: InvocationPolicy): CommandPolicy {
-  return {kind: 'conditional', validate}
-}
-
 /**
- * Helper for conditional policies to deny flags. The flags are also hidden
+ * Conditional policies to deny flags. The flags are also hidden
  * from rendered help, so hosts are never told about surface they cannot use.
  */
 export function conditionalDenyFlags(...names: string[]): CommandPolicy {
-  const condition = conditional(({flags}) =>
-    names.every((name) => flags[name] === undefined || flags[name] === false),
-  )
   return {
-    ...condition,
     deniedFlags: names,
+    kind: 'conditional',
+    validate: ({flags}) =>
+      names.every((name) => flags[name] === undefined || flags[name] === false),
   }
 }
 
