@@ -1,4 +1,3 @@
-import {readFileSync} from 'node:fs'
 import {fileURLToPath} from 'node:url'
 
 import {Config} from '@oclif/core'
@@ -51,18 +50,21 @@ describe('invokeSanityCli', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('the mcp policy covers exactly the commands in the oclif manifest', () => {
+  test('the mcp policy covers exactly this package’s visible commands', () => {
     // Exhaustiveness keeps the policy honest: a new CLI command fails here
     // until it is deliberately categorized (allow/conditional/deny), and a
-    // policy entry for a removed command fails too.
-    const manifest = JSON.parse(
-      readFileSync(fileURLToPath(new URL('../../../oclif.manifest.json', import.meta.url)), 'utf8'),
-    ) as {commands: Record<string, unknown>}
-
-    const manifestIds = Object.keys(manifest.commands).toSorted()
+    // policy entry for a removed command fails too. Command ids come from the
+    // loaded oclif config — the same source invokeSanityCli resolves against —
+    // scoped to this package's own visible commands: hidden entries are alias
+    // redirects, and commands contributed by other plugins (blueprints,
+    // typegen, help) are uncategorized by design, so they fail closed.
+    const commandIds = config.commands
+      .filter((command) => command.pluginName === config.pjson.name && !command.hidden)
+      .map((command) => command.id)
+      .toSorted()
     const policyIds = Object.keys(commandPolicies.mcp).toSorted()
 
-    expect(policyIds).toEqual(manifestIds)
+    expect(policyIds).toEqual(commandIds)
   })
 
   test('runs a command from string args, using the provided token', async () => {
