@@ -3,6 +3,10 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
+import {
+  removedManifestFlags,
+  warnOnRemovedManifestFlags,
+} from '../../actions/schema/utils/removedManifestFlags.js'
 import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
 
 const description = `
@@ -34,6 +38,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   ]
 
   static override flags = {
+    ...removedManifestFlags,
     id: Flags.string({
       description: 'Fetch a single schema by id',
       helpValue: '<schema_id>',
@@ -47,6 +52,9 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ListSchemaCommand)
+
+    warnOnRemovedManifestFlags(flags, this.output)
+
     const errors: string[] = []
     const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
     if (errors.length > 0) {

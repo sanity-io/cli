@@ -7,6 +7,10 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
+import {
+  removedManifestFlags,
+  warnOnRemovedManifestFlags,
+} from '../../actions/schema/utils/removedManifestFlags.js'
 import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
 
 const description = `
@@ -30,6 +34,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
   ]
 
   static override flags = {
+    ...removedManifestFlags,
     tag: Flags.string({
       description: 'Add a tag suffix to the schema id',
       helpValue: '<tag>',
@@ -59,6 +64,8 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeploySchemaCommand)
     const {tag, workspace} = flags
+
+    warnOnRemovedManifestFlags(flags, this.output)
 
     try {
       const workDir = (await this.getProjectRoot()).directory

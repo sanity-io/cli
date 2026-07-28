@@ -4,6 +4,10 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
+import {
+  removedManifestFlags,
+  warnOnRemovedManifestFlags,
+} from '../../actions/schema/utils/removedManifestFlags.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -34,6 +38,7 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       description: 'Delete schemas from a specific dataset',
       semantics: 'specify',
     }),
+    ...removedManifestFlags,
     ids: Flags.string({
       description: 'Comma-separated list of schema ids to delete',
       required: true,
@@ -56,6 +61,8 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     const {dataset, yes} = flags
 
     deleteSchemaDebug('Running schema delete with flags: %O', flags)
+
+    warnOnRemovedManifestFlags(flags, this.output)
 
     const ids = parseIds(flags.ids)
 
