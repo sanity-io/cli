@@ -14,6 +14,8 @@ const mockAppendEnvValues = vi.hoisted(() => vi.fn())
 const mockEnsureEnvGitignored = vi.hoisted(() => vi.fn(() => ({added: false, ignored: true})))
 const mockIsEnvTracked = vi.hoisted(() => vi.fn(() => false))
 const mockInput = vi.hoisted(() => vi.fn())
+const mockScaffoldProject = vi.hoisted(() => vi.fn())
+const mockExistingScaffoldEnvFiles = vi.hoisted(() => vi.fn(() => [] as string[]))
 
 vi.mock(
   '@sanity/cli-core/SanityCommand',
@@ -46,6 +48,12 @@ vi.mock('../../../util/envFile.js', () => ({
   GUARDED_ENV_KEYS: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID', 'SANITY_CLAIM_URL'],
   isEnvTracked: mockIsEnvTracked,
   readEnvValues: mockReadEnvValues,
+  TOKEN_ENV_FILES: './.env, or sanity/.env.local in a scaffolded project',
+}))
+vi.mock('../../../actions/scaffold/scaffoldProject.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../actions/scaffold/scaffoldProject.js')>()),
+  existingScaffoldEnvFiles: mockExistingScaffoldEnvFiles,
+  scaffoldProject: mockScaffoldProject,
 }))
 
 const mockMinted = {
@@ -98,10 +106,21 @@ beforeEach(() => {
   mockReadEnvValues.mockReturnValue({})
   mockEnsureEnvGitignored.mockReturnValue({added: false, ignored: true})
   mockIsEnvTracked.mockReturnValue(false)
+  mockExistingScaffoldEnvFiles.mockReturnValue([])
   mockAppendEnvValues.mockReturnValue({
     created: true,
     skippedKeys: [],
     wroteKeys: ['SANITY_AUTH_TOKEN', 'SANITY_DATASET', 'SANITY_PROJECT_ID'],
+  })
+  mockScaffoldProject.mockResolvedValue({
+    frontendEnv: {
+      NEXT_PUBLIC_SANITY_DATASET: mockMinted.datasetName,
+      NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId,
+    },
+    frontendEnvWritten: true,
+    frontendPath: '/tmp/project/web',
+    studioPath: '/tmp/project/sanity',
+    warnings: [],
   })
   // Default to unattended so tests without a name argument never hang on the prompt.
   mocks.SanityCmdIsUnattended.mockReturnValue(true)
@@ -172,8 +191,8 @@ describe('#projects:mint', () => {
 
     await MintProjectCommand.run(['My New Project'])
 
-    expect(mockEnsureEnvGitignored).toHaveBeenCalledWith(expect.any(String))
-    expect(loggedLines()).toContain('Added .env to .gitignore so the token stays out of git.')
+    expect(mockEnsureEnvGitignored).toHaveBeenCalledWith(expect.any(String), '.env*')
+    expect(loggedLines()).toContain('Added .env* to .gitignore so the token stays out of git.')
   })
 
   test('stays quiet about gitignore when .env is already ignored', async () => {
@@ -203,7 +222,7 @@ describe('#projects:mint', () => {
     expect(warnings).toContain('.env is already tracked by git')
     expect(warnings).toContain('git rm --cached .env')
     // The reassuring gitignore line must not appear when it wouldn't actually protect the token.
-    expect(loggedLines()).not.toContain('Added .env to .gitignore so the token stays out of git.')
+    expect(loggedLines()).not.toContain('Added .env* to .gitignore so the token stays out of git.')
   })
 
   test('warns when .env cannot be gitignored, so the token is never silently committable', async () => {
@@ -214,7 +233,7 @@ describe('#projects:mint', () => {
     await MintProjectCommand.run(['My New Project'])
 
     const warnings = vi.mocked(mocks.SanityCmdOutput.warn).mock.calls.flat().join('\n')
-    expect(warnings).toContain("Couldn't add .env to .gitignore")
+    expect(warnings).toContain("Couldn't add .env* to .gitignore")
   })
 
   test('hands over the values for keys the writer skipped', async () => {
@@ -266,8 +285,8 @@ describe('#projects:mint', () => {
 
     await MintProjectCommand.run(['My New Project'])
 
-    expect(mockEnsureEnvGitignored).toHaveBeenCalledWith(expect.any(String))
-    expect(loggedLines()).toContain('Added .env to .gitignore so the token stays out of git.')
+    expect(mockEnsureEnvGitignored).toHaveBeenCalledWith(expect.any(String), '.env*')
+    expect(loggedLines()).toContain('Added .env* to .gitignore so the token stays out of git.')
   })
 
   test('defaults the display name when unattended and no project name is provided', async () => {
@@ -599,6 +618,337 @@ describe('#projects:mint re-mint guardrail', () => {
     expect(lines).toContain('--force: minting a new project')
     expect(lines).toContain('Update ./.env yourself')
     expect(lines).toContain(`SANITY_AUTH_TOKEN="${mockMinted.token}"`)
+  })
+
+  test('a shadowed token alone does not block the scaffold', async () => {
+    mockAppendEnvValues.mockReturnValue({
+      created: false,
+      skippedKeys: ['SANITY_AUTH_TOKEN'],
+      wroteKeys: ['SANITY_PROJECT_ID', 'SANITY_DATASET'],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    // The scaffold writes the token into sanity/.env.local from the mint payload, and ledger auth
+    // keys off the project id, so only a missing project id can stop it.
+    expect(mockScaffoldProject).toHaveBeenCalled()
+    const lines = loggedLines()
+    expect(lines).not.toContain('Skipping the sanity/ and web/ scaffold')
+    expect(lines).toContain('./.env already has SANITY_AUTH_TOKEN')
+    expect(lines).toContain(`SANITY_AUTH_TOKEN="${mockMinted.token}"`)
+  })
+
+  test('blank template lines shadow the write, so the scaffold is skipped too', async () => {
+    mockAppendEnvValues.mockReturnValue({
+      created: false,
+      skippedKeys: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID'],
+      wroteKeys: ['SANITY_DATASET'],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    expect(mockMintUnclaimedProject).toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    const lines = loggedLines()
+    expect(lines).toContain('Skipping the sanity/ and web/ scaffold')
+    expect(lines).toContain('shadowed the values')
+    expect(lines).toContain(`SANITY_AUTH_TOKEN="${mockMinted.token}"`)
+    expect(lines).toContain(`SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
+  })
+
+  test('a skipped dataset exemplar alone still scaffolds', async () => {
+    mockAppendEnvValues.mockReturnValue({
+      created: false,
+      skippedKeys: ['SANITY_DATASET'],
+      wroteKeys: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID'],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    expect(mockScaffoldProject).toHaveBeenCalled()
+    expect(loggedLines()).not.toContain('Skipping the sanity/ and web/ scaffold')
+  })
+
+  test('a failed .env write skips the scaffold instead of building on a broken directory', async () => {
+    mockAppendEnvValues.mockImplementation(() => {
+      throw new Error('EACCES')
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    expect(mockMintUnclaimedProject).toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    const lines = loggedLines()
+    expect(lines).toContain('Add these to ./.env yourself')
+    expect(lines).toContain('Skipping the sanity/ and web/ scaffold')
+    expect(lines).not.toContain('./.env is written')
+    expect(loggedLines()).toContain(mockMinted.claimUrl)
+  })
+
+  test('a remint names the scaffolded env files that still hold dead values', async () => {
+    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockExistingScaffoldEnvFiles.mockReturnValue(['sanity/.env.local', 'web/.env.local'])
+
+    await MintProjectCommand.run(['My New Project', '--force'])
+
+    const lines = loggedLines()
+    expect(lines).toContain('still hold superseded values')
+    expect(lines).toContain(`sanity/.env.local: SANITY_AUTH_TOKEN="${mockMinted.token}"`)
+    expect(lines).toContain(
+      `web/.env.local: NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`,
+    )
+    expect(lines).not.toContain(`web/.env.local: SANITY_API_READ_TOKEN`)
+  })
+
+  test('a remint names keys only for the scaffolded env files that exist', async () => {
+    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockExistingScaffoldEnvFiles.mockReturnValue(['web/.env.local'])
+
+    await MintProjectCommand.run(['My New Project', '--force'])
+
+    const lines = loggedLines()
+    expect(lines).toContain(`web/.env.local: NEXT_PUBLIC_SANITY_PROJECT_ID`)
+    expect(lines).not.toContain('sanity/.env.local:')
+  })
+
+  test('a remint stays quiet about scaffolded env files when there are none', async () => {
+    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockExistingScaffoldEnvFiles.mockReturnValue([])
+
+    await MintProjectCommand.run(['My New Project', '--force'])
+
+    expect(loggedLines()).not.toContain('still hold superseded values')
+  })
+
+  test('--json surfaces the stale scaffolded env files as a warning', async () => {
+    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockExistingScaffoldEnvFiles.mockReturnValue(['sanity/.env.local', 'web/.env.local'])
+
+    const result = await MintProjectCommand.run(['My New Project', '--force', '--json'])
+
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('still hold superseded values')]),
+    )
+    const stale = result.warnings?.find((w) => w.includes('still hold superseded values')) ?? ''
+    expect(stale).toContain('sanity/.env.local (SANITY_AUTH_TOKEN)')
+    expect(stale).toContain(
+      'web/.env.local (NEXT_PUBLIC_SANITY_PROJECT_ID, NEXT_PUBLIC_SANITY_DATASET)',
+    )
+    expect(stale).toContain('keep the token out of web/.env.local')
+    // Empty parens mean a named file resolved to no keys, which is how a separator mismatch shows up.
+    expect(stale).not.toContain('()')
+  })
+
+  test('recovery advice gives the real scaffold commands, never --force', async () => {
+    mockAppendEnvValues.mockReturnValue({
+      created: false,
+      skippedKeys: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID'],
+      wroteKeys: [],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    const lines = loggedLines()
+    expect(lines).toContain(
+      `npx sanity init --project ${mockMinted.resourceId} --dataset ${mockMinted.datasetName} --output-path sanity`,
+    )
+    expect(lines).toContain('npx --yes create-next-app@^16 web')
+    expect(lines).toContain(`sanity/.env.local: SANITY_AUTH_TOKEN="${mockMinted.token}"`)
+    expect(lines).toContain(
+      `web/.env.local: NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`,
+    )
+    expect(lines).not.toMatch(/web\/\.env\.local: SANITY_AUTH_TOKEN/)
+    expect(lines).not.toMatch(/Set them to the values shown, then run/)
+    expect(lines).not.toMatch(/scaffold it yourself with `sanity init`/)
+  })
+
+  test('a scaffold throw also points at the real commands, and says no re-mint is needed', async () => {
+    mockScaffoldProject.mockRejectedValue(new Error('disk full'))
+
+    await MintProjectCommand.run(['My New Project'])
+
+    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining('nothing needs re-minting'),
+    )
+    const lines = loggedLines()
+    expect(lines).toContain('Scaffold it yourself with:')
+    expect(lines).toContain('npx --yes create-next-app@^16 web')
+  })
+
+  test('scaffolds both folders and points at each dev server', async () => {
+    await MintProjectCommand.run(['My New Project'])
+
+    expect(mockScaffoldProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataset: mockMinted.datasetName,
+        displayName: 'My New Project',
+        projectId: mockMinted.resourceId,
+        token: mockMinted.token,
+      }),
+    )
+    const lines = loggedLines()
+    expect(lines).toContain('Created ./sanity (Studio) and ./web (frontend).')
+    expect(lines).toContain('cd sanity && npx sanity dev')
+    expect(lines).toContain('cd web && npm run dev')
+    expect(lines).toContain('Your dataset is private until you claim it')
+  })
+
+  test('--no-scaffold mints without touching the filesystem beyond .env', async () => {
+    await MintProjectCommand.run(['My New Project', '--no-scaffold'])
+
+    expect(mockMintUnclaimedProject).toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+  })
+
+  test('does not scaffold in JSON mode', async () => {
+    await expect(MintProjectCommand.run(['My New Project', '--json'])).resolves.toEqual(
+      expectedResult,
+    )
+
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+  })
+
+  test('does not scaffold over a directory that already had credentials', async () => {
+    mockReadEnvValues.mockReturnValue(existingEnv)
+
+    await MintProjectCommand.run(['My New Project', '--force'])
+
+    expect(mockMintUnclaimedProject).toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+  })
+
+  test('prints the frontend env values when an app is already present', async () => {
+    mockScaffoldProject.mockResolvedValue({
+      detectedFramework: 'Next.js',
+      frontendEnv: {
+        NEXT_PUBLIC_SANITY_DATASET: mockMinted.datasetName,
+        NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId,
+      },
+      frontendEnvWritten: false,
+      studioPath: '/tmp/project/sanity',
+      warnings: [],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    const lines = loggedLines()
+    expect(lines).toContain('Found Next.js here, so only ./sanity was created.')
+    expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
+    expect(lines).not.toContain('cd web && npm run dev')
+  })
+
+  test('surfaces scaffold warnings without failing the mint', async () => {
+    mockScaffoldProject.mockResolvedValue({
+      frontendEnv: {},
+      frontendEnvWritten: false,
+      studioPath: '/tmp/project/sanity',
+      warnings: ['create-next-app failed: boom. Scaffold the frontend yourself.'],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining('create-next-app failed: boom'),
+    )
+  })
+
+  test('when the frontend was not created, says what exists and hands over its env values', async () => {
+    mockScaffoldProject.mockResolvedValue({
+      frontendEnv: {NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId},
+      frontendEnvWritten: false,
+      studioPath: '/tmp/project/sanity',
+      warnings: ['create-next-app failed: boom. Scaffold the frontend yourself.'],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    const lines = loggedLines()
+    expect(lines).toContain('Created ./sanity (Studio). The frontend was not created.')
+    expect(lines).toContain('cd sanity && npx sanity dev')
+    expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
+    expect(lines).not.toContain('cd web && npm run dev')
+  })
+
+  test('prints the frontend values when the frontend exists but its env write failed', async () => {
+    mockScaffoldProject.mockResolvedValue({
+      frontendEnv: {NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId},
+      frontendEnvWritten: false,
+      frontendPath: '/tmp/project/web',
+      studioPath: '/tmp/project/sanity',
+      warnings: ["Couldn't write web/.env.local."],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    const lines = loggedLines()
+    expect(lines).toContain('Created ./sanity (Studio) and ./web (frontend).')
+    expect(lines).toContain("./web/.env.local wasn't written.")
+    expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
+  })
+
+  test('stays quiet about env values when the frontend env write succeeded', async () => {
+    await MintProjectCommand.run(['My New Project'])
+
+    const lines = loggedLines()
+    expect(lines).not.toContain("wasn't written")
+    expect(lines).not.toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
+  })
+
+  test('never prints the token as a frontend env value', async () => {
+    mockScaffoldProject.mockResolvedValue({
+      detectedFramework: 'Next.js',
+      frontendEnv: {NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId},
+      frontendEnvWritten: false,
+      studioPath: '/tmp/project/sanity',
+      warnings: [],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    const lines = loggedLines()
+    expect(lines).not.toContain('SANITY_API_READ_TOKEN')
+    expect(lines).toContain('Copy SANITY_AUTH_TOKEN from ./.env')
+  })
+
+  test('names the right public prefix convention for a non-Next framework', async () => {
+    mockScaffoldProject.mockResolvedValue({
+      detectedFramework: 'Astro',
+      frontendEnv: {NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId},
+      frontendEnvWritten: false,
+      studioPath: '/tmp/project/sanity',
+      warnings: [],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    const lines = loggedLines()
+    expect(lines).toContain('Found Astro here, so only ./sanity was created.')
+    expect(lines).toContain('Those names follow the Next.js convention.')
+  })
+
+  test('does not add the prefix caveat when the detected framework is Next.js', async () => {
+    mockScaffoldProject.mockResolvedValue({
+      detectedFramework: 'Next.js',
+      frontendEnv: {NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId},
+      frontendEnvWritten: false,
+      studioPath: '/tmp/project/sanity',
+      warnings: [],
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    expect(loggedLines()).not.toContain('follow the Next.js convention')
+  })
+
+  test('a scaffold failure never reads as a mint failure', async () => {
+    mockScaffoldProject.mockRejectedValue(new Error('disk full'))
+
+    await expect(MintProjectCommand.run(['My New Project'])).resolves.toEqual(expectedResult)
+
+    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Couldn't scaffold the project (disk full)"),
+    )
+    expect(loggedLines()).toContain(mockMinted.claimUrl)
   })
 })
 

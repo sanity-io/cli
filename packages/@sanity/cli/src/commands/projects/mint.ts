@@ -7,6 +7,16 @@ import {exitCodes} from '@sanity/cli-core'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {createFlow, input} from '@sanity/cli-core/ux'
 
+import {
+  existingScaffoldEnvFiles,
+  FRONTEND_DIR,
+  FRONTEND_ENV_FILE,
+  manualScaffoldCommands,
+  scaffoldProject,
+  type ScaffoldResult,
+  STUDIO_DIR,
+  STUDIO_ENV_FILE,
+} from '../../actions/scaffold/scaffoldProject.js'
 import {lookupClaimState, mintUnclaimedProject} from '../../services/mintProject.js'
 import {
   forgetMintedProject,
@@ -20,11 +30,14 @@ import {
   GUARDED_ENV_KEYS,
   isEnvTracked,
   readEnvValues,
+  TOKEN_ENV_FILES,
 } from '../../util/envFile.js'
 import {renderNewCommandSplash} from '../../util/newCommandSplash.js'
 import {hyperlink} from '../../util/terminalLink.js'
 
 const DEFAULT_PROJECT_NAME = 'My Sanity project'
+
+const SCAFFOLD_REQUIRED_ENV_KEYS = ['SANITY_PROJECT_ID'] as const
 
 function describeExpiry(expiresAt: string | undefined): string {
   if (!expiresAt) return ''
@@ -76,9 +89,11 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     'Mint an unclaimed Sanity project without logging in.\n' +
     '\n' +
     'Credentials are written to ./.env (SANITY_PROJECT_ID, SANITY_DATASET, and ' +
-    'SANITY_AUTH_TOKEN, a robot token) and .env is gitignored, so `sanity` commands in this ' +
-    'directory run as the project with no account. Use --json for a machine-readable payload ' +
-    'instead: JSON mode writes no files and the caller owns the credentials.\n' +
+    'SANITY_AUTH_TOKEN, a robot token) and .env is gitignored, so `sanity` commands here ' +
+    'authenticate as the project with no account. Commands that need a project id still take it ' +
+    'from a Sanity config file or --project-id, so run them inside the scaffolded Studio folder. ' +
+    'Use --json for a machine-readable payload instead: JSON mode writes no files and the caller ' +
+    'owns the credentials.\n' +
     '\n' +
     'Claiming: the project must be claimed with a Sanity account within 72 hours (expiresAt) or ' +
     'it is permanently deleted, content included. The claim URL is single-use and whoever opens ' +
@@ -90,8 +105,9 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     'is private pre-claim: frontend reads must run server-side, and the token must never sit ' +
     'under a client-exposed prefix like NEXT_PUBLIC_* or SANITY_STUDIO_*.\n' +
     '\n' +
-    'After the claim, run `sanity login` and remove SANITY_AUTH_TOKEN from .env to act as your ' +
-    'own account; until then, CLI commands in this directory keep authenticating as the robot.\n' +
+    `After the claim, run \`sanity login\` and remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES} ` +
+    'to act as your own account; until then, CLI commands in this directory keep ' +
+    'authenticating as the robot.\n' +
     '\n' +
     'Minting is rate-limited per machine. Fetch https://sanity.new for agent instructions.'
 
@@ -125,6 +141,11 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       default: false,
       description:
         'Mint a new project even when .env already has Sanity credentials (the file is left untouched; the new values are printed for you to apply)',
+    }),
+    scaffold: Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: `Scaffold a Studio into ./${STUDIO_DIR} and a Next.js frontend into ./${FRONTEND_DIR} after minting`,
     }),
     yes: Flags.boolean({
       char: 'y',
@@ -218,18 +239,62 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       flow.line(`SANITY_DATASET="${minted.datasetName}"`)
       flow.line(`SANITY_AUTH_TOKEN="${minted.token}"`)
     }
+    const scaffoldEnvKeys: Record<string, [key: string, value: string][]> = {
+      [FRONTEND_ENV_FILE]: [
+        ['NEXT_PUBLIC_SANITY_PROJECT_ID', minted.resourceId],
+        ['NEXT_PUBLIC_SANITY_DATASET', minted.datasetName],
+      ],
+      [STUDIO_ENV_FILE]: [['SANITY_AUTH_TOKEN', minted.token]],
+    }
+    const printScaffoldEnvLines = (files: string[]) => {
+      for (const file of files) {
+        for (const [key, value] of scaffoldEnvKeys[file] ?? []) {
+          flow.line(`${file}: ${key}="${value}"`)
+        }
+      }
+    }
+    const describeScaffoldEnvKeys = (files: string[]) =>
+      files
+        .map((file) => `${file} (${(scaffoldEnvKeys[file] ?? []).map(([key]) => key).join(', ')})`)
+        .join(' and ')
+    const printScaffoldRecipe = () => {
+      for (const command of manualScaffoldCommands({
+        dataset: minted.datasetName,
+        projectId: minted.resourceId,
+      })) {
+        flow.line(command)
+      }
+      flow.line('Then add:')
+      printScaffoldEnvLines(Object.keys(scaffoldEnvKeys))
+    }
     let warnings: MintProjectResult['warnings']
+    let credentialsOnDisk = false
 
     if (guard.hasExistingKeys) {
+      const staleScaffoldEnv = existingScaffoldEnvFiles(process.cwd())
+
       if (json) {
         warnings = [
           '.env still holds the previous Sanity values and was not modified (this command ' +
             'never edits existing lines); update it from this payload.',
+          ...(staleScaffoldEnv.length > 0
+            ? [
+                `${describeScaffoldEnvKeys(staleScaffoldEnv)} still hold superseded values; ` +
+                  `update them from this payload too, and keep the token out of ${FRONTEND_DIR}/.env.local.`,
+              ]
+            : []),
         ]
       } else {
         flow.highlight('Update ./.env yourself, replacing the old Sanity values with these:')
         printEnvValues()
         flow.gap()
+        if (staleScaffoldEnv.length > 0) {
+          flow.note(
+            `${staleScaffoldEnv.join(' and ')} still hold superseded values, so update them too:`,
+          )
+          printScaffoldEnvLines(staleScaffoldEnv)
+          flow.gap()
+        }
       }
 
       if (guard.expiredProjectId && !forgetMintedProject(guard.expiredProjectId)) {
@@ -252,7 +317,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         })
         // `.env` carries the robot token whether we wrote it now or it was already present
         // (skipped) — gitignore it either way, not just when keys were written this run.
-        const gitignore = ensureEnvGitignored(process.cwd())
+        const gitignore = ensureEnvGitignored(process.cwd(), '.env*')
         // Gitignore does nothing for an already-tracked file, so a tracked `.env` can still be
         // committed — check before claiming the token is protected.
         const envTracked = isEnvTracked(process.cwd())
@@ -265,17 +330,28 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
             flow.line(`${key}="${envValues[key as keyof typeof envValues]}"`)
           }
         }
+        credentialsOnDisk = SCAFFOLD_REQUIRED_ENV_KEYS.every((key) =>
+          written.wroteKeys.includes(key),
+        )
+        if (!credentialsOnDisk) {
+          flow.note(
+            `Skipping the ${STUDIO_DIR}/ and ${FRONTEND_DIR}/ scaffold: the lines above shadowed ` +
+              'the values, so ./.env carries no usable credentials and nothing here can ' +
+              'authenticate. Set them to the values shown, then scaffold with:',
+          )
+          printScaffoldRecipe()
+        }
         if (envTracked) {
           this.output.warn(
             '.env is already tracked by git; adding it to .gitignore does not untrack it, so the ' +
               'token can still be committed. Run `git rm --cached .env` to stop tracking it.',
           )
         } else if (gitignore.added) {
-          flow.line('Added .env to .gitignore so the token stays out of git.')
+          flow.line('Added .env* to .gitignore so the token stays out of git.')
         } else if (!gitignore.ignored) {
           // The write failed — .env now holds a token but may not be ignored. Never silent.
           this.output.warn(
-            "Couldn't add .env to .gitignore; add it yourself so the robot token in .env is never committed.",
+            "Couldn't add .env* to .gitignore; add it yourself so the robot token in .env is never committed.",
           )
         }
       } catch (err) {
@@ -284,7 +360,82 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         // don't claim otherwise. Add them to .env yourself, and keep .env out of git.
         flow.highlight('Add these to ./.env yourself, and keep .env out of git:')
         printEnvValues()
+        flow.note(
+          `Skipping the ${STUDIO_DIR}/ and ${FRONTEND_DIR}/ scaffold: ./.env is what makes this ` +
+            'directory authenticate, so scaffolding without it would leave a project that cannot ' +
+            'read its own content. Write ./.env, then scaffold with:',
+        )
+        printScaffoldRecipe()
       }
+      flow.gap()
+    }
+
+    const shouldScaffold =
+      !json && this.flags.scaffold && !guard.hasExistingKeys && credentialsOnDisk
+    let scaffold: ScaffoldResult | undefined
+    if (shouldScaffold) {
+      try {
+        scaffold = await scaffoldProject({
+          dataset: minted.datasetName,
+          displayName,
+          output,
+          projectId: minted.resourceId,
+          telemetry: this.telemetry,
+          token: minted.token,
+          workDir: process.cwd(),
+        })
+      } catch (err) {
+        this.output.warn(
+          `Couldn't scaffold the project (${err instanceof Error ? err.message : err}). ` +
+            'Your project is minted and ./.env is written, so nothing needs re-minting.',
+        )
+        flow.note('Scaffold it yourself with:')
+        printScaffoldRecipe()
+      }
+    }
+
+    if (scaffold) {
+      for (const warning of scaffold.warnings) this.output.warn(warning)
+      flow.gap()
+      const printFrontendEnv = () => {
+        for (const [key, value] of Object.entries(scaffold.frontendEnv)) {
+          flow.line(`${key}="${value}"`)
+        }
+        if (scaffold.detectedFramework && scaffold.detectedFramework !== 'Next.js') {
+          flow.line(
+            `Those names follow the Next.js convention. On ${scaffold.detectedFramework}, use its ` +
+              'own public prefix for the project id and dataset.',
+          )
+        }
+      }
+
+      if (scaffold.frontendPath) {
+        flow.highlight(`Created ./${STUDIO_DIR} (Studio) and ./${FRONTEND_DIR} (frontend).`)
+        flow.line(`cd ${STUDIO_DIR} && npx sanity dev    to start the Studio on port 3333`)
+        flow.line(`cd ${FRONTEND_DIR} && npm run dev     to start the frontend on port 3000`)
+        if (!scaffold.frontendEnvWritten) {
+          flow.line(`./${FRONTEND_DIR}/.env.local wasn't written. Add these yourself:`)
+          printFrontendEnv()
+        }
+      } else if (scaffold.detectedFramework) {
+        flow.highlight(
+          `Found ${scaffold.detectedFramework} here, so only ./${STUDIO_DIR} was created.`,
+        )
+        flow.line('Add these to your app:')
+        printFrontendEnv()
+      } else {
+        flow.highlight(`Created ./${STUDIO_DIR} (Studio). The frontend was not created.`)
+        flow.line(`cd ${STUDIO_DIR} && npx sanity dev    to start the Studio on port 3333`)
+        flow.line('Scaffold a frontend yourself, then add these:')
+        printFrontendEnv()
+      }
+      flow.gap()
+      flow.note(
+        'Your dataset is private until you claim it, so reading content from your frontend needs a ' +
+          'token. Copy SANITY_AUTH_TOKEN from ./.env when you add those reads, keep them ' +
+          'server-side, and never put it under a browser-exposed prefix like NEXT_PUBLIC_ or ' +
+          'SANITY_STUDIO_: that publishes a credential with full write access.',
+      )
       flow.gap()
     }
 
@@ -352,7 +503,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
           code: 'CLAIMED_PROJECT_IN_ENV',
           exit: exitCodes.RUNTIME_ERROR,
           suggestions: [
-            'If it is yours: run `sanity login`, then remove SANITY_AUTH_TOKEN from .env to act as yourself',
+            `If it is yours: run \`sanity login\`, then remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES} to act as yourself`,
             `Mint a fresh project here anyway: \`${invoked} --force\` (.env is left untouched)`,
           ],
         },
