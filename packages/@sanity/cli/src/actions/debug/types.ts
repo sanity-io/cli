@@ -1,5 +1,6 @@
 export interface UserInfo {
-  email: string
+  /** Null when authenticating with an API token rather than a user account. */
+  email: string | null
   id: string
   name: string
   provider: string

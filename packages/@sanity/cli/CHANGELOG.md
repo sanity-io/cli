@@ -1,5 +1,29 @@
 # Change Log
 
+## [7.14.0](https://github.com/sanity-io/cli/compare/cli-v7.13.0...cli-v7.14.0)
+
+_2026-07-28_
+
+### Features
+
+- Invoke allowed commands from outside the cli ([#1598](https://github.com/sanity-io/cli/pull/1598)) ([93f54ec](https://github.com/sanity-io/cli/commit/93f54ecafb5fb039633b6d60024c96b9d733573c))
+
+### Bug Fixes
+
+- **cli:** note --skip-history before prompting in dataset copy ([#1603](https://github.com/sanity-io/cli/pull/1603)) ([2ae1c1e](https://github.com/sanity-io/cli/commit/2ae1c1e5881002ee651636502dfba1537f02e54f))
+- **deploy:** when a workbench app's slug is already taken, report the existing app id and how to reuse it via `deployment.appId` ([#1596](https://github.com/sanity-io/cli/pull/1596)) ([d988745](https://github.com/sanity-io/cli/commit/d9887459fcf9e1c98ff4df06c0af7f0798f68e3f))
+- **cli:** honor packageManager field and check package-lock.json last when detecting package manager ([#1588](https://github.com/sanity-io/cli/pull/1588)) ([bb5a2de](https://github.com/sanity-io/cli/commit/bb5a2deb84e2e9051aaca26f39317fbcec5e04ab))
+- **cli:** auto-set strictExecutionOrder when unstable_bundledDev is enabled ([#1591](https://github.com/sanity-io/cli/pull/1591)) ([ff14024](https://github.com/sanity-io/cli/commit/ff1402422883d6444698a39230a62465bdd124d6))
+- **workbench:** output federation static assets to static dir ([#1594](https://github.com/sanity-io/cli/pull/1594)) ([643f3d4](https://github.com/sanity-io/cli/commit/643f3d471fc913d4a66b5c18f8e73ec48eea0075))
+- **cli:** stop printing "null" as the user when authenticating with a token ([#1604](https://github.com/sanity-io/cli/pull/1604)) ([513a5ab](https://github.com/sanity-io/cli/commit/513a5ab18f50f64b663a901de0dab5f0dc9deb10))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.7.2
+    - @sanity/cli-core bumped to 2.6.0
+
 ## [7.13.0](https://github.com/sanity-io/cli/compare/cli-v7.12.1...cli-v7.13.0)
 
 _2026-07-23_

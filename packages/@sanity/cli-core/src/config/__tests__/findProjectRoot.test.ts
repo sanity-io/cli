@@ -3,6 +3,7 @@ import {join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {runWithCliExecutionContext} from '../../executionContext'
 import {readJsonFile} from '../../util/readJsonFile'
 import {findProjectRoot} from '../findProjectRoot'
 
@@ -197,5 +198,19 @@ describe('#findProjectRoot', () => {
       path: join(mockCwd, 'sanity.config.ts'),
       type: 'studio',
     })
+  })
+
+  test('throws without touching the filesystem when an execution context is active', async () => {
+    // A config file is present, but the guard must reject before looking
+    vi.mocked(access).mockResolvedValue(undefined)
+
+    await runWithCliExecutionContext({token: 'test-token'}, async () => {
+      await expect(findProjectRoot(mockCwd)).rejects.toThrow(
+        'Project root resolution from the filesystem is disabled for programmatic invocations',
+      )
+    })
+
+    expect(access).not.toHaveBeenCalled()
+    expect(readJsonFile).not.toHaveBeenCalled()
   })
 })

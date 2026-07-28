@@ -65,7 +65,10 @@ async function getSanityUserInfo(): Promise<string | undefined> {
 
   try {
     const user = await getCliUser()
-    return user ? `${user.name} <${user.email}>` : undefined
+    if (!user) return undefined
+    // API tokens resolve to a user with no email; `Name <null>` isn't valid
+    // npm author syntax, so emit the bare name instead.
+    return user.email ? `${user.name} <${user.email}>` : user.name
   } catch {
     return undefined
   }

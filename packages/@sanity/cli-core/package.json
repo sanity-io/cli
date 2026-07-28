@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "description": "Sanity CLI core package",
   "keywords": [
     "cli",
@@ -52,6 +52,10 @@
     "./errors": {
       "source": "./src/_exports/errors.ts",
       "default": "./dist/_exports/errors.js"
+    },
+    "./executionContext": {
+      "source": "./src/executionContext.ts",
+      "default": "./dist/executionContext.js"
     },
     "./package-manager": {
       "source": "./src/_exports/package-manager.ts",

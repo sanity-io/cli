@@ -714,6 +714,9 @@ importers:
       smol-toml:
         specifier: ^1.6.1
         version: 1.6.1
+      string-argv:
+        specifier: ^0.3.2
+        version: 0.3.2
       tar:
         specifier: ^7.5.15
         version: 7.5.16
@@ -4515,8 +4518,8 @@ packages:
     resolution: {integrity: sha512-mWgAMVq9VaKUrEs7FmBbYFRBa5YvNb4FUjHOh2Ie05Qzhqlv90UX8o4fWMZPANhoebu36zridWs0B0tgGi+2Tw==}
     engines: {node: '>=20'}
 
-  '@sanity/blueprints@0.23.0':
-    resolution: {integrity: sha512-Hr+3nWOc/7LsvtucGGR7WDawdRTVCZ4MjWz+9jfAZ3m2MoXg+L++uHXQfcQRVhsJPRrL2SSMLVvI0+FHxEDoHQ==}
+  '@sanity/blueprints@0.23.1':
+    resolution: {integrity: sha512-rp2FB4WRDLo4t5GVWXChFr0pyHEQrRgvJIKla6R58MjaIYSOPe8JUZdL49v+xaGa4zTYaE1cyKQ+2LE8OGd3/Q==}
     engines: {node: '>=22'}
     peerDependencies:
       vite: '>= 8'
@@ -4825,8 +4828,8 @@ packages:
     resolution: {integrity: sha512-g1NzCwQbz+Of1dtDLKOjXL3Md7ALK0TsADVOJd28Gp+Cv64YZKQxBhevOFew6HeeIZi2vdErgmQyh8QZtur9mg==}
     engines: {node: '>=22.12'}
 
-  '@sanity/workbench@0.1.0-alpha.30':
-    resolution: {integrity: sha512-LiJriPsr8wDorKQXG1pc7vqTY0A3Kwj+yNygKMJHIRDn5OY189S1q/Ajw/HhepJGkgSbOKTxYe1Q2BrJ3M5axA==}
+  '@sanity/workbench@0.1.0-alpha.34':
+    resolution: {integrity: sha512-T/OMZbTbtWFZHR2s8xUkxLdP4/gDbCr84rbFDs35VZeU5g/qj4I0JZlgtCYeJMOuWnAG++8GKYhStG0+HQBygA==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       '@sanity/sdk': ^2.9.0
@@ -9492,8 +9495,8 @@ packages:
     resolution: {integrity: sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
-  verkit@0.1.2:
-    resolution: {integrity: sha512-WqkT8n3hqizuCu71W3bUzf5fjBmkbXcudsehe/NbxA8PgqoKnSOY5K0Ba2ckg1qaRaSpSz7as/n9K1R9JXjQKg==}
+  verkit@0.3.0:
+    resolution: {integrity: sha512-Njrh4U8UODGajoZ44QS2C/BsoEM9DTI/aCqY5swsizb+/ap0FamvnCMcZAxrR5+aoC0ZqkawEfpC/N2SBc+xeA==}
     engines: {node: '>=18.12.0'}
 
   vite-node@6.0.0:
@@ -13174,7 +13177,7 @@ snapshots:
 
   '@sanity/blueprints@0.20.2': {}
 
-  '@sanity/blueprints@0.23.0(vite@8.1.5(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))':
+  '@sanity/blueprints@0.23.1(vite@8.1.5(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))':
     optionalDependencies:
       vite: 8.1.5(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0)
 
@@ -13709,7 +13712,7 @@ snapshots:
       '@oclif/core': 4.11.14
       '@oclif/plugin-help': 6.2.53
       '@sanity-labs/design-tokens': 0.0.2-alpha.4
-      '@sanity/blueprints': 0.23.0(vite@8.1.5(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))
+      '@sanity/blueprints': 0.23.1(vite@8.1.5(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))
       '@sanity/blueprints-parser': 0.4.0
       '@sanity/cli-build': 5.0.0(@babel/core@7.29.7)(@babel/runtime@7.29.7)(@noble/hashes@2.2.0)(@types/node@22.20.0)(@types/react@19.2.17)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(jiti@2.7.0)(rolldown@1.2.0)(terser@5.48.0)(tsx@4.23.1)(typescript@6.0.3)(yaml@2.9.0)
       '@sanity/cli-core': 2.5.1(@noble/hashes@2.2.0)(@types/node@22.20.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(terser@5.48.0)(yaml@2.9.0)
@@ -14028,13 +14031,13 @@ snapshots:
       - vue-tsc
       - yaml
 
-  '@sanity/workbench@0.1.0-alpha.30(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)':
+  '@sanity/workbench@0.1.0-alpha.34(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)':
     dependencies:
       '@module-federation/runtime': 2.8.0
       '@sanity/sdk': 2.15.0(@types/react@19.2.17)(immer@11.1.8)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4)
       '@sanity/telemetry': 1.1.0(react@19.2.7)
       rxjs: 7.8.2
-      verkit: 0.1.2
+      verkit: 0.3.0
       xstate: 5.32.4
       zod: 4.4.3
     transitivePeerDependencies:
@@ -18415,7 +18418,7 @@ snapshots:
       '@sanity/ui': 3.3.5(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(styled-components@6.4.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@sanity/util': 6.5.0-workbench.20260714145319(@types/react@19.2.17)
       '@sanity/uuid': 3.0.3
-      '@sanity/workbench': 0.1.0-alpha.30(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)
+      '@sanity/workbench': 0.1.0-alpha.34(@sanity/sdk@2.15.0(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))(xstate@5.32.4))(react@19.2.7)(xstate@5.32.4)
       '@sentry/react': 10.65.0(react@19.2.7)
       '@tanstack/react-table': 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/react-virtual': 3.14.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -19167,7 +19170,7 @@ snapshots:
 
   validate-npm-package-name@5.0.1: {}
 
-  verkit@0.1.2: {}
+  verkit@0.3.0: {}
 
   vite-node@6.0.0(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0):
     dependencies:
