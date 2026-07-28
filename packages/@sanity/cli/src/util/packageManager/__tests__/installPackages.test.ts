@@ -73,6 +73,10 @@ describe('installDeclaredPackages', () => {
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
     expect(mockSpinnerInstance.fail).not.toHaveBeenCalled()
+    expect(mockSpinner).toHaveBeenCalledWith({
+      discardStdin: true,
+      text: 'Running npm install\n',
+    })
   })
 
   test('installs with yarn successfully', async () => {
@@ -346,6 +350,10 @@ describe('installNewPackages', () => {
       ['install', '--save', 'next-sanity'],
       expect.objectContaining({cancelSignal: controller.signal}),
     )
+    expect(mockSpinner).toHaveBeenCalledWith({
+      discardStdin: false,
+      text: 'Running npm install --save next-sanity\n',
+    })
     expect(mockSpinnerInstance.fail).toHaveBeenCalledOnce()
     expect(mockSpinnerInstance.succeed).not.toHaveBeenCalled()
   })

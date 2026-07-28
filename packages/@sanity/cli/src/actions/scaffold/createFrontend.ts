@@ -71,7 +71,10 @@ export async function createFrontend({
 
   debug('Scaffolding frontend: npx %s', args.join(' '))
 
-  const progress = spinner('Creating your Next.js app\n').start()
+  const progress = spinner({
+    discardStdin: !cancelSignal,
+    text: 'Creating your Next.js app\n',
+  }).start()
   let result
   try {
     result = await execa('npx', args, {

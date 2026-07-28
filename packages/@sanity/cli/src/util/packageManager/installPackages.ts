@@ -71,7 +71,10 @@ async function executePackageManagerCommand(
   output: Output,
   errorMessage: string,
 ): Promise<void> {
-  const progress = spinner(`Running ${packageManager} ${args.join(' ')}\n`).start()
+  const progress = spinner({
+    discardStdin: !execOptions.cancelSignal,
+    text: `Running ${packageManager} ${args.join(' ')}\n`,
+  }).start()
 
   const result = await execa(packageManager, args, execOptions)
 

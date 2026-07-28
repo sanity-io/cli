@@ -13,12 +13,11 @@ const mockExeca = vi.hoisted(() => vi.fn())
 const mockInstallNewPackages = vi.hoisted(() => vi.fn())
 const mockProgressFail = vi.hoisted(() => vi.fn())
 const mockProgressSucceed = vi.hoisted(() => vi.fn())
+const mockSpinner = vi.hoisted(() => vi.fn())
 
 vi.mock('execa', () => ({execa: mockExeca}))
 vi.mock('@sanity/cli-core/ux', () => ({
-  spinner: () => ({
-    start: () => ({fail: mockProgressFail, succeed: mockProgressSucceed}),
-  }),
+  spinner: mockSpinner,
 }))
 vi.mock('../../../util/packageManager/installPackages.js', () => ({
   installNewPackages: mockInstallNewPackages,
@@ -33,6 +32,9 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockExeca.mockResolvedValue({exitCode: 0})
   mockInstallNewPackages.mockResolvedValue(undefined)
+  mockSpinner.mockReturnValue({
+    start: () => ({fail: mockProgressFail, succeed: mockProgressSucceed}),
+  })
 })
 
 describe('createFrontend', () => {
@@ -100,6 +102,21 @@ describe('createFrontend', () => {
 
     const options = mockExeca.mock.calls[0][2]
     expect(options).toMatchObject({stdio: ['ignore', 'pipe', 'pipe']})
+    expect(mockSpinner).toHaveBeenCalledWith({
+      discardStdin: true,
+      text: 'Creating your Next.js app\n',
+    })
+  })
+
+  test('keeps terminal SIGINT enabled while cancellation is active', async () => {
+    const controller = new AbortController()
+
+    await createFrontend({...args, cancelSignal: controller.signal})
+
+    expect(mockSpinner).toHaveBeenCalledWith({
+      discardStdin: false,
+      text: 'Creating your Next.js app\n',
+    })
   })
 
   test('wraps a scaffolder failure so the caller can keep the minted project', async () => {
