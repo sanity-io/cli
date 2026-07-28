@@ -330,6 +330,25 @@ describe('installNewPackages', () => {
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
   })
+
+  test('propagates cancellation when the package manager exits successfully', async () => {
+    const controller = new AbortController()
+    const options = {packageManager: 'npm' as const, packages: ['next-sanity']}
+    controller.abort(new Error('SIGINT'))
+    mockExeca.mockResolvedValueOnce({exitCode: 0, failed: false} as Result)
+
+    await expect(
+      installNewPackages(options, {...context, cancelSignal: controller.signal}),
+    ).rejects.toThrow('SIGINT')
+
+    expect(mockExeca).toHaveBeenCalledWith(
+      'npm',
+      ['install', '--save', 'next-sanity'],
+      expect.objectContaining({cancelSignal: controller.signal}),
+    )
+    expect(mockSpinnerInstance.fail).toHaveBeenCalledOnce()
+    expect(mockSpinnerInstance.succeed).not.toHaveBeenCalled()
+  })
 })
 
 describe('pnpm ignored build scripts', () => {

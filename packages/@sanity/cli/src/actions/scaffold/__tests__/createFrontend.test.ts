@@ -11,8 +11,15 @@ import {
 
 const mockExeca = vi.hoisted(() => vi.fn())
 const mockInstallNewPackages = vi.hoisted(() => vi.fn())
+const mockProgressFail = vi.hoisted(() => vi.fn())
+const mockProgressSucceed = vi.hoisted(() => vi.fn())
 
 vi.mock('execa', () => ({execa: mockExeca}))
+vi.mock('@sanity/cli-core/ux', () => ({
+  spinner: () => ({
+    start: () => ({fail: mockProgressFail, succeed: mockProgressSucceed}),
+  }),
+}))
 vi.mock('../../../util/packageManager/installPackages.js', () => ({
   installNewPackages: mockInstallNewPackages,
 }))
@@ -128,6 +135,24 @@ describe('createFrontend', () => {
 
     await expect(createFrontend(args)).rejects.toThrow(FrontendScaffoldError)
   })
+
+  test('propagates cancellation when create-next-app exits successfully on SIGINT', async () => {
+    const controller = new AbortController()
+    mockExeca.mockImplementation(async () => {
+      controller.abort(new Error('SIGINT'))
+      return {exitCode: 0}
+    })
+
+    const error = await createFrontend({...args, cancelSignal: controller.signal}).catch(
+      (err: unknown) => err,
+    )
+
+    expect(error).toEqual(new Error('SIGINT'))
+    expect(error).not.toBeInstanceOf(FrontendScaffoldError)
+    expect(mockExeca.mock.calls[0][2]).toMatchObject({cancelSignal: controller.signal})
+    expect(mockProgressFail).toHaveBeenCalledOnce()
+    expect(mockProgressSucceed).not.toHaveBeenCalled()
+  })
 })
 
 describe('installFrontendDeps', () => {
@@ -153,5 +178,24 @@ describe('installFrontendDeps', () => {
     mockInstallNewPackages.mockRejectedValue('ENOSPC')
 
     await expect(installFrontendDeps(args)).rejects.toThrow('Installing next-sanity failed: ENOSPC')
+  })
+
+  test('propagates cancellation while installing next-sanity', async () => {
+    const controller = new AbortController()
+    mockInstallNewPackages.mockImplementation(async () => {
+      controller.abort(new Error('SIGINT'))
+      controller.signal.throwIfAborted()
+    })
+
+    const error = await installFrontendDeps({...args, cancelSignal: controller.signal}).catch(
+      (err: unknown) => err,
+    )
+
+    expect(error).toEqual(new Error('SIGINT'))
+    expect(error).not.toBeInstanceOf(FrontendScaffoldError)
+    expect(mockInstallNewPackages).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({cancelSignal: controller.signal}),
+    )
   })
 })

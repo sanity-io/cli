@@ -374,8 +374,12 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       !json && this.flags.scaffold && !guard.hasExistingKeys && credentialsOnDisk
     let scaffold: ScaffoldResult | undefined
     if (shouldScaffold) {
+      const scaffoldController = new AbortController()
+      const abortScaffold = () => scaffoldController.abort(new Error('SIGINT'))
+      process.once('SIGINT', abortScaffold)
       try {
         scaffold = await scaffoldProject({
+          cancelSignal: scaffoldController.signal,
           dataset: minted.datasetName,
           displayName,
           output,
@@ -384,13 +388,18 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
           token: minted.token,
           workDir: process.cwd(),
         })
+        scaffoldController.signal.throwIfAborted()
       } catch (err) {
+        scaffoldController.signal.throwIfAborted()
+        if (err instanceof Error && err.message === 'SIGINT') throw err
         this.output.warn(
           `Couldn't scaffold the project (${err instanceof Error ? err.message : err}). ` +
             'Your project is minted and ./.env is written, so nothing needs re-minting.',
         )
         flow.note('Scaffold it yourself with:')
         printScaffoldRecipe()
+      } finally {
+        process.off('SIGINT', abortScaffold)
       }
     }
 

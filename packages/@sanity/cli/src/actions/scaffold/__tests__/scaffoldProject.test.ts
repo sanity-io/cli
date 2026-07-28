@@ -202,6 +202,21 @@ describe('scaffoldProject', () => {
     await expect(scaffoldProject(args)).rejects.toThrow('disk full')
   })
 
+  test('propagates frontend cancellation without writing frontend configuration', async () => {
+    const controller = new AbortController()
+    mockCreateFrontend.mockImplementation(async () => {
+      controller.abort(new Error('SIGINT'))
+      controller.signal.throwIfAborted()
+    })
+
+    await expect(scaffoldProject({...args, cancelSignal: controller.signal})).rejects.toThrow(
+      'SIGINT',
+    )
+
+    expect(envWriteFor(path.join(workDir, FRONTEND_DIR, '.env.local'))).toBeUndefined()
+    expect(mockInstallFrontendDeps).not.toHaveBeenCalled()
+  })
+
   test('writes the frontend env before installing, so a failed install keeps it configured', async () => {
     const {FrontendScaffoldError} = await import('../createFrontend.js')
     mockInstallFrontendDeps.mockRejectedValue(
@@ -219,6 +234,18 @@ describe('scaffoldProject', () => {
     mockInstallFrontendDeps.mockRejectedValue(new Error('segfault'))
 
     await expect(scaffoldProject(args)).rejects.toThrow('segfault')
+  })
+
+  test('propagates dependency installation cancellation', async () => {
+    const controller = new AbortController()
+    mockInstallFrontendDeps.mockImplementation(async () => {
+      controller.abort(new Error('SIGINT'))
+      controller.signal.throwIfAborted()
+    })
+
+    await expect(scaffoldProject({...args, cancelSignal: controller.signal})).rejects.toThrow(
+      'SIGINT',
+    )
   })
 
   test('a failed Studio env write degrades to a warning instead of unwinding the mint', async () => {

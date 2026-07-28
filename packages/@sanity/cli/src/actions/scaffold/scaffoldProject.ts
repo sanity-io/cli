@@ -58,6 +58,7 @@ export interface ScaffoldResult {
 
 // The token goes to `.env.local`, never `.env`: the scaffolded `.gitignore` covers `*.local` only.
 export async function scaffoldProject({
+  cancelSignal,
   dataset,
   displayName,
   output,
@@ -67,6 +68,7 @@ export async function scaffoldProject({
   token,
   workDir,
 }: {
+  cancelSignal?: AbortSignal
   dataset: string
   displayName: string
   output: Output
@@ -76,6 +78,7 @@ export async function scaffoldProject({
   token: string
   workDir: string
 }): Promise<ScaffoldResult> {
+  cancelSignal?.throwIfAborted()
   const detected = await detectFrameworkRecord({
     frameworkList: frameworks as readonly Framework[],
     rootPath: workDir,
@@ -137,6 +140,7 @@ export async function scaffoldProject({
     throw err
   }
 
+  cancelSignal?.throwIfAborted()
   const studioEnvWritten = writeScaffoldEnv(
     path.join(studioPath, '.env.local'),
     {SANITY_AUTH_TOKEN: token},
@@ -166,11 +170,13 @@ export async function scaffoldProject({
 
   try {
     await createFrontend({
+      cancelSignal,
       dirName: FRONTEND_DIR,
       output,
       packageManager: resolvedPackageManager,
       workDir,
     })
+    cancelSignal?.throwIfAborted()
   } catch (err) {
     if (err instanceof FrontendScaffoldError) {
       warnings.push(
@@ -195,11 +201,13 @@ export async function scaffoldProject({
 
   try {
     await installFrontendDeps({
+      cancelSignal,
       dirName: FRONTEND_DIR,
       output,
       packageManager: resolvedPackageManager,
       workDir,
     })
+    cancelSignal?.throwIfAborted()
   } catch (err) {
     if (!(err instanceof FrontendScaffoldError)) throw err
     warnings.push(`${err.message}. Run the install yourself in ./${FRONTEND_DIR}.`)

@@ -75,6 +75,11 @@ async function executePackageManagerCommand(
 
   const result = await execa(packageManager, args, execOptions)
 
+  if (execOptions.cancelSignal?.aborted) {
+    progress.fail()
+    execOptions.cancelSignal.throwIfAborted()
+  }
+
   if (result?.exitCode || result?.failed) {
     // pnpm exits non-zero if dependency build scripts were skipped, even though
     // the install itself succeeded. Treat it as a success, but point to
@@ -135,11 +140,12 @@ export async function installDeclaredPackages(
 
 export async function installNewPackages(
   options: InstallOptions,
-  context: {output: Output; workDir: string},
+  context: {cancelSignal?: AbortSignal; output: Output; workDir: string},
 ): Promise<void> {
   const {packageManager, packages} = options
-  const {output, workDir} = context
+  const {cancelSignal, output, workDir} = context
   const execOptions: Options = {
+    cancelSignal,
     cwd: workDir,
     encoding: 'utf8',
     env: getPartialEnvWithNpmPath(workDir),

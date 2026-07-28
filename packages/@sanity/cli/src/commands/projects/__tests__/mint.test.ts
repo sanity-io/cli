@@ -957,6 +957,41 @@ describe('#projects:mint re-mint guardrail', () => {
     )
     expect(loggedLines()).toContain(mockMinted.claimUrl)
   })
+
+  test('a scaffold SIGINT aborts instead of degrading to a warning', async () => {
+    mockScaffoldProject.mockRejectedValue(new Error('SIGINT'))
+
+    await expect(MintProjectCommand.run(['My New Project'])).rejects.toThrow('SIGINT')
+
+    expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("Couldn't scaffold the project"),
+    )
+  })
+
+  test('aborts an active scaffold when the command receives SIGINT', async () => {
+    const existingListeners = process.rawListeners('SIGINT')
+    mockScaffoldProject.mockImplementation(async ({cancelSignal}) => {
+      const sigintHandler = process
+        .rawListeners('SIGINT')
+        .find((listener) => !existingListeners.includes(listener))
+      expect(sigintHandler).toBeDefined()
+      sigintHandler?.()
+      expect(cancelSignal.aborted).toBe(true)
+      return {
+        frontendEnv: {},
+        frontendEnvWritten: false,
+        studioPath: '/tmp/project/sanity',
+        warnings: [],
+      }
+    })
+
+    await expect(MintProjectCommand.run(['My New Project'])).rejects.toThrow('SIGINT')
+
+    expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("Couldn't scaffold the project"),
+    )
+    expect(process.rawListeners('SIGINT')).toEqual(existingListeners)
+  })
 })
 
 describe('#new', () => {

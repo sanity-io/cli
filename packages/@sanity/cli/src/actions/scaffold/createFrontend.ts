@@ -55,11 +55,13 @@ export class FrontendScaffoldError extends Error {
 
 // Closed stdin is what guarantees no prompt can wait for a human, rather than trusting the flags.
 export async function createFrontend({
+  cancelSignal,
   dirName,
   output,
   packageManager,
   workDir,
 }: {
+  cancelSignal?: AbortSignal
   dirName: string
   output: Output
   packageManager: PackageManager
@@ -73,6 +75,7 @@ export async function createFrontend({
   let result
   try {
     result = await execa('npx', args, {
+      cancelSignal,
       cwd: workDir,
       encoding: 'utf8',
       env: {
@@ -82,8 +85,10 @@ export async function createFrontend({
       reject: false,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
+    cancelSignal?.throwIfAborted()
   } catch (err) {
     progress.fail()
+    cancelSignal?.throwIfAborted()
     throw new FrontendScaffoldError(
       `create-next-app failed: ${err instanceof Error ? err.message : String(err)}`,
     )
@@ -104,11 +109,13 @@ export async function createFrontend({
 }
 
 export async function installFrontendDeps({
+  cancelSignal,
   dirName,
   output,
   packageManager,
   workDir,
 }: {
+  cancelSignal?: AbortSignal
   dirName: string
   output: Output
   packageManager: PackageManager
@@ -117,9 +124,11 @@ export async function installFrontendDeps({
   try {
     await installNewPackages(
       {packageManager, packages: [NEXT_SANITY_SPEC]},
-      {output, workDir: path.join(workDir, dirName)},
+      {cancelSignal, output, workDir: path.join(workDir, dirName)},
     )
+    cancelSignal?.throwIfAborted()
   } catch (err) {
+    cancelSignal?.throwIfAborted()
     throw new FrontendScaffoldError(
       `Installing next-sanity failed: ${err instanceof Error ? err.message : String(err)}`,
     )
