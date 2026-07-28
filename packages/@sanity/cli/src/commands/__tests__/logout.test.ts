@@ -7,8 +7,7 @@ import {AUTH_API_VERSION} from '../../services/auth.js'
 import {LogoutCommand} from '../logout.js'
 
 const mockConfigStoreDelete = vi.hoisted(() => vi.fn())
-const mockGetMintedProjectRecord = vi.hoisted(() => vi.fn())
-const mockReadEnvValues = vi.hoisted(() => vi.fn())
+const mockedResolveCliCredential = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
@@ -21,22 +20,18 @@ vi.mock('@sanity/cli-core', async () => {
     setCliUserConfig: vi.fn(),
   }
 })
-vi.mock('../../util/claimNudges.js', () => ({
-  getMintedProjectRecord: mockGetMintedProjectRecord,
-}))
-vi.mock('../../util/envFile.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../util/envFile.js')>()),
-  readEnvValues: mockReadEnvValues,
+// The active-identity warnings come from the credential resolver; pin it so the tests never read
+// real machine state (env, cwd `.env`, the ledger).
+vi.mock('@sanity/cli-core/config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core/config')>()),
+  resolveCliCredential: mockedResolveCliCredential,
 }))
 
 const mockedGetCliUserConfig = vi.mocked(getCliUserConfig)
 const mockedSetConfig = vi.mocked(setCliUserConfig)
 
 beforeEach(() => {
-  // Baselines no-token cases, otherwise auth token might be populated by test env shell.
-  vi.stubEnv('SANITY_AUTH_TOKEN', '')
-  mockReadEnvValues.mockReturnValue({})
-  mockGetMintedProjectRecord.mockReturnValue(undefined)
+  mockedResolveCliCredential.mockResolvedValue({source: 'none'})
 })
 
 afterEach(() => {
@@ -49,6 +44,7 @@ afterEach(() => {
 
 describe('#logout', () => {
   test('logs out successfully if a stored session exists', async () => {
+    mockedResolveCliCredential.mockResolvedValue({source: 'session', token: 'test-token'})
     mockedGetCliUserConfig.mockReturnValueOnce('test-token')
 
     mockApi({
@@ -94,7 +90,7 @@ describe('#logout', () => {
   })
 
   test('env token only: explains it cannot be logged out, calls no API', async () => {
-    vi.stubEnv('SANITY_AUTH_TOKEN', 'sk-robot-token')
+    mockedResolveCliCredential.mockResolvedValue({source: 'environment', token: 'sk-robot-token'})
     mockedGetCliUserConfig.mockReturnValueOnce(undefined)
 
     const {error, stderr, stdout} = await testCommand(LogoutCommand)
@@ -109,9 +105,12 @@ describe('#logout', () => {
   })
 
   test('minted directory: warns the ledger robot identity survives logout', async () => {
+    mockedResolveCliCredential.mockResolvedValue({
+      projectId: 'abc123',
+      source: 'minted-project',
+      token: 'sk-robot',
+    })
     mockedGetCliUserConfig.mockReturnValueOnce(undefined)
-    mockReadEnvValues.mockReturnValue({SANITY_PROJECT_ID: 'abc123'})
-    mockGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
 
     const {error, stderr, stdout} = await testCommand(LogoutCommand)
 
@@ -119,15 +118,14 @@ describe('#logout', () => {
     expect(stderr).toContain('acts as unclaimed Sanity project abc123')
     // The ledger identity counts as credentials — don't claim there are none.
     expect(stdout).not.toContain('No login credentials found')
-    expect(mockGetMintedProjectRecord).toHaveBeenCalledWith('abc123')
   })
 
   test('env token plus stored session: warns about the env token and ends the session', async () => {
-    vi.stubEnv('SANITY_AUTH_TOKEN', 'sk-robot-token')
+    mockedResolveCliCredential.mockResolvedValue({source: 'environment', token: 'sk-robot-token'})
     mockedGetCliUserConfig.mockReturnValueOnce('session-token')
 
     // Matching the Authorization header proves the session token hit /auth/logout; sending the
-    // env token there is the exact leak the command guards against.
+    // active env token there is the exact leak the command guards against.
     mockApi({
       apiVersion: AUTH_API_VERSION,
       method: 'post',
@@ -139,6 +137,31 @@ describe('#logout', () => {
     const {stderr, stdout} = await testCommand(LogoutCommand)
 
     expect(stderr).toContain('SANITY_AUTH_TOKEN is set in the environment')
+    expect(stdout).toContain('Logged out successfully')
+    expect(mockedSetConfig).toHaveBeenCalledWith('authToken', undefined)
+  })
+
+  test('minted robot plus stored session: warns, and still revokes only the session token', async () => {
+    // The robot outranks the session for auth, but logout must still end the stored session,
+    // and must never send the robot token to the session logout endpoint.
+    mockedResolveCliCredential.mockResolvedValue({
+      projectId: 'abc123',
+      source: 'minted-project',
+      token: 'sk-robot',
+    })
+    mockedGetCliUserConfig.mockReturnValueOnce('session-token')
+
+    mockApi({
+      apiVersion: AUTH_API_VERSION,
+      method: 'post',
+      uri: '/auth/logout',
+    })
+      .matchHeader('authorization', 'Bearer session-token')
+      .reply(200)
+
+    const {stderr, stdout} = await testCommand(LogoutCommand)
+
+    expect(stderr).toContain('acts as unclaimed Sanity project abc123')
     expect(stdout).toContain('Logged out successfully')
     expect(mockedSetConfig).toHaveBeenCalledWith('authToken', undefined)
   })

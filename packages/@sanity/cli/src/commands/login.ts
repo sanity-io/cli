@@ -1,14 +1,13 @@
-import path from 'node:path'
 import {text} from 'node:stream/consumers'
 
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
+import {resolveCliCredential} from '@sanity/cli-core/config'
 
 import {login} from '../actions/auth/login/login.js'
 import {LOGIN_PROVIDER_IDS} from '../actions/auth/login/loginInstructions.js'
-import {getMintedProjectRecord} from '../util/claimNudges.js'
-import {readEnvValues, TOKEN_ENV_FILES} from '../util/envFile.js'
+import {TOKEN_ENV_FILES} from '../util/envFile.js'
 
 export class LoginCommand extends SanityCommand<typeof LoginCommand> {
   static override description = 'Log in to your Sanity account'
@@ -81,29 +80,24 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
         token,
       })
       this.log('Login successful')
-      this.warnWhenSessionIsOutranked()
+      await this.warnWhenSessionIsOutranked()
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.error(`Login failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
-  private warnWhenSessionIsOutranked() {
-    const envToken = process.env.SANITY_AUTH_TOKEN?.trim()
-    if (envToken) {
+  // The new session is already stored, so a 'session' source means the login is active and
+  // nothing outranks it.
+  private async warnWhenSessionIsOutranked() {
+    const credential = await resolveCliCredential()
+    if (credential.source === 'environment') {
       this.warn(
         `SANITY_AUTH_TOKEN is set in the environment (often via ${TOKEN_ENV_FILES}). It outranks this login session. Remove that variable to act as the account you just logged in with.`,
       )
-      return
-    }
-
-    const {SANITY_PROJECT_ID} = readEnvValues(path.join(process.cwd(), '.env'), [
-      'SANITY_PROJECT_ID',
-    ])
-    const mintedRecord = SANITY_PROJECT_ID ? getMintedProjectRecord(SANITY_PROJECT_ID) : undefined
-    if (mintedRecord) {
+    } else if (credential.source === 'minted-project') {
       this.warn(
-        `This directory acts as unclaimed Sanity project ${SANITY_PROJECT_ID} via its robot token, which outranks this login session here. Claim the project to act as yourself.`,
+        `This directory acts as unclaimed Sanity project ${credential.projectId} via its robot token, which outranks this login session here. Claim the project to act as yourself.`,
       )
     }
   }

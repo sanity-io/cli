@@ -4,7 +4,7 @@ import {Readable} from 'node:stream'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startServerForTokenCallback} from '../../actions/auth/authServer.js'
 import {LOGIN_PROVIDER_IDS} from '../../actions/auth/login/loginInstructions.js'
@@ -34,19 +34,14 @@ vi.mock('@sanity/cli-core/ux', async () => {
 // Mock browser launching
 vi.mock('open')
 
-// The outranked-session warnings read the cwd `.env` and the unclaimed-projects ledger. Both
-// are real machine state, so pin them to be inert unless a test opts in.
-const mockReadEnvValues = vi.hoisted(() => vi.fn().mockReturnValue({}))
-const mockGetMintedProjectRecord = vi.hoisted(() => vi.fn().mockReturnValue(undefined))
+// The outranked-session warnings resolve the active credential source. The real resolver reads
+// machine state (env, cwd `.env`, the ledger, the stored session), so pin it to be inert unless
+// a test opts in.
+const mockedResolveCliCredential = vi.hoisted(() => vi.fn())
 
-vi.mock('../../util/envFile.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../util/envFile.js')>()),
-  readEnvValues: mockReadEnvValues,
-}))
-
-vi.mock('../../util/claimNudges.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../util/claimNudges.js')>()),
-  getMintedProjectRecord: mockGetMintedProjectRecord,
+vi.mock('@sanity/cli-core/config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core/config')>()),
+  resolveCliCredential: mockedResolveCliCredential,
 }))
 
 // Mock platform detection
@@ -232,6 +227,10 @@ function mockValidTokenLogin(token: string) {
 }
 
 describe('#login', {timeout: 10_000}, () => {
+  beforeEach(() => {
+    mockedResolveCliCredential.mockResolvedValue({source: 'none'})
+  })
+
   afterEach(() => {
     if (originalStdinDescriptor) {
       Object.defineProperty(process, 'stdin', originalStdinDescriptor)
@@ -537,8 +536,8 @@ describe('#login', {timeout: 10_000}, () => {
   })
 
   describe('Outranked Session Warnings', () => {
-    test('warns when SANITY_AUTH_TOKEN outranks the fresh session', async () => {
-      vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+    test('warns when the resolver reports an environment credential', async () => {
+      mockedResolveCliCredential.mockResolvedValue({source: 'environment', token: 'env-token'})
       mockValidTokenLogin('valid-token')
 
       const {error, stderr, stdout} = await testTokenLogin('valid-token')
@@ -549,15 +548,11 @@ describe('#login', {timeout: 10_000}, () => {
       expect(stderr).toContain('It outranks this login session')
     })
 
-    test('warns when the directory acts as an unclaimed minted project', async () => {
-      vi.stubEnv('SANITY_AUTH_TOKEN', '')
-      mockReadEnvValues.mockReturnValueOnce({SANITY_PROJECT_ID: 'abc123'})
-      mockGetMintedProjectRecord.mockReturnValueOnce({
-        claimToken: 'claim-token',
-        claimUrl: 'https://www.sanity.io/claim/some-token',
-        expiresAt: '2099-01-01T00:00:00.000Z',
-        mintedAt: '2026-07-24T00:00:00.000Z',
+    test('warns when the resolver reports a minted-project credential', async () => {
+      mockedResolveCliCredential.mockResolvedValue({
         projectId: 'abc123',
+        source: 'minted-project',
+        token: 'sk-robot',
       })
       mockValidTokenLogin('valid-token')
 
@@ -568,8 +563,19 @@ describe('#login', {timeout: 10_000}, () => {
       expect(stderr).toContain('outranks this login session')
     })
 
-    test('stays quiet when nothing outranks the session', async () => {
-      vi.stubEnv('SANITY_AUTH_TOKEN', '')
+    test('stays quiet when the resolver reports the fresh session as active', async () => {
+      // The resolver runs after the new session is stored, so 'session' means the login won.
+      mockedResolveCliCredential.mockResolvedValue({source: 'session', token: 'valid-token'})
+      mockValidTokenLogin('valid-token')
+
+      const {error, stderr} = await testTokenLogin('valid-token')
+
+      if (error) throw error
+      expect(stderr).not.toContain('outranks this login session')
+    })
+
+    test('stays quiet when the resolver reports no credential', async () => {
+      mockedResolveCliCredential.mockResolvedValue({source: 'none'})
       mockValidTokenLogin('valid-token')
 
       const {error, stderr} = await testTokenLogin('valid-token')

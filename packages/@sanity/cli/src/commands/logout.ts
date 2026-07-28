@@ -1,5 +1,3 @@
-import path from 'node:path'
-
 import {
   exitCodes,
   getCliUserConfig,
@@ -7,11 +5,11 @@ import {
   SanityCommand,
   setCliUserConfig,
 } from '@sanity/cli-core'
+import {resolveCliCredential} from '@sanity/cli-core/config'
 import {isHttpError} from '@sanity/client'
 
 import {logout} from '../services/auth.js'
-import {getMintedProjectRecord} from '../util/claimNudges.js'
-import {readEnvValues, TOKEN_ENV_FILES} from '../util/envFile.js'
+import {TOKEN_ENV_FILES} from '../util/envFile.js'
 
 export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
   static override description = 'Log out of the current session'
@@ -19,31 +17,25 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
   public async run(): Promise<void> {
     await this.parse(LogoutCommand)
 
-    // Prevents SANITY_AUTH_TOKEN from causing errors when passed to session lookup endpoints.
-    const envToken = process.env.SANITY_AUTH_TOKEN?.trim()
-    if (envToken) {
+    // The active credential may be an environment or minted-project robot token, which logout
+    // cannot end. Surface that instead of reporting no credentials. Only the stored login
+    // session is ever revoked, so those tokens are never sent to the session logout endpoint.
+    const credential = await resolveCliCredential()
+    if (credential.source === 'environment') {
       this.warn(
         `SANITY_AUTH_TOKEN is set in the environment (often via ${TOKEN_ENV_FILES}). Logging out cannot end it. Remove that variable to stop acting as its identity.`,
       )
-    }
-
-    // getCliToken also authenticates from the unclaimed-projects ledger, ahead of the login
-    // session, so in a minted directory the CLI keeps acting as the project robot after logout.
-    // Surface that rather than reporting no credentials.
-    const {SANITY_PROJECT_ID} = readEnvValues(path.join(process.cwd(), '.env'), [
-      'SANITY_PROJECT_ID',
-    ])
-    const mintedRecord = SANITY_PROJECT_ID ? getMintedProjectRecord(SANITY_PROJECT_ID) : undefined
-    if (mintedRecord) {
+    } else if (credential.source === 'minted-project') {
       this.warn(
-        `This directory acts as unclaimed Sanity project ${SANITY_PROJECT_ID} via a stored robot token. Logout cannot end that. Claim the project, or run sanity elsewhere, to stop acting as it.`,
+        `This directory acts as unclaimed Sanity project ${credential.projectId} via a stored robot token. Logout cannot end that. Claim the project, or run sanity elsewhere, to stop acting as it.`,
       )
     }
 
-    // Target the stored login session directly to avoid sending env token to session endpoint.
+    // Target the stored login session directly to avoid sending the active token to the session
+    // endpoint: an outranking credential must not prevent revoking a separately stored session.
     const sessionToken = getCliUserConfig('authToken')
     if (!sessionToken) {
-      if (!envToken && !mintedRecord) this.log('No login credentials found')
+      if (credential.source === 'none') this.log('No login credentials found')
       return
     }
 

@@ -20,9 +20,9 @@ vi.mock('../../../util/readJsonFileSync.js')
 vi.mock('../../../util/writeJsonFileSync.js')
 vi.mock('node:fs')
 
-const mockResolveMintedProjectToken = vi.hoisted(() => vi.fn())
+const mockResolveMintedProjectCredential = vi.hoisted(() => vi.fn())
 vi.mock('../unclaimedProjects.js', () => ({
-  resolveMintedProjectToken: mockResolveMintedProjectToken,
+  resolveMintedProjectCredential: mockResolveMintedProjectCredential,
   UNCLAIMED_PROJECTS_CONFIG_KEY: 'unclaimedProjects',
 }))
 
@@ -44,8 +44,8 @@ describe('cliUserConfig', () => {
       // clearAllMocks() does not reset implementations, so make the cache
       // state explicit for every test
       vi.mocked(getCachedToken).mockReturnValue(undefined)
-      // No minted ledger token by default, tests that want one opt in.
-      mockResolveMintedProjectToken.mockReturnValue(undefined)
+      // No minted ledger credential by default, tests that want one opt in.
+      mockResolveMintedProjectCredential.mockReturnValue(undefined)
     })
     afterEach(() => {
       vi.unstubAllEnvs()
@@ -69,7 +69,10 @@ describe('cliUserConfig', () => {
     })
 
     test('should return the ledger token when no env token is set, ahead of the login session', async () => {
-      mockResolveMintedProjectToken.mockReturnValue('ledger-token')
+      mockResolveMintedProjectCredential.mockReturnValue({
+        projectId: 'abc123',
+        token: 'ledger-token',
+      })
 
       const token = await getCliToken()
       expect(token).toBe('ledger-token')
@@ -80,11 +83,14 @@ describe('cliUserConfig', () => {
 
     test('should prefer the env token over the ledger token', async () => {
       vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
-      mockResolveMintedProjectToken.mockReturnValue('ledger-token')
+      mockResolveMintedProjectCredential.mockReturnValue({
+        projectId: 'abc123',
+        token: 'ledger-token',
+      })
 
       const token = await getCliToken()
       expect(token).toBe('env-token')
-      expect(mockResolveMintedProjectToken).not.toHaveBeenCalled()
+      expect(mockResolveMintedProjectCredential).not.toHaveBeenCalled()
     })
 
     test('should return undefined if no token is available', async () => {

@@ -5,6 +5,8 @@ export {
   getCliToken,
   getCliUserConfig,
   getUserConfig,
+  resolveCliCredential,
+  type ResolvedCliCredential,
   setCliUserConfig,
 } from '../config/cli/cliUserConfig.js'
 export {getCliConfig, getCliConfigUncached} from '../config/cli/getCliConfig.js'
@@ -15,6 +17,8 @@ export {
   type TypeGenConfig,
 } from '../config/cli/types/cliConfig.js'
 export {
+  type MintedProjectCredential,
+  resolveMintedProjectCredential,
   resolveMintedProjectToken,
   UNCLAIMED_PROJECTS_CONFIG_KEY,
 } from '../config/cli/unclaimedProjects.js'

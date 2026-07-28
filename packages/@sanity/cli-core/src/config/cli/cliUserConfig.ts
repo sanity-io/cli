@@ -10,7 +10,7 @@ import {readJsonFileSync} from '../../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedToken, setCachedToken} from './cliTokenCache.js'
 import {type ConfigStore} from './types/cliConfig.js'
-import {resolveMintedProjectToken, UNCLAIMED_PROJECTS_CONFIG_KEY} from './unclaimedProjects.js'
+import {resolveMintedProjectCredential, UNCLAIMED_PROJECTS_CONFIG_KEY} from './unclaimedProjects.js'
 
 // Re-export so existing consumers don't break
 export {clearCliTokenCache} from './cliTokenCache.js'
@@ -18,6 +18,56 @@ export {clearCliTokenCache} from './cliTokenCache.js'
 // Only used for testing
 export const _internals = {
   getCliUserConfig,
+}
+
+/**
+ * The active CLI credential together with where it came from, in precedence order:
+ * a nonblank `SANITY_AUTH_TOKEN` in the environment, then the minted-project ledger record
+ * selected by the current directory's `.env` project id, then the stored login session.
+ *
+ * @internal
+ */
+export type ResolvedCliCredential =
+  | {projectId: string; source: 'minted-project'; token: string}
+  | {source: 'environment'; token: string}
+  | {source: 'none'}
+  | {source: 'session'; token: string}
+
+/**
+ * Resolve the active CLI credential and its source. Uncached: callers that explain which
+ * identity is in effect (login/logout warnings) need a fresh answer, not a source inferred
+ * from a cached string. Token-oriented callers should keep using {@link getCliToken}.
+ *
+ * @param cwd - Directory whose `.env` selects the minted-project ledger record; defaults to
+ * the process working directory
+ * @internal
+ */
+export async function resolveCliCredential(cwd?: string): Promise<ResolvedCliCredential> {
+  const envToken = process.env.SANITY_AUTH_TOKEN?.trim()
+  if (envToken) {
+    return {source: 'environment', token: envToken}
+  }
+
+  // A minted directory carries the robot token in both `.env` (for the app runtime) and the
+  // ledger. This resolves it from the ledger, keyed by the `.env` project id, because env
+  // injection never runs before a config file exists — the gap that stops `sanity init`
+  // authenticating in a freshly minted directory.
+  let minted
+  try {
+    minted = resolveMintedProjectCredential(getUserConfig().get(UNCLAIMED_PROJECTS_CONFIG_KEY), cwd)
+  } catch {
+    // Fall through to the login session.
+  }
+  if (minted) {
+    return {projectId: minted.projectId, source: 'minted-project', token: minted.token}
+  }
+
+  const sessionToken = _internals.getCliUserConfig('authToken')
+  if (sessionToken) {
+    return {source: 'session', token: sessionToken}
+  }
+
+  return {source: 'none'}
 }
 
 /**
@@ -41,31 +91,11 @@ export async function getCliToken(): Promise<string | undefined> {
     return cached
   }
 
-  const token = process.env.SANITY_AUTH_TOKEN
-  if (token) {
-    const trimmed = token.trim()
-    setCachedToken(trimmed)
-    return trimmed
-  }
+  const credential = await resolveCliCredential()
+  const token = credential.source === 'none' ? undefined : credential.token
 
-  // A minted directory carries the robot token in both `.env` (for the app runtime) and the
-  // ledger. This resolves it from the ledger, keyed by the `.env` project id, because env
-  // injection never runs before a config file exists — the gap that stops `sanity init`
-  // authenticating in a freshly minted directory.
-  let mintedToken: string | undefined
-  try {
-    mintedToken = resolveMintedProjectToken(getUserConfig().get(UNCLAIMED_PROJECTS_CONFIG_KEY))
-  } catch {
-    // Fall through to the login session.
-  }
-  if (mintedToken) {
-    setCachedToken(mintedToken)
-    return mintedToken
-  }
-
-  const configToken = _internals.getCliUserConfig('authToken')
-  setCachedToken(configToken)
-  return configToken
+  setCachedToken(token)
+  return token
 }
 const cliUserConfigSchema = {
   authToken: z.optional(z.string()),

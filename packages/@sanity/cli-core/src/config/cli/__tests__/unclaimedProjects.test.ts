@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {resolveMintedProjectToken} from '../unclaimedProjects.js'
+import {resolveMintedProjectCredential, resolveMintedProjectToken} from '../unclaimedProjects.js'
 
 let dir: string
 
@@ -75,10 +75,50 @@ describe('resolveMintedProjectToken', () => {
     expect(resolveMintedProjectToken({abc123: {projectId: 'abc123'}}, dir)).toBeUndefined()
   })
 
+  test('returns undefined when the record token is empty or whitespace-only', () => {
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+
+    expect(
+      resolveMintedProjectToken({abc123: {projectId: 'abc123', token: ''}}, dir),
+    ).toBeUndefined()
+    expect(
+      resolveMintedProjectToken({abc123: {projectId: 'abc123', token: '   '}}, dir),
+    ).toBeUndefined()
+  })
+
   test('returns undefined when the ledger is empty or absent', () => {
     fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
 
     expect(resolveMintedProjectToken({}, dir)).toBeUndefined()
     expect(resolveMintedProjectToken(undefined, dir)).toBeUndefined()
+  })
+})
+
+describe('resolveMintedProjectCredential', () => {
+  test('returns the ledger token together with the project id that selected it', () => {
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+
+    expect(
+      resolveMintedProjectCredential({abc123: {projectId: 'abc123', token: 'sk-robot'}}, dir),
+    ).toEqual({projectId: 'abc123', token: 'sk-robot'})
+  })
+
+  test('returns undefined when no valid credential can be resolved', () => {
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+
+    expect(resolveMintedProjectCredential({abc123: {projectId: 'abc123'}}, dir)).toBeUndefined()
+    expect(resolveMintedProjectCredential(undefined, dir)).toBeUndefined()
+    expect(resolveMintedProjectCredential('not-a-ledger', dir)).toBeUndefined()
+  })
+
+  test('rejects an empty or whitespace-only token instead of constructing a credential', () => {
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+
+    expect(
+      resolveMintedProjectCredential({abc123: {projectId: 'abc123', token: ''}}, dir),
+    ).toBeUndefined()
+    expect(
+      resolveMintedProjectCredential({abc123: {projectId: 'abc123', token: '   '}}, dir),
+    ).toBeUndefined()
   })
 })
