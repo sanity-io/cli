@@ -45,16 +45,41 @@ function hasKey(contents: string, key: string): boolean {
   return new RegExp(String.raw`^\s*(?:export\s+)?${key}\s*=`, 'm').test(contents)
 }
 
-export function readEnvValues(envPath: string, keys: string[]): Partial<Record<string, string>> {
-  if (!fs.existsSync(envPath)) return {}
-  const parsed = parseDotenv(fs.readFileSync(envPath, 'utf8'))
+export interface EnvKeyInspection {
+  /** Keys present as assignment lines whose effective dotenv value is absent or blank. */
+  blankKeys: string[]
+  /** Keys with assignment syntax in the file (including `export KEY=`), blank or not. */
+  presentKeys: string[]
+  /** Effective nonblank values, following dotenv grammar (last assignment wins). */
+  values: Partial<Record<string, string>>
+}
 
+/**
+ * Inspect `keys` in the env file at `envPath` under both definitions of "exists" used by the env
+ * helpers: assignment-line presence (what `appendEnvValues` refuses to overwrite) and effective
+ * dotenv value (what `readEnvValues` returns). `blankKeys` is the gap between the two: lines the
+ * writer will skip but that carry no usable value.
+ */
+export function inspectEnvKeys(envPath: string, keys: readonly string[]): EnvKeyInspection {
+  if (!fs.existsSync(envPath)) return {blankKeys: [], presentKeys: [], values: {}}
+  const contents = fs.readFileSync(envPath, 'utf8')
+  const parsed = parseDotenv(contents)
+
+  const presentKeys = keys.filter((key) => hasKey(contents, key))
   const values: Partial<Record<string, string>> = {}
   for (const key of keys) {
     const value = parsed[key]?.trim()
     if (value) values[key] = value
   }
-  return values
+  return {
+    blankKeys: presentKeys.filter((key) => values[key] === undefined),
+    presentKeys,
+    values,
+  }
+}
+
+export function readEnvValues(envPath: string, keys: string[]): Partial<Record<string, string>> {
+  return inspectEnvKeys(envPath, keys).values
 }
 
 export function appendEnvValues(

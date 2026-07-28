@@ -5,7 +5,13 @@ import path from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
-import {appendEnvValues, ensureEnvGitignored, isEnvTracked, readEnvValues} from '../envFile.js'
+import {
+  appendEnvValues,
+  ensureEnvGitignored,
+  inspectEnvKeys,
+  isEnvTracked,
+  readEnvValues,
+} from '../envFile.js'
 
 const git = (dir: string, ...args: string[]) =>
   execFileSync('git', args, {cwd: dir, stdio: 'ignore'})
@@ -180,6 +186,103 @@ describe('appendEnvValues', () => {
 
     expect(result).toEqual({created: false, skippedKeys: ['SANITY_PROJECT_ID'], wroteKeys: []})
     expect(fs.readFileSync(envPath, 'utf8')).toBe(original)
+  })
+})
+
+function inspect(contents: string, keys: readonly string[] = ['SANITY_PROJECT_ID']) {
+  const envPath = path.join(dir, '.env')
+  fs.writeFileSync(envPath, contents)
+  return inspectEnvKeys(envPath, keys)
+}
+
+describe('inspectEnvKeys', () => {
+  test('reports nothing for a missing file', () => {
+    expect(inspectEnvKeys(path.join(dir, '.env'), ['SANITY_PROJECT_ID'])).toEqual({
+      blankKeys: [],
+      presentKeys: [],
+      values: {},
+    })
+  })
+
+  test('reports nothing for a key with no assignment line', () => {
+    expect(inspect('OTHER_KEY=other\n')).toEqual({blankKeys: [], presentKeys: [], values: {}})
+  })
+
+  test('a blank assignment is present but blank', () => {
+    expect(inspect('SANITY_PROJECT_ID=\n')).toEqual({
+      blankKeys: ['SANITY_PROJECT_ID'],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {},
+    })
+  })
+
+  test('a whitespace-only assignment counts as blank', () => {
+    expect(inspect('SANITY_PROJECT_ID="   "\n')).toEqual({
+      blankKeys: ['SANITY_PROJECT_ID'],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {},
+    })
+  })
+
+  test('an export-prefixed blank assignment counts as present and blank', () => {
+    expect(inspect('export SANITY_PROJECT_ID=\n')).toEqual({
+      blankKeys: ['SANITY_PROJECT_ID'],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {},
+    })
+  })
+
+  test('inline comments follow dotenv grammar: stripped unquoted, data inside quotes', () => {
+    expect(
+      inspect(
+        'SANITY_PROJECT_ID=abc123 # minted 2026-07-22\nSANITY_DATASET="pro#duction" # note\n',
+        ['SANITY_PROJECT_ID', 'SANITY_DATASET'],
+      ),
+    ).toEqual({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID', 'SANITY_DATASET'],
+      values: {SANITY_DATASET: 'pro#duction', SANITY_PROJECT_ID: 'abc123'},
+    })
+  })
+
+  test('a line that is only an inline comment yields a blank value', () => {
+    expect(inspect('SANITY_PROJECT_ID= # fill me in\n')).toEqual({
+      blankKeys: ['SANITY_PROJECT_ID'],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {},
+    })
+  })
+
+  test('duplicate keys: a final nonblank assignment wins, so the key is not blank', () => {
+    expect(inspect('SANITY_PROJECT_ID=\nSANITY_PROJECT_ID=abc123\n')).toEqual({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {SANITY_PROJECT_ID: 'abc123'},
+    })
+  })
+
+  test('duplicate keys: a final blank assignment shadows the earlier value, so the key is blank', () => {
+    expect(inspect('SANITY_PROJECT_ID=abc123\nSANITY_PROJECT_ID=\n')).toEqual({
+      blankKeys: ['SANITY_PROJECT_ID'],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {},
+    })
+  })
+
+  test('a normal nonblank value is present with its value', () => {
+    expect(inspect('SANITY_PROJECT_ID="abc123"\n')).toEqual({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {SANITY_PROJECT_ID: 'abc123'},
+    })
+  })
+
+  test('a commented-out assignment does not count as present', () => {
+    expect(inspect('# SANITY_PROJECT_ID=abc123\n')).toEqual({
+      blankKeys: [],
+      presentKeys: [],
+      values: {},
+    })
   })
 })
 

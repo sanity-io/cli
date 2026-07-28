@@ -28,8 +28,8 @@ import {
   appendEnvValues,
   ensureEnvGitignored,
   GUARDED_ENV_KEYS,
+  inspectEnvKeys,
   isEnvTracked,
-  readEnvValues,
   TOKEN_ENV_FILES,
 } from '../../util/envFile.js'
 import {renderNewCommandSplash} from '../../util/newCommandSplash.js'
@@ -479,7 +479,26 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
   }
 
   private async guardExistingProject(envPath: string, invoked: string): Promise<GuardResult> {
-    const existing = readEnvValues(envPath, [...GUARDED_ENV_KEYS])
+    const inspection = inspectEnvKeys(envPath, GUARDED_ENV_KEYS)
+
+    // A blank `KEY=` line is invisible to the value read but still owns the line for the writer,
+    // so the new credentials could never be persisted. Refuse (even with --force, which never
+    // edits existing lines either) before spending a mint or touching the filesystem.
+    if (inspection.blankKeys.length > 0) {
+      throw new CLIError(
+        `This directory's .env contains blank Sanity credential placeholders: ` +
+          `${inspection.blankKeys.join(', ')}. No project was minted.`,
+        {
+          code: 'BLANK_SANITY_ENV_VALUES',
+          exit: exitCodes.RUNTIME_ERROR,
+          suggestions: [
+            `Remove those blank lines from .env, or populate them, before running \`${invoked}\``,
+          ],
+        },
+      )
+    }
+
+    const existing = inspection.values
     const foundKeys = GUARDED_ENV_KEYS.filter((key) => existing[key] !== undefined)
     if (foundKeys.length === 0) return {hasExistingKeys: false}
     if (this.flags.force) {

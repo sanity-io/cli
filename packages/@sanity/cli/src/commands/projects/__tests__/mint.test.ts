@@ -9,7 +9,7 @@ const mockLookupClaimState = vi.hoisted(() => vi.fn())
 const mockRecordMintedProject = vi.hoisted(() => vi.fn())
 const mockGetMintedProjectRecord = vi.hoisted(() => vi.fn())
 const mockForgetMintedProject = vi.hoisted(() => vi.fn())
-const mockReadEnvValues = vi.hoisted(() => vi.fn())
+const mockInspectEnvKeys = vi.hoisted(() => vi.fn())
 const mockAppendEnvValues = vi.hoisted(() => vi.fn())
 const mockEnsureEnvGitignored = vi.hoisted(() => vi.fn(() => ({added: false, ignored: true})))
 const mockIsEnvTracked = vi.hoisted(() => vi.fn(() => false))
@@ -46,8 +46,8 @@ vi.mock('../../../util/envFile.js', () => ({
   appendEnvValues: mockAppendEnvValues,
   ensureEnvGitignored: mockEnsureEnvGitignored,
   GUARDED_ENV_KEYS: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID', 'SANITY_CLAIM_URL'],
+  inspectEnvKeys: mockInspectEnvKeys,
   isEnvTracked: mockIsEnvTracked,
-  readEnvValues: mockReadEnvValues,
   TOKEN_ENV_FILES: './.env, or sanity/.env.local in a scaffolded project',
 }))
 vi.mock('../../../actions/scaffold/scaffoldProject.js', async (importOriginal) => ({
@@ -85,6 +85,13 @@ const existingEnv = {
   SANITY_PROJECT_ID: 'oldproj',
 }
 
+/** The guard's inspection of a `.env` holding these effective (nonblank) values. */
+const asInspection = (values: Record<string, string>) => ({
+  blankKeys: [],
+  presentKeys: Object.keys(values),
+  values,
+})
+
 const existingRecord = {
   claimToken: 'old-claim-token',
   claimUrl: 'https://www.sanity.io/claim/old-claim-token',
@@ -103,7 +110,7 @@ beforeEach(() => {
   mockGetMintedProjectRecord.mockReturnValue(undefined)
   mockRecordMintedProject.mockReturnValue(true)
   mockForgetMintedProject.mockReturnValue(true)
-  mockReadEnvValues.mockReturnValue({})
+  mockInspectEnvKeys.mockReturnValue(asInspection({}))
   mockEnsureEnvGitignored.mockReturnValue({added: false, ignored: true})
   mockIsEnvTracked.mockReturnValue(false)
   mockExistingScaffoldEnvFiles.mockReturnValue([])
@@ -239,7 +246,7 @@ describe('#projects:mint', () => {
   test('hands over the values for keys the writer skipped', async () => {
     // A template's lone SANITY_DATASET line: the writer never overwrites it, and the flow
     // prints what the key must read instead of pretending the old value is fine.
-    mockReadEnvValues.mockReturnValue({SANITY_DATASET: 'production'})
+    mockInspectEnvKeys.mockReturnValue(asInspection({SANITY_DATASET: 'production'}))
     mockAppendEnvValues.mockReturnValue({
       created: false,
       skippedKeys: ['SANITY_DATASET'],
@@ -255,10 +262,10 @@ describe('#projects:mint', () => {
   })
 
   test('blank template leftovers never swallow the token (guard-absent, writer-present)', async () => {
-    // `SANITY_PROJECT_ID=` and `SANITY_AUTH_TOKEN=` lines: blank values are "absent" to the
-    // guard's dotenv read (mint proceeds down the fresh lane) but "present" to the writer's
-    // line check (append skips them). The skipped token's only copy must reach the terminal.
-    mockReadEnvValues.mockReturnValue({})
+    // Blank guarded placeholders now refuse up front (see mint.blankEnv.test.ts), so with the
+    // real helpers this state needs an unguarded shadowed key or a race. If the writer ever
+    // skips keys the guard let through, the skipped token's only copy must reach the terminal.
+    mockInspectEnvKeys.mockReturnValue(asInspection({}))
     mockAppendEnvValues.mockReturnValue({
       created: false,
       skippedKeys: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID'],
@@ -323,7 +330,7 @@ describe('#projects:mint', () => {
     )
 
     // The guardrail reads .env even in JSON mode — but JSON mode never writes.
-    expect(mockReadEnvValues).toHaveBeenCalled()
+    expect(mockInspectEnvKeys).toHaveBeenCalled()
     expect(mockAppendEnvValues).not.toHaveBeenCalled()
     expect(mockInput).not.toHaveBeenCalled()
     // "No files written" includes the user-config ledger — the caller owns the returned token.
@@ -342,7 +349,7 @@ describe('#projects:mint', () => {
 
 describe('#projects:mint re-mint guardrail', () => {
   test('aborts before minting when .env holds a live unclaimed project', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue({
       expiresAt: '2099-01-01T00:00:00.000Z',
@@ -359,7 +366,7 @@ describe('#projects:mint re-mint guardrail', () => {
 
   test('live refusal omits the expiry clause when the server returns none', async () => {
     // Server-confirmed claimable with a null expiry: the stale local date must not surface.
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue({
       ...existingRecord,
       expiresAt: '2020-01-01T00:00:00.000Z',
@@ -373,7 +380,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('aborts before minting when the existing project was already claimed', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'claimed'})
 
@@ -382,7 +389,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('mints past a verified-expired project without --force, printing the new values', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'expired'})
 
@@ -406,7 +413,7 @@ describe('#projects:mint re-mint guardrail', () => {
     // Unwritable user config (sudo-owned file, sandboxed $HOME): the surviving record would
     // re-authorize the auto-proceed on every re-run, so the flow must say so — the warning is
     // what stops a blind agent retry loop from draining the mint budget. Still fail-open.
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'expired'})
     mockForgetMintedProject.mockReturnValue(false)
@@ -420,7 +427,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('--json surfaces a failed ledger drop through the warnings payload', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'expired'})
     mockForgetMintedProject.mockReturnValue(false)
@@ -437,7 +444,7 @@ describe('#projects:mint re-mint guardrail', () => {
   test('lookup failure never authorizes the expired auto-proceed, even past local expiry', async () => {
     // The project may have been claimed since the record was written — a dead lookup plus a
     // stale local clock is not evidence enough to declare it dead and spend a mint.
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue({
       ...existingRecord,
       expiresAt: '2020-01-01T00:00:00.000Z',
@@ -452,7 +459,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('falls back to local expiry when the claim lookup fails: live aborts', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue(undefined)
 
@@ -465,7 +472,7 @@ describe('#projects:mint re-mint guardrail', () => {
   test('a lone SANITY_DATASET (template leftover) never blocks minting', async () => {
     // An .env.example copied with a blank project id leaves only the dataset key — it carries
     // no identity or credential, so the guardrail must let the mint through without --force.
-    mockReadEnvValues.mockReturnValue({SANITY_DATASET: 'production'})
+    mockInspectEnvKeys.mockReturnValue(asInspection({SANITY_DATASET: 'production'}))
 
     await MintProjectCommand.run(['My New Project'])
 
@@ -475,7 +482,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('aborts when existing credentials cannot be traced to a mint', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(undefined)
 
     await expect(MintProjectCommand.run(['My New Project'])).rejects.toThrow(
@@ -489,10 +496,9 @@ describe('#projects:mint re-mint guardrail', () => {
     // A stale SANITY_CLAIM_URL whose project was claimed proves nothing about this directory's
     // credentials — no claimed attribution, no remove-your-token advice, just the generic
     // refusal with the --force escape.
-    mockReadEnvValues.mockReturnValue({
-      ...existingEnv,
-      SANITY_CLAIM_URL: 'https://www.sanity.io/claim/url-token',
-    })
+    mockInspectEnvKeys.mockReturnValue(
+      asInspection({...existingEnv, SANITY_CLAIM_URL: 'https://www.sanity.io/claim/url-token'}),
+    )
     mockGetMintedProjectRecord.mockReturnValue(undefined)
     mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'claimed'})
 
@@ -505,10 +511,12 @@ describe('#projects:mint re-mint guardrail', () => {
   test('unbound claim-URL evidence can refuse but never authorizes the auto-proceed', async () => {
     // A stale/unrelated SANITY_CLAIM_URL beside live credentials: its "expired" verdict is not
     // proof about SANITY_PROJECT_ID, so minting must not proceed without --force.
-    mockReadEnvValues.mockReturnValue({
-      ...existingEnv,
-      SANITY_CLAIM_URL: 'https://www.sanity.io/claim/unrelated-token',
-    })
+    mockInspectEnvKeys.mockReturnValue(
+      asInspection({
+        ...existingEnv,
+        SANITY_CLAIM_URL: 'https://www.sanity.io/claim/unrelated-token',
+      }),
+    )
     mockGetMintedProjectRecord.mockReturnValue(undefined)
     mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'expired'})
 
@@ -533,10 +541,9 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('recovers the claim token from SANITY_CLAIM_URL when the ledger has no record', async () => {
-    mockReadEnvValues.mockReturnValue({
-      ...existingEnv,
-      SANITY_CLAIM_URL: 'https://www.sanity.io/claim/url-token',
-    })
+    mockInspectEnvKeys.mockReturnValue(
+      asInspection({...existingEnv, SANITY_CLAIM_URL: 'https://www.sanity.io/claim/url-token'}),
+    )
     mockGetMintedProjectRecord.mockReturnValue(undefined)
     mockLookupClaimState.mockResolvedValue({
       expiresAt: '2099-01-01T00:00:00.000Z',
@@ -550,7 +557,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('--json refuses a live unclaimed project with a structured error, before minting', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue({
       expiresAt: '2099-01-01T00:00:00.000Z',
@@ -566,7 +573,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('--json still mints on verified-expired, warns about the stale .env, writes nothing', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'expired'})
 
@@ -580,7 +587,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('--json --force mints without verification, leaves .env alone, and warns', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
 
     await expect(MintProjectCommand.run(['My New Project', '--json', '--force'])).resolves.toEqual({
@@ -593,7 +600,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('--json --force in a bare directory appends nothing and warns about nothing', async () => {
-    mockReadEnvValues.mockReturnValue({})
+    mockInspectEnvKeys.mockReturnValue(asInspection({}))
 
     await expect(MintProjectCommand.run(['My New Project', '--json', '--force'])).resolves.toEqual(
       expectedResult,
@@ -604,7 +611,7 @@ describe('#projects:mint re-mint guardrail', () => {
 
   test('--force mints without prompting, leaves .env untouched, prints the new values', async () => {
     mocks.SanityCmdIsUnattended.mockReturnValue(false)
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
 
     await MintProjectCommand.run(['My New Project', '--force'])
@@ -686,7 +693,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('a remint names the scaffolded env files that still hold dead values', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockExistingScaffoldEnvFiles.mockReturnValue(['sanity/.env.local', 'web/.env.local'])
 
     await MintProjectCommand.run(['My New Project', '--force'])
@@ -701,7 +708,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('a remint names keys only for the scaffolded env files that exist', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockExistingScaffoldEnvFiles.mockReturnValue(['web/.env.local'])
 
     await MintProjectCommand.run(['My New Project', '--force'])
@@ -712,7 +719,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('a remint stays quiet about scaffolded env files when there are none', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockExistingScaffoldEnvFiles.mockReturnValue([])
 
     await MintProjectCommand.run(['My New Project', '--force'])
@@ -721,7 +728,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('--json surfaces the stale scaffolded env files as a warning', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
     mockExistingScaffoldEnvFiles.mockReturnValue(['sanity/.env.local', 'web/.env.local'])
 
     const result = await MintProjectCommand.run(['My New Project', '--force', '--json'])
@@ -809,7 +816,7 @@ describe('#projects:mint re-mint guardrail', () => {
   })
 
   test('does not scaffold over a directory that already had credentials', async () => {
-    mockReadEnvValues.mockReturnValue(existingEnv)
+    mockInspectEnvKeys.mockReturnValue(asInspection(existingEnv))
 
     await MintProjectCommand.run(['My New Project', '--force'])
 
