@@ -1,6 +1,6 @@
 /**
  * Module-level cache for the CLI auth token, shared between
- * `getCliToken` (reads/writes) and `setCliUserConfig` (invalidates).
+ * `getCliToken` (reads/writes) and `setCliUserConfig` (updates/invalidates).
  *
  * Extracted into its own module to avoid a circular dependency
  * between `cliUserConfig.ts` and `getCliToken.ts`.
@@ -19,7 +19,8 @@ export function setCachedToken(token: string | undefined): void {
  * Clear the in-process token cache so the next `getCliToken()` call
  * re-reads from disk or the environment.
  *
- * Called automatically by `setCliUserConfig('authToken', ...)`.
+ * Called automatically when the stored session is cleared or an exported token must retain
+ * precedence over a newly stored session.
  *
  * @internal
  */

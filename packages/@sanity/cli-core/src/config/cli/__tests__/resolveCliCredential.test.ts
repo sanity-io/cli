@@ -5,7 +5,12 @@ import path from 'node:path'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {clearCliTokenCache} from '../cliTokenCache.js'
-import {getCliToken, getUserConfig, resolveCliCredential} from '../cliUserConfig.js'
+import {
+  getCliToken,
+  getUserConfig,
+  resolveCliCredential,
+  setCliUserConfig,
+} from '../cliUserConfig.js'
 
 // The resolver is the one place CLI credential precedence lives, so these tests run the real
 // config store (via SANITY_CLI_CONFIG_PATH) and a real `.env` instead of mocking file readers.
@@ -55,6 +60,17 @@ describe('resolveCliCredential', () => {
       projectId: 'abc123',
       source: 'minted-project',
       token: 'sk-robot',
+    })
+  })
+
+  test('root .env minted-project token recovers when the ledger write is missing', async () => {
+    writeConfig({authToken: 'session-token'})
+    fs.writeFileSync(envPath, 'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-env-robot"\n')
+
+    await expect(resolveCliCredential(dir)).resolves.toEqual({
+      projectId: 'abc123',
+      source: 'minted-project',
+      token: 'sk-env-robot',
     })
   })
 
@@ -196,6 +212,24 @@ describe('resolveCliCredential', () => {
 })
 
 describe('getCliToken delegation', () => {
+  test('a fresh login session displaces an invalid root .env token for this process', async () => {
+    vi.spyOn(process, 'cwd').mockReturnValue(dir)
+    fs.writeFileSync(
+      envPath,
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="invalid-mint-token"\n',
+    )
+
+    await expect(getCliToken()).resolves.toBe('invalid-mint-token')
+
+    setCliUserConfig('authToken', 'fresh-session-token')
+    await expect(getCliToken()).resolves.toBe('fresh-session-token')
+
+    // The override is deliberately process-scoped. A new invocation resolves the mint token
+    // normally, preserving pre-claim access for users who also have a stored login session.
+    clearCliTokenCache()
+    await expect(getCliToken()).resolves.toBe('invalid-mint-token')
+  })
+
   test('resolves through the resolver and keeps caching the token', async () => {
     vi.spyOn(process, 'cwd').mockReturnValue(dir)
     writeConfig({authToken: 'session-token'})

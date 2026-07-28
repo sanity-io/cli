@@ -36,6 +36,7 @@ describe('cliUserConfig', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   describe('getCliToken()', () => {
@@ -273,8 +274,18 @@ describe('cliUserConfig', () => {
       )
     })
 
-    test('invalidates token cache after setting authToken', () => {
+    test('activates a newly stored authToken for the current process', () => {
       setCliUserConfig('authToken', 'new-token')
+      expect(setCachedToken).toHaveBeenCalledWith('new-token')
+      expect(clearCliTokenCache).not.toHaveBeenCalled()
+    })
+
+    test('does not outrank an explicitly exported authToken', () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+
+      setCliUserConfig('authToken', 'new-token')
+
+      expect(setCachedToken).not.toHaveBeenCalled()
       expect(clearCliTokenCache).toHaveBeenCalled()
     })
 

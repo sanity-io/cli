@@ -22,8 +22,9 @@ export const _internals = {
 
 /**
  * The active CLI credential together with where it came from, in precedence order:
- * a nonblank `SANITY_AUTH_TOKEN` in the environment, then the minted-project ledger record
- * selected by the current directory's `.env` project id, then the stored login session.
+ * a nonblank `SANITY_AUTH_TOKEN` in the environment, then the minted-project credential selected
+ * by the current directory's `.env` project id (ledger first, root `.env` as recovery), then the
+ * stored login session.
  *
  * @internal
  */
@@ -48,10 +49,9 @@ export async function resolveCliCredential(cwd?: string): Promise<ResolvedCliCre
     return {source: 'environment', token: envToken}
   }
 
-  // A minted directory carries the robot token in both `.env` (for the app runtime) and the
-  // ledger. This resolves it from the ledger, keyed by the `.env` project id, because env
-  // injection never runs before a config file exists — the gap that stops `sanity init`
-  // authenticating in a freshly minted directory.
+  // A minted directory carries the robot token in both `.env` and the ledger. Resolve the ledger
+  // copy first, with the root `.env` copy as recovery when the ledger write failed. Env injection
+  // never runs before a config file exists, which is the gap this directory-aware tier closes.
   let minted
   try {
     minted = resolveMintedProjectCredential(getUserConfig().get(UNCLAIMED_PROJECTS_CONFIG_KEY), cwd)
@@ -132,9 +132,16 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
     writeJsonFileSync(configPath, {...config, [prop]: value}, {pretty: true})
   }
 
-  // Invalidate the in-process token cache so subsequent getCliToken() calls
-  // pick up the new value from disk.
-  clearCliTokenCache()
+  // A successful explicit login must take effect for the rest of this process. Otherwise an
+  // invalid project-local mint token can keep winning normal resolution after the fresh session
+  // is stored, and the command that initiated login immediately fails its next authenticated
+  // request. Preserve an explicitly exported token as the highest-precedence process credential.
+  const envToken = process.env.SANITY_AUTH_TOKEN?.trim()
+  if (value && !envToken) {
+    setCachedToken(value)
+  } else {
+    clearCliTokenCache()
+  }
 }
 
 /**

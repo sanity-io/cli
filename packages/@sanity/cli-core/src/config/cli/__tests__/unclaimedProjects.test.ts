@@ -26,6 +26,26 @@ describe('resolveMintedProjectToken', () => {
     )
   })
 
+  test('falls back to the directory .env token when the ledger write is absent', () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-env-robot"\n',
+    )
+
+    expect(resolveMintedProjectToken(undefined, dir)).toBe('sk-env-robot')
+  })
+
+  test('keeps the ledger token authoritative when the directory .env token differs', () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-env-robot"\n',
+    )
+
+    expect(resolveMintedProjectToken({abc123: {token: 'sk-ledger-robot'}}, dir)).toBe(
+      'sk-ledger-robot',
+    )
+  })
+
   test('reads the directory .env, not a shell-exported SANITY_PROJECT_ID from another project', () => {
     // A stale shell export must not steal a different project's ledger token — the value in this
     // directory's .env wins.
@@ -61,7 +81,7 @@ describe('resolveMintedProjectToken', () => {
     ).toBeUndefined()
   })
 
-  test('returns undefined when the ledger has no record for that project', () => {
+  test('returns undefined when neither the ledger nor .env has a token for that project', () => {
     fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="other"\n')
 
     expect(
@@ -69,7 +89,7 @@ describe('resolveMintedProjectToken', () => {
     ).toBeUndefined()
   })
 
-  test('returns undefined when the record carries no token', () => {
+  test('returns undefined when the record and .env carry no token', () => {
     fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
 
     expect(resolveMintedProjectToken({abc123: {projectId: 'abc123'}}, dir)).toBeUndefined()
@@ -86,7 +106,7 @@ describe('resolveMintedProjectToken', () => {
     ).toBeUndefined()
   })
 
-  test('returns undefined when the ledger is empty or absent', () => {
+  test('returns undefined when the ledger is empty or absent and .env carries no token', () => {
     fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
 
     expect(resolveMintedProjectToken({}, dir)).toBeUndefined()
@@ -101,6 +121,18 @@ describe('resolveMintedProjectCredential', () => {
     expect(
       resolveMintedProjectCredential({abc123: {projectId: 'abc123', token: 'sk-robot'}}, dir),
     ).toEqual({projectId: 'abc123', token: 'sk-robot'})
+  })
+
+  test('returns the root .env credential when no ledger record was persisted', () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-env-robot"\n',
+    )
+
+    expect(resolveMintedProjectCredential(undefined, dir)).toEqual({
+      projectId: 'abc123',
+      token: 'sk-env-robot',
+    })
   })
 
   test('returns undefined when no valid credential can be resolved', () => {

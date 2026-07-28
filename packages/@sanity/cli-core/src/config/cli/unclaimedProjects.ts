@@ -27,27 +27,34 @@ export interface MintedProjectCredential {
 /**
  * Resolve the robot credential for the minted project the current directory points at, given the
  * ledger `records` (the `unclaimedProjects` config value). Lets the CLI authenticate in a freshly
- * minted directory that has no config file — where env injection never runs. Mint writes the same
- * token into `.env` for the app runtime (which is why `.env` must stay gitignored); the CLI
- * resolves it from the ledger instead because env injection never runs before a config file
- * exists, and `.env` is user-mutable. Never throws.
+ * minted directory that has no config file — where env injection never runs. The ledger remains
+ * authoritative when it has a usable token; the root `.env` token is the recovery path when the
+ * ledger write failed. Mint writes both values before scaffolding, and `.env` must stay gitignored.
+ * Never throws.
  */
 export function resolveMintedProjectCredential(
   records: unknown,
   cwd: string = process.cwd(),
 ): MintedProjectCredential | undefined {
   try {
-    if (!records || typeof records !== 'object') return undefined
-
     const projectId = readEnvFileValue(cwd, 'SANITY_PROJECT_ID')
     if (!projectId) return undefined
 
-    const record = (records as Record<string, {token?: unknown}>)[projectId]
-    const token = record?.token
-    // A blank token cannot authenticate anything; treat the record as invalid so resolution
-    // falls through to the stored login session instead of surfacing an unusable credential.
-    if (typeof token !== 'string' || !token.trim()) return undefined
-    return {projectId, token}
+    const record =
+      records && typeof records === 'object'
+        ? (records as Record<string, {token?: unknown}>)[projectId]
+        : undefined
+    const recordToken = record?.token
+    if (typeof recordToken === 'string' && recordToken.trim()) {
+      return {projectId, token: recordToken}
+    }
+
+    // Mint can still persist the project-local credential if its separate user-config ledger
+    // write fails. Read only this directory's `.env` (never process.env or nested Studio env)
+    // so commands at the mint root can authenticate without silently taking another project's
+    // shell export.
+    const envToken = readEnvFileValue(cwd, 'SANITY_AUTH_TOKEN')
+    return envToken ? {projectId, token: envToken} : undefined
   } catch (err) {
     debug('failed to resolve minted project credential: %s', err)
     return undefined
