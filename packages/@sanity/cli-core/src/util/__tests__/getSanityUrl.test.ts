@@ -1,8 +1,13 @@
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {runWithCliExecutionContext} from '../../executionContext.js'
 import {getSanityUrl} from '../getSanityUrl.js'
 
 describe('getSanityUrl', () => {
+  beforeEach(() => {
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
+  })
+
   afterEach(() => {
     vi.unstubAllEnvs()
   })
@@ -28,6 +33,14 @@ describe('getSanityUrl', () => {
   test('returns production domain when SANITY_INTERNAL_ENV is not staging', () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
     expect(getSanityUrl('/test')).toBe('https://www.sanity.io/test')
+  })
+
+  test('prefers the invocation environment over SANITY_INTERNAL_ENV', () => {
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
+
+    const url = runWithCliExecutionContext({sanityEnv: 'staging'}, () => getSanityUrl('/docs/api'))
+
+    expect(url).toBe('https://www.sanity.work/docs/api')
   })
 
   test('prepends leading slash when path is missing one', () => {

@@ -23,6 +23,7 @@ beforeAll(async () => {
   // Keep tests hermetic: never let token resolution fall back to the
   // developer's real stored CLI login.
   vi.stubEnv('SANITY_CLI_CONFIG_PATH', '/nonexistent/sanity-cli-test-config.json')
+  vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
 
   config = await Config.load(fileURLToPath(new URL('../../..', import.meta.url)))
 })
@@ -157,12 +158,16 @@ describe('invokeSanityCli', () => {
     expect(result).toEqual({exitCode: 0, output: 'https://example.com'})
   })
 
-  test('concurrent invocations use their own token and capture their own output', async () => {
+  test('concurrent invocations use their own environment, token, and output', async () => {
     mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/project-a/cors`})
       .matchHeader('authorization', 'Bearer token-a')
       .delay(50)
       .reply(200, [{...corsOrigin('https://user-a.example.com'), projectId: 'project-a'}])
-    mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/project-b/cors`})
+    mockApi({
+      apiHost: 'https://api.sanity.work',
+      apiVersion: CORS_API_VERSION,
+      uri: `/projects/project-b/cors`,
+    })
       .matchHeader('authorization', 'Bearer token-b')
       .delay(5)
       .reply(200, [{...corsOrigin('https://user-b.example.com'), projectId: 'project-b'}])
@@ -171,12 +176,14 @@ describe('invokeSanityCli', () => {
       invokeSanityCli({
         args: 'cors list --project-id project-a',
         config,
+        sanityEnv: 'production',
         source: 'mcp',
         token: 'token-a',
       }),
       invokeSanityCli({
         args: 'cors list --project-id project-b',
         config,
+        sanityEnv: 'staging',
         source: 'mcp',
         token: 'token-b',
       }),

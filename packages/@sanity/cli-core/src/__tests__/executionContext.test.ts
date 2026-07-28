@@ -8,7 +8,7 @@ describe('executionContext', () => {
   })
 
   test('context is visible inside the async call graph and gone after', async () => {
-    const context = {token: 'test-token'}
+    const context = {sanityEnv: 'staging', token: 'test-token'} as const
     await runWithCliExecutionContext(context, async () => {
       expect(getCliExecutionContext()).toBe(context)
       await Promise.resolve()
@@ -18,21 +18,24 @@ describe('executionContext', () => {
   })
 
   test('concurrent contexts are isolated from each other', async () => {
-    const seen: Record<string, string | undefined> = {}
+    const seen: Record<string, {sanityEnv?: string; token?: string}> = {}
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
     await Promise.all([
-      runWithCliExecutionContext({token: 'token-a'}, async () => {
+      runWithCliExecutionContext({sanityEnv: 'production', token: 'token-a'}, async () => {
         await sleep(15)
-        seen.a = getCliExecutionContext()?.token
+        seen.a = {...getCliExecutionContext()}
       }),
-      runWithCliExecutionContext({token: 'token-b'}, async () => {
+      runWithCliExecutionContext({sanityEnv: 'staging', token: 'token-b'}, async () => {
         await sleep(5)
-        seen.b = getCliExecutionContext()?.token
+        seen.b = {...getCliExecutionContext()}
       }),
     ])
 
-    expect(seen).toEqual({a: 'token-a', b: 'token-b'})
+    expect(seen).toEqual({
+      a: {sanityEnv: 'production', token: 'token-a'},
+      b: {sanityEnv: 'staging', token: 'token-b'},
+    })
   })
 
   test('makes isInteractive report non-interactive', async () => {

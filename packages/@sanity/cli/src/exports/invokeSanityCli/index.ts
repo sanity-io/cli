@@ -23,7 +23,7 @@
 import {Config, Parser} from '@oclif/core'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {CLI_TELEMETRY_SYMBOL, exitCodes, noopLogger, setCliTelemetry} from '@sanity/cli-core'
-import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
 import {parseArgsStringToArgv} from 'string-argv'
 
 import {commandPolicies} from './commandPolicies/index.js'
@@ -88,6 +88,13 @@ export interface InvokeSanityCliOptions {
    * package's config, loaded once and cached across invocations.
    */
   config?: Config
+
+  /**
+   * Sanity deployment environment for this invocation. Scoped to this call
+   * via the CLI execution context and defaults to `SANITY_INTERNAL_ENV` (or
+   * production when it is unset).
+   */
+  sanityEnv?: SanityEnvironment
 }
 
 /**
@@ -126,6 +133,7 @@ function stripFlagQuotes(rawToken: string): string {
 export async function invokeSanityCli({
   args,
   config,
+  sanityEnv,
   source,
   token,
 }: InvokeSanityCliOptions): Promise<InvokeSanityCliResult> {
@@ -230,7 +238,7 @@ export async function invokeSanityCli({
   const sink = (line: string) => output.push(line)
 
   try {
-    await runWithCliExecutionContext({stderr: sink, stdout: sink, token}, () =>
+    await runWithCliExecutionContext({sanityEnv, stderr: sink, stdout: sink, token}, () =>
       CommandClass.run(commandArgv, resolvedConfig),
     )
     return {exitCode: exitCodes.SUCCESS, output: output.join('\n')}

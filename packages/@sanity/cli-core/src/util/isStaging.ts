@@ -1,3 +1,5 @@
+import {getCliExecutionContext} from '../executionContext.js'
+
 /**
  * Checks if the environment is staging.
  *
@@ -5,5 +7,5 @@
  * @internal
  */
 export function isStaging(): boolean {
-  return process.env.SANITY_INTERNAL_ENV === 'staging'
+  return (getCliExecutionContext()?.sanityEnv ?? process.env.SANITY_INTERNAL_ENV) === 'staging'
 }
