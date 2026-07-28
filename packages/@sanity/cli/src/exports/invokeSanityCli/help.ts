@@ -78,6 +78,7 @@ function withoutDeniedFlags(command: Command.Loadable, policy?: CommandPolicy): 
  * to the process streams.
  */
 class InvokableHelp extends Help {
+  public commandId: string | undefined
   public readonly lines: string[] = []
 
   private readonly commandIds: Set<string>
@@ -115,6 +116,7 @@ class InvokableHelp extends Help {
 
   public override async showCommandHelp(command: Command.Loadable): Promise<void> {
     if (!this.commandIds.has(command.id)) throw new NotInvokableError(command.id)
+    this.commandId = command.id
     return super.showCommandHelp(withoutDeniedFlags(command, this.policySet[command.id]))
   }
 
@@ -140,7 +142,7 @@ export async function renderInvokableHelp(
   config: Config,
   argv: string[],
   policySet: CommandPolicySet,
-): Promise<string | undefined> {
+): Promise<{commandId?: string; output: string} | undefined> {
   const help = new InvokableHelp(config, policySet)
   try {
     await help.showHelp(argv)
@@ -151,7 +153,10 @@ export async function renderInvokableHelp(
     if (err instanceof NotInvokableError || err.oclif) return undefined
     throw err
   }
-  return help.lines.join('\n').trimEnd()
+  return {
+    ...(help.commandId && {commandId: help.commandId}),
+    output: help.lines.join('\n').trimEnd(),
+  }
 }
 
 /**

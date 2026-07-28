@@ -106,6 +106,12 @@ export interface InvokeSanityCliResult {
 
   /** Combined stdout and stderr output, in emission order. */
   output: string
+
+  /**
+   * Canonical oclif command id when the invocation resolved to a command
+   * exposed by the selected policy (for example, `datasets:create`).
+   */
+  commandId?: string
 }
 
 let cachedConfig: Promise<Config> | undefined
@@ -166,8 +172,8 @@ export async function invokeSanityCli({
       // Drop a leading `help` so the rest is the subject, mirroring how
       // oclif's dispatch consumes the token before the help command sees argv
       const helpArgv = argv[0] === 'help' ? argv.slice(1) : argv
-      const output = await renderInvokableHelp(resolvedConfig, helpArgv, policySet)
-      if (output !== undefined) return {exitCode: exitCodes.SUCCESS, output}
+      const result = await renderInvokableHelp(resolvedConfig, helpArgv, policySet)
+      if (result) return {...result, exitCode: exitCodes.SUCCESS}
       const helpFlags = getHelpFlagAdditions(resolvedConfig)
       return unknownCommandResult(
         helpArgv.filter((token) => !helpFlags.includes(token)),
@@ -210,6 +216,7 @@ export async function invokeSanityCli({
     }
   } catch (err) {
     return {
+      commandId,
       exitCode: exitCodes.USAGE_ERROR,
       output: err instanceof Error ? err.message : String(err),
     }
@@ -229,6 +236,7 @@ export async function invokeSanityCli({
     }
 
     return {
+      commandId,
       exitCode: exitCodes.USAGE_ERROR,
       output,
     }
@@ -241,18 +249,19 @@ export async function invokeSanityCli({
     await runWithCliExecutionContext({sanityEnv, stderr: sink, stdout: sink, token}, () =>
       CommandClass.run(commandArgv, resolvedConfig),
     )
-    return {exitCode: exitCodes.SUCCESS, output: output.join('\n')}
+    return {commandId, exitCode: exitCodes.SUCCESS, output: output.join('\n')}
   } catch (err) {
     const exit = err.oclif?.exit
 
     // `this.exit(0)` throws an ExitError but is a successful outcome
     if (exit === exitCodes.SUCCESS) {
-      return {exitCode: exitCodes.SUCCESS, output: output.join('\n')}
+      return {commandId, exitCode: exitCodes.SUCCESS, output: output.join('\n')}
     }
 
     const message = prettyPrintError(err) || String(err)
     if (message) output.push(message)
     return {
+      commandId,
       exitCode: typeof exit === 'number' ? exit : exitCodes.RUNTIME_ERROR,
       output: output.join('\n'),
     }
