@@ -46,7 +46,7 @@ describe('createFrontend', () => {
       expect(execArgs).toContain('web')
       expect(execArgs).toContain('--disable-git')
       expect(execArgs).toContain('--yes')
-      expect(options).toMatchObject({cwd: '/tmp/my-project'})
+      expect(options).toMatchObject({cwd: '/tmp/my-project', timeout: expect.any(Number)})
     })
   })
 
@@ -177,8 +177,11 @@ describe('installFrontendDeps', () => {
     await installFrontendDeps(args)
 
     expect(mockInstallNewPackages).toHaveBeenCalledWith(
-      {packageManager: 'npm', packages: ['next-sanity@13']},
-      expect.objectContaining({workDir: path.join('/tmp/my-project', 'web')}),
+      {packageManager: 'npm', packages: ['next-sanity']},
+      expect.objectContaining({
+        timeout: expect.any(Number),
+        workDir: path.join('/tmp/my-project', 'web'),
+      }),
     )
   })
 

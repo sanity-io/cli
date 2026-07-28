@@ -143,10 +143,10 @@ export async function installDeclaredPackages(
 
 export async function installNewPackages(
   options: InstallOptions,
-  context: {cancelSignal?: AbortSignal; output: Output; workDir: string},
+  context: {cancelSignal?: AbortSignal; output: Output; timeout?: number; workDir: string},
 ): Promise<void> {
   const {packageManager, packages} = options
-  const {cancelSignal, output, workDir} = context
+  const {cancelSignal, output, timeout, workDir} = context
   const execOptions: Options = {
     cancelSignal,
     cwd: workDir,
@@ -154,6 +154,7 @@ export async function installNewPackages(
     env: getPartialEnvWithNpmPath(workDir),
     reject: false,
     stdio: 'pipe',
+    timeout,
   }
 
   if (packageManager === 'manual') {

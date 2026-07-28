@@ -14,7 +14,9 @@ const debug = subdebug('scaffold')
 
 const CREATE_NEXT_APP_SPEC = 'create-next-app@^16'
 
-const NEXT_SANITY_SPEC = 'next-sanity@13'
+const NEXT_SANITY_SPEC = 'next-sanity'
+
+const SCAFFOLD_TIMEOUT_MS = 10 * 60_000
 
 const packageManagerFlag: Record<PackageManager, string | undefined> = {
   bun: '--use-bun',
@@ -87,6 +89,7 @@ export async function createFrontend({
       },
       reject: false,
       stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: SCAFFOLD_TIMEOUT_MS,
     })
     cancelSignal?.throwIfAborted()
   } catch (err) {
@@ -127,7 +130,12 @@ export async function installFrontendDeps({
   try {
     await installNewPackages(
       {packageManager, packages: [NEXT_SANITY_SPEC]},
-      {cancelSignal, output, workDir: path.join(workDir, dirName)},
+      {
+        cancelSignal,
+        output,
+        timeout: SCAFFOLD_TIMEOUT_MS,
+        workDir: path.join(workDir, dirName),
+      },
     )
     cancelSignal?.throwIfAborted()
   } catch (err) {
