@@ -158,7 +158,7 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/ui": "^3.3.5",
+    "@sanity/ui": "^3.5.0",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/debug": "catalog:",
