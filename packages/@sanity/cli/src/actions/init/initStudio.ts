@@ -33,6 +33,7 @@ export async function initStudio({
   organizationId,
   output,
   outputPath,
+  preclaim = false,
   projectId,
   remoteTemplateInfo,
   sluggedName,
@@ -49,6 +50,7 @@ export async function initStudio({
   organizationId: string | undefined
   output: Output
   outputPath: string
+  preclaim?: boolean
   projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
@@ -167,7 +169,10 @@ export async function initStudio({
   output.log('\n')
   output.log(`Other helpful commands:`)
   output.log(`npx sanity docs browse     to open the documentation in a browser`)
-  output.log(`npx sanity manage          to open the project settings in a browser`)
+  // The robot token on an unclaimed project cannot manage settings, so Manage is a dead end.
+  if (!preclaim) {
+    output.log(`npx sanity manage          to open the project settings in a browser`)
+  }
   output.log(`npx sanity help            to explore the CLI manual`)
 
   if (isFirstProject) {
