@@ -59,6 +59,7 @@ vi.mock('../../../util/detectFramework.js', () => ({
 // not-logged-in hint, and a developer's local .env must not steer these auth assertions.
 vi.mock('../../../util/envFile.js', () => ({
   GUARDED_ENV_KEYS: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID', 'SANITY_CLAIM_URL'],
+  inspectEnvKeys: vi.fn(() => ({blankKeys: [], presentKeys: [], values: {}})),
   readEnvValues: vi.fn(() => ({})),
   TOKEN_ENV_FILES: './.env, or sanity/.env.local in a scaffolded project',
 }))

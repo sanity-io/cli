@@ -7,6 +7,7 @@ import {resolveCliCredential} from '@sanity/cli-core/config'
 
 import {login} from '../actions/auth/login/login.js'
 import {LOGIN_PROVIDER_IDS} from '../actions/auth/login/loginInstructions.js'
+import {getMintedProjectRecord} from '../util/claimNudges.js'
 import {TOKEN_ENV_FILES} from '../util/envFile.js'
 
 export class LoginCommand extends SanityCommand<typeof LoginCommand> {
@@ -96,9 +97,15 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
         `SANITY_AUTH_TOKEN is set in the environment (often via ${TOKEN_ENV_FILES}). It outranks this login session. Remove that variable to act as the account you just logged in with.`,
       )
     } else if (credential.source === 'minted-project') {
-      this.warn(
-        `This directory acts as unclaimed Sanity project ${credential.projectId} via its robot token, which outranks this login session here. Claim the project to act as yourself.`,
-      )
+      if (getMintedProjectRecord(credential.projectId)) {
+        this.warn(
+          `This directory acts as unclaimed Sanity project ${credential.projectId} via its robot token, which outranks this login session here. Claim the project to act as yourself.`,
+        )
+      } else {
+        this.warn(
+          `This directory uses SANITY_AUTH_TOKEN from ./.env for Sanity project ${credential.projectId}, which outranks this login session here. Remove SANITY_AUTH_TOKEN from ./.env to act as the account you just logged in with.`,
+        )
+      }
     }
   }
 }

@@ -38,10 +38,15 @@ vi.mock('open')
 // machine state (env, cwd `.env`, the ledger, the stored session), so pin it to be inert unless
 // a test opts in.
 const mockedResolveCliCredential = vi.hoisted(() => vi.fn())
+const mockedGetMintedProjectRecord = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core/config', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core/config')>()),
   resolveCliCredential: mockedResolveCliCredential,
+}))
+
+vi.mock('../../util/claimNudges.js', () => ({
+  getMintedProjectRecord: mockedGetMintedProjectRecord,
 }))
 
 // Mock platform detection
@@ -229,6 +234,7 @@ function mockValidTokenLogin(token: string) {
 describe('#login', {timeout: 10_000}, () => {
   beforeEach(() => {
     mockedResolveCliCredential.mockResolvedValue({source: 'none'})
+    mockedGetMintedProjectRecord.mockReturnValue(undefined)
   })
 
   afterEach(() => {
@@ -548,9 +554,25 @@ describe('#login', {timeout: 10_000}, () => {
       expect(stderr).toContain('It outranks this login session')
     })
 
-    test('warns when the resolver reports a minted-project credential', async () => {
+    test('warns when the resolver reports a known unclaimed minted-project credential', async () => {
       mockedResolveCliCredential.mockResolvedValue({
         projectId: 'abc123',
+        source: 'minted-project',
+        token: 'sk-robot',
+      })
+      mockedGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
+      mockValidTokenLogin('valid-token')
+
+      const {error, stderr} = await testTokenLogin('valid-token')
+
+      if (error) throw error
+      expect(stderr).toContain('unclaimed Sanity project abc123')
+      expect(stderr).toContain('outranks this login session')
+    })
+
+    test('does not label a project-local .env credential as unclaimed', async () => {
+      mockedResolveCliCredential.mockResolvedValue({
+        projectId: 'claimed123',
         source: 'minted-project',
         token: 'sk-robot',
       })
@@ -559,8 +581,10 @@ describe('#login', {timeout: 10_000}, () => {
       const {error, stderr} = await testTokenLogin('valid-token')
 
       if (error) throw error
-      expect(stderr).toContain('unclaimed Sanity project abc123')
+      expect(stderr).toContain('SANITY_AUTH_TOKEN from ./.env')
       expect(stderr).toContain('outranks this login session')
+      expect(stderr).not.toContain('unclaimed Sanity project')
+      expect(stderr).not.toContain('Claim the project')
     })
 
     test('stays quiet when the resolver reports the fresh session as active', async () => {

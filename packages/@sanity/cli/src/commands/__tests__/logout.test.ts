@@ -8,6 +8,7 @@ import {LogoutCommand} from '../logout.js'
 
 const mockConfigStoreDelete = vi.hoisted(() => vi.fn())
 const mockedResolveCliCredential = vi.hoisted(() => vi.fn())
+const mockedGetMintedProjectRecord = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
@@ -27,11 +28,16 @@ vi.mock('@sanity/cli-core/config', async (importOriginal) => ({
   resolveCliCredential: mockedResolveCliCredential,
 }))
 
+vi.mock('../../util/claimNudges.js', () => ({
+  getMintedProjectRecord: mockedGetMintedProjectRecord,
+}))
+
 const mockedGetCliUserConfig = vi.mocked(getCliUserConfig)
 const mockedSetConfig = vi.mocked(setCliUserConfig)
 
 beforeEach(() => {
   mockedResolveCliCredential.mockResolvedValue({source: 'none'})
+  mockedGetMintedProjectRecord.mockReturnValue(undefined)
 })
 
 afterEach(() => {
@@ -110,6 +116,7 @@ describe('#logout', () => {
       source: 'minted-project',
       token: 'sk-robot',
     })
+    mockedGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
     mockedGetCliUserConfig.mockReturnValueOnce(undefined)
 
     const {error, stderr, stdout} = await testCommand(LogoutCommand)
@@ -117,6 +124,23 @@ describe('#logout', () => {
     expect(error).toBeUndefined()
     expect(stderr).toContain('acts as unclaimed Sanity project abc123')
     // The ledger identity counts as credentials — don't claim there are none.
+    expect(stdout).not.toContain('No login credentials found')
+  })
+
+  test('project-local .env credential: does not claim the project is unclaimed', async () => {
+    mockedResolveCliCredential.mockResolvedValue({
+      projectId: 'claimed123',
+      source: 'minted-project',
+      token: 'sk-robot',
+    })
+    mockedGetCliUserConfig.mockReturnValueOnce(undefined)
+
+    const {error, stderr, stdout} = await testCommand(LogoutCommand)
+
+    expect(error).toBeUndefined()
+    expect(stderr).toContain('SANITY_AUTH_TOKEN from ./.env')
+    expect(stderr).not.toContain('unclaimed Sanity project')
+    expect(stderr).not.toContain('Claim the project')
     expect(stdout).not.toContain('No login credentials found')
   })
 
@@ -149,6 +173,7 @@ describe('#logout', () => {
       source: 'minted-project',
       token: 'sk-robot',
     })
+    mockedGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
     mockedGetCliUserConfig.mockReturnValueOnce('session-token')
 
     mockApi({
