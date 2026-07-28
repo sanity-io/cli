@@ -53,6 +53,10 @@
       "source": "./src/_exports/errors.ts",
       "default": "./dist/_exports/errors.js"
     },
+    "./executionContext": {
+      "source": "./src/executionContext.ts",
+      "default": "./dist/executionContext.js"
+    },
     "./package-manager": {
       "source": "./src/_exports/package-manager.ts",
       "default": "./dist/_exports/package-manager.js"

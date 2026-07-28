@@ -1,6 +1,7 @@
 import {dirname, resolve} from 'node:path'
 
 import {ProjectRootNotFoundError} from '../errors/ProjectRootNotFoundError.js'
+import {getCliExecutionContext} from '../executionContext.js'
 import {findAppConfigPathSync, findStudioConfigPathSync} from './util/configPathsSync.js'
 import {ProjectRootResult} from './util/recursivelyResolveProjectRoot.js'
 
@@ -54,6 +55,14 @@ function recursivelyResolveProjectRootSync(
  * @internal
  */
 export function findProjectRootSync(cwd: string): ProjectRootResult {
+  // See the matching guard in findProjectRoot: programmatic invocations must
+  // never resolve project context from the host's filesystem.
+  if (getCliExecutionContext()) {
+    throw new ProjectRootNotFoundError(
+      'Project root resolution from the filesystem is disabled for programmatic invocations',
+    )
+  }
+
   try {
     // First try to find a studio project root, looks for `sanity.config.(ts|js)`
     const studioProjectRoot = resolveProjectRootForStudioSync(cwd)
