@@ -308,16 +308,17 @@ describe('#runClaimNudges', () => {
     expect(await run()).toBe('')
   })
 
-  test('notifies once about locally expired projects and forgets them (org read fails open)', async () => {
+  test('keeps locally expired credentials when the server state cannot be verified', async () => {
     mockLookupViaProject.mockResolvedValue(undefined)
     seedRecord({expiresAt: new Date(NOW - HOUR).toISOString()})
 
     const output = await run()
 
-    expect(output).toContain('Unclaimed Sanity project abc123 expired on')
-    expect(output).toContain('Run `sanity new --force` to mint a replacement')
-    expect(storedRecords().abc123).toBeUndefined()
-    expect(await run()).toBe('')
+    expect(output).toContain("current state couldn't be verified")
+    expect(output).toContain('It may still be claimable')
+    expect(output).toContain('https://www.sanity.io/claim/some-token')
+    expect(output).not.toContain('has been deleted')
+    expect(storedRecords().abc123).toBeDefined()
   })
 
   test('a locally expired project the server still calls claimable is kept quietly', async () => {

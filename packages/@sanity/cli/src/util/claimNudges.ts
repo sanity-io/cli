@@ -164,6 +164,8 @@ const claimedMessage = (record: UnclaimedProjectRecord): string =>
 const expiredMessage = (record: UnclaimedProjectRecord): string =>
   // `--force` mints a replacement and leaves `.env` for you to update.
   `Unclaimed Sanity project ${record.projectId} expired on ${record.expiresAt} and has been deleted. Run \`sanity new --force\` to mint a replacement, and claim it within 72 hours to keep it.`
+const unverifiedExpiryMessage = (record: UnclaimedProjectRecord): string =>
+  `${logSymbols.warning} Sanity project ${record.projectId} reached its recorded claim deadline on ${record.expiresAt}, but its current state couldn't be verified. It may still be claimable; try ${record.claimUrl}. Its local credentials have been kept so a temporary network failure cannot discard access.`
 const revokedMessage = (record: UnclaimedProjectRecord): string =>
   // The dead token is no longer valid; let the user know.
   `${logSymbols.warning} Sanity project ${record.projectId}'s token is no longer valid. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES} to act as yourself.`
@@ -217,9 +219,10 @@ export async function runClaimNudges(
       default: {
         if (msLeft > 0) {
           live.push({msLeft, record})
-        } else if (state !== 'claimable') {
-          announce(expiredMessage(record))
-          drop(record.projectId)
+        } else if (state === undefined) {
+          // A failed lookup is not proof of deletion. Keep the claim URL and robot token until
+          // the server confirms a terminal state; a later run can reconcile the record.
+          announce(unverifiedExpiryMessage(record))
         }
         // Locally expired but confirmed claimable (clock skew or an extended window): keep the
         // record quietly and let the next run re-check.
