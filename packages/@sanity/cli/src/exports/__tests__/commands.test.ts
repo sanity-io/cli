@@ -321,7 +321,7 @@ describe('invokeSanityCli', () => {
     expect(result.output).not.toContain('is not supported here')
   })
 
-  test.each(['--help', '-h', 'help', 'sanity --help'])(
+  test.each(['--help', 'help', 'sanity --help'])(
     '`%s` renders root help scoped to the policy surface',
     async (args) => {
       const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
@@ -340,7 +340,7 @@ describe('invokeSanityCli', () => {
     },
   )
 
-  test.each(['cors --help', 'cors -h', 'help cors'])(
+  test.each(['cors --help', 'help cors'])(
     '`%s` renders topic help listing only invokable commands',
     async (args) => {
       const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
@@ -352,6 +352,18 @@ describe('invokeSanityCli', () => {
       expect(result.output).toContain('cors list')
     },
   )
+
+  test('`-h` is not a help flag, matching the regular CLI dispatch', async () => {
+    const result = await invokeSanityCli({
+      args: 'cors list -h',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(2)
+    expect(result.output).toContain('-h')
+  })
 
   test('topic help omits denied commands within the topic', async () => {
     const result = await invokeSanityCli({

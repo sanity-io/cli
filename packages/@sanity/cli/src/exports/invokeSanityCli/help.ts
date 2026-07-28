@@ -1,4 +1,5 @@
 import {type Command, type Config, Help, type Interfaces} from '@oclif/core'
+import {getHelpFlagAdditions} from '@oclif/core/help'
 
 import {type CommandPolicy, type CommandPolicySet} from './commandPolicies/policy.js'
 
@@ -149,16 +150,19 @@ export async function renderInvokableHelp(
 
 /**
  * Whether `argv` asks for help rather than a command invocation: a leading
- * `help` (oclif's help command), or a help flag before any `--` terminator
- * (same rule as oclif's own dispatch, plus `-h` as a convenience).
+ * `help` (oclif's help command), or a recognized help flag before any `--`
+ * terminator. The flags come from {@link getHelpFlagAdditions} — the same
+ * source oclif's own dispatch consults — so this surface recognizes exactly
+ * what the regular CLI recognizes.
  *
  * @internal
  */
-export function isHelpRequest(argv: string[]): boolean {
+export function isHelpRequest(argv: string[], config: Config): boolean {
   if (argv[0] === 'help') return true
+  const helpFlags = getHelpFlagAdditions(config)
   for (const token of argv) {
     if (token === '--') return false
-    if (token === '--help' || token === '-h') return true
+    if (helpFlags.includes(token)) return true
   }
   return false
 }

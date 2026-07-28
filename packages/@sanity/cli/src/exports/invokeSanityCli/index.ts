@@ -17,11 +17,11 @@
  * ```
  *
  * Help works like the regular CLI, scoped to the source's policy: `--help`
- * (or `help` / `-h`) renders root help listing the invokable topics, and a
- * subject (`cors --help`, `cors list --help`) renders topic or command help.
+ * (or `help`) renders root help listing the invokable topics, and a subject
+ * (`cors --help`, `cors list --help`) renders topic or command help.
  */
 import {Config, Parser} from '@oclif/core'
-import {normalizeArgv} from '@oclif/core/help'
+import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {CLI_TELEMETRY_SYMBOL, exitCodes, noopLogger, setCliTelemetry} from '@sanity/cli-core'
 import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {parseArgsStringToArgv} from 'string-argv'
@@ -147,17 +147,16 @@ export async function invokeSanityCli({
   // response (identical to a truly unknown command, so hosts can't probe the
   // full CLI surface through help), and a help request never executes a
   // command.
-  if (isHelpRequest(argv)) {
+  if (isHelpRequest(argv, resolvedConfig)) {
     try {
-      // Drop a leading `help` so the rest is the subject, and present `-h` as
-      // `--help`, the only help flag oclif's subject resolution recognizes
-      const helpArgv = (argv[0] === 'help' ? argv.slice(1) : argv).map((token) =>
-        token === '-h' ? '--help' : token,
-      )
+      // Drop a leading `help` so the rest is the subject, mirroring how
+      // oclif's dispatch consumes the token before the help command sees argv
+      const helpArgv = argv[0] === 'help' ? argv.slice(1) : argv
       const output = await renderInvokableHelp(resolvedConfig, helpArgv, policySet)
       if (output !== undefined) return {exitCode: exitCodes.SUCCESS, output}
+      const helpFlags = getHelpFlagAdditions(resolvedConfig)
       return unknownCommandResult(
-        helpArgv.filter((token) => token !== '--help'),
+        helpArgv.filter((token) => !helpFlags.includes(token)),
         policySet,
       )
     } catch (err) {
