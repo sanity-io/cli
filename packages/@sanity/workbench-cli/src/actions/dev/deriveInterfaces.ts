@@ -20,12 +20,8 @@ export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[nu
 export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
 
 /**
- * Map a workbench app's declarations to its registry interface records:
- * `views` → panels, `services` → workers, plus the `app` view for whatever the
- * build exposes as `./App`. Each mirrors a deployed record so the workbench loads
- * a local interface like a deployed one. `undefined` for a non-branded app; a
- * studio that declares `entry` is rejected (studio app views aren't implemented
- * yet — its `app` view renders the studio config).
+ * Map a workbench app's declarations to its registry interface records. A studio
+ * that declares `entry` is rejected (studio app views aren't implemented yet).
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
