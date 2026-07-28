@@ -24,7 +24,8 @@ vi.mock('@sanity/cli-core', async () => {
 vi.mock('../../util/claimNudges.js', () => ({
   getMintedProjectRecord: mockGetMintedProjectRecord,
 }))
-vi.mock('../../util/envFile.js', () => ({
+vi.mock('../../util/envFile.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../util/envFile.js')>()),
   readEnvValues: mockReadEnvValues,
 }))
 

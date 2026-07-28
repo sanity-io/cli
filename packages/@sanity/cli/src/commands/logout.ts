@@ -11,7 +11,7 @@ import {isHttpError} from '@sanity/client'
 
 import {logout} from '../services/auth.js'
 import {getMintedProjectRecord} from '../util/claimNudges.js'
-import {readEnvValues} from '../util/envFile.js'
+import {readEnvValues, TOKEN_ENV_FILES} from '../util/envFile.js'
 
 export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
   static override description = 'Log out of the current session'
@@ -23,7 +23,7 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
     const envToken = process.env.SANITY_AUTH_TOKEN?.trim()
     if (envToken) {
       this.warn(
-        'SANITY_AUTH_TOKEN is set in the environment (often via ./.env). Logging out cannot end it. Remove that variable to stop acting as its identity.',
+        `SANITY_AUTH_TOKEN is set in the environment (often via ${TOKEN_ENV_FILES}). Logging out cannot end it. Remove that variable to stop acting as its identity.`,
       )
     }
 

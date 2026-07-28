@@ -1,4 +1,4 @@
-import {getCliToken, setCliUserConfig} from '@sanity/cli-core'
+import {getCliToken, getCliUserConfig, setCliUserConfig} from '@sanity/cli-core'
 import open from 'open'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -12,6 +12,9 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     getCliToken: vi.fn(),
+    // `getCliUserConfig` reads the config file directly rather than through `getUserConfig`, so
+    // without this it returns the developer's real session and `login` revokes it over the network.
+    getCliUserConfig: vi.fn(),
     getUserConfig: vi.fn().mockReturnValue({
       delete: vi.fn(),
       get: vi.fn(),
@@ -115,6 +118,13 @@ describe('#login vercel provider', () => {
     )
     expect(mockedOpen).not.toHaveBeenCalled()
     expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'test-token')
+  })
+
+  test('reads the previous session from the mocked config, never the real one', async () => {
+    await login({experimental: true, output, telemetry} as never)
+
+    expect(vi.isMockFunction(getCliUserConfig)).toBe(true)
+    expect(vi.mocked(getCliUserConfig)).toHaveBeenCalledWith('authToken')
   })
 
   test('records telemetry errors for token validation failures', async () => {

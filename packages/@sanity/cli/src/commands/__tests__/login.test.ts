@@ -17,6 +17,7 @@ import {LoginCommand} from '../login.js'
 const mockInput = vi.hoisted(() => vi.fn())
 const mockSelect = vi.hoisted(() => vi.fn())
 const mockedGetCliToken = vi.hoisted(() => vi.fn())
+const mockedGetCliUserConfig = vi.hoisted(() => vi.fn())
 const mockedSetCliUserConfig = vi.hoisted(() => vi.fn())
 const mockedIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
 
@@ -72,6 +73,7 @@ vi.mock('@sanity/cli-core', async () => {
   return {
     ...actual,
     getCliToken: mockedGetCliToken,
+    getCliUserConfig: mockedGetCliUserConfig,
     getGlobalCliClient: vi
       .fn()
       .mockImplementation((options: {apiVersion: string; token?: string}) => {
@@ -400,7 +402,7 @@ describe('#login', {timeout: 10_000}, () => {
     })
 
     test('invalidates an existing session after token login', async () => {
-      mockedGetCliToken.mockResolvedValue('old-auth-token')
+      mockedGetCliUserConfig.mockReturnValue('old-auth-token')
 
       mockApi({
         apiVersion: USERS_API_VERSION,
@@ -442,8 +444,41 @@ describe('#login', {timeout: 10_000}, () => {
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
 
+    test('revokes the stored session even when a robot token outranks it', async () => {
+      mockedGetCliToken.mockResolvedValue('sk-robot-token-outranking-the-session')
+      mockedGetCliUserConfig.mockReturnValue('old-auth-token')
+
+      mockApi({apiVersion: USERS_API_VERSION, method: 'get', uri: '/users/me'})
+        .matchHeader('authorization', 'Bearer new-auth-token')
+        .reply(200, {
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+          provider: 'github',
+        })
+
+      mockApi({apiVersion: USERS_API_VERSION, method: 'get', uri: '/users/me'})
+        .matchHeader('authorization', 'Bearer old-auth-token')
+        .reply(200, {
+          email: 'old@example.com',
+          id: 'old-user-123',
+          name: 'Old User',
+          provider: 'github',
+        })
+
+      const revoke = mockApi({apiVersion: AUTH_API_VERSION, method: 'post', uri: '/auth/logout'})
+        .matchHeader('authorization', 'Bearer old-auth-token')
+        .reply(200)
+
+      const {error} = await testTokenLogin('new-auth-token')
+
+      if (error) throw error
+      expect(revoke.isDone()).toBe(true)
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+    })
+
     test('does not invalidate an existing Sanity API token after token login', async () => {
-      mockedGetCliToken.mockResolvedValue('old-api-token')
+      mockedGetCliUserConfig.mockReturnValue('old-api-token')
 
       mockApi({
         apiVersion: USERS_API_VERSION,
@@ -478,7 +513,7 @@ describe('#login', {timeout: 10_000}, () => {
     })
 
     test('does not invalidate an unchanged token after token login', async () => {
-      mockedGetCliToken.mockResolvedValue('same-token')
+      mockedGetCliUserConfig.mockReturnValue('same-token')
 
       mockApi({
         apiVersion: USERS_API_VERSION,
@@ -1167,7 +1202,7 @@ describe('#login', {timeout: 10_000}, () => {
 
   describe('Session Management', () => {
     test('invalidates existing session on new login', async () => {
-      mockedGetCliToken.mockResolvedValue('old-auth-token')
+      mockedGetCliUserConfig.mockReturnValue('old-auth-token')
       mockSingleProviderLogin()
 
       mockApi({
@@ -1200,7 +1235,7 @@ describe('#login', {timeout: 10_000}, () => {
     })
 
     test('clears an expired previous token without invalidating it', async () => {
-      mockedGetCliToken.mockResolvedValue('expired-token')
+      mockedGetCliUserConfig.mockReturnValue('expired-token')
       mockSingleProviderLogin('session-401')
 
       mockApi({
@@ -1220,7 +1255,7 @@ describe('#login', {timeout: 10_000}, () => {
 
     test('warns on non-401 error when invalidating session', async () => {
       // 500 should produce a warning
-      mockedGetCliToken.mockResolvedValue('old-token')
+      mockedGetCliUserConfig.mockReturnValue('old-token')
       mockSingleProviderLogin()
 
       mockApi({
@@ -1254,7 +1289,7 @@ describe('#login', {timeout: 10_000}, () => {
     })
 
     test('does not invalidate a previous Sanity API token on new login', async () => {
-      mockedGetCliToken.mockResolvedValue('old-api-token')
+      mockedGetCliUserConfig.mockReturnValue('old-api-token')
       mockSingleProviderLogin()
 
       mockApi({
@@ -1279,7 +1314,7 @@ describe('#login', {timeout: 10_000}, () => {
     })
 
     test('attempts logout when previous token type check fails', async () => {
-      mockedGetCliToken.mockResolvedValue('old-token')
+      mockedGetCliUserConfig.mockReturnValue('old-token')
       mockSingleProviderLogin()
 
       mockApi({

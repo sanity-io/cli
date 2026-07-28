@@ -1,6 +1,6 @@
 import {
   type CLITelemetryStore,
-  getCliToken,
+  getCliUserConfig,
   getUserConfig,
   type Output,
   setCliUserConfig,
@@ -45,7 +45,8 @@ interface LoginOptions {
  */
 export async function login(options: LoginOptions) {
   const {output, telemetry} = options
-  const previousToken = await getCliToken()
+  // Not `getCliToken()`: it prefers env and ledger robot tokens, which never revoke the session.
+  const previousToken = getCliUserConfig('authToken')
 
   const trace = telemetry.trace(LoginTrace)
   trace.start()

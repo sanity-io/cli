@@ -8,7 +8,7 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {login} from '../actions/auth/login/login.js'
 import {LOGIN_PROVIDER_IDS} from '../actions/auth/login/loginInstructions.js'
 import {getMintedProjectRecord} from '../util/claimNudges.js'
-import {readEnvValues} from '../util/envFile.js'
+import {readEnvValues, TOKEN_ENV_FILES} from '../util/envFile.js'
 
 export class LoginCommand extends SanityCommand<typeof LoginCommand> {
   static override description = 'Log in to your Sanity account'
@@ -92,7 +92,7 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
     const envToken = process.env.SANITY_AUTH_TOKEN?.trim()
     if (envToken) {
       this.warn(
-        'SANITY_AUTH_TOKEN is set in the environment (often via ./.env). It outranks this login session. Remove that variable to act as the account you just logged in with.',
+        `SANITY_AUTH_TOKEN is set in the environment (often via ${TOKEN_ENV_FILES}). It outranks this login session. Remove that variable to act as the account you just logged in with.`,
       )
       return
     }
