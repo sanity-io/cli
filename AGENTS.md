@@ -9,8 +9,11 @@ All commands are run from the root of the repo.
 - `pnpm test:integration` - run all integration tests - much more expensive, takes ~3 mins on a modern machine, use sparingly or as a final validation check
 - `pnpm test` - run all tests
 - `pnpm test[:unit|:integration] <test-file>` - run specific test file(s); the arg is a path substring match. Example: `pnpm test documents/__tests__/get`
+- `pnpm format [paths...]` - format files with oxfmt
+- `pnpm check:format` - verify formatting with oxfmt
 - `pnpm check:types` - TypeScript type checking
-- `pnpm check:lint` - ESLint + Prettier
+- `pnpm check:lint` - check code with ESLint
+- `pnpm lint:fix` - fix auto-fixable ESLint issues
 - `pnpm check:deps` - unused dependency / export check
 - `pnpm build:cli` - build the project
 - `pnpm watch:cli` - build in watch mode
@@ -19,7 +22,7 @@ All commands are run from the root of the repo.
 
 # Workflow
 
-- Be sure to typecheck, lint, build, depcheck and run tests when you are done.
+- Be sure to format, typecheck, lint, build, depcheck and run tests when you are done.
 - Testing coverage should be maximized. Prefer running tests with coverage and the goal is to achieve maximum unit testing coverage for any new code added.
 - When creating pull requests, always follow the template in `.github/PULL_REQUEST_TEMPLATE.md`. Do not use your own format.
 - Releasable changes need a changeset, normally auto-generated from the PR's "Notes for release" section (empty uses the PR title; `N/A` skips it). See CONTRIBUTING.md "Automatic Changesets"; a hand-authored `.changeset/` file also works and takes precedence.
