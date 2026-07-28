@@ -42,13 +42,12 @@ vi.mock('../../../util/claimNudges.js', async (importOriginal) => ({
   getMintedProjectRecord: mockGetMintedProjectRecord,
   recordMintedProject: mockRecordMintedProject,
 }))
-vi.mock('../../../util/envFile.js', () => ({
+vi.mock('../../../util/envFile.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../util/envFile.js')>()),
   appendEnvValues: mockAppendEnvValues,
   ensureEnvGitignored: mockEnsureEnvGitignored,
-  GUARDED_ENV_KEYS: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID', 'SANITY_CLAIM_URL'],
   inspectEnvKeys: mockInspectEnvKeys,
   isEnvTracked: mockIsEnvTracked,
-  TOKEN_ENV_FILES: './.env, or sanity/.env.local in a scaffolded project',
 }))
 vi.mock('../../../actions/scaffold/scaffoldProject.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../actions/scaffold/scaffoldProject.js')>()),
@@ -210,13 +209,15 @@ describe('#projects:mint', () => {
     expect(loggedLines()).not.toContain('Added .env to .gitignore')
   })
 
-  test('warns when the ledger write fails, since bare-directory auth depends on it', async () => {
+  test('warns when the ledger write fails without claiming root auth is broken', async () => {
     mockRecordMintedProject.mockReturnValue(false)
 
     await MintProjectCommand.run(['My New Project'])
 
     const warnings = vi.mocked(mocks.SanityCmdOutput.warn).mock.calls.flat().join('\n')
     expect(warnings).toContain("Couldn't save this project to the local registry")
+    expect(warnings).toContain('Commands in this directory can still authenticate from ./.env')
+    expect(warnings).not.toContain('may not authenticate')
   })
 
   test('warns to untrack an already git-tracked .env, since gitignore cannot protect it', async () => {
@@ -796,8 +797,48 @@ describe('#projects:mint re-mint guardrail', () => {
     const lines = loggedLines()
     expect(lines).toContain('Created ./sanity (Studio) and ./web (frontend).')
     expect(lines).toContain('cd sanity && npx sanity dev')
+    expect(lines).toContain(`http://localhost:3333/#token=${mockMinted.token}`)
+    expect(lines).toContain('to enter the Studio before claiming')
     expect(lines).toContain('cd web && npm run dev')
     expect(lines).toContain('Your dataset is private until you claim it')
+  })
+
+  test.each([
+    ['pnpm', 'pnpm dev'],
+    ['yarn', 'yarn dev'],
+  ] as const)(
+    'prints the matching %s frontend dev command',
+    async (frontendPackageManager, devCommand) => {
+      mockScaffoldProject.mockResolvedValue({
+        frontendEnv: {},
+        frontendEnvWritten: true,
+        frontendPackageManager,
+        frontendPath: '/tmp/project/web',
+        studioPath: '/tmp/project/sanity',
+        warnings: [],
+      })
+
+      await MintProjectCommand.run(['My New Project'])
+
+      const lines = loggedLines()
+      expect(lines).toContain(`cd web && ${devCommand}`)
+      expect(lines).not.toContain('cd web && npm run dev')
+    },
+  )
+
+  test('prints the claim URL before starting the scaffold', async () => {
+    await MintProjectCommand.run(['My New Project'])
+
+    const claimLogIndex = vi
+      .mocked(mocks.SanityCmdOutput.log)
+      .mock.calls.findIndex((call) => call.join(' ').includes(mockMinted.claimUrl))
+    const claimLogOrder = vi.mocked(mocks.SanityCmdOutput.log).mock.invocationCallOrder[
+      claimLogIndex
+    ]
+    const scaffoldOrder = mockScaffoldProject.mock.invocationCallOrder[0]
+
+    expect(claimLogIndex).toBeGreaterThanOrEqual(0)
+    expect(claimLogOrder).toBeLessThan(scaffoldOrder)
   })
 
   test('--no-scaffold mints without touching the filesystem beyond .env', async () => {
@@ -822,6 +863,10 @@ describe('#projects:mint re-mint guardrail', () => {
 
     expect(mockMintUnclaimedProject).toHaveBeenCalled()
     expect(mockScaffoldProject).not.toHaveBeenCalled()
+    const lines = loggedLines()
+    expect(lines).toContain('Skipping the automatic scaffold')
+    expect(lines).toContain('After replacing those values, scaffold with:')
+    expect(lines).toContain('npx sanity init')
   })
 
   test('prints the frontend env values when an app is already present', async () => {
@@ -840,6 +885,7 @@ describe('#projects:mint re-mint guardrail', () => {
 
     const lines = loggedLines()
     expect(lines).toContain('Found Next.js here, so only ./sanity was created.')
+    expect(lines).toContain(`http://localhost:3333/#token=${mockMinted.token}`)
     expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
     expect(lines).not.toContain('cd web && npm run dev')
   })
@@ -872,6 +918,7 @@ describe('#projects:mint re-mint guardrail', () => {
     const lines = loggedLines()
     expect(lines).toContain('Created ./sanity (Studio). The frontend was not created.')
     expect(lines).toContain('cd sanity && npx sanity dev')
+    expect(lines).toContain(`http://localhost:3333/#token=${mockMinted.token}`)
     expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
     expect(lines).not.toContain('cd web && npm run dev')
   })

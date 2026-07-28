@@ -53,6 +53,7 @@ export interface ScaffoldResult {
   warnings: string[]
 
   detectedFramework?: string
+  frontendPackageManager?: PackageManager
   frontendPath?: string
 }
 
@@ -213,7 +214,14 @@ export async function scaffoldProject({
     warnings.push(`${err.message}. Run the install yourself in ./${FRONTEND_DIR}.`)
   }
 
-  return {frontendEnv, frontendEnvWritten, frontendPath, studioPath, warnings}
+  return {
+    frontendEnv,
+    frontendEnvWritten,
+    frontendPackageManager: resolvedPackageManager,
+    frontendPath,
+    studioPath,
+    warnings,
+  }
 }
 
 function writeScaffoldEnv(

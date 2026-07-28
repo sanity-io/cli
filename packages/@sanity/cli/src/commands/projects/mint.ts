@@ -39,6 +39,21 @@ const DEFAULT_PROJECT_NAME = 'My Sanity project'
 
 const SCAFFOLD_REQUIRED_ENV_KEYS = ['SANITY_PROJECT_ID'] as const
 
+const FRONTEND_DEV_COMMANDS: Record<
+  NonNullable<ScaffoldResult['frontendPackageManager']>,
+  string
+> = {
+  bun: 'bun dev',
+  manual: 'npm run dev',
+  npm: 'npm run dev',
+  pnpm: 'pnpm dev',
+  yarn: 'yarn dev',
+}
+
+function frontendDevCommand(packageManager: ScaffoldResult['frontendPackageManager']): string {
+  return packageManager ? FRONTEND_DEV_COMMANDS[packageManager] : 'npm run dev'
+}
+
 function describeExpiry(expiresAt: string | undefined): string {
   if (!expiresAt) return ''
   const ms = new Date(expiresAt).getTime() - Date.now()
@@ -228,6 +243,20 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     flow.result(`Project ID: ${styleText('cyan', minted.resourceId)}`)
     flow.result(`Dataset:    ${styleText('cyan', minted.datasetName)}`)
     flow.gap()
+    flow.note(
+      `You must claim this project within ${styleText('yellow', '72 hours')} (by ${minted.expiresAt}) ` +
+        'or your project will be deleted.',
+    )
+    flow.line("Project credentials keep working after you've claimed.")
+    flow.line(hyperlink(styleText('cyan', minted.claimUrl), minted.claimUrl))
+    flow.gap()
+    flow.note(
+      styleText('dim', 'If an agent is running this, surface the full claim URL to the user.'),
+    )
+    flow.line(
+      styleText('dim', 'They need to click this link to claim the project before it expires.'),
+    )
+    flow.gap()
 
     const envValues = {
       SANITY_AUTH_TOKEN: minted.token,
@@ -293,6 +322,17 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
             `${staleScaffoldEnv.join(' and ')} still hold superseded values, so update them too:`,
           )
           printScaffoldEnvLines(staleScaffoldEnv)
+          flow.gap()
+        }
+        if (this.flags.scaffold) {
+          flow.note(
+            `Skipping the automatic scaffold because ./.env still points at the previous project.${
+              staleScaffoldEnv.length === 0
+                ? ' After replacing those values, scaffold with:'
+                : ' Update the existing scaffold values above before using it.'
+            }`,
+          )
+          if (staleScaffoldEnv.length === 0) printScaffoldRecipe()
           flow.gap()
         }
       }
@@ -417,11 +457,21 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
           )
         }
       }
+      const studioTokenUrl = `http://localhost:3333/#token=${encodeURIComponent(minted.token)}`
+      const printStudioInstructions = () => {
+        flow.line(`cd ${STUDIO_DIR} && npx sanity dev    to start the Studio on port 3333`)
+        flow.line(
+          `Then open ${hyperlink(styleText('cyan', studioTokenUrl), studioTokenUrl)} to enter the Studio before claiming.`,
+        )
+      }
 
       if (scaffold.frontendPath) {
         flow.highlight(`Created ./${STUDIO_DIR} (Studio) and ./${FRONTEND_DIR} (frontend).`)
-        flow.line(`cd ${STUDIO_DIR} && npx sanity dev    to start the Studio on port 3333`)
-        flow.line(`cd ${FRONTEND_DIR} && npm run dev     to start the frontend on port 3000`)
+        printStudioInstructions()
+        flow.line(
+          `cd ${FRONTEND_DIR} && ${frontendDevCommand(scaffold.frontendPackageManager)}     ` +
+            'to start the frontend on port 3000',
+        )
         if (!scaffold.frontendEnvWritten) {
           flow.line(`./${FRONTEND_DIR}/.env.local wasn't written. Add these yourself:`)
           printFrontendEnv()
@@ -430,11 +480,12 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         flow.highlight(
           `Found ${scaffold.detectedFramework} here, so only ./${STUDIO_DIR} was created.`,
         )
+        printStudioInstructions()
         flow.line('Add these to your app:')
         printFrontendEnv()
       } else {
         flow.highlight(`Created ./${STUDIO_DIR} (Studio). The frontend was not created.`)
-        flow.line(`cd ${STUDIO_DIR} && npx sanity dev    to start the Studio on port 3333`)
+        printStudioInstructions()
         flow.line('Scaffold a frontend yourself, then add these:')
         printFrontendEnv()
       }
@@ -449,29 +500,14 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     }
 
     if (recorded === false) {
-      // The ledger is how `sanity` commands here authenticate before a config file exists; a failed
-      // write must never hide behind mint's success.
+      // Root commands can recover the token from .env, but claim reminders need the ledger.
       const msg =
-        "Couldn't save this project to the local registry; sanity commands in this directory may " +
-        'not authenticate until you set SANITY_AUTH_TOKEN from .env, add a Sanity config, or claim the project.'
+        "Couldn't save this project to the local registry, so automatic claim reminders won't " +
+        'include it. Commands in this directory can still authenticate from ./.env.'
       if (json) warnings = [...(warnings ?? []), msg]
       else this.output.warn(msg)
     }
 
-    flow.note(
-      `You must claim this project within ${styleText('yellow', '72 hours')} (by ${minted.expiresAt}) ` +
-        'or your project will be deleted.',
-    )
-    flow.line("Project credentials keep working after you've claimed.")
-    flow.line(hyperlink(styleText('cyan', minted.claimUrl), minted.claimUrl))
-    flow.gap()
-    flow.note(
-      styleText('dim', 'If an agent is running this, surface the full claim URL to the user.'),
-    )
-    flow.line(
-      styleText('dim', 'They need to click this link to claim the project before it expires.'),
-    )
-    flow.gap()
     flow.outro('Tell your agent to fetch https://sanity.new for instructions on what to do next.')
 
     return {

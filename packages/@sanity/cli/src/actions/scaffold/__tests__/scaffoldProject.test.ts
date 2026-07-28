@@ -84,6 +84,7 @@ describe('scaffoldProject', () => {
 
     expect(result.studioPath).toBe(path.join(workDir, STUDIO_DIR))
     expect(result.frontendPath).toBe(path.join(workDir, FRONTEND_DIR))
+    expect(result.frontendPackageManager).toBe('npm')
     expect(result.detectedFramework).toBeUndefined()
     expect(result.warnings).toEqual([])
     expect(mockCreateFrontend).toHaveBeenCalledWith(

@@ -140,6 +140,9 @@ export async function initStudio({
     output.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
   }
 
+  // `sanity new` owns the combined Studio/frontend outro and the pre-claim token URL.
+  if (preclaim) return
+
   const devCommandMap: Record<PackageManager, string> = {
     bun: 'bun dev',
     manual: 'npm run dev',
@@ -169,10 +172,7 @@ export async function initStudio({
   output.log('\n')
   output.log(`Other helpful commands:`)
   output.log(`npx sanity docs browse     to open the documentation in a browser`)
-  // The robot token on an unclaimed project cannot manage settings, so Manage is a dead end.
-  if (!preclaim) {
-    output.log(`npx sanity manage          to open the project settings in a browser`)
-  }
+  output.log(`npx sanity manage          to open the project settings in a browser`)
   output.log(`npx sanity help            to explore the CLI manual`)
 
   if (isFirstProject) {
