@@ -1,5 +1,23 @@
 # @sanity/workbench-cli
 
+## [1.7.2](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.1...workbench-cli-v1.7.2)
+
+_2026-07-28_
+
+### Bug Fixes
+
+- **workbench:** align the local dev config version with Brett ([#1601](https://github.com/sanity-io/cli/pull/1601)) ([7332e1f](https://github.com/sanity-io/cli/commit/7332e1f699aa4c98f8787cb6e4c3d879d75cd7c1))
+- **deploy:** when a workbench app's slug is already taken, report the existing app id and how to reuse it via `deployment.appId` ([#1596](https://github.com/sanity-io/cli/pull/1596)) ([d988745](https://github.com/sanity-io/cli/commit/d9887459fcf9e1c98ff4df06c0af7f0798f68e3f))
+- **workbench:** validate app config at build, dev, and deploy ([#1590](https://github.com/sanity-io/cli/pull/1590)) ([efb5705](https://github.com/sanity-io/cli/commit/efb5705b0ccde1108a2503f921a9cab4f2aa850e))
+- **workbench:** output federation static assets to static dir ([#1594](https://github.com/sanity-io/cli/pull/1594)) ([643f3d4](https://github.com/sanity-io/cli/commit/643f3d471fc913d4a66b5c18f8e73ec48eea0075))
+- **deps:** update dependency @module-federation/vite to v1.19.1 ([#1599](https://github.com/sanity-io/cli/pull/1599)) ([cdd03f8](https://github.com/sanity-io/cli/commit/cdd03f8a9d7d471539bc58b7c0de4ae7c24a952a))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.6.0
+
 ## [1.7.1](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.0...workbench-cli-v1.7.1)
 
 _2026-07-22_
