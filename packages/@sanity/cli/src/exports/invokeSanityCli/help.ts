@@ -1,7 +1,11 @@
 import {type Command, type Config, Help, type Interfaces} from '@oclif/core'
 import {getHelpFlagAdditions} from '@oclif/core/help'
 
-import {type CommandPolicy, type CommandPolicySet} from './commandPolicies/policy.js'
+import {
+  type CommandPolicy,
+  type CommandPolicySet,
+  isConditionalInvocationPolicy,
+} from './commandPolicies/policy.js'
 
 /** Command ids a policy exposes: entries that are not denied. */
 function visibleCommandIds(policySet: CommandPolicySet): Set<string> {
@@ -33,8 +37,10 @@ class NotInvokableError extends Error {}
  * only advertises invocations the policy accepts.
  */
 function withoutDeniedFlags(command: Command.Loadable, policy?: CommandPolicy): Command.Loadable {
-  const denied = policy?.deniedFlags
-  if (!denied?.length) return {...command}
+  if (!policy || !isConditionalInvocationPolicy(policy)) return {...command}
+
+  const denied = policy.deniedFlags
+  if (denied.length === 0) return {...command}
 
   const flags = {...command.flags}
   const spellings: string[] = []

@@ -18,15 +18,19 @@ interface Invocation {
 
 type InvocationPolicy = (invocation: Invocation) => boolean
 
-export interface CommandPolicy {
-  kind: 'allow' | 'conditional' | 'deny'
-  validate: InvocationPolicy
-
+type ConditionalInvocationPolicy = CommandPolicy & {
   /**
    * Flag names this policy refuses. Declarative so the help renderer can
    * omit them (and examples using them) from the advertised command surface.
    */
-  deniedFlags?: readonly string[]
+  deniedFlags: readonly string[]
+
+  kind: 'conditional'
+}
+
+export interface CommandPolicy {
+  kind: 'allow' | 'conditional' | 'deny'
+  validate: InvocationPolicy
 }
 
 /** Every valid invocation of the command is safe. */
@@ -39,13 +43,19 @@ export const deny: CommandPolicy = {kind: 'deny', validate: () => false}
  * Conditional policies to deny flags. The flags are also hidden
  * from rendered help, so hosts are never told about surface they cannot use.
  */
-export function conditionalDenyFlags(...names: string[]): CommandPolicy {
+export function conditionalDenyFlags(...names: string[]): ConditionalInvocationPolicy {
   return {
     deniedFlags: names,
     kind: 'conditional',
     validate: ({flags}) =>
       names.every((name) => flags[name] === undefined || flags[name] === false),
   }
+}
+
+export function isConditionalInvocationPolicy(
+  policy: CommandPolicy,
+): policy is ConditionalInvocationPolicy {
+  return policy.kind === 'conditional'
 }
 
 /** A complete policy table, keyed by oclif command id. */

@@ -27,7 +27,12 @@ import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {parseArgsStringToArgv} from 'string-argv'
 
 import {commandPolicies} from './commandPolicies/index.js'
-import {type CommandPolicySet, deny, type InvocationSource} from './commandPolicies/policy.js'
+import {
+  type CommandPolicySet,
+  deny,
+  type InvocationSource,
+  isConditionalInvocationPolicy,
+} from './commandPolicies/policy.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
 
 /**
@@ -203,15 +208,18 @@ export async function invokeSanityCli({
 
   if (!policy.validate(invocation)) {
     const displayId = commandId.replaceAll(':', ' ')
-    const usedDeniedFlags = (policy.deniedFlags ?? []).filter(
-      (name) => invocation.flags[name] !== undefined && invocation.flags[name] !== false,
-    )
+    let output = `This invocation of \`${displayId}\` is not supported here`
+
+    if (isConditionalInvocationPolicy(policy)) {
+      const usedDeniedFlags = policy.deniedFlags.filter(
+        (name) => invocation.flags[name] !== undefined && invocation.flags[name] !== false,
+      )
+      output = `\nThe ${usedDeniedFlags.map((name) => `--${name}`).join(', ')} flag is not supported here for \`${displayId}\``
+    }
+
     return {
       exitCode: exitCodes.USAGE_ERROR,
-      output:
-        usedDeniedFlags.length > 0
-          ? `The ${usedDeniedFlags.map((name) => `--${name}`).join(', ')} flag is not supported here for \`${displayId}\``
-          : `This invocation of \`${displayId}\` is not supported here`,
+      output,
     }
   }
 
