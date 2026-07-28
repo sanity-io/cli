@@ -298,12 +298,38 @@ describe('invokeSanityCli', () => {
   test.each([
     ['docs read /docs/studio/installation --web', '--web'], // --web opens a browser on the host
     ['graphql undeploy --api ios --force', '--api'], // --api loads local GraphQL definitions
+    ['api users/me --input body.json', '--input'], // --input reads the host's filesystem or stdin
   ])('`%s` is refused by a conditional policy naming the flag', async (args, deniedFlag) => {
     const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.output).toContain('is not supported here')
     expect(result.output).toContain(deniedFlag)
+  })
+
+  test.each([
+    ['a file', 'api users/me -F body=@payload.json'],
+    ['stdin', 'api users/me --field body=@-'],
+  ])('`api` field values reading from %s are refused', async (_source, args) => {
+    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+
+    expect(result.exitCode).toBe(2)
+    expect(result.output).toContain('is not supported here')
+  })
+
+  test('the api policy refuses only the host input channels', () => {
+    const policy = commandPolicies.mcp.api
+    const validate = (flags: Record<string, unknown>) => policy.validate({args: {}, flags})
+
+    expect(validate({})).toBe(true)
+    expect(validate({field: ['key=value', 'count=1']})).toBe(true)
+    // Raw `-f` fields are always verbatim strings — `@` has no meaning there.
+    expect(validate({'raw-field': ['key=@payload.json']})).toBe(true)
+
+    expect(validate({input: 'payload.json'})).toBe(false)
+    expect(validate({input: '-'})).toBe(false)
+    expect(validate({field: ['body=@payload.json']})).toBe(false)
+    expect(validate({field: ['key=value', 'body=@-']})).toBe(false)
   })
 
   test('conditional policies see parsed flags, not raw tokens', async () => {

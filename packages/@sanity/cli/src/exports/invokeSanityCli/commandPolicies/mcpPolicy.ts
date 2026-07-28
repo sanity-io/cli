@@ -1,4 +1,20 @@
-import {allow, type CommandPolicySet, conditionalDenyFlags, deny} from './policy.js'
+import {
+  allow,
+  type CommandPolicySet,
+  conditionalDenyFlags,
+  conditionalPolicy,
+  deny,
+} from './policy.js'
+
+/**
+ * A typed `-F/--field` value of `@<file>` or `@-` makes the `api` command
+ * read the host's filesystem or stdin (raw `-f` fields are always verbatim).
+ */
+function fieldReadsFromHost(field: unknown): boolean {
+  if (typeof field !== 'string') return false
+  const separatorIndex = field.indexOf('=')
+  return separatorIndex > 0 && field[separatorIndex + 1] === '@'
+}
 
 /**
  * MCP programmatic mode disables local project/config discovery (see the CLI
@@ -12,8 +28,15 @@ import {allow, type CommandPolicySet, conditionalDenyFlags, deny} from './policy
  * - deny: no invocation is safe
  */
 export const mcpPolicy: CommandPolicySet = {
-  // Special exception, this can be very dangerous but is also super useful to expose
-  api: allow,
+  // Special exception, this can be very dangerous but is also super useful
+  // to expose. Only the host input channels are refused: `--input` reads the
+  // request body from the host's filesystem or stdin, and `-F key=@<file>` /
+  // `-F key=@-` field values do the same.
+  api: conditionalPolicy({
+    deniedFlags: ['input'],
+    validate: ({flags}) =>
+      !Array.isArray(flags.field) || !flags.field.some((field) => fieldReadsFromHost(field)),
+  }),
 
   'backups:disable': allow,
   // Writes a downloaded backup to the local filesystem.

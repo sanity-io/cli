@@ -52,6 +52,24 @@ export function conditionalDenyFlags(...names: string[]): ConditionalInvocationP
   }
 }
 
+/**
+ * Conditional policy combining {@link conditionalDenyFlags} with an extra
+ * predicate on the parsed invocation, for conditions a flag name alone
+ * cannot express — e.g. flag values that would read from the host machine.
+ * `deniedFlags` are hidden from rendered help; the predicate is not
+ * expressible there, so flags it constrains stay advertised.
+ */
+export function conditionalPolicy(options: {
+  deniedFlags?: string[]
+  validate: InvocationPolicy
+}): ConditionalInvocationPolicy {
+  const denyFlags = conditionalDenyFlags(...(options.deniedFlags ?? []))
+  return {
+    ...denyFlags,
+    validate: (invocation) => denyFlags.validate(invocation) && options.validate(invocation),
+  }
+}
+
 export function isConditionalInvocationPolicy(
   policy: CommandPolicy,
 ): policy is ConditionalInvocationPolicy {
