@@ -24,8 +24,8 @@ import {Config, Parser} from '@oclif/core'
 import {normalizeArgv} from '@oclif/core/help'
 import {CLI_TELEMETRY_SYMBOL, exitCodes, noopLogger, setCliTelemetry} from '@sanity/cli-core'
 import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {parseArgsStringToArgv} from 'string-argv'
 
-import {tokenizeCliArgs} from '../../util/tokenizeCliArgs.js'
 import {commandPolicies} from './commandPolicies/index.js'
 import {type CommandPolicySet, deny, type InvocationSource} from './commandPolicies/policy.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
@@ -98,6 +98,17 @@ export interface InvokeSanityCliResult {
 let cachedConfig: Promise<Config> | undefined
 
 /**
+ * Unlike a shell, string-argv keeps quotes that are glued to unquoted text:
+ * `--name="my project"` tokenizes with the quotes intact. Strip a matching
+ * wrapping quote pair from the value side of `--flag=`-shaped tokens so the
+ * common shell-style form yields the value the caller intended.
+ */
+function stripFlagQuotes(rawToken: string): string {
+  const match = /^(-{1,2}[^\s=]+=)(['"])([\s\S]*)\2$/.exec(rawToken)
+  return match ? match[1] + match[3] : rawToken
+}
+
+/**
  * Run a policy-permitted CLI command in-process and capture its result.
  *
  * Command-level failures (unknown command, bad flags, API errors) are
@@ -122,15 +133,12 @@ export async function invokeSanityCli({
     setCliTelemetry(noopLogger)
   }
 
-  let argv: string[]
-  try {
-    argv = typeof args === 'string' ? tokenizeCliArgs(args) : [...args]
-  } catch (err) {
-    return {
-      exitCode: exitCodes.USAGE_ERROR,
-      output: err instanceof Error ? err.message : String(err),
-    }
-  }
+  // Pre-split argv arrays are taken verbatim; only string input goes through
+  // shell-style tokenization and quote normalization.
+  let argv =
+    typeof args === 'string'
+      ? parseArgsStringToArgv(args).map((t) => stripFlagQuotes(t))
+      : [...args]
   if (argv[0] === 'sanity') argv = argv.slice(1)
 
   // Help requests are routed through oclif's help system, scoped to the

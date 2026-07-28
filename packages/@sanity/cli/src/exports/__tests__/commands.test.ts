@@ -124,6 +124,24 @@ describe('invokeSanityCli', () => {
     expect(result).toEqual({exitCode: 0, output: 'https://example.com'})
   })
 
+  test.each([
+    ['double quotes', `cors list --project-id="${projectId}"`],
+    ['single quotes', `cors list --project-id='${projectId}'`],
+  ])('strips %s glued to --flag= tokens like a shell would', async (_style, args) => {
+    mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
+      .matchHeader('authorization', 'Bearer user-token')
+      .reply(200, [corsOrigin('https://example.com')])
+
+    const result = await invokeSanityCli({
+      args,
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result).toEqual({exitCode: 0, output: 'https://example.com'})
+  })
+
   test('supports colon-separated command ids', async () => {
     mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
       .matchHeader('authorization', 'Bearer user-token')
@@ -262,16 +280,19 @@ describe('invokeSanityCli', () => {
     expect(result.output).toContain('Unknown or unsupported command')
   })
 
-  test('reports unterminated quotes as a usage error', async () => {
+  test('tolerates unterminated quotes, treating the rest as one token', async () => {
+    mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
+      .matchHeader('authorization', 'Bearer user-token')
+      .reply(200, [corsOrigin('https://example.com')])
+
     const result = await invokeSanityCli({
-      args: 'cors add "https://example.com',
+      args: `cors list --project-id "${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
     })
 
-    expect(result.exitCode).toBe(2)
-    expect(result.output).toContain('Unterminated double quote')
+    expect(result).toEqual({exitCode: 0, output: 'https://example.com'})
   })
 
   test.each([
