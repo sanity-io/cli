@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.6.0](https://github.com/sanity-io/cli/compare/cli-core-v2.5.1...cli-core-v2.6.0)
+
+_2026-07-28_
+
+### Features
+
+- Invoke allowed commands from outside the cli ([#1598](https://github.com/sanity-io/cli/pull/1598)) ([93f54ec](https://github.com/sanity-io/cli/commit/93f54ecafb5fb039633b6d60024c96b9d733573c))
+
+### Bug Fixes
+
+- **cli:** stop printing "null" as the user when authenticating with a token ([#1604](https://github.com/sanity-io/cli/pull/1604)) ([513a5ab](https://github.com/sanity-io/cli/commit/513a5ab18f50f64b663a901de0dab5f0dc9deb10))
+
 ## [2.5.1](https://github.com/sanity-io/cli/compare/cli-core-v2.5.0...cli-core-v2.5.1)
 
 _2026-07-20_
