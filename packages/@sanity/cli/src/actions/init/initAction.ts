@@ -17,7 +17,7 @@ import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {getMintedProjectRecord} from '../../util/claimNudges.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
-import {GUARDED_ENV_KEYS, readEnvValues} from '../../util/envFile.js'
+import {GUARDED_ENV_KEYS, inspectEnvKeys} from '../../util/envFile.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
@@ -406,8 +406,9 @@ async function ensureAuthenticated(
   // that's the case we must not steer the user toward `sanity new` — it would dead-end. A ledger
   // record narrows that further to a *known* unclaimed mint (a bare SANITY_PROJECT_ID is also
   // written by `sanity init --env` and survives a claim), which earns more specific guidance.
-  const guardedEnv = readEnvValues(path.join(process.cwd(), '.env'), [...GUARDED_ENV_KEYS])
-  const hasGuardedKeys = GUARDED_ENV_KEYS.some((key) => guardedEnv[key] !== undefined)
+  const guardedInspection = inspectEnvKeys(path.join(process.cwd(), '.env'), GUARDED_ENV_KEYS)
+  const guardedEnv = guardedInspection.values
+  const hasGuardedKeys = guardedInspection.presentKeys.length > 0
   const mintedRecord = guardedEnv.SANITY_PROJECT_ID
     ? getMintedProjectRecord(guardedEnv.SANITY_PROJECT_ID)
     : undefined
@@ -418,6 +419,10 @@ async function ensureAuthenticated(
       message =
         `This directory has an unclaimed Sanity project (${guardedEnv.SANITY_PROJECT_ID}) but its ` +
         "token isn't available here. Set SANITY_AUTH_TOKEN from its .env, or claim the project, then re-run."
+    } else if (guardedInspection.blankKeys.length > 0) {
+      message =
+        'Not logged in, and this directory has blank Sanity credential placeholders in .env: ' +
+        `${guardedInspection.blankKeys.join(', ')}. Remove or populate them, then re-run.`
     } else if (hasGuardedKeys) {
       message =
         'Not logged in, and this directory already has Sanity credentials in .env. Set ' +

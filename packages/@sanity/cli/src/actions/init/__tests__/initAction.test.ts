@@ -14,7 +14,15 @@ import {type InitContext, type InitOptions} from '../types.js'
 const mockGetById = vi.hoisted(() => vi.fn())
 const mockValidateSession = vi.hoisted(() => vi.fn())
 const mockLogin = vi.hoisted(() => vi.fn())
-const mockReadEnvValues = vi.hoisted(() => vi.fn(() => ({}) as Record<string, string>))
+const mockInspectEnvKeys = vi.hoisted(() =>
+  vi.fn(
+    (): {
+      blankKeys: string[]
+      presentKeys: string[]
+      values: Record<string, string>
+    } => ({blankKeys: [], presentKeys: [], values: {}}),
+  ),
+)
 const mockGetMintedProjectRecord = vi.hoisted(() => vi.fn())
 
 // ---------------------------------------------------------------------------
@@ -73,7 +81,7 @@ vi.mock('../../auth/login/login.js', () => ({
 
 vi.mock('../../../util/envFile.js', () => ({
   GUARDED_ENV_KEYS: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID', 'SANITY_CLAIM_URL'],
-  readEnvValues: mockReadEnvValues,
+  inspectEnvKeys: mockInspectEnvKeys,
   TOKEN_ENV_FILES: './.env, or sanity/.env.local in a scaffolded project',
 }))
 
@@ -220,7 +228,11 @@ describe('initAction (direct)', () => {
 
   test('unattended not-logged-in in a minted directory points at its token, not `sanity new`', async () => {
     mockValidateSession.mockResolvedValue(null)
-    mockReadEnvValues.mockReturnValue({SANITY_PROJECT_ID: 'abc123'})
+    mockInspectEnvKeys.mockReturnValue({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {SANITY_PROJECT_ID: 'abc123'},
+    })
     // A ledger record is what marks this as a known unclaimed mint.
     mockGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
 
@@ -251,7 +263,11 @@ describe('initAction (direct)', () => {
     // no ledger record must not be mislabeled an unclaimed mint — and since `sanity new` is still
     // refused here (guarded key present), it must not be suggested either.
     mockValidateSession.mockResolvedValue(null)
-    mockReadEnvValues.mockReturnValue({SANITY_PROJECT_ID: 'claimedproj'})
+    mockInspectEnvKeys.mockReturnValue({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {SANITY_PROJECT_ID: 'claimedproj'},
+    })
     mockGetMintedProjectRecord.mockReturnValue(undefined)
 
     const context = createTestContext()
@@ -273,6 +289,37 @@ describe('initAction (direct)', () => {
     const initError = caughtError as InitError
     expect(initError.message).toContain('already has Sanity credentials in .env')
     expect(initError.message).not.toContain('unclaimed Sanity project (claimedproj)')
+    expect(initError.message).not.toContain('sanity new')
+  })
+
+  test('unattended not-logged-in with blank guarded placeholders explains how to unblock', async () => {
+    mockValidateSession.mockResolvedValue(null)
+    mockInspectEnvKeys.mockReturnValue({
+      blankKeys: ['SANITY_PROJECT_ID', 'SANITY_AUTH_TOKEN'],
+      presentKeys: ['SANITY_PROJECT_ID', 'SANITY_AUTH_TOKEN'],
+      values: {},
+    })
+
+    const context = createTestContext()
+    const options: InitOptions = {
+      ...defaultOptions,
+      dataset: 'production',
+      outputPath: '/tmp/test-output',
+      project: 'test-project',
+      unattended: true,
+    }
+
+    let caughtError: unknown
+    try {
+      await initAction(options, context)
+    } catch (error) {
+      caughtError = error
+    }
+
+    const initError = caughtError as InitError
+    expect(initError.message).toContain(
+      'blank Sanity credential placeholders in .env: SANITY_PROJECT_ID, SANITY_AUTH_TOKEN',
+    )
     expect(initError.message).not.toContain('sanity new')
   })
 
@@ -313,7 +360,11 @@ describe('initAction (direct)', () => {
     // `sanity new` is refused by the remint guard in a minted directory, so its banner would
     // steer the user toward a dead end — mirror the unattended path, which already special-cases it.
     mockValidateSession.mockResolvedValue(null)
-    mockReadEnvValues.mockReturnValue({SANITY_PROJECT_ID: 'abc123'})
+    mockInspectEnvKeys.mockReturnValue({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {SANITY_PROJECT_ID: 'abc123'},
+    })
     mockGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
     // The banner renders before login(); reject there to stop before the networked getCliUser.
     mockLogin.mockRejectedValueOnce(new Error('stop'))
@@ -335,8 +386,34 @@ describe('initAction (direct)', () => {
     // A copied minted directory or an `init --env` leftover: no ledger record, but `sanity new` is
     // still refused because guarded keys are present — so the banner must stay suppressed.
     mockValidateSession.mockResolvedValue(null)
-    mockReadEnvValues.mockReturnValue({SANITY_PROJECT_ID: 'copied-or-claimed'})
+    mockInspectEnvKeys.mockReturnValue({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {SANITY_PROJECT_ID: 'copied-or-claimed'},
+    })
     mockGetMintedProjectRecord.mockReturnValue(undefined)
+    mockLogin.mockRejectedValueOnce(new Error('stop'))
+
+    const context = createTestContext()
+    await initAction(
+      {...defaultOptions, dataset: 'production', project: 'test-project'},
+      context,
+    ).catch(() => {})
+
+    const combined = vi
+      .mocked(context.output.log)
+      .mock.calls.map((call) => call[0])
+      .join('\n')
+    expect(combined).not.toContain('Two ways to start')
+  })
+
+  test('suppresses the banner when .env has blank guarded placeholders', async () => {
+    mockValidateSession.mockResolvedValue(null)
+    mockInspectEnvKeys.mockReturnValue({
+      blankKeys: ['SANITY_PROJECT_ID'],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {},
+    })
     mockLogin.mockRejectedValueOnce(new Error('stop'))
 
     const context = createTestContext()
@@ -354,7 +431,7 @@ describe('initAction (direct)', () => {
 
   test('shows the "two ways to start" banner when the directory has no minted project', async () => {
     mockValidateSession.mockResolvedValue(null)
-    mockReadEnvValues.mockReturnValue({})
+    mockInspectEnvKeys.mockReturnValue({blankKeys: [], presentKeys: [], values: {}})
     mockGetMintedProjectRecord.mockReturnValue(undefined)
     mockLogin.mockRejectedValueOnce(new Error('stop'))
 
