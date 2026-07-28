@@ -10,6 +10,7 @@ import {
   lookupClaimStateViaProject,
   type MintedProject,
 } from '../services/mintProject.js'
+import {TOKEN_ENV_FILES} from './envFile.js'
 
 const debug = subdebug('claimNudges')
 
@@ -159,13 +160,13 @@ function renderAggregateReminder(live: Array<{msLeft: number; record: UnclaimedP
 const claimedMessage = (record: UnclaimedProjectRecord): string =>
   // The robot token stays in `.env` after claim; let the user know.
   `${logSymbols.success} Sanity project ${record.projectId} has been claimed. It's yours to keep.\n` +
-  `CLI commands here still authenticate with the robot token in .env. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from .env to act as yourself.`
+  `CLI commands here still authenticate with the robot token. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES} to act as yourself.`
 const expiredMessage = (record: UnclaimedProjectRecord): string =>
   // `--force` mints a replacement and leaves `.env` for you to update.
   `Unclaimed Sanity project ${record.projectId} expired on ${record.expiresAt} and has been deleted. Run \`sanity new --force\` to mint a replacement, and claim it within 72 hours to keep it.`
 const revokedMessage = (record: UnclaimedProjectRecord): string =>
   // The dead token is no longer valid; let the user know.
-  `${logSymbols.warning} Sanity project ${record.projectId}'s token is no longer valid. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from .env to act as yourself.`
+  `${logSymbols.warning} Sanity project ${record.projectId}'s token is no longer valid. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES} to act as yourself.`
 
 export async function runClaimNudges(
   write: (line: string) => void,

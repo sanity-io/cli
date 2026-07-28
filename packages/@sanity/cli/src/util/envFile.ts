@@ -16,6 +16,8 @@ export const GUARDED_ENV_KEYS = [
   'SANITY_CLAIM_URL',
 ] as const
 
+export const TOKEN_ENV_FILES = './.env or sanity/.env.local'
+
 /**
  * Whether `.env` is already tracked by git in `dir`. Gitignore only affects untracked files, so a
  * tracked `.env` will still be committed no matter what `.gitignore` says — callers must warn and
@@ -76,22 +78,23 @@ export function appendEnvValues(
 }
 
 /**
- * Ensure `.env` is gitignored in `dir`. `ignored` reports whether `.env` is definitely covered
- * afterwards; callers must warn when it is false, since a failed write can leave a token committable
- * and there is no way to distinguish that from success without it. `added` is true only when this
- * call wrote the entry (so "already ignored" stays quiet).
+ * Ensure `pattern` is gitignored in `dir`. `ignored` is false when a failed write may have left the
+ * file committable; `added` is true only when this call wrote the entry.
  */
-export function ensureEnvGitignored(dir: string): {added: boolean; ignored: boolean} {
+export function ensureEnvGitignored(
+  dir: string,
+  pattern: string = '.env',
+): {added: boolean; ignored: boolean} {
   try {
     const gitignorePath = path.join(dir, '.gitignore')
     const existing = fs.existsSync(gitignorePath) ? fs.readFileSync(gitignorePath, 'utf8') : ''
-    const alreadyIgnored = existing
-      .split('\n')
-      .some((line) => line.trim().replace(/^\//, '') === '.env')
+    // Git matches a slash-free pattern at any depth; a root-anchored `/.env*` misses nested files.
+    const covers = new Set(pattern === '.env' ? ['.env', '/.env', '.env*'] : [pattern])
+    const alreadyIgnored = existing.split('\n').some((line) => covers.has(line.trim()))
     if (alreadyIgnored) return {added: false, ignored: true}
 
     const separator = existing && !existing.endsWith('\n') ? '\n' : ''
-    fs.appendFileSync(gitignorePath, `${separator}.env\n`)
+    fs.appendFileSync(gitignorePath, `${separator}${pattern}\n`)
     return {added: true, ignored: true}
   } catch {
     return {added: false, ignored: false}

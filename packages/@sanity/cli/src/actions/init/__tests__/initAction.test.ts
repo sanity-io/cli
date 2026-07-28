@@ -74,6 +74,7 @@ vi.mock('../../auth/login/login.js', () => ({
 vi.mock('../../../util/envFile.js', () => ({
   GUARDED_ENV_KEYS: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID', 'SANITY_CLAIM_URL'],
   readEnvValues: mockReadEnvValues,
+  TOKEN_ENV_FILES: './.env, or sanity/.env.local in a scaffolded project',
 }))
 
 vi.mock('../../../util/claimNudges.js', () => ({

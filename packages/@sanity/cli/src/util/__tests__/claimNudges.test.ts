@@ -265,11 +265,21 @@ describe('#runClaimNudges', () => {
 
     expect(output).toContain('has been claimed')
     // The robot token in .env keeps outranking a login session; the farewell must say so.
-    expect(output).toContain('still authenticate with the robot token in .env')
-    expect(output).toContain('remove SANITY_AUTH_TOKEN from .env to act as yourself')
+    expect(output).toContain('still authenticate with the robot token')
+    expect(output).toContain('remove SANITY_AUTH_TOKEN from ./.env or sanity/.env.local')
     expect(output).not.toContain('Claim it now:')
     expect(storedRecords().abc123).toBeUndefined()
     expect(await run()).toBe('')
+  })
+
+  test('post-claim cleanup names every file a token can reach, not just .env', async () => {
+    mockLookupViaProject.mockResolvedValue('claimed')
+    seedRecord()
+
+    const output = await run()
+
+    expect(output).toContain('./.env or sanity/.env.local')
+    expect(output).not.toMatch(/SANITY_AUTH_TOKEN from \.env\b/)
   })
 
   test('drops a revoked token so login can take over', async () => {
@@ -281,7 +291,7 @@ describe('#runClaimNudges', () => {
     expect(output).toContain('token is no longer valid')
     expect(output).toContain('sanity login')
     // A config dir auto-injects .env, so the dead token must be removed or it outranks the session.
-    expect(output).toContain('remove SANITY_AUTH_TOKEN from .env')
+    expect(output).toContain('remove SANITY_AUTH_TOKEN from ./.env')
     expect(storedRecords().abc123).toBeUndefined()
     expect(await run()).toBe('')
   })

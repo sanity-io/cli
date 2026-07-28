@@ -49,6 +49,32 @@ describe('ensureEnvGitignored', () => {
 
     expect(ensureEnvGitignored(dir)).toEqual({added: false, ignored: false})
   })
+
+  test('writes the given pattern, which scaffolding uses to cover the .env.local files too', () => {
+    expect(ensureEnvGitignored(dir, '.env*')).toEqual({added: true, ignored: true})
+    expect(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8')).toBe('.env*\n')
+  })
+
+  test('treats an existing .env* as already covering .env, so no duplicate entry is added', () => {
+    fs.writeFileSync(path.join(dir, '.gitignore'), '.env*\n')
+
+    expect(ensureEnvGitignored(dir)).toEqual({added: false, ignored: true})
+    expect(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8')).toBe('.env*\n')
+  })
+
+  test('a root-anchored /.env* does not count as covering, since it misses nested files', () => {
+    fs.writeFileSync(path.join(dir, '.gitignore'), '/.env*\n')
+
+    expect(ensureEnvGitignored(dir, '.env*')).toEqual({added: true, ignored: true})
+    expect(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8')).toBe('/.env*\n.env*\n')
+  })
+
+  test('a bare .env does not count as covering the .env* pattern', () => {
+    fs.writeFileSync(path.join(dir, '.gitignore'), '.env\n')
+
+    expect(ensureEnvGitignored(dir, '.env*')).toEqual({added: true, ignored: true})
+    expect(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8')).toBe('.env\n.env*\n')
+  })
 })
 
 describe('isEnvTracked', () => {
