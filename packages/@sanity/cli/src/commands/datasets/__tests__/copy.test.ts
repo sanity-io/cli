@@ -280,6 +280,46 @@ describe('#dataset:copy', () => {
       )
     })
 
+    test('notes the --skip-history flag before prompting, while it is still actionable', async () => {
+      mockListDatasets.mockResolvedValue([
+        createMockDataset('production'),
+        createMockDataset('staging'),
+      ])
+      mockCopyDataset.mockResolvedValue({jobId: 'job-789'})
+      mockFollowCopyJob.mockReturnValue(of({progress: 100, type: 'progress'}))
+      mockPromptForDatasetName.mockResolvedValue('backup')
+
+      const noteOrder: string[] = []
+      vi.mocked(mocks.SanityCmdOutput.log).mockImplementation((message?: string) => {
+        if (message && /--skip-history/.test(message)) noteOrder.push('note')
+      })
+      mockPromptForDataset.mockImplementation(() => {
+        noteOrder.push('prompt')
+        return Promise.resolve('production')
+      })
+
+      await CopyDatasetCommand.run([])
+
+      // The note is only useful ahead of the prompts — the copy can't be canceled
+      // once started, so it must not trail the operation.
+      expect(noteOrder).toEqual(['note', 'prompt'])
+    })
+
+    test('does not note the --skip-history flag when it is already set', async () => {
+      mockListDatasets.mockResolvedValue([
+        createMockDataset('production'),
+        createMockDataset('staging'),
+      ])
+      mockCopyDataset.mockResolvedValue({jobId: 'job-790'})
+      mockFollowCopyJob.mockReturnValue(of({progress: 100, type: 'progress'}))
+
+      await CopyDatasetCommand.run(['production', 'backup', '--skip-history'])
+
+      expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
+        expect.stringMatching(/--skip-history/),
+      )
+    })
+
     test('prompts for source and target datasets when not provided', async () => {
       mockListDatasets.mockResolvedValue([
         createMockDataset('production'),
