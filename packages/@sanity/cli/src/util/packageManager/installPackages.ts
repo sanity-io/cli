@@ -71,9 +71,17 @@ async function executePackageManagerCommand(
   output: Output,
   errorMessage: string,
 ): Promise<void> {
-  const progress = spinner(`Running ${packageManager} ${args.join(' ')}\n`).start()
+  const progress = spinner({
+    discardStdin: !execOptions.cancelSignal,
+    text: `Running ${packageManager} ${args.join(' ')}\n`,
+  }).start()
 
   const result = await execa(packageManager, args, execOptions)
+
+  if (execOptions.cancelSignal?.aborted) {
+    progress.fail()
+    execOptions.cancelSignal.throwIfAborted()
+  }
 
   if (result?.exitCode || result?.failed) {
     // pnpm exits non-zero if dependency build scripts were skipped, even though
@@ -135,16 +143,18 @@ export async function installDeclaredPackages(
 
 export async function installNewPackages(
   options: InstallOptions,
-  context: {output: Output; workDir: string},
+  context: {cancelSignal?: AbortSignal; output: Output; timeout?: number; workDir: string},
 ): Promise<void> {
   const {packageManager, packages} = options
-  const {output, workDir} = context
+  const {cancelSignal, output, timeout, workDir} = context
   const execOptions: Options = {
+    cancelSignal,
     cwd: workDir,
     encoding: 'utf8',
     env: getPartialEnvWithNpmPath(workDir),
     reject: false,
     stdio: 'pipe',
+    timeout,
   }
 
   if (packageManager === 'manual') {

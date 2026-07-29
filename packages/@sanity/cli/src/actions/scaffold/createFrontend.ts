@@ -1,0 +1,139 @@
+import path from 'node:path'
+
+import {type Output, subdebug} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
+import {execa} from 'execa'
+
+import {installNewPackages} from '../../util/packageManager/installPackages.js'
+import {
+  getPartialEnvWithNpmPath,
+  type PackageManager,
+} from '../../util/packageManager/packageManagerChoice.js'
+
+const debug = subdebug('scaffold')
+const CREATE_NEXT_APP_SPEC = 'create-next-app@^16'
+const NEXT_SANITY_SPEC = 'next-sanity'
+const SCAFFOLD_TIMEOUT_MS = 10 * 60_000
+
+const packageManagerFlag: Record<PackageManager, string | undefined> = {
+  bun: '--use-bun',
+  manual: undefined,
+  npm: '--use-npm',
+  pnpm: '--use-pnpm',
+  yarn: '--use-yarn',
+}
+
+const scaffolderFlags = [
+  '--typescript',
+  '--app',
+  '--eslint',
+  '--tailwind',
+  '--no-src-dir',
+  '--disable-git',
+  '--yes',
+]
+
+function scaffolderArgs(dirName: string, packageManager?: PackageManager): string[] {
+  const pmFlag = packageManager ? packageManagerFlag[packageManager] : undefined
+  return ['--yes', CREATE_NEXT_APP_SPEC, dirName, ...scaffolderFlags, ...(pmFlag ? [pmFlag] : [])]
+}
+
+export function frontendScaffoldCommand(dirName: string): string {
+  return `npx ${scaffolderArgs(dirName).join(' ')}`
+}
+
+export class FrontendScaffoldError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'FrontendScaffoldError'
+  }
+}
+
+export async function createFrontend({
+  cancelSignal,
+  dirName,
+  output,
+  packageManager,
+  workDir,
+}: {
+  cancelSignal?: AbortSignal
+  dirName: string
+  output: Output
+  packageManager: PackageManager
+  workDir: string
+}): Promise<void> {
+  const args = scaffolderArgs(dirName, packageManager)
+  debug('Scaffolding frontend: npx %s', args.join(' '))
+
+  const progress = spinner({
+    discardStdin: !cancelSignal,
+    text: 'Creating your Next.js app\n',
+  }).start()
+  let result
+  try {
+    result = await execa('npx', args, {
+      cancelSignal,
+      cwd: workDir,
+      encoding: 'utf8',
+      env: {
+        ...getPartialEnvWithNpmPath(workDir),
+        npm_config_yes: 'true',
+      },
+      reject: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: SCAFFOLD_TIMEOUT_MS,
+    })
+    cancelSignal?.throwIfAborted()
+  } catch (err) {
+    progress.fail()
+    cancelSignal?.throwIfAborted()
+    throw new FrontendScaffoldError(
+      `create-next-app failed: ${err instanceof Error ? err.message : String(err)}`,
+    )
+  }
+
+  if (result.failed || result.exitCode) {
+    progress.fail()
+    const commandOutput = [result.stdout, result.stderr]
+      .filter((chunk): chunk is string => typeof chunk === 'string' && chunk.length > 0)
+      .join('\n')
+    if (commandOutput) output.log(commandOutput)
+    throw new FrontendScaffoldError(
+      `create-next-app failed${result.exitCode ? ` with exit code ${result.exitCode}` : ''}`,
+    )
+  }
+
+  progress.succeed()
+}
+
+export async function installFrontendDeps({
+  cancelSignal,
+  dirName,
+  output,
+  packageManager,
+  workDir,
+}: {
+  cancelSignal?: AbortSignal
+  dirName: string
+  output: Output
+  packageManager: PackageManager
+  workDir: string
+}): Promise<void> {
+  try {
+    await installNewPackages(
+      {packageManager, packages: [NEXT_SANITY_SPEC]},
+      {
+        cancelSignal,
+        output,
+        timeout: SCAFFOLD_TIMEOUT_MS,
+        workDir: path.join(workDir, dirName),
+      },
+    )
+    cancelSignal?.throwIfAborted()
+  } catch (err) {
+    cancelSignal?.throwIfAborted()
+    throw new FrontendScaffoldError(
+      `Installing next-sanity failed: ${err instanceof Error ? err.message : String(err)}`,
+    )
+  }
+}

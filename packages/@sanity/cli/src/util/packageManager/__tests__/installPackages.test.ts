@@ -73,6 +73,10 @@ describe('installDeclaredPackages', () => {
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
     expect(mockSpinnerInstance.fail).not.toHaveBeenCalled()
+    expect(mockSpinner).toHaveBeenCalledWith({
+      discardStdin: true,
+      text: 'Running npm install\n',
+    })
   })
 
   test('installs with yarn successfully', async () => {
@@ -199,6 +203,29 @@ describe('installNewPackages', () => {
     })
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+  })
+
+  test('propagates cancellation when the package manager exits successfully', async () => {
+    const controller = new AbortController()
+    const options = {packageManager: 'npm' as const, packages: ['next-sanity']}
+    controller.abort(new Error('SIGINT'))
+    mockExeca.mockResolvedValueOnce({exitCode: 0, failed: false} as Result)
+
+    await expect(
+      installNewPackages(options, {...context, cancelSignal: controller.signal}),
+    ).rejects.toThrow('SIGINT')
+
+    expect(mockExeca).toHaveBeenCalledWith(
+      'npm',
+      ['install', '--save', 'next-sanity'],
+      expect.objectContaining({cancelSignal: controller.signal}),
+    )
+    expect(mockSpinner).toHaveBeenCalledWith({
+      discardStdin: false,
+      text: 'Running npm install --save next-sanity\n',
+    })
+    expect(mockSpinnerInstance.fail).toHaveBeenCalledOnce()
+    expect(mockSpinnerInstance.succeed).not.toHaveBeenCalled()
   })
 
   test('installs multiple packages with yarn successfully', async () => {

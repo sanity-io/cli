@@ -33,6 +33,7 @@ export async function initStudio({
   organizationId,
   output,
   outputPath,
+  preclaim = false,
   projectId,
   remoteTemplateInfo,
   sluggedName,
@@ -49,6 +50,7 @@ export async function initStudio({
   organizationId: string | undefined
   output: Output
   outputPath: string
+  preclaim?: boolean
   projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
@@ -137,6 +139,9 @@ export async function initStudio({
     output.log('and create a new clean dataset with')
     output.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
   }
+
+  // `sanity new` owns the combined Studio/frontend outro.
+  if (preclaim) return
 
   const devCommandMap: Record<PackageManager, string> = {
     bun: 'bun dev',
