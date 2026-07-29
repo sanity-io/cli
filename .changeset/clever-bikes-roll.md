@@ -2,4 +2,4 @@
 "@sanity/cli": patch
 ---
 
-fix(cli): deny `sanity api --token` for MCP policy command set
+fix(cli): update MCP policy command set to prevent authentication overrides for `sanity api`
