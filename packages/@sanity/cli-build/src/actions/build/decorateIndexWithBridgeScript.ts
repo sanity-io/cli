@@ -1,3 +1,5 @@
+import {isStaging} from '@sanity/cli-core/util'
+
 /**
  * Decorates the given HTML template with a script
  * tag that loads the bridge component to communicate
@@ -6,17 +8,14 @@
  * @internal
  */
 export function decorateIndexWithBridgeScript(template: string): string {
-  const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production'
-
   /**
-   * The URL to the bridge script is determined by the
-   * `SANITY_INTERNAL_ENV` environment variable. So if you deploy
-   * a studio to the staging ENV then you'll get the correct script.
+   * The URL to the bridge script is determined by the active Sanity
+   * environment. So if you deploy a studio to the staging environment,
+   * then you'll get the correct script.
    */
-  const scriptURL =
-    sanityEnv === 'production'
-      ? 'https://core.sanity-cdn.com/bridge.js'
-      : 'https://core.sanity-cdn.work/bridge.js'
+  const scriptURL = isStaging()
+    ? 'https://core.sanity-cdn.work/bridge.js'
+    : 'https://core.sanity-cdn.com/bridge.js'
 
   return template.replace(
     '</head>',
