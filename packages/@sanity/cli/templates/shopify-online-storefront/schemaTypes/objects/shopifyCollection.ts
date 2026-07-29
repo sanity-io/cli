@@ -14,6 +14,14 @@ export default defineType({
       name: 'status',
       title: 'Status',
     },
+    {
+      name: 'metafields',
+      title: 'Metafields',
+      options: {
+        collapsed: true,
+        collapsible: true,
+      },
+    },
   ],
   fields: [
     // Created at
@@ -97,6 +105,18 @@ export default defineType({
       name: 'sortOrder',
       title: 'Sort order',
       type: 'string',
+    }),
+    // Metafields
+    defineField({
+      fieldset: 'metafields',
+      name: 'metafields',
+      title: 'Metafields',
+      type: 'array',
+      description:
+        'Shopify metafields, for the namespaces selected in Sanity Connect. Replaced in full on every sync',
+      // Keep this a single-member array: Sanity resolves members without a `_type` to the sole
+      // member type, and synced metafields carry only a `_key`.
+      of: [{type: 'shopifyMetafield'}],
     }),
     // Shop details
     defineField({

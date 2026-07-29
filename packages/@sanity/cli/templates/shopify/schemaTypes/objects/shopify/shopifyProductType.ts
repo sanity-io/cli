@@ -29,6 +29,14 @@ export const shopifyProductType = defineField({
         collapsible: true,
       },
     },
+    {
+      name: 'metafields',
+      title: 'Metafields',
+      options: {
+        collapsed: true,
+        collapsible: true,
+      },
+    },
   ],
   fields: [
     defineField({
@@ -126,6 +134,16 @@ export const shopifyProductType = defineField({
           to: [{type: 'productVariant'}],
         }),
       ],
+    }),
+    defineField({
+      fieldset: 'metafields',
+      name: 'metafields',
+      type: 'array',
+      description:
+        'Shopify metafields, for the namespaces selected in Sanity Connect. Replaced in full on every sync',
+      // Keep this a single-member array: Sanity resolves members without a `_type` to the sole
+      // member type, and synced metafields carry only a `_key`.
+      of: [defineArrayMember({type: 'shopifyMetafield'})],
     }),
   ],
 })

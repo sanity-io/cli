@@ -1,4 +1,4 @@
-import {defineField} from 'sanity'
+import {defineArrayMember, defineField} from 'sanity'
 
 export const shopifyCollectionType = defineField({
   name: 'shopifyCollection',
@@ -13,6 +13,14 @@ export const shopifyCollectionType = defineField({
     {
       name: 'status',
       title: 'Status',
+    },
+    {
+      name: 'metafields',
+      title: 'Metafields',
+      options: {
+        collapsed: true,
+        collapsible: true,
+      },
     },
   ],
   fields: [
@@ -79,6 +87,16 @@ export const shopifyCollectionType = defineField({
     defineField({
       name: 'sortOrder',
       type: 'string',
+    }),
+    defineField({
+      fieldset: 'metafields',
+      name: 'metafields',
+      type: 'array',
+      description:
+        'Shopify metafields, for the namespaces selected in Sanity Connect. Replaced in full on every sync',
+      // Keep this a single-member array: Sanity resolves members without a `_type` to the sole
+      // member type, and synced metafields carry only a `_key`.
+      of: [defineArrayMember({type: 'shopifyMetafield'})],
     }),
   ],
 })

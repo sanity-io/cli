@@ -13,6 +13,7 @@ import priceRange from './objects/priceRange'
 import proxyString from './objects/proxyString'
 import shopifyCollection from './objects/shopifyCollection'
 import shopifyCollectionRule from './objects/shopifyCollectionRule'
+import shopifyMetafield from './objects/shopifyMetafield'
 import shopifyProduct from './objects/shopifyProduct'
 import shopifyProductVariant from './objects/shopifyProductVariant'
 
@@ -35,6 +36,7 @@ export const schemaTypes = [
   proxyString,
   shopifyCollection,
   shopifyCollectionRule,
+  shopifyMetafield,
   shopifyProduct,
   shopifyProductVariant,
 

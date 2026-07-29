@@ -37,6 +37,7 @@ import {productWithVariantType} from './objects/shopify/productWithVariantType'
 import {proxyStringType} from './objects/shopify/proxyStringType'
 import {seoType} from './objects/seoType'
 import {shopifyCollectionType} from './objects/shopify/shopifyCollectionType'
+import {shopifyMetafieldType} from './objects/shopify/shopifyMetafieldType'
 import {shopifyProductType} from './objects/shopify/shopifyProductType'
 import {shopifyProductVariantType} from './objects/shopify/shopifyProductVariantType'
 import {shopType} from './objects/shopify/shopType'
@@ -81,6 +82,7 @@ const objects = [
   proxyStringType,
   seoType,
   shopifyCollectionType,
+  shopifyMetafieldType,
   shopifyProductType,
   shopifyProductVariantType,
   shopType,

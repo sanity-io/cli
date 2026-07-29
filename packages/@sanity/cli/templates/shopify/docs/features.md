@@ -12,6 +12,26 @@ Inside `/schemaTypes` you'll find schema definitions for all the content types.
 - `/schemaTypes/documents/`: Document types determines the shape of the JSON documents that's stored in your content lake. This is where you define the content forms for things like collections, products, product variants, as well as articles.
 - `/schemaTypes/objects/`: General purpose & re-usable content structures, such as links, custom product options and modules.
 
+## Shopify metafields
+
+If you've selected metafield namespaces to import in Sanity Connect, your product and collection metafields are synced to `store.metafields` and surfaced under a **Metafields** fieldset on the corresponding document.
+
+Each entry holds the metafield's `namespace`, `key`, Shopify `type` and `value`:
+
+```json
+{
+  "_key": "custom.snowboard_length",
+  "namespace": "custom",
+  "key": "snowboard_length",
+  "type": "dimension",
+  "value": {"value": 180, "unit": "CENTIMETERS"}
+}
+```
+
+Values arrive deserialized, so `value` holds whatever the metafield's Shopify type implies — a string, number, boolean, list or JSON object. Because no single Sanity field type covers all of those, `value` isn't declared on the `shopifyMetafield` schema type; `/components/inputs/ShopifyMetafield.tsx` reads it from the raw value and renders it as text instead.
+
+Metafields are read-only in the Studio and the whole array is replaced on every sync, so any edits you make here are overwritten. Variant metafields and metaobjects aren't synced.
+
 ## Structure
 
 Sanity Studio will automatically list all your [document types][docs-document-types] out of the box. Sometimes you want a more streamlined editor experience. That's why you'll find a custom [structure][docs-structure] that's defined in `/structure`. It does the following things:
