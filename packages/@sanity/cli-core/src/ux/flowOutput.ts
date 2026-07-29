@@ -1,4 +1,4 @@
-import {styleText} from 'node:util'
+import {stripVTControlCharacters, styleText} from 'node:util'
 
 import {isInteractive} from '../util/isInteractive.js'
 import {spinner, type SpinnerInstance} from './spinner.js'
@@ -11,6 +11,80 @@ function rail(glyph: string): string {
   return styleText('gray', glyph)
 }
 
+const RAIL_PREFIX_WIDTH = 3
+function visibleWidth(text: string): number {
+  return [...stripVTControlCharacters(text)].length
+}
+
+function wrapLine(text: string, width: number): string[] {
+  if (visibleWidth(text) <= width) return [text]
+
+  const chunks = text.match(/\S+|\s+/g)
+  if (!chunks) return ['']
+
+  const lines: string[] = []
+  let current = ''
+  let whitespace = ''
+
+  for (const chunk of chunks) {
+    if (/^\s+$/.test(chunk)) {
+      whitespace += chunk
+      continue
+    }
+
+    const candidate = current ? `${current}${whitespace}${chunk}` : chunk
+    if (current && visibleWidth(candidate) > width) {
+      lines.push(current.trimEnd())
+      current = chunk
+    } else {
+      current = candidate
+    }
+    whitespace = ''
+  }
+
+  lines.push(current.trimEnd())
+  return lines
+}
+
+function wrapText(text: string): string[] {
+  if (
+    !process.stdout.isTTY ||
+    !Number.isFinite(process.stdout.columns) ||
+    process.stdout.columns <= 0
+  ) {
+    return text.split(/\r?\n/)
+  }
+  const columns = process.stdout.columns
+  const width = Math.max(columns - RAIL_PREFIX_WIDTH, 1)
+  return text.split(/\r?\n/).flatMap((line) => wrapLine(line, width))
+}
+
+function writeRailed(log: LogFn, glyph: string, text: string): void {
+  for (const [index, line] of wrapText(text).entries()) {
+    const marker =
+      index === 0 && glyph === '◆' ? styleText('green', glyph) : rail(index === 0 ? glyph : '│')
+    log(`${marker}  ${line}`)
+  }
+}
+
+function isSafeTerminalLink(url: string): boolean {
+  for (const character of url) {
+    const codePoint = character.codePointAt(0)
+    if (codePoint !== undefined && (codePoint <= 0x1f || codePoint === 0x7f)) return false
+  }
+  try {
+    const protocol = new URL(url).protocol
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function terminalLink(url: string): string {
+  if (!process.stdout.isTTY || !isSafeTerminalLink(url)) return url
+  return `\u001B]8;;${url}\u0007${styleText(['cyan', 'underline'], url)}\u001B]8;;\u0007`
+}
+
 export interface Flow {
   /** `│` — a blank rail line separating steps. */
   gap(): void
@@ -20,6 +94,8 @@ export interface Flow {
   intro(text: string): void
   /** `│  <text>` — a continuation line belonging to the previous step. */
   line(text: string): void
+  /** A copy-safe URL. Long URLs are never hard-wrapped. */
+  link(url: string, options?: {label?: string; outro?: boolean}): void
   /** `●` — a step happening behind the scenes, or a tip. */
   note(text: string): void
   /** `└` — closing line of the story. */
@@ -40,22 +116,26 @@ export function createFlow(log: LogFn): Flow {
       log(rail('│'))
     },
     highlight(text: string) {
-      log(`${styleText('green', '◆')}  ${text}`)
+      writeRailed(log, '◆', text)
     },
     intro(text: string) {
-      log(`${rail('┌')}  ${text}`)
+      writeRailed(log, '┌', text)
     },
     line(text: string) {
-      log(`${rail('│')}  ${text}`)
+      writeRailed(log, '│', text)
+    },
+    link(url: string, options = {}) {
+      const label = options.label ? `${options.label} ` : ''
+      log(`${rail(options.outro ? '└' : '│')}  ${label}${terminalLink(url)}`)
     },
     note(text: string) {
-      log(`${rail('●')}  ${text}`)
+      writeRailed(log, '●', text)
     },
     outro(text: string) {
-      log(`${rail('└')}  ${text}`)
+      writeRailed(log, '└', text)
     },
     result(text: string) {
-      log(`${rail('◇')}  ${text}`)
+      writeRailed(log, '◇', text)
     },
     spin(text: string) {
       // No human, or stderr can't render cleanly (piped, or a zero-width pty that sends ora into
