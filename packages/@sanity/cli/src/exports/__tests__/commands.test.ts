@@ -113,7 +113,11 @@ describe('invokeSanityCli', () => {
         token: 'invocation-token',
       })
 
-      expect(result).toEqual({exitCode: 0, output: 'https://isolated.example.com'})
+      expect(result).toEqual({
+        commandId: 'cors:list',
+        exitCode: 0,
+        output: 'https://isolated.example.com',
+      })
       expect(cwd).not.toHaveBeenCalled()
       expect(stdout).not.toHaveBeenCalled()
       expect(stderr).not.toHaveBeenCalled()
