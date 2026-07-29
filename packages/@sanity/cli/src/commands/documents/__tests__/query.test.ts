@@ -1,4 +1,5 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -104,6 +105,19 @@ describe('#documents:query', () => {
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
   })
 
+  test('does not read the API version environment variable under an execution context', async () => {
+    vi.stubEnv('SANITY_CLI_QUERY_API_VERSION', 'v2023-01-01')
+    mockFetch.mockResolvedValue([{_id: 'test'}])
+
+    await runWithCliExecutionContext({token: 'context-token'}, () =>
+      testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {mocks: defaultMocks}),
+    )
+
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({apiVersion: '2025-08-15'}),
+    )
+  })
+
   test('uses anonymous flag to skip authentication', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
@@ -207,6 +221,9 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({apiVersion: envApiVersion}),
+    )
   })
 
   describe('outside project context', () => {

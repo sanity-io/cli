@@ -1,5 +1,6 @@
 import {ux} from '@oclif/core' // TODO: should telemetry helpers be importing oclif? cli-build imports this... we should remove this.
 
+import {getCliExecutionContext} from '../executionContext.js'
 import {noopLogger} from './noopTelemetry.js'
 import {type CLITelemetryStore} from './types.js'
 
@@ -31,6 +32,10 @@ function getState(): CliTelemetryState | undefined {
  */
 // TODO: change this API so that it accepts a channel for passing warnings through, otherwise this is pumped through OCLIF UX via singleton
 export function getCliTelemetry(): CLITelemetryStore {
+  // Programmatic invocations must neither consume nor replace telemetry state
+  // owned by the embedding host.
+  if (getCliExecutionContext()) return noopLogger
+
   const state = getState()
   // This should never happen, but if it does, we return a noop logger to avoid errors.
   if (!state) {
@@ -61,6 +66,7 @@ export function setCliTelemetry(
  * @internal
  */
 export function reportCliTraceError(error: Error): void {
+  if (getCliExecutionContext()) return
   getState()?.reportTraceError?.(error)
 }
 

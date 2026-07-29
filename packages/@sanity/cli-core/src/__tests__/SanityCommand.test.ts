@@ -240,6 +240,26 @@ describe('SanityCommand', () => {
   })
 
   describe('catch (error handling)', () => {
+    test('checks context before reading process.cwd for project resolution', async () => {
+      const cwd = vi.spyOn(process, 'cwd').mockImplementation(() => {
+        throw new Error('host cwd accessed')
+      })
+      const cmdClass = createMockedRunCommand({
+        run: async function () {
+          await this.getProjectRoot()
+        },
+      })
+
+      try {
+        await expect(runWithCliExecutionContext({}, () => cmdClass.run([]))).rejects.toThrow(
+          'Project root resolution from the filesystem is disabled',
+        )
+        expect(cwd).not.toHaveBeenCalled()
+      } finally {
+        cwd.mockRestore()
+      }
+    })
+
     test('under an execution context, a command failure does not touch process.exitCode', async () => {
       const previousExitCode = process.exitCode
       const cmdClass = createMockedRunCommand({

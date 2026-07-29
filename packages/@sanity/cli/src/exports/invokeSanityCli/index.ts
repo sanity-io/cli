@@ -20,10 +20,11 @@
  * (or `help`) renders root help listing the invokable topics, and a subject
  * (`cors --help`, `cors list --help`) renders topic or command help.
  */
-import {Config, Parser} from '@oclif/core'
+import {Command, Config, Parser, settings} from '@oclif/core'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
-import {CLI_TELEMETRY_SYMBOL, exitCodes, noopLogger, setCliTelemetry} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core'
 import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
+import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {parseArgsStringToArgv} from 'string-argv'
 
 import {commandPolicies} from './commandPolicies/index.js'
@@ -36,14 +37,45 @@ import {
 import {isHelpRequest, renderInvokableHelp} from './help.js'
 import {prettyPrintError} from './prettyPrintError.js'
 
+type InvokableCommand = Pick<SanityCommand<typeof Command>, 'runInExecutionContext'>
+
+/**
+ * Instantiate a policy-approved command for isolated execution.
+ *
+ * Every invokable command extends `SanityCommand`, whose
+ * `runInExecutionContext()` runs the instance without oclif's static
+ * `Command.run()` — the static runner re-enters `Config.load()` (filesystem
+ * reads and a process-global config cache write) on every call. The manifest
+ * types command classes as the abstract oclif `Command`, hence the
+ * constructor cast. The method is probed rather than checked with
+ * `instanceof`, because command modules may load from the compiled build
+ * while this module runs from source, giving `SanityCommand` two identities.
+ */
+function instantiateCommand(
+  CommandClass: Command.Class,
+  argv: string[],
+  config: Config,
+): InvokableCommand {
+  const ConcreteCommand = CommandClass as unknown as new (argv: string[], config: Config) => Command
+  const command = new ConcreteCommand(argv, config) as Command & Partial<InvokableCommand>
+  if (typeof command.runInExecutionContext !== 'function') {
+    throw new TypeError(`Command "${CommandClass.id}" does not support isolated execution`)
+  }
+  return command as InvokableCommand
+}
+
 /**
  * Load the oclif `Config` for this package, needed to resolve, load, and run
  * commands. Loading it once and reusing it across invocations avoids
- * re-reading the command manifest per call.
+ * re-reading the command manifest per call. It only reads this package's own
+ * installed files — process-lifetime initialization, not per-invocation host
+ * state — so it happens outside any execution context.
  */
 function loadCliCommandConfig(): Promise<Config> {
   return Config.load(import.meta.url)
 }
+
+let cachedConfig: Promise<Config> | undefined
 
 function unknownCommandResult(argv: string[], policySet: CommandPolicySet): InvokeSanityCliResult {
   const available = Object.entries(policySet)
@@ -91,8 +123,8 @@ export interface InvokeSanityCliOptions {
 
   /**
    * Sanity deployment environment for this invocation. Scoped to this call
-   * via the CLI execution context and defaults to `SANITY_INTERNAL_ENV` (or
-   * production when it is unset).
+   * via the CLI execution context and defaults to production. The embedding
+   * process's `SANITY_INTERNAL_ENV` is never consulted.
    */
   sanityEnv?: SanityEnvironment
 }
@@ -114,8 +146,6 @@ export interface InvokeSanityCliResult {
   commandId?: string
 }
 
-let cachedConfig: Promise<Config> | undefined
-
 /**
  * Unlike a shell, string-argv keeps quotes that are glued to unquoted text:
  * `--name="my project"` tokenizes with the quotes intact. Strip a matching
@@ -136,22 +166,33 @@ function stripFlagQuotes(rawToken: string): string {
  *
  * @internal
  */
-export async function invokeSanityCli({
-  args,
-  config,
-  sanityEnv,
-  source,
-  token,
-}: InvokeSanityCliOptions): Promise<InvokeSanityCliResult> {
-  const resolvedConfig = config ?? (await (cachedConfig ??= loadCliCommandConfig()))
-  const policySet = commandPolicies[source]
+export async function invokeSanityCli(
+  options: InvokeSanityCliOptions,
+): Promise<InvokeSanityCliResult> {
+  // Always load compiled command modules. Oclif's dev-mode source resolution
+  // otherwise probes tsconfigs (reading the filesystem and process.cwd) on
+  // every command load, and may register ts-node process-wide.
+  settings.enableAutoTranspile = false
 
-  // Commands log through the global telemetry store; default it to a noop
-  // store so embedding hosts need no telemetry wiring (and see no warnings),
-  // without clobbering a store the host may have installed itself.
-  if (!(globalThis as Record<symbol, unknown>)[CLI_TELEMETRY_SYMBOL]) {
-    setCliTelemetry(noopLogger)
-  }
+  const resolvedConfig = options.config ?? (await (cachedConfig ??= loadCliCommandConfig()))
+  const output: string[] = []
+  const sink = (line: string) => output.push(line)
+  const {sanityEnv, token} = options
+
+  // Establish the isolation boundary before rendering help, loading command
+  // modules, parsing, or executing. Any code reached by an external
+  // invocation can therefore fail closed on context.
+  return runWithCliExecutionContext({sanityEnv, stderr: sink, stdout: sink, token}, () =>
+    invokeSanityCliInContext(options, resolvedConfig, output),
+  )
+}
+
+async function invokeSanityCliInContext(
+  {args, source}: InvokeSanityCliOptions,
+  resolvedConfig: Config,
+  output: string[],
+): Promise<InvokeSanityCliResult> {
+  const policySet = commandPolicies[source]
 
   // Pre-split argv arrays are taken verbatim; only string input goes through
   // shell-style tokenization and quote normalization.
@@ -242,13 +283,9 @@ export async function invokeSanityCli({
     }
   }
 
-  const output: string[] = []
-  const sink = (line: string) => output.push(line)
-
   try {
-    await runWithCliExecutionContext({sanityEnv, stderr: sink, stdout: sink, token}, () =>
-      CommandClass.run(commandArgv, resolvedConfig),
-    )
+    const command = instantiateCommand(CommandClass, commandArgv, resolvedConfig)
+    await command.runInExecutionContext()
     return {commandId, exitCode: exitCodes.SUCCESS, output: output.join('\n')}
   } catch (err) {
     const exit = err.oclif?.exit

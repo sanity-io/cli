@@ -1,6 +1,7 @@
 import {fileURLToPath} from 'node:url'
 
 import {Config} from '@oclif/core'
+import {CLI_TELEMETRY_SYMBOL} from '@sanity/cli-core'
 import {mockApi} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -78,6 +79,65 @@ describe('invokeSanityCli', () => {
     expect(result.exitCode).toBe(0)
     expect(result.output).toContain('USAGE')
     expect(result.output).toContain('Manage CORS origins for your project')
+  })
+
+  test('an allowed invocation does not consult or mutate representative host state', async () => {
+    mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
+      .matchHeader('authorization', 'Bearer invocation-token')
+      .reply(200, [corsOrigin('https://isolated.example.com')])
+
+    const globalRegistry = globalThis as Record<symbol, unknown>
+    const previousTelemetry = globalRegistry[CLI_TELEMETRY_SYMBOL]
+    const hostTelemetry = {log: vi.fn()}
+    globalRegistry[CLI_TELEMETRY_SYMBOL] = hostTelemetry
+    const previousEnv = {
+      authToken: process.env.SANITY_AUTH_TOKEN,
+      sanityEnv: process.env.SANITY_INTERNAL_ENV,
+    }
+    process.env.SANITY_AUTH_TOKEN = 'host-token'
+    process.env.SANITY_INTERNAL_ENV = 'staging'
+
+    const cwd = vi.spyOn(process, 'cwd').mockImplementation(() => {
+      throw new Error('host cwd accessed')
+    })
+    const stdout = vi.spyOn(process.stdout, 'write')
+    const stderr = vi.spyOn(process.stderr, 'write')
+    const once = vi.spyOn(process, 'once')
+    const off = vi.spyOn(process, 'off')
+
+    try {
+      const result = await invokeSanityCli({
+        args: `cors list --project-id ${projectId}`,
+        sanityEnv: 'production',
+        source: 'mcp',
+        token: 'invocation-token',
+      })
+
+      expect(result).toEqual({
+        commandId: 'cors:list',
+        exitCode: 0,
+        output: 'https://isolated.example.com',
+      })
+      expect(cwd).not.toHaveBeenCalled()
+      expect(stdout).not.toHaveBeenCalled()
+      expect(stderr).not.toHaveBeenCalled()
+      expect(once).not.toHaveBeenCalledWith('SIGINT', expect.any(Function))
+      expect(off).not.toHaveBeenCalledWith('SIGINT', expect.any(Function))
+      expect(globalRegistry[CLI_TELEMETRY_SYMBOL]).toBe(hostTelemetry)
+      expect(process.env.SANITY_AUTH_TOKEN).toBe('host-token')
+      expect(process.env.SANITY_INTERNAL_ENV).toBe('staging')
+    } finally {
+      cwd.mockRestore()
+      stdout.mockRestore()
+      stderr.mockRestore()
+      once.mockRestore()
+      off.mockRestore()
+      globalRegistry[CLI_TELEMETRY_SYMBOL] = previousTelemetry
+      if (previousEnv.authToken === undefined) delete process.env.SANITY_AUTH_TOKEN
+      else process.env.SANITY_AUTH_TOKEN = previousEnv.authToken
+      if (previousEnv.sanityEnv === undefined) delete process.env.SANITY_INTERNAL_ENV
+      else process.env.SANITY_INTERNAL_ENV = previousEnv.sanityEnv
+    }
   })
 
   test('runs a command from string args, using the provided token', async () => {
