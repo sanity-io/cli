@@ -4,6 +4,7 @@ import {styleText} from 'node:util'
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes} from '@sanity/cli-core'
+import {findMintedProjectEnvBoundary} from '@sanity/cli-core/config'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {createFlow, input} from '@sanity/cli-core/ux'
 
@@ -200,8 +201,20 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     // How this command was invoked (`sanity new` vs `sanity projects mint`).
     const invoked = [this.config.bin, ...(this.id?.split(':') ?? [])].join(' ')
 
-    const envPath = path.join(process.cwd(), '.env')
-    const guard: GuardResult = await this.guardExistingProject(envPath, invoked)
+    const cwd = process.cwd()
+    // Guard against the same nearest credential boundary used by CLI authentication, but keep
+    // first-mint writes rooted at the invocation directory.
+    const envPath = path.join(cwd, '.env')
+    const guardEnvPath = findMintedProjectEnvBoundary(cwd)?.envPath ?? envPath
+    const guard: GuardResult = await this.guardExistingProject(guardEnvPath, invoked)
+    const guardDirectory = path.dirname(guardEnvPath)
+    const guardIsCurrentDirectory = path.resolve(guardDirectory) === path.resolve(cwd)
+    const guardEnvReference = guardIsCurrentDirectory ? './.env' : path.relative(cwd, guardEnvPath)
+    const guardJsonEnvReference = guardIsCurrentDirectory ? '.env' : guardEnvReference
+    const guardScopedReference = (relativePath: string) =>
+      guardIsCurrentDirectory
+        ? relativePath
+        : path.relative(cwd, path.join(guardDirectory, relativePath))
 
     if (!json) {
       renderNewCommandSplash(output.log)
@@ -228,10 +241,16 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     if (!json) {
       if (guard.expiredProjectId) {
         flow.note(
-          `Found an expired unclaimed project (${guard.expiredProjectId}) in .env. Minting a replacement; your .env is left untouched and new values follow.`,
+          guardIsCurrentDirectory
+            ? `Found an expired unclaimed project (${guard.expiredProjectId}) in .env. Minting a replacement; your .env is left untouched and new values follow.`
+            : `Found an expired unclaimed project (${guard.expiredProjectId}) in ${guardEnvReference}. Minting a replacement; ${guardEnvReference} is left untouched and new values follow.`,
         )
       } else if (guard.hasExistingKeys) {
-        flow.note('--force: minting a new project. Your .env is left untouched; new values follow.')
+        flow.note(
+          guardIsCurrentDirectory
+            ? '--force: minting a new project. Your .env is left untouched; new values follow.'
+            : `--force: minting a new project. ${guardEnvReference} is left untouched; new values follow.`,
+        )
       }
       if (guard.hasExistingKeys) flow.gap()
     }
@@ -295,16 +314,25 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       ],
       [STUDIO_ENV_FILE]: [['SANITY_AUTH_TOKEN', minted.token]],
     }
-    const printScaffoldEnvLines = (files: string[]) => {
+    const printScaffoldEnvLines = (
+      files: string[],
+      displayPath: (file: string) => string = (file) => file,
+    ) => {
       for (const file of files) {
         for (const [key, value] of scaffoldEnvKeys[file] ?? []) {
-          flow.line(`${file}: ${key}="${value}"`)
+          flow.line(`${displayPath(file)}: ${key}="${value}"`)
         }
       }
     }
-    const describeScaffoldEnvKeys = (files: string[]) =>
+    const describeScaffoldEnvKeys = (
+      files: string[],
+      displayPath: (file: string) => string = (file) => file,
+    ) =>
       files
-        .map((file) => `${file} (${(scaffoldEnvKeys[file] ?? []).map(([key]) => key).join(', ')})`)
+        .map(
+          (file) =>
+            `${displayPath(file)} (${(scaffoldEnvKeys[file] ?? []).map(([key]) => key).join(', ')})`,
+        )
         .join(' and ')
     const printScaffoldRecipe = () => {
       for (const command of manualScaffoldCommands({
@@ -322,33 +350,35 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     let rootTokenWritten = false
 
     if (guard.hasExistingKeys) {
-      const staleScaffoldEnv = existingScaffoldEnvFiles(process.cwd())
+      const staleScaffoldEnv = existingScaffoldEnvFiles(guardDirectory)
 
       if (json) {
         warnings = [
-          '.env still holds the previous Sanity values and was not modified (this command ' +
+          `${guardJsonEnvReference} still holds the previous Sanity values and was not modified (this command ` +
             'never edits existing lines); update it from this payload.',
           ...(staleScaffoldEnv.length > 0
             ? [
-                `${describeScaffoldEnvKeys(staleScaffoldEnv)} still hold superseded values; ` +
-                  `update them from this payload too, and keep the token out of ${FRONTEND_DIR}/.env.local.`,
+                `${describeScaffoldEnvKeys(staleScaffoldEnv, guardScopedReference)} still hold superseded values; ` +
+                  `update them from this payload too, and keep the token out of ${guardScopedReference(FRONTEND_ENV_FILE)}.`,
               ]
             : []),
         ]
       } else {
-        flow.highlight('Update ./.env yourself, replacing the old Sanity values with these:')
+        flow.highlight(
+          `Update ${guardEnvReference} yourself, replacing the old Sanity values with these:`,
+        )
         printEnvValues()
         flow.gap()
         if (staleScaffoldEnv.length > 0) {
           flow.note(
-            `${staleScaffoldEnv.join(' and ')} still hold superseded values, so update them too:`,
+            `${staleScaffoldEnv.map((file) => guardScopedReference(file)).join(' and ')} still hold superseded values, so update them too:`,
           )
-          printScaffoldEnvLines(staleScaffoldEnv)
+          printScaffoldEnvLines(staleScaffoldEnv, guardScopedReference)
           flow.gap()
         }
         if (this.flags.scaffold) {
           flow.note(
-            `Skipping the automatic scaffold because ./.env still points at the previous project.${
+            `Skipping the automatic scaffold because ${guardEnvReference} still points at the previous project.${
               staleScaffoldEnv.length === 0
                 ? ' After replacing those values, scaffold with:'
                 : ' Update the existing scaffold values above before using it.'
@@ -596,6 +626,25 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
   }
 
   private async guardExistingProject(envPath: string, invoked: string): Promise<GuardResult> {
+    const cwdEnvPath = path.join(process.cwd(), '.env')
+    const isCurrentDirectoryEnv = path.resolve(envPath) === path.resolve(cwdEnvPath)
+    const envReference = isCurrentDirectoryEnv ? '.env' : path.relative(process.cwd(), envPath)
+    const envSubject = isCurrentDirectoryEnv
+      ? "This directory's .env"
+      : `The ancestor ${envReference}`
+    const scopeSubject = isCurrentDirectoryEnv ? 'This directory' : envSubject
+    const replacementDetail = isCurrentDirectoryEnv
+      ? 'the unclaimed project lives on until it expires'
+      : `${envReference} is left untouched; the unclaimed project lives on until it expires`
+    const tokenEnvFiles = isCurrentDirectoryEnv
+      ? TOKEN_ENV_FILES
+      : `${envReference} or ${path.relative(
+          process.cwd(),
+          path.join(path.dirname(envPath), STUDIO_ENV_FILE),
+        )}`
+    const differentScopeSuggestion = isCurrentDirectoryEnv
+      ? 'Or run this command in a different directory'
+      : `Or run this command outside the project scope established by ${envReference}`
     const inspection = inspectEnvKeys(envPath, GUARDED_ENV_KEYS)
 
     // A blank `KEY=` line is invisible to the value read but still owns the line for the writer,
@@ -603,13 +652,13 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     // edits existing lines either) before spending a mint or touching the filesystem.
     if (inspection.blankKeys.length > 0) {
       throw new CLIError(
-        `This directory's .env contains blank Sanity credential placeholders: ` +
+        `${envSubject} contains blank Sanity credential placeholders: ` +
           `${inspection.blankKeys.join(', ')}. No project was minted.`,
         {
           code: 'BLANK_SANITY_ENV_VALUES',
           exit: exitCodes.RUNTIME_ERROR,
           suggestions: [
-            `Remove those blank lines from .env, or populate them, before running \`${invoked}\``,
+            `Remove those blank lines from ${envReference}, or populate them, before running \`${invoked}\``,
           ],
         },
       )
@@ -634,13 +683,13 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
 
     if (lookup?.state === 'claimed' && boundToken) {
       throw new CLIError(
-        `This directory's .env points at ${projectId ? `Sanity project ${projectId}` : 'a Sanity project'}, which has already been claimed.`,
+        `${envSubject} points at ${projectId ? `Sanity project ${projectId}` : 'a Sanity project'}, which has already been claimed.`,
         {
           code: 'CLAIMED_PROJECT_IN_ENV',
           exit: exitCodes.RUNTIME_ERROR,
           suggestions: [
-            `If it is yours: run \`sanity login\`, then remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES} to act as yourself`,
-            `Mint a fresh project here anyway: \`${invoked} --force\` (.env is left untouched)`,
+            `If it is yours: run \`sanity login\`, then remove SANITY_AUTH_TOKEN from ${tokenEnvFiles} to act as yourself`,
+            `Mint a fresh project here anyway: \`${invoked} --force\` (${envReference} is left untouched)`,
           ],
         },
       )
@@ -651,29 +700,26 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       // Only continue when project expiry verified server-side.
       const expiresAt = lookup ? (lookup.expiresAt ?? undefined) : record?.expiresAt
       throw new CLIError(
-        `This directory already has an unclaimed Sanity project${projectId ? ` (${projectId})` : ''}${describeExpiry(expiresAt ?? undefined)}.`,
+        `${scopeSubject} already has an unclaimed Sanity project${projectId ? ` (${projectId})` : ''}${describeExpiry(expiresAt ?? undefined)}.`,
         {
           code: 'UNCLAIMED_PROJECT_IN_ENV',
           exit: exitCodes.RUNTIME_ERROR,
           suggestions: [
             ...(claimUrl ? [`Claim it to keep it: ${claimUrl}`] : []),
-            `Mint a replacement anyway: \`${invoked} --force\` (the unclaimed project lives on until it expires)`,
+            `Mint a replacement anyway: \`${invoked} --force\` (${replacementDetail})`,
           ],
         },
       )
     }
 
     // Managed keys present, but nothing verifies what they belong to.
-    throw new CLIError(
-      `This directory's .env already has Sanity credentials (${foundKeys.join(', ')}).`,
-      {
-        code: 'UNVERIFIED_SANITY_CREDENTIALS',
-        exit: exitCodes.RUNTIME_ERROR,
-        suggestions: [
-          `Mint a fresh project anyway: \`${invoked} --force\` (.env is left untouched)`,
-          'Or run this command in a different directory',
-        ],
-      },
-    )
+    throw new CLIError(`${envSubject} already has Sanity credentials (${foundKeys.join(', ')}).`, {
+      code: 'UNVERIFIED_SANITY_CREDENTIALS',
+      exit: exitCodes.RUNTIME_ERROR,
+      suggestions: [
+        `Mint a fresh project anyway: \`${invoked} --force\` (${envReference} is left untouched)`,
+        differentScopeSuggestion,
+      ],
+    })
   }
 }

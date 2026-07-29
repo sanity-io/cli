@@ -7,6 +7,7 @@ import {
   subdebug,
   type TelemetryUserProperties,
 } from '@sanity/cli-core'
+import {findMintedProjectEnvBoundary} from '@sanity/cli-core/config'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
@@ -403,11 +404,29 @@ async function ensureAuthenticated(
     return {user}
   }
 
-  // `sanity new`'s remint guard refuses whenever any guarded `.env` key is present, so wherever
-  // that's the case we must not steer the user toward `sanity new` — it would dead-end. A ledger
-  // record narrows that further to a *known* unclaimed mint (a bare SANITY_PROJECT_ID is also
-  // written by `sanity init --env` and survives a claim), which earns more specific guidance.
-  const guardedInspection = inspectEnvKeys(path.join(process.cwd(), '.env'), GUARDED_ENV_KEYS)
+  // `sanity new`'s remint guard refuses whenever the nearest ancestor credential boundary has a
+  // guarded `.env` key, so in that scope we must not steer the user toward `sanity new` — it would
+  // dead-end. A ledger record narrows that further to a *known* unclaimed mint (a bare
+  // SANITY_PROJECT_ID is also written by `sanity init --env` and survives a claim), which earns
+  // more specific guidance.
+  const cwd = process.cwd()
+  let guardedInspection: ReturnType<typeof inspectEnvKeys>
+  let credentialBoundaryInspectionFailed = false
+  try {
+    const guardedEnvPath = findMintedProjectEnvBoundary(cwd)?.envPath ?? path.join(cwd, '.env')
+    guardedInspection = inspectEnvKeys(guardedEnvPath, GUARDED_ENV_KEYS)
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    const message =
+      `Could not inspect the Sanity credential boundary: ${detail}. ` +
+      'Ensure ancestor .env files are readable regular files, then re-run.'
+    if (options.unattended) {
+      throw new InitError(message, exitCodes.RUNTIME_ERROR)
+    }
+    output.warn(message)
+    credentialBoundaryInspectionFailed = true
+    guardedInspection = {blankKeys: [], presentKeys: [], values: {}}
+  }
   const guardedEnv = guardedInspection.values
   const hasGuardedKeys = guardedInspection.presentKeys.length > 0
   const mintedRecord = guardedEnv.SANITY_PROJECT_ID
@@ -442,7 +461,7 @@ async function ensureAuthenticated(
   output.warn(LOGIN_REQUIRED_MESSAGE)
 
   // Suppressed wherever `sanity new` would be refused (any guarded `.env` key present).
-  if (!hasGuardedKeys) renderNewCommandBanner(output)
+  if (!hasGuardedKeys && !credentialBoundaryInspectionFailed) renderNewCommandBanner(output)
 
   try {
     await login({

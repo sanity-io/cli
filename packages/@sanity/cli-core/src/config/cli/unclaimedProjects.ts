@@ -32,23 +32,32 @@ function isMissingFileError(error: unknown): boolean {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT'
 }
 
+export interface MintedProjectEnvBoundary {
+  contents: string
+  envPath: string
+}
+
 /**
  * Find the nearest ancestor `.env` that establishes a Sanity credential boundary. The walk stays
- * lexical, parses only the selected file, and never consults or mutates `process.env`.
+ * lexical and never consults or mutates `process.env`. Missing files are skipped; other read
+ * errors propagate so callers can fail closed.
  */
-function readMintedProjectEnv(cwd: string): Record<string, string> | undefined {
+export function findMintedProjectEnvBoundary(
+  cwd: string = process.cwd(),
+): MintedProjectEnvBoundary | undefined {
   let directory = path.resolve(cwd)
 
   while (true) {
     let contents: string | undefined
+    const envPath = path.join(directory, '.env')
     try {
-      contents = fs.readFileSync(path.join(directory, '.env'), 'utf8')
+      contents = fs.readFileSync(envPath, 'utf8')
     } catch (error) {
-      if (!isMissingFileError(error)) return undefined
+      if (!isMissingFileError(error)) throw error
     }
 
     if (contents !== undefined && mentionsMintedCredentialBoundary(contents)) {
-      return parseDotenv(contents)
+      return {contents, envPath}
     }
 
     const parent = path.dirname(directory)
@@ -75,9 +84,10 @@ export function resolveMintedProjectCredential(
   cwd: string = process.cwd(),
 ): MintedProjectCredential | undefined {
   try {
-    const env = readMintedProjectEnv(cwd)
-    if (!env) return undefined
+    const boundary = findMintedProjectEnvBoundary(cwd)
+    if (!boundary) return undefined
 
+    const env = parseDotenv(boundary.contents)
     const projectId = env.SANITY_PROJECT_ID?.trim()
     if (!projectId) return undefined
 

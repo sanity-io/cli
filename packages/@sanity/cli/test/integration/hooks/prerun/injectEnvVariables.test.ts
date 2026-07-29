@@ -60,7 +60,7 @@ describe('#injectEnvVariables', () => {
     expect(process.env.MY_CUSTOM_VAR).toBe('test2')
   })
 
-  test('should not inject a mint-root token into a descendant frontend', async () => {
+  test('should not inject a mint-root token into a generated frontend without Sanity config', async () => {
     const mintRoot = await testFixture('basic-functions')
     const frontendRoot = join(mintRoot, 'web')
     const cwd = join(frontendRoot, 'src')

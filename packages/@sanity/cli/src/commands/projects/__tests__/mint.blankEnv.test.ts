@@ -56,6 +56,14 @@ function listDir(): string[] {
   return fs.readdirSync(dir).toSorted()
 }
 
+function enterMintedDescendant(): {descendant: string; envReference: string} {
+  const descendant = path.join(dir, 'web')
+  fs.mkdirSync(descendant)
+  cwdSpy.mockReturnValue(descendant)
+  fs.writeFileSync(envPath, 'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-root-robot"\n')
+  return {descendant, envReference: path.relative(descendant, envPath)}
+}
+
 async function runAndCatch(
   argv: string[],
 ): Promise<Error & {code?: string; suggestions?: string[]}> {
@@ -96,6 +104,70 @@ afterEach(() => {
 
 describe('#projects:mint blank .env placeholders (real env helpers)', () => {
   const blankEnv = 'SANITY_PROJECT_ID=\nSANITY_AUTH_TOKEN=\n'
+
+  test('refuses a second mint from a generated descendant of the mint root', async () => {
+    const {descendant, envReference} = enterMintedDescendant()
+
+    const err = await runAndCatch(['My New Project'])
+
+    expect(err.code).toBe('UNVERIFIED_SANITY_CREDENTIALS')
+    expect(err.message).toContain(`The ancestor ${envReference} already has`)
+    expect(err.message).not.toContain("This directory's .env")
+    expect(err.suggestions?.join('\n')).toContain(
+      `outside the project scope established by ${envReference}`,
+    )
+    expect(err.suggestions?.join('\n')).not.toContain('in a different directory')
+    expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
+    expect(fs.existsSync(path.join(descendant, '.env'))).toBe(false)
+  })
+
+  test('claimed-project cleanup names the ancestor token files from a descendant', async () => {
+    const {descendant, envReference} = enterMintedDescendant()
+    const studioEnvReference = path.relative(descendant, path.join(dir, 'sanity', '.env.local'))
+    mockGetMintedProjectRecord.mockReturnValue({
+      claimToken: 'old-claim-token',
+      projectId: 'abc123',
+    })
+    mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'claimed'})
+
+    const err = await runAndCatch(['My New Project'])
+    const suggestions = err.suggestions?.join('\n')
+
+    expect(err.code).toBe('CLAIMED_PROJECT_IN_ENV')
+    expect(suggestions).toContain(
+      `remove SANITY_AUTH_TOKEN from ${envReference} or ${studioEnvReference}`,
+    )
+    expect(suggestions).not.toContain('./.env or sanity/.env.local')
+    expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
+  })
+
+  test('--force replacement discovers and names stale files in the ancestor scope', async () => {
+    const {descendant, envReference} = enterMintedDescendant()
+    const studioDir = path.join(dir, 'sanity')
+    fs.mkdirSync(studioDir)
+    fs.writeFileSync(path.join(studioDir, '.env.local'), 'SANITY_AUTH_TOKEN="sk-root-robot"\n')
+    fs.writeFileSync(
+      path.join(descendant, '.env.local'),
+      'NEXT_PUBLIC_SANITY_PROJECT_ID="abc123"\n',
+    )
+    const studioEnvReference = path.relative(descendant, path.join(studioDir, '.env.local'))
+    const frontendEnvReference = path.relative(descendant, path.join(descendant, '.env.local'))
+
+    await MintProjectCommand.run(['My New Project', '--force'])
+
+    const lines = vi.mocked(mocks.SanityCmdOutput.log).mock.calls.flat().join('\n')
+    expect(lines).toContain(
+      `--force: minting a new project. ${envReference} is left untouched; new values follow.`,
+    )
+    expect(lines).toContain(`Update ${envReference} yourself`)
+    expect(lines).toContain(
+      `${studioEnvReference} and ${frontendEnvReference} still hold superseded values`,
+    )
+    expect(lines).toContain(`because ${envReference} still points at the previous project`)
+    expect(lines).not.toContain('Update ./.env yourself')
+    expect(mockMintUnclaimedProject).toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+  })
 
   test('refuses before provisioning and leaves the directory untouched', async () => {
     fs.writeFileSync(envPath, blankEnv)

@@ -17,7 +17,9 @@ export {
   type TypeGenConfig,
 } from '../config/cli/types/cliConfig.js'
 export {
+  findMintedProjectEnvBoundary,
   type MintedProjectCredential,
+  type MintedProjectEnvBoundary,
   resolveMintedProjectCredential,
   resolveMintedProjectToken,
   UNCLAIMED_PROJECTS_CONFIG_KEY,

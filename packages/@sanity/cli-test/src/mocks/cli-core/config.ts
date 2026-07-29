@@ -8,6 +8,8 @@ export const getCliConfigUncached: Mock = vi.fn()
 /** @internal */
 export const getCliConfigSync: Mock = vi.fn()
 /** @internal */
+export const findMintedProjectEnvBoundary: Mock = vi.fn()
+/** @internal */
 export const isWorkbenchApp: Mock = vi.fn()
 /** @internal */
 export const parseWorkbenchCliConfig: Mock = vi.fn()

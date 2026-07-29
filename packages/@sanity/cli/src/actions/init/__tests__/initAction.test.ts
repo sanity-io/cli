@@ -1,3 +1,7 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
 import {createTestClient, mockApi} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -15,13 +19,16 @@ const mockGetById = vi.hoisted(() => vi.fn())
 const mockValidateSession = vi.hoisted(() => vi.fn())
 const mockLogin = vi.hoisted(() => vi.fn())
 const mockInspectEnvKeys = vi.hoisted(() =>
-  vi.fn(
-    (): {
+  vi.fn<
+    (
+      _envPath: string,
+      _keys: readonly string[],
+    ) => {
       blankKeys: string[]
       presentKeys: string[]
-      values: Record<string, string>
-    } => ({blankKeys: [], presentKeys: [], values: {}}),
-  ),
+      values: Partial<Record<string, string>>
+    }
+  >(() => ({blankKeys: [], presentKeys: [], values: {}})),
 )
 const mockGetMintedProjectRecord = vi.hoisted(() => vi.fn())
 
@@ -122,6 +129,31 @@ function createTestContext(): InitContext {
       }),
     } as unknown as InitContext['telemetry'],
     workDir: '/tmp/test-work-dir',
+  }
+}
+
+async function useMintedDescendant(options: {unreadable?: boolean} = {}): Promise<() => void> {
+  const mintRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sanity-init-minted-root-'))
+  const descendant = path.join(mintRoot, 'web')
+  fs.mkdirSync(descendant)
+  const envPath = path.join(mintRoot, '.env')
+  if (options.unreadable) {
+    fs.mkdirSync(envPath)
+  } else {
+    fs.writeFileSync(envPath, 'SANITY_PROJECT_ID="abc123"\n')
+  }
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(descendant)
+  if (!options.unreadable) {
+    const {inspectEnvKeys} = await vi.importActual<typeof import('../../../util/envFile.js')>(
+      '../../../util/envFile.js',
+    )
+    mockInspectEnvKeys.mockImplementation(inspectEnvKeys)
+  }
+
+  return () => {
+    mockInspectEnvKeys.mockImplementation(() => ({blankKeys: [], presentKeys: [], values: {}}))
+    cwdSpy.mockRestore()
+    fs.rmSync(mintRoot, {force: true, recursive: true})
   }
 }
 
@@ -257,6 +289,94 @@ describe('initAction (direct)', () => {
     expect(initError.message).not.toContain('run `sanity new`')
   })
 
+  test('unattended not-logged-in in a minted descendant keeps the mint-root guidance', async () => {
+    const cleanup = await useMintedDescendant()
+    mockValidateSession.mockResolvedValue(null)
+    mockGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
+
+    const context = createTestContext()
+    const options: InitOptions = {
+      ...defaultOptions,
+      dataset: 'production',
+      outputPath: '/tmp/test-output',
+      project: 'test-project',
+      unattended: true,
+    }
+
+    let caughtError: unknown
+    try {
+      await initAction(options, context)
+    } catch (error) {
+      caughtError = error
+    } finally {
+      cleanup()
+    }
+
+    const initError = caughtError as InitError
+    expect(initError.message).toContain('unclaimed Sanity project (abc123)')
+    expect(initError.message).toContain('Set SANITY_AUTH_TOKEN')
+    expect(initError.message).not.toContain('run `sanity new`')
+  })
+
+  test('unattended reports an unreadable ancestor credential boundary without suggesting a remint', async () => {
+    const cleanup = await useMintedDescendant({unreadable: true})
+    mockValidateSession.mockResolvedValue(null)
+
+    const context = createTestContext()
+    let caughtError: unknown
+    try {
+      await initAction(
+        {
+          ...defaultOptions,
+          dataset: 'production',
+          outputPath: '/tmp/test-output',
+          project: 'test-project',
+          unattended: true,
+        },
+        context,
+      )
+    } catch (error) {
+      caughtError = error
+    } finally {
+      cleanup()
+    }
+
+    expect(caughtError).toBeInstanceOf(InitError)
+    const initError = caughtError as InitError
+    expect(initError.message).toContain('Could not inspect the Sanity credential boundary')
+    expect(initError.message).toContain('Ensure ancestor .env files are readable regular files')
+    expect(initError.message).not.toContain('sanity new')
+    expect(initError.exitCode).toBe(1)
+  })
+
+  test('interactive warns on an unreadable ancestor boundary, suppresses the remint banner, and logs in', async () => {
+    const cleanup = await useMintedDescendant({unreadable: true})
+    mockValidateSession.mockResolvedValue(null)
+    mockLogin.mockRejectedValueOnce(new Error('stop'))
+
+    const context = createTestContext()
+    try {
+      await expect(
+        initAction({...defaultOptions, dataset: 'production', project: 'test-project'}, context),
+      ).rejects.toThrow('Login failed: stop')
+    } finally {
+      cleanup()
+    }
+
+    const warnings = vi
+      .mocked(context.output.warn)
+      .mock.calls.map((call) => call[0])
+      .join('\n')
+    const logged = vi
+      .mocked(context.output.log)
+      .mock.calls.map((call) => call[0])
+      .join('\n')
+    expect(warnings).toContain('Could not inspect the Sanity credential boundary')
+    expect(warnings).toContain('Ensure ancestor .env files are readable regular files')
+    expect(logged).not.toContain('Two ways to start')
+    expect(mockLogin).toHaveBeenCalledOnce()
+  })
+
   test('unattended not-logged-in with guarded .env keys but no ledger record: no mislabel, no sanity new', async () => {
     // `sanity init --env` also writes SANITY_PROJECT_ID and it survives a claim, so a bare id with
     // no ledger record must not be mislabeled an unclaimed mint — and since `sanity new` is still
@@ -355,24 +475,24 @@ describe('initAction (direct)', () => {
     expect(combined).not.toContain('null')
   })
 
-  test('suppresses the "two ways to start" banner in a minted directory', async () => {
+  test('suppresses the "two ways to start" banner in a minted descendant', async () => {
     // `sanity new` is refused by the remint guard in a minted directory, so its banner would
     // steer the user toward a dead end — mirror the unattended path, which already special-cases it.
+    const cleanup = await useMintedDescendant()
     mockValidateSession.mockResolvedValue(null)
-    mockInspectEnvKeys.mockReturnValue({
-      blankKeys: [],
-      presentKeys: ['SANITY_PROJECT_ID'],
-      values: {SANITY_PROJECT_ID: 'abc123'},
-    })
     mockGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
     // The banner renders before login(); reject there to stop before the networked getCliUser.
     mockLogin.mockRejectedValueOnce(new Error('stop'))
 
     const context = createTestContext()
-    await initAction(
-      {...defaultOptions, dataset: 'production', project: 'test-project'},
-      context,
-    ).catch(() => {})
+    try {
+      await initAction(
+        {...defaultOptions, dataset: 'production', project: 'test-project'},
+        context,
+      ).catch(() => {})
+    } finally {
+      cleanup()
+    }
 
     const combined = vi
       .mocked(context.output.log)
