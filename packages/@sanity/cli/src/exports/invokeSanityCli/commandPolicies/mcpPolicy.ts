@@ -16,6 +16,15 @@ function fieldReadsFromHost(field: unknown): boolean {
   return separatorIndex > 0 && field[separatorIndex + 1] === '@'
 }
 
+/** A `-H/--header` value that replaces the invocation's authentication. */
+function headerOverridesAuthentication(header: unknown): boolean {
+  if (typeof header !== 'string') return false
+  const separatorIndex = header.indexOf(':')
+  return (
+    separatorIndex > 0 && header.slice(0, separatorIndex).trim().toLowerCase() === 'authorization'
+  )
+}
+
 /**
  * MCP programmatic mode disables local project/config discovery (see the CLI
  * execution context). Missing project or dataset values may therefore produce
@@ -30,13 +39,15 @@ function fieldReadsFromHost(field: unknown): boolean {
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful
   // to expose. Refuse authentication overrides and host input channels:
-  // `--token` replaces the MCP user's token, `--input` reads the request body
-  // from the host's filesystem or stdin, and `-F key=@<file>` / `-F key=@-`
-  // field values do the same.
+  // `--token` and an Authorization header replace the MCP user's token,
+  // `--input` reads the request body from the host's filesystem or stdin, and
+  // `-F key=@<file>` / `-F key=@-` field values do the same.
   api: conditionalPolicy({
     deniedFlags: ['input', 'token'],
     validate: ({flags}) =>
-      !Array.isArray(flags.field) || !flags.field.some((field) => fieldReadsFromHost(field)),
+      (!Array.isArray(flags.field) || !flags.field.some((field) => fieldReadsFromHost(field))) &&
+      (!Array.isArray(flags.header) ||
+        !flags.header.some((header) => headerOverridesAuthentication(header))),
   }),
 
   'backups:disable': allow,

@@ -214,7 +214,9 @@ export async function invokeSanityCli({
       const usedDeniedFlags = policy.deniedFlags.filter(
         (name) => invocation.flags[name] !== undefined && invocation.flags[name] !== false,
       )
-      output = `\nThe ${usedDeniedFlags.map((name) => `--${name}`).join(', ')} flag is not supported here for \`${displayId}\``
+      if (usedDeniedFlags.length > 0) {
+        output = `\nThe ${usedDeniedFlags.map((name) => `--${name}`).join(', ')} flag is not supported here for \`${displayId}\``
+      }
     }
 
     return {
