@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.7.0](https://github.com/sanity-io/cli/compare/cli-core-v2.6.0...cli-core-v2.7.0)
+
+_2026-07-29_
+
+### Features
+
+- support providing sanityEnv to execution context ([#1608](https://github.com/sanity-io/cli/pull/1608)) ([161efb5](https://github.com/sanity-io/cli/commit/161efb54ec091c2c9603b6e6e469deb12fd374a1))
+
 ## [2.6.0](https://github.com/sanity-io/cli/compare/cli-core-v2.5.1...cli-core-v2.6.0)
 
 _2026-07-28_
