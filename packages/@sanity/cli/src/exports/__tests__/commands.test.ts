@@ -243,6 +243,27 @@ describe('invokeSanityCli', () => {
     }
   })
 
+  test('preserves actionable details from command errors', async () => {
+    const result = await invokeSanityCli({
+      args: 'backups list',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(1)
+    expect(result.output).toMatchInlineSnapshot(`
+      "ProjectRootNotFoundError: Unable to determine project ID
+      Code: PROJECT_ROOT_NOT_FOUND
+      Try this:
+        * Providing a project ID: --project-id <project-id>
+        * Running this command from within a Sanity project directory
+        * Running in an interactive terminal to get a project selection prompt
+      Caused by: NonInteractiveError: Cannot run "select" prompt in a non-interactive environment. Provide the required value via flags or environment variables, or run in an interactive terminal.
+      Code: NON_INTERACTIVE"
+    `)
+  })
+
   test.each([
     'login', // denied: performs an authentication flow
     'schemas list', // denied: requires a local project
