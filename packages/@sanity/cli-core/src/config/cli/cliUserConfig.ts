@@ -23,8 +23,8 @@ export const _internals = {
 /**
  * The active CLI credential together with where it came from, in precedence order:
  * a nonblank `SANITY_AUTH_TOKEN` in the environment, then the minted-project credential selected
- * by the current directory's `.env` project id (ledger first, root `.env` as recovery), then the
- * stored login session.
+ * by the nearest ancestor `.env` credential boundary (ledger first, that `.env` as recovery), then
+ * the stored login session.
  *
  * @internal
  */
@@ -39,8 +39,8 @@ export type ResolvedCliCredential =
  * identity is in effect (login/logout warnings) need a fresh answer, not a source inferred
  * from a cached string. Token-oriented callers should keep using {@link getCliToken}.
  *
- * @param cwd - Directory whose `.env` selects the minted-project ledger record; defaults to
- * the process working directory
+ * @param cwd - Directory where the minted-project `.env` ancestor search starts; defaults to the
+ * process working directory
  * @internal
  */
 export async function resolveCliCredential(cwd?: string): Promise<ResolvedCliCredential> {
@@ -50,8 +50,9 @@ export async function resolveCliCredential(cwd?: string): Promise<ResolvedCliCre
   }
 
   // A minted directory carries the robot token in both `.env` and the ledger. Resolve the ledger
-  // copy first, with the root `.env` copy as recovery when the ledger write failed. Env injection
-  // never runs before a config file exists, which is the gap this directory-aware tier closes.
+  // copy first, with the selected ancestor `.env` copy as recovery when the ledger write failed.
+  // Env injection remains scoped to a discovered project root, which is the gap this independent
+  // directory-aware tier closes.
   let minted
   try {
     minted = resolveMintedProjectCredential(getUserConfig().get(UNCLAIMED_PROJECTS_CONFIG_KEY), cwd)

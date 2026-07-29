@@ -33,7 +33,7 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
         )
       } else {
         this.warn(
-          `This directory uses SANITY_AUTH_TOKEN from ./.env for Sanity project ${credential.projectId}. Logout cannot end that. Remove SANITY_AUTH_TOKEN from ./.env to stop acting as it.`,
+          `This directory uses SANITY_AUTH_TOKEN from this project's .env for Sanity project ${credential.projectId}. Logout cannot end that. Remove SANITY_AUTH_TOKEN from that .env to stop acting as it.`,
         )
       }
     }

@@ -63,6 +63,19 @@ describe('resolveCliCredential', () => {
     })
   })
 
+  test('a mint-root credential outranks the stored session from a deep frontend directory', async () => {
+    const frontendDir = path.join(dir, 'web', 'src')
+    fs.mkdirSync(frontendDir, {recursive: true})
+    writeConfig({authToken: 'session-token', unclaimedProjects: ledger})
+    fs.writeFileSync(envPath, 'SANITY_PROJECT_ID="abc123"\n')
+
+    await expect(resolveCliCredential(frontendDir)).resolves.toEqual({
+      projectId: 'abc123',
+      source: 'minted-project',
+      token: 'sk-robot',
+    })
+  })
+
   test('root .env minted-project token recovers when the ledger write is missing', async () => {
     writeConfig({authToken: 'session-token'})
     fs.writeFileSync(envPath, 'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-env-robot"\n')
@@ -141,6 +154,19 @@ describe('resolveCliCredential', () => {
 
   test('a ledger record without a token falls through to the stored session', async () => {
     writeConfig({authToken: 'session-token', unclaimedProjects: {abc123: {projectId: 'abc123'}}})
+    fs.writeFileSync(envPath, 'SANITY_PROJECT_ID="abc123"\n')
+
+    await expect(resolveCliCredential(dir)).resolves.toEqual({
+      source: 'session',
+      token: 'session-token',
+    })
+  })
+
+  test('a ledger record for a different project falls through to the stored session', async () => {
+    writeConfig({
+      authToken: 'session-token',
+      unclaimedProjects: {abc123: {projectId: 'otherproj', token: 'sk-wrong'}},
+    })
     fs.writeFileSync(envPath, 'SANITY_PROJECT_ID="abc123"\n')
 
     await expect(resolveCliCredential(dir)).resolves.toEqual({

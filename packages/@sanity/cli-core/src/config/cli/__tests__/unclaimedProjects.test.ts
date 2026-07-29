@@ -41,9 +41,9 @@ describe('resolveMintedProjectToken', () => {
       'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-env-robot"\n',
     )
 
-    expect(resolveMintedProjectToken({abc123: {token: 'sk-ledger-robot'}}, dir)).toBe(
-      'sk-ledger-robot',
-    )
+    expect(
+      resolveMintedProjectToken({abc123: {projectId: 'abc123', token: 'sk-ledger-robot'}}, dir),
+    ).toBe('sk-ledger-robot')
   })
 
   test('reads the directory .env, not a shell-exported SANITY_PROJECT_ID from another project', () => {
@@ -123,6 +123,87 @@ describe('resolveMintedProjectCredential', () => {
     ).toEqual({projectId: 'abc123', token: 'sk-robot'})
   })
 
+  test('resolves the mint-root ledger credential from generated, renamed, and deep frontends', () => {
+    const frontendDirectories = [
+      path.join(dir, 'web'),
+      path.join(dir, 'existing-frontend'),
+      path.join(dir, 'existing-frontend', 'packages', 'site'),
+    ]
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+
+    for (const frontendDirectory of frontendDirectories) {
+      fs.mkdirSync(frontendDirectory, {recursive: true})
+      expect(
+        resolveMintedProjectCredential(
+          {abc123: {projectId: 'abc123', token: 'sk-robot'}},
+          frontendDirectory,
+        ),
+      ).toEqual({projectId: 'abc123', token: 'sk-robot'})
+    }
+  })
+
+  test('a nearer credential boundary blocks the mint root even when incomplete or malformed', () => {
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+    const records = {abc123: {projectId: 'abc123', token: 'sk-robot'}}
+    const nearerBoundaries = [
+      'SANITY_AUTH_TOKEN="sk-nearer"\n',
+      'SANITY_CLAIM_URL=\n',
+      'SANITY_PROJECT_ID=\n',
+      'SANITY_PROJECT_ID\n',
+      'export SANITY_PROJECT_ID\n',
+    ]
+
+    for (const [index, contents] of nearerBoundaries.entries()) {
+      const descendant = path.join(dir, `frontend-${index}`, 'deep')
+      fs.mkdirSync(descendant, {recursive: true})
+      fs.writeFileSync(path.join(path.dirname(descendant), '.env'), contents)
+
+      expect(resolveMintedProjectCredential(records, descendant)).toBeUndefined()
+    }
+  })
+
+  test('recovers the mint-root .env token from generated and unrelated nested frontends', () => {
+    const generatedFrontend = path.join(dir, 'web')
+    const frontend = path.join(dir, 'existing-frontend')
+    const descendant = path.join(frontend, 'packages', 'site')
+    fs.mkdirSync(generatedFrontend)
+    fs.mkdirSync(descendant, {recursive: true})
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-env-robot"\n',
+    )
+    fs.writeFileSync(
+      path.join(frontend, '.env'),
+      '# SANITY_PROJECT_ID="commented"\nSANITY_AUTH_TOKEN_HINT="not-a-token"\nDATABASE_URL="postgres://localhost"\n',
+    )
+    fs.writeFileSync(
+      path.join(frontend, 'packages', '.env.local'),
+      'SANITY_PROJECT_ID="ignored-local-file"\n',
+    )
+
+    for (const cwd of [generatedFrontend, descendant]) {
+      expect(resolveMintedProjectCredential(undefined, cwd)).toEqual({
+        projectId: 'abc123',
+        token: 'sk-env-robot',
+      })
+    }
+  })
+
+  test('an unreadable nearer .env fails closed instead of inheriting the mint root', () => {
+    const frontend = path.join(dir, 'web')
+    const descendant = path.join(frontend, 'deep')
+    fs.mkdirSync(descendant, {recursive: true})
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+    fs.mkdirSync(path.join(frontend, '.env'))
+
+    expect(
+      resolveMintedProjectCredential(
+        {abc123: {projectId: 'abc123', token: 'sk-robot'}},
+        descendant,
+      ),
+    ).toBeUndefined()
+  })
+
   test('returns the root .env credential when no ledger record was persisted', () => {
     fs.writeFileSync(
       path.join(dir, '.env'),
@@ -141,6 +222,34 @@ describe('resolveMintedProjectCredential', () => {
     expect(resolveMintedProjectCredential({abc123: {projectId: 'abc123'}}, dir)).toBeUndefined()
     expect(resolveMintedProjectCredential(undefined, dir)).toBeUndefined()
     expect(resolveMintedProjectCredential('not-a-ledger', dir)).toBeUndefined()
+  })
+
+  test('rejects ledger records whose own project id is missing or mismatched', () => {
+    fs.writeFileSync(path.join(dir, '.env'), 'SANITY_PROJECT_ID="abc123"\n')
+
+    expect(
+      resolveMintedProjectCredential({abc123: {token: 'sk-missing-project'}}, dir),
+    ).toBeUndefined()
+    expect(
+      resolveMintedProjectCredential(
+        {abc123: {projectId: 'otherproj', token: 'sk-mismatched-project'}},
+        dir,
+      ),
+    ).toBeUndefined()
+  })
+
+  test('falls back to the selected .env token when its ledger record is malformed', () => {
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      'SANITY_PROJECT_ID="abc123"\nSANITY_AUTH_TOKEN="sk-env-robot"\n',
+    )
+
+    expect(
+      resolveMintedProjectCredential(
+        {abc123: {projectId: 'otherproj', token: 'sk-mismatched-project'}},
+        dir,
+      ),
+    ).toEqual({projectId: 'abc123', token: 'sk-env-robot'})
   })
 
   test('rejects an empty or whitespace-only token instead of constructing a credential', () => {

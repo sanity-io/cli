@@ -1,4 +1,4 @@
-import {writeFile} from 'node:fs/promises'
+import {mkdir, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {testFixture, testHook} from '@sanity/cli-test'
@@ -58,6 +58,30 @@ describe('#injectEnvVariables', () => {
 
     expect(process.env.SANITY_APP_TEST_VAR).toBe('test')
     expect(process.env.MY_CUSTOM_VAR).toBe('test2')
+  })
+
+  test('should not inject a mint-root token into a descendant frontend', async () => {
+    const mintRoot = await testFixture('basic-functions')
+    const frontendRoot = join(mintRoot, 'web')
+    const cwd = join(frontendRoot, 'src')
+    await mkdir(cwd, {recursive: true})
+    await writeFile(
+      join(mintRoot, '.env'),
+      'SANITY_PROJECT_ID=root-project\nSANITY_AUTH_TOKEN=sk-root-robot\n',
+    )
+    delete process.env.SANITY_AUTH_TOKEN
+    delete process.env.SANITY_PROJECT_ID
+    process.chdir(cwd)
+
+    const {Command, config} = await getCommandAndConfig('learn')
+
+    await testHook<'prerun'>(injectEnvVariables, {
+      Command,
+      config,
+    })
+
+    expect(process.env.SANITY_AUTH_TOKEN).toBeUndefined()
+    expect(process.env.SANITY_PROJECT_ID).toBeUndefined()
   })
 
   test('should warn when running in production environment', async () => {

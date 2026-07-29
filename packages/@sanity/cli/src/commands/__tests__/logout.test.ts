@@ -140,7 +140,7 @@ describe('#logout', () => {
     const {error, stderr, stdout} = await testCommand(LogoutCommand)
 
     expect(error).toBeUndefined()
-    expect(stderr).toContain('SANITY_AUTH_TOKEN from ./.env')
+    expect(stderr).toContain("SANITY_AUTH_TOKEN from this project's .env")
     expect(stderr).not.toContain('unclaimed Sanity project')
     expect(stderr).not.toContain('Claim the project')
     expect(stdout).not.toContain('No login credentials found')

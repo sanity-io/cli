@@ -583,7 +583,7 @@ describe('#login', {timeout: 10_000}, () => {
       const {error, stderr} = await testTokenLogin('valid-token')
 
       if (error) throw error
-      expect(stderr).toContain('SANITY_AUTH_TOKEN from ./.env')
+      expect(stderr).toContain("SANITY_AUTH_TOKEN from this project's .env")
       expect(stderr).toContain('outranks this login session')
       expect(stderr).not.toContain('unclaimed Sanity project')
       expect(stderr).not.toContain('Claim the project')

@@ -103,7 +103,7 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
         )
       } else {
         this.warn(
-          `This directory uses SANITY_AUTH_TOKEN from ./.env for Sanity project ${credential.projectId}, which outranks this login session here. Remove SANITY_AUTH_TOKEN from ./.env to act as the account you just logged in with.`,
+          `This directory uses SANITY_AUTH_TOKEN from this project's .env for Sanity project ${credential.projectId}, which outranks this login session here. Remove SANITY_AUTH_TOKEN from that .env to act as the account you just logged in with.`,
         )
       }
     }
