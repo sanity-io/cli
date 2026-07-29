@@ -1,4 +1,6 @@
-import {stripVTControlCharacters, styleText} from 'node:util'
+import {styleText} from 'node:util'
+
+import wrapAnsi from 'wrap-ansi'
 
 import {isInteractive} from '../util/isInteractive.js'
 import {spinner, type SpinnerInstance} from './spinner.js'
@@ -12,40 +14,6 @@ function rail(glyph: string): string {
 }
 
 const RAIL_PREFIX_WIDTH = 3
-function visibleWidth(text: string): number {
-  return [...stripVTControlCharacters(text)].length
-}
-
-function wrapLine(text: string, width: number): string[] {
-  if (visibleWidth(text) <= width) return [text]
-
-  const chunks = text.match(/\S+|\s+/g)
-  if (!chunks) return ['']
-
-  const lines: string[] = []
-  let current = ''
-  let whitespace = ''
-
-  for (const chunk of chunks) {
-    if (/^\s+$/.test(chunk)) {
-      whitespace += chunk
-      continue
-    }
-
-    const candidate = current ? `${current}${whitespace}${chunk}` : chunk
-    if (current && visibleWidth(candidate) > width) {
-      lines.push(current.trimEnd())
-      current = chunk
-    } else {
-      current = candidate
-    }
-    whitespace = ''
-  }
-
-  lines.push(current.trimEnd())
-  return lines
-}
-
 function wrapText(text: string): string[] {
   if (
     !process.stdout.isTTY ||
@@ -56,7 +24,7 @@ function wrapText(text: string): string[] {
   }
   const columns = process.stdout.columns
   const width = Math.max(columns - RAIL_PREFIX_WIDTH, 1)
-  return text.split(/\r?\n/).flatMap((line) => wrapLine(line, width))
+  return wrapAnsi(text, width, {hard: false, wordWrap: true}).split('\n')
 }
 
 function writeRailed(log: LogFn, glyph: string, text: string): void {
@@ -67,11 +35,13 @@ function writeRailed(log: LogFn, glyph: string, text: string): void {
   }
 }
 
+function isTerminalControl(character: string): boolean {
+  const codePoint = character.codePointAt(0)
+  return codePoint !== undefined && (codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f))
+}
+
 function isSafeTerminalLink(url: string): boolean {
-  for (const character of url) {
-    const codePoint = character.codePointAt(0)
-    if (codePoint !== undefined && (codePoint <= 0x1f || codePoint === 0x7f)) return false
-  }
+  if ([...url].some((character) => isTerminalControl(character))) return false
   try {
     const protocol = new URL(url).protocol
     return protocol === 'http:' || protocol === 'https:'
@@ -80,8 +50,17 @@ function isSafeTerminalLink(url: string): boolean {
   }
 }
 
+function encodeTerminalControls(value: string): string {
+  return [...value]
+    .map((character) => (isTerminalControl(character) ? encodeURIComponent(character) : character))
+    .join('')
+}
+
 function terminalLink(url: string): string {
-  if (!process.stdout.isTTY || !isSafeTerminalLink(url)) return url
+  const sanitizedUrl = encodeTerminalControls(url)
+  if (!process.stdout.isTTY || sanitizedUrl !== url || !isSafeTerminalLink(url)) {
+    return sanitizedUrl
+  }
   return `\u001B]8;;${url}\u0007${styleText(['cyan', 'underline'], url)}\u001B]8;;\u0007`
 }
 

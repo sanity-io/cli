@@ -64,8 +64,8 @@ export type ClaimState = 'claimable' | 'claimed' | 'expired' | 'revoked'
 
 /**
  * Look up claim state via the provision endpoint (rate-limited: ~20/h per IP). Unauthenticated
- * and safe to poll, but reserved for one-time checks like the pre-mint guard. Fails open and
- * falls back to local expiry data.
+ * and safe to poll, but reserved for one-time checks like the pre-mint guard. Returns `undefined`
+ * on uncertainty; callers must not use local expiry data to authorize replacement or cleanup.
  */
 export async function lookupClaimState(
   claimToken: string,

@@ -59,6 +59,9 @@ describe('createFlow output', () => {
     expect(lines.map((line) => stripVTControlCharacters(line).slice(3)).join(' ')).toBe(
       'Claiming keeps everything you built and makes the dataset readable.',
     )
+    expect(lines.every((line) => line.includes('\u001B[36m') && line.endsWith('\u001B[39m'))).toBe(
+      true,
+    )
   })
 
   test('keeps a long claim URL intact on one standalone TTY line', () => {
@@ -74,6 +77,17 @@ describe('createFlow output', () => {
     expect(lines[0]).toContain('\u001B]8;;')
   })
 
+  test('wraps by terminal cell width without splitting long words', () => {
+    setStdout(true, 10)
+    const lines: string[] = []
+    const flow = createFlow((line = '') => lines.push(stripVTControlCharacters(line)))
+
+    flow.line('界界界 a')
+    flow.line('unbreakable')
+
+    expect(lines).toEqual(['│  界界界', '│  a', '│  unbreakable'])
+  })
+
   test('prints a bare claim URL without control bytes when stdout is not a TTY', () => {
     setStdout(false, 20)
     const lines: string[] = []
@@ -83,6 +97,21 @@ describe('createFlow output', () => {
 
     expect(lines).toEqual([`│  ${url}`])
     expect(lines[0]).toBe(stripVTControlCharacters(lines[0]))
+  })
+
+  test.each([
+    ['TTY', true],
+    ['non-TTY', false],
+  ])('sanitizes ESC, BEL, and C1 controls in %s link output', (_, isTTY) => {
+    setStdout(isTTY, 80)
+    const lines: string[] = []
+    const unsafeUrl = 'https://www.sanity.io/manage/claim/\u001B\u0007\u009Csecret'
+    const sanitizedUrl = 'https://www.sanity.io/manage/claim/%1B%07%C2%9Csecret'
+
+    createFlow((line = '') => lines.push(line)).link(unsafeUrl)
+
+    expect(lines[0].slice(lines[0].indexOf('  ') + 2)).toBe(sanitizedUrl)
+    expect(lines[0]).not.toContain('\u001B]8;;')
   })
 })
 
