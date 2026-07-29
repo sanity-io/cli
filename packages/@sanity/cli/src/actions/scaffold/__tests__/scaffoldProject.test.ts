@@ -2,12 +2,14 @@ import {mkdirSync, mkdtempSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 
+import {frameworks} from '@vercel/frameworks'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   existingScaffoldEnvFiles,
   FRONTEND_DIR,
   FRONTEND_ENV_FILE,
+  FRONTEND_ENV_PREFIX_OVERRIDES,
   scaffoldProject,
   STUDIO_DIR,
   STUDIO_ENV_FILE,
@@ -85,6 +87,7 @@ describe('scaffoldProject', () => {
     expect(result.studioPath).toBe(path.join(workDir, STUDIO_DIR))
     expect(result.frontendPath).toBe(path.join(workDir, FRONTEND_DIR))
     expect(result.frontendPackageManager).toBe('npm')
+    expect(result.frontendEnvPrefix).toBe('NEXT_PUBLIC_')
     expect(result.detectedFramework).toBeUndefined()
     expect(result.warnings).toEqual([])
     expect(mockCreateFrontend).toHaveBeenCalledWith(
@@ -154,13 +157,18 @@ describe('scaffoldProject', () => {
   })
 
   test('leaves an existing app alone but still scaffolds the Studio beside it', async () => {
-    mockDetectFrameworkRecord.mockResolvedValue({name: 'Next.js', slug: 'nextjs'})
+    mockDetectFrameworkRecord.mockResolvedValue({
+      envPrefix: 'NEXT_PUBLIC_',
+      name: 'Next.js',
+      slug: 'nextjs',
+    })
 
     const result = await scaffoldProject(args)
 
     expect(mockCreateFrontend).not.toHaveBeenCalled()
     expect(mockInitStudio).toHaveBeenCalled()
     expect(result.detectedFramework).toBe('Next.js')
+    expect(result.frontendEnvPrefix).toBe('NEXT_PUBLIC_')
     expect(result.frontendPath).toBeUndefined()
     expect(result.frontendEnv).toEqual({
       NEXT_PUBLIC_SANITY_DATASET: 'production',
@@ -170,12 +178,59 @@ describe('scaffoldProject', () => {
   })
 
   test('a framework that is not Next.js also keeps the frontend untouched', async () => {
-    mockDetectFrameworkRecord.mockResolvedValue({name: 'Astro', slug: 'astro'})
+    mockDetectFrameworkRecord.mockResolvedValue({
+      envPrefix: 'PUBLIC_',
+      name: 'Astro',
+      slug: 'astro',
+    })
 
     const result = await scaffoldProject(args)
 
     expect(mockCreateFrontend).not.toHaveBeenCalled()
     expect(result.detectedFramework).toBe('Astro')
+  })
+
+  test.each([
+    ['Astro', 'astro', 'PUBLIC_', 'PUBLIC_'],
+    ['Vite', 'vite', 'VITE_', 'VITE_'],
+    ['Nuxt', 'nuxtjs', 'NUXT_ENV_', 'NUXT_PUBLIC_'],
+    ['SvelteKit', 'sveltekit-1', undefined, 'PUBLIC_'],
+    ['Next.js', 'nextjs', 'NEXT_PUBLIC_', 'NEXT_PUBLIC_'],
+  ] as const)(
+    'uses the resolved public prefix for detected %s apps',
+    async (name, slug, envPrefix, expectedPrefix) => {
+      mockDetectFrameworkRecord.mockResolvedValue({envPrefix, name, slug})
+
+      const result = await scaffoldProject(args)
+
+      expect(result.frontendEnvPrefix).toBe(expectedPrefix)
+      expect(result.frontendEnv).toEqual({
+        [`${expectedPrefix}SANITY_DATASET`]: 'production',
+        [`${expectedPrefix}SANITY_PROJECT_ID`]: 'abc123',
+      })
+    },
+  )
+
+  test('uses an explicit Next.js fallback payload when the detected prefix is unknown', async () => {
+    mockDetectFrameworkRecord.mockResolvedValue({name: 'Mystery', slug: 'mystery'})
+
+    const result = await scaffoldProject(args)
+
+    expect(result.frontendEnvPrefix).toBeUndefined()
+    expect(result.frontendEnv).toEqual({
+      NEXT_PUBLIC_SANITY_DATASET: 'production',
+      NEXT_PUBLIC_SANITY_PROJECT_ID: 'abc123',
+    })
+  })
+
+  test('keeps prefix override keys aligned with installed framework slugs', () => {
+    const dependencySlugs: ReadonlySet<string> = new Set(
+      frameworks.flatMap((framework) => (framework.slug ? [framework.slug] : [])),
+    )
+
+    expect(
+      Object.keys(FRONTEND_ENV_PREFIX_OVERRIDES).every((slug) => dependencySlugs.has(slug)),
+    ).toBe(true)
   })
 
   test('keeps the Studio when the frontend scaffold fails, and reports it', async () => {

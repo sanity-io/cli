@@ -24,6 +24,13 @@ const debug = subdebug('scaffold')
 export const STUDIO_DIR = 'sanity'
 export const FRONTEND_DIR = 'web'
 
+const NEXTJS_ENV_PREFIX = 'NEXT_PUBLIC_'
+
+export const FRONTEND_ENV_PREFIX_OVERRIDES = {
+  nuxtjs: 'NUXT_PUBLIC_',
+  'sveltekit-1': 'PUBLIC_',
+} as const satisfies Record<string, string>
+
 const STUDIO_PACKAGE_NAME = 'sanity-studio'
 
 const STUDIO_PACKAGE_MANAGERS = new Set<PackageManager>(['npm', 'pnpm', 'yarn'])
@@ -53,8 +60,27 @@ export interface ScaffoldResult {
   warnings: string[]
 
   detectedFramework?: string
+
+  frontendEnvPrefix?: string
   frontendPackageManager?: PackageManager
   frontendPath?: string
+}
+
+function resolveFrontendEnvPrefix(detected: Framework): string | undefined {
+  const override =
+    FRONTEND_ENV_PREFIX_OVERRIDES[detected.slug as keyof typeof FRONTEND_ENV_PREFIX_OVERRIDES]
+  return (override ?? detected.envPrefix?.trim()) || undefined
+}
+
+function createFrontendEnv(
+  dataset: string,
+  projectId: string,
+  prefix: string,
+): Record<string, string> {
+  return {
+    [`${prefix}SANITY_DATASET`]: dataset,
+    [`${prefix}SANITY_PROJECT_ID`]: projectId,
+  }
 }
 
 // The token goes to `.env.local`, never `.env`: the scaffolded `.gitignore` covers `*.local` only.
@@ -153,16 +179,15 @@ export async function scaffoldProject({
     )
   }
 
-  const frontendEnv = {
-    NEXT_PUBLIC_SANITY_DATASET: dataset,
-    NEXT_PUBLIC_SANITY_PROJECT_ID: projectId,
-  }
+  const frontendEnvPrefix = detected ? resolveFrontendEnvPrefix(detected) : NEXTJS_ENV_PREFIX
+  const frontendEnv = createFrontendEnv(dataset, projectId, frontendEnvPrefix ?? NEXTJS_ENV_PREFIX)
 
   if (detected) {
     debug('Detected %s in %s, leaving the frontend alone', detected.name, workDir)
     return {
       detectedFramework: detected.name,
       frontendEnv,
+      frontendEnvPrefix,
       frontendEnvWritten: false,
       studioPath,
       warnings,
@@ -184,7 +209,13 @@ export async function scaffoldProject({
         `${err.message}. Scaffold it with \`${frontendScaffoldCommand(FRONTEND_DIR)}\`, ` +
           'then add the env values below.',
       )
-      return {frontendEnv, frontendEnvWritten: false, studioPath, warnings}
+      return {
+        frontendEnv,
+        frontendEnvPrefix,
+        frontendEnvWritten: false,
+        studioPath,
+        warnings,
+      }
     }
     throw err
   }
@@ -216,6 +247,7 @@ export async function scaffoldProject({
 
   return {
     frontendEnv,
+    frontendEnvPrefix,
     frontendEnvWritten,
     frontendPackageManager: resolvedPackageManager,
     frontendPath,
