@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.7.1](https://github.com/sanity-io/cli/compare/cli-core-v2.7.0...cli-core-v2.7.1)
+
+_2026-07-29_
+
+### Bug Fixes
+
+- Stricter context for cli invoke ([#1618](https://github.com/sanity-io/cli/pull/1618)) ([f857468](https://github.com/sanity-io/cli/commit/f85746877a7913bbab5c7cf43c4d6dbacd09504e))
+
 ## [2.7.0](https://github.com/sanity-io/cli/compare/cli-core-v2.6.0...cli-core-v2.7.0)
 
 _2026-07-29_
