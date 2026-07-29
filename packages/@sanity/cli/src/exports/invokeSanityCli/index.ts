@@ -34,6 +34,7 @@ import {
   isConditionalInvocationPolicy,
 } from './commandPolicies/policy.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
+import {prettyPrintError} from './prettyPrintError.js'
 
 /**
  * Load the oclif `Config` for this package, needed to resolve, load, and run
@@ -239,7 +240,7 @@ export async function invokeSanityCli({
       return {exitCode: exitCodes.SUCCESS, output: output.join('\n')}
     }
 
-    const message = err instanceof Error ? err.message : String(err)
+    const message = prettyPrintError(err) || String(err)
     if (message) output.push(message)
     return {
       exitCode: typeof exit === 'number' ? exit : exitCodes.RUNTIME_ERROR,
