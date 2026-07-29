@@ -205,7 +205,20 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     // Guard against the same nearest credential boundary used by CLI authentication, but keep
     // first-mint writes rooted at the invocation directory.
     const envPath = path.join(cwd, '.env')
-    const guardEnvPath = findMintedProjectEnvBoundary(cwd)?.envPath ?? envPath
+    let guardEnvPath: string
+    try {
+      guardEnvPath = findMintedProjectEnvBoundary(cwd)?.envPath ?? envPath
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      throw new CLIError(
+        `Could not inspect the Sanity credential boundary: ${detail}. ` +
+          'Ensure ancestor .env files are readable regular files, then re-run.',
+        {
+          code: 'CREDENTIAL_BOUNDARY_INSPECTION_FAILED',
+          exit: exitCodes.RUNTIME_ERROR,
+        },
+      )
+    }
     const guard: GuardResult = await this.guardExistingProject(guardEnvPath, invoked)
     const guardDirectory = path.dirname(guardEnvPath)
     const guardIsCurrentDirectory = path.resolve(guardDirectory) === path.resolve(cwd)

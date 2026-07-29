@@ -5,6 +5,7 @@ import path from 'node:path'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {NewCommand} from '../../new.js'
 import {MintProjectCommand} from '../mint.js'
 
 // The blank-placeholder refusal exists because line presence (the writer's definition of
@@ -119,6 +120,25 @@ describe('#projects:mint blank .env placeholders (real env helpers)', () => {
     expect(err.suggestions?.join('\n')).not.toContain('in a different directory')
     expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
     expect(fs.existsSync(path.join(descendant, '.env'))).toBe(false)
+  })
+
+  test('sanity new reports an actionable error when an ancestor credential boundary is unreadable', async () => {
+    const descendant = path.join(dir, 'web')
+    fs.mkdirSync(descendant)
+    fs.mkdirSync(envPath)
+    cwdSpy.mockReturnValue(descendant)
+
+    const err = await NewCommand.run(['My New Project']).then(
+      () => undefined,
+      (thrown: unknown) => thrown,
+    )
+
+    expect(err).toBeInstanceOf(Error)
+    const cliError = err as Error & {code?: string}
+    expect(cliError.code).toBe('CREDENTIAL_BOUNDARY_INSPECTION_FAILED')
+    expect(cliError.message).toContain('Could not inspect the Sanity credential boundary')
+    expect(cliError.message).toContain('Ensure ancestor .env files are readable regular files')
+    expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
   })
 
   test('claimed-project cleanup names the ancestor token files from a descendant', async () => {
