@@ -28,7 +28,20 @@ Each entry holds the metafield's `namespace`, `key`, Shopify `type` and `value`:
 }
 ```
 
-Values arrive deserialized, so `value` holds whatever the metafield's Shopify type implies — a string, number, boolean, list or JSON object. Because no single Sanity field type covers all of those, `value` isn't declared on the `shopifyMetafield` schema type; `/components/inputs/ShopifyMetafield.tsx` reads it from the raw value and renders it as text instead.
+Values arrive deserialized, so `value` holds whatever the metafield's Shopify type implies — a string, number, boolean, list or JSON object. Because no single Sanity field type covers all of those, `value` isn't declared on the `shopifyMetafield` schema type; `/components/inputs/ShopifyMetafield.tsx` reads it from the raw value instead.
+
+`/utils/formatMetafieldValue.ts` formats it using the metafield's `type`:
+
+| Metafield type                  | Synced value                                   | Displayed as                    |
+| ------------------------------- | ---------------------------------------------- | ------------------------------- |
+| `dimension`, `weight`, `volume` | `{"value": 180, "unit": "CENTIMETERS"}`        | `180 cm`                        |
+| `money`                         | `{"amount": "649.00", "currency_code": "USD"}` | `649.00 USD`                    |
+| `rating`                        | `{"value": "4.7", "scale_max": "5.0"}`         | `4.7 / 5.0`                     |
+| `list.*`                        | `["Poplar core", "Carbon stringers"]`          | `Poplar core, Carbon stringers` |
+| `json`, `rich_text_field`       | `{"camber": "hybrid"}`                         | indented JSON                   |
+| everything else                 | `"Advanced"`, `7`, `true`                      | as-is                           |
+
+Measurement units not in the map are shown unchanged rather than guessed at, matching how the importer normalizes them. Dates keep their synced ISO form so they stay unambiguous.
 
 Metafields are read-only in the Studio and the whole array is replaced on every sync, so any edits you make here are overwritten. Variant metafields and metaobjects aren't synced.
 

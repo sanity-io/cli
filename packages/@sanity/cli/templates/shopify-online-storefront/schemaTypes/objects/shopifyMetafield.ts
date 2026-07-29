@@ -43,7 +43,7 @@ export default defineType({
     },
     prepare({key, namespace, type, value}) {
       return {
-        subtitle: formatMetafieldValuePreview(value) || type,
+        subtitle: formatMetafieldValuePreview(type, value) || type,
         title: [namespace, key].filter(Boolean).join('.'),
       }
     },

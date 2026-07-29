@@ -15,12 +15,15 @@ type Metafield = {
  *
  * `value` is deliberately not declared as a field on the `shopifyMetafield` schema type: its shape
  * depends on the Shopify metafield type and Sanity has no field type that accepts every variant. We
- * read it off the raw object value instead and render it as text.
+ * read it off the raw object value instead and format it according to the metafield's type.
  */
 const ShopifyMetafield = (props: ObjectInputProps) => {
   const {namespace, key, type, value} = (props.value || {}) as Metafield
 
-  const formattedValue = formatMetafieldValue(value)
+  const formattedValue = formatMetafieldValue(type, value)
+  // Only `json` and `rich_text_field` values keep their line breaks; everything else formats to a
+  // single line and reads better as plain text.
+  const isMultiline = formattedValue.includes('\n')
 
   return (
     <Card padding={3} radius={2} shadow={1} tone="transparent">
@@ -40,7 +43,11 @@ const ShopifyMetafield = (props: ObjectInputProps) => {
         </Flex>
         {formattedValue ? (
           <Box overflow="auto">
-            <Code size={1}>{formattedValue}</Code>
+            {isMultiline ? (
+              <Code size={1}>{formattedValue}</Code>
+            ) : (
+              <Text size={1}>{formattedValue}</Text>
+            )}
           </Box>
         ) : (
           <Text muted size={1}>
