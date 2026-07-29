@@ -1,4 +1,5 @@
 import {getUserConfig} from '@sanity/cli-core'
+import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {mockApi} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -23,13 +24,14 @@ function createInMemoryConfigStore() {
 const testConfigStore = createInMemoryConfigStore()
 
 const mockGetCliToken = vi.hoisted(() => vi.fn<() => Promise<string | undefined>>())
+const mockGetUserConfig = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
     getCliToken: mockGetCliToken,
-    getUserConfig: vi.fn(() => testConfigStore),
+    getUserConfig: mockGetUserConfig,
   }
 })
 
@@ -60,6 +62,7 @@ describe('#fetchTelemetryConsent', () => {
   beforeEach(() => {
     testConfigStore.clear()
     mockGetCliToken.mockResolvedValue('test-token')
+    mockGetUserConfig.mockReturnValue(testConfigStore)
   })
 
   afterEach(() => {
@@ -75,6 +78,21 @@ describe('#fetchTelemetryConsent', () => {
     const consent = await fetchTelemetryConsent()
 
     expect(consent).toEqual({status: 'granted'})
+  })
+
+  test('bypasses the host config cache under an execution context', async () => {
+    mockApi({
+      apiVersion: TELEMETRY_API_VERSION,
+      query: {tag: 'sanity.cli.telemetry-consent'},
+      uri: '/intake/telemetry-status',
+    }).reply(200, {status: 'granted'})
+
+    const consent = await runWithCliExecutionContext({token: 'context-token'}, () =>
+      fetchTelemetryConsent(),
+    )
+
+    expect(consent).toEqual({status: 'granted'})
+    expect(mockGetUserConfig).not.toHaveBeenCalled()
   })
 
   test('should cache consent under a token-scoped key', async () => {

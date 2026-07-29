@@ -6,6 +6,7 @@ import {
   SanityCommand,
   subdebug,
 } from '@sanity/cli-core'
+import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -54,7 +55,6 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     }),
     'api-version': Flags.string({
       description: `API version to use (defaults to ${DOCUMENTS_API_VERSION})`,
-      env: 'SANITY_CLI_QUERY_API_VERSION',
     }),
     pretty: Flags.boolean({
       default: false,
@@ -91,9 +91,12 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     }
 
     const targetDataset = dataset || cliConfig.api?.dataset
-    const targetApiVersion = apiVersion || DOCUMENTS_API_VERSION
+    const configuredApiVersion =
+      apiVersion ??
+      (getCliExecutionContext() ? undefined : process.env.SANITY_CLI_QUERY_API_VERSION)
+    const targetApiVersion = configuredApiVersion || DOCUMENTS_API_VERSION
 
-    if (!apiVersion) {
+    if (!configuredApiVersion) {
       this.warn(`--api-version not specified, using \`${DOCUMENTS_API_VERSION}\``)
     }
 
