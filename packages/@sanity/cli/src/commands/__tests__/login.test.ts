@@ -11,6 +11,7 @@ import {LOGIN_PROVIDER_IDS} from '../../actions/auth/login/loginInstructions.js'
 import {AUTH_API_VERSION} from '../../services/auth.js'
 import {USERS_API_VERSION} from '../../services/user.js'
 import {canLaunchBrowser} from '../../util/canLaunchBrowser.js'
+import {TOKEN_ENV_FILES} from '../../util/envFile.js'
 import {LoginCommand} from '../login.js'
 
 // Hoisted mocks for user prompts
@@ -552,6 +553,7 @@ describe('#login', {timeout: 10_000}, () => {
       expect(stdout).toContain('Login successful')
       expect(stderr).toContain('SANITY_AUTH_TOKEN is set in the environment')
       expect(stderr).toContain('It outranks this login session')
+      expect(stderr.replaceAll(/\s*›\s*/g, ' ').replaceAll(/\s+/g, ' ')).toContain(TOKEN_ENV_FILES)
     })
 
     test('warns when the resolver reports a known unclaimed minted-project credential', async () => {

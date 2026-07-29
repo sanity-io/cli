@@ -79,10 +79,9 @@ vi.mock('../../auth/login/login.js', () => ({
   login: mockLogin,
 }))
 
-vi.mock('../../../util/envFile.js', () => ({
-  GUARDED_ENV_KEYS: ['SANITY_AUTH_TOKEN', 'SANITY_PROJECT_ID', 'SANITY_CLAIM_URL'],
+vi.mock('../../../util/envFile.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../util/envFile.js')>()),
   inspectEnvKeys: mockInspectEnvKeys,
-  TOKEN_ENV_FILES: './.env, or sanity/.env.local in a scaffolded project',
 }))
 
 vi.mock('../../../util/claimNudges.js', () => ({

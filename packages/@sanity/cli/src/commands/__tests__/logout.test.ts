@@ -4,6 +4,7 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {AUTH_API_VERSION} from '../../services/auth.js'
+import {TOKEN_ENV_FILES} from '../../util/envFile.js'
 import {LogoutCommand} from '../logout.js'
 
 const mockConfigStoreDelete = vi.hoisted(() => vi.fn())
@@ -103,6 +104,7 @@ describe('#logout', () => {
 
     expect(error).toBeUndefined()
     expect(stderr).toContain('SANITY_AUTH_TOKEN is set in the environment')
+    expect(stderr.replaceAll(/\s*›\s*/g, ' ').replaceAll(/\s+/g, ' ')).toContain(TOKEN_ENV_FILES)
     // oclif wraps warnings, so assert a fragment that fits on one wrapped line.
     expect(stderr).toContain('Remove that variable')
     expect(stdout).not.toContain('No login credentials found')

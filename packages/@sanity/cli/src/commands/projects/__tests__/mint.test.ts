@@ -1,6 +1,10 @@
+import {stripVTControlCharacters} from 'node:util'
+
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {CLAIM_WINDOW_HOURS} from '../../../services/mintProject.js'
+import {TOKEN_ENV_FILES} from '../../../util/envFile.js'
 import {NewCommand} from '../../new.js'
 import {MintProjectCommand} from '../mint.js'
 
@@ -32,7 +36,8 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
     }),
   }
 })
-vi.mock('../../../services/mintProject.js', () => ({
+vi.mock('../../../services/mintProject.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../services/mintProject.js')>()),
   lookupClaimState: mockLookupClaimState,
   mintUnclaimedProject: mockMintUnclaimedProject,
 }))
@@ -103,6 +108,17 @@ function loggedLines(): string {
   return vi.mocked(mocks.SanityCmdOutput.log).mock.calls.flat().join('\n')
 }
 
+function loggedCalls(): string[] {
+  return vi.mocked(mocks.SanityCmdOutput.log).mock.calls.map((call) => call.join(' '))
+}
+
+const {columns: originalStdoutColumns, isTTY: originalStdoutIsTTY} = process.stdout
+
+function setStdout(isTTY: boolean, columns: number): void {
+  Object.defineProperty(process.stdout, 'isTTY', {configurable: true, value: isTTY})
+  Object.defineProperty(process.stdout, 'columns', {configurable: true, value: columns})
+}
+
 beforeEach(() => {
   mockMintUnclaimedProject.mockResolvedValue(mockMinted)
   mockLookupClaimState.mockResolvedValue(undefined)
@@ -134,6 +150,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
+  setStdout(originalStdoutIsTTY as boolean, originalStdoutColumns as number)
   // oclif's catch sets process.exitCode when a command throws (in JSON mode it swallows the
   // error after printing the structured payload) — reset so tests never leak a failing code.
   process.exitCode = undefined
@@ -152,25 +169,95 @@ describe('#projects:mint', () => {
     // The splash renders first: squiggle art alone, no links.
     expect(lines).toContain('@@@@')
     expect(lines).not.toContain('https://sanity.io/learn')
-    expect(lines).toContain("Let's get you set up with a Sanity project.")
+    expect(lines).toContain('Setting up your Sanity project.')
     // The --yes hint is redundant when the run is already non-interactive.
     expect(lines).not.toContain('--yes')
     expect(lines).toContain(mockMinted.resourceId)
     expect(lines).toContain(mockMinted.datasetName)
     expect(lines).toContain(mockMinted.claimUrl)
-    expect(lines).toContain(mockMinted.expiresAt)
     // Without a TTY the spinner degrades to plain rail lines through the same log sink.
     expect(lines).toContain('Minting your project...')
-    expect(lines).toContain('Project minted')
+    expect(lines).toContain('Created "My New Project"')
     // Direct claim messaging: exact deadline, deletion consequence, and the agent handoff.
-    expect(lines).toContain('You must claim this project within 72 hours')
-    expect(lines).toContain('or your project will be deleted')
-    expect(lines).toContain("Project credentials keep working after you've claimed")
-    expect(lines).toContain('If an agent is running this, surface the full claim URL to the user.')
-    expect(lines).toContain('They need to click this link to claim the project before it expires.')
+    expect(lines).toContain('Claim your project by 18 July 2026, 00:00 UTC')
+    expect(lines).toContain('project and everything in it is permanently deleted at that deadline')
+    expect(lines).toContain('nothing you have built changes')
     expect(lines).toContain(
-      'Tell your agent to fetch https://sanity.new for instructions on what to do next.',
+      'If you are an agent: give this claim URL to the person you are working for.',
     )
+    expect(lines).toContain('They have to open it themselves before the deadline.')
+    expect(lines).toContain('Framework setup and what to do after claiming: https://sanity.new')
+  })
+
+  test('tells one ordered story and repeats the exact claim URL in the outro', async () => {
+    await MintProjectCommand.run(['My New Project'])
+
+    const plain = loggedCalls().map((line) => stripVTControlCharacters(line))
+    const indexOf = (part: string) => plain.findIndex((line) => line.includes(part))
+
+    expect(indexOf('Created "My New Project"')).toBeLessThan(indexOf('Project ID: abc123'))
+    expect(indexOf('Project ID: abc123')).toBeLessThan(
+      indexOf('Dataset: production (where your content lives)'),
+    )
+    expect(indexOf('Dataset: production (where your content lives)')).toBeLessThan(
+      indexOf('Claim your project by 18 July 2026, 00:00 UTC'),
+    )
+    expect(indexOf('Claim your project by 18 July 2026, 00:00 UTC')).toBeLessThan(
+      indexOf(mockMinted.claimUrl),
+    )
+    expect(indexOf(mockMinted.claimUrl)).toBeLessThan(indexOf('Created two folders'))
+    expect(indexOf('Created two folders')).toBeLessThan(indexOf('Your access token is in'))
+    expect(indexOf('Your access token is in')).toBeLessThan(indexOf('https://sanity.new'))
+
+    const claimLines = plain.filter((line) => line.includes(mockMinted.claimUrl))
+    expect(claimLines).toHaveLength(2)
+    expect(claimLines.at(-1)).toContain('Claim your project:')
+
+    const projectIdCall = loggedCalls().findIndex((line) => line.includes('Project ID: abc123'))
+    expect(mockRecordMintedProject.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(mocks.SanityCmdOutput.log).mock.invocationCallOrder[projectIdCall],
+    )
+    const firstClaimCall = loggedCalls().findIndex((line) => line.includes(mockMinted.claimUrl))
+    const firstClaimOrder = vi.mocked(mocks.SanityCmdOutput.log).mock.invocationCallOrder[
+      firstClaimCall
+    ]
+    expect(firstClaimOrder).toBeLessThan(mockAppendEnvValues.mock.invocationCallOrder[0])
+    expect(firstClaimOrder).toBeLessThan(mockScaffoldProject.mock.invocationCallOrder[0])
+  })
+
+  test.each([80, 32])(
+    'wraps prose with rails at %i columns without breaking the claim credential',
+    async (columns) => {
+      setStdout(true, columns)
+      const claimUrl = `https://www.sanity.io/manage/claim/${'copy-safe-secret'.repeat(8)}`
+      mockMintUnclaimedProject.mockResolvedValue({...mockMinted, claimUrl})
+
+      await MintProjectCommand.run(['My New Project', '--no-scaffold'])
+
+      const physicalLines = loggedCalls()
+        .flatMap((line) => line.split('\n'))
+        .map((line) => stripVTControlCharacters(line))
+      const claimLines = physicalLines.filter((line) => line.includes(claimUrl))
+      expect(claimLines).toHaveLength(2)
+      expect(claimLines.every((line) => line.includes(claimUrl))).toBe(true)
+      expect(claimLines.every((line) => !line.includes('\n'))).toBe(true)
+
+      const railedProse = physicalLines.filter(
+        (line) => /^[┌│◇◆●└] {2}/.test(line) && !line.includes(claimUrl),
+      )
+      expect(railedProse.length).toBeGreaterThan(0)
+      expect(railedProse.every((line) => line.length <= columns)).toBe(true)
+    },
+  )
+
+  test('prints claim credentials without OSC 8 bytes when stdout is not a TTY', async () => {
+    setStdout(false, 80)
+
+    await MintProjectCommand.run(['My New Project', '--no-scaffold'])
+
+    const claimLines = loggedCalls().filter((line) => line.includes(mockMinted.claimUrl))
+    expect(claimLines).toHaveLength(2)
+    expect(claimLines.every((line) => !line.includes('\u001B]8;;'))).toBe(true)
   })
 
   test('appends credentials and claim context to .env in a fresh directory', async () => {
@@ -187,9 +274,7 @@ describe('#projects:mint', () => {
         banner: expect.arrayContaining([expect.stringContaining(mockMinted.claimUrl)]),
       }),
     )
-    expect(loggedLines()).toContain(
-      'Saved credentials to ./.env as SANITY_AUTH_TOKEN, SANITY_DATASET, SANITY_PROJECT_ID',
-    )
+    expect(loggedLines()).toContain('Your access token is in ./.env and ./sanity/.env.local')
   })
 
   test('gitignores .env after writing it, and says so when it adds the entry', async () => {
@@ -257,9 +342,9 @@ describe('#projects:mint', () => {
     await MintProjectCommand.run(['My New Project'])
 
     const lines = loggedLines()
-    expect(lines).toContain('Saved credentials to ./.env as SANITY_AUTH_TOKEN, SANITY_PROJECT_ID')
     expect(lines).toContain('./.env already has SANITY_DATASET')
     expect(lines).toContain(`SANITY_DATASET="${mockMinted.datasetName}"`)
+    expect(lines).toContain('Your access token is in ./.env and ./sanity/.env.local')
   })
 
   test('blank template leftovers never swallow the token (guard-absent, writer-present)', async () => {
@@ -336,6 +421,10 @@ describe('#projects:mint', () => {
     expect(mockInput).not.toHaveBeenCalled()
     // "No files written" includes the user-config ledger — the caller owns the returned token.
     expect(mockRecordMintedProject).not.toHaveBeenCalled()
+    expect(mockEnsureEnvGitignored).not.toHaveBeenCalled()
+    expect(mockIsEnvTracked).not.toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalled()
   })
 
   test('propagates mint failures', async () => {
@@ -385,7 +474,16 @@ describe('#projects:mint re-mint guardrail', () => {
     mockGetMintedProjectRecord.mockReturnValue(existingRecord)
     mockLookupClaimState.mockResolvedValue({expiresAt: null, state: 'claimed'})
 
-    await expect(MintProjectCommand.run(['My New Project'])).rejects.toThrow(/already been claimed/)
+    const error = await MintProjectCommand.run(['My New Project']).catch(
+      (caught: unknown) => caught,
+    )
+
+    expect(error).toMatchObject({
+      code: 'CLAIMED_PROJECT_IN_ENV',
+      suggestions: expect.arrayContaining([
+        expect.stringContaining(`remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES}`),
+      ]),
+    })
     expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
   })
 
@@ -626,6 +724,7 @@ describe('#projects:mint re-mint guardrail', () => {
     expect(lines).toContain('--force: minting a new project')
     expect(lines).toContain('Update ./.env yourself')
     expect(lines).toContain(`SANITY_AUTH_TOKEN="${mockMinted.token}"`)
+    expect(lines.match(/--force: minting a new project/g)).toHaveLength(1)
   })
 
   test('a shadowed token alone does not block the scaffold', async () => {
@@ -644,6 +743,9 @@ describe('#projects:mint re-mint guardrail', () => {
     expect(lines).not.toContain('Skipping the sanity/ and web/ scaffold')
     expect(lines).toContain('./.env already has SANITY_AUTH_TOKEN')
     expect(lines).toContain(`SANITY_AUTH_TOKEN="${mockMinted.token}"`)
+    expect(lines).toContain('Your access token is in ./sanity/.env.local')
+    expect(lines).toContain('./.env kept its existing token')
+    expect(lines).not.toContain('Your access token is in ./.env and')
   })
 
   test('blank template lines shadow the write, so the scaffold is skipped too', async () => {
@@ -795,12 +897,15 @@ describe('#projects:mint re-mint guardrail', () => {
       }),
     )
     const lines = loggedLines()
-    expect(lines).toContain('Created ./sanity (Studio) and ./web (frontend).')
+    expect(lines).toContain('Created two folders')
+    expect(lines).toContain('./sanity — your Studio, where you write and edit content')
+    expect(lines).toContain('./web — your website, a Next.js app that reads it')
     expect(lines).toContain('cd sanity && npx sanity dev')
     expect(lines).toContain(`http://localhost:3333/#token=${mockMinted.token}`)
-    expect(lines).toContain('to enter the Studio before claiming')
+    expect(lines).toContain('the token in that link signs you in — there is no account yet')
     expect(lines).toContain('cd web && npm run dev')
-    expect(lines).toContain('Your dataset is private until you claim it')
+    expect(lines).toContain('then open http://localhost:3000/')
+    expect(lines).toContain('Your content is private until you claim')
   })
 
   test.each([
@@ -846,6 +951,12 @@ describe('#projects:mint re-mint guardrail', () => {
 
     expect(mockMintUnclaimedProject).toHaveBeenCalled()
     expect(mockScaffoldProject).not.toHaveBeenCalled()
+    const lines = loggedLines()
+    expect(lines).toContain('Project created without scaffolding')
+    expect(lines).toContain('No folders were created')
+    expect(lines).not.toContain('Created two folders')
+    expect(lines).toContain('Your access token is in ./.env')
+    expect(lines).toContain('https://sanity.new')
   })
 
   test('does not scaffold in JSON mode', async () => {
@@ -884,7 +995,8 @@ describe('#projects:mint re-mint guardrail', () => {
     await MintProjectCommand.run(['My New Project'])
 
     const lines = loggedLines()
-    expect(lines).toContain('Found Next.js here, so only ./sanity was created.')
+    expect(lines).toContain('Created ./sanity for your existing Next.js app')
+    expect(lines).toContain('Your existing Next.js frontend was left unchanged.')
     expect(lines).toContain(`http://localhost:3333/#token=${mockMinted.token}`)
     expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
     expect(lines).not.toContain('cd web && npm run dev')
@@ -916,7 +1028,7 @@ describe('#projects:mint re-mint guardrail', () => {
     await MintProjectCommand.run(['My New Project'])
 
     const lines = loggedLines()
-    expect(lines).toContain('Created ./sanity (Studio). The frontend was not created.')
+    expect(lines).toContain('Created ./sanity; the frontend was not created')
     expect(lines).toContain('cd sanity && npx sanity dev')
     expect(lines).toContain(`http://localhost:3333/#token=${mockMinted.token}`)
     expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
@@ -935,7 +1047,7 @@ describe('#projects:mint re-mint guardrail', () => {
     await MintProjectCommand.run(['My New Project'])
 
     const lines = loggedLines()
-    expect(lines).toContain('Created ./sanity (Studio) and ./web (frontend).')
+    expect(lines).toContain('Created two folders')
     expect(lines).toContain("./web/.env.local wasn't written.")
     expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
   })
@@ -961,13 +1073,48 @@ describe('#projects:mint re-mint guardrail', () => {
 
     const lines = loggedLines()
     expect(lines).not.toContain('SANITY_API_READ_TOKEN')
-    expect(lines).toContain('Copy SANITY_AUTH_TOKEN from ./.env')
+    expect(lines).toContain('Your access token is in ./.env and ./sanity/.env.local')
+    expect(lines).toContain(
+      'The token can read and change everything in this project. Never copy it into code that runs in a browser.',
+    )
   })
 
-  test('names the right public prefix convention for a non-Next framework', async () => {
+  test.each([
+    ['Astro', 'PUBLIC_'],
+    ['Vite', 'VITE_'],
+    ['Nuxt', 'NUXT_PUBLIC_'],
+    ['SvelteKit', 'PUBLIC_'],
+    ['Next.js', 'NEXT_PUBLIC_'],
+  ] as const)(
+    'prints framework-correct environment values for detected %s apps',
+    async (detectedFramework, frontendEnvPrefix) => {
+      mockScaffoldProject.mockResolvedValue({
+        detectedFramework,
+        frontendEnv: {
+          [`${frontendEnvPrefix}SANITY_DATASET`]: mockMinted.datasetName,
+          [`${frontendEnvPrefix}SANITY_PROJECT_ID`]: mockMinted.resourceId,
+        },
+        frontendEnvPrefix,
+        frontendEnvWritten: false,
+        studioPath: '/tmp/project/sanity',
+        warnings: [],
+      })
+
+      await MintProjectCommand.run(['My New Project'])
+
+      const lines = loggedLines()
+      expect(lines).toContain(`Created ./sanity for your existing ${detectedFramework} app`)
+      expect(lines).toContain(`${frontendEnvPrefix}SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
+      expect(lines).not.toContain('fallback values')
+      expect(lines).not.toContain('Next.js convention')
+    },
+  )
+
+  test('labels Next.js-shaped values as a fallback when the public prefix is unknown', async () => {
     mockScaffoldProject.mockResolvedValue({
-      detectedFramework: 'Astro',
+      detectedFramework: 'Mystery',
       frontendEnv: {NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId},
+      frontendEnvPrefix: undefined,
       frontendEnvWritten: false,
       studioPath: '/tmp/project/sanity',
       warnings: [],
@@ -976,22 +1123,9 @@ describe('#projects:mint re-mint guardrail', () => {
     await MintProjectCommand.run(['My New Project'])
 
     const lines = loggedLines()
-    expect(lines).toContain('Found Astro here, so only ./sanity was created.')
-    expect(lines).toContain('Those names follow the Next.js convention.')
-  })
-
-  test('does not add the prefix caveat when the detected framework is Next.js', async () => {
-    mockScaffoldProject.mockResolvedValue({
-      detectedFramework: 'Next.js',
-      frontendEnv: {NEXT_PUBLIC_SANITY_PROJECT_ID: mockMinted.resourceId},
-      frontendEnvWritten: false,
-      studioPath: '/tmp/project/sanity',
-      warnings: [],
-    })
-
-    await MintProjectCommand.run(['My New Project'])
-
-    expect(loggedLines()).not.toContain('follow the Next.js convention')
+    expect(lines).toContain(`NEXT_PUBLIC_SANITY_PROJECT_ID="${mockMinted.resourceId}"`)
+    expect(lines).toContain('These fallback values use NEXT_PUBLIC_')
+    expect(lines).toContain('Translate that public prefix for Mystery')
   })
 
   test('a scaffold failure never reads as a mint failure', async () => {
@@ -1051,5 +1185,65 @@ describe('#new', () => {
   test('does not inherit the parent hidden aliases', () => {
     expect(MintProjectCommand.hiddenAliases).toEqual(['project:mint'])
     expect(NewCommand.hiddenAliases).toEqual([])
+  })
+
+  test('has newcomer help that describes creation without inheriting mint terminology', () => {
+    const help = [
+      NewCommand.description,
+      ...NewCommand.examples.map((example) =>
+        typeof example === 'string' ? example : `${example.command}\n${example.description}`,
+      ),
+      NewCommand.flags.scaffold.description,
+    ].join('\n')
+
+    expect(help).toContain('Create a Sanity project without an account')
+    expect(help).toContain('./sanity')
+    expect(help).toContain('Studio')
+    expect(help).toContain('edit content')
+    expect(help).toContain('./web')
+    expect(help).toContain('Next.js')
+    expect(help).toContain('--no-scaffold')
+    expect(help).toContain(`${CLAIM_WINDOW_HOURS} hours`)
+    expect(help).toContain('free')
+    expect(help).toContain('permanently deleted')
+    expect(help).toContain('claim link')
+    expect(help).toContain('access token')
+    expect(help).toContain('.env')
+    expect(help).toContain('gitignored')
+    expect(help).toContain('browser code')
+    expect(help).toContain('https://sanity.new')
+    expect(help).not.toMatch(/\bmint(?:ed|ing)?\b/i)
+  })
+})
+
+describe('#projects:mint help', () => {
+  test('documents the technical scaffold, credential, claim, and JSON contracts', () => {
+    const help = [
+      MintProjectCommand.description,
+      MintProjectCommand.flags.scaffold.description,
+    ].join('\n')
+
+    expect(help).toContain('./sanity')
+    expect(help).toContain('./web')
+    expect(help).toContain('Studio')
+    expect(help).toContain('Next.js')
+    expect(help).toContain('--no-scaffold')
+    expect(help).toContain('./.env')
+    expect(help).toContain('local ledger')
+    expect(help).toContain('--project-id')
+    expect(help).toContain('--json')
+    expect(help).toContain('writes no files')
+    expect(help).toContain('permanently deleted')
+    expect(help).toContain('single-use')
+    expect(help).toContain('If you are an agent')
+    expect(help).toContain('full content access')
+    expect(help).toContain('server-side')
+    expect(help).toContain('public')
+    expect(help).toContain('sanity login')
+    expect(help).toContain('remove SANITY_AUTH_TOKEN')
+    expect(help).toContain(TOKEN_ENV_FILES)
+    expect(help).toContain('https://sanity.new')
+    expect(help).not.toContain('NEXT_PUBLIC_')
+    expect(help).not.toContain('SANITY_STUDIO_')
   })
 })

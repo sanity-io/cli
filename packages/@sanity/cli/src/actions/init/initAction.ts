@@ -20,6 +20,7 @@ import {detectFrameworkRecord} from '../../util/detectFramework.js'
 import {GUARDED_ENV_KEYS, inspectEnvKeys} from '../../util/envFile.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
+import {CLAIM_WINDOW_HOURS, SANITY_NEW_URL} from '../../util/mintProjectConstants.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
 import {getProviderName, getUserDisplayName} from '../auth/getProviderName.js'
 import {login} from '../auth/login/login.js'
@@ -431,8 +432,8 @@ async function ensureAuthenticated(
       message =
         'Not logged in. Run `sanity login` to authenticate, then re-run this command. ' +
         'To create a project without logging in, run `sanity new` (use --json for ' +
-        'machine-readable output) and claim it with a Sanity account within 72 hours to keep it. ' +
-        'Fetch https://sanity.new to learn more.'
+        `machine-readable output) and claim it with a Sanity account within ${CLAIM_WINDOW_HOURS} hours to keep it. ` +
+        `Fetch ${SANITY_NEW_URL} to learn more.`
     }
     throw new InitError(message, exitCodes.RUNTIME_ERROR)
   }

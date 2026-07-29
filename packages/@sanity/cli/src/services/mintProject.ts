@@ -7,6 +7,8 @@ const debug = subdebug('projects:mint')
 /** Provision API version — see the unauthenticated mint-and-claim endpoint. */
 export const PROVISION_API_VERSION = 'v2026-06-23'
 
+export {CLAIM_WINDOW_HOURS} from '../util/mintProjectConstants.js'
+
 // The claim-state lookups branch on status codes (404/401 are meaningful answers, not failures),
 // so non-2xx responses must be returned rather than thrown.
 const request = createRequester({middleware: {httpErrors: false, promise: {onlyBody: false}}})
@@ -153,7 +155,7 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
     )
   }
   if (response.statusCode === 429) {
-    throw new Error('Mint rate limit reached for this machine. Try again in an hour.')
+    throw new Error('Mint rate limit reached for this machine. Try again later.')
   }
   if (!isOk(response.statusCode)) {
     const body = typeof response.body === 'string' ? response.body : ''

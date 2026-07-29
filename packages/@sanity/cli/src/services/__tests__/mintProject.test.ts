@@ -105,7 +105,7 @@ describe('#mintUnclaimedProject', () => {
     mockRequest.mockResolvedValue({body: '', headers: {}, statusCode: 429})
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
-      'Mint rate limit reached for this machine. Try again in an hour.',
+      'Mint rate limit reached for this machine. Try again later.',
     )
   })
 

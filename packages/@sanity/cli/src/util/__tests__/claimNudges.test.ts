@@ -1,7 +1,7 @@
 import {getUserConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {lookupClaimStateViaProject} from '../../services/mintProject.js'
+import {CLAIM_WINDOW_HOURS, lookupClaimStateViaProject} from '../../services/mintProject.js'
 import {
   forgetMintedProject,
   recordMintedProject,
@@ -9,6 +9,7 @@ import {
   UNCLAIMED_PROJECTS_CONFIG_KEY,
   type UnclaimedProjectRecord,
 } from '../claimNudges.js'
+import {TOKEN_ENV_FILES} from '../envFile.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const actual = await importOriginal()
@@ -17,7 +18,8 @@ vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
     getUserConfig: vi.fn(),
   }
 })
-vi.mock('../../services/mintProject.js', () => ({
+vi.mock('../../services/mintProject.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/mintProject.js')>()),
   lookupClaimStateViaProject: vi.fn(),
 }))
 
@@ -159,8 +161,10 @@ describe('#runClaimNudges', () => {
     )
     expect(first).toContain('https://www.sanity.io/claim/some-token')
     expect(first).toContain('permanently deleted at')
-    expect(first).toContain('If an agent is running this, surface the full claim URL to the user.')
-    expect(first).toContain('They need to click this link to claim the project before it expires.')
+    expect(first).toContain(
+      'If you are an agent: give this claim URL to the person you are working for.',
+    )
+    expect(first).toContain('They have to open it themselves before the deadline.')
     expect(first).not.toContain('╭') // compact lines, never a box
     expect(first.startsWith('\n')).toBe(true)
     // No dedupe: the identical reminder repeats on the very next run.
@@ -219,10 +223,10 @@ describe('#runClaimNudges', () => {
     expect(output).not.toContain('Unclaimed Sanity project abc123 expires')
     // The agent instruction appears once, on the aggregate, covering every link above it.
     expect(output).toContain(
-      'If an agent is running this, surface every claim URL above to the user.',
+      'If you are an agent: give every claim URL above to the person you are working for.',
     )
-    expect(output).toContain('They need to click each link to claim its project before it expires.')
-    expect(output).not.toContain('surface the full claim URL to the user.')
+    expect(output).toContain('They have to open each one themselves before its deadline.')
+    expect(output).not.toContain('give this claim URL')
   })
 
   test('pluralizes the aggregation header past two projects', async () => {
@@ -266,7 +270,7 @@ describe('#runClaimNudges', () => {
     expect(output).toContain('has been claimed')
     // The robot token in .env keeps outranking a login session; the farewell must say so.
     expect(output).toContain('still authenticate with the robot token')
-    expect(output).toContain('remove SANITY_AUTH_TOKEN from ./.env or sanity/.env.local')
+    expect(output).toContain(`remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES}`)
     expect(output).not.toContain('Claim it now:')
     expect(storedRecords().abc123).toBeUndefined()
     expect(await run()).toBe('')
@@ -278,7 +282,7 @@ describe('#runClaimNudges', () => {
 
     const output = await run()
 
-    expect(output).toContain('./.env or sanity/.env.local')
+    expect(output).toContain(TOKEN_ENV_FILES)
     expect(output).not.toMatch(/SANITY_AUTH_TOKEN from \.env\b/)
   })
 
@@ -291,7 +295,7 @@ describe('#runClaimNudges', () => {
     expect(output).toContain('token is no longer valid')
     expect(output).toContain('sanity login')
     // A config dir auto-injects .env, so the dead token must be removed or it outranks the session.
-    expect(output).toContain('remove SANITY_AUTH_TOKEN from ./.env')
+    expect(output).toContain(`remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES}`)
     expect(storedRecords().abc123).toBeUndefined()
     expect(await run()).toBe('')
   })
@@ -302,8 +306,11 @@ describe('#runClaimNudges', () => {
 
     const output = await run()
 
-    expect(output).toContain('Unclaimed Sanity project abc123 expired on')
-    expect(output).toContain('Run `sanity new --force` to mint a replacement')
+    expect(output).toContain('project abc123 expired on')
+    expect(output).toContain('server confirmed')
+    expect(output).toContain('permanently gone and no longer recoverable')
+    expect(output).toContain('Run `sanity new --force` to create a replacement')
+    expect(output).toContain(`Claim the replacement within ${CLAIM_WINDOW_HOURS} hours to keep it.`)
     expect(storedRecords().abc123).toBeUndefined()
     expect(await run()).toBe('')
   })
@@ -318,6 +325,17 @@ describe('#runClaimNudges', () => {
     expect(output).toContain('It may still be claimable')
     expect(output).toContain('https://www.sanity.io/claim/some-token')
     expect(output).not.toContain('has been deleted')
+    expect(storedRecords().abc123).toBeDefined()
+  })
+
+  test('keeps locally expired credentials when no token is available to verify state', async () => {
+    seedRecord({expiresAt: new Date(NOW - HOUR).toISOString(), token: undefined})
+
+    const output = await run()
+
+    expect(output).toContain("current state couldn't be verified")
+    expect(output).toContain('https://www.sanity.io/claim/some-token')
+    expect(output).not.toContain('permanently gone')
     expect(storedRecords().abc123).toBeDefined()
   })
 
@@ -349,7 +367,7 @@ describe('#runClaimNudges', () => {
 
     const output = await run()
 
-    expect(output).toContain('Unclaimed Sanity project abc123 expired on')
+    expect(output).toContain('project abc123 expired on')
     // The expiry farewell dropped abc123, but the concurrent mint's record survived the write.
     expect(storedRecords().abc123).toBeUndefined()
     expect(storedRecords().fresh99).toBeDefined()

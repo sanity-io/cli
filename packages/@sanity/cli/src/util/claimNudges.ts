@@ -11,6 +11,7 @@ import {
   type MintedProject,
 } from '../services/mintProject.js'
 import {TOKEN_ENV_FILES} from './envFile.js'
+import {CLAIM_WINDOW_HOURS} from './mintProjectConstants.js'
 
 const debug = subdebug('claimNudges')
 
@@ -121,9 +122,12 @@ function renderReminder(
   {solo = true} = {},
 ): string {
   const agentCta =
-    styleText('dim', 'If an agent is running this, surface the full claim URL to the user.') +
+    styleText(
+      'dim',
+      'If you are an agent: give this claim URL to the person you are working for.',
+    ) +
     '\n' +
-    styleText('dim', 'They need to click this link to claim the project before it expires.')
+    styleText('dim', 'They have to open it themselves before the deadline.')
 
   const urgent = msLeft <= 24 * 3_600_000
   const headline = `Unclaimed Sanity project ${record.projectId} expires in ${formatMsLeft(msLeft)}`
@@ -151,9 +155,12 @@ function renderAggregateReminder(live: Array<{msLeft: number; record: UnclaimedP
   return (
     `${header}\n\n` +
     `${lines.join('\n')}\n\n` +
-    styleText('dim', 'If an agent is running this, surface every claim URL above to the user.') +
+    styleText(
+      'dim',
+      'If you are an agent: give every claim URL above to the person you are working for.',
+    ) +
     '\n' +
-    styleText('dim', 'They need to click each link to claim its project before it expires.')
+    styleText('dim', 'They have to open each one themselves before its deadline.')
   )
 }
 
@@ -163,7 +170,7 @@ const claimedMessage = (record: UnclaimedProjectRecord): string =>
   `CLI commands here still authenticate with the robot token. Run \`sanity login\`, then remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES} to act as yourself.`
 const expiredMessage = (record: UnclaimedProjectRecord): string =>
   // `--force` mints a replacement and leaves `.env` for you to update.
-  `Unclaimed Sanity project ${record.projectId} expired on ${record.expiresAt} and has been deleted. Run \`sanity new --force\` to mint a replacement, and claim it within 72 hours to keep it.`
+  `The server confirmed that unclaimed Sanity project ${record.projectId} expired on ${record.expiresAt}. Its project and content are permanently gone and no longer recoverable. Run \`sanity new --force\` to create a replacement. Claim the replacement within ${CLAIM_WINDOW_HOURS} hours to keep it.`
 const unverifiedExpiryMessage = (record: UnclaimedProjectRecord): string =>
   `${logSymbols.warning} Sanity project ${record.projectId} reached its recorded claim deadline on ${record.expiresAt}, but its current state couldn't be verified. It may still be claimable; try ${record.claimUrl}. Its local credentials have been kept so a temporary network failure cannot discard access.`
 const revokedMessage = (record: UnclaimedProjectRecord): string =>

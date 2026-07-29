@@ -32,8 +32,8 @@ import {
   isEnvTracked,
   TOKEN_ENV_FILES,
 } from '../../util/envFile.js'
+import {CLAIM_WINDOW_HOURS, SANITY_NEW_URL} from '../../util/mintProjectConstants.js'
 import {renderNewCommandSplash} from '../../util/newCommandSplash.js'
-import {hyperlink} from '../../util/terminalLink.js'
 
 const DEFAULT_PROJECT_NAME = 'My Sanity project'
 
@@ -59,6 +59,24 @@ function describeExpiry(expiresAt: string | undefined): string {
   const ms = new Date(expiresAt).getTime() - Date.now()
   if (!Number.isFinite(ms) || ms <= 0) return ''
   return `, expiring in ${formatMsLeft(ms)} (${expiresAt})`
+}
+
+function formatClaimDeadline(expiresAt: string): string {
+  const deadline = new Date(expiresAt)
+  if (!Number.isFinite(deadline.getTime())) return expiresAt
+  return (
+    new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      hour: '2-digit',
+      hour12: false,
+      minute: '2-digit',
+      month: 'long',
+      timeZone: 'UTC',
+      year: 'numeric',
+    })
+      .format(deadline)
+      .replace(' at ', ', ') + ' UTC'
+  )
 }
 
 function claimTokenFromClaimUrl(claimUrl: string | undefined): string | undefined {
@@ -103,28 +121,30 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
   static override description =
     'Mint an unclaimed Sanity project without logging in.\n' +
     '\n' +
-    'Credentials are written to ./.env (SANITY_PROJECT_ID, SANITY_DATASET, and ' +
-    'SANITY_AUTH_TOKEN, a robot token) and .env is gitignored, so `sanity` commands here ' +
-    'authenticate as the project with no account. Commands that need a project id still take it ' +
-    'from a Sanity config file or --project-id, so run them inside the scaffolded Studio folder. ' +
-    'Use --json for a machine-readable payload instead: JSON mode writes no files and the caller ' +
-    'owns the credentials.\n' +
+    `By default, it scaffolds ./${STUDIO_DIR}, a Studio for editing content, and ` +
+    `./${FRONTEND_DIR}, a connected Next.js website. Use --no-scaffold to mint only the project.\n` +
     '\n' +
-    'Claiming: the project must be claimed with a Sanity account within 72 hours (expiresAt) or ' +
-    'it is permanently deleted, content included. The claim URL is single-use and whoever opens ' +
-    "it takes ownership: keep it out of git and shared channels. If you're an agent, surface the link to the end user " +
-    "immediately. Everything keeps working after you've claimed, including the robot token.\n" +
+    'Credentials are written to ./.env, which is gitignored, and to a local ledger used for CLI ' +
+    'authentication and claim reminders. Commands that need a project id still read it from a ' +
+    'Sanity config file or --project-id, so run them inside the scaffolded Studio. With --json, ' +
+    'the command writes no files, creates no scaffold or ledger entry, and returns a ' +
+    'machine-readable credential payload.\n' +
     '\n' +
-    'The robot token has full content access to this project: create, edit, publish, and deploy ' +
-    'schemas. It cannot deploy a hosted Studio, create datasets, or manage settings. The dataset ' +
-    'is private pre-claim: frontend reads must run server-side, and the token must never sit ' +
-    'under a client-exposed prefix like NEXT_PUBLIC_* or SANITY_STUDIO_*.\n' +
+    `The project must be claimed with a Sanity account within ${CLAIM_WINDOW_HOURS} hours or the ` +
+    'project and all its content are permanently deleted. The claim URL is single-use; whoever ' +
+    'opens it becomes the owner. If you are an agent: give the full claim URL to the person you ' +
+    'are working for immediately. They must open it themselves before the deadline.\n' +
+    '\n' +
+    'The robot token has full content access: it can create, edit, and publish content and deploy ' +
+    'schemas. It cannot deploy a hosted Studio, create datasets, or manage project settings. ' +
+    'Before claim, dataset reads are private and must use the token server-side; never expose it ' +
+    'to browser code. Claiming makes the dataset public and readable without the token.\n' +
     '\n' +
     `After the claim, run \`sanity login\` and remove SANITY_AUTH_TOKEN from ${TOKEN_ENV_FILES} ` +
-    'to act as your own account; until then, CLI commands in this directory keep ' +
-    'authenticating as the robot.\n' +
+    'to act as your own account. The robot token remains active until you remove it.\n' +
     '\n' +
-    'Minting is rate-limited per machine. Fetch https://sanity.new for agent instructions.'
+    'Minting is rate-limited per machine. Framework setup and post-claim cleanup: ' +
+    `${SANITY_NEW_URL}.`
 
   static override enableJsonFlag = true
 
@@ -160,7 +180,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     scaffold: Flags.boolean({
       allowNo: true,
       default: true,
-      description: `Scaffold a Studio into ./${STUDIO_DIR} and a Next.js frontend into ./${FRONTEND_DIR} after minting`,
+      description: `Scaffold a Studio into ./${STUDIO_DIR} and a Next.js frontend into ./${FRONTEND_DIR} after minting; use --no-scaffold to mint only the project`,
     }),
     yes: Flags.boolean({
       char: 'y',
@@ -183,29 +203,23 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     const envPath = path.join(process.cwd(), '.env')
     const guard: GuardResult = await this.guardExistingProject(envPath, invoked)
 
-    renderNewCommandSplash(output.log)
-
-    flow.intro("Let's get you set up with a Sanity project.")
-    flow.gap()
-
-    if (!this.isUnattended()) {
-      flow.note(
-        `${styleText('cyan', `${invoked} --yes`)} for a non-interactive flow with defaults.`,
-      )
+    if (!json) {
+      renderNewCommandSplash(output.log)
+      flow.intro('Setting up your Sanity project.')
       flow.gap()
+
+      if (!this.isUnattended()) {
+        flow.note(
+          `${styleText('cyan', `${invoked} --yes`)} for a non-interactive flow with defaults.`,
+        )
+        flow.gap()
+      }
     }
 
     let displayName = this.args.projectName?.trim()
-    if (displayName) {
-      flow.result(`Project name: ${styleText('cyan', displayName)}`)
-      flow.gap()
-    } else if (this.isUnattended()) {
+    if (!displayName && this.isUnattended()) {
       displayName = DEFAULT_PROJECT_NAME
-      flow.result(
-        `Project name: ${styleText('cyan', displayName)} ${styleText('dim', '(default)')}`,
-      )
-      flow.gap()
-    } else {
+    } else if (!displayName) {
       displayName =
         (await input({default: DEFAULT_PROJECT_NAME, message: 'Project name'})).trim() ||
         DEFAULT_PROJECT_NAME
@@ -218,10 +232,8 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         )
       } else if (guard.hasExistingKeys) {
         flow.note('--force: minting a new project. Your .env is left untouched; new values follow.')
-      } else {
-        flow.note('No Sanity credentials in .env yet, adding them.')
       }
-      flow.gap()
+      if (guard.hasExistingKeys) flow.gap()
     }
 
     const spin = json ? undefined : flow.spin('Minting your project...')
@@ -232,31 +244,39 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       spin?.fail('Minting your project failed.')
       throw err
     }
-    spin?.succeed('Project minted')
-
     // `--json` writes nothing (no `.env` either), so it must not touch the ledger — the caller owns
     // the returned token. Only the interactive path records, and so keeps showing unclaimed nudges
     // until claim or expiry (e.g. for a `--force`-superseded live project that may hold content).
     const recorded = json ? undefined : recordMintedProject(minted)
+    spin?.succeed(`Created "${displayName}"`)
 
-    flow.gap()
-    flow.result(`Project ID: ${styleText('cyan', minted.resourceId)}`)
-    flow.result(`Dataset:    ${styleText('cyan', minted.datasetName)}`)
-    flow.gap()
-    flow.note(
-      `You must claim this project within ${styleText('yellow', '72 hours')} (by ${minted.expiresAt}) ` +
-        'or your project will be deleted.',
-    )
-    flow.line("Project credentials keep working after you've claimed.")
-    flow.line(hyperlink(styleText('cyan', minted.claimUrl), minted.claimUrl))
-    flow.gap()
-    flow.note(
-      styleText('dim', 'If an agent is running this, surface the full claim URL to the user.'),
-    )
-    flow.line(
-      styleText('dim', 'They need to click this link to claim the project before it expires.'),
-    )
-    flow.gap()
+    if (!json) {
+      flow.result(`Project ID: ${styleText('cyan', minted.resourceId)}`)
+      flow.result(`Dataset: ${styleText('cyan', minted.datasetName)} (where your content lives)`)
+      flow.gap()
+      flow.highlight(
+        `Claim your project by ${styleText('yellow', formatClaimDeadline(minted.expiresAt))}`,
+      )
+      flow.gap()
+      flow.link(minted.claimUrl)
+      flow.gap()
+      flow.line(
+        'Until then it is temporary — the project and everything in it is permanently deleted ' +
+          'at that deadline. Claiming is free, takes about a minute, and nothing you have built changes.',
+      )
+      flow.line(
+        'Treat the link like a password: it is single-use, and whoever opens it becomes the owner.',
+      )
+      flow.gap()
+      flow.note(
+        styleText(
+          'dim',
+          'If you are an agent: give this claim URL to the person you are working for.',
+        ),
+      )
+      flow.line(styleText('dim', 'They have to open it themselves before the deadline.'))
+      flow.gap()
+    }
 
     const envValues = {
       SANITY_AUTH_TOKEN: minted.token,
@@ -298,6 +318,8 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     }
     let warnings: MintProjectResult['warnings']
     let credentialsOnDisk = false
+    let envProtected = false
+    let rootTokenWritten = false
 
     if (guard.hasExistingKeys) {
       const staleScaffoldEnv = existingScaffoldEnvFiles(process.cwd())
@@ -361,9 +383,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         // Gitignore does nothing for an already-tracked file, so a tracked `.env` can still be
         // committed — check before claiming the token is protected.
         const envTracked = isEnvTracked(process.cwd())
-        if (written.wroteKeys.length > 0) {
-          flow.highlight(`Saved credentials to ./.env as ${written.wroteKeys.join(', ')}`)
-        }
+        envProtected = !envTracked && gitignore.ignored
         if (written.skippedKeys.length > 0) {
           flow.note(`./.env already has ${written.skippedKeys.join(', ')}; make sure they read:`)
           for (const key of written.skippedKeys) {
@@ -373,6 +393,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         credentialsOnDisk = SCAFFOLD_REQUIRED_ENV_KEYS.every((key) =>
           written.wroteKeys.includes(key),
         )
+        rootTokenWritten = written.wroteKeys.includes('SANITY_AUTH_TOKEN')
         if (!credentialsOnDisk) {
           flow.note(
             `Skipping the ${STUDIO_DIR}/ and ${FRONTEND_DIR}/ scaffold: the lines above shadowed ` +
@@ -413,6 +434,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     const shouldScaffold =
       !json && this.flags.scaffold && !guard.hasExistingKeys && credentialsOnDisk
     let scaffold: ScaffoldResult | undefined
+    let scaffoldFailed = false
     if (shouldScaffold) {
       const scaffoldController = new AbortController()
       const abortScaffold = () => scaffoldController.abort(new Error('SIGINT'))
@@ -436,6 +458,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
           `Couldn't scaffold the project (${err instanceof Error ? err.message : err}). ` +
             'Your project is minted and ./.env is written, so nothing needs re-minting.',
         )
+        scaffoldFailed = true
         flow.note('Scaffold it yourself with:')
         printScaffoldRecipe()
       } finally {
@@ -445,57 +468,54 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
 
     if (scaffold) {
       for (const warning of scaffold.warnings) this.output.warn(warning)
-      flow.gap()
       const printFrontendEnv = () => {
         for (const [key, value] of Object.entries(scaffold.frontendEnv)) {
           flow.line(`${key}="${value}"`)
         }
-        if (scaffold.detectedFramework && scaffold.detectedFramework !== 'Next.js') {
+        if (scaffold.detectedFramework && !scaffold.frontendEnvPrefix) {
           flow.line(
-            `Those names follow the Next.js convention. On ${scaffold.detectedFramework}, use its ` +
-              'own public prefix for the project id and dataset.',
+            `These fallback values use NEXT_PUBLIC_. Translate that public prefix for ${scaffold.detectedFramework} before using them.`,
           )
         }
       }
       const studioTokenUrl = `http://localhost:3333/#token=${encodeURIComponent(minted.token)}`
       const printStudioInstructions = () => {
-        flow.line(`cd ${STUDIO_DIR} && npx sanity dev    to start the Studio on port 3333`)
-        flow.line(
-          `Then open ${hyperlink(styleText('cyan', studioTokenUrl), studioTokenUrl)} to enter the Studio before claiming.`,
-        )
+        flow.line(`cd ${STUDIO_DIR} && npx sanity dev`)
+        flow.line('then open')
+        flow.link(studioTokenUrl)
+        flow.line('the token in that link signs you in — there is no account yet')
       }
 
       if (scaffold.frontendPath) {
-        flow.highlight(`Created ./${STUDIO_DIR} (Studio) and ./${FRONTEND_DIR} (frontend).`)
+        flow.highlight('Created two folders')
+        flow.line(`./${STUDIO_DIR} — your Studio, where you write and edit content`)
+        flow.line(`./${FRONTEND_DIR} — your website, a Next.js app that reads it`)
+        flow.gap()
         printStudioInstructions()
-        flow.line(
-          `cd ${FRONTEND_DIR} && ${frontendDevCommand(scaffold.frontendPackageManager)}     ` +
-            'to start the frontend on port 3000',
-        )
+        flow.line(`cd ${FRONTEND_DIR} && ${frontendDevCommand(scaffold.frontendPackageManager)}`)
+        flow.line('then open http://localhost:3000/')
         if (!scaffold.frontendEnvWritten) {
           flow.line(`./${FRONTEND_DIR}/.env.local wasn't written. Add these yourself:`)
           printFrontendEnv()
         }
       } else if (scaffold.detectedFramework) {
         flow.highlight(
-          `Found ${scaffold.detectedFramework} here, so only ./${STUDIO_DIR} was created.`,
+          `Created ./${STUDIO_DIR} for your existing ${scaffold.detectedFramework} app`,
         )
+        flow.line(`./${STUDIO_DIR} — your Studio, where you write and edit content`)
+        flow.line(`Your existing ${scaffold.detectedFramework} frontend was left unchanged.`)
+        flow.gap()
         printStudioInstructions()
         flow.line('Add these to your app:')
         printFrontendEnv()
       } else {
-        flow.highlight(`Created ./${STUDIO_DIR} (Studio). The frontend was not created.`)
+        flow.highlight(`Created ./${STUDIO_DIR}; the frontend was not created`)
+        flow.line(`./${STUDIO_DIR} — your Studio, where you write and edit content`)
+        flow.gap()
         printStudioInstructions()
         flow.line('Scaffold a frontend yourself, then add these:')
         printFrontendEnv()
       }
-      flow.gap()
-      flow.note(
-        'Your dataset is private until you claim it, so reading content from your frontend needs a ' +
-          'token. Copy SANITY_AUTH_TOKEN from ./.env when you add those reads, keep them ' +
-          'server-side, and never put it under a browser-exposed prefix like NEXT_PUBLIC_ or ' +
-          'SANITY_STUDIO_: that publishes a credential with full write access.',
-      )
       flow.gap()
     }
 
@@ -508,7 +528,59 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       else this.output.warn(msg)
     }
 
-    flow.outro('Tell your agent to fetch https://sanity.new for instructions on what to do next.')
+    if (!json) {
+      if (!scaffold && !this.flags.scaffold) {
+        flow.highlight('Project created without scaffolding')
+        flow.line(
+          'No folders were created. Use the project ID and dataset above in your own setup.',
+        )
+        flow.gap()
+      } else if (scaffoldFailed) {
+        flow.highlight('The project is ready; automatic scaffolding did not finish')
+        flow.line('No re-mint is needed. Use the manual commands above to finish the setup.')
+        flow.gap()
+      }
+
+      const studioEnvFailed = scaffold?.warnings.some((warning) =>
+        warning.includes(`Couldn't write ${STUDIO_ENV_FILE}`),
+      )
+      const tokenLocations = [
+        ...(rootTokenWritten ? ['./.env'] : []),
+        ...(scaffold && !studioEnvFailed ? [`./${STUDIO_ENV_FILE}`] : []),
+      ]
+      if (tokenLocations.length === 0) {
+        flow.highlight('Protect the replacement access token printed above')
+        flow.line('It was not written over your existing configuration.')
+      } else {
+        flow.highlight(`Your access token is in ${tokenLocations.join(' and ')}`)
+        if (envProtected && tokenLocations.length === 2) {
+          flow.line('Both files are kept out of version control for you.')
+        } else if (!rootTokenWritten || envProtected) {
+          flow.line('That file is kept out of version control for you.')
+        } else if (tokenLocations.length === 2) {
+          flow.line(`./${STUDIO_ENV_FILE} is ignored; keep ./.env out of version control yourself.`)
+        } else {
+          flow.line('Keep that file out of version control.')
+        }
+        if (!rootTokenWritten) {
+          flow.line(
+            './.env kept its existing token; use the replacement value printed above when you update it.',
+          )
+        }
+      }
+      flow.line(
+        'The token can read and change everything in this project. Never copy it into code that runs in a browser.',
+      )
+      flow.gap()
+      flow.line(
+        'Your content is private until you claim, so anything reading it needs that token. Keep those reads server-side.',
+      )
+      flow.line('Claiming makes the dataset public and readable without the token.')
+      flow.gap()
+      flow.line(`Framework setup and what to do after claiming: ${SANITY_NEW_URL}`)
+      flow.gap()
+      flow.link(minted.claimUrl, {label: 'Claim your project:', outro: true})
+    }
 
     return {
       apiHost: minted.apiHost,
