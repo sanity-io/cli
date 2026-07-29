@@ -281,8 +281,9 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       flow.gap()
       flow.line(
         'Until then it is temporary — the project and everything in it is permanently deleted ' +
-          'at that deadline. Claiming is free, takes about a minute, and nothing you have built changes.',
+          'at that deadline.',
       )
+      flow.line('Claiming is free, takes about a minute, and nothing you have built changes.')
       flow.line(
         'Treat the link like a password: it is single-use, and whoever opens it becomes the owner.',
       )
