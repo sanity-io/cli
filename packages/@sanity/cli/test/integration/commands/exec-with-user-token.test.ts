@@ -60,7 +60,7 @@ describe('exec --with-user-token', {timeout: 15 * 1000}, () => {
   let scriptPath: string
 
   beforeEach(async () => {
-    exampleDir = await testFixture('basic-studio')
+    exampleDir = await testFixture('basic-studio', {useSystemTmp: true})
     process.chdir(exampleDir)
 
     scriptPath = join(exampleDir, 'test-script.ts')

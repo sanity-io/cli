@@ -31,7 +31,11 @@ export async function ensureAuthenticated(options: {
   options.output.warn(LOGIN_REQUIRED_MESSAGE)
 
   try {
-    await login({output: options.output, telemetry: options.telemetry})
+    await login({
+      activateSessionForProcess: true,
+      output: options.output,
+      telemetry: options.telemetry,
+    })
   } catch (cause) {
     throw new LoginError(getErrorMessage(cause), {cause})
   }

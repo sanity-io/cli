@@ -153,13 +153,17 @@ describe('ensureAuthenticated', () => {
 
     const user = await ensureAuthenticated({output: mockOutput, telemetry: mockTelemetry})
 
-    expect(mockLogin).toHaveBeenCalledWith({output: mockOutput, telemetry: mockTelemetry})
+    expect(mockLogin).toHaveBeenCalledWith({
+      activateSessionForProcess: true,
+      output: mockOutput,
+      telemetry: mockTelemetry,
+    })
     expect(mockOutput.warn).toHaveBeenCalledWith(LOGIN_REQUIRED_MESSAGE)
     expect(user).toEqual(expect.objectContaining({email: 'new@example.com'}))
   })
 
-  test('triggers login when token is expired', async () => {
-    mockGetCliToken.mockResolvedValue('expired-token')
+  test('activates the fresh session when an injected token fails validation', async () => {
+    mockGetCliToken.mockResolvedValue('injected-env-token')
     mockGetById.mockRejectedValueOnce(createHttpError(401, 'Unauthorized')).mockResolvedValue({
       email: 'reauthed@example.com',
       id: 'user-789',
@@ -170,7 +174,11 @@ describe('ensureAuthenticated', () => {
 
     const user = await ensureAuthenticated({output: mockOutput, telemetry: mockTelemetry})
 
-    expect(mockLogin).toHaveBeenCalled()
+    expect(mockLogin).toHaveBeenCalledWith({
+      activateSessionForProcess: true,
+      output: mockOutput,
+      telemetry: mockTelemetry,
+    })
     expect(user).toEqual(expect.objectContaining({email: 'reauthed@example.com'}))
   })
 

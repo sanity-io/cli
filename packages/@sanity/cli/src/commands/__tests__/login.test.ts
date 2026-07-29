@@ -40,9 +40,11 @@ vi.mock('open')
 // a test opts in.
 const mockedResolveCliCredential = vi.hoisted(() => vi.fn())
 const mockedGetMintedProjectRecord = vi.hoisted(() => vi.fn())
+const mockedActivateCliSessionForProcess = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core/config', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core/config')>()),
+  activateCliSessionForProcess: mockedActivateCliSessionForProcess,
   resolveCliCredential: mockedResolveCliCredential,
 }))
 
@@ -553,7 +555,10 @@ describe('#login', {timeout: 10_000}, () => {
       expect(stdout).toContain('Login successful')
       expect(stderr).toContain('SANITY_AUTH_TOKEN is set in the environment')
       expect(stderr).toContain('It outranks this login session')
-      expect(stderr.replaceAll(/\s*›\s*/g, ' ').replaceAll(/\s+/g, ' ')).toContain(TOKEN_ENV_FILES)
+      expect(stderr.replaceAll(/\s*[›»]\s*/g, ' ').replaceAll(/\s+/g, ' ')).toContain(
+        TOKEN_ENV_FILES,
+      )
+      expect(mockedActivateCliSessionForProcess).not.toHaveBeenCalled()
     })
 
     test('warns when the resolver reports a known unclaimed minted-project credential', async () => {

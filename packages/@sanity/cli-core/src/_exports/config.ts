@@ -1,6 +1,7 @@
 // Exports related to retrieving CLI, studio, app or workbench configuration or paths.
 
 export {
+  activateCliSessionForProcess,
   clearCliTokenCache,
   getCliToken,
   getCliUserConfig,

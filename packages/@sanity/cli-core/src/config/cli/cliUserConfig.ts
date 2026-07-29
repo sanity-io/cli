@@ -98,6 +98,21 @@ export async function getCliToken(): Promise<string | undefined> {
   setCachedToken(token)
   return token
 }
+
+/**
+ * Make a freshly stored login session the active credential for the rest of this process.
+ *
+ * Embedded authentication flows use this after an invalid active credential triggered login.
+ * Standalone login deliberately does not, so environment and minted-project credentials retain
+ * their normal precedence and can be reported to the user.
+ *
+ * @param token - The newly stored login session token
+ * @internal
+ */
+export function activateCliSessionForProcess(token: string): void {
+  setCachedToken(token)
+}
+
 const cliUserConfigSchema = {
   authToken: z.optional(z.string()),
 }
@@ -133,16 +148,7 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
     writeJsonFileSync(configPath, {...config, [prop]: value}, {pretty: true})
   }
 
-  // A successful explicit login must take effect for the rest of this process. Otherwise an
-  // invalid project-local mint token can keep winning normal resolution after the fresh session
-  // is stored, and the command that initiated login immediately fails its next authenticated
-  // request. Preserve an explicitly exported token as the highest-precedence process credential.
-  const envToken = process.env.SANITY_AUTH_TOKEN?.trim()
-  if (value && !envToken) {
-    setCachedToken(value)
-  } else {
-    clearCliTokenCache()
-  }
+  clearCliTokenCache()
 }
 
 /**

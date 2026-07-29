@@ -1,4 +1,5 @@
 import {getCliToken, getCliUserConfig, setCliUserConfig} from '@sanity/cli-core'
+import {activateCliSessionForProcess} from '@sanity/cli-core/config'
 import open from 'open'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -25,6 +26,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
+vi.mock('@sanity/cli-core/config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core/config')>()),
+  activateCliSessionForProcess: vi.fn(),
+}))
+
 vi.mock('@sanity/cli-core/ux', () => ({
   spinner: vi.fn(() => ({
     start: vi.fn(() => ({
@@ -50,6 +56,7 @@ vi.mock('../../../../util/canLaunchBrowser.js', () => ({
 
 const mockedGetCliToken = vi.mocked(getCliToken)
 const mockedSetCliUserConfig = vi.mocked(setCliUserConfig)
+const mockedActivateCliSessionForProcess = vi.mocked(activateCliSessionForProcess)
 const mockedStartServerForTokenCallback = vi.mocked(startServerForTokenCallback)
 const mockedGetProvider = vi.mocked(getProvider)
 const mockedValidateToken = vi.mocked(validateToken)
@@ -125,6 +132,12 @@ describe('#login vercel provider', () => {
 
     expect(vi.isMockFunction(getCliUserConfig)).toBe(true)
     expect(vi.mocked(getCliUserConfig)).toHaveBeenCalledWith('authToken')
+  })
+
+  test('activates the fresh session when an embedded authentication flow opts in', async () => {
+    await login({activateSessionForProcess: true, open: false, output, telemetry})
+
+    expect(mockedActivateCliSessionForProcess).toHaveBeenCalledWith('test-token')
   })
 
   test('records telemetry errors for token validation failures', async () => {

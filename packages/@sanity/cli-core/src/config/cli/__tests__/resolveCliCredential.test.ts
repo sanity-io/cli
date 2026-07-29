@@ -6,6 +6,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {clearCliTokenCache} from '../cliTokenCache.js'
 import {
+  activateCliSessionForProcess,
   getCliToken,
   getUserConfig,
   resolveCliCredential,
@@ -238,7 +239,7 @@ describe('resolveCliCredential', () => {
 })
 
 describe('getCliToken delegation', () => {
-  test('a fresh login session displaces an invalid root .env token for this process', async () => {
+  test('an embedded login explicitly displaces an invalid root .env token for this process', async () => {
     vi.spyOn(process, 'cwd').mockReturnValue(dir)
     fs.writeFileSync(
       envPath,
@@ -248,12 +249,28 @@ describe('getCliToken delegation', () => {
     await expect(getCliToken()).resolves.toBe('invalid-mint-token')
 
     setCliUserConfig('authToken', 'fresh-session-token')
+    await expect(getCliToken()).resolves.toBe('invalid-mint-token')
+
+    activateCliSessionForProcess('fresh-session-token')
     await expect(getCliToken()).resolves.toBe('fresh-session-token')
 
     // The override is deliberately process-scoped. A new invocation resolves the mint token
     // normally, preserving pre-claim access for users who also have a stored login session.
     clearCliTokenCache()
     await expect(getCliToken()).resolves.toBe('invalid-mint-token')
+  })
+
+  test('standalone login preserves an exported token until an embedded flow activates its session', async () => {
+    vi.stubEnv('SANITY_AUTH_TOKEN', 'exported-token')
+
+    setCliUserConfig('authToken', 'fresh-session-token')
+    await expect(getCliToken()).resolves.toBe('exported-token')
+
+    activateCliSessionForProcess('fresh-session-token')
+    await expect(getCliToken()).resolves.toBe('fresh-session-token')
+
+    clearCliTokenCache()
+    await expect(getCliToken()).resolves.toBe('exported-token')
   })
 
   test('resolves through the resolver and keeps caching the token', async () => {

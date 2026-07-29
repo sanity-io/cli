@@ -465,6 +465,7 @@ async function ensureAuthenticated(
 
   try {
     await login({
+      activateSessionForProcess: true,
       output,
       telemetry: trace.newContext('login'),
     })

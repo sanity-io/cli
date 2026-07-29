@@ -6,6 +6,7 @@ import {
   setCliUserConfig,
   subdebug,
 } from '@sanity/cli-core'
+import {activateCliSessionForProcess} from '@sanity/cli-core/config'
 import {spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 import open from 'open'
@@ -24,6 +25,7 @@ interface LoginOptions {
 
   telemetry: CLITelemetryStore
 
+  activateSessionForProcess?: boolean
   experimental?: boolean
   open?: boolean
   provider?: string
@@ -54,7 +56,7 @@ export async function login(options: LoginOptions) {
   if (typeof options.token === 'string') {
     try {
       const authToken = await validateToken(options.token)
-      await storeAuthToken(authToken, previousToken, output)
+      await storeAuthToken(authToken, previousToken, output, options.activateSessionForProcess)
       trace.complete()
     } catch (err: unknown) {
       trace.error(err as Error)
@@ -111,7 +113,7 @@ export async function login(options: LoginOptions) {
     })
   }
 
-  await storeAuthToken(authToken, previousToken, output)
+  await storeAuthToken(authToken, previousToken, output, options.activateSessionForProcess)
 
   trace.complete()
 }
@@ -120,8 +122,10 @@ async function storeAuthToken(
   authToken: string,
   previousToken: string | undefined,
   output: Output,
+  activateSessionForProcess = false,
 ) {
   setCliUserConfig('authToken', authToken)
+  if (activateSessionForProcess) activateCliSessionForProcess(authToken)
   getUserConfig().delete('telemetryConsent')
 
   // If we had a session previously, attempt to clear it

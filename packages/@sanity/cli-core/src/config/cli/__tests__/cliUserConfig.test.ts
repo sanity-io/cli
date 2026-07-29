@@ -8,6 +8,7 @@ import {writeJsonFileSync} from '../../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedToken, setCachedToken} from '../cliTokenCache.js'
 import {
   _internals,
+  activateCliSessionForProcess,
   getCliToken,
   getCliUserConfig,
   getUserConfig,
@@ -274,10 +275,10 @@ describe('cliUserConfig', () => {
       )
     })
 
-    test('activates a newly stored authToken for the current process', () => {
+    test('invalidates the token cache after storing authToken', () => {
       setCliUserConfig('authToken', 'new-token')
-      expect(setCachedToken).toHaveBeenCalledWith('new-token')
-      expect(clearCliTokenCache).not.toHaveBeenCalled()
+      expect(clearCliTokenCache).toHaveBeenCalled()
+      expect(setCachedToken).not.toHaveBeenCalled()
     })
 
     test('does not outrank an explicitly exported authToken', () => {
@@ -292,6 +293,14 @@ describe('cliUserConfig', () => {
     test('invalidates token cache after clearing authToken', () => {
       setCliUserConfig('authToken', undefined)
       expect(clearCliTokenCache).toHaveBeenCalled()
+    })
+  })
+
+  describe('activateCliSessionForProcess', () => {
+    test('explicitly activates the newly stored session', () => {
+      activateCliSessionForProcess('new-token')
+
+      expect(setCachedToken).toHaveBeenCalledWith('new-token')
     })
   })
 

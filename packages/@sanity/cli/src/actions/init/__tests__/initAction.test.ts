@@ -230,6 +230,39 @@ describe('initAction (direct)', () => {
     expect(combined).toContain('production')
   })
 
+  test('embedded login activates its fresh session before init continues', async () => {
+    mockValidateSession.mockResolvedValue(null)
+    mockLogin.mockResolvedValue(undefined)
+    mockGetById.mockResolvedValue({
+      email: 'fresh@example.com',
+      id: 'user-456',
+      name: 'Fresh User',
+      provider: 'github',
+    })
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    const context = createTestContext()
+    await initAction(
+      {
+        ...defaultOptions,
+        bare: true,
+        dataset: 'production',
+        project: 'test-project',
+      },
+      context,
+    )
+
+    expect(mockLogin).toHaveBeenCalledWith(
+      expect.objectContaining({activateSessionForProcess: true}),
+    )
+    expect(mockGetById).toHaveBeenCalledWith('me')
+  })
+
   test('throws InitError when not authenticated in unattended mode', async () => {
     mockValidateSession.mockResolvedValue(null)
 

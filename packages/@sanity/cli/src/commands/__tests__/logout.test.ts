@@ -104,7 +104,7 @@ describe('#logout', () => {
 
     expect(error).toBeUndefined()
     expect(stderr).toContain('SANITY_AUTH_TOKEN is set in the environment')
-    expect(stderr.replaceAll(/\s*›\s*/g, ' ').replaceAll(/\s+/g, ' ')).toContain(TOKEN_ENV_FILES)
+    expect(stderr.replaceAll(/\s*[›»]\s*/g, ' ').replaceAll(/\s+/g, ' ')).toContain(TOKEN_ENV_FILES)
     // oclif wraps warnings, so assert a fragment that fits on one wrapped line.
     expect(stderr).toContain('Remove that variable')
     expect(stdout).not.toContain('No login credentials found')
