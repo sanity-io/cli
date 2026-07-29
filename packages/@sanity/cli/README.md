@@ -2616,14 +2616,14 @@ Log in to your Sanity account
 
 ```
 USAGE
-  $ sanity login [--open] [--provider <providerId> | --sso <slug> | --with-token] [--sso-provider <name> ]
+  $ sanity login [--with-token | --provider <providerId> | --sso <slug>] [--open] [--sso-provider <name> ]
 
 FLAGS
+  --with-token             Read token from standard input
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
   --provider=<providerId>  Log in using a provider ID (google, github, sanity, vercel)
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
-  --with-token             Read token from standard input
 
 DESCRIPTION
   Log in to your Sanity account
@@ -2632,6 +2632,10 @@ EXAMPLES
   Log in using default settings
 
     $ sanity login
+
+  Log in using a token from standard input
+
+    $ sanity login --with-token < token.txt
 
   Login with GitHub provider, but do not open a browser window automatically
 
@@ -2644,10 +2648,6 @@ EXAMPLES
   Log in using a specific SSO provider within an organization
 
     $ sanity login --sso my-organization --sso-provider "Okta SSO"
-
-  Log in using a token from standard input
-
-    $ sanity login --with-token < token.txt
 ```
 
 ## `sanity logout`
