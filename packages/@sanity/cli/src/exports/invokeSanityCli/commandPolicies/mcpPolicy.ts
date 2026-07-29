@@ -29,11 +29,12 @@ function fieldReadsFromHost(field: unknown): boolean {
  */
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful
-  // to expose. Only the host input channels are refused: `--input` reads the
-  // request body from the host's filesystem or stdin, and `-F key=@<file>` /
-  // `-F key=@-` field values do the same.
+  // to expose. Refuse authentication overrides and host input channels:
+  // `--token` replaces the MCP user's token, `--input` reads the request body
+  // from the host's filesystem or stdin, and `-F key=@<file>` / `-F key=@-`
+  // field values do the same.
   api: conditionalPolicy({
-    deniedFlags: ['input'],
+    deniedFlags: ['input', 'token'],
     validate: ({flags}) =>
       !Array.isArray(flags.field) || !flags.field.some((field) => fieldReadsFromHost(field)),
   }),
