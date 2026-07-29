@@ -1,5 +1,19 @@
 # Changelog
 
+## [8.0.1](https://github.com/sanity-io/cli/compare/cli-test-v8.0.0...cli-test-v8.0.1)
+
+_2026-07-29_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1558](https://github.com/sanity-io/cli/pull/1558)) ([0020787](https://github.com/sanity-io/cli/commit/00207879ad5018ebb3a7b54861052fb0f9ca9c05))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.1
+
 ## [8.0.0](https://github.com/sanity-io/cli/compare/cli-test-v7.0.0...cli-test-v8.0.0)
 
 _2026-07-29_

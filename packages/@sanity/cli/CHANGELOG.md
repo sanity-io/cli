@@ -1,5 +1,19 @@
 # Change Log
 
+## [7.15.1](https://github.com/sanity-io/cli/compare/cli-v7.15.0...cli-v7.15.1)
+
+_2026-07-29_
+
+### Bug Fixes
+
+- Stricter context for cli invoke ([#1618](https://github.com/sanity-io/cli/pull/1618)) ([f857468](https://github.com/sanity-io/cli/commit/f85746877a7913bbab5c7cf43c4d6dbacd09504e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.1
+
 ## [7.15.0](https://github.com/sanity-io/cli/compare/cli-v7.14.0...cli-v7.15.0)
 
 _2026-07-29_
