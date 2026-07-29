@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 
 import {
   exitCodes,
+  getCliToken,
   type SanityOrgUser,
   subdebug,
   type TelemetryUserProperties,
@@ -436,9 +437,13 @@ async function ensureAuthenticated(
   if (options.unattended) {
     let message: string
     if (mintedRecord) {
-      message =
-        `This directory has an unclaimed Sanity project (${guardedEnv.SANITY_PROJECT_ID}) but its ` +
-        "token isn't available here. Set SANITY_AUTH_TOKEN from its .env, or claim the project, then re-run."
+      const activeToken = await getCliToken()
+      message = activeToken
+        ? `This directory has an unclaimed Sanity project (${guardedEnv.SANITY_PROJECT_ID}), but ` +
+          'the available auth token is invalid, expired, or lacks the required access. Set ' +
+          'SANITY_AUTH_TOKEN to a valid token, or claim the project, then re-run.'
+        : `This directory has an unclaimed Sanity project (${guardedEnv.SANITY_PROJECT_ID}) but its ` +
+          "token isn't available here. Set SANITY_AUTH_TOKEN from its .env, or claim the project, then re-run."
     } else if (guardedInspection.blankKeys.length > 0) {
       message =
         'Not logged in, and this directory has blank Sanity credential placeholders in .env: ' +

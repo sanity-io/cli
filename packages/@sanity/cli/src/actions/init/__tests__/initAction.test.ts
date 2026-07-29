@@ -16,6 +16,7 @@ import {type InitContext, type InitOptions} from '../types.js'
 // ---------------------------------------------------------------------------
 
 const mockGetById = vi.hoisted(() => vi.fn())
+const mockGetCliToken = vi.hoisted(() => vi.fn())
 const mockValidateSession = vi.hoisted(() => vi.fn())
 const mockLogin = vi.hoisted(() => vi.fn())
 const mockInspectEnvKeys = vi.hoisted(() =>
@@ -45,6 +46,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
   return {
     ...actual,
+    getCliToken: mockGetCliToken,
     getGlobalCliClient: vi.fn().mockResolvedValue({
       projects: {
         list: vi
@@ -164,6 +166,7 @@ async function useMintedDescendant(options: {unreadable?: boolean} = {}): Promis
 describe('initAction (direct)', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    mockGetCliToken.mockReset()
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
@@ -319,6 +322,43 @@ describe('initAction (direct)', () => {
     const initError = caughtError as InitError
     expect(initError.message).toContain('unclaimed Sanity project (abc123)')
     expect(initError.message).toContain('Set SANITY_AUTH_TOKEN')
+    expect(initError.message).not.toContain('run `sanity new`')
+  })
+
+  test('unattended reports an available but rejected minted credential as invalid', async () => {
+    mockValidateSession.mockResolvedValue(null)
+    mockGetCliToken.mockResolvedValue('expired-or-revoked-token')
+    mockInspectEnvKeys.mockReturnValue({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {SANITY_PROJECT_ID: 'abc123'},
+    })
+    mockGetMintedProjectRecord.mockReturnValue({projectId: 'abc123'})
+
+    const context = createTestContext()
+    let caughtError: unknown
+    try {
+      await initAction(
+        {
+          ...defaultOptions,
+          dataset: 'production',
+          outputPath: '/tmp/test-output',
+          project: 'test-project',
+          unattended: true,
+        },
+        context,
+      )
+    } catch (error) {
+      caughtError = error
+    }
+
+    expect(caughtError).toBeInstanceOf(InitError)
+    const initError = caughtError as InitError
+    expect(initError.message).toContain(
+      'available auth token is invalid, expired, or lacks the required access',
+    )
+    expect(initError.message).toContain('Set SANITY_AUTH_TOKEN to a valid token')
+    expect(initError.message).not.toContain("token isn't available here")
     expect(initError.message).not.toContain('run `sanity new`')
   })
 
