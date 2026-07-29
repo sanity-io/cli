@@ -320,6 +320,7 @@ describe('invokeSanityCli', () => {
     ['docs read /docs/studio/installation --web', '--web'], // --web opens a browser on the host
     ['graphql undeploy --api ios --force', '--api'], // --api loads local GraphQL definitions
     ['api users/me --input body.json', '--input'], // --input reads the host's filesystem or stdin
+    ['api users/me --token other-user-token', '--token'], // --token overrides the MCP user's token
   ])('`%s` is refused by a conditional policy naming the flag', async (args, deniedFlag) => {
     const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
 
@@ -335,20 +336,35 @@ describe('invokeSanityCli', () => {
     const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
-    expect(result.output).toContain('is not supported here')
+    expect(result.output).toBe('This invocation of `api` is not supported here')
   })
 
-  test('the api policy refuses only the host input channels', () => {
+  test.each([
+    ['long flag', 'api users/me --header "Authorization: Bearer other-user-token"'],
+    ['short flag with mixed casing', 'api users/me -H "aUtHoRiZaTiOn: Basic credentials"'],
+  ])('`api` Authorization headers using the %s are refused', async (_style, args) => {
+    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+
+    expect(result.exitCode).toBe(2)
+    expect(result.output).toBe('This invocation of `api` is not supported here')
+  })
+
+  test('the api policy refuses authentication overrides and host input channels', () => {
     const policy = commandPolicies.mcp.api
     const validate = (flags: Record<string, unknown>) => policy.validate({args: {}, flags})
 
     expect(validate({})).toBe(true)
     expect(validate({field: ['key=value', 'count=1']})).toBe(true)
+    expect(validate({header: ['Content-Type: application/json', 'X-Custom: value']})).toBe(true)
+    expect(validate({header: [42, 'invalid']})).toBe(true)
     // Raw `-f` fields are always verbatim strings — `@` has no meaning there.
     expect(validate({'raw-field': ['key=@payload.json']})).toBe(true)
 
     expect(validate({input: 'payload.json'})).toBe(false)
     expect(validate({input: '-'})).toBe(false)
+    expect(validate({token: 'other-user-token'})).toBe(false)
+    expect(validate({header: ['Authorization: Bearer other-user-token']})).toBe(false)
+    expect(validate({header: [' aUtHoRiZaTiOn : Basic credentials']})).toBe(false)
     expect(validate({field: ['body=@payload.json']})).toBe(false)
     expect(validate({field: ['key=value', 'body=@-']})).toBe(false)
   })
@@ -450,6 +466,18 @@ describe('invokeSanityCli', () => {
     expect(result.exitCode).toBe(0)
     expect(result.output).toContain('USAGE')
     expect(result.output).not.toContain(deniedFlag)
+  })
+
+  test('`api --help` omits the policy-denied --token flag definition', async () => {
+    const result = await invokeSanityCli({
+      args: 'api --help',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(0)
+    expect(result.output).not.toContain('-t, --token=')
   })
 
   test('help output is stable across invocations sharing a config', async () => {
