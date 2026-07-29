@@ -511,6 +511,7 @@ describe('invokeSanityCli', () => {
 
     expect(validate({})).toBe(true)
     expect(validate({field: ['key=value', 'count=1']})).toBe(true)
+    expect(validate({field: [42, 'invalid']})).toBe(true)
     expect(validate({header: ['Content-Type: application/json', 'X-Custom: value']})).toBe(true)
     expect(validate({header: [42, 'invalid']})).toBe(true)
     // Raw `-f` fields are always verbatim strings — `@` has no meaning there.
