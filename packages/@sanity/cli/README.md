@@ -1862,7 +1862,7 @@ ARGUMENTS
 
 FLAGS
   --anonymous            Send the query without any authorization token
-  --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to use (defaults to 2025-08-15)
+  --api-version=<value>  API version to use (defaults to 2025-08-15)
   --pretty               Colorize JSON output
 
 OVERRIDE FLAGS
