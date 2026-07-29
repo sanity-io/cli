@@ -7,5 +7,9 @@ import {getCliExecutionContext} from '../executionContext.js'
  * @internal
  */
 export function isStaging(): boolean {
-  return (getCliExecutionContext()?.sanityEnv ?? process.env.SANITY_INTERNAL_ENV) === 'staging'
+  const context = getCliExecutionContext()
+
+  if (context) return context.sanityEnv === 'staging'
+
+  return process.env.SANITY_INTERNAL_ENV === 'staging'
 }
