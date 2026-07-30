@@ -209,6 +209,9 @@ export const mcpPolicy: CommandPolicySet = {
   // Exposes authentication credential metadata.
   'tokens:list': deny,
 
+  // Reads the local schema and source files and writes generated types to the project.
+  'typegen:generate': deny,
+
   // Loads local CLI and workbench configuration to identify the deployed Studio or application.
   undeploy: deny,
 
