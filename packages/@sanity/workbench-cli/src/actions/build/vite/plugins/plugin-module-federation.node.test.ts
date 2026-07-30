@@ -31,14 +31,18 @@ describe('sanityModuleFederation', () => {
   // project with a tsconfig.json, but it compiles the generated .js/.jsx
   // expose shims with the user's compiler options — tsc rejects them without
   // allowJs (TS6504), and declaration emit of the user's noEmit app code fails
-  // on its own (TS2742/TS4082). Type generation must stay explicitly off.
-  it('disables dts type generation so the user tsconfig never compiles the generated exposes', () => {
+  // on its own (TS2742/TS4082).
+  //
+  // Must be `false`, not `{generateTypes: false}`: an object keeps type
+  // consumption on, and that forks a dts dev worker which survives a hard exit
+  // holding our stdout pipe, leaving `sanity dev` unquittable under a wrapper.
+  it('disables dts entirely so no expose shims compile and no dts dev worker is forked', () => {
     mockFederation.mockReturnValue([])
 
     runPlugin()
 
     expect(mockFederation).toHaveBeenCalledTimes(1)
-    expect(mockFederation.mock.calls[0][0].dts).toEqual({generateTypes: false})
+    expect(mockFederation.mock.calls[0][0].dts).toBe(false)
   })
 
   it('scopes plugins to the dev server and the federation build environment', () => {

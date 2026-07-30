@@ -21,7 +21,7 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
       disableDynamicRemoteTypeHints: true,
       remoteHmr: true,
     },
-    // Remote type generation stays off: it compiles the exposes with the
+    // Remote types stay off entirely: generation compiles the exposes with the
     // project's tsconfig, and that breaks twice over on real projects.
     // The exposes are generated .js/.jsx shims, which tsc refuses without
     // allowJs (TYPE-001/TS6504) — no app template sets it. And with allowJs
@@ -29,7 +29,13 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     // are noEmit projects never written to be declaration-emittable: TS2742
     // (non-portable inferred types, endemic under pnpm) and TS4082 (private
     // names in default exports) then fail the compile just the same.
-    dts: {generateTypes: false},
+    //
+    // `false` rather than `{generateTypes: false}`: an object still leaves type
+    // *consumption* on, which forks a dts dev worker that inherits our stdio and
+    // is only asked to exit over IPC when vite closes cleanly. Any hard exit
+    // strands it, and a stranded worker holds the stdout pipe open, so a wrapper
+    // like turbo waits for EOF forever and `sanity dev` can't be quit.
+    dts: false,
     exposes,
     filename: `${FEDERATION_FILE_NAME}.js`,
     manifest: true,
