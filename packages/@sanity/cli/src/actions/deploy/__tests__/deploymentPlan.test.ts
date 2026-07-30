@@ -154,7 +154,7 @@ describe('reportExposes', () => {
     const reporter = createCollectingReporter<DeployCheck>()
 
     const exposes = reportExposes(reporter, {
-      services: [{name: 'sync', src: './sync.ts', type: 'worker'}],
+      services: [{name: 'sync', src: './sync.ts', title: 'sync', type: 'worker'}],
       views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
     })
 

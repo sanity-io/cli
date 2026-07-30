@@ -1,8 +1,3 @@
-export {
-  buildExposes,
-  type DeployedExpose,
-  summarizeExposes,
-} from '../actions/deploy/buildExposes.js'
 export {checkBuiltOutput} from '../actions/deploy/checkBuiltOutput.js'
 export {
   deployConfig,
@@ -16,9 +11,9 @@ export {
   deployWorkbenchApp,
 } from '../actions/deploy/deployWorkbenchApp.js'
 export {getWorkbench} from '../actions/deploy/getWorkbench.js'
+export {type DeployedExpose, summarizeInterfaces} from '../actions/deploy/summarizeInterfaces.js'
 export {
   type Application,
-  type BrettInterface,
   type BrettWorkspace,
   getApplication,
   getApplicationUrl,
