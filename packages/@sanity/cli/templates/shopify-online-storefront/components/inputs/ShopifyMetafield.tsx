@@ -1,9 +1,10 @@
 import {LockIcon} from '@sanity/icons'
 import {Box, Card, Code, Flex, Stack, Text} from '@sanity/ui'
 import {type ObjectInputProps} from 'sanity'
-import {formatMetafieldValue} from '../../utils/formatMetafieldValue'
+import {formatMetafieldLabel, formatMetafieldValue} from '../../utils/formatMetafieldValue'
 
 type Metafield = {
+  _key?: string
   namespace?: string
   key?: string
   type?: string
@@ -18,7 +19,8 @@ type Metafield = {
  * read it off the raw object value instead and format it according to the metafield's type.
  */
 const ShopifyMetafield = (props: ObjectInputProps) => {
-  const {namespace, key, type, value} = (props.value || {}) as Metafield
+  const metafield = (props.value || {}) as Metafield
+  const {type, value} = metafield
 
   const formattedValue = formatMetafieldValue(type, value)
   // Only `json` and `rich_text_field` values keep their line breaks; everything else formats to a
@@ -30,7 +32,7 @@ const ShopifyMetafield = (props: ObjectInputProps) => {
       <Stack space={3}>
         <Flex align="center" gap={2}>
           <Text size={1} weight="semibold">
-            {[namespace, key].filter(Boolean).join('.') || 'Metafield'}
+            {formatMetafieldLabel(metafield)}
           </Text>
           {type && (
             <Text muted size={1}>

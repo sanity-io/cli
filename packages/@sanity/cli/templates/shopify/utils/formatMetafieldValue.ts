@@ -105,3 +105,19 @@ export const formatMetafieldValue = (type: string | undefined, value: unknown) =
 export const formatMetafieldValuePreview = (type: string | undefined, value: unknown) => {
   return formatMetafieldValue(type, value).replace(/\s+/g, ' ').trim()
 }
+
+/**
+ * `<namespace>.<key>`, which is also what the importer uses as the `_key`. Falls back to the `_key`
+ * itself, which every array member has, so a metafield is never left unlabelled. The label is read
+ * from `namespace` and `key` rather than from `_key` because `_key` is array identity rather than
+ * data: the Studio regenerates it when an item is duplicated or copied.
+ */
+export const formatMetafieldLabel = (metafield: {
+  namespace?: string
+  key?: string
+  _key?: string
+}) => {
+  return (
+    [metafield.namespace, metafield.key].filter(Boolean).join('.') || metafield._key || 'Metafield'
+  )
+}

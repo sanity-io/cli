@@ -2,7 +2,7 @@ import {TagIcon} from '@sanity/icons'
 import {defineField, defineType} from 'sanity'
 
 import ShopifyMetafield from '../../components/inputs/ShopifyMetafield'
-import {formatMetafieldValuePreview} from '../../utils/formatMetafieldValue'
+import {formatMetafieldLabel, formatMetafieldValuePreview} from '../../utils/formatMetafieldValue'
 
 export default defineType({
   title: 'Metafield',
@@ -36,15 +36,16 @@ export default defineType({
   ],
   preview: {
     select: {
+      itemKey: '_key',
       key: 'key',
       namespace: 'namespace',
       type: 'type',
       value: 'value',
     },
-    prepare({key, namespace, type, value}) {
+    prepare({itemKey, key, namespace, type, value}) {
       return {
         subtitle: formatMetafieldValuePreview(type, value) || type,
-        title: [namespace, key].filter(Boolean).join('.'),
+        title: formatMetafieldLabel({_key: itemKey, key, namespace}),
       }
     },
   },
