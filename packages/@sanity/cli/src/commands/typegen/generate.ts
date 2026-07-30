@@ -195,6 +195,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
 
   private async runWatcher(): Promise<void> {
     const trace = this.telemetry.trace(TypegenWatchModeTrace)
+    let spin: SpinnerInstance | undefined
 
     try {
       const {config: typegenConfig, workDir} = await this.getConfig()
@@ -205,14 +206,35 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         resolve = res
       })
 
+      const watchSpin = spinner({}).start('Loading schema…')
+      spin = watchSpin
+      const rendererContext = {
+        formatGeneratedCode: typegenConfig.formatGeneratedCode,
+        generates: typegenConfig.generates,
+        schema: typegenConfig.schema,
+      }
+      let renderProgress = createTypegenProgressRenderer(watchSpin, rendererContext)
+
       const typegenWatcher = runTypegenWatcher({
         config: typegenConfig,
+        onProgress: (event) => {
+          // 'schemaLoaded' is the first event of every generation cycle; the
+          // renderer accumulates per-run state, so start each cycle fresh.
+          if (event.type === 'schemaLoaded') {
+            renderProgress = createTypegenProgressRenderer(watchSpin, rendererContext)
+          }
+          renderProgress(event)
+        },
         workDir,
       })
 
       const stop = once(async () => {
         process.off('SIGINT', stop)
         process.off('SIGTERM', stop)
+
+        if (watchSpin.isSpinning) {
+          watchSpin.stop()
+        }
 
         trace.log({
           step: 'stopped',
@@ -229,6 +251,9 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
 
       await promise
     } catch (error) {
+      if (spin?.isSpinning) {
+        spin.fail()
+      }
       trace.error(error instanceof Error ? error : new Error(String(error)))
       this.error(`${error instanceof Error ? error.message : 'Unknown error'}`, {exit: 1})
     }

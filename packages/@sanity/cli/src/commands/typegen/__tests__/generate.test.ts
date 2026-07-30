@@ -1,4 +1,4 @@
-import {testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const runTypegenGenerate = vi.hoisted(() =>
@@ -89,7 +89,7 @@ describe('#typegen:generate', () => {
     expect(runTypegenGenerate).toHaveBeenCalledOnce()
     const [options] = runTypegenGenerate.mock.calls[0]
     if (!options.config) throw new Error('Expected a config to be passed to runTypegenGenerate')
-    expect(options.workDir).toBe('/test/path')
+    expect(options.workDir).toBe(convertToSystemPath('/test/path'))
     expect(typeof options.onProgress).toBe('function')
     expect(options.config.generates).toBe('./sanity.types.ts')
   })
@@ -160,7 +160,8 @@ describe('#typegen:generate', () => {
 
     expect(runTypegenWatcher).toHaveBeenCalledOnce()
     const [options] = runTypegenWatcher.mock.calls[0]
-    expect(options.workDir).toBe('/test/path')
+    expect(options.workDir).toBe(convertToSystemPath('/test/path'))
+    expect(typeof options.onProgress).toBe('function')
     expect(stop).toHaveBeenCalledOnce()
     expect(process.listenerCount('SIGINT')).toBe(0)
     expect(process.listenerCount('SIGTERM')).toBe(0)
