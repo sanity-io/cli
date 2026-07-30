@@ -26,14 +26,19 @@ export interface InterfaceArtifact {
 
 /**
  * The `src` of a dock item the app placed but didn't author: an inlined
- * `unstable_defineView('dock_item', ...)` that renders nothing, so the workbench
- * keeps its own dock rendering.
+ * `unstable_defineView('dock_item', ...)` that renders the host's default, so the
+ * dock item stays the workbench's to change and never enters the app's bundle.
+ * Renders nothing against a host that offers no default.
  */
 const GENERATED_DOCK_ITEM: GeneratedArtifact = {
   path: GENERATED_DOCK_ITEM_FILE,
   source: () => `// This file is auto-generated on 'sanity build' / 'sanity dev'
 // Modifications to this file are automatically discarded
-export default {components: () => null, type: 'dock_item', version: ${VIEW_CONTRACT_VERSION}}
+export default {
+  components: (props) => props.renderDefault?.() ?? null,
+  type: 'dock_item',
+  version: ${VIEW_CONTRACT_VERSION},
+}
 `,
 }
 

@@ -48,6 +48,10 @@ export type IconDescriptor =
 /**
  * Props a dock-item component receives: its dock record, with the placement
  * metadata flattened in, plus the icon the host would render by default.
+ *
+ * `renderDefault` returns the workbench's own dock item, so an override can wrap
+ * it (a badge, a counter) instead of rebuilding it. It comes from the host, not
+ * the app's bundle: absent against a host that offers no default.
  * @public
  */
 export type DockItemViewProps = ViewComponentBaseProps<{
@@ -56,7 +60,7 @@ export type DockItemViewProps = ViewComponentBaseProps<{
   priority?: number
   title: string
   type: 'dock_item'
-}> & {icon: IconDescriptor}
+}> & {icon: IconDescriptor; renderDefault?: () => unknown}
 
 /**
  * The components each interface type exposes, keyed by type. A type with a

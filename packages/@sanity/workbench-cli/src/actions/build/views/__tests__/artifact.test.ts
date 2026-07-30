@@ -33,13 +33,11 @@ describe('viewArtifacts', () => {
       },
     ])
 
-    // The module the render artifact imports renders nothing, so the workbench
-    // falls back to its default dock rendering.
+    // The module the render artifact imports renders the host's own dock item,
+    // and nothing at all against a host that offers none.
     expect(source?.path).toBe('interfaces/dock-item.js')
     expect(source?.expose).toBeUndefined()
-    expect(source?.source(context)).toContain(
-      "export default {components: () => null, type: 'dock_item', version: 1}",
-    )
+    expect(source?.source(context)).toContain('(props) => props.renderDefault?.() ?? null')
     expect(render?.source(context)).toContain(
       'import view from "../.././.sanity/federation/interfaces/dock-item.js"',
     )

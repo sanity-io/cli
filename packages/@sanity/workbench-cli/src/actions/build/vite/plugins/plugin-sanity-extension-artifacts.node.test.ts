@@ -99,7 +99,7 @@ describe('sanityExtensionArtifacts', () => {
       path.join(root, '.sanity/federation/interfaces/dock-item.js'),
       'utf8',
     )
-    expect(source).toContain('components: () => null')
+    expect(source).toContain('props.renderDefault?.()')
 
     const item = fs.readFileSync(
       path.join(root, '.sanity/federation/views/drop-desk/item.js'),
