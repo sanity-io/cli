@@ -2,4 +2,4 @@
 '@sanity/cli': minor
 ---
 
-Move the `typegen generate` command into the CLI instead of loading `@sanity/codegen` as an oclif plugin. Requires `@sanity/codegen` v8.
+The `sanity typegen generate` command now ships directly in the CLI. There is no change to how you run it.
