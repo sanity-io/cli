@@ -605,7 +605,6 @@ describe('#undeploy', () => {
         cliConfig: {
           app: unstable_defineApp({
             entry: './src/App.tsx',
-            name: 'my-app',
             organizationId: 'org-1',
             slug: 'my-app-x1',
             title: 'My App',
@@ -642,7 +641,6 @@ describe('#undeploy', () => {
         cliConfig: {
           app: unstable_defineApp({
             entry: './src/App.tsx',
-            name: 'my-app',
             organizationId: 'org-1',
             slug: 'my-app-x1',
             title: 'My App',

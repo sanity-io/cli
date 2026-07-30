@@ -75,7 +75,6 @@ describe('extractCoreAppManifest', () => {
   test('forwards slug from a workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: unstable_defineApp({
-        name: 'my-app',
         organizationId: 'org-1',
         slug: 'my-slug',
         title: 'My App',

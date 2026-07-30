@@ -33,7 +33,7 @@ export function deriveInterfaces(
     throw new Error('App views for studios are not implemented yet')
   }
 
-  const interfaceId = (type: string, name: string): string => `${app.name}-${type}-${name}`
+  const interfaceId = (type: string, name: string): string => `${app.slug}-${type}-${name}`
 
   const views = (app.views ?? []).map(
     (view): DevServerInterface => ({
@@ -70,10 +70,10 @@ export function deriveInterfaces(
       ? []
       : [
           {
-            id: interfaceId('app', app.name),
+            id: interfaceId('app', app.slug),
             metadata: null,
-            moduleId: interfaceModuleId('app', app.name),
-            name: app.name,
+            moduleId: interfaceModuleId('app', app.slug),
+            name: app.slug,
             src: appEntry,
             title: app.title,
             type: 'app',
@@ -121,7 +121,7 @@ export async function deriveConfigs(app: CliConfig['app']): Promise<DevServerCon
       src: field.src,
       title: field.title,
     })),
-    moduleName: app.name,
+    moduleName: app.slug,
     version: String(MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION),
   }
   return [{...entry, id: await contentHash(JSON.stringify(entry))}]

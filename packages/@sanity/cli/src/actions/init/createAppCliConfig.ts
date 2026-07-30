@@ -16,7 +16,6 @@ export default defineCliConfig({
 interface GenerateCliConfigOptions {
   entry: string
   isWorkbenchApp: boolean
-  name: string
   slug: string
   title: string
 

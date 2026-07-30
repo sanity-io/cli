@@ -4,7 +4,7 @@ import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {buildExposes, summarizeExposes} from '../buildExposes.js'
 
 const context = {
-  appName: 'drop-desk',
+  appSlug: 'drop-desk',
   appTitle: 'Drop Desk',
   exposesAppView: true,
   version: '1.2.3',

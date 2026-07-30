@@ -13,7 +13,6 @@ import {type DevActionOptions} from '../types.js'
  */
 export function workbenchApp(overrides: Record<string, unknown> = {}): CliConfig['app'] {
   return unstable_defineApp({
-    name: 'test-app',
     organizationId: 'org-123',
     slug: 'test-app',
     title: 'Test App',

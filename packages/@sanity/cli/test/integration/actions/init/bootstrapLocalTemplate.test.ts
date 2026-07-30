@@ -128,9 +128,8 @@ describe('bootstrapLocalTemplate (workbench)', () => {
 
     const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
     expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
-    expect(cliConfig).toContain(`name: 'my-studio'`)
     expect(cliConfig).toContain(`title: 'My Studio'`)
-    // `slug` defaults from the entered name/title, slugified
+    // `slug` derives from the entered project name, slugified
     expect(cliConfig).toContain(`slug: 'my-studio'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`projectId: 'abc123'`)
@@ -159,11 +158,9 @@ describe('bootstrapLocalTemplate (workbench)', () => {
 
     const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
     expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
-    // App init derives `name` from the output directory, same as package.json
-    const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
-    expect(cliConfig).toContain(`name: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`title: 'My App'`)
-    // App init derives `slug` from the output directory too, same as `name`
+    // App init derives `slug` from the output directory, same as package.json's name
+    const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
     expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`entry: './src/App.tsx'`)
