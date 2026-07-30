@@ -109,7 +109,7 @@ describe('createFlow output', () => {
 })
 
 describe('createFlow spin', () => {
-  test('animates only for an interactive stderr TTY', () => {
+  test('animates for an interactive stderr TTY', () => {
     setStderr(true, 80)
     createFlow(() => {})
       .spin('minting')
@@ -117,12 +117,29 @@ describe('createFlow spin', () => {
 
     expect(mockSpinner).toHaveBeenCalledTimes(1)
     expect(stopAndPersist).toHaveBeenCalledTimes(1)
+  })
 
-    vi.clearAllMocks()
+  test.each([
+    ['succeed', 'minted', '◇  minted\n'],
+    ['fail', 'mint failed', '✖  mint failed\n'],
+  ] as const)('writes the non-interactive %s fallback only to stderr', (method, text, expected) => {
     mockIsInteractive.mockReturnValue(false)
-    const lines: string[] = []
-    createFlow((line = '') => lines.push(line)).spin('minting')
-    expect(mockSpinner).not.toHaveBeenCalled()
-    expect(lines[0]).toContain('minting')
+    const stdout: string[] = []
+    const write = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+
+    try {
+      createFlow((line = '') => stdout.push(line))
+        .spin('minting')
+        [method](text)
+
+      expect(mockSpinner).not.toHaveBeenCalled()
+      expect(stdout).toEqual([])
+      expect(write.mock.calls.map(([chunk]) => stripVTControlCharacters(String(chunk)))).toEqual([
+        '●  minting\n',
+        expected,
+      ])
+    } finally {
+      write.mockRestore()
+    }
   })
 })

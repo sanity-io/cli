@@ -33,6 +33,10 @@ function writeRailed(log: LogFn, glyph: string, text: string): void {
   }
 }
 
+function writeStderr(message = ''): void {
+  process.stderr.write(`${message}\n`)
+}
+
 function isTerminalControl(character: string): boolean {
   const codePoint = character.codePointAt(0)
   return codePoint !== undefined && (codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f))
@@ -121,10 +125,10 @@ export function createFlow(log: LogFn): Flow {
     },
     spin(text: string) {
       if (!isInteractive() || !process.stderr.isTTY || !process.stderr.columns) {
-        this.note(text)
+        writeRailed(writeStderr, '●', text)
         return {
-          fail: (failText: string) => log(`${styleText('red', '✖')}  ${failText}`),
-          succeed: (successText: string) => log(`${rail('◇')}  ${successText}`),
+          fail: (failText: string) => writeStderr(`${styleText('red', '✖')}  ${failText}`),
+          succeed: (successText: string) => writeStderr(`${rail('◇')}  ${successText}`),
         }
       }
 
