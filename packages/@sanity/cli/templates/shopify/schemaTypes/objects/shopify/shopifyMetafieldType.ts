@@ -1,7 +1,7 @@
 import {TagIcon} from '@sanity/icons'
 import {defineField} from 'sanity'
 
-import ShopifyMetafieldInput from '../../../components/inputs/ShopifyMetafield'
+import ShopifyMetafield from '../../../components/inputs/ShopifyMetafield'
 import {
   formatMetafieldLabel,
   formatMetafieldValuePreview,
@@ -14,7 +14,7 @@ export const shopifyMetafieldType = defineField({
   icon: TagIcon,
   readOnly: true,
   components: {
-    input: ShopifyMetafieldInput,
+    input: ShopifyMetafield,
   },
   fields: [
     defineField({
@@ -30,6 +30,11 @@ export const shopifyMetafieldType = defineField({
       type: 'string',
       description: 'Shopify metafield type, e.g. single_line_text_field',
     }),
+    // `value` is deliberately not declared. Its shape depends on the metafield type — a string,
+    // number, boolean, list or object — and no Sanity field type accepts all of those. A declared
+    // field is always type-checked, even when hidden, so declaring it reports a validation error on
+    // every value that is not a string. Undeclared fields are only flagged outside the Studio, so
+    // this stays quiet; `ShopifyMetafield` renders the value from the raw object value.
   ],
   preview: {
     select: {

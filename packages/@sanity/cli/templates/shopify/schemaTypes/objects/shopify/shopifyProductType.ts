@@ -29,8 +29,11 @@ export const shopifyProductType = defineField({
         collapsible: true,
       },
     },
+    // Named differently to the `metafields` field on purpose: a fieldset's path is its parent path
+    // plus its name, so a fieldset sharing a field's name produces two different things with the
+    // same path.
     {
-      name: 'metafields',
+      name: 'shopifyMetafields',
       title: 'Metafields',
       options: {
         collapsed: true,
@@ -136,7 +139,7 @@ export const shopifyProductType = defineField({
       ],
     }),
     defineField({
-      fieldset: 'metafields',
+      fieldset: 'shopifyMetafields',
       name: 'metafields',
       type: 'array',
       description:

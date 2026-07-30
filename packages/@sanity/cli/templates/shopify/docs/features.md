@@ -28,9 +28,9 @@ Each entry holds the metafield's `namespace`, `key`, Shopify `type` and `value`:
 }
 ```
 
-Values arrive deserialized, so `value` holds whatever the metafield's Shopify type implies — a string, number, boolean, list or JSON object. Because no single Sanity field type covers all of those, `value` isn't declared on the `shopifyMetafield` schema type; `/components/inputs/ShopifyMetafield.tsx` reads it from the raw value instead.
+Values arrive deserialized, so `value` holds whatever the metafield's Shopify type implies — a string, number, boolean, list or JSON object. No single Sanity field type covers all of those, and a declared field is type-checked even when hidden, so `value` is left undeclared and `/components/inputs/ShopifyMetafield.tsx` reads it from the raw object value.
 
-`/utils/formatMetafieldValue.ts` formats it using the metafield's `type`:
+Each metafield is shown as a row in the array, with `namespace.key` as the title and the formatted value as the subtitle. `/utils/formatMetafieldValue.ts` formats it using the metafield's `type`:
 
 | Metafield type                  | Synced value                                   | Displayed as                    |
 | ------------------------------- | ---------------------------------------------- | ------------------------------- |

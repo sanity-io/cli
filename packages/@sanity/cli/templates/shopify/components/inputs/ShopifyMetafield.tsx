@@ -1,62 +1,35 @@
-import {LockIcon} from '@sanity/icons'
-import {Box, Card, Code, Flex, Stack, Text} from '@sanity/ui'
+import {Card, Code, Text} from '@sanity/ui'
 import {type ObjectInputProps} from 'sanity'
-import {formatMetafieldLabel, formatMetafieldValue} from '../../utils/formatMetafieldValue'
-
-type Metafield = {
-  _key?: string
-  namespace?: string
-  key?: string
-  type?: string
-  value?: unknown
-}
+import {formatMetafieldValue} from '../../utils/formatMetafieldValue'
 
 /**
- * Read-only display for a single Shopify metafield.
+ * Read-only display of a synced Shopify metafield's value.
  *
- * `value` is deliberately not declared as a field on the `shopifyMetafield` schema type: its shape
- * depends on the Shopify metafield type and Sanity has no field type that accepts every variant. We
- * read it off the raw object value instead and format it according to the metafield's type.
+ * `value` is not declared on the `shopifyMetafield` schema type, so it has to be read from the raw
+ * object value here. The array row already shows the namespace, key and type, so this renders the
+ * value only.
  */
-export default function ShopifyMetafieldInput(props: ObjectInputProps) {
-  const metafield = (props.value || {}) as Metafield
-  const {type, value} = metafield
+export default function ShopifyMetafield(props: ObjectInputProps) {
+  const {type, value} = (props.value || {}) as {type?: string; value?: unknown}
 
   const formattedValue = formatMetafieldValue(type, value)
-  // Only `json` and `rich_text_field` values keep their line breaks; everything else formats to a
-  // single line and reads better as plain text.
-  const isMultiline = formattedValue.includes('\n')
 
   return (
-    <Card padding={3} radius={2} shadow={1} tone="transparent">
-      <Stack space={3}>
-        <Flex align="center" gap={2}>
-          <Text size={1} weight="semibold">
-            {formatMetafieldLabel(metafield)}
-          </Text>
-          {type && (
-            <Text muted size={1}>
-              <code>{type}</code>
-            </Text>
-          )}
-          <Text muted size={1}>
-            <LockIcon />
-          </Text>
-        </Flex>
-        {formattedValue ? (
-          <Box overflow="auto">
-            {isMultiline ? (
-              <Code size={1}>{formattedValue}</Code>
-            ) : (
-              <Text size={1}>{formattedValue}</Text>
-            )}
-          </Box>
+    <Card border padding={3} radius={1} tone="transparent">
+      {formattedValue ? (
+        // Only `json` and `rich_text_field` keep their line breaks and need the monospace block.
+        formattedValue.includes('\n') ? (
+          <Code size={1} style={{margin: 0}}>
+            {formattedValue}
+          </Code>
         ) : (
-          <Text muted size={1}>
-            No value
-          </Text>
-        )}
-      </Stack>
+          <Text size={1}>{formattedValue}</Text>
+        )
+      ) : (
+        <Text muted size={1}>
+          No value
+        </Text>
+      )}
     </Card>
   )
 }
