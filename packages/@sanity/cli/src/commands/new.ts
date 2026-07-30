@@ -306,10 +306,9 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
         ) {
           throw err
         }
-        // After the scaffolding process is aborted, we may be in a partial failure state.
-        // It's risky to attempt automatic cleanup of the underlying filesystem, as we don't
-        // know if there are legitimate files the end user / agent would want to retain.
-        // Surface the failure and "project created" message, and leave inspection to the user/agent.
+        // Scaffolding is best-effort and may leave files or directories behind when it fails.
+        // Partial filesystem state does not prove the scaffold is runnable, so report the failure,
+        // continue only with the project/token/claim handoff below, and do not attempt cleanup.
         flow.note(`Automatic setup did not finish: ${err instanceof Error ? err.message : err}`)
         flow.line('The project was created. You do not need to create another one.')
         flow.gap()
