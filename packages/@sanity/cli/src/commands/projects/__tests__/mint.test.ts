@@ -133,6 +133,9 @@ describe('#projects:mint', () => {
         'make CLI commands run from ./sanity authenticate as your account. The token in ./.env is ' +
         'not used for CLI authentication from the mint root.',
     )
+    expect(MintProjectCommand.flags.force.description).toBe(
+      'Mint a new project even when .env or .env.local already has Sanity values (existing files are left unchanged)',
+    )
   })
 
   test('mints, records, writes setup values, and scaffolds the project', async () => {
@@ -304,7 +307,7 @@ describe('#projects:mint', () => {
     expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
   })
 
-  test('--force prints replacement values without changing .env or scaffolding', async () => {
+  test('--force leaves existing env values unchanged and still scaffolds', async () => {
     mockInspectEnvKeys
       .mockReturnValueOnce({
         blankKeys: [],
@@ -316,19 +319,23 @@ describe('#projects:mint', () => {
     await MintProjectCommand.run(['My New Project', '--force'])
 
     expect(mockAppendEnvValues).not.toHaveBeenCalled()
-    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    expect(mockScaffoldProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataset: minted.datasetName,
+        projectId: minted.resourceId,
+        token: minted.token,
+      }),
+    )
     expect(outputText()).toContain('Your existing ./.env was left unchanged')
-    expect(outputText()).toContain('Update ./.env')
-    expect(outputText()).toContain('Create your Studio')
-    expect(outputText()).toContain('Create a new Next.js website in ./web')
-    expect(outputText()).toContain(`SANITY_PROJECT_ID="${minted.resourceId}"`)
-    expect(outputText()).toContain(`SANITY_AUTH_TOKEN="${minted.token}"`)
+    expect(outputText()).toContain('Scaffolding will use the new project values')
+    expect(outputText()).not.toContain('Update ./.env')
+    expect(outputText()).toContain('Created two folders')
     expect(outputText()).toContain('Keep those reads server-side')
     expect(outputText()).toContain('never expose the token to the')
     expect(outputText()).toContain('browser: it can change everything in this project')
   })
 
-  test('--force identifies .env.local as the file that needs new values', async () => {
+  test('--force leaves an existing .env.local unchanged and still scaffolds', async () => {
     mockInspectEnvKeys.mockReturnValueOnce(emptyInspection).mockReturnValueOnce({
       blankKeys: [],
       presentKeys: ['SANITY_PROJECT_ID'],
@@ -338,7 +345,24 @@ describe('#projects:mint', () => {
     await MintProjectCommand.run(['My New Project', '--force'])
 
     expect(outputText()).toContain('Your existing ./.env.local was left unchanged')
-    expect(outputText()).toContain('Update ./.env.local')
+    expect(outputText()).not.toContain('Update ./.env.local')
+    expect(mockScaffoldProject).toHaveBeenCalled()
+  })
+
+  test('--force still refuses a non-empty Studio target before minting', async () => {
+    mockInspectEnvKeys
+      .mockReturnValueOnce({
+        blankKeys: [],
+        presentKeys: ['SANITY_PROJECT_ID'],
+        values: {SANITY_PROJECT_ID: 'existing'},
+      })
+      .mockReturnValueOnce(emptyInspection)
+    mockIsStudioScaffoldTargetAvailable.mockResolvedValue(false)
+
+    await expect(MintProjectCommand.run(['My New Project', '--force'])).rejects.toMatchObject({
+      code: 'EXISTING_STUDIO_DIRECTORY',
+    })
+    expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
   })
 
   test('refuses blank project placeholders even with --force', async () => {
@@ -564,7 +588,9 @@ describe('#new', () => {
       'Set up a Studio in ./sanity and a Next.js website in ./web (on by default)',
     )
     expect(NewCommand.args.projectName.description).toBe('Display name for the new project')
-    expect(NewCommand.flags.force.description).toMatch(/^Create a new project/u)
+    expect(NewCommand.flags.force.description).toBe(
+      'Create a new project even when .env or .env.local already has Sanity values (existing files are left unchanged)',
+    )
   })
 
   test('runs the same self-contained implementation with its own command identity', async () => {

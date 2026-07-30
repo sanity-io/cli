@@ -63,7 +63,7 @@ export class NewCommand extends MintProjectCommand {
     force: Flags.boolean({
       default: false,
       description:
-        'Create a new project even when .env already has Sanity setup values (the file is left untouched; the new values are printed for you to apply)',
+        'Create a new project even when .env or .env.local already has Sanity values (existing files are left unchanged)',
     }),
     scaffold: Flags.boolean({
       allowNo: true,

@@ -194,7 +194,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     force: Flags.boolean({
       default: false,
       description:
-        'Mint a new project even when .env already has Sanity setup values (the file is left untouched; the new values are printed for you to apply)',
+        'Mint a new project even when .env or .env.local already has Sanity values (existing files are left unchanged)',
     }),
     scaffold: Flags.boolean({
       allowNo: true,
@@ -231,12 +231,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
           invoked,
         )
     const hasExistingKeys = existingEnvFiles.length > 0
-    if (
-      !json &&
-      this.flags.scaffold &&
-      !hasExistingKeys &&
-      !(await isStudioScaffoldTargetAvailable(cwd))
-    ) {
+    if (!json && this.flags.scaffold && !(await isStudioScaffoldTargetAvailable(cwd))) {
       throw new CLIError(`./${STUDIO_DIR} is not empty. No project was minted.`, {
         code: 'EXISTING_STUDIO_DIRECTORY',
         exit: exitCodes.RUNTIME_ERROR,
@@ -389,7 +384,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       const message =
         `${existingEnvFiles.join(' and ')} still ${existingEnvFiles.length === 1 ? 'holds' : 'hold'} ` +
         `the previous Sanity values and ${existingEnvFiles.length === 1 ? 'was' : 'were'} not ` +
-        'modified; update them from the new values.'
+        'modified.'
       if (json) {
         warnings = [message]
       } else {
@@ -398,21 +393,12 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
             existingEnvFiles.length === 1 ? 'was' : 'were'
           } left unchanged.`,
         )
-        flow.gap()
-        flow.highlight(`Update ${existingEnvFiles.join(' and ')}`)
-        flow.line(
-          existingEnvFiles.length === 1
-            ? 'Replace the previous Sanity values with:'
-            : 'Replace the previous Sanity values in both files with:',
-        )
-        flow.gap()
-        printEnvValues()
-        flow.gap()
         if (this.flags.scaffold) {
-          printScaffoldRecipe()
-          flow.gap()
+          flow.line('Scaffolding will use the new project values.')
+        } else {
+          flow.line('Use the new project values shown above in your own setup.')
         }
-        rootEnvRecoveryPrinted = true
+        flow.gap()
       }
     } else if (!json) {
       try {
@@ -474,7 +460,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       flow.gap()
     }
 
-    const shouldScaffold = !json && this.flags.scaffold && !hasExistingKeys && setupValuesWritten
+    const shouldScaffold = !json && this.flags.scaffold && (hasExistingKeys || setupValuesWritten)
     let scaffold: ScaffoldResult | undefined
     if (shouldScaffold) {
       const scaffoldController = new AbortController()
@@ -687,7 +673,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         code: 'EXISTING_SANITY_ENV_VALUES',
         exit: exitCodes.RUNTIME_ERROR,
         suggestions: [
-          `Mint a fresh project anyway: \`${invoked} --force\` (.env is left untouched)`,
+          `Mint a fresh project anyway: \`${invoked} --force\` (existing files are left untouched)`,
           'Or run this command in a different directory',
         ],
       },
