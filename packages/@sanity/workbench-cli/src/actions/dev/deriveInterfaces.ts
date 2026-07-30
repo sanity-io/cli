@@ -7,6 +7,7 @@ import {
   VIEW_CONTRACT_VERSION,
 } from '../../contract.js'
 import {isWorkbenchApp, readConfig} from '../../defineApp.js'
+import {resolveViews} from '../../resolveViews.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from '../build/vite/constants.js'
 import {type DevServerManifest} from './registry.js'
 
@@ -35,18 +36,19 @@ export function deriveInterfaces(
 
   const interfaceId = (type: string, name: string): string => `${app.name}-${type}-${name}`
 
-  const views = (app.views ?? []).map(
-    (view): DevServerInterface => ({
-      id: interfaceId('panel', view.name),
-      metadata: null,
-      moduleId: interfaceModuleId('panel', view.name),
+  const views = resolveViews(app).map((view): DevServerInterface => {
+    const record = {
+      id: interfaceId(view.type, view.name),
+      moduleId: interfaceModuleId(view.type, view.name),
       name: view.name,
       src: view.src,
-      title: view.title ?? view.name,
-      type: 'panel',
+      title: view.title ?? (view.type === 'dock_item' ? app.title : view.name),
       version: String(VIEW_CONTRACT_VERSION),
-    }),
-  )
+    }
+    return view.type === 'dock_item'
+      ? {...record, metadata: view.metadata, type: view.type}
+      : {...record, metadata: null, type: view.type}
+  })
 
   const services = (app.services ?? []).map(
     (service): DevServerInterface => ({

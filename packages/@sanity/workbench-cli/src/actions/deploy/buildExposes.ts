@@ -31,14 +31,18 @@ export function buildExposes(
     })
   }
   for (const view of exposes.views ?? []) {
-    records.push({
-      metadata: null,
-      moduleId: interfaceModuleId('panel', view.name),
+    const record = {
+      moduleId: interfaceModuleId(view.type, view.name),
       name: view.name,
-      title: view.title ?? view.name,
-      type: 'panel',
+      // A dock item stands in for the app in the dock, so it borrows its title.
+      title: view.title ?? (view.type === 'dock_item' ? appTitle : view.name),
       version,
-    })
+    }
+    records.push(
+      view.type === 'dock_item'
+        ? {...record, metadata: view.metadata, type: view.type}
+        : {...record, metadata: null, type: view.type},
+    )
   }
   for (const service of exposes.services ?? []) {
     records.push({
@@ -95,7 +99,8 @@ export function summarizeExposes({services, views}: WorkbenchExposes): {
     title: decl.title ?? decl.name,
     type: decl.type,
   })
-  const viewExposes = (views ?? []).map((view) => toExpose(view))
+  // A generated dock item is no entry point the app authored.
+  const viewExposes = (views ?? []).filter((view) => !view.generated).map((view) => toExpose(view))
   const serviceExposes = (services ?? []).map((service) => toExpose(service))
 
   const lines: string[] = []

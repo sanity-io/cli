@@ -5,7 +5,7 @@ import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
-import {type AppInterfaceMetadata} from '../contract.js'
+import {type DockItemMetadata} from '../contract.js'
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
 export type ApplicationType = 'coreApp' | 'studio'
@@ -31,7 +31,8 @@ interface BrettInterfaceBase {
  * @internal
  */
 export type BrettInterface =
-  | (BrettInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
+  | (BrettInterfaceBase & {metadata: DockItemMetadata | null; type: 'dock_item'})
+  | (BrettInterfaceBase & {metadata: null; type: 'app'})
   | (BrettInterfaceBase & {metadata: null; type: 'panel'})
   | (BrettInterfaceBase & {metadata: null; type: 'worker'})
 

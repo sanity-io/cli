@@ -17,7 +17,7 @@ import {
 } from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
-import {AppInterfaceMetadataSchema} from '../../contract.js'
+import {DockItemMetadataSchema} from '../../contract.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
@@ -74,9 +74,10 @@ const interfaceBaseFields = {
 const devServerInterfaceSchema = z.discriminatedUnion('type', [
   z.object({
     ...interfaceBaseFields,
-    metadata: z.nullable(AppInterfaceMetadataSchema),
-    type: z.literal('app'),
+    metadata: z.nullable(DockItemMetadataSchema),
+    type: z.literal('dock_item'),
   }),
+  z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('app')}),
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('panel')}),
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('worker')}),
 ])

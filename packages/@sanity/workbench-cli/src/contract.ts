@@ -31,6 +31,7 @@ export interface ViewComponentBaseProps<TView> {
  * @internal
  */
 export const VIEW_COMPONENTS = {
+  dock_item: ['item'],
   panel: ['title', 'panel'],
 } as const satisfies Record<string, readonly string[]>
 
@@ -41,17 +42,17 @@ export type InterfaceType = keyof typeof VIEW_COMPONENTS
 export type ServiceType = 'worker'
 
 /**
- * The `app` interface's dock-placement metadata. Interface metadata is
- * discriminated on `type`; `app` is the only type with a shape so far.
+ * Where an app renders in the dock. `group` stays a loose string — the
+ * workbench, not the CLI, decides which groups exist.
  * @internal
  */
-export const AppInterfaceMetadataSchema = z.object({
+export const DockItemMetadataSchema = z.object({
   group: z.optional(z.string()),
   priority: z.optional(z.number()),
 })
 
 /** @internal */
-export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
+export type DockItemMetadata = z.infer<typeof DockItemMetadataSchema>
 
 /**
  * The module-federation id a build exposes an interface at. Dev stamps the same
@@ -63,6 +64,7 @@ export function interfaceModuleId(type: string, name: string): string {
     case 'app': {
       return 'App'
     }
+    case 'dock_item':
     case 'panel': {
       return `views/${name}`
     }
@@ -95,8 +97,19 @@ const PanelViewSchema = z.object({
   ...interfaceDeclarationFields('View'),
 })
 
+const DockItemViewSchema = z.object({
+  type: z.literal('dock_item'),
+  ...interfaceDeclarationFields('View'),
+})
+
 /** @internal */
-export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [PanelViewSchema])
+export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [
+  DockItemViewSchema,
+  PanelViewSchema,
+])
+
+/** @internal */
+export type InterfaceDeclaration = z.infer<typeof InterfaceDeclarationSchema>
 
 const WorkerServiceSchema = z.object({
   type: z.literal('worker'),

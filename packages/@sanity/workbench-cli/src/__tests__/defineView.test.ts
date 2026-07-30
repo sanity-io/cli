@@ -1,7 +1,12 @@
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {VIEW_CONTRACT_VERSION} from '../contract.js'
-import {type DefinedView, type PanelViewProps, unstable_defineView} from '../defineView.js'
+import {
+  type DefinedView,
+  type DockItemViewProps,
+  type PanelViewProps,
+  unstable_defineView,
+} from '../defineView.js'
 
 const title = ({view}: PanelViewProps) => view.name
 const panel = ({view}: PanelViewProps) => view.name
@@ -44,6 +49,18 @@ describe('type surface', () => {
         return null
       },
     })
+  })
+
+  test('takes a bare component for a single-slot view type', () => {
+    const dockItem = unstable_defineView('dock_item', ({icon, view}) => {
+      expectTypeOf(view.title).toEqualTypeOf<string>()
+      expectTypeOf(view.priority).toEqualTypeOf<number | undefined>()
+      expectTypeOf(icon.variant).toEqualTypeOf<'avatar' | 'image'>()
+      return null
+    })
+
+    expectTypeOf(dockItem.components).toBeFunction()
+    expectTypeOf(dockItem.components).parameter(0).toEqualTypeOf<DockItemViewProps>()
   })
 
   test('rejects an unknown view type', () => {

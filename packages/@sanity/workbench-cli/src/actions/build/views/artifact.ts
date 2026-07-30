@@ -1,4 +1,5 @@
-import {type InterfaceType, VIEW_COMPONENTS} from '../../../contract.js'
+import {type InterfaceType, VIEW_COMPONENTS, VIEW_CONTRACT_VERSION} from '../../../contract.js'
+import {GENERATED_DOCK_ITEM_FILE} from '../../../resolveViews.js'
 import {type GeneratedArtifact} from '../artifact.js'
 import {renderRemote} from '../render-remote.js'
 
@@ -18,6 +19,22 @@ export interface InterfaceArtifact {
   src: string
   /** Interface type — selects which components the build expands. */
   type: InterfaceType
+
+  /** The build writes this view's `src` too — see {@link GENERATED_DOCK_ITEM}. */
+  generated?: boolean
+}
+
+/**
+ * The `src` of a dock item the app placed but didn't author: an inlined
+ * `unstable_defineView('dock_item', ...)` that renders nothing, so the workbench
+ * keeps its own dock rendering.
+ */
+const GENERATED_DOCK_ITEM: GeneratedArtifact = {
+  path: GENERATED_DOCK_ITEM_FILE,
+  source: () => `// This file is auto-generated on 'sanity build' / 'sanity dev'
+// Modifications to this file are automatically discarded
+export default {components: () => null, type: 'dock_item', version: ${VIEW_CONTRACT_VERSION}}
+`,
 }
 
 /**
@@ -32,6 +49,7 @@ export interface InterfaceArtifact {
 export function viewArtifacts(views: readonly InterfaceArtifact[]): GeneratedArtifact[] {
   const artifacts: GeneratedArtifact[] = []
   for (const view of views) {
+    if (view.generated) artifacts.push(GENERATED_DOCK_ITEM)
     for (const component of VIEW_COMPONENTS[view.type]) {
       artifacts.push({
         expose: `./${VIEWS_DIR_NAME}/${view.name}/${component}`,

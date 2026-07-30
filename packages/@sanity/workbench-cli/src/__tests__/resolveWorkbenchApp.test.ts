@@ -78,6 +78,46 @@ describe('resolveWorkbenchApp', () => {
     })
   })
 
+  test('lifts the declared placement onto a generated dock item', () => {
+    const config = asConfig(
+      unstable_defineApp({
+        group: 'dock.system',
+        name: 'my-app',
+        organizationId: 'org-123',
+        priority: 20,
+        slug: 'my-app',
+        title: 'My App',
+      }),
+    )
+
+    expect(resolveWorkbenchApp(config)?.views).toEqual([
+      {
+        generated: true,
+        metadata: {group: 'dock.system', priority: 20},
+        name: 'my-app',
+        src: './.sanity/federation/interfaces/dock-item.js',
+        type: 'dock_item',
+      },
+    ])
+  })
+
+  test('keeps a declared dock item as the app view it is', () => {
+    const config = asConfig(
+      unstable_defineApp({
+        entry: './src/App.tsx',
+        name: 'my-app',
+        organizationId: 'org-123',
+        slug: 'my-app',
+        title: 'My App',
+        views: [{name: 'dock', src: './src/dockItem.tsx', type: 'dock_item'}],
+      }),
+    )
+
+    expect(resolveWorkbenchApp(config)?.views).toEqual([
+      {metadata: {}, name: 'dock', src: './src/dockItem.tsx', type: 'dock_item'},
+    ])
+  })
+
   test('throws when an app declares both an entry and panel views', () => {
     const config = asConfig(
       unstable_defineApp({

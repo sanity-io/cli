@@ -79,14 +79,49 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('carries null metadata on every interface (not yet populated)', () => {
+  test('leaves metadata null on every interface but the dock item', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
+      group: 'dock.user',
       services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
     })
-    expect(deriveInterfaces(app, {isApp: true})?.every((iface) => iface.metadata === null)).toBe(
-      true,
+    const metadataByType = Object.fromEntries(
+      (deriveInterfaces(app, {isApp: true}) ?? []).map((iface) => [iface.type, iface.metadata]),
     )
+    expect(metadataByType).toEqual({app: null, dock_item: {group: 'dock.user'}, worker: null})
+  })
+
+  test('forwards the placement as a dock item, so dev and deploy read one source', () => {
+    const app = workbenchApp({entry: './src/App.tsx', group: 'dock.user', priority: 20})
+    expect(deriveInterfaces(app, {isApp: true})?.[0]).toEqual({
+      id: 'test-app-dock_item-test-app',
+      metadata: {group: 'dock.user', priority: 20},
+      moduleId: 'views/test-app',
+      name: 'test-app',
+      src: './.sanity/federation/interfaces/dock-item.js',
+      title: 'Test App',
+      type: 'dock_item',
+      version: '1',
+    })
+  })
+
+  test('serves a declared dock item from its own source file', () => {
+    const app = workbenchApp({
+      priority: 5,
+      views: [{name: 'dock', src: './src/DockItem.tsx', title: 'Inbox', type: 'dock_item'}],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-dock_item-dock',
+        metadata: {priority: 5},
+        moduleId: 'views/dock',
+        name: 'dock',
+        src: './src/DockItem.tsx',
+        title: 'Inbox',
+        type: 'dock_item',
+        version: '1',
+      },
+    ])
   })
 
   test('omits the app interface for a dock-only app (no entry)', () => {

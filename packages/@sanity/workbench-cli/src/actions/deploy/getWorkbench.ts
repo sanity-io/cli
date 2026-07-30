@@ -36,15 +36,17 @@ export function getWorkbench(
   if (!app) return null
 
   const {config, entry, isSingleton, services, views} = app
+  // A generated dock item renders nothing, so it alone isn't worth hosting.
+  const hasInterfaces = !!entry || views.some((view) => !view.generated) || services.length > 0
 
   return {
     ...app,
 
     deploySingletonConfig: !!isSingleton && !!config,
-    hasInterfaces: !!entry || views.length > 0 || services.length > 0,
+    hasInterfaces,
 
     assertDeployable() {
-      if (!entry && views.length === 0 && services.length === 0 && !config) {
+      if (!hasInterfaces && !config) {
         throw new Error(
           'Nothing to deploy: the app declares no entry, views, services or config. ' +
             'Add at least one to the app config.',

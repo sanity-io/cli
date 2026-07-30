@@ -76,6 +76,38 @@ describe('sanityExtensionArtifacts', () => {
     expect(title).toContain('view.components["title"]')
   })
 
+  it('writes both halves of a generated dock item: its source and its render artifact', () => {
+    const root = makeRoot()
+    runConfigResolved(
+      sanityExtensionArtifacts({
+        artifacts: workbenchArtifacts({
+          views: [
+            {
+              generated: true,
+              metadata: {group: 'dock.user'},
+              name: 'drop-desk',
+              src: './.sanity/federation/interfaces/dock-item.js',
+              type: 'dock_item',
+            },
+          ],
+        }),
+      }),
+      root,
+    )
+
+    const source = fs.readFileSync(
+      path.join(root, '.sanity/federation/interfaces/dock-item.js'),
+      'utf8',
+    )
+    expect(source).toContain('components: () => null')
+
+    const item = fs.readFileSync(
+      path.join(root, '.sanity/federation/views/drop-desk/item.js'),
+      'utf8',
+    )
+    expect(item).toContain('import view from "../../interfaces/dock-item.js"')
+  })
+
   it('writes nothing when no views are declared', () => {
     const root = makeRoot()
     runConfigResolved(sanityExtensionArtifacts({artifacts: workbenchArtifacts({views: []})}), root)

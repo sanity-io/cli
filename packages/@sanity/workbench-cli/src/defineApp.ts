@@ -29,6 +29,9 @@ const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user']
  */
 export type DockGroup = z.output<typeof DockGroupSchema>
 
+const countViews = (views: readonly {type: string}[] | undefined, type: string) =>
+  (views ?? []).filter((view) => view.type === type).length
+
 /**
  * Runtime-validation schema for `unstable_defineApp`.
  * @internal
@@ -118,25 +121,34 @@ export const DefineAppInputSchema = z
     }),
   )
   .check(
-    // An app exposes one interface kind: an app view (`entry`) or panels.
+    // A dock item is placement, not a surface, so it rides with an entry or a panel.
     z.refine(
-      (input) => !(input.entry !== undefined && (input.views?.length ?? 0) > 0),
+      (input) => !(input.entry !== undefined && countViews(input.views, 'panel') > 0),
       'An app cannot expose both an app view (`entry`) and panel views. Declare one or the other.',
     ),
   )
   .check(
     z.refine(
-      (input) => (input.views?.length ?? 0) <= 1,
+      (input) => countViews(input.views, 'panel') <= 1,
       'An app can expose at most one panel view.',
     ),
   )
+  .check(
+    // Only one item renders in the dock, so a second declaration would be dropped.
+    z.refine(
+      (input) => countViews(input.views, 'dock_item') <= 1,
+      'An app can declare at most one `dock_item` view.',
+    ),
+  )
+
+type ViewDeclaration = NonNullable<z.output<typeof DefineAppInputSchema>['views']>[number]
 
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
  * `applicationType`, `isSingleton`, and `config` — validated by the
  * schema but not part of the public surface (Sanity-owned apps set them via
- * `@ts-expect-error`). A union so an app declares an app `entry` or `views`,
- * never both.
+ * `@ts-expect-error`). A union so an app declares an app `entry` or panel
+ * `views`, never both; a `dock_item` view goes with either.
  * @public
  */
 export type DefineAppInput = Omit<
@@ -144,8 +156,8 @@ export type DefineAppInput = Omit<
   'applicationType' | 'config' | 'entry' | 'isSingleton' | 'views'
 > &
   (
-    | {entry?: never; views?: NonNullable<z.output<typeof DefineAppInputSchema>['views']>}
-    | {entry?: string; views?: never}
+    | {entry?: never; views?: ViewDeclaration[]}
+    | {entry?: string; views?: Extract<ViewDeclaration, {type: 'dock_item'}>[]}
   )
 
 /**

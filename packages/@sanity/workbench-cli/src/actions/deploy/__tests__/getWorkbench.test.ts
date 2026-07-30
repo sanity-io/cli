@@ -102,6 +102,20 @@ describe('assertDeployable', () => {
     ).not.toThrow()
   })
 
+  test('passes when the app declares a dock item to render', () => {
+    expect(() =>
+      workbench({
+        views: [{name: 'dock', src: './src/dockItem.tsx', type: 'dock_item'}],
+      }).assertDeployable(),
+    ).not.toThrow()
+  })
+
+  test('throws when placement is all the app declares — a generated item renders nothing', () => {
+    expect(() => workbench({group: 'dock.user', priority: 20}).assertDeployable()).toThrow(
+      'declares no entry, views, services or config',
+    )
+  })
+
   test('passes when a media library declares a field', () => {
     expect(() =>
       mediaLibrary({

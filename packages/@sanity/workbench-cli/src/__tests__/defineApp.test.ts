@@ -246,6 +246,32 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     )
   })
 
+  test('accepts a dock_item view alongside an entry — placement is not a surface', () => {
+    expect(
+      DefineAppInputSchema.safeParse(
+        validInput({
+          entry: './src/App.tsx',
+          views: [{name: 'dock', src: './src/dockItem.tsx', type: 'dock_item'}],
+        }),
+      ).success,
+    ).toBe(true)
+  })
+
+  test('rejects more than one dock_item view', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        views: [
+          {name: 'dock', src: './src/a.tsx', type: 'dock_item'},
+          {name: 'dock-2', src: './src/b.tsx', type: 'dock_item'},
+        ],
+      }),
+    )
+    expect(result.success).toBe(false)
+    expect(
+      result.error?.issues.some((issue) => /at most one `dock_item`/.test(issue.message)),
+    ).toBe(true)
+  })
+
   test('rejects more than one panel view', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
@@ -305,6 +331,7 @@ describe('type surface', () => {
 describe('interface union (entry vs views)', () => {
   type Base = {name: string; organizationId: string; slug: string; title: string}
   type PanelView = {name: string; src: string; type: 'panel'}
+  type DockItemView = {name: string; src: string; type: 'dock_item'}
 
   test('allows an app entry without panel views', () => {
     expectTypeOf<Base & {entry: string}>().toExtend<DefineAppInput>()
@@ -316,6 +343,10 @@ describe('interface union (entry vs views)', () => {
 
   test('rejects declaring an app entry and panel views together', () => {
     expectTypeOf<Base & {entry: string; views: PanelView[]}>().not.toExtend<DefineAppInput>()
+  })
+
+  test('allows a dock item next to an app entry', () => {
+    expectTypeOf<Base & {entry: string; views: DockItemView[]}>().toExtend<DefineAppInput>()
   })
 })
 

@@ -7,6 +7,7 @@
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 
 import {type DefineAppInput, isWorkbenchApp, readConfig, type WorkbenchApp} from './defineApp.js'
+import {type ResolvedView, resolveViews} from './resolveViews.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from './validateWorkbenchApp.js'
 
 /**
@@ -17,7 +18,7 @@ import {formatWorkbenchAppErrors, validateWorkbenchApp} from './validateWorkbenc
 export interface WorkbenchExposes {
   config?: WorkbenchApp['config']
   services?: DefineAppInput['services']
-  views?: DefineAppInput['views']
+  views?: readonly ResolvedView[]
 }
 
 /** @public */
@@ -32,8 +33,8 @@ export interface ResolvedWorkbenchApp {
   /** Hostname the application is created at on first deploy. */
   readonly slug: string
 
-  /** Dock panel views the app declares. */
-  readonly views: NonNullable<DefineAppInput['views']>
+  /** The views the app exposes, including the dock item its placement implies. */
+  readonly views: readonly ResolvedView[]
 
   /** Resolved app kind — `studio` or one of the SDK app types. */
   readonly applicationType?: string
@@ -72,7 +73,7 @@ export function resolveWorkbenchApp(
     organizationId: app.organizationId,
     services: app.services ?? [],
     slug: app.slug,
-    views: app.views ?? [],
+    views: resolveViews(app),
     visibility: app.visibility,
   }
 }

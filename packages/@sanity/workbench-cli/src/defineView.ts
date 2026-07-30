@@ -4,6 +4,7 @@ import {
   type ViewComponent,
   type ViewComponentBaseProps,
 } from './contract.js'
+import {type DockGroup} from './defineApp.js'
 
 /**
  * Props a panel component receives: its interface record, minus the
@@ -36,10 +37,34 @@ export interface PanelViewComponents {
 export type PanelComponent = keyof PanelViewComponents
 
 /**
- * The components each interface type exposes, keyed by type.
+ * The icon the host resolved for the app: the declared SVG, or the avatar it
+ * falls back to. `color` names a design-system avatar color.
+ * @public
+ */
+export type IconDescriptor =
+  | {color: string; initials: string; variant: 'avatar'}
+  | {svg: string; variant: 'image'}
+
+/**
+ * Props a dock-item component receives: its dock record, with the placement
+ * metadata flattened in, plus the icon the host would render by default.
+ * @public
+ */
+export type DockItemViewProps = ViewComponentBaseProps<{
+  group?: DockGroup
+  name: string
+  priority?: number
+  title: string
+  type: 'dock_item'
+}> & {icon: IconDescriptor}
+
+/**
+ * The components each interface type exposes, keyed by type. A type with a
+ * single slot takes the component itself, not a record.
  * @public
  */
 export interface ViewComponentsByType {
+  dock_item: ViewComponent<DockItemViewProps>
   panel: PanelViewComponents
 }
 

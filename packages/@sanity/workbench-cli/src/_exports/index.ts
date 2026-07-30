@@ -19,8 +19,11 @@ export type {
 export {unstable_defineView} from '../defineView.js'
 export type {
   DefinedView,
+  DockItemViewProps,
+  IconDescriptor,
   PanelComponent,
   PanelViewComponents,
   PanelViewProps,
   ViewComponentsByType,
 } from '../defineView.js'
+export {type ResolvedView, resolveViews} from '../resolveViews.js'

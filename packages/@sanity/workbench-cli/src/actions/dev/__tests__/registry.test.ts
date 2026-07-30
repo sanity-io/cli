@@ -151,6 +151,29 @@ describe('registerDevServer', () => {
     expect(getRegisteredServers()[0]).toMatchObject({id: 'app-abc', projectId: 'x1g7jygt'})
   })
 
+  test('keeps a dock item and its placement on re-read', () => {
+    const dockItem = {
+      id: 'app-abc-dock_item-drop-desk',
+      metadata: {group: 'dock.user', priority: 20},
+      moduleId: 'views/drop-desk',
+      name: 'drop-desk',
+      src: './.sanity/federation/interfaces/dock-item.js',
+      title: 'Drop Desk',
+      type: 'dock_item',
+      version: '1',
+    } as const
+
+    registerDevServer({
+      host: 'localhost',
+      interfaces: [dockItem],
+      port: 3334,
+      type: 'coreApp',
+      workDir: '/tmp/project',
+    })
+
+    expect(getRegisteredServers()[0]?.interfaces).toEqual([dockItem])
+  })
+
   test('omits optional metadata when not provided', () => {
     registerDevServer({host: 'localhost', port: 3334, type: 'studio', workDir: '/tmp/project'})
 

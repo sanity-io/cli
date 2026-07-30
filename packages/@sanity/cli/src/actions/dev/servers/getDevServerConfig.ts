@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
-import {isWorkbenchApp, resolveAppId} from '@sanity/workbench-cli'
+import {isWorkbenchApp, resolveAppId, resolveViews} from '@sanity/workbench-cli'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
 import {determineIsApp} from '../../../util/determineIsApp.js'
@@ -63,7 +63,7 @@ export function getDevServerConfig({
     // view: the runtime/federation skip the `./App` render path entirely.
     entry: app?.entry,
     exposes: isWorkbenchApp(app)
-      ? {config: app.config, services: app.services, views: app.views}
+      ? {config: app.config, services: app.services, views: resolveViews(app)}
       : undefined,
     // `devAction` passes an explicit port when a running workbench claimed the
     // configured one; otherwise the shared resolution stands.
