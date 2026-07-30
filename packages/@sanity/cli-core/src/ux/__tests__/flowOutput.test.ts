@@ -72,12 +72,12 @@ describe('createFlow output', () => {
     expect(lines).toEqual([`│  ${secret}`])
   })
 
-  test('indents runnable commands beneath their action', () => {
+  test('renders commands as railed copy', () => {
     const lines: string[] = []
 
     createFlow((line = '') => lines.push(line)).command('npm run dev')
 
-    expect(stripVTControlCharacters(lines[0])).toBe('│     $ npm run dev')
+    expect(stripVTControlCharacters(lines[0])).toBe('│  npm run dev')
   })
 
   test('encodes terminal controls in commands', () => {
@@ -85,7 +85,7 @@ describe('createFlow output', () => {
 
     createFlow((line = '') => lines.push(line)).command(terminalLink)
 
-    expect(stripVTControlCharacters(lines[0])).toBe(`│     $ ${encodedTerminalLink}`)
+    expect(stripVTControlCharacters(lines[0])).toBe(`│  ${encodedTerminalLink}`)
   })
 
   test('wraps prose with a rail while keeping a claim URL copy-safe', () => {

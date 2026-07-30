@@ -237,15 +237,14 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
     if (!json) {
       flow.result(`Project ID: ${styleText('cyan', project.resourceId)}`)
       flow.result(`Dataset: ${styleText('cyan', project.datasetName)} (where your content lives)`)
-      flow.result(`Access token: ${styleText('cyan', project.token)}`)
       flow.gap()
-      flow.line('Run a CLI command with this access token:')
+      flow.highlight('Run a CLI command:')
+      flow.gap()
       flow.command(`SANITY_AUTH_TOKEN="${project.token}" sanity <command>`)
       flow.gap()
       flow.highlight(
         `Claim your project by ${styleText('yellow', formatClaimDeadline(project.expiresAt))}`,
       )
-      flow.gap()
       flow.link(project.claimUrl)
       flow.gap()
       flow.line(
@@ -264,21 +263,23 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
       flow.gap()
     }
 
-    const studioTokenUrl = `http://localhost:3333/#token=${encodeURIComponent(project.token)}`
     const printStudioInstructions = () => {
-      flow.highlight('Start your Studio with:')
+      flow.highlight('Start your Studio:')
       flow.gap()
       flow.command(`cd ${STUDIO_DIR} && npx sanity dev`)
       flow.gap()
-      flow.link(studioTokenUrl, {label: 'then open'})
-      flow.line('The token in that link signs you in: there is no account yet.')
+      flow.link(`http://localhost:3333/#token=${encodeURIComponent(project.token)}`, {
+        label: 'Then open this link:',
+      })
+      flow.gap()
+      flow.line('The token signs you in: there is no account yet.')
     }
     const printWebsiteInstructions = (packageManager: ScaffoldResult['frontendPackageManager']) => {
-      flow.highlight('In a separate terminal, start your website with:')
+      flow.highlight('In a separate terminal, start your website:')
       flow.gap()
       flow.command(`cd ${FRONTEND_DIR} && ${frontendDevCommand(packageManager)}`)
       flow.gap()
-      flow.link('http://localhost:3000/', {label: 'then open'})
+      flow.link('http://localhost:3000', {label: 'Then open this link:'})
     }
 
     let scaffold: ScaffoldResult | undefined
@@ -388,8 +389,7 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
           'everything in this project. Claiming makes your content readable without it.',
       )
       flow.gap()
-      flow.line('Framework setup, and what to do after claiming:')
-      flow.line(SANITY_NEW_URL)
+      flow.link(SANITY_NEW_URL, {label: 'Framework setup, and what to do after claiming:'})
       flow.gap()
       flow.link(project.claimUrl, {label: 'Claim your project:', outro: true})
     }

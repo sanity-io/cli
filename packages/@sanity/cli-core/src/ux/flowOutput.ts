@@ -67,7 +67,7 @@ function terminalLink(url: string): string {
 }
 
 export interface Flow {
-  /** An indented, copyable command belonging to the preceding action. */
+  /** A copyable command belonging to the preceding action. */
   command(command: string): void
   /** `│` — a blank rail line separating steps. */
   gap(): void
@@ -96,7 +96,7 @@ export interface Flow {
 export function createFlow(log: LogFn): Flow {
   return {
     command(command: string) {
-      log(`${rail('│')}     ${styleText('cyan', `$ ${encodeTerminalControls(command)}`)}`)
+      log(`${rail('│')}  ${styleText('cyan', encodeTerminalControls(command))}`)
     },
     gap() {
       log(rail('│'))

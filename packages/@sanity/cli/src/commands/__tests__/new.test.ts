@@ -57,6 +57,13 @@ function outputText(): string {
   return stripVTControlCharacters(vi.mocked(mocks.SanityCmdOutput.log).mock.calls.flat().join('\n'))
 }
 
+function outputLines(): string[] {
+  return vi
+    .mocked(mocks.SanityCmdOutput.log)
+    .mock.calls.flat()
+    .map((line) => stripVTControlCharacters(String(line)))
+}
+
 beforeEach(() => {
   vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
   mockMintUnclaimedProject.mockResolvedValue(project)
@@ -100,12 +107,38 @@ describe('#new', () => {
     await NewCommand.run(['My New Project'])
 
     const output = outputText()
+    const lines = outputLines()
     expect(output).toContain(`Project ID: ${project.resourceId}`)
     expect(output).toContain(`Dataset: ${project.datasetName}`)
-    expect(output).toContain(`Access token: ${project.token}`)
-    expect(output).toContain(`SANITY_AUTH_TOKEN="${project.token}" sanity <command>`)
+    expect(output).not.toContain(`Access token: ${project.token}`)
+    expect(lines).toContain('◆  Run a CLI command:')
+    expect(lines).toContain(`│  SANITY_AUTH_TOKEN="${project.token}" sanity <command>`)
+    const cliInstructionIndex = lines.indexOf('◆  Run a CLI command:')
+    expect(lines.slice(cliInstructionIndex, cliInstructionIndex + 3)).toEqual([
+      '◆  Run a CLI command:',
+      '│',
+      `│  SANITY_AUTH_TOKEN="${project.token}" sanity <command>`,
+    ])
     expect(output).toContain(project.claimUrl)
+    const claimInstructionIndex = lines.findIndex((line) =>
+      line.startsWith('◆  Claim your project by'),
+    )
+    expect(lines.slice(claimInstructionIndex, claimInstructionIndex + 2)).toEqual([
+      expect.stringMatching(/^◆ {2}Claim your project by/u),
+      `│  ${project.claimUrl}`,
+    ])
     expect(output).toContain('http://localhost:3333/#token=sk-robot-token')
+    const studioLinkIndex = lines.indexOf(
+      '│  Then open this link: http://localhost:3333/#token=sk-robot-token',
+    )
+    expect(lines.slice(studioLinkIndex, studioLinkIndex + 3)).toEqual([
+      '│  Then open this link: http://localhost:3333/#token=sk-robot-token',
+      '│',
+      '│  The token signs you in: there is no account yet.',
+    ])
+    expect(lines).toContain('│  Framework setup, and what to do after claiming: https://sanity.new')
+    expect(lines).toContain('◆  In a separate terminal, start your website:')
+    expect(lines).toContain('│  Then open this link: http://localhost:3000')
     expect(output).toContain('Your access token is in ./sanity/.env.local and ./web/.env.local')
     expect(output).not.toContain('./.env')
   })
@@ -204,7 +237,7 @@ describe('#new', () => {
     expect(outputText()).toContain('Finish installing your website dependencies')
     expect(outputText()).toContain('cd web && pnpm add --save-prod next-sanity')
     expect(outputText().indexOf('cd web && pnpm add --save-prod next-sanity')).toBeLessThan(
-      outputText().indexOf('In a separate terminal, start your website with:'),
+      outputText().indexOf('In a separate terminal, start your website:'),
     )
   })
 
