@@ -221,13 +221,15 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     const invoked = [this.config.bin, ...(this.id?.split(':') ?? [])].join(' ')
     const cwd = process.cwd()
     const envPath = path.join(cwd, '.env')
-    const existingEnvFiles = this.guardExistingProject(
-      [
-        {displayPath: './.env', path: envPath},
-        {displayPath: './.env.local', path: path.join(cwd, '.env.local')},
-      ],
-      invoked,
-    )
+    const existingEnvFiles = json
+      ? []
+      : this.guardExistingProject(
+          [
+            {displayPath: './.env', path: envPath},
+            {displayPath: './.env.local', path: path.join(cwd, '.env.local')},
+          ],
+          invoked,
+        )
     const hasExistingKeys = existingEnvFiles.length > 0
     if (
       !json &&

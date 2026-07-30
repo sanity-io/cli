@@ -251,9 +251,16 @@ describe('#projects:mint', () => {
     expect(mockMintUnclaimedProject).toHaveBeenCalled()
   })
 
-  test('--json returns the payload without any local writes or narration', async () => {
+  test('--json ignores local env values and returns the payload without local writes', async () => {
+    mockInspectEnvKeys.mockReturnValue({
+      blankKeys: [],
+      presentKeys: ['SANITY_PROJECT_ID'],
+      values: {SANITY_PROJECT_ID: 'existing'},
+    })
+
     await expect(MintProjectCommand.run(['My New Project', '--json'])).resolves.toEqual(result)
 
+    expect(mockInspectEnvKeys).not.toHaveBeenCalled()
     expect(mockRecordUnclaimedProject).not.toHaveBeenCalled()
     expect(mockAppendEnvValues).not.toHaveBeenCalled()
     expect(mockEnsureEnvGitignored).not.toHaveBeenCalled()
