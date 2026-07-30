@@ -144,11 +144,12 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     `By default this also scaffolds a Studio into ./${STUDIO_DIR} and a Next.js frontend into ` +
       `./${FRONTEND_DIR}, with credentials wired into both; pass --no-scaffold to skip it.`,
     'Credentials are written to ./.env (SANITY_PROJECT_ID, SANITY_DATASET, and ' +
-      'SANITY_AUTH_TOKEN, a robot token) and .env is gitignored. This command does not change ' +
-      'how the CLI chooses credentials for later commands. Commands that need a project id read ' +
-      `it from a Sanity config file or --project-id, so run those from ./${STUDIO_DIR}. Use ` +
-      '--json for a machine-readable payload: it writes no files, scaffolds nothing, and the ' +
-      'caller owns the credentials.',
+      'SANITY_AUTH_TOKEN, a robot token) and .env is gitignored. The CLI does not load ./.env ' +
+      'because the mint root has no Sanity config. Commands run from the scaffolded Studio load ' +
+      `${STUDIO_ENV_FILE} because ./${STUDIO_DIR} has a Sanity config. Commands that need a ` +
+      `project id should therefore run from ./${STUDIO_DIR} or receive --project-id. Use --json ` +
+      'for a machine-readable payload: it writes no files, scaffolds nothing, and the caller owns ' +
+      'the credentials.',
     `Claiming: the project must be claimed with a Sanity account within ${CLAIM_WINDOW_HOURS} hours ` +
       '(expiresAt) or it is permanently deleted, content included. The claim URL is single-use ' +
       "and whoever opens it takes ownership: keep it out of git and shared channels. If you're " +
@@ -158,9 +159,9 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       'schemas. It cannot deploy a hosted Studio, create datasets, or manage settings. The dataset ' +
       'is private until you claim, so frontend reads must run server-side; claiming makes it ' +
       'public. Wherever it lives, the token must never sit under a browser-exposed prefix.',
-    `After the claim, run \`sanity login\` and remove SANITY_AUTH_TOKEN from ./.env or ${STUDIO_ENV_FILE} ` +
-      'to act as your own account; until then, CLI commands in this directory keep ' +
-      'authenticating as the robot.',
+    `After the claim, run \`sanity login\` and remove SANITY_AUTH_TOKEN from ${STUDIO_ENV_FILE} ` +
+      `to make CLI commands run from ./${STUDIO_DIR} authenticate as your account. The token in ` +
+      './.env is not used for CLI authentication from the mint root.',
     `Minting is rate-limited per machine. Fetch ${SANITY_NEW_URL} for agent instructions.`,
   )
 

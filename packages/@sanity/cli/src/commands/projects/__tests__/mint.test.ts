@@ -119,15 +119,19 @@ describe('#projects:mint', () => {
         'with credentials wired into both; pass --no-scaffold to skip it.',
     )
     expect(description).toContain(
-      'This command does not change how the CLI chooses credentials for later commands.',
+      'The CLI does not load ./.env because the mint root has no Sanity config.',
+    )
+    expect(description).toContain(
+      'Commands run from the scaffolded Studio load sanity/.env.local because ./sanity has a ' +
+        'Sanity config.',
     )
     expect(description).not.toContain(
       'so `sanity` commands run from here authenticate as the project with no account',
     )
     expect(description).toContain(
-      'After the claim, run `sanity login` and remove SANITY_AUTH_TOKEN from ./.env or ' +
-        'sanity/.env.local to act as your own account; until then, CLI commands in this directory ' +
-        'keep authenticating as the robot.',
+      'After the claim, run `sanity login` and remove SANITY_AUTH_TOKEN from sanity/.env.local to ' +
+        'make CLI commands run from ./sanity authenticate as your account. The token in ./.env is ' +
+        'not used for CLI authentication from the mint root.',
     )
   })
 
