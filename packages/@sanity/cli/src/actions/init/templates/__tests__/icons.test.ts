@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url'
 
 import {describe, expect, test} from 'vitest'
 
+import appSanityUi from '../appSanityUi.js'
 import getStarted from '../getStarted.js'
 import {blogSchemaFolder} from '../nextjs/schemaTypes/blog.js'
 import shopify from '../shopify.js'
@@ -54,6 +55,15 @@ describe('init template @sanity/icons usage', () => {
     ['shopifyOnline', shopifyOnline],
   ] as const)('%s depends on @sanity/icons v5', (_name, template) => {
     expect(template.dependencies?.['@sanity/icons']).toMatch(/^\^5\./)
+  })
+
+  test.each([
+    ['getStarted', getStarted],
+    ['shopify', shopify],
+    ['shopifyOnline', shopifyOnline],
+    ['appSanityUi', appSanityUi],
+  ] as const)('%s depends on @sanity/ui v3', (_name, template) => {
+    expect(template.dependencies?.['@sanity/ui']).toMatch(/^\^3\./)
   })
 
   test('filesystem templates do not use barrelled @sanity/icons imports', async () => {
