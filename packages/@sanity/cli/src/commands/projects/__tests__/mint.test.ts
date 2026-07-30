@@ -171,6 +171,15 @@ describe('#projects:mint', () => {
     expect(output).toContain('Created "My New Project"')
     expect(output).toContain(`Project ID: ${minted.resourceId}`)
     expect(output).toContain(`Dataset: ${minted.datasetName} (where your content lives)`)
+    expect(output).toContain(`Access token: ${minted.token}`)
+    expect(output).toContain('Run a CLI command with this access token:')
+    expect(output).toContain(`$ SANITY_AUTH_TOKEN="${minted.token}" sanity <command>`)
+    expect(output.indexOf(`Access token: ${minted.token}`)).toBeLessThan(
+      output.indexOf('Claim your project by'),
+    )
+    expect(output.indexOf(`Access token: ${minted.token}`)).toBeLessThan(
+      output.indexOf('Created two folders'),
+    )
     expect(output).toContain('Claim your project by 1 August 2026, 00:00 UTC')
     expect(output).toContain(minted.claimUrl)
     expect(output).toContain('Created two folders')

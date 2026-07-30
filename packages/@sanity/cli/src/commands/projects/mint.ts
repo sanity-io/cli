@@ -282,6 +282,10 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     if (!json) {
       flow.result(`Project ID: ${styleText('cyan', minted.resourceId)}`)
       flow.result(`Dataset: ${styleText('cyan', minted.datasetName)} (where your content lives)`)
+      flow.result(`Access token: ${styleText('cyan', minted.token)}`)
+      flow.gap()
+      flow.line('Run a CLI command with this access token:')
+      flow.command(`SANITY_AUTH_TOKEN="${minted.token}" sanity <command>`)
       flow.gap()
       flow.highlight(
         `Claim your project by ${styleText('yellow', formatClaimDeadline(minted.expiresAt))}`,
