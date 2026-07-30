@@ -52,7 +52,9 @@ export function createTypegenProgressRenderer(
       case 'complete': {
         const {result} = event
         if (result.filesWithErrors > 0) {
-          spin.warn(`Encountered errors in ${count(result.filesWithErrors, 'files')} while generating types`)
+          spin.warn(
+            `Encountered errors in ${count(result.filesWithErrors, 'files')} while generating types`,
+          )
         }
 
         let successText =

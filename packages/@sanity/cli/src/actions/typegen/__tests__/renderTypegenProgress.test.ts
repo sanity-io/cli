@@ -63,8 +63,12 @@ describe('createTypegenProgressRenderer', () => {
     })
     render({result, type: 'complete'})
 
-    expect(spin.succeed).toHaveBeenCalledWith(expect.stringContaining('Schema loaded from schema.json'))
-    const success = calls.find((c) => c.method === 'succeed' && c.text?.includes('Successfully generated'))
+    expect(spin.succeed).toHaveBeenCalledWith(
+      expect.stringContaining('Schema loaded from schema.json'),
+    )
+    const success = calls.find(
+      (c) => c.method === 'succeed' && c.text?.includes('Successfully generated'),
+    )
     expect(success?.text).toContain('sanity.types.ts')
   })
 
