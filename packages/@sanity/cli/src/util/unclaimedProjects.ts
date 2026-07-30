@@ -3,13 +3,14 @@ import {subdebug} from '@sanity/cli-core/debug'
 
 import {type MintedProject} from '../services/mintProject.js'
 
-const debug = subdebug('projects:mint:registry')
+const debug = subdebug('projects:unclaimed:registry')
 
 export const UNCLAIMED_PROJECTS_CONFIG_KEY = 'unclaimedProjects'
 
-interface UnclaimedProjectRecord {
+export interface UnclaimedProjectRecord {
   claimToken: string
   claimUrl: string
+  dataset: string
   expiresAt: string
   mintedAt: string
   projectId: string
@@ -37,6 +38,7 @@ export function recordUnclaimedProject(
     const record: UnclaimedProjectRecord = {
       claimToken: minted.claimToken,
       claimUrl: minted.claimUrl,
+      dataset: minted.datasetName,
       expiresAt: minted.expiresAt,
       mintedAt,
       projectId: minted.resourceId,
@@ -55,4 +57,76 @@ export function recordUnclaimedProject(
     )
     return false
   }
+}
+
+function requireString(
+  value: Record<string, unknown>,
+  key: keyof UnclaimedProjectRecord,
+  projectId: string,
+): string {
+  const field = value[key]
+  if (typeof field !== 'string' || field.length === 0) {
+    throw new Error(
+      `Local recovery record for project "${projectId}" is malformed: "${key}" is missing or invalid.`,
+    )
+  }
+  return field
+}
+
+function parseRecord(projectId: string, value: unknown): UnclaimedProjectRecord {
+  const record = asRecord(value)
+  const parsed: UnclaimedProjectRecord = {
+    claimToken: requireString(record, 'claimToken', projectId),
+    claimUrl: requireString(record, 'claimUrl', projectId),
+    dataset: requireString(record, 'dataset', projectId),
+    expiresAt: requireString(record, 'expiresAt', projectId),
+    mintedAt: requireString(record, 'mintedAt', projectId),
+    projectId: requireString(record, 'projectId', projectId),
+    token: requireString(record, 'token', projectId),
+  }
+
+  if (parsed.projectId !== projectId) {
+    throw new Error(
+      `Local recovery record for project "${projectId}" is malformed: its project ID does not match.`,
+    )
+  }
+  let claimUrlValid = false
+  try {
+    const protocol = new URL(parsed.claimUrl).protocol
+    claimUrlValid = protocol === 'https:' || protocol === 'http:'
+  } catch {
+    // The actionable error is reported below.
+  }
+  if (!claimUrlValid) {
+    throw new TypeError(
+      `Local recovery record for project "${projectId}" is malformed: "claimUrl" is not a valid URL.`,
+    )
+  }
+  if (!Number.isFinite(Date.parse(parsed.mintedAt))) {
+    throw new TypeError(
+      `Local recovery record for project "${projectId}" is malformed: "mintedAt" is not a valid date.`,
+    )
+  }
+  if (!Number.isFinite(Date.parse(parsed.expiresAt))) {
+    throw new TypeError(
+      `Local recovery record for project "${projectId}" is malformed: "expiresAt" is not a valid date.`,
+    )
+  }
+
+  return parsed
+}
+
+/**
+ * Read and validate the passive local recovery registry without changing it.
+ */
+export function readUnclaimedProjects(): UnclaimedProjectRecord[] {
+  const stored = getUserConfig().get(UNCLAIMED_PROJECTS_CONFIG_KEY)
+  if (stored === undefined) return []
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
+    throw new Error('The local unclaimed-project registry is malformed.')
+  }
+
+  return Object.entries(stored)
+    .map(([projectId, record]) => parseRecord(projectId, record))
+    .toSorted((left, right) => right.mintedAt.localeCompare(left.mintedAt))
 }

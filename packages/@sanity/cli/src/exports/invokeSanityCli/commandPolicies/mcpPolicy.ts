@@ -184,8 +184,8 @@ export const mcpPolicy: CommandPolicySet = {
 
   'projects:create': allow,
   'projects:list': allow,
-  // Creates a remote project, writes local setup values, and may scaffold applications.
-  'projects:mint': deny,
+  // Reads locally stored claim URLs and robot tokens.
+  'projects:unclaimed': deny,
 
   // Loads the local Studio configuration to resolve the datasets containing each schema.
   'schemas:delete': deny,

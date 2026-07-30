@@ -2,7 +2,11 @@ import {getUserConfig} from '@sanity/cli-core/config'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type MintedProject} from '../../services/mintProject.js'
-import {recordUnclaimedProject, UNCLAIMED_PROJECTS_CONFIG_KEY} from '../unclaimedProjects.js'
+import {
+  readUnclaimedProjects,
+  recordUnclaimedProject,
+  UNCLAIMED_PROJECTS_CONFIG_KEY,
+} from '../unclaimedProjects.js'
 
 const mockGet = vi.fn()
 const mockSet = vi.fn()
@@ -43,6 +47,7 @@ describe('recordUnclaimedProject', () => {
       abc123: {
         claimToken: minted.claimToken,
         claimUrl: minted.claimUrl,
+        dataset: minted.datasetName,
         expiresAt: minted.expiresAt,
         mintedAt: '2026-07-29T12:00:00.000Z',
         projectId: minted.resourceId,
@@ -119,5 +124,52 @@ describe('recordUnclaimedProject', () => {
     })
 
     expect(recordUnclaimedProject(minted)).toBe(false)
+  })
+})
+
+describe('readUnclaimedProjects', () => {
+  const record = {
+    claimToken: minted.claimToken,
+    claimUrl: minted.claimUrl,
+    dataset: minted.datasetName,
+    expiresAt: minted.expiresAt,
+    mintedAt: '2026-07-29T12:00:00.000Z',
+    projectId: minted.resourceId,
+    token: minted.token,
+  }
+
+  test('returns an empty list when the registry does not exist', () => {
+    mockGet.mockReturnValue(undefined)
+
+    expect(readUnclaimedProjects()).toEqual([])
+    expect(mockSet).not.toHaveBeenCalled()
+  })
+
+  test('returns validated records newest first without mutating the registry', () => {
+    mockGet.mockReturnValue({
+      [minted.resourceId]: record,
+      older: {
+        ...record,
+        mintedAt: '2026-07-28T12:00:00.000Z',
+        projectId: 'older',
+      },
+    })
+
+    expect(readUnclaimedProjects()).toEqual([record, expect.objectContaining({projectId: 'older'})])
+    expect(mockSet).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['invalid registry', []],
+    ['missing dataset', {abc123: {...record, dataset: undefined}}],
+    ['mismatched project ID', {abc123: {...record, projectId: 'other'}}],
+    ['invalid claim URL', {abc123: {...record, claimUrl: 'not-a-url'}}],
+    ['invalid mint time', {abc123: {...record, mintedAt: 'not-a-date'}}],
+    ['invalid claim deadline', {abc123: {...record, expiresAt: 'not-a-date'}}],
+  ])('rejects a malformed %s', (_label, stored) => {
+    mockGet.mockReturnValue(stored)
+
+    expect(() => readUnclaimedProjects()).toThrow(/malformed/u)
+    expect(mockSet).not.toHaveBeenCalled()
   })
 })
