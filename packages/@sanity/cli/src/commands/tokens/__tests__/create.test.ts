@@ -5,6 +5,7 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
+import {getPresetExpiryDate} from '../../../actions/tokens/expiry.js'
 import {CreateTokenCommand} from '../create.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -32,6 +33,57 @@ const defaultMocks = {
   token: 'test-token',
 }
 
+const viewerRole = {
+  appliesToRobots: true,
+  appliesToUsers: true,
+  description: 'Can read documents',
+  isCustom: false,
+  name: 'viewer',
+  title: 'Viewer',
+}
+
+const editorRole = {
+  appliesToRobots: true,
+  appliesToUsers: true,
+  description: 'Can read and write documents',
+  isCustom: false,
+  name: 'editor',
+  title: 'Editor',
+}
+
+const createRobot = (overrides: Record<string, unknown> = {}) => ({
+  createdAt: '2026-01-01T00:00:00.000Z',
+  expiresAt: null,
+  id: 'g-robot-123',
+  label: 'My Test Token',
+  managedBy: {resourceId: testProjectId, resourceType: 'project'},
+  memberships: [
+    {
+      addedAt: '2026-01-01T00:00:00.000Z',
+      resourceId: testProjectId,
+      resourceType: 'project',
+      roleNames: ['viewer'],
+    },
+  ],
+  token: 'sk_test_abcd1234',
+  tokenId: 'si-token-123',
+  ...overrides,
+})
+
+const mockRolesApi = (roles: unknown[] = [viewerRole, editorRole]) =>
+  mockApi({
+    apiVersion: TOKENS_API_VERSION,
+    query: {includeChildren: 'false', limit: '500'},
+    uri: `/access/project/${testProjectId}/roles`,
+  }).reply(200, {data: roles, nextCursor: null})
+
+const mockCreateRobotApi = () =>
+  mockApi({
+    apiVersion: TOKENS_API_VERSION,
+    method: 'post',
+    uri: `/access/project/${testProjectId}/robots`,
+  })
+
 describe('#tokens:create', () => {
   beforeEach(() => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
@@ -45,51 +97,12 @@ describe('#tokens:create', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('creates token with label argument and default role', async () => {
-    const mockRoles = [
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read documents',
-        isCustom: false,
-        name: 'viewer',
-        projectId: 'test-project',
-        title: 'Viewer',
-      },
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read and write documents',
-        isCustom: false,
-        name: 'editor',
-        projectId: 'test-project',
-        title: 'Editor',
-      },
-    ]
+  test('creates token with label argument and prompted role and expiry', async () => {
+    mockedSelect.mockResolvedValueOnce('viewer') // role
+    mockedSelect.mockResolvedValueOnce('none') // expiry
 
-    const mockToken = {
-      id: 'token-123',
-      key: 'sk_test_abcd1234',
-      label: 'My Test Token',
-      projectUserId: 'user-123',
-      roles: [
-        {
-          name: 'viewer',
-          title: 'Viewer',
-        },
-      ],
-    }
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/roles',
-    }).reply(200, mockRoles)
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/tokens',
-    }).reply(200, mockToken)
+    mockRolesApi()
+    mockCreateRobotApi().reply(201, createRobot())
 
     const {error, stdout} = await testCommand(CreateTokenCommand, ['My Test Token'], {
       mocks: defaultMocks,
@@ -98,57 +111,148 @@ describe('#tokens:create', () => {
     expect(error).toBeUndefined()
     expect(stdout).toContain('API token created')
     expect(stdout).toContain('Label: My Test Token')
-    expect(stdout).toContain('ID: token-123')
+    expect(stdout).toContain('ID: g-robot-123')
     expect(stdout).toContain('Role: Viewer')
+    expect(stdout).toContain('Expires: Never')
     expect(stdout).toContain('Token: sk_test_abcd1234')
     expect(stdout).toContain("Copy the token now. It won't be shown again.")
   })
 
+  test('offers expiry choices matching the Manage token creation flow', async () => {
+    mockedSelect.mockResolvedValueOnce('viewer')
+    mockedSelect.mockResolvedValueOnce('none')
+
+    mockRolesApi()
+    mockCreateRobotApi().reply(201, createRobot())
+
+    await testCommand(CreateTokenCommand, ['My Test Token'], {mocks: defaultMocks})
+
+    const expiryCall = mockedSelect.mock.calls[1][0]
+    expect(expiryCall.message).toBe('Token expiration:')
+    expect(expiryCall.default).toBe('none')
+    expect(expiryCall.choices.map((choice) => (choice as {value: string}).value)).toEqual([
+      'none',
+      '30',
+      '60',
+      '90',
+      'custom',
+    ])
+    expect((expiryCall.choices[0] as {name: string}).name).toBe('No expiration')
+    expect((expiryCall.choices[1] as {name: string}).name).toMatch(
+      /^30 days \(\d{2} \w{3} \d{4}\)$/,
+    )
+  })
+
+  test('creates token with a preset expiry', async () => {
+    mockedSelect.mockResolvedValueOnce('viewer')
+    mockedSelect.mockResolvedValueOnce('30')
+
+    const expectedDate = getPresetExpiryDate(30)
+    let requestBody: Record<string, unknown> = {}
+
+    mockRolesApi()
+    mockCreateRobotApi().reply(201, (uri, body) => {
+      requestBody = body as Record<string, unknown>
+      return createRobot({expiresAt: `${expectedDate}T00:00:00.000Z`})
+    })
+
+    const {stdout} = await testCommand(CreateTokenCommand, ['My Test Token'], {
+      mocks: defaultMocks,
+    })
+
+    expect(requestBody.expiresAt).toBe(expectedDate)
+    expect(requestBody.memberships).toEqual([
+      {resourceId: testProjectId, resourceType: 'project', roleNames: ['viewer']},
+    ])
+    expect(stdout).toContain(`Expires: ${expectedDate}`)
+  })
+
+  test('creates token with a custom expiry date', async () => {
+    mockedSelect.mockResolvedValueOnce('viewer')
+    mockedSelect.mockResolvedValueOnce('custom')
+    mockedInput.mockResolvedValueOnce('2099-12-31')
+
+    let requestBody: Record<string, unknown> = {}
+
+    mockRolesApi()
+    mockCreateRobotApi().reply(201, (uri, body) => {
+      requestBody = body as Record<string, unknown>
+      return createRobot({expiresAt: '2099-12-31T00:00:00.000Z'})
+    })
+
+    const {stdout} = await testCommand(CreateTokenCommand, ['My Test Token'], {
+      mocks: defaultMocks,
+    })
+
+    expect(mockedInput).toHaveBeenCalledWith({
+      message: 'Expiration date (YYYY-MM-DD):',
+      validate: expect.any(Function),
+    })
+    expect(requestBody.expiresAt).toBe('2099-12-31')
+    expect(stdout).toContain('Expires: 2099-12-31')
+  })
+
+  test('creates token with --expires-at flag without prompting for expiry', async () => {
+    mockedSelect.mockResolvedValueOnce('viewer')
+
+    let requestBody: Record<string, unknown> = {}
+
+    mockRolesApi()
+    mockCreateRobotApi().reply(201, (uri, body) => {
+      requestBody = body as Record<string, unknown>
+      return createRobot({expiresAt: '2099-06-15T00:00:00.000Z'})
+    })
+
+    const {stdout} = await testCommand(
+      CreateTokenCommand,
+      ['My Test Token', '--expires-at=2099-06-15'],
+      {mocks: defaultMocks},
+    )
+
+    expect(mockedSelect).toHaveBeenCalledTimes(1) // only the role prompt
+    expect(requestBody.expiresAt).toBe('2099-06-15')
+    expect(stdout).toContain('Expires: 2099-06-15')
+  })
+
+  test.each([
+    {reason: 'not a date', value: 'soon'},
+    {reason: 'wrong format', value: '15-06-2099'},
+    {reason: 'invalid date', value: '2099-13-45'},
+    {reason: 'in the past', value: '2020-01-01'},
+  ])('rejects --expires-at value that is $reason', async ({value}) => {
+    mockedSelect.mockResolvedValueOnce('viewer')
+    mockRolesApi()
+
+    const {error} = await testCommand(
+      CreateTokenCommand,
+      ['My Test Token', `--expires-at=${value}`],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Invalid `--expires-at` value')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
   test('creates token with specific role', async () => {
-    const mockRoles = [
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read documents',
-        isCustom: false,
-        name: 'viewer',
-        projectId: 'test-project',
-        title: 'Viewer',
-      },
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read and write documents',
-        isCustom: false,
-        name: 'editor',
-        projectId: 'test-project',
-        title: 'Editor',
-      },
-    ]
+    mockedSelect.mockResolvedValueOnce('none') // expiry
 
-    const mockToken = {
-      id: 'token-456',
-      key: 'sk_test_editor1234',
-      label: 'Editor Token',
-      projectUserId: 'user-123',
-      roles: [
-        {
-          name: 'editor',
-          title: 'Editor',
-        },
-      ],
-    }
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/roles',
-    }).reply(200, mockRoles)
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/tokens',
-    }).reply(200, mockToken)
+    mockRolesApi()
+    mockCreateRobotApi().reply(
+      201,
+      createRobot({
+        label: 'Editor Token',
+        memberships: [
+          {
+            addedAt: '2026-01-01T00:00:00.000Z',
+            resourceId: testProjectId,
+            resourceType: 'project',
+            roleNames: ['editor'],
+          },
+        ],
+        token: 'sk_test_editor1234',
+      }),
+    )
 
     const {stdout} = await testCommand(CreateTokenCommand, ['Editor Token', '--role=editor'], {
       mocks: defaultMocks,
@@ -161,56 +265,35 @@ describe('#tokens:create', () => {
   })
 
   test('outputs JSON when --json flag is used', async () => {
-    const mockToken = {
-      id: 'token-json',
-      key: 'sk_test_json1234',
-      label: 'JSON Token',
-      projectUserId: 'user-123',
-      roles: [
-        {
-          name: 'viewer',
-          title: 'Viewer',
-        },
-      ],
-    }
-
-    // --json is unattended, so the role defaults to viewer without a roles prompt
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/tokens',
-    }).reply(200, mockToken)
+    // --json is unattended, so the role defaults to viewer without any prompts
+    mockCreateRobotApi().reply(201, createRobot({label: 'JSON Token', token: 'sk_test_json1234'}))
 
     const {stdout} = await testCommand(CreateTokenCommand, ['JSON Token', '--json'], {
       mocks: defaultMocks,
     })
 
     const parsedOutput = JSON.parse(stdout)
-    expect(parsedOutput).toEqual(mockToken)
+    expect(parsedOutput).toEqual({
+      createdAt: '2026-01-01T00:00:00.000Z',
+      expiresAt: null,
+      id: 'g-robot-123',
+      key: 'sk_test_json1234',
+      label: 'JSON Token',
+      roles: [{name: 'viewer', title: 'Viewer'}],
+      tokenId: 'si-token-123',
+    })
     expect(mockedSelect).not.toHaveBeenCalled()
     expect(mockedInput).not.toHaveBeenCalled()
   })
 
   test('works in unattended mode with --yes flag', async () => {
-    const mockToken = {
-      id: 'token-unattended',
-      key: 'sk_test_unattended1234',
-      label: 'Unattended Token',
-      projectUserId: 'user-123',
-      roles: [
-        {
-          name: 'viewer',
-          title: 'Viewer',
-        },
-      ],
-    }
-
-    // Only mock the token creation API, not the roles API since unattended mode uses default role
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/tokens',
-    }).reply(200, mockToken)
+    // Only mock the robot creation API; unattended mode uses the default role
+    // and no expiry without prompting
+    let requestBody: Record<string, unknown> = {}
+    mockCreateRobotApi().reply(201, (uri, body) => {
+      requestBody = body as Record<string, unknown>
+      return createRobot({label: 'Unattended Token'})
+    })
 
     const {stdout} = await testCommand(CreateTokenCommand, ['Unattended Token', '--yes'], {
       mocks: defaultMocks,
@@ -218,27 +301,32 @@ describe('#tokens:create', () => {
 
     expect(stdout).toContain('API token created')
     expect(stdout).toContain('Label: Unattended Token')
+    expect(stdout).toContain('Expires: Never')
+    expect(requestBody.expiresAt).toBeUndefined()
     expect(mockedSelect).not.toHaveBeenCalled()
     expect(mockedInput).not.toHaveBeenCalled()
   })
 
-  test('handles invalid role error', async () => {
-    const mockRoles = [
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read documents',
-        isCustom: false,
-        name: 'viewer',
-        projectId: 'test-project',
-        title: 'Viewer',
-      },
-    ]
+  test('accepts --expires-at in unattended mode', async () => {
+    let requestBody: Record<string, unknown> = {}
+    mockCreateRobotApi().reply(201, (uri, body) => {
+      requestBody = body as Record<string, unknown>
+      return createRobot({expiresAt: '2099-06-15T00:00:00.000Z', label: 'CI Token'})
+    })
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/roles',
-    }).reply(200, mockRoles)
+    const {stdout} = await testCommand(
+      CreateTokenCommand,
+      ['CI Token', '--yes', '--expires-at=2099-06-15'],
+      {mocks: defaultMocks},
+    )
+
+    expect(requestBody.expiresAt).toBe('2099-06-15')
+    expect(stdout).toContain('Expires: 2099-06-15')
+    expect(mockedSelect).not.toHaveBeenCalled()
+  })
+
+  test('handles invalid role error', async () => {
+    mockRolesApi([viewerRole])
 
     const {error} = await testCommand(CreateTokenCommand, ['Test Token', '--role=invalid'], {
       mocks: defaultMocks,
@@ -251,28 +339,11 @@ describe('#tokens:create', () => {
   })
 
   test('handles API error during token creation', async () => {
-    const mockRoles = [
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read documents',
-        isCustom: false,
-        name: 'viewer',
-        projectId: 'test-project',
-        title: 'Viewer',
-      },
-    ]
+    mockedSelect.mockResolvedValueOnce('viewer')
+    mockedSelect.mockResolvedValueOnce('none')
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/roles',
-    }).reply(200, mockRoles)
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/tokens',
-    }).reply(500, {message: 'Internal Server Error'})
+    mockRolesApi([viewerRole])
+    mockCreateRobotApi().reply(500, {message: 'Internal Server Error'})
 
     const {error} = await testCommand(CreateTokenCommand, ['Failed Token'], {mocks: defaultMocks})
 
@@ -296,22 +367,16 @@ describe('#tokens:create', () => {
   })
 
   test('handles no roles available for tokens', async () => {
-    const mockRoles = [
+    mockRolesApi([
       {
         appliesToRobots: false, // Not applicable to robots
         appliesToUsers: true,
         description: 'Full access',
         isCustom: false,
         name: 'admin',
-        projectId: 'test-project',
         title: 'Admin',
       },
-    ]
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/roles',
-    }).reply(200, mockRoles)
+    ])
 
     const {error} = await testCommand(CreateTokenCommand, ['Test Token'], {mocks: defaultMocks})
 
@@ -321,44 +386,12 @@ describe('#tokens:create', () => {
   })
 
   test('prompts for label when not provided in interactive mode', async () => {
-    const mockRoles = [
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read documents',
-        isCustom: false,
-        name: 'viewer',
-        projectId: 'test-project',
-        title: 'Viewer',
-      },
-    ]
-
-    const mockToken = {
-      id: 'token-prompted',
-      key: 'sk_test_prompted1234',
-      label: 'Prompted Label',
-      projectUserId: 'user-123',
-      roles: [
-        {
-          name: 'viewer',
-          title: 'Viewer',
-        },
-      ],
-    }
-
     mockedInput.mockResolvedValueOnce('Prompted Label')
     mockedSelect.mockResolvedValueOnce('viewer')
+    mockedSelect.mockResolvedValueOnce('none')
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/roles',
-    }).reply(200, mockRoles)
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/tokens',
-    }).reply(200, mockToken)
+    mockRolesApi([viewerRole])
+    mockCreateRobotApi().reply(201, createRobot({label: 'Prompted Label'}))
 
     const {stdout} = await testCommand(CreateTokenCommand, [], {mocks: defaultMocks})
 
@@ -374,42 +407,10 @@ describe('#tokens:create', () => {
     // Mock input to capture the validation function and return a valid label
     mockedInput.mockResolvedValueOnce('Valid Label')
     mockedSelect.mockResolvedValueOnce('viewer')
+    mockedSelect.mockResolvedValueOnce('none')
 
-    const mockRoles = [
-      {
-        appliesToRobots: true,
-        appliesToUsers: true,
-        description: 'Can read documents',
-        isCustom: false,
-        name: 'viewer',
-        projectId: 'test-project',
-        title: 'Viewer',
-      },
-    ]
-
-    const mockToken = {
-      id: 'token-validated',
-      key: 'sk_test_validated1234',
-      label: 'Valid Label',
-      projectUserId: 'user-123',
-      roles: [
-        {
-          name: 'viewer',
-          title: 'Viewer',
-        },
-      ],
-    }
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/roles',
-    }).reply(200, mockRoles)
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/tokens',
-    }).reply(200, mockToken)
+    mockRolesApi([viewerRole])
+    mockCreateRobotApi().reply(201, createRobot({label: 'Valid Label'}))
 
     await testCommand(CreateTokenCommand, [], {mocks: defaultMocks})
 

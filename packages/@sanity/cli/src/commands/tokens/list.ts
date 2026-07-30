@@ -3,6 +3,7 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {Table} from 'console-table-printer'
 
+import {formatTokenExpiry} from '../../actions/tokens/expiry.js'
 import {type Token} from '../../actions/tokens/types.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getTokens} from '../../services/tokens.js'
@@ -76,6 +77,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
         {alignment: 'left', maxLen: 40, name: 'label', title: 'Label'},
         {alignment: 'left', maxLen: 20, name: 'id', title: 'Token ID'},
         {alignment: 'left', maxLen: 30, name: 'roles', title: 'Roles'},
+        {alignment: 'left', maxLen: 12, name: 'expires', title: 'Expires'},
       ],
       title: `Found ${tokens.length} API tokens`,
     })
@@ -87,6 +89,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       const truncatedRoles = roles.length > 27 ? `${roles.slice(0, 27)}...` : roles
 
       table.addRow({
+        expires: formatTokenExpiry(token.expiresAt),
         id: token.id,
         label: truncatedLabel,
         roles: truncatedRoles,

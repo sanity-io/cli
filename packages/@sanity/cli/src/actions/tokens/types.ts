@@ -3,24 +3,56 @@ interface TokenRole {
   title: string
 }
 
-export interface Token {
+/**
+ * A robot as returned by the Access API
+ * (`/access/project/{projectId}/robots`)
+ *
+ * @internal
+ */
+export interface Robot {
   createdAt: string
-  createdBy: string
+  expiresAt: string | null
   id: string
   label: string
-  lastUsedAt: string | null
-  permissions: string[]
-  projectId: string
-  projectUserId: string
-  roles: TokenRole[]
+  memberships: RobotMembership[]
+  tokenId: string
+
+  managedBy?: {
+    resourceId: string
+    resourceType: string
+  } | null
 }
 
-export interface TokenResponse {
+interface RobotMembership {
+  resourceId: string
+  resourceType: string
+  roleNames: string[]
+
+  addedAt?: string
+  lastSeenAt?: string | null
+  resourceUserId?: string | null
+}
+
+/**
+ * A project API token, mapped from an Access API robot.
+ *
+ * `id` is the robot ID used by the Access API for delete/update operations,
+ * while `tokenId` is the identifier of the current token credential (the ID
+ * previously exposed by the deprecated Projects API tokens endpoints).
+ *
+ * @internal
+ */
+export interface Token {
+  createdAt: string
+  expiresAt: string | null
   id: string
-  key: string
   label: string
-  projectUserId: string
   roles: TokenRole[]
+  tokenId: string
+}
+
+export interface TokenResponse extends Token {
+  key: string
 }
 
 export interface ProjectRole {
@@ -29,6 +61,5 @@ export interface ProjectRole {
   description: string
   isCustom: boolean
   name: string
-  projectId: string
   title: string
 }

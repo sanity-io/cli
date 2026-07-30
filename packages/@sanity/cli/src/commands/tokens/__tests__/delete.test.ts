@@ -4,41 +4,66 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
-import {type Token} from '../../../actions/tokens/types.js'
+import {type Robot} from '../../../actions/tokens/types.js'
 import {DeleteTokensCommand} from '../delete.js'
 
+const testProjectId = 'test-project'
+
 // Test fixtures
-const createToken = (overrides: Partial<Token> & {id: string}): Token => ({
-  createdAt: '2023-01-01T00:00:00Z',
-  createdBy: 'user-creator',
+const createRobot = (overrides: Partial<Robot> & {id: string}): Robot => ({
+  createdAt: '2023-01-01T00:00:00.000Z',
+  expiresAt: null,
   label: 'Test Token',
-  lastUsedAt: null,
-  permissions: ['read', 'write'],
-  projectId: 'test-project',
-  projectUserId: 'user-123',
-  roles: [{name: 'editor', title: 'Editor'}],
+  managedBy: {resourceId: testProjectId, resourceType: 'project'},
+  memberships: [
+    {
+      addedAt: '2023-01-01T00:00:00.000Z',
+      resourceId: testProjectId,
+      resourceType: 'project',
+      roleNames: ['editor'],
+    },
+  ],
+  tokenId: `si-${overrides.id}`,
   ...overrides,
 })
 
-const TEST_TOKENS = {
-  API_TOKEN: createToken({
-    id: 'token-api-123',
+const TEST_ROBOTS = {
+  API_TOKEN: createRobot({
+    id: 'g-robot-api-123',
     label: 'API Token',
-    roles: [{name: 'editor', title: 'Editor'}],
   }),
-  READ_TOKEN: createToken({
-    id: 'token-read-456',
+  READ_TOKEN: createRobot({
+    id: 'g-robot-read-456',
     label: 'Read Token',
-    roles: [{name: 'viewer', title: 'Viewer'}],
-  }),
-  WRITE_TOKEN: createToken({
-    id: 'token-write-789',
-    label: 'Write Token',
-    roles: [{name: 'administrator', title: 'Administrator'}],
+    memberships: [
+      {
+        addedAt: '2023-01-01T00:00:00.000Z',
+        resourceId: testProjectId,
+        resourceType: 'project',
+        roleNames: ['viewer'],
+      },
+    ],
   }),
 } as const
 
-const testProjectId = 'test-project'
+const mockRoles = [
+  {
+    appliesToRobots: true,
+    appliesToUsers: true,
+    description: 'Can read and write documents',
+    isCustom: false,
+    name: 'editor',
+    title: 'Editor',
+  },
+  {
+    appliesToRobots: true,
+    appliesToUsers: true,
+    description: 'Can read documents',
+    isCustom: false,
+    name: 'viewer',
+    title: 'Viewer',
+  },
+]
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
@@ -50,6 +75,27 @@ const defaultMocks = {
   },
   token: 'test-token',
 }
+
+const mockRobotsApi = () =>
+  mockApi({
+    apiVersion: TOKENS_API_VERSION,
+    query: {includeChildren: 'false'},
+    uri: `/access/project/${testProjectId}/robots`,
+  })
+
+const mockRolesApi = () =>
+  mockApi({
+    apiVersion: TOKENS_API_VERSION,
+    query: {includeChildren: 'false', limit: '500'},
+    uri: `/access/project/${testProjectId}/roles`,
+  })
+
+const mockDeleteRobotApi = (robotId: string) =>
+  mockApi({
+    apiVersion: TOKENS_API_VERSION,
+    method: 'delete',
+    uri: `/access/project/${testProjectId}/robots/${robotId}`,
+  })
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -72,31 +118,23 @@ describe('#tokens:delete', () => {
     const {confirm} = await import('@sanity/cli-core/ux')
     vi.mocked(confirm).mockResolvedValue(true)
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/projects/test-project/tokens/token-api-123',
-    }).reply(204)
+    mockDeleteRobotApi('g-robot-api-123').reply(204)
 
-    const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123'], {
+    const {stdout} = await testCommand(DeleteTokensCommand, ['g-robot-api-123'], {
       mocks: defaultMocks,
     })
     expect(stdout).toBe('API token deleted\n')
     expect(confirm).toHaveBeenCalledWith({
       default: false,
-      message: 'Delete API token "token-api-123"?',
+      message: 'Delete API token "g-robot-api-123"?',
     })
   })
 
   test('deletes a specific token by ID with --yes flag (skips confirmation)', async () => {
     const {confirm} = await import('@sanity/cli-core/ux')
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/projects/test-project/tokens/token-api-123',
-    }).reply(204)
+    mockDeleteRobotApi('g-robot-api-123').reply(204)
 
-    const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'], {
+    const {stdout} = await testCommand(DeleteTokensCommand, ['g-robot-api-123', '--yes'], {
       mocks: defaultMocks,
     })
     expect(stdout).toBe('API token deleted\n')
@@ -104,23 +142,59 @@ describe('#tokens:delete', () => {
   })
 
   test('deletes a specific token by ID with -y flag (skips confirmation)', async () => {
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/projects/test-project/tokens/token-api-123',
-    }).reply(204)
+    mockDeleteRobotApi('g-robot-api-123').reply(204)
 
-    const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123', '-y'], {
+    const {stdout} = await testCommand(DeleteTokensCommand, ['g-robot-api-123', '-y'], {
       mocks: defaultMocks,
     })
     expect(stdout).toBe('API token deleted\n')
+  })
+
+  test('deletes a token by its legacy token ID', async () => {
+    // A legacy token ID (from the deprecated Projects API) is not a robot ID,
+    // so the first delete attempt 404s and the ID is resolved via the robot list
+    mockDeleteRobotApi('si-g-robot-api-123').reply(404, {message: 'Robot not found'})
+    mockRobotsApi().reply(200, {
+      data: [TEST_ROBOTS.API_TOKEN, TEST_ROBOTS.READ_TOKEN],
+      nextCursor: null,
+    })
+    mockDeleteRobotApi('g-robot-api-123').reply(204)
+
+    const {stdout} = await testCommand(DeleteTokensCommand, ['si-g-robot-api-123', '--yes'], {
+      mocks: defaultMocks,
+    })
+    expect(stdout).toBe('API token deleted\n')
+  })
+
+  test('throws not found when the ID matches no robot or legacy token ID', async () => {
+    mockDeleteRobotApi('nonexistent-token').reply(404, {message: 'Robot not found'})
+    mockRobotsApi().reply(200, {data: [TEST_ROBOTS.API_TOKEN], nextCursor: null})
+
+    const {error} = await testCommand(DeleteTokensCommand, ['nonexistent-token', '--yes'], {
+      mocks: defaultMocks,
+    })
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Token with ID "nonexistent-token" not found')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('surfaces the original not found error when the robot list cannot be fetched', async () => {
+    mockDeleteRobotApi('nonexistent-token').reply(404, {message: 'Robot not found'})
+    mockRobotsApi().reply(403, {message: 'Forbidden'})
+
+    const {error} = await testCommand(DeleteTokensCommand, ['nonexistent-token', '--yes'], {
+      mocks: defaultMocks,
+    })
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Token with ID "nonexistent-token" not found')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('cancels deletion when user declines confirmation', async () => {
     const {confirm} = await import('@sanity/cli-core/ux')
     vi.mocked(confirm).mockResolvedValue(false)
 
-    const {error, stdout} = await testCommand(DeleteTokensCommand, ['token-api-123'], {
+    const {error, stdout} = await testCommand(DeleteTokensCommand, ['g-robot-api-123'], {
       mocks: defaultMocks,
     })
     expect(error).toBeInstanceOf(Error)
@@ -143,7 +217,7 @@ describe('#tokens:delete', () => {
     )
     expect(missingId.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
-    const missingConfirmation = await testCommand(DeleteTokensCommand, ['token-api-123'], {
+    const missingConfirmation = await testCommand(DeleteTokensCommand, ['g-robot-api-123'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
     expect(missingConfirmation.error?.message).toContain('--yes')
@@ -154,26 +228,22 @@ describe('#tokens:delete', () => {
 
   test('prompts user to select token when none specified', async () => {
     const {confirm, select} = await import('@sanity/cli-core/ux')
-    vi.mocked(select).mockResolvedValue('token-read-456')
+    vi.mocked(select).mockResolvedValue('g-robot-read-456')
     vi.mocked(confirm).mockResolvedValue(true)
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(200, [TEST_TOKENS.API_TOKEN, TEST_TOKENS.READ_TOKEN])
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/projects/test-project/tokens/token-read-456',
-    }).reply(204)
+    mockRobotsApi().reply(200, {
+      data: [TEST_ROBOTS.API_TOKEN, TEST_ROBOTS.READ_TOKEN],
+      nextCursor: null,
+    })
+    mockRolesApi().reply(200, {data: mockRoles, nextCursor: null})
+    mockDeleteRobotApi('g-robot-read-456').reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
       choices: [
-        {name: 'API Token (Editor)', value: 'token-api-123'},
-        {name: 'Read Token (Viewer)', value: 'token-read-456'},
+        {name: 'API Token (Editor)', value: 'g-robot-api-123'},
+        {name: 'Read Token (Viewer)', value: 'g-robot-read-456'},
       ],
       message: 'Select token to delete:',
     })
@@ -181,85 +251,64 @@ describe('#tokens:delete', () => {
 
   test('handles tokens with multiple roles', async () => {
     const {confirm, select} = await import('@sanity/cli-core/ux')
-    const multiRoleToken = createToken({
-      id: 'token-multi-123',
+    const multiRoleRobot = createRobot({
+      id: 'g-robot-multi-123',
       label: 'Multi Role Token',
-      roles: [
-        {name: 'editor', title: 'Editor'},
-        {name: 'viewer', title: 'Viewer'},
+      memberships: [
+        {
+          addedAt: '2023-01-01T00:00:00.000Z',
+          resourceId: testProjectId,
+          resourceType: 'project',
+          roleNames: ['editor', 'viewer'],
+        },
       ],
     })
-    vi.mocked(select).mockResolvedValue('token-multi-123')
+    vi.mocked(select).mockResolvedValue('g-robot-multi-123')
     vi.mocked(confirm).mockResolvedValue(true)
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(200, [multiRoleToken])
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/projects/test-project/tokens/token-multi-123',
-    }).reply(204)
+    mockRobotsApi().reply(200, {data: [multiRoleRobot], nextCursor: null})
+    mockRolesApi().reply(200, {data: mockRoles, nextCursor: null})
+    mockDeleteRobotApi('g-robot-multi-123').reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
-      choices: [{name: 'Multi Role Token (Editor, Viewer)', value: 'token-multi-123'}],
+      choices: [{name: 'Multi Role Token (Editor, Viewer)', value: 'g-robot-multi-123'}],
       message: 'Select token to delete:',
     })
   })
 
   test('handles tokens with no roles', async () => {
     const {confirm, select} = await import('@sanity/cli-core/ux')
-    const noRoleToken = createToken({
-      id: 'token-no-role-123',
+    const noRoleRobot = createRobot({
+      id: 'g-robot-no-role-123',
       label: 'No Role Token',
-      roles: [],
+      memberships: [
+        {
+          addedAt: '2023-01-01T00:00:00.000Z',
+          resourceId: testProjectId,
+          resourceType: 'project',
+          roleNames: [],
+        },
+      ],
     })
-    vi.mocked(select).mockResolvedValue('token-no-role-123')
+    vi.mocked(select).mockResolvedValue('g-robot-no-role-123')
     vi.mocked(confirm).mockResolvedValue(true)
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(200, [noRoleToken])
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/projects/test-project/tokens/token-no-role-123',
-    }).reply(204)
+    mockRobotsApi().reply(200, {data: [noRoleRobot], nextCursor: null})
+    mockRolesApi().reply(200, {data: mockRoles, nextCursor: null})
+    mockDeleteRobotApi('g-robot-no-role-123').reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
-      choices: [{name: 'No Role Token ()', value: 'token-no-role-123'}],
+      choices: [{name: 'No Role Token ()', value: 'g-robot-no-role-123'}],
       message: 'Select token to delete:',
     })
   })
 
-  test('throws error when token not found (404)', async () => {
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/projects/test-project/tokens/nonexistent-token',
-    }).reply(404, {message: 'Token not found'})
-
-    const {error} = await testCommand(DeleteTokensCommand, ['nonexistent-token', '--yes'], {
-      mocks: defaultMocks,
-    })
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Token with ID "nonexistent-token" not found')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('throws error when no tokens exist in project', async () => {
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(200, [])
+    mockRobotsApi().reply(200, {data: [], nextCursor: null})
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
@@ -271,13 +320,9 @@ describe('#tokens:delete', () => {
     {desc: 'when deleting token', message: 'Internal Server Error', statusCode: 500},
     {desc: 'with forbidden error when deleting token', message: 'Forbidden', statusCode: 403},
   ])('handles API error $desc', async ({message, statusCode}) => {
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/projects/test-project/tokens/token-api-123',
-    }).reply(statusCode, {message})
+    mockDeleteRobotApi('g-robot-api-123').reply(statusCode, {message})
 
-    const {error} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'], {
+    const {error} = await testCommand(DeleteTokensCommand, ['g-robot-api-123', '--yes'], {
       mocks: defaultMocks,
     })
     expect(error).toBeInstanceOf(Error)
@@ -287,10 +332,7 @@ describe('#tokens:delete', () => {
   })
 
   test('handles API error when fetching tokens', async () => {
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(404, {message: 'Project not found'})
+    mockRobotsApi().reply(404, {message: 'Project not found'})
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
@@ -301,10 +343,7 @@ describe('#tokens:delete', () => {
   })
 
   test('handles API error with server error when fetching tokens', async () => {
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(500, {message: 'Internal Server Error'})
+    mockRobotsApi().reply(500, {message: 'Internal Server Error'})
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
@@ -317,7 +356,7 @@ describe('#tokens:delete', () => {
     {desc: 'no project ID is found', projectId: undefined},
     {desc: 'project ID is empty string', projectId: ''},
   ])('throws error when $desc', async ({projectId}) => {
-    const {error} = await testCommand(DeleteTokensCommand, ['token-api-123'], {
+    const {error} = await testCommand(DeleteTokensCommand, ['g-robot-api-123'], {
       mocks: {
         ...defaultMocks,
         cliConfig: {api: {projectId}},
@@ -338,7 +377,7 @@ describe('#tokens:delete', () => {
 
   test('handles network errors when deleting token', async () => {
     // Don't set up any mock to simulate network failure
-    const {error} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'], {
+    const {error} = await testCommand(DeleteTokensCommand, ['g-robot-api-123', '--yes'], {
       mocks: defaultMocks,
     })
     expect(error).toBeInstanceOf(Error)

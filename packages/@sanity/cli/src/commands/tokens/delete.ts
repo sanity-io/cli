@@ -13,7 +13,8 @@ const deleteTokenDebug = subdebug('tokens:delete')
 export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensCommand> {
   static override args = {
     tokenId: Args.string({
-      description: 'Token ID to delete (will prompt if not provided)',
+      description:
+        'ID of the token to delete, as shown by `tokens list` (will prompt if not provided)',
       required: false,
     }),
   }
