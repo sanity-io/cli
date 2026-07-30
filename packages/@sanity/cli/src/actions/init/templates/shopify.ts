@@ -65,8 +65,8 @@ const shopifyTemplate: ProjectTemplate = {
     '@sanity/ui': '^3.1.14',
     'lodash.get': '^4.4.2',
     'pluralize-esm': '^9.0.2',
-    'sanity-plugin-hotspot-array': '^3.0.2',
-    'sanity-plugin-media': '^4.1.1',
+    'sanity-plugin-hotspot-array': '^5.0.11',
+    'sanity-plugin-media': '^6.0.9',
     slug: '^8.2.2',
   },
   devDependencies: {

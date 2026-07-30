@@ -10,6 +10,7 @@ import callout from './objects/callout'
 import inventory from './objects/inventory'
 import option from './objects/option'
 import priceRange from './objects/priceRange'
+import shop from './objects/shop'
 import proxyString from './objects/proxyString'
 import shopifyCollection from './objects/shopifyCollection'
 import shopifyCollectionRule from './objects/shopifyCollectionRule'
@@ -34,6 +35,7 @@ export const schemaTypes = [
   option,
   priceRange,
   proxyString,
+  shop,
   shopifyCollection,
   shopifyCollectionRule,
   shopifyMetafield,
