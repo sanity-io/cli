@@ -14,11 +14,8 @@ export const shopifyCollectionType = defineField({
       name: 'status',
       title: 'Status',
     },
-    // Named differently to the `metafields` field on purpose: a fieldset's path is its parent path
-    // plus its name, so a fieldset sharing a field's name produces two different things with the
-    // same path.
     {
-      name: 'shopifyMetafields',
+      name: 'metafields',
       title: 'Metafields',
       options: {
         collapsed: true,
@@ -92,13 +89,11 @@ export const shopifyCollectionType = defineField({
       type: 'string',
     }),
     defineField({
-      fieldset: 'shopifyMetafields',
+      fieldset: 'metafields',
       name: 'metafields',
       type: 'array',
-      description:
-        'Shopify metafields, for the namespaces selected in Sanity Connect. Replaced in full on every sync',
-      // Keep this a single-member array: Sanity resolves members without a `_type` to the sole
-      // member type, and synced metafields carry only a `_key`.
+      description: 'Read-only. Replaced in full on every sync',
+      // Keep one member type: synced metafields have no `_type`, which only resolves when `of` has one.
       of: [defineArrayMember({type: 'shopifyMetafield'})],
     }),
   ],

@@ -2,10 +2,6 @@ import {TagIcon} from '@sanity/icons'
 import {defineField} from 'sanity'
 
 import ShopifyMetafield from '../../../components/inputs/ShopifyMetafield'
-import {
-  formatMetafieldLabel,
-  formatMetafieldValuePreview,
-} from '../../../utils/formatMetafieldValue'
 
 export const shopifyMetafieldType = defineField({
   title: 'Metafield',
@@ -28,26 +24,20 @@ export const shopifyMetafieldType = defineField({
     defineField({
       name: 'type',
       type: 'string',
-      description: 'Shopify metafield type, e.g. single_line_text_field',
     }),
-    // `value` is deliberately not declared. Its shape depends on the metafield type — a string,
-    // number, boolean, list or object — and no Sanity field type accepts all of those. A declared
-    // field is always type-checked, even when hidden, so declaring it reports a validation error on
-    // every value that is not a string. Undeclared fields are only flagged outside the Studio, so
-    // this stays quiet; `ShopifyMetafield` renders the value from the raw object value.
+    // `value` is deliberately left undeclared: it can be a string, number, boolean, list or object
+    // depending on the metafield type, and a declared field is type-checked even when hidden.
   ],
   preview: {
     select: {
-      itemKey: '_key',
       key: 'key',
       namespace: 'namespace',
-      type: 'type',
       value: 'value',
     },
-    prepare({itemKey, key, namespace, type, value}) {
+    prepare({key, namespace, value}) {
       return {
-        subtitle: formatMetafieldValuePreview(type, value) || type,
-        title: formatMetafieldLabel({_key: itemKey, key, namespace}),
+        subtitle: typeof value === 'string' ? value : JSON.stringify(value),
+        title: [namespace, key].filter(Boolean).join('.'),
       }
     },
   },

@@ -14,7 +14,7 @@ Inside `/schemaTypes` you'll find schema definitions for all the content types.
 
 ## Shopify metafields
 
-If you've selected metafield namespaces to import in Sanity Connect, your product and collection metafields are synced to `store.metafields` and surfaced under a **Metafields** fieldset on the corresponding document.
+If you've selected metafield namespaces to import in Sanity Connect, your product and collection metafields are synced to `store.metafields` and shown under a **Metafields** fieldset.
 
 Each entry holds the metafield's `namespace`, `key`, Shopify `type` and `value`:
 
@@ -28,22 +28,9 @@ Each entry holds the metafield's `namespace`, `key`, Shopify `type` and `value`:
 }
 ```
 
-Values arrive deserialized, so `value` holds whatever the metafield's Shopify type implies — a string, number, boolean, list or JSON object. No single Sanity field type covers all of those, and a declared field is type-checked even when hidden, so `value` is left undeclared and `/components/inputs/ShopifyMetafield.tsx` reads it from the raw object value.
+`value` isn't declared on the `shopifyMetafield` schema type. Its shape follows the Shopify metafield type — a string, number, boolean, list or object — and no Sanity field type accepts all of those. `/components/inputs/ShopifyMetafield.tsx` reads it from the raw value and shows it as text, using JSON for anything that isn't a string.
 
-Each metafield is shown as a row in the array, with `namespace.key` as the title and the formatted value as the subtitle. `/utils/formatMetafieldValue.ts` formats it using the metafield's `type`:
-
-| Metafield type                  | Synced value                                   | Displayed as                    |
-| ------------------------------- | ---------------------------------------------- | ------------------------------- |
-| `dimension`, `weight`, `volume` | `{"value": 180, "unit": "CENTIMETERS"}`        | `180 cm`                        |
-| `money`                         | `{"amount": "649.00", "currency_code": "USD"}` | `649.00 USD`                    |
-| `rating`                        | `{"value": "4.7", "scale_max": "5.0"}`         | `4.7 / 5.0`                     |
-| `list.*`                        | `["Poplar core", "Carbon stringers"]`          | `Poplar core, Carbon stringers` |
-| `json`, `rich_text_field`       | `{"camber": "hybrid"}`                         | indented JSON                   |
-| everything else                 | `"Advanced"`, `7`, `true`                      | as-is                           |
-
-Measurement units not in the map are shown unchanged rather than guessed at, matching how the importer normalizes them. Dates keep their synced ISO form so they stay unambiguous.
-
-Metafields are read-only in the Studio and the whole array is replaced on every sync, so any edits you make here are overwritten. Variant metafields and metaobjects aren't synced.
+Metafields are read-only and the whole array is replaced on every sync, so edits made here are overwritten. Variant metafields and metaobjects aren't synced.
 
 ## Structure
 
