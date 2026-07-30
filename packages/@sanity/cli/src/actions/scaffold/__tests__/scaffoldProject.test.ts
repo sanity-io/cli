@@ -88,7 +88,7 @@ describe('scaffoldProject', () => {
   test('refuses a non-empty Studio target before writing files', async () => {
     mockDirIsEmptyOrNonExistent.mockResolvedValue(false)
 
-    await expect(scaffoldProject(options)).rejects.toThrow('./sanity is not empty')
+    await expect(scaffoldProject(options)).rejects.toThrow('./sanity is not an empty directory')
 
     expect(mockInitStudio).not.toHaveBeenCalled()
     expect(mockWriteFileSync).not.toHaveBeenCalled()

@@ -5,7 +5,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 const mockMintUnclaimedProject = vi.hoisted(() => vi.fn())
 const mockRecordUnclaimedProject = vi.hoisted(() => vi.fn())
-const mockIsStudioScaffoldTargetAvailable = vi.hoisted(() => vi.fn())
+const mockGetUnavailableScaffoldTarget = vi.hoisted(() => vi.fn())
 const mockInput = vi.hoisted(() => vi.fn())
 const mockScaffoldProject = vi.hoisted(() => vi.fn())
 
@@ -25,7 +25,7 @@ vi.mock('../../util/unclaimedProjects.js', () => ({
 }))
 vi.mock('../../actions/scaffold/scaffoldProject.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../actions/scaffold/scaffoldProject.js')>()),
-  isStudioScaffoldTargetAvailable: mockIsStudioScaffoldTargetAvailable,
+  getUnavailableScaffoldTarget: mockGetUnavailableScaffoldTarget,
   scaffoldProject: mockScaffoldProject,
 }))
 
@@ -68,7 +68,7 @@ beforeEach(() => {
   vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
   mockMintUnclaimedProject.mockResolvedValue(project)
   mockRecordUnclaimedProject.mockReturnValue(true)
-  mockIsStudioScaffoldTargetAvailable.mockResolvedValue(true)
+  mockGetUnavailableScaffoldTarget.mockResolvedValue(undefined)
   mockScaffoldProject.mockResolvedValue({
     frontendDependenciesInstalled: true,
     frontendPackageManager: 'npm',
@@ -183,10 +183,25 @@ describe('#new', () => {
   })
 
   test('refuses a non-empty Studio target before creating a project', async () => {
-    mockIsStudioScaffoldTargetAvailable.mockResolvedValue(false)
+    mockGetUnavailableScaffoldTarget.mockResolvedValue('sanity')
 
     await expect(NewCommand.run(['My New Project'])).rejects.toMatchObject({
       code: 'EXISTING_STUDIO_DIRECTORY',
+    })
+    expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
+  })
+
+  test('refuses a non-empty frontend target before creating a project', async () => {
+    mockGetUnavailableScaffoldTarget.mockResolvedValue('web')
+
+    await expect(NewCommand.run(['My New Project'])).rejects.toMatchObject({
+      code: 'EXISTING_FRONTEND_DIRECTORY',
+      suggestions: [
+        'Run this command where ./web does not exist or is an empty directory',
+        expect.stringMatching(
+          /^Or run `.+ --no-scaffold` to create the project without changing \.\/web$/u,
+        ),
+      ],
     })
     expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
   })

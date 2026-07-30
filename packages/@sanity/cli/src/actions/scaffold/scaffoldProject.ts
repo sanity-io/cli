@@ -27,9 +27,13 @@ const STUDIO_PACKAGE_NAME = 'sanity-studio'
 const STUDIO_PACKAGE_MANAGERS = new Set<PackageManager>(['npm', 'pnpm', 'yarn'])
 
 export async function isStudioScaffoldTargetAvailable(workDir: string): Promise<boolean> {
-  const studioPath = path.join(workDir, STUDIO_DIR)
+  return isScaffoldTargetAvailable(workDir, STUDIO_DIR)
+}
+
+async function isScaffoldTargetAvailable(workDir: string, targetDir: string): Promise<boolean> {
+  const targetPath = path.join(workDir, targetDir)
   try {
-    if (!(await lstat(studioPath)).isDirectory()) {
+    if (!(await lstat(targetPath)).isDirectory()) {
       return false
     }
   } catch (err) {
@@ -38,7 +42,28 @@ export async function isStudioScaffoldTargetAvailable(workDir: string): Promise<
     }
   }
 
-  return dirIsEmptyOrNonExistent(studioPath)
+  return dirIsEmptyOrNonExistent(targetPath)
+}
+
+async function inspectScaffoldTargets(workDir: string) {
+  if (!(await isStudioScaffoldTargetAvailable(workDir))) {
+    return {unavailableTarget: STUDIO_DIR}
+  }
+
+  const detectedFramework = await detectFrameworkRecord({
+    frameworkList: frameworks as readonly Framework[],
+    rootPath: workDir,
+  })
+  if (!detectedFramework && !(await isScaffoldTargetAvailable(workDir, FRONTEND_DIR))) {
+    return {unavailableTarget: FRONTEND_DIR}
+  }
+
+  return {detectedFramework}
+}
+
+export async function getUnavailableScaffoldTarget(workDir: string): Promise<string | undefined> {
+  const {unavailableTarget} = await inspectScaffoldTargets(workDir)
+  return unavailableTarget
 }
 
 export interface ScaffoldResult {
@@ -82,13 +107,10 @@ export async function scaffoldProject({
   workDir: string
 }): Promise<ScaffoldResult> {
   cancelSignal?.throwIfAborted()
-  const detected = await detectFrameworkRecord({
-    frameworkList: frameworks as readonly Framework[],
-    rootPath: workDir,
-  })
+  const {detectedFramework: detected, unavailableTarget} = await inspectScaffoldTargets(workDir)
   const studioPath = path.join(workDir, STUDIO_DIR)
-  if (!(await isStudioScaffoldTargetAvailable(workDir))) {
-    throw new Error(`./${STUDIO_DIR} is not empty`)
+  if (unavailableTarget) {
+    throw new Error(`./${unavailableTarget} is not an empty directory`)
   }
 
   const resolvedPackageManager = await resolvePackageManager({

@@ -9,7 +9,7 @@ import {createFlow, input} from '@sanity/cli-core/ux'
 import {
   FRONTEND_DIR,
   FRONTEND_ENV_FILE,
-  isStudioScaffoldTargetAvailable,
+  getUnavailableScaffoldTarget,
   scaffoldProject,
   type ScaffoldResult,
   STUDIO_DIR,
@@ -189,15 +189,23 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
     const invoked = [this.config.bin, ...(this.id?.split(':') ?? [])].join(' ')
     const cwd = process.cwd()
 
-    if (!json && this.flags.scaffold && !(await isStudioScaffoldTargetAvailable(cwd))) {
-      throw new CLIError(`./${STUDIO_DIR} is not empty. No project was created.`, {
-        code: 'EXISTING_STUDIO_DIRECTORY',
-        exit: exitCodes.RUNTIME_ERROR,
-        suggestions: [
-          `Move or remove ./${STUDIO_DIR}`,
-          `Or run \`${invoked} --no-scaffold\` to create the project without changing it`,
-        ],
-      })
+    const unavailableScaffoldTarget =
+      !json && this.flags.scaffold ? await getUnavailableScaffoldTarget(cwd) : undefined
+    if (unavailableScaffoldTarget) {
+      throw new CLIError(
+        `./${unavailableScaffoldTarget} is not an empty directory. No project was created.`,
+        {
+          code:
+            unavailableScaffoldTarget === STUDIO_DIR
+              ? 'EXISTING_STUDIO_DIRECTORY'
+              : 'EXISTING_FRONTEND_DIRECTORY',
+          exit: exitCodes.RUNTIME_ERROR,
+          suggestions: [
+            `Run this command where ./${unavailableScaffoldTarget} does not exist or is an empty directory`,
+            `Or run \`${invoked} --no-scaffold\` to create the project without changing ./${unavailableScaffoldTarget}`,
+          ],
+        },
+      )
     }
 
     if (!json) {
