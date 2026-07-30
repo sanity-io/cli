@@ -130,3 +130,29 @@ export function readUnclaimedProjects(): UnclaimedProjectRecord[] {
     .map(([projectId, record]) => parseRecord(projectId, record))
     .toSorted((left, right) => right.mintedAt.localeCompare(left.mintedAt))
 }
+
+/**
+ * Remove a record only when its claim token still matches the record that was checked.
+ */
+export function removeUnclaimedProject(projectId: string, expectedClaimToken: string): boolean {
+  try {
+    const config = getUserConfig()
+    const records = asRecord(config.get(UNCLAIMED_PROJECTS_CONFIG_KEY))
+    const current = asRecord(records[projectId])
+    if (current.claimToken !== expectedClaimToken) return false
+
+    const {[projectId]: _, ...remaining} = records
+    if (Object.keys(remaining).length === 0) {
+      config.delete(UNCLAIMED_PROJECTS_CONFIG_KEY)
+    } else {
+      config.set(UNCLAIMED_PROJECTS_CONFIG_KEY, remaining)
+    }
+    return true
+  } catch (error) {
+    debug(
+      'failed to remove unclaimed project: %s',
+      error instanceof Error ? error.message : `${error}`,
+    )
+    return false
+  }
+}

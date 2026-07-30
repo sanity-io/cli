@@ -4,6 +4,8 @@ import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 const mockGet = vi.hoisted(() => vi.fn())
+const mockDelete = vi.hoisted(() => vi.fn())
+const mockGetProjectClaimStatus = vi.hoisted(() => vi.fn())
 const mockSet = vi.hoisted(() => vi.fn())
 
 vi.mock(
@@ -12,9 +14,13 @@ vi.mock(
 )
 vi.mock('@sanity/cli-core/config', () => ({
   getUserConfig: vi.fn(() => ({
+    delete: mockDelete,
     get: mockGet,
     set: mockSet,
   })),
+}))
+vi.mock('../../../services/projects.js', () => ({
+  getProjectClaimStatus: mockGetProjectClaimStatus,
 }))
 
 const claimToken = 'claim-secret'
@@ -37,6 +43,7 @@ function outputText(): string {
 
 beforeEach(() => {
   mockGet.mockReturnValue({[record.projectId]: record})
+  mockGetProjectClaimStatus.mockResolvedValue('unclaimed')
 })
 
 afterEach(() => {
@@ -58,6 +65,74 @@ describe('#projects:unclaimed', () => {
     expect(output).toContain(record.expiresAt)
     expect(output).toContain(record.claimUrl)
     expect(output).not.toContain(robotToken)
+    expect(mockGetProjectClaimStatus).toHaveBeenCalledWith(record.projectId, robotToken)
+    expect(mockSet).not.toHaveBeenCalled()
+  })
+
+  test('removes claimed records before listing', async () => {
+    mockGetProjectClaimStatus.mockResolvedValue('claimed')
+
+    await UnclaimedProjectsCommand.run([])
+
+    expect(mockDelete).toHaveBeenCalledWith('unclaimedProjects')
+    expect(outputText()).toContain(
+      `✔ Project "${record.projectId}" is claimed. Local recovery details removed.`,
+    )
+    expect(outputText()).not.toContain('No locally recorded unclaimed projects')
+    expect(outputText()).not.toContain(record.claimUrl)
+    expect(outputText()).not.toContain(robotToken)
+  })
+
+  test('lists claimed project notices below remaining unclaimed projects', async () => {
+    const claimed = {
+      ...record,
+      claimToken: 'claimed-secret',
+      claimUrl: 'https://www.sanity.io/claim/claimed-secret',
+      projectId: 'claimed',
+      token: 'sk-claimed-token',
+    }
+    mockGet.mockReturnValue({[claimed.projectId]: claimed, [record.projectId]: record})
+    mockGetProjectClaimStatus.mockImplementation(async (projectId: string) =>
+      projectId === claimed.projectId ? 'claimed' : 'unclaimed',
+    )
+
+    await UnclaimedProjectsCommand.run([])
+
+    const output = outputText()
+    expect(output.indexOf(record.claimUrl)).toBeLessThan(
+      output.indexOf(
+        `✔ Project "${claimed.projectId}" is claimed. Local recovery details removed.`,
+      ),
+    )
+    expect(output).not.toContain(claimed.claimUrl)
+    expect(output).not.toContain(claimed.token)
+  })
+
+  test('keeps claimed records and warns when local cleanup fails', async () => {
+    mockGetProjectClaimStatus.mockResolvedValue('claimed')
+    mockDelete.mockImplementationOnce(() => {
+      throw new Error('disk full')
+    })
+
+    await UnclaimedProjectsCommand.run([])
+
+    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+      `Project "${record.projectId}" is claimed, but its local recovery details could not be removed. Run this command again to retry.`,
+    )
+    expect(outputText()).not.toContain(record.claimUrl)
+    expect(outputText()).not.toContain(robotToken)
+  })
+
+  test('keeps records and warns when claim status cannot be verified', async () => {
+    mockGetProjectClaimStatus.mockResolvedValue('unknown')
+
+    await UnclaimedProjectsCommand.run([])
+
+    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+      `Could not verify whether project "${record.projectId}" is claimed. Local recovery details were kept. Run this command again to retry.`,
+    )
+    expect(outputText()).toContain(record.claimUrl)
+    expect(mockDelete).not.toHaveBeenCalled()
     expect(mockSet).not.toHaveBeenCalled()
   })
 
@@ -90,6 +165,45 @@ describe('#projects:unclaimed', () => {
     expect(output).not.toContain('localhost:3333')
     expect(output).not.toContain(other.projectId)
     expect(output).not.toContain(other.token)
+    expect(mockSet).not.toHaveBeenCalled()
+  })
+
+  test('--project-id removes and reports a claimed project', async () => {
+    const other = {
+      ...record,
+      claimToken: 'other-claim-secret',
+      claimUrl: 'https://www.sanity.io/claim/other-claim-secret',
+      projectId: 'other',
+      token: 'sk-other-token',
+    }
+    mockGet.mockReturnValue({[other.projectId]: other, [record.projectId]: record})
+    mockGetProjectClaimStatus.mockResolvedValue('claimed')
+
+    await UnclaimedProjectsCommand.run(['--project-id', record.projectId])
+
+    expect(mockGetProjectClaimStatus).toHaveBeenCalledOnce()
+    expect(mockGetProjectClaimStatus).toHaveBeenCalledWith(record.projectId, robotToken)
+    expect(mockSet).toHaveBeenCalledWith('unclaimedProjects', {
+      [other.projectId]: other,
+    })
+    expect(outputText()).toContain(
+      `✔ Project "${record.projectId}" is claimed. Local recovery details removed.`,
+    )
+    expect(outputText()).not.toContain(record.claimUrl)
+    expect(outputText()).not.toContain(robotToken)
+  })
+
+  test('--project-id keeps details and warns when claim status cannot be verified', async () => {
+    mockGetProjectClaimStatus.mockResolvedValue('unknown')
+
+    await UnclaimedProjectsCommand.run(['--project-id', record.projectId])
+
+    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+      `Could not verify whether project "${record.projectId}" is claimed. Local recovery details were kept. Run this command again to retry.`,
+    )
+    expect(outputText()).toContain(record.claimUrl)
+    expect(outputText()).toContain(robotToken)
+    expect(mockDelete).not.toHaveBeenCalled()
     expect(mockSet).not.toHaveBeenCalled()
   })
 

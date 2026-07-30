@@ -7,6 +7,10 @@ export const PROJECTS_API_VERSION = '2025-09-22'
 
 export const CREATE_PROJECT_API_VERSION = 'v2025-05-14'
 
+const UNCLAIMED_PROJECT_ORGANIZATION_ID = 'oSystemUnclaimed'
+
+export type ProjectClaimStatus = 'claimed' | 'unclaimed' | 'unknown'
+
 interface CreateProjectOptions {
   displayName: string
 
@@ -63,6 +67,34 @@ export async function getProjectById(projectId: string) {
   })
 
   return client.projects.getById(projectId)
+}
+
+export async function getProjectClaimStatus(
+  projectId: string,
+  token: string,
+): Promise<ProjectClaimStatus> {
+  try {
+    const client = await getProjectCliClient({
+      apiVersion: PROJECTS_API_VERSION,
+      projectId,
+      requireUser: true,
+      token,
+    })
+    const project = await client.projects.getById(projectId)
+
+    if (typeof project.organizationId !== 'string' || project.organizationId.length === 0) {
+      return 'unknown'
+    }
+
+    return project.organizationId === UNCLAIMED_PROJECT_ORGANIZATION_ID ? 'unclaimed' : 'claimed'
+  } catch (error) {
+    debug(
+      'failed to check claim status for project %s: %s',
+      projectId,
+      error instanceof Error ? error.message : `${error}`,
+    )
+    return 'unknown'
+  }
 }
 
 export async function getProjectRoles(projectId: string) {

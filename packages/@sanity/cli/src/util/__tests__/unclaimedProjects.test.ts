@@ -5,15 +5,17 @@ import {type MintedProject} from '../../services/mintProject.js'
 import {
   readUnclaimedProjects,
   recordUnclaimedProject,
+  removeUnclaimedProject,
   UNCLAIMED_PROJECTS_CONFIG_KEY,
 } from '../unclaimedProjects.js'
 
+const mockDelete = vi.fn()
 const mockGet = vi.fn()
 const mockSet = vi.fn()
 
 vi.mock('@sanity/cli-core/config', () => ({
   getUserConfig: vi.fn(() => ({
-    delete: vi.fn(),
+    delete: mockDelete,
     get: mockGet,
     set: mockSet,
   })),
@@ -171,5 +173,50 @@ describe('readUnclaimedProjects', () => {
 
     expect(() => readUnclaimedProjects()).toThrow(/malformed/u)
     expect(mockSet).not.toHaveBeenCalled()
+  })
+})
+
+describe('removeUnclaimedProject', () => {
+  const record = {
+    claimToken: minted.claimToken,
+    projectId: minted.resourceId,
+  }
+
+  test('deletes the registry key when removing its only record', () => {
+    mockGet.mockReturnValue({[record.projectId]: record})
+
+    expect(removeUnclaimedProject(record.projectId, record.claimToken)).toBe(true)
+    expect(mockDelete).toHaveBeenCalledWith(UNCLAIMED_PROJECTS_CONFIG_KEY)
+    expect(mockSet).not.toHaveBeenCalled()
+  })
+
+  test('preserves other records', () => {
+    const other = {claimToken: 'other-claim-token', projectId: 'other'}
+    mockGet.mockReturnValue({[other.projectId]: other, [record.projectId]: record})
+
+    expect(removeUnclaimedProject(record.projectId, record.claimToken)).toBe(true)
+    expect(mockSet).toHaveBeenCalledWith(UNCLAIMED_PROJECTS_CONFIG_KEY, {
+      [other.projectId]: other,
+    })
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  test('does not remove a record when its claim token changed', () => {
+    mockGet.mockReturnValue({
+      [record.projectId]: {...record, claimToken: 'replacement-claim-token'},
+    })
+
+    expect(removeUnclaimedProject(record.projectId, record.claimToken)).toBe(false)
+    expect(mockDelete).not.toHaveBeenCalled()
+    expect(mockSet).not.toHaveBeenCalled()
+  })
+
+  test('returns false when the config write fails', () => {
+    mockGet.mockReturnValue({[record.projectId]: record})
+    mockDelete.mockImplementationOnce(() => {
+      throw new Error('disk full')
+    })
+
+    expect(removeUnclaimedProject(record.projectId, record.claimToken)).toBe(false)
   })
 })

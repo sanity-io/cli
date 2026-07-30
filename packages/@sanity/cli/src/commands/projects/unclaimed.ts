@@ -2,10 +2,16 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 import size from 'lodash-es/size.js'
 
 import {formatKeyValue, sectionHeader} from '../../actions/debug/output.js'
-import {readUnclaimedProjects, type UnclaimedProjectRecord} from '../../util/unclaimedProjects.js'
+import {getProjectClaimStatus} from '../../services/projects.js'
+import {
+  readUnclaimedProjects,
+  removeUnclaimedProject,
+  type UnclaimedProjectRecord,
+} from '../../util/unclaimedProjects.js'
 
 const listFields = ['id', 'dataset', 'created', 'claim deadline', 'claim url']
 
@@ -74,6 +80,19 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
         return
       }
 
+      const status = await getProjectClaimStatus(record.projectId, record.token)
+      if (status === 'claimed') {
+        if (this.removeClaimedProject(record)) {
+          this.logClaimedProject(record.projectId)
+        }
+        return
+      }
+      if (status === 'unknown') {
+        this.output.warn(
+          `Could not verify whether project "${projectId}" is claimed. Local recovery details were kept. Run this command again to retry.`,
+        )
+      }
+
       this.output.log(sectionHeader('Project'))
       const details = [
         ['Project ID', record.projectId],
@@ -90,7 +109,36 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
       return
     }
 
+    const checked = await Promise.all(
+      records.map(async (record) => ({
+        record,
+        status: await getProjectClaimStatus(record.projectId, record.token),
+      })),
+    )
+    records = []
+    const claimedProjectIds: string[] = []
+    for (const {record, status} of checked) {
+      if (status === 'claimed') {
+        if (this.removeClaimedProject(record)) {
+          claimedProjectIds.push(record.projectId)
+        }
+        continue
+      }
+      if (status === 'unknown') {
+        this.output.warn(
+          `Could not verify whether project "${record.projectId}" is claimed. Local recovery details were kept. Run this command again to retry.`,
+        )
+      }
+      records.push(record)
+    }
+
     if (records.length === 0) {
+      if (claimedProjectIds.length > 0) {
+        for (const claimedProjectId of claimedProjectIds) {
+          this.logClaimedProject(claimedProjectId)
+        }
+        return
+      }
       this.output.log(
         'No locally recorded unclaimed projects. Create one with `sanity new`, then return here if you need its recovery details.',
       )
@@ -103,5 +151,27 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
     )) {
       this.output.log(line)
     }
+    if (claimedProjectIds.length > 0) {
+      this.output.log()
+      for (const claimedProjectId of claimedProjectIds) {
+        this.logClaimedProject(claimedProjectId)
+      }
+    }
+  }
+
+  private logClaimedProject(projectId: string): void {
+    this.output.log(
+      `${logSymbols.success} Project "${projectId}" is claimed. Local recovery details removed.`,
+    )
+  }
+
+  private removeClaimedProject(record: UnclaimedProjectRecord): boolean {
+    const removed = removeUnclaimedProject(record.projectId, record.claimToken)
+    if (!removed) {
+      this.output.warn(
+        `Project "${record.projectId}" is claimed, but its local recovery details could not be removed. Run this command again to retry.`,
+      )
+    }
+    return removed
   }
 }
