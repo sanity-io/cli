@@ -86,6 +86,7 @@ export async function scaffoldProject({
   cancelSignal,
   dataset,
   displayName,
+  onFrameworkDetected,
   output,
   packageManager,
   projectId,
@@ -96,6 +97,7 @@ export async function scaffoldProject({
   cancelSignal?: AbortSignal
   dataset: string
   displayName: string
+  onFrameworkDetected?: (framework: string | undefined) => void
   output: Output
   packageManager?: PackageManager
   projectId: string
@@ -108,6 +110,7 @@ export async function scaffoldProject({
     frameworkList: frameworks as readonly Framework[],
     rootPath: workDir,
   })
+  onFrameworkDetected?.(detected?.name)
   const studioPath = path.join(workDir, STUDIO_DIR)
   if (!(await isStudioScaffoldTargetAvailable(workDir))) {
     throw new Error(`./${STUDIO_DIR} is not empty`)

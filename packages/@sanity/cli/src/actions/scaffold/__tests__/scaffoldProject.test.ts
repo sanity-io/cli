@@ -138,13 +138,14 @@ describe('scaffoldProject', () => {
     ['nuxtjs', FRONTEND_ENV_PREFIX_OVERRIDES.nuxtjs],
     ['sveltekit-1', FRONTEND_ENV_PREFIX_OVERRIDES['sveltekit-1']],
   ])('uses framework-correct public env keys for %s', async (slug, prefix) => {
+    const onFrameworkDetected = vi.fn()
     mockDetectFrameworkRecord.mockResolvedValue({
       envPrefix: 'IGNORED_',
       name: slug,
       slug,
     })
 
-    await expect(scaffoldProject(options)).resolves.toMatchObject({
+    await expect(scaffoldProject({...options, onFrameworkDetected})).resolves.toMatchObject({
       detectedFramework: slug,
       frontendEnv: {
         [`${prefix}SANITY_DATASET`]: 'production',
@@ -153,6 +154,7 @@ describe('scaffoldProject', () => {
       frontendEnvWritten: false,
       studioEnvWritten: true,
     })
+    expect(onFrameworkDetected).toHaveBeenCalledWith(slug)
     expect(mockCreateFrontend).not.toHaveBeenCalled()
   })
 

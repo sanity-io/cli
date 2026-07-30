@@ -339,7 +339,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         }
       }
     }
-    const printScaffoldRecipe = () => {
+    const printScaffoldRecipe = (detectedFramework?: string) => {
       const [studioCommand, frontendCommand] = manualScaffoldCommands({
         dataset: minted.datasetName,
         projectId: minted.resourceId,
@@ -348,6 +348,10 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
       flow.gap()
       flow.command(studioCommand)
       flow.gap()
+      if (detectedFramework) {
+        flow.line(`Your existing ${detectedFramework} frontend was detected and left unchanged.`)
+        return
+      }
       flow.highlight(`Create a new Next.js website in ./${FRONTEND_DIR}`)
       flow.gap()
       flow.command(frontendCommand)
@@ -463,6 +467,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
     const shouldScaffold = !json && this.flags.scaffold && (hasExistingKeys || setupValuesWritten)
     let scaffold: ScaffoldResult | undefined
     if (shouldScaffold) {
+      let detectedFramework: string | undefined
       const scaffoldController = new AbortController()
       const abortScaffold = () => scaffoldController.abort(new Error('SIGINT'))
       process.once('SIGINT', abortScaffold)
@@ -471,6 +476,9 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
           cancelSignal: scaffoldController.signal,
           dataset: minted.datasetName,
           displayName,
+          onFrameworkDetected: (framework) => {
+            detectedFramework = framework
+          },
           output,
           projectId: minted.resourceId,
           telemetry: this.telemetry,
@@ -492,7 +500,7 @@ export class MintProjectCommand extends SanityCommand<typeof MintProjectCommand>
         flow.note(`Automatic setup did not finish: ${err instanceof Error ? err.message : err}`)
         flow.line('The project is ready. You do not need to create another one.')
         flow.gap()
-        printScaffoldRecipe()
+        printScaffoldRecipe(detectedFramework)
         flow.gap()
       } finally {
         process.off('SIGINT', abortScaffold)

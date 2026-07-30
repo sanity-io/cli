@@ -72,7 +72,17 @@ function outputText(): string {
   return stripVTControlCharacters(vi.mocked(mocks.SanityCmdOutput.log).mock.calls.flat().join('\n'))
 }
 
+function stderrText(): string {
+  return stripVTControlCharacters(
+    vi
+      .mocked(process.stderr.write)
+      .mock.calls.map(([chunk]) => String(chunk))
+      .join(''),
+  )
+}
+
 beforeEach(() => {
+  vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
   mockMintUnclaimedProject.mockResolvedValue(minted)
   mockRecordUnclaimedProject.mockReturnValue(true)
   mockIsStudioScaffoldTargetAvailable.mockResolvedValue(true)
@@ -101,6 +111,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
+  vi.restoreAllMocks()
   vi.unstubAllEnvs()
   process.exitCode = undefined
 })
@@ -171,7 +182,7 @@ describe('#projects:mint', () => {
     const output = outputText()
     expect(output).toContain('@@@@')
     expect(output).toContain('Setting up your Sanity project.')
-    expect(output).toContain('Created "My New Project"')
+    expect(stderrText()).toContain('Created "My New Project"')
     expect(output).toContain(`Project ID: ${minted.resourceId}`)
     expect(output).toContain(`Dataset: ${minted.datasetName} (where your content lives)`)
     expect(output).toContain(`Access token: ${minted.token}`)
@@ -401,6 +412,20 @@ describe('#projects:mint', () => {
     expect(mocks.SanityCmdOutput.warn).not.toHaveBeenCalled()
   })
 
+  test('does not suggest replacing a detected frontend when scaffolding fails', async () => {
+    mockScaffoldProject.mockImplementation(async ({onFrameworkDetected}) => {
+      onFrameworkDetected?.('Nuxt')
+      throw new Error('template failed')
+    })
+
+    await MintProjectCommand.run(['My New Project'])
+
+    const output = outputText()
+    expect(output).toContain('Your existing Nuxt frontend was detected and left unchanged')
+    expect(output).not.toContain('Create a new Next.js website')
+    expect(output).not.toContain('$ npx --yes create-next-app')
+  })
+
   test('gives a runnable recovery when .env is already tracked by git', async () => {
     mockIsEnvTracked.mockReturnValue(true)
 
@@ -597,6 +622,6 @@ describe('#new', () => {
     await NewCommand.run(['My New Project', '--no-scaffold'])
 
     expect(mockMintUnclaimedProject).toHaveBeenCalledWith({displayName: 'My New Project'})
-    expect(outputText()).toContain('Created "My New Project"')
+    expect(stderrText()).toContain('Created "My New Project"')
   })
 })
