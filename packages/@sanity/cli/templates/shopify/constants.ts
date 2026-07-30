@@ -1,7 +1,9 @@
 // Currency code (ISO 4217) to use when displaying prices in the studio
 
 import ShopifyIcon from './components/icons/Shopify'
-import {ColorWheelIcon, ComposeIcon, SearchIcon} from '@sanity/icons'
+import {ColorWheelIcon} from '@sanity/icons/ColorWheel'
+import {ComposeIcon} from '@sanity/icons/Compose'
+import {SearchIcon} from '@sanity/icons/Search'
 
 // https://en.wikipedia.org/wiki/ISO_4217
 export const DEFAULT_CURRENCY_CODE = 'USD'
