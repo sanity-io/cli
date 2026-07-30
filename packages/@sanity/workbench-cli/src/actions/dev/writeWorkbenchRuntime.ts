@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import {subdebug} from '@sanity/cli-core'
+import {isStaging} from '@sanity/cli-core/util'
 
 const devDebug = subdebug('dev')
 
@@ -64,10 +65,7 @@ export async function writeWorkbenchRuntime(options: {
   // `define` never reaches pre-bundled dependencies like the SDK.
   const indexHtml = indexHtmlTemplate
     .replace(/%SANITY_WORKBENCH_PREFETCH_HINTS%/, prefetchHints)
-    .replace(
-      /%SANITY_WORKBENCH_STAGING%/,
-      JSON.stringify(process.env.SANITY_INTERNAL_ENV === 'staging'),
-    )
+    .replace(/%SANITY_WORKBENCH_STAGING%/, JSON.stringify(isStaging()))
 
   devDebug('Making workbench runtime directory')
   await fs.mkdir(workbenchDir, {recursive: true})

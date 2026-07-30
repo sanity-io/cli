@@ -4,6 +4,7 @@ import {Args, Flags} from '@oclif/core'
 import {exit} from '@oclif/core/errors'
 import {exitCodes} from '@sanity/cli-core'
 import {subdebug} from '@sanity/cli-core/debug'
+import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {spinner} from '@sanity/cli-core/ux'
 import {Table} from 'console-table-printer'
@@ -382,6 +383,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
   private async subscribeToProgress(projectId: string, jobId: string): Promise<void> {
     const spin = spinner('').start()
+    const hasCliExecutionContext = Boolean(getCliExecutionContext())
 
     return new Promise<void>((resolve, reject) => {
       const sigintHandler = () => {
@@ -392,12 +394,12 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
       const subscription = followCopyJobProgress({jobId, projectId}).subscribe({
         complete: () => {
-          process.off('SIGINT', sigintHandler)
+          if (!hasCliExecutionContext) process.off('SIGINT', sigintHandler)
           spin.succeed('Copy finished.')
           resolve()
         },
         error: (err) => {
-          process.off('SIGINT', sigintHandler)
+          if (!hasCliExecutionContext) process.off('SIGINT', sigintHandler)
           spin.fail('Copy failed.')
           reject(err)
         },
@@ -408,7 +410,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         },
       })
 
-      process.once('SIGINT', sigintHandler)
+      if (!hasCliExecutionContext) process.once('SIGINT', sigintHandler)
     })
   }
 }

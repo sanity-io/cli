@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGlobalCliClient, getProjectCliClient} from '../apiClient.js'
+import {runWithCliExecutionContext} from '../executionContext.js'
 
 const mockCreateClient = vi.hoisted(() => vi.fn())
 const mockRequesterClone = vi.hoisted(() => vi.fn())
@@ -142,6 +143,40 @@ describe('getGlobalCliClient', () => {
       }),
     )
   })
+
+  test('invocation production environment overrides process staging environment', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
+
+    await runWithCliExecutionContext({sanityEnv: 'production'}, () =>
+      getGlobalCliClient({apiVersion: '2021-06-07'}),
+    )
+
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        apiHost: expect.anything(),
+      }),
+    )
+  })
+
+  test('explicit client apiHost overrides invocation environment', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+
+    await runWithCliExecutionContext({sanityEnv: 'staging'}, () =>
+      getGlobalCliClient({
+        apiHost: 'https://api.sanity.io',
+        apiVersion: '2021-06-07',
+      }),
+    )
+
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiHost: 'https://api.sanity.io',
+      }),
+    )
+  })
 })
 
 describe('getProjectCliClient', () => {
@@ -245,6 +280,25 @@ describe('getProjectCliClient', () => {
     expect(mockCreateClient).toHaveBeenCalledWith(
       expect.not.objectContaining({
         apiHost: expect.anything(),
+      }),
+    )
+  })
+
+  test('invocation staging environment overrides process production environment', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
+
+    await runWithCliExecutionContext({sanityEnv: 'staging'}, () =>
+      getProjectCliClient({
+        apiVersion: '2021-06-07',
+        projectId: 'test-project',
+      }),
+    )
+
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiHost: 'https://api.sanity.work',
       }),
     )
   })

@@ -1,6 +1,13 @@
 import {AsyncLocalStorage} from 'node:async_hooks'
 
 /**
+ * Sanity deployment environment used by a programmatic CLI invocation.
+ *
+ * @public
+ */
+export type SanityEnvironment = 'production' | 'staging'
+
+/**
  * Explicit, per-invocation execution context for running CLI commands
  * programmatically (e.g. from an MCP server or another embedding host).
  *
@@ -23,6 +30,12 @@ import {AsyncLocalStorage} from 'node:async_hooks'
  * @public
  */
 export interface CliExecutionContext {
+  /**
+   * Sanity deployment environment to use for this invocation.
+   * Overrides `SANITY_INTERNAL_ENV`.
+   */
+  sanityEnv?: SanityEnvironment
+
   /**
    * Sink for output the command would otherwise write to `process.stderr`.
    * Called once per line, without a trailing newline.

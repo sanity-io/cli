@@ -1,5 +1,43 @@
 # Change Log
 
+## [7.15.1](https://github.com/sanity-io/cli/compare/cli-v7.15.0...cli-v7.15.1)
+
+_2026-07-29_
+
+### Bug Fixes
+
+- Stricter context for cli invoke ([#1618](https://github.com/sanity-io/cli/pull/1618)) ([f857468](https://github.com/sanity-io/cli/commit/f85746877a7913bbab5c7cf43c4d6dbacd09504e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.1
+
+## [7.15.0](https://github.com/sanity-io/cli/compare/cli-v7.14.0...cli-v7.15.0)
+
+_2026-07-29_
+
+### Features
+
+- support providing sanityEnv to execution context ([#1608](https://github.com/sanity-io/cli/pull/1608)) ([161efb5](https://github.com/sanity-io/cli/commit/161efb54ec091c2c9603b6e6e469deb12fd374a1))
+- return commandId in InvokeSanityCliResult ([#1609](https://github.com/sanity-io/cli/pull/1609)) ([29d220a](https://github.com/sanity-io/cli/commit/29d220a9bdcf698189402159f85b2909ca30aa99))
+
+### Bug Fixes
+
+- **cli:** update MCP policy command set to prevent authentication overrides for `sanity api` ([#1611](https://github.com/sanity-io/cli/pull/1611)) ([c508d5e](https://github.com/sanity-io/cli/commit/c508d5e6c8154b1ce5e94d4424c53a20e3e556dc))
+- bump Sanity package baselines in catalog and CLI manifest ([#1606](https://github.com/sanity-io/cli/pull/1606)) ([fdfd3e4](https://github.com/sanity-io/cli/commit/fdfd3e4dac329955337fb2fb802fc9c2e7c475f1))
+- **cli:** move --with-token argument to be first in sanity login ([#1589](https://github.com/sanity-io/cli/pull/1589)) ([32d18dc](https://github.com/sanity-io/cli/commit/32d18dcb613180b90b561d9c011e65df39372cd9))
+- **cli:** handle `PrettyPrintableError`s thrown during `invokeSanityCli()` execution, including error code, suggestions, and references ([#1612](https://github.com/sanity-io/cli/pull/1612)) ([20896ec](https://github.com/sanity-io/cli/commit/20896eccaa9fe66bb26e56e481a7e6227cc9ea08))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 5.1.0
+    - @sanity/cli-core bumped to 2.7.0
+    - @sanity/workbench-cli bumped to 1.8.0
+
 ## [7.14.0](https://github.com/sanity-io/cli/compare/cli-v7.13.0...cli-v7.14.0)
 
 _2026-07-28_

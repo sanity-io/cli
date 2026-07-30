@@ -7,7 +7,11 @@ import {
   VIEW_CONTRACT_VERSION,
 } from '../../contract.js'
 import {isWorkbenchApp, readConfig} from '../../defineApp.js'
+import {FEDERATION_FILE_NAME, RUNTIME_DIR} from '../build/vite/constants.js'
 import {type DevServerManifest} from './registry.js'
+
+/** What a studio exposes as `./App` — the generated entry that renders `sanity.config.ts`. */
+const GENERATED_ENTRY = `./${RUNTIME_DIR}/${FEDERATION_FILE_NAME}.jsx`
 
 /** One forwarded interface record on the dev-server registry entry. */
 export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[number]
@@ -16,11 +20,8 @@ export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[nu
 export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
 
 /**
- * Map a workbench app's declarations to its registry interface records:
- * `views` → panels, `services` → workers, `entry` → the `app` view. Each mirrors
- * a deployed record so the workbench loads a local interface like a deployed one.
- * `undefined` for a non-branded app; a studio that declares `entry` is rejected
- * (studio app views aren't implemented yet).
+ * Map a workbench app's declarations to its registry interface records. A studio
+ * that declares `entry` is rejected (studio app views aren't implemented yet).
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
@@ -60,8 +61,12 @@ export function deriveInterfaces(
     }),
   )
 
+  // Tracks what the build exposes as `./App`: an app's declared `entry`, and a
+  // studio's generated entry. A dock-only app (no `entry`) exposes none.
+  const appEntry = options.isApp ? app.entry : GENERATED_ENTRY
+
   const appView: DevServerInterface[] =
-    app.entry === undefined
+    appEntry === undefined
       ? []
       : [
           {
@@ -69,7 +74,7 @@ export function deriveInterfaces(
             metadata: null,
             moduleId: interfaceModuleId('app', app.name),
             name: app.name,
-            src: app.entry,
+            src: appEntry,
             title: app.title,
             type: 'app',
           },

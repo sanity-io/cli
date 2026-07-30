@@ -1,5 +1,23 @@
 # @sanity/workbench-cli
 
+## [1.8.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.2...workbench-cli-v1.8.0)
+
+_2026-07-29_
+
+### Features
+
+- support providing sanityEnv to execution context ([#1608](https://github.com/sanity-io/cli/pull/1608)) ([161efb5](https://github.com/sanity-io/cli/commit/161efb54ec091c2c9603b6e6e469deb12fd374a1))
+
+### Bug Fixes
+
+- **workbench:** forward an app interface for a local workbench studio ([#1605](https://github.com/sanity-io/cli/pull/1605)) ([a0735b1](https://github.com/sanity-io/cli/commit/a0735b1f5bf0e465a86ef7dd3ddd3f4a8f3519cb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.0
+
 ## [1.7.2](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.1...workbench-cli-v1.7.2)
 
 _2026-07-28_

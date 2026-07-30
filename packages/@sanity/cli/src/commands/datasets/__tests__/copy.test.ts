@@ -1,3 +1,4 @@
+import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {spinnerText} from '@sanity/cli-test/mocks/cli-core/ux'
@@ -442,6 +443,26 @@ describe('#dataset:copy', () => {
         expect.stringMatching(/job job-detach completed/i),
       )
       expect(mockFollowCopyJob).not.toHaveBeenCalled()
+    })
+
+    test('does not mutate host signal listeners under an execution context', async () => {
+      mockListDatasets.mockResolvedValue([
+        createMockDataset('production'),
+        createMockDataset('staging'),
+      ])
+      mockCopyDataset.mockResolvedValue({jobId: 'job-context'})
+      mockFollowCopyJob.mockReturnValue(of({progress: 100, type: 'progress'}))
+      const once = vi.spyOn(process, 'once')
+      const off = vi.spyOn(process, 'off')
+
+      try {
+        await runWithCliExecutionContext({}, () => CopyDatasetCommand.run(['production', 'backup']))
+        expect(once).not.toHaveBeenCalledWith('SIGINT', expect.any(Function))
+        expect(off).not.toHaveBeenCalledWith('SIGINT', expect.any(Function))
+      } finally {
+        once.mockRestore()
+        off.mockRestore()
+      }
     })
 
     test('handles copy dataset errors', async () => {

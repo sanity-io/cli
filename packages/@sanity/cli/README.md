@@ -528,13 +528,12 @@ Diagnose potential issues with local Blueprint and remote Stack configuration
 
 ```
 USAGE
-  $ sanity blueprints doctor [--json] [-p <value>] [--verbose] [--fix]
+  $ sanity blueprints doctor [--json] [-p <value>] [--fix]
 
 FLAGS
   -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
       --fix           Interactively fix configuration issues
       --json          Format output as json
-      --[no-]verbose  Verbose output; defaults to true
 
 DESCRIPTION
   Diagnose potential issues with local Blueprint and remote Stack configuration
@@ -544,6 +543,8 @@ DESCRIPTION
 
   Run this command when encountering errors with other Blueprint commands. Use --fix to interactively resolve detected
   issues.
+
+  Supports --json for programmatic consumption of diagnostic results.
 
 EXAMPLES
   $ sanity blueprints doctor
@@ -1861,7 +1862,7 @@ ARGUMENTS
 
 FLAGS
   --anonymous            Send the query without any authorization token
-  --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to use (defaults to 2025-08-15)
+  --api-version=<value>  API version to use (defaults to 2025-08-15)
   --pretty               Colorize JSON output
 
 OVERRIDE FLAGS
@@ -2071,7 +2072,7 @@ Add or set an environment variable for a deployed function
 
 ```
 USAGE
-  $ sanity functions env add NAME KEY VALUE [--json]
+  $ sanity functions env add NAME KEY VALUE [--json] [--stack <value>]
 
 ARGUMENTS
   NAME   The name of the Sanity Function
@@ -2079,7 +2080,8 @@ ARGUMENTS
   VALUE  The value of the environment variable
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Add or set an environment variable for a deployed function
@@ -2091,6 +2093,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
+
+  $ sanity functions env add --stack <name-or-id> MyFunction API_URL https://api.example.com/
 ```
 
 ## `sanity functions env list NAME`
@@ -2099,13 +2103,14 @@ List environment variables for a deployed function
 
 ```
 USAGE
-  $ sanity functions env list NAME [--json]
+  $ sanity functions env list NAME [--json] [--stack <value>]
 
 ARGUMENTS
   NAME  The name of the Sanity Function
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   List environment variables for a deployed function
@@ -2116,6 +2121,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env list MyFunction
+
+  $ sanity functions env list --stack <name-or-id> MyFunction
 ```
 
 ## `sanity functions env remove NAME KEY`
@@ -2124,14 +2131,15 @@ Remove an environment variable from a deployed function
 
 ```
 USAGE
-  $ sanity functions env remove NAME KEY [--json]
+  $ sanity functions env remove NAME KEY [--json] [--stack <value>]
 
 ARGUMENTS
   NAME  The name of the Sanity Function
   KEY   The name of the environment variable
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Remove an environment variable from a deployed function
@@ -2143,6 +2151,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env remove MyFunction API_URL
+
+  $ sanity functions env remove --stack <name-or-id> MyFunction API_URL
 ```
 
 ## `sanity functions logs [NAME]`
@@ -2616,14 +2626,14 @@ Log in to your Sanity account
 
 ```
 USAGE
-  $ sanity login [--open] [--provider <providerId> | --sso <slug> | --with-token] [--sso-provider <name> ]
+  $ sanity login [--with-token | --provider <providerId> | --sso <slug>] [--open] [--sso-provider <name> ]
 
 FLAGS
+  --with-token             Read token from standard input
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
   --provider=<providerId>  Log in using a provider ID (google, github, sanity, vercel)
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
-  --with-token             Read token from standard input
 
 DESCRIPTION
   Log in to your Sanity account
@@ -2632,6 +2642,10 @@ EXAMPLES
   Log in using default settings
 
     $ sanity login
+
+  Log in using a token from standard input
+
+    $ sanity login --with-token < token.txt
 
   Login with GitHub provider, but do not open a browser window automatically
 
@@ -2644,10 +2658,6 @@ EXAMPLES
   Log in using a specific SSO provider within an organization
 
     $ sanity login --sso my-organization --sso-provider "Okta SSO"
-
-  Log in using a token from standard input
-
-    $ sanity login --with-token < token.txt
 ```
 
 ## `sanity logout`

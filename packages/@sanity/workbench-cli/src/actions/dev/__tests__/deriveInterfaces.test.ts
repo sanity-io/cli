@@ -209,7 +209,7 @@ describe('deriveInterfaces', () => {
     )
   })
 
-  test('a studio without entry still derives its panels/workers', () => {
+  test('derives a studio app interface from the generated entry, after its panels/workers', () => {
     const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
     expect(deriveInterfaces(app, {isApp: false})).toEqual([
       {
@@ -221,6 +221,15 @@ describe('deriveInterfaces', () => {
         title: 'feed',
         type: 'panel',
         version: '1',
+      },
+      {
+        id: 'test-app-app-test-app',
+        metadata: null,
+        moduleId: 'App',
+        name: 'test-app',
+        src: './.sanity/federation/remote-entry.jsx',
+        title: 'Test App',
+        type: 'app',
       },
     ])
   })

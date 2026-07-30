@@ -1,10 +1,15 @@
-import {describe, expect, test} from 'vitest'
+import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
   getModuleUrl,
 } from '../getAutoUpdatesImportMap.js'
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
 
 describe('getAutoUpdateImportMap() without app id', () => {
   test('works with sanity package', () => {
@@ -174,5 +179,16 @@ describe('getModuleUrl', () => {
 
     expect(res).toContain('/v1/modules/by-app/my-app-id/')
     expect(res).not.toContain('/default/')
+  })
+
+  test('uses the invocation environment for the default module endpoint', () => {
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
+    vi.stubEnv('SANITY_MODULES_HOST', undefined)
+
+    const res = runWithCliExecutionContext({sanityEnv: 'staging'}, () =>
+      getModuleUrl({name: 'sanity', version: '3.40.0'}, {timestamp: 1}),
+    )
+
+    expect(res).toContain('https://sanity-cdn.work/')
   })
 })
