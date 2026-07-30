@@ -96,7 +96,7 @@ export interface Flow {
 export function createFlow(log: LogFn): Flow {
   return {
     command(command: string) {
-      log(`${rail('│')}     ${styleText('cyan', `$ ${command}`)}`)
+      log(`${rail('│')}     ${styleText('cyan', `$ ${encodeTerminalControls(command)}`)}`)
     },
     gap() {
       log(rail('│'))
@@ -124,24 +124,30 @@ export function createFlow(log: LogFn): Flow {
       writeRailed(log, '◇', text)
     },
     spin(text: string) {
+      const sanitizedText = encodeTerminalControls(text)
       if (!isInteractive() || !process.stderr.isTTY || !process.stderr.columns) {
-        writeRailed(writeStderr, '●', text)
+        writeRailed(writeStderr, '●', sanitizedText)
         return {
-          fail: (failText: string) => writeStderr(`${styleText('red', '✖')}  ${failText}`),
-          succeed: (successText: string) => writeStderr(`${rail('◇')}  ${successText}`),
+          fail: (failText: string) =>
+            writeStderr(`${styleText('red', '✖')}  ${encodeTerminalControls(failText)}`),
+          succeed: (successText: string) =>
+            writeStderr(`${rail('◇')}  ${encodeTerminalControls(successText)}`),
         }
       }
 
       const spin: SpinnerInstance = spinner({
         spinner: {frames: SPINNER_FRAMES, interval: 120},
-        text,
+        text: sanitizedText,
       }).start()
       return {
         fail(failText: string) {
-          spin.stopAndPersist({symbol: `${styleText('red', '✖')} `, text: failText})
+          spin.stopAndPersist({
+            symbol: `${styleText('red', '✖')} `,
+            text: encodeTerminalControls(failText),
+          })
         },
         succeed(successText: string) {
-          spin.stopAndPersist({symbol: `${rail('◇')} `, text: successText})
+          spin.stopAndPersist({symbol: `${rail('◇')} `, text: encodeTerminalControls(successText)})
         },
       }
     },

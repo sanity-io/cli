@@ -7,6 +7,8 @@ import {createFlow} from '../flowOutput.js'
 const mockIsInteractive = vi.hoisted(() => vi.fn())
 const mockStart = vi.hoisted(() => vi.fn())
 const mockSpinner = vi.hoisted(() => vi.fn())
+const terminalLink = '\u001B]8;;http://evil\u0007click\u001B]8;;\u0007'
+const encodedTerminalLink = '%1B]8;;http://evil%07click%1B]8;;%07'
 
 vi.mock('../../util/isInteractive.js', () => ({
   isInteractive: mockIsInteractive,
@@ -78,6 +80,14 @@ describe('createFlow output', () => {
     expect(stripVTControlCharacters(lines[0])).toBe('│     $ npm run dev')
   })
 
+  test('encodes terminal controls in commands', () => {
+    const lines: string[] = []
+
+    createFlow((line = '') => lines.push(line)).command(terminalLink)
+
+    expect(stripVTControlCharacters(lines[0])).toBe(`│     $ ${encodedTerminalLink}`)
+  })
+
   test('wraps prose with a rail while keeping a claim URL copy-safe', () => {
     setStdout(true, 20)
     const lines: string[] = []
@@ -109,6 +119,21 @@ describe('createFlow output', () => {
 })
 
 describe('createFlow spin', () => {
+  test.each(['succeed', 'fail'] as const)(
+    'encodes terminal controls in the interactive %s path',
+    (method) => {
+      setStderr(true, 80)
+      createFlow(() => {})
+        .spin(terminalLink)
+        [method](terminalLink)
+
+      expect(mockSpinner).toHaveBeenCalledWith(expect.objectContaining({text: encodedTerminalLink}))
+      expect(stopAndPersist).toHaveBeenCalledWith(
+        expect.objectContaining({text: encodedTerminalLink}),
+      )
+    },
+  )
+
   test('animates for an interactive stderr TTY', () => {
     setStderr(true, 80)
     createFlow(() => {})
@@ -120,23 +145,23 @@ describe('createFlow spin', () => {
   })
 
   test.each([
-    ['succeed', 'minted', '◇  minted\n'],
-    ['fail', 'mint failed', '✖  mint failed\n'],
-  ] as const)('writes the non-interactive %s fallback only to stderr', (method, text, expected) => {
+    ['succeed', '◇'],
+    ['fail', '✖'],
+  ] as const)('writes the non-interactive %s fallback only to stderr', (method, expected) => {
     mockIsInteractive.mockReturnValue(false)
     const stdout: string[] = []
     const write = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
 
     try {
       createFlow((line = '') => stdout.push(line))
-        .spin('minting')
-        [method](text)
+        .spin(terminalLink)
+        [method](terminalLink)
 
       expect(mockSpinner).not.toHaveBeenCalled()
       expect(stdout).toEqual([])
       expect(write.mock.calls.map(([chunk]) => stripVTControlCharacters(String(chunk)))).toEqual([
-        '●  minting\n',
-        expected,
+        `●  ${encodedTerminalLink}\n`,
+        `${expected}  ${encodedTerminalLink}\n`,
       ])
     } finally {
       write.mockRestore()
