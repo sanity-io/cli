@@ -2,7 +2,7 @@ import {subdebug} from '@sanity/cli-core/debug'
 import {createRequester} from '@sanity/cli-core/request'
 import {isStaging} from '@sanity/cli-core/util'
 
-const debug = subdebug('projects:mint')
+const debug = subdebug('new:provision')
 
 /** Provision API version for minting unclaimed projects. */
 export const PROVISION_API_VERSION = 'v2026-06-23'
@@ -69,7 +69,7 @@ function parseProvisionResponse(body: unknown): MintedProject {
     missing.push('resourceType')
   }
   if (missing.length > 0) {
-    throw new Error(`Mint response is missing or invalid: ${missing.join(', ')}`)
+    throw new Error(`Project creation response is missing or invalid: ${missing.join(', ')}`)
   }
 
   return minted as MintedProject
@@ -96,14 +96,14 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
 
   if (response.statusCode === 404) {
     throw new Error(
-      'Minting new projects is currently unavailable. Try again later, or run `sanity login` and `sanity init`.',
+      'Creating projects without an account is currently unavailable. Try again later, or run `sanity login` and `sanity init`.',
     )
   }
   if (response.statusCode === 429) {
-    throw new Error('Mint rate limit reached for this machine. Try again later.')
+    throw new Error('Project creation rate limit reached for this machine. Try again later.')
   }
   if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw new Error(`Mint failed (HTTP ${response.statusCode}). Try again later.`)
+    throw new Error(`Project creation failed (HTTP ${response.statusCode}). Try again later.`)
   }
 
   return parseProvisionResponse(response.body)

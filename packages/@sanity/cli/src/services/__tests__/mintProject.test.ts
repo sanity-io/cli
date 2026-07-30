@@ -117,7 +117,7 @@ describe('mintUnclaimedProject', () => {
     mockRequest.mockResolvedValue(jsonResponse({}, 404))
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
-      'Minting new projects is currently unavailable.',
+      'Creating projects without an account is currently unavailable.',
     )
   })
 
@@ -125,7 +125,7 @@ describe('mintUnclaimedProject', () => {
     mockRequest.mockResolvedValue(jsonResponse({}, 429))
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
-      'Mint rate limit reached for this machine. Try again later.',
+      'Project creation rate limit reached for this machine. Try again later.',
     )
   })
 
@@ -137,7 +137,7 @@ describe('mintUnclaimedProject', () => {
     })
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
-      'Mint failed (HTTP 500). Try again later.',
+      'Project creation failed (HTTP 500). Try again later.',
     )
   })
 
@@ -152,7 +152,7 @@ describe('mintUnclaimedProject', () => {
     )
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
-      'Mint response is missing or invalid: claimApiUrl, claimUrl, token, resourceType',
+      'Project creation response is missing or invalid: claimApiUrl, claimUrl, token, resourceType',
     )
   })
 
@@ -164,7 +164,7 @@ describe('mintUnclaimedProject', () => {
     })
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
-      'Mint response is missing or invalid',
+      'Project creation response is missing or invalid',
     )
   })
 })

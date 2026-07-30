@@ -2,12 +2,7 @@ import path from 'node:path'
 
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {
-  createFrontend,
-  frontendScaffoldCommand,
-  FrontendScaffoldError,
-  installFrontendDeps,
-} from '../createFrontend.js'
+import {createFrontend, FrontendScaffoldError, installFrontendDeps} from '../createFrontend.js'
 
 const mockExeca = vi.hoisted(() => vi.fn())
 const mockInstallNewPackages = vi.hoisted(() => vi.fn())
@@ -31,14 +26,6 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockExeca.mockResolvedValue({exitCode: 0, failed: false, stderr: '', stdout: ''})
   mockInstallNewPackages.mockResolvedValue(undefined)
-})
-
-describe('frontendScaffoldCommand', () => {
-  test('returns a fully non-interactive create-next-app command', () => {
-    expect(frontendScaffoldCommand('web')).toContain(
-      'npx --yes create-next-app@^16 web --typescript --app --eslint --tailwind --no-src-dir --disable-git --yes',
-    )
-  })
 })
 
 describe('createFrontend', () => {
@@ -82,6 +69,27 @@ describe('createFrontend', () => {
     expect(mockOutputLog).toHaveBeenCalledWith('failure details')
     expect(mockProgress.fail).toHaveBeenCalled()
   })
+
+  test('turns a missing scaffolder result into a typed error', async () => {
+    mockExeca.mockResolvedValue(undefined)
+
+    await expect(
+      createFrontend({
+        dirName: 'web',
+        output,
+        packageManager: 'npm',
+        workDir: '/tmp/project',
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        message: 'create-next-app failed',
+        name: 'FrontendScaffoldError',
+      }),
+    )
+
+    expect(mockProgress.fail).toHaveBeenCalled()
+    expect(mockProgress.succeed).not.toHaveBeenCalled()
+  })
 })
 
 describe('installFrontendDeps', () => {
@@ -99,6 +107,24 @@ describe('installFrontendDeps', () => {
         output,
         timeout: 600_000,
         workDir: path.join('/tmp/project', 'web'),
+      }),
+    )
+  })
+
+  test('wraps installer exit errors for partial scaffold recovery', async () => {
+    mockInstallNewPackages.mockRejectedValue(new Error('Package installation failed'))
+
+    await expect(
+      installFrontendDeps({
+        dirName: 'web',
+        output,
+        packageManager: 'npm',
+        workDir: '/tmp/project',
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        message: 'Installing next-sanity failed: Package installation failed',
+        name: 'FrontendScaffoldError',
       }),
     )
   })

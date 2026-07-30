@@ -1,23 +1,20 @@
+import {writeFileSync} from 'node:fs'
+import {lstat} from 'node:fs/promises'
 import path from 'node:path'
 
 import {type CLITelemetryStore, type Output, subdebug} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type Framework, frameworks} from '@vercel/frameworks'
 
 import {CLIInitStepCompleted} from '../../telemetry/init.telemetry.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
-import {appendEnvValues} from '../../util/envFile.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {initStudio} from '../init/initStudio.js'
 import {resolvePackageManager} from '../init/resolvePackageManager.js'
 import {type InitOptions} from '../init/types.js'
-import {
-  createFrontend,
-  frontendScaffoldCommand,
-  FrontendScaffoldError,
-  installFrontendDeps,
-} from './createFrontend.js'
+import {createFrontend, FrontendScaffoldError, installFrontendDeps} from './createFrontend.js'
 
 const debug = subdebug('scaffold')
 
@@ -26,59 +23,40 @@ export const FRONTEND_DIR = 'web'
 export const STUDIO_ENV_FILE = `${STUDIO_DIR}/.env.local`
 export const FRONTEND_ENV_FILE = `${FRONTEND_DIR}/.env.local`
 
-const NEXTJS_ENV_PREFIX = 'NEXT_PUBLIC_'
 const STUDIO_PACKAGE_NAME = 'sanity-studio'
 const STUDIO_PACKAGE_MANAGERS = new Set<PackageManager>(['npm', 'pnpm', 'yarn'])
 
-export const FRONTEND_ENV_PREFIX_OVERRIDES = {
-  nuxtjs: 'NUXT_PUBLIC_',
-  'sveltekit-1': 'PUBLIC_',
-} as const satisfies Record<string, string>
+export async function isStudioScaffoldTargetAvailable(workDir: string): Promise<boolean> {
+  const studioPath = path.join(workDir, STUDIO_DIR)
+  try {
+    if (!(await lstat(studioPath)).isDirectory()) {
+      return false
+    }
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw err
+    }
+  }
 
-export function manualScaffoldCommands(options: {
-  dataset: string
-  projectId: string
-}): [studio: string, frontend: string] {
-  const {dataset, projectId} = options
-  return [
-    `npx sanity init --project ${projectId} --dataset ${dataset} --output-path ${STUDIO_DIR} --no-mcp --no-skills --no-git -y`,
-    frontendScaffoldCommand(FRONTEND_DIR),
-  ]
-}
-
-export function isStudioScaffoldTargetAvailable(workDir: string): Promise<boolean> {
-  return dirIsEmptyOrNonExistent(path.join(workDir, STUDIO_DIR))
+  return dirIsEmptyOrNonExistent(studioPath)
 }
 
 export interface ScaffoldResult {
-  frontendEnv: Record<string, string>
-  frontendEnvWritten: boolean
-  studioEnvWritten: boolean
   studioPath: string
 
   detectedFramework?: string
   frontendCreationError?: string
   frontendDependenciesInstalled?: boolean
   frontendDependencyError?: string
-  frontendEnvPrefix?: string
   frontendPackageManager?: PackageManager
   frontendPath?: string
 }
 
-function resolveFrontendEnvPrefix(detected: Framework): string | undefined {
-  const override =
-    FRONTEND_ENV_PREFIX_OVERRIDES[detected.slug as keyof typeof FRONTEND_ENV_PREFIX_OVERRIDES]
-  return (override ?? detected.envPrefix?.trim()) || undefined
-}
-
-function createFrontendEnv(
-  dataset: string,
-  projectId: string,
-  prefix: string,
-): Record<string, string> {
+function createScaffoldEnv(dataset: string, projectId: string, token: string) {
   return {
-    [`${prefix}SANITY_DATASET`]: dataset,
-    [`${prefix}SANITY_PROJECT_ID`]: projectId,
+    SANITY_AUTH_TOKEN: token,
+    SANITY_DATASET: dataset,
+    SANITY_PROJECT_ID: projectId,
   }
 }
 
@@ -86,7 +64,6 @@ export async function scaffoldProject({
   cancelSignal,
   dataset,
   displayName,
-  onFrameworkDetected,
   output,
   packageManager,
   projectId,
@@ -97,7 +74,6 @@ export async function scaffoldProject({
   cancelSignal?: AbortSignal
   dataset: string
   displayName: string
-  onFrameworkDetected?: (framework: string | undefined) => void
   output: Output
   packageManager?: PackageManager
   projectId: string
@@ -110,7 +86,6 @@ export async function scaffoldProject({
     frameworkList: frameworks as readonly Framework[],
     rootPath: workDir,
   })
-  onFrameworkDetected?.(detected?.name)
   const studioPath = path.join(workDir, STUDIO_DIR)
   if (!(await isStudioScaffoldTargetAvailable(workDir))) {
     throw new Error(`./${STUDIO_DIR} is not empty`)
@@ -145,6 +120,8 @@ export async function scaffoldProject({
   const trace = telemetry.trace(CLIInitStepCompleted)
   trace.start()
   try {
+    // To avoid changing Studio initialization internals, we're deferring passing `cancelSignal`
+    // until post `sanity new` launch.
     await initStudio({
       datasetName: dataset,
       defaults: await getProjectDefaults({isPlugin: false, workDir}),
@@ -170,23 +147,17 @@ export async function scaffoldProject({
   }
 
   cancelSignal?.throwIfAborted()
-  const studioEnvWritten = writeScaffoldEnv(
+  const scaffoldEnv = createScaffoldEnv(dataset, projectId, token)
+  writeScaffoldEnv(
     path.join(studioPath, '.env.local'),
-    {SANITY_AUTH_TOKEN: token},
-    'Added by `sanity new`. Keep this file out of git: it holds a live project token.',
+    scaffoldEnv,
+    `Studio scaffold completed, but writing ./${STUDIO_ENV_FILE} failed`,
   )
-
-  const frontendEnvPrefix = detected ? resolveFrontendEnvPrefix(detected) : NEXTJS_ENV_PREFIX
-  const frontendEnv = createFrontendEnv(dataset, projectId, frontendEnvPrefix ?? NEXTJS_ENV_PREFIX)
 
   if (detected) {
     debug('Detected %s in %s, leaving the frontend alone', detected.name, workDir)
     return {
       detectedFramework: detected.name,
-      frontendEnv,
-      frontendEnvPrefix,
-      frontendEnvWritten: false,
-      studioEnvWritten,
       studioPath,
     }
   }
@@ -204,10 +175,7 @@ export async function scaffoldProject({
     if (err instanceof FrontendScaffoldError) {
       return {
         frontendCreationError: err.message,
-        frontendEnv,
-        frontendEnvPrefix,
-        frontendEnvWritten: false,
-        studioEnvWritten,
+        frontendPackageManager: resolvedPackageManager,
         studioPath,
       }
     }
@@ -215,10 +183,10 @@ export async function scaffoldProject({
   }
 
   const frontendPath = path.join(workDir, FRONTEND_DIR)
-  const frontendEnvWritten = writeScaffoldEnv(
+  writeScaffoldEnv(
     path.join(frontendPath, '.env.local'),
-    frontendEnv,
-    'Added by `sanity new`.',
+    scaffoldEnv,
+    `Website scaffold completed, but writing ./${FRONTEND_ENV_FILE} failed`,
   )
 
   let frontendDependenciesInstalled = resolvedPackageManager !== 'manual'
@@ -243,12 +211,8 @@ export async function scaffoldProject({
   return {
     frontendDependenciesInstalled,
     frontendDependencyError,
-    frontendEnv,
-    frontendEnvPrefix,
-    frontendEnvWritten,
     frontendPackageManager: resolvedPackageManager,
     frontendPath,
-    studioEnvWritten,
     studioPath,
   }
 }
@@ -256,17 +220,15 @@ export async function scaffoldProject({
 function writeScaffoldEnv(
   envPath: string,
   values: Record<string, string>,
-  banner: string,
-): boolean {
+  errorContext: string,
+): void {
+  const lines = [
+    '# Added by `sanity new`. Keep this file out of git: it holds a live project token.',
+    ...Object.entries(values).map(([key, value]) => `${key}="${value}"`),
+  ]
   try {
-    const written = appendEnvValues(envPath, values, {banner: [banner]})
-    if (written.skippedKeys.length > 0) {
-      debug('%s already had %s; values not written', envPath, written.skippedKeys.join(', '))
-      return false
-    }
-    return true
+    writeFileSync(envPath, `${lines.join('\n')}\n`, 'utf8')
   } catch (err) {
-    debug('Failed writing %s: %O', envPath, err)
-    return false
+    throw new Error(`${errorContext}: ${getErrorMessage(err)}`, {cause: err})
   }
 }

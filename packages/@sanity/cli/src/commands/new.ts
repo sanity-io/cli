@@ -1,17 +1,124 @@
+import {styleText} from 'node:util'
+
 import {Args, Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {createFlow, input} from '@sanity/cli-core/ux'
 
-import {FRONTEND_DIR, STUDIO_DIR} from '../actions/scaffold/scaffoldProject.js'
+import {
+  FRONTEND_DIR,
+  FRONTEND_ENV_FILE,
+  isStudioScaffoldTargetAvailable,
+  scaffoldProject,
+  type ScaffoldResult,
+  STUDIO_DIR,
+  STUDIO_ENV_FILE,
+} from '../actions/scaffold/scaffoldProject.js'
+import {type MintedProject, mintUnclaimedProject} from '../services/mintProject.js'
 import {CLAIM_WINDOW_HOURS, SANITY_NEW_URL} from '../util/mintProjectConstants.js'
-import {formatHelpDescription, MintProjectCommand} from './projects/mint.js'
+import {renderNewCommandSplash} from '../util/newCommandSplash.js'
+import {recordUnclaimedProject} from '../util/unclaimedProjects.js'
 
-/**
- * Top-level alias for `sanity projects mint`.
- * Subclassed to share implementation and give `sanity new` its own entry in help output.
- *
- * Help text is deliberately not shared with the parent: `projects mint` is the plumbing command
- * and can stay technical, while `sanity new` is the door most people arrive at.
- */
-export class NewCommand extends MintProjectCommand {
+const DEFAULT_PROJECT_NAME = 'My Sanity project'
+const HELP_DESCRIPTION_WIDTH = 78
+
+function formatHelpDescription(...paragraphs: string[]): string {
+  return paragraphs
+    .map((paragraph) => {
+      const lines: string[] = []
+      let line = ''
+
+      for (const word of paragraph.split(/\s+/u)) {
+        if (!line || line.length + word.length + 1 <= HELP_DESCRIPTION_WIDTH) {
+          line = line ? `${line} ${word}` : word
+        } else {
+          lines.push(line)
+          line = word
+        }
+      }
+
+      if (line) lines.push(line)
+      return lines.join('\n')
+    })
+    .join('\n\n')
+}
+
+const FRONTEND_DEV_COMMANDS: Record<
+  NonNullable<ScaffoldResult['frontendPackageManager']>,
+  string
+> = {
+  bun: 'bun dev',
+  manual: 'npm run dev',
+  npm: 'npm run dev',
+  pnpm: 'pnpm dev',
+  yarn: 'yarn dev',
+}
+
+function frontendDevCommand(packageManager: ScaffoldResult['frontendPackageManager']): string {
+  return packageManager ? FRONTEND_DEV_COMMANDS[packageManager] : 'npm run dev'
+}
+
+function frontendInstallCommand(packageManager: ScaffoldResult['frontendPackageManager']): string {
+  switch (packageManager) {
+    case 'bun': {
+      return 'bun add next-sanity'
+    }
+    case 'pnpm': {
+      return 'pnpm add --save-prod next-sanity'
+    }
+    case 'yarn': {
+      return 'yarn add next-sanity'
+    }
+    default: {
+      return 'npm install next-sanity'
+    }
+  }
+}
+
+function formatClaimDeadline(expiresAt: string): string {
+  const deadline = new Date(expiresAt)
+  if (!Number.isFinite(deadline.getTime())) return expiresAt
+  return (
+    new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      hour: '2-digit',
+      hour12: false,
+      minute: '2-digit',
+      month: 'long',
+      timeZone: 'UTC',
+      year: 'numeric',
+    })
+      .format(deadline)
+      .replace(' at ', ', ') + ' UTC'
+  )
+}
+
+export interface NewProjectResult {
+  apiHost: string
+  claimApiUrl: string
+  claimToken: string
+  claimUrl: string
+  dataset: string
+  expiresAt: string
+  projectId: string
+  token: string
+}
+
+function toResult(project: MintedProject): NewProjectResult {
+  return {
+    apiHost: project.apiHost,
+    claimApiUrl: project.claimApiUrl,
+    claimToken: project.claimToken,
+    claimUrl: project.claimUrl,
+    dataset: project.datasetName,
+    expiresAt: project.expiresAt,
+    projectId: project.resourceId,
+    token: project.token,
+  }
+}
+
+export class NewCommand extends SanityCommand<typeof NewCommand> {
   static override args = {
     projectName: Args.string({
       description: 'Display name for the new project',
@@ -28,12 +135,14 @@ export class NewCommand extends MintProjectCommand {
       'a Sanity account before the deadline and everything you have built stays exactly as it is. ' +
       'Claiming is free and takes about a minute. Miss the deadline and the project and its ' +
       'content are deleted.',
-    'Two things to keep private. The claim link, because anyone who opens it becomes the owner. ' +
-      'And the access token saved in ./.env, because it can read and change everything in the ' +
-      'project - .env is added to .gitignore for you, and the token must never go into code that ' +
-      'runs in the browser.',
+    'Two things to keep private: the claim link, because anyone who opens it becomes the owner, ' +
+      `and the access token saved in ./${STUDIO_ENV_FILE} and ./${FRONTEND_ENV_FILE}, because it ` +
+      'can read and change everything in the project. Keep both env files out of git, and never ' +
+      'put the token in code that runs in the browser.',
     `Fetch ${SANITY_NEW_URL} for full instructions, or point your AI agent at it.`,
   )
+
+  static override enableJsonFlag = true
 
   static override examples = [
     {
@@ -59,20 +168,232 @@ export class NewCommand extends MintProjectCommand {
   ]
 
   static override flags = {
-    ...MintProjectCommand.flags,
-    force: Flags.boolean({
-      default: false,
-      description:
-        'Create a new project even when .env or .env.local already has Sanity values (existing files are left unchanged)',
-    }),
     scaffold: Flags.boolean({
       allowNo: true,
       default: true,
       description: `Set up a Studio in ./${STUDIO_DIR} and a Next.js website in ./${FRONTEND_DIR} (on by default)`,
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      default: false,
+      description: `Skip prompts and use defaults (project: "${DEFAULT_PROJECT_NAME}")`,
+    }),
   }
 
-  static override hiddenAliases: string[] = []
-
   static override summary = `Create a Sanity project without an account, and claim it within ${CLAIM_WINDOW_HOURS} hours to keep it.`
+
+  public async run(): Promise<NewProjectResult> {
+    const {output} = this
+    const json = this.jsonEnabled()
+    const flow = createFlow(output.log)
+    const invoked = [this.config.bin, ...(this.id?.split(':') ?? [])].join(' ')
+    const cwd = process.cwd()
+
+    if (!json && this.flags.scaffold && !(await isStudioScaffoldTargetAvailable(cwd))) {
+      throw new CLIError(`./${STUDIO_DIR} is not empty. No project was created.`, {
+        code: 'EXISTING_STUDIO_DIRECTORY',
+        exit: exitCodes.RUNTIME_ERROR,
+        suggestions: [
+          `Move or remove ./${STUDIO_DIR}`,
+          `Or run \`${invoked} --no-scaffold\` to create the project without changing it`,
+        ],
+      })
+    }
+
+    if (!json) {
+      renderNewCommandSplash(output.log)
+      flow.intro('Setting up your Sanity project.')
+      flow.gap()
+
+      if (!this.isUnattended()) {
+        flow.note(
+          `${styleText('cyan', `${invoked} --yes`)} for a non-interactive flow with defaults.`,
+        )
+        flow.gap()
+      }
+    }
+
+    let displayName = this.args.projectName?.trim()
+    if (!displayName && this.isUnattended()) {
+      displayName = DEFAULT_PROJECT_NAME
+    } else if (!displayName) {
+      displayName =
+        (await input({default: DEFAULT_PROJECT_NAME, message: 'Project name'})).trim() ||
+        DEFAULT_PROJECT_NAME
+    }
+
+    const spin = json ? undefined : flow.spin('Creating your project...')
+    let project: MintedProject
+    try {
+      project = await mintUnclaimedProject({displayName})
+    } catch (err) {
+      spin?.fail('Creating your project failed.')
+      throw err
+    }
+
+    const recorded = recordUnclaimedProject(project)
+    spin?.succeed(`Created "${displayName}"`)
+
+    if (!json) {
+      flow.result(`Project ID: ${styleText('cyan', project.resourceId)}`)
+      flow.result(`Dataset: ${styleText('cyan', project.datasetName)} (where your content lives)`)
+      flow.result(`Access token: ${styleText('cyan', project.token)}`)
+      flow.gap()
+      flow.line('Run a CLI command with this access token:')
+      flow.command(`SANITY_AUTH_TOKEN="${project.token}" sanity <command>`)
+      flow.gap()
+      flow.highlight(
+        `Claim your project by ${styleText('yellow', formatClaimDeadline(project.expiresAt))}`,
+      )
+      flow.gap()
+      flow.link(project.claimUrl)
+      flow.gap()
+      flow.line(
+        'Until then it is temporary: the project and everything in it is deleted at that deadline. ' +
+          'Claiming is free, takes about a minute, and nothing you have built changes. Treat the ' +
+          'link like a password: whoever opens it becomes the owner.',
+      )
+      flow.gap()
+      flow.note(
+        styleText(
+          'dim',
+          'If you are an agent: give this claim URL to the person you are working for. They have ' +
+            'to open it themselves before the deadline.',
+        ),
+      )
+      flow.gap()
+    }
+
+    const studioTokenUrl = `http://localhost:3333/#token=${encodeURIComponent(project.token)}`
+    const printStudioInstructions = () => {
+      flow.highlight('Start your Studio with:')
+      flow.gap()
+      flow.command(`cd ${STUDIO_DIR} && npx sanity dev`)
+      flow.gap()
+      flow.link(studioTokenUrl, {label: 'then open'})
+      flow.line('The token in that link signs you in: there is no account yet.')
+    }
+    const printWebsiteInstructions = (packageManager: ScaffoldResult['frontendPackageManager']) => {
+      flow.highlight('In a separate terminal, start your website with:')
+      flow.gap()
+      flow.command(`cd ${FRONTEND_DIR} && ${frontendDevCommand(packageManager)}`)
+      flow.gap()
+      flow.link('http://localhost:3000/', {label: 'then open'})
+    }
+
+    let scaffold: ScaffoldResult | undefined
+    if (!json && this.flags.scaffold) {
+      const scaffoldController = new AbortController()
+      const abortScaffold = () => scaffoldController.abort(new Error('SIGINT'))
+      process.once('SIGINT', abortScaffold)
+      try {
+        scaffold = await scaffoldProject({
+          cancelSignal: scaffoldController.signal,
+          dataset: project.datasetName,
+          displayName,
+          output,
+          projectId: project.resourceId,
+          telemetry: this.telemetry,
+          token: project.token,
+          workDir: cwd,
+        })
+        scaffoldController.signal.throwIfAborted()
+      } catch (err) {
+        if (
+          scaffoldController.signal.aborted ||
+          (err instanceof Error && err.message === 'SIGINT')
+        ) {
+          throw err
+        }
+        // After the scaffolding process is aborted, we may be in a partial failure state.
+        // It's risky to attempt automatic cleanup of the underlying filesystem, as we don't
+        // know if there are legitimate files the end user / agent would want to retain.
+        // Surface the failure and "project created" message, and leave inspection to the user/agent.
+        flow.note(`Automatic setup did not finish: ${err instanceof Error ? err.message : err}`)
+        flow.line('The project was created. You do not need to create another one.')
+        flow.gap()
+      } finally {
+        process.off('SIGINT', abortScaffold)
+      }
+    }
+
+    if (scaffold) {
+      if (scaffold.frontendPath) {
+        flow.result('Created two folders')
+        flow.line(`./${STUDIO_DIR}: your Studio, where you write and edit content`)
+        flow.line(`./${FRONTEND_DIR}: your website, a Next.js app that reads it`)
+        flow.gap()
+        printStudioInstructions()
+        if (scaffold.frontendDependenciesInstalled === false) {
+          flow.gap()
+          if (scaffold.frontendDependencyError) {
+            flow.line(`Installing website dependencies failed: ${scaffold.frontendDependencyError}`)
+            flow.gap()
+          }
+          flow.highlight('Finish installing your website dependencies')
+          flow.gap()
+          flow.command(
+            `cd ${FRONTEND_DIR} && ${frontendInstallCommand(scaffold.frontendPackageManager)}`,
+          )
+        }
+        flow.gap()
+        printWebsiteInstructions(scaffold.frontendPackageManager)
+      } else if (scaffold.detectedFramework) {
+        flow.result(`Created ./${STUDIO_DIR} for your existing ${scaffold.detectedFramework} app`)
+        flow.line(`./${STUDIO_DIR}: your Studio, where you write and edit content`)
+        flow.line(`Your existing ${scaffold.detectedFramework} frontend was left unchanged.`)
+        flow.gap()
+        printStudioInstructions()
+      } else {
+        flow.result(`Created ./${STUDIO_DIR}`)
+        flow.line(`./${STUDIO_DIR}: your Studio, where you write and edit content`)
+        flow.line(
+          `The website was not created: ${scaffold.frontendCreationError ?? 'automatic setup did not finish'}`,
+        )
+        flow.gap()
+        printStudioInstructions()
+      }
+      flow.gap()
+    }
+
+    if (recorded === false && !json) {
+      flow.note('The local recovery record was not saved.')
+      flow.line('Keep the claim URL and access token from this output.')
+      flow.gap()
+    }
+
+    if (!json) {
+      if (!scaffold && !this.flags.scaffold) {
+        flow.result('Project created without scaffolding')
+        flow.line(
+          'No folders or env files were created. Use the project ID and dataset above in your own setup.',
+        )
+        flow.gap()
+      }
+
+      if (scaffold?.frontendPath) {
+        flow.note(`Your access token is in ./${STUDIO_ENV_FILE} and ./${FRONTEND_ENV_FILE}`)
+        flow.line('Keep both files out of version control.')
+      } else if (scaffold) {
+        flow.note(`Your access token is in ./${STUDIO_ENV_FILE}`)
+        flow.line('Keep that file out of version control.')
+      } else {
+        flow.note('Your access token is shown above.')
+        flow.line('Keep it out of version control.')
+      }
+      flow.gap()
+      flow.line(
+        'Your content is private until you claim, so anything reading it needs that token. Keep ' +
+          'those reads server-side and never expose the token to the browser: it can change ' +
+          'everything in this project. Claiming makes your content readable without it.',
+      )
+      flow.gap()
+      flow.line('Framework setup, and what to do after claiming:')
+      flow.line(SANITY_NEW_URL)
+      flow.gap()
+      flow.link(project.claimUrl, {label: 'Claim your project:', outro: true})
+    }
+
+    return toResult(project)
+  }
 }

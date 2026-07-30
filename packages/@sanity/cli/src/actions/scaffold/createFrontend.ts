@@ -38,10 +38,6 @@ function scaffolderArgs(dirName: string, packageManager?: PackageManager): strin
   return ['--yes', CREATE_NEXT_APP_SPEC, dirName, ...scaffolderFlags, ...(pmFlag ? [pmFlag] : [])]
 }
 
-export function frontendScaffoldCommand(dirName: string): string {
-  return `npx ${scaffolderArgs(dirName).join(' ')}`
-}
-
 export class FrontendScaffoldError extends Error {
   constructor(message: string) {
     super(message)
@@ -92,14 +88,14 @@ export async function createFrontend({
     )
   }
 
-  if (result.failed || result.exitCode) {
+  if (!result || result.failed || result.exitCode) {
     progress.fail()
-    const commandOutput = [result.stdout, result.stderr]
+    const commandOutput = [result?.stdout, result?.stderr]
       .filter((chunk): chunk is string => typeof chunk === 'string' && chunk.length > 0)
       .join('\n')
     if (commandOutput) output.log(commandOutput)
     throw new FrontendScaffoldError(
-      `create-next-app failed${result.exitCode ? ` with exit code ${result.exitCode}` : ''}`,
+      `create-next-app failed${result?.exitCode ? ` with exit code ${result.exitCode}` : ''}`,
     )
   }
 
