@@ -84,11 +84,13 @@ export async function initStudio({
     step: 'importTemplateDataset',
   })
 
-  try {
-    await updateProjectInitializedAt(projectId)
-  } catch (err) {
-    // Non-critical update
-    debug('Failed to update cliInitializedAt metadata', err)
+  if (!preclaim) {
+    try {
+      await updateProjectInitializedAt(projectId)
+    } catch (err) {
+      // Non-critical update
+      debug('Failed to update cliInitializedAt metadata', err)
+    }
   }
 
   const {pkgManager} = await scaffoldAndInstall({

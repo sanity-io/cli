@@ -51,12 +51,14 @@ describe('initStudio', () => {
     await initStudio({...args, preclaim: true} as never)
 
     expect(mockScaffoldAndInstall).toHaveBeenCalled()
+    expect(mockUpdateProjectInitializedAt).not.toHaveBeenCalled()
     expect(mockOutputLog).not.toHaveBeenCalled()
   })
 
   test('keeps the standalone Studio outro for regular init calls', async () => {
     await initStudio({...args, preclaim: false} as never)
 
+    expect(mockUpdateProjectInitializedAt).toHaveBeenCalledWith(args.projectId)
     const lines = mockOutputLog.mock.calls.flat().join('\n')
     expect(lines).toContain('Success! Your Studio has been created')
     expect(lines).toContain('Get started by running npm run dev')
