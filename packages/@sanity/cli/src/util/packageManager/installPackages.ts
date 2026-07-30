@@ -1,4 +1,5 @@
-import {type Output} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {execa, type Options} from 'execa'
 
@@ -75,40 +76,58 @@ async function executePackageManagerCommand(
     discardStdin: !execOptions.cancelSignal,
     text: `Running ${packageManager} ${args.join(' ')}\n`,
   }).start()
-
-  const result = await execa(packageManager, args, execOptions)
-
-  if (execOptions.cancelSignal?.aborted) {
+  let progressSettled = false
+  const fail = () => {
+    progressSettled = true
     progress.fail()
-    execOptions.cancelSignal.throwIfAborted()
+  }
+  const succeed = () => {
+    progressSettled = true
+    progress.succeed()
   }
 
-  if (result?.exitCode || result?.failed) {
-    // pnpm exits non-zero if dependency build scripts were skipped, even though
-    // the install itself succeeded. Treat it as a success, but point to
-    // `pnpm approve-builds` if anything other than esbuild was skipped
-    // (esbuild works without its build script through a JS fallback).
-    const commandOutput = [result.stdout, result.stderr]
-      .filter((chunk): chunk is string => typeof chunk === 'string')
-      .join('\n')
-    const ignoredBuilds =
-      packageManager === 'pnpm' ? getIgnoredBuildScripts(commandOutput) : undefined
+  try {
+    const result = await execa(packageManager, args, execOptions)
 
-    if (ignoredBuilds) {
-      progress.succeed()
-      if (ignoredBuilds.some((entry) => !isEsbuild(entry))) {
-        output.warn(IGNORED_BUILDS_NOTICE)
-      }
-      return
+    if (execOptions.cancelSignal?.aborted) {
+      fail()
+      execOptions.cancelSignal.throwIfAborted()
     }
 
-    progress.fail()
-    // Log both streams - package managers often print the actionable error
-    // details to stderr, so logging stdout alone can hide the failure reason.
-    output.log(commandOutput)
-    output.error(errorMessage, {exit: 1})
-  } else {
-    progress.succeed()
+    if (result?.exitCode || result?.failed) {
+      // pnpm exits non-zero if dependency build scripts were skipped, even though
+      // the install itself succeeded. Treat it as a success, but point to
+      // `pnpm approve-builds` if anything other than esbuild was skipped
+      // (esbuild works without its build script through a JS fallback).
+      const commandOutput = [result.stdout, result.stderr]
+        .filter((chunk): chunk is string => typeof chunk === 'string')
+        .join('\n')
+      const ignoredBuilds =
+        packageManager === 'pnpm' ? getIgnoredBuildScripts(commandOutput) : undefined
+
+      if (ignoredBuilds) {
+        succeed()
+        if (ignoredBuilds.some((entry) => !isEsbuild(entry))) {
+          output.warn(IGNORED_BUILDS_NOTICE)
+        }
+        return
+      }
+
+      fail()
+      // Log both streams - package managers often print the actionable error
+      // details to stderr, so logging stdout alone can hide the failure reason.
+      output.log(commandOutput)
+      throw new CLIError(errorMessage, {exit: exitCodes.RUNTIME_ERROR})
+    } else {
+      succeed()
+    }
+  } catch (err) {
+    if (!progressSettled) {
+      fail()
+    }
+    throw err
+  } finally {
+    progress.stop()
   }
 }
 
