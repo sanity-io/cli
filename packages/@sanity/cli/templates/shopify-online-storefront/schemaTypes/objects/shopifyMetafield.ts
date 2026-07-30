@@ -38,12 +38,14 @@ export default defineType({
     select: {
       key: 'key',
       namespace: 'namespace',
+      type: 'type',
       value: 'value',
     },
-    prepare({key, namespace, value}) {
+    prepare({key, namespace, type, value}) {
+      const name = [namespace, key].filter(Boolean).join('.')
       return {
         subtitle: typeof value === 'string' ? value : JSON.stringify(value),
-        title: [namespace, key].filter(Boolean).join('.'),
+        title: type ? `${name} (${type})` : name,
       }
     },
   },
