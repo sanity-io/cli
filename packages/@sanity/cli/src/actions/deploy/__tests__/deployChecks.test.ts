@@ -385,7 +385,7 @@ describe('describeAppTarget', () => {
 })
 
 describe('describeStudioTarget', () => {
-  test('slug-taken → fail names the taken slug and how to reuse the existing id', () => {
+  test('slug-taken → fail names the existing app id and how to reuse it', () => {
     const check = describeStudioTarget(
       {
         existing: {
@@ -400,7 +400,7 @@ describe('describeStudioTarget', () => {
     )
 
     expect(check).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
-    expect(check.message).toContain('slug "my-studio" is already taken')
+    expect(check.message).toContain('already exists at slug "my-studio"')
     expect(check.message).toContain('existing-1')
     expect(check.solution).toContain("appId: 'existing-1'")
     expect(check.target).toEqual({
@@ -409,6 +409,23 @@ describe('describeStudioTarget', () => {
       title: 'My Studio',
       url: 'https://org-1.sanity.run/studio/existing-1',
     })
+  })
+
+  test('reports a taken slug identically to the app path', () => {
+    const existing = {
+      appHost: 'shared-slug',
+      id: 'existing-1',
+      organizationId: 'org-1',
+      title: 'Holder',
+      url: 'https://org-1.sanity.run/application/existing-1',
+    }
+
+    const studioCheck = describeStudioTarget(
+      {existing, type: 'slug-taken'},
+      {isExternal: false, isWorkbench: true},
+    )
+
+    expect(studioCheck).toEqual(describeAppTarget({existing, type: 'slug-taken'}))
   })
 })
 

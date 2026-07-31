@@ -375,7 +375,7 @@ export function describeStudioTarget(
       const {existing: application} = resolution
       return {
         exitCode: exitCodes.USAGE_ERROR,
-        message: `The slug "${application.appHost}" is already taken in this organization (app ID ${application.id})`,
+        message: `An application already exists at slug "${application.appHost}" in this organization (app ID ${application.id})`,
         solution: `Add \`deployment: {appId: '${application.id}'}\` to sanity.cli.ts to redeploy it`,
         status: 'fail',
         target: {

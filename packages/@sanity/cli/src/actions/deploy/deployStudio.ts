@@ -231,6 +231,7 @@ async function runStudioDeployment(
         target: {
           action: applicationCreated ? 'create' : 'update',
           applicationId,
+          ...(applicationCreated ? {slug: workbench.slug} : {}),
           title: appTitle,
           url,
         },
