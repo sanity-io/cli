@@ -295,14 +295,16 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
       flow.gap()
     }
 
+    const studioUrl =
+      `http://localhost:3333/#token=${encodeURIComponent(project.token)}` +
+      `&claim=${encodeURIComponent(project.claimUrl)}`
+
     const printStudioInstructions = () => {
       flow.highlight('Start your Studio:')
       flow.gap()
       flow.command(`cd ${STUDIO_DIR} && npx sanity dev`)
       flow.gap()
-      flow.link(`http://localhost:3333/#token=${encodeURIComponent(project.token)}`, {
-        label: 'Then open this link:',
-      })
+      flow.link(studioUrl, {label: 'Then open this link:'})
       flow.gap()
       flow.line('The token signs you in: there is no account yet.')
     }
@@ -401,7 +403,7 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
           'No folders or env files were created. Use the project ID and dataset above in your own setup.',
         )
         flow.gap()
-        flow.link(`http://localhost:3333/#token=${encodeURIComponent(project.token)}`, {
+        flow.link(studioUrl, {
           label: 'Once a Studio is running on http://localhost:3333, sign in with:',
         })
         flow.gap()
