@@ -27,6 +27,10 @@ All commands are run from the root of the repo.
 - When creating pull requests, always follow the template in `.github/PULL_REQUEST_TEMPLATE.md`. Do not use your own format.
 - Releasable changes need a changeset, normally auto-generated from the PR's "Notes for release" section (empty uses the PR title; `N/A` skips it). See CONTRIBUTING.md "Automatic Changesets"; a hand-authored `.changeset/` file also works and takes precedence.
 
+# Flow UX
+
+`packages/@sanity/cli-core/src/ux/flowOutput.ts` is reserved for the `new.ts` command. Before reusing its [`@clack/prompts`-style output](https://www.npmjs.com/package/@clack/prompts) in another CLI feature, clearly articulate the compelling use case to the end user or harness.
+
 # Testing Rules
 
 Follow all instructions and guidance laid out in the Testing Requirements section in `CONTRIBUTING.md`.
