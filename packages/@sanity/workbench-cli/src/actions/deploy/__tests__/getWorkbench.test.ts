@@ -42,8 +42,8 @@ describe('getWorkbench', () => {
 
   test('exposes the declared interfaces off the branded app', () => {
     const resolved = workbench({
-      services: [{name: 'sync', src: './src/sync.ts', type: 'worker'}],
-      views: [{name: 'panel', src: './src/panel.tsx', type: 'panel'}],
+      services: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
+      views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
     })
     expect(resolved.views).toHaveLength(1)
     expect(resolved.services).toHaveLength(1)
@@ -88,7 +88,7 @@ describe('assertDeployable', () => {
   test('passes when the app declares a view', () => {
     expect(() =>
       workbench({
-        views: [{name: 'panel', src: './src/panel.tsx', type: 'panel'}],
+        views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
       }).assertDeployable(),
     ).not.toThrow()
   })
@@ -96,7 +96,7 @@ describe('assertDeployable', () => {
   test('passes when the app declares a service', () => {
     expect(() =>
       workbench({
-        services: [{name: 'sync', src: './src/sync.ts', type: 'worker'}],
+        services: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
       }).assertDeployable(),
     ).not.toThrow()
   })
@@ -131,7 +131,7 @@ describe('deploySingletonConfig / hasInterfaces', () => {
 
   test('a non-singleton app never deploys a config, and reports its interfaces', () => {
     const resolved = workbench({
-      views: [{name: 'panel', src: './src/panel.tsx', type: 'panel'}],
+      views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
     })
     expect(resolved.deploySingletonConfig).toBe(false)
     expect(resolved.hasInterfaces).toBe(true)

@@ -7,7 +7,7 @@ import {pack} from 'tar-fs'
 
 import {getWorkbenchUrl} from '../../services/applications.js'
 import {createConfig, resolveSingletonInstallationId} from '../../services/installations.js'
-import {summarizeExposeGroup} from './buildExposes.js'
+import {summarizeExposeGroup} from './summarizeInterfaces.js'
 
 const debug = subdebug('deploy')
 

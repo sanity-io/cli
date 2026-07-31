@@ -7,7 +7,6 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
 import {
-  buildExposes,
   createCoreApp,
   deployConfig,
   deployWorkbenchApp,
@@ -281,14 +280,10 @@ async function runAppDeployment(
     // so this only ships the deployment; plain coreApps use user-applications below.
     if (workbench && organizationId && applicationId) {
       await deployWorkbenchApp({
+        app: cliConfig.app,
         applicationId,
         icon: appIcon,
-        interfaces: buildExposes(workbench, {
-          appSlug: workbench.slug,
-          appTitle,
-          exposesAppView: workbench.entry !== undefined,
-          version,
-        }),
+        isApp: true,
         isAutoUpdating,
         // Once the deployment is live, a metadata-sync or later config failure
         // must not delete the app.

@@ -2,8 +2,9 @@ import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-cor
 import {type ViteDevServer} from 'vite'
 
 import {resolveAppId} from '../../appId.js'
+import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
-import {deriveConfigs, deriveInterfaces} from './deriveInterfaces.js'
+import {deriveConfigs} from './deriveConfigs.js'
 import {trackExposesSet} from './exposesSetId.js'
 import {type DevServerManifest, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'

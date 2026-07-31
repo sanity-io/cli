@@ -113,8 +113,8 @@ describe('startDevServerRegistration', () => {
       cliConfig: workbenchCliConfig({
         app: workbenchApp({
           views: [
-            {name: 'feed', src: './src/Feed.tsx', type: 'panel'},
-            {name: 'inbox', src: './src/Inbox.tsx', type: 'panel'},
+            {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'},
+            {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'},
           ],
         }),
       }),
@@ -194,7 +194,9 @@ describe('startDevServerRegistration', () => {
     // A fresh config read with a panel → the watcher re-derives + forwards it
     // alongside the manifest (which stays pure).
     mockGetCliConfigUncached.mockResolvedValue({
-      app: workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]}),
+      app: workbenchApp({
+        views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      }),
     })
 
     await register({isApp: true})
@@ -282,7 +284,7 @@ describe('startDevServerRegistration', () => {
 
   // Adding/removing a view or service must rebuild the federation remote so the
   // new interface gets an expose + artifact. The watcher drives it.
-  const feed = {name: 'feed', src: './src/Feed.tsx', type: 'panel'}
+  const feed = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
 
   test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {
     const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)
@@ -309,7 +311,9 @@ describe('startDevServerRegistration', () => {
 
     await register({
       cliConfig: {
-        app: workbenchApp({views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}]}),
+        app: workbenchApp({
+          views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+        }),
       } as any,
       isApp: true,
       onInterfaceSetChange,

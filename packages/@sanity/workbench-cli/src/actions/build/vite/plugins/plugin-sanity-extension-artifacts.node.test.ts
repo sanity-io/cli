@@ -41,7 +41,7 @@ describe('sanityExtensionArtifacts', () => {
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}],
+          views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
         }),
       }),
       root,
@@ -57,7 +57,7 @@ describe('sanityExtensionArtifacts', () => {
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}],
+          views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
         }),
       }),
       root,
@@ -87,7 +87,7 @@ describe('sanityExtensionArtifacts', () => {
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+          services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
           views: [],
         }),
       }),

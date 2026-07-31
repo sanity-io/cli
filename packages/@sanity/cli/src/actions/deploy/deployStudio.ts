@@ -7,7 +7,6 @@ import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   type BrettWorkspace,
-  buildExposes,
   createStudio,
   deployWorkbenchApp,
   getApplicationUrl,
@@ -193,14 +192,10 @@ async function runStudioDeployment(
     // build, so this only ships the deployment; plain studios use user-applications.
     if (workbench && !isExternal && organizationId && applicationId) {
       await deployWorkbenchApp({
+        app: cliConfig.app,
         applicationId,
         icon: appIcon,
-        interfaces: buildExposes(workbench, {
-          appSlug: workbench.slug,
-          appTitle,
-          exposesAppView: true,
-          version,
-        }),
+        isApp: false,
         isAutoUpdating,
         label: 'Deploying to sanity.studio',
         // Once the deployment is live, a metadata-sync failure must not delete

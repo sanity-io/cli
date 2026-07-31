@@ -135,9 +135,22 @@ describe('DefineAppInputSchema (build-time validation)', () => {
 
   test('accepts a panel view declaration', () => {
     const parsed = DefineAppInputSchema.parse(
+      validInput({views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}]}),
+    )
+    expect(parsed.views?.[0]).toEqual({
+      name: 'feed',
+      src: './src/panel.tsx',
+      title: 'feed',
+      type: 'panel',
+    })
+  })
+
+  test('requires a view title, which Brett stores on the interface', () => {
+    const result = DefineAppInputSchema.safeParse(
       validInput({views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}]}),
     )
-    expect(parsed.views?.[0]).toEqual({name: 'feed', src: './src/panel.tsx', type: 'panel'})
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]?.message).toBe('View `title` is required')
   })
 
   test('rejects an unknown view type', () => {
@@ -152,8 +165,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/a.tsx', type: 'panel'},
-          {name: 'feed', src: './src/b.tsx', type: 'panel'},
+          {name: 'feed', src: './src/a.tsx', title: 'feed', type: 'panel'},
+          {name: 'feed', src: './src/b.tsx', title: 'feed', type: 'panel'},
         ],
       }),
     )
@@ -164,14 +177,16 @@ describe('DefineAppInputSchema (build-time validation)', () => {
   test('accepts a worker service declaration, rejecting duplicate service names', () => {
     expect(
       DefineAppInputSchema.safeParse(
-        validInput({services: [{name: 'unread', src: './src/service.ts', type: 'worker'}]}),
+        validInput({
+          services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+        }),
       ).success,
     ).toBe(true)
     const dupes = DefineAppInputSchema.safeParse(
       validInput({
         services: [
-          {name: 'unread', src: './src/a.ts', type: 'worker'},
-          {name: 'unread', src: './src/b.ts', type: 'worker'},
+          {name: 'unread', src: './src/a.ts', title: 'unread', type: 'worker'},
+          {name: 'unread', src: './src/b.ts', title: 'unread', type: 'worker'},
         ],
       }),
     )
@@ -239,7 +254,7 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         entry: './src/App.tsx',
-        views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}],
+        views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
       }),
     )
     expect(result.success).toBe(false)
@@ -252,8 +267,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/a.tsx', type: 'panel'},
-          {name: 'inbox', src: './src/b.tsx', type: 'panel'},
+          {name: 'feed', src: './src/a.tsx', title: 'feed', type: 'panel'},
+          {name: 'inbox', src: './src/b.tsx', title: 'inbox', type: 'panel'},
         ],
       }),
     )

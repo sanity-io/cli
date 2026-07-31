@@ -1,87 +1,14 @@
 import {type CliConfig} from '@sanity/cli-core'
 
-import {
-  interfaceModuleId,
-  MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
-  SERVICE_CONTRACT_VERSION,
-  VIEW_CONTRACT_VERSION,
-} from '../../contract.js'
+import {MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../contract.js'
 import {isWorkbenchApp, readConfig} from '../../defineApp.js'
-import {FEDERATION_FILE_NAME, RUNTIME_DIR} from '../build/vite/constants.js'
 import {type DevServerManifest} from './registry.js'
-
-/** What a studio exposes as `./App` — the generated entry that renders `sanity.config.ts`. */
-const GENERATED_ENTRY = `./${RUNTIME_DIR}/${FEDERATION_FILE_NAME}.jsx`
 
 /** One forwarded interface record on the dev-server registry entry. */
 export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[number]
 
 /** One forwarded config on the dev-server registry entry. */
 export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
-
-/**
- * Map a workbench app's declarations to its registry interface records. A studio
- * that declares `entry` is rejected (studio app views aren't implemented yet).
- */
-export function deriveInterfaces(
-  app: CliConfig['app'],
-  options: {isApp: boolean},
-): DevServerInterface[] | undefined {
-  if (!isWorkbenchApp(app)) return undefined
-
-  if (!options.isApp && app.entry !== undefined) {
-    throw new Error('App views for studios are not implemented yet')
-  }
-
-  const interfaceId = (type: string, name: string): string => `${app.slug}-${type}-${name}`
-
-  const views = (app.views ?? []).map(
-    (view): DevServerInterface => ({
-      id: interfaceId('panel', view.name),
-      metadata: null,
-      moduleId: interfaceModuleId('panel', view.name),
-      name: view.name,
-      src: view.src,
-      title: view.title ?? view.name,
-      type: 'panel',
-      version: String(VIEW_CONTRACT_VERSION),
-    }),
-  )
-
-  const services = (app.services ?? []).map(
-    (service): DevServerInterface => ({
-      id: interfaceId('worker', service.name),
-      metadata: null,
-      moduleId: interfaceModuleId('worker', service.name),
-      name: service.name,
-      src: service.src,
-      title: service.title ?? service.name,
-      type: 'worker',
-      version: String(SERVICE_CONTRACT_VERSION),
-    }),
-  )
-
-  // Tracks what the build exposes as `./App`: an app's declared `entry`, and a
-  // studio's generated entry. A dock-only app (no `entry`) exposes none.
-  const appEntry = options.isApp ? app.entry : GENERATED_ENTRY
-
-  const appView: DevServerInterface[] =
-    appEntry === undefined
-      ? []
-      : [
-          {
-            id: interfaceId('app', app.slug),
-            metadata: null,
-            moduleId: interfaceModuleId('app', app.slug),
-            name: app.slug,
-            src: appEntry,
-            title: app.title,
-            type: 'app',
-          },
-        ]
-
-  return [...views, ...services, ...appView]
-}
 
 /**
  * The named source files a config's generated module is built from, dispatched
