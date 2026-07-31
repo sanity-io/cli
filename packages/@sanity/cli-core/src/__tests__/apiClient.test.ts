@@ -384,9 +384,11 @@ describe('authErrors middleware', () => {
     const result = onErrorHandler!(error)
 
     expect(result).toBe(error)
-    expect(result?.message).toBe(
-      'Unauthorized. This account is not a member of the project. Organization-level roles do not grant access to project content. Add this account as a project member: https://www.sanity.io/manage/project/test-project/members.',
+    expect(result?.message).toContain('This account is not a member of the project')
+    expect(result?.message).toContain(
+      'sanity users invite <email> --project-id test-project --role <role>',
     )
+    expect(result?.message).toContain('https://www.sanity.io/manage/project/test-project/members')
     expect(result?.message).not.toContain('sanity login')
   })
 
@@ -424,9 +426,13 @@ describe('authErrors middleware', () => {
     const result = onErrorHandler!(error)
 
     expect(result).toBe(error)
-    expect(result?.message).toBe(
-      'project user not found for user ID "gZmyPK60G" in project "test-project". This account is not a member of the project. Organization-level roles do not grant access to project content. Add this account as a project member: https://www.sanity.io/manage/project/test-project/members.',
+    expect(result?.message).toContain(
+      'project user not found for user ID "gZmyPK60G" in project "test-project". This account is not a member of the project',
     )
+    expect(result?.message).toContain(
+      'sanity users invite <email> --project-id test-project --role <role>',
+    )
+    expect(result?.message).toContain('https://www.sanity.io/manage/project/test-project/members')
     expect(result?.message).not.toContain('sanity login')
   })
 
@@ -462,8 +468,9 @@ describe('authErrors middleware', () => {
 
     expect(result).toBe(error)
     expect(result?.message).toContain(
-      'Add this account as a project member: https://www.sanity.io/manage.',
+      'sanity users invite <email> --project-id <project-id> --role <role>',
     )
+    expect(result?.message).toContain('add it as a project member at https://www.sanity.io/manage.')
     expect(result?.message).not.toContain('sanity login')
   })
 
@@ -503,8 +510,9 @@ describe('authErrors middleware', () => {
 
     expect(result).toBe(error)
     expect(result?.message).toContain(
-      'Add this account as a project member: https://www.sanity.io/manage.',
+      'sanity users invite <email> --project-id <project-id> --role <role>',
     )
+    expect(result?.message).toContain('add it as a project member at https://www.sanity.io/manage.')
     expect(result?.message).not.toContain('/members')
     expect(result?.message).not.toContain('sanity login')
   })

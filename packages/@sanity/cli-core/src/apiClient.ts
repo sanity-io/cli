@@ -166,10 +166,14 @@ function authErrors(projectId?: string) {
       const statusCode = isHttpError(err) && err.statusCode
       if (statusCode === 401) {
         if (isProjectUserNotFoundError(err)) {
+          const inviteCommand = styleText(
+            'cyan',
+            `sanity users invite <email> --project-id ${projectId ?? '<project-id>'} --role <role>`,
+          )
           const membersUrl = projectId
             ? getSanityUrl(`/manage/project/${encodeURIComponent(projectId)}/members`)
             : getSanityUrl('/manage')
-          err.message = `${err.message}. This account is not a member of the project. Organization-level roles do not grant access to project content. Add this account as a project member: ${membersUrl}.`
+          err.message = `${err.message}. This account is not a member of the project. Organization-level roles do not grant access to project content. Invite this account with ${inviteCommand} or add it as a project member at ${membersUrl}.`
           return err
         }
 
