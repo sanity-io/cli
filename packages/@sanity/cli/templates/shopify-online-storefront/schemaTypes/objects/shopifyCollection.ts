@@ -113,6 +113,9 @@ export default defineType({
       title: 'Metafields',
       type: 'array',
       description: 'Read-only. Replaced in full on every sync',
+      // Shopify owns these, so drop the add button and the drag handles. `readOnly` alone does not
+      // remove them.
+      options: {disableActions: ['add'], sortable: false},
       // Keep one member type: synced metafields have no `_type`, which only resolves when `of` has one.
       of: [{type: 'shopifyMetafield'}],
     }),
