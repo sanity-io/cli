@@ -165,11 +165,9 @@ function authErrors(projectId?: string) {
 
       const statusCode = isHttpError(err) && err.statusCode
       if (statusCode === 401) {
-        const membership = detectMissingProjectMembership(err)
-        if (membership) {
-          const membersProjectId = projectId ?? membership.projectId
-          const membersUrl = membersProjectId
-            ? getSanityUrl(`/manage/project/${encodeURIComponent(membersProjectId)}/members`)
+        if (isProjectUserNotFoundError(err)) {
+          const membersUrl = projectId
+            ? getSanityUrl(`/manage/project/${encodeURIComponent(projectId)}/members`)
             : getSanityUrl('/manage')
           err.message = `${err.message}. This account is not a member of the project. Organization-level roles do not grant access to project content. Add this account as a project member: ${membersUrl}.`
           return err
@@ -186,34 +184,15 @@ function authErrors(projectId?: string) {
 // Detection fallback for Content Lake responses that carry the
 // missing-membership 401 only as prose. Anchored to the full sentence so
 // unrelated 401s can't trigger; if the wording ever changes, detection
-// degrades to the generic 401 guidance below rather than misfiring.
+// degrades to the generic 401 guidance above rather than misfiring.
 const PROJECT_USER_NOT_FOUND_MESSAGE =
   /\bproject user not found for user ID "[^"]*" in project "[a-zA-Z0-9-]+"/
 
-function detectMissingProjectMembership(
-  err: ClientError | ServerError,
-): {projectId?: string} | undefined {
-  const isMembershipError =
+function isProjectUserNotFoundError(err: ClientError | ServerError): boolean {
+  return (
     isProjectUserNotFoundErrorBody(err.response.body) ||
     PROJECT_USER_NOT_FOUND_MESSAGE.test(err.message)
-
-  return isMembershipError ? {projectId: getProjectIdFromRequestUrl(err.response.url)} : undefined
-}
-
-// Data-plane requests address the project through the hostname
-// (`{projectId}.api.sanity.io`), so the failing request's URL identifies the
-// project without depending on error prose.
-function getProjectIdFromRequestUrl(url: unknown): string | undefined {
-  if (typeof url !== 'string') return undefined
-
-  let hostname: string
-  try {
-    hostname = new URL(url).hostname
-  } catch {
-    return undefined
-  }
-
-  return /^([a-z0-9-]+)\.api\.sanity\.(?:io|work)$/.exec(hostname)?.[1]
+  )
 }
 
 function isProjectUserNotFoundErrorBody(body: unknown): boolean {

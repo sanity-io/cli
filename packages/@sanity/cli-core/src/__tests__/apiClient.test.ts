@@ -430,7 +430,7 @@ describe('authErrors middleware', () => {
     expect(result?.message).not.toContain('sanity login')
   })
 
-  test('derives the members link from the request URL on the global client', async () => {
+  test('explains missing project membership on the global client', async () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
 
     let onErrorHandler: ((err: Error | null) => Error | null) | undefined
@@ -450,13 +450,10 @@ describe('authErrors middleware', () => {
     const error = new Error(
       'project user not found for user ID "gZmyPK60G" in project "0zvlb7pj"',
     ) as Error & {
-      response: {body: Record<string, never>; url: string}
+      response: {body: Record<string, never>}
       statusCode: number
     }
-    error.response = {
-      body: {},
-      url: 'https://0zvlb7pj.api.sanity.io/v2021-06-07/data/query/production?query=*',
-    }
+    error.response = {body: {}}
     error.statusCode = 401
 
     mockIsHttpError.mockReturnValue(true)
@@ -465,7 +462,7 @@ describe('authErrors middleware', () => {
 
     expect(result).toBe(error)
     expect(result?.message).toContain(
-      'Add this account as a project member: https://www.sanity.io/manage/project/0zvlb7pj/members.',
+      'Add this account as a project member: https://www.sanity.io/manage.',
     )
     expect(result?.message).not.toContain('sanity login')
   })
@@ -490,7 +487,6 @@ describe('authErrors middleware', () => {
     const error = new Error('Unauthorized') as Error & {
       response: {
         body: {error: {type: string}}
-        url: string
       }
       statusCode: number
     }
@@ -498,7 +494,6 @@ describe('authErrors middleware', () => {
       body: {
         error: {type: 'projectUserNotFoundError'},
       },
-      url: 'https://api.sanity.io/v2021-06-07/some/endpoint',
     }
     error.statusCode = 401
 
