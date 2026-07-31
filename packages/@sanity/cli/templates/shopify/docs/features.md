@@ -30,17 +30,9 @@ Each entry holds the metafield's `namespace`, `key`, Shopify `type` and `value`:
 
 `value` isn't declared on the `shopifyMetafield` schema type. Its shape follows the Shopify metafield type — a string, number, boolean, list or object — and no Sanity field type accepts all of those. `/components/inputs/ShopifyMetafield.tsx` reads it from the raw value instead.
 
-`/utils/formatMetafieldValue.ts` decides how a value is shown, using a small map keyed by metafield type:
+`/utils/formatMetafieldValue.ts` decides how a value is shown, using a small map keyed by metafield type. `dimension`, `weight`, `volume`, `money`, `rating` and `list.single_line_text_field` are there as examples.
 
-```ts
-const formatters: Record<string, (value: any) => string> = {
-  dimension: ({value, unit}) => `${value} ${unit}`,
-  money: ({amount, currency_code: currencyCode}) => `${amount} ${currencyCode}`,
-  // ...
-}
-```
-
-A handful of types are there as examples. Anything not listed falls back to the raw value — a string as-is, anything else as JSON — so your own metafields still display. To show one of them nicely, add an entry. Shopify's [full list of metafield types](https://shopify.dev/docs/apps/build/custom-data/metafields/list-of-data-types) shows the shape of each value.
+Anything not listed falls back to the raw value — a string as-is, anything else as JSON — so your own metafields still display. To show one of them nicely, add an entry to `formatters`. Shopify's [list of data types](https://shopify.dev/docs/apps/build/custom-data/metafields/list-of-data-types) gives the shape of every value.
 
 Metafields are read-only and the whole array is replaced on every sync, so edits made here are overwritten. Variant metafields and metaobjects aren't synced.
 
