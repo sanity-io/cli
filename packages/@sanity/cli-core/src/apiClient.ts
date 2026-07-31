@@ -165,8 +165,9 @@ function authErrors(projectId?: string) {
 
       const statusCode = isHttpError(err) && err.statusCode
       if (statusCode === 401) {
-        if (isProjectUserNotFoundError(err.response.body, err.message)) {
-          const membersProjectId = projectId ?? getProjectIdFromMessage(err.message)
+        const membership = detectMissingProjectMembership(err)
+        if (membership) {
+          const membersProjectId = projectId ?? membership.projectId
           const membersUrl = membersProjectId
             ? getSanityUrl(`/manage/project/${encodeURIComponent(membersProjectId)}/members`)
             : getSanityUrl('/manage')
@@ -182,14 +183,27 @@ function authErrors(projectId?: string) {
   }
 }
 
-// The Content Lake reports the missing-membership case as plain text, e.g.
-// `project user not found for user ID "abc" in project "xyz"`, while other
-// APIs use a structured error type. Match both.
-const PROJECT_USER_NOT_FOUND_MESSAGE = /project user not found/i
+// The Content Lake's missing-membership 401 is prose (surfaced verbatim as
+// the client error message), and that sentence is also the only place the
+// project id appears. Match the full sentence so unrelated 401s can't
+// trigger; if the wording ever changes, detection degrades to the generic
+// 401 guidance below rather than misfiring.
+const PROJECT_USER_NOT_FOUND_MESSAGE =
+  /\bproject user not found for user ID "[^"]*" in project "([a-zA-Z0-9-]+)"/
 
-function isProjectUserNotFoundError(body: unknown, message: string): boolean {
-  if (PROJECT_USER_NOT_FOUND_MESSAGE.test(message)) return true
+function detectMissingProjectMembership(
+  err: ClientError | ServerError,
+): {projectId?: string} | undefined {
+  // Structured error type, where the API provides one
+  if (isProjectUserNotFoundErrorBody(err.response.body)) {
+    return {projectId: PROJECT_USER_NOT_FOUND_MESSAGE.exec(err.message)?.[1]}
+  }
 
+  const match = PROJECT_USER_NOT_FOUND_MESSAGE.exec(err.message)
+  return match ? {projectId: match[1]} : undefined
+}
+
+function isProjectUserNotFoundErrorBody(body: unknown): boolean {
   if (typeof body !== 'object' || body === null || !('error' in body)) return false
 
   const {error} = body
@@ -199,10 +213,6 @@ function isProjectUserNotFoundError(body: unknown, message: string): boolean {
     'type' in error &&
     error.type === 'projectUserNotFoundError'
   )
-}
-
-function getProjectIdFromMessage(message: string): string | undefined {
-  return /in project "([a-z0-9-]+)"/i.exec(message)?.[1]
 }
 
 function isReqResError(err: Error): err is ClientError | ServerError {
