@@ -85,6 +85,10 @@ export interface NewProjectResult {
   dataset: string
   expiresAt: string
   projectId: string
+  terms: {
+    notice: string
+    url: string
+  }
   token: string
 }
 
@@ -97,6 +101,7 @@ function toResult(project: MintedProject): NewProjectResult {
     dataset: project.datasetName,
     expiresAt: project.expiresAt,
     projectId: project.resourceId,
+    terms: {notice: project.termsNotice, url: project.termsUrl},
     token: project.token,
   }
 }
@@ -369,6 +374,9 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
         'The claim link and token are printed above but you can recover them ' +
           `with ${styleText('cyan', 'sanity projects unclaimed')} before the timer runs out on ${formatClaimDeadline(project.expiresAt)}.`,
       )
+      flow.gap()
+      flow.line(project.termsNotice)
+      flow.link(project.termsUrl, {label: 'Terms of Service:'})
       flow.gap()
       flow.line('For more information on how claiming works or how to build your app')
       flow.link(SANITY_NEW_URL, {label: 'visit', outro: true})

@@ -29,6 +29,8 @@ const minted: MintedProject = {
   datasetName: 'production',
   expiresAt: '2026-08-01T00:00:00.000Z',
   resourceId: 'abc123',
+  termsNotice: 'By continuing to use this project you accept the Sanity Terms of Service.',
+  termsUrl: 'https://www.sanity.io/legal/tos',
   token: 'sk-robot-token',
 }
 
