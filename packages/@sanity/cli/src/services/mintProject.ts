@@ -2,6 +2,11 @@ import {subdebug} from '@sanity/cli-core/debug'
 import {createRequester} from '@sanity/cli-core/request'
 import {isStaging} from '@sanity/cli-core/util'
 
+import {
+  TERMS_OF_SERVICE_FALLBACK_NOTICE,
+  TERMS_OF_SERVICE_FALLBACK_URL,
+} from '../util/mintProjectConstants.js'
+
 const debug = subdebug('new:provision')
 
 /** Provision API version for minting unclaimed projects. */
@@ -17,6 +22,9 @@ export interface MintedProject {
   datasetName: string
   expiresAt: string
   resourceId: string
+  /** Terms of Service accepted by using the project. Falls back to the bundled constants. */
+  termsNotice: string
+  termsUrl: string
   token: string
 }
 
@@ -50,6 +58,10 @@ function parseProvisionResponse(body: unknown): MintedProject {
     response.links && typeof response.links === 'object' && !Array.isArray(response.links)
       ? (response.links as Record<string, unknown>)
       : {}
+  const terms =
+    response.terms && typeof response.terms === 'object' && !Array.isArray(response.terms)
+      ? (response.terms as Record<string, unknown>)
+      : {}
 
   const minted = {
     apiHost: getString(response.apiHost),
@@ -72,7 +84,11 @@ function parseProvisionResponse(body: unknown): MintedProject {
     throw new Error(`Project creation response is missing or invalid: ${missing.join(', ')}`)
   }
 
-  return minted as MintedProject
+  return {
+    ...(minted as Omit<MintedProject, 'termsNotice' | 'termsUrl'>),
+    termsNotice: getString(terms.notice) ?? TERMS_OF_SERVICE_FALLBACK_NOTICE,
+    termsUrl: getString(terms.url) ?? TERMS_OF_SERVICE_FALLBACK_URL,
+  }
 }
 
 /**

@@ -37,6 +37,8 @@ const project = {
   datasetName: 'production',
   expiresAt: '2026-08-01T00:00:00.000Z',
   resourceId: 'abc123',
+  termsNotice: 'By continuing to use this project you accept the Sanity Terms of Service.',
+  termsUrl: 'https://www.sanity.io/legal/tos',
   token: 'sk-robot-token',
 }
 
@@ -48,6 +50,7 @@ const result = {
   dataset: project.datasetName,
   expiresAt: project.expiresAt,
   projectId: project.resourceId,
+  terms: {notice: project.termsNotice, url: project.termsUrl},
   token: project.token,
 }
 
@@ -279,6 +282,23 @@ describe('#new', () => {
     expect(outputText().indexOf('cd web && pnpm add --save-prod next-sanity')).toBeLessThan(
       outputText().indexOf('In a separate terminal, start your website:'),
     )
+  })
+
+  test('prints the terms of service notice from the provision response', async () => {
+    await NewCommand.run(['My New Project'])
+
+    const lines = outputLines()
+    expect(lines).toContain(`│  ${project.termsNotice}`)
+    expect(lines).toContain(`│  Terms of Service: ${project.termsUrl}`)
+    expect(lines.indexOf(`│  Terms of Service: ${project.termsUrl}`)).toBeLessThan(
+      lines.indexOf('└  visit https://sanity.new'),
+    )
+  })
+
+  test('prints the terms of service notice when the project is created without scaffolding', async () => {
+    await NewCommand.run(['My New Project', '--no-scaffold'])
+
+    expect(outputLines()).toContain(`│  Terms of Service: ${project.termsUrl}`)
   })
 
   test('exits without additional recovery output when setup is cancelled', async () => {

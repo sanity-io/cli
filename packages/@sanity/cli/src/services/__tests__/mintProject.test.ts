@@ -19,6 +19,10 @@ const provisionResponse = {
   },
   resourceId: 'abc123',
   resourceType: 'project',
+  terms: {
+    notice: 'By continuing to use this project you accept the Sanity Terms of Service.',
+    url: 'https://www.sanity.io/legal/tos',
+  },
   token: 'sk-robot-token',
 }
 
@@ -49,6 +53,8 @@ describe('mintUnclaimedProject', () => {
       datasetName: provisionResponse.datasetName,
       expiresAt: provisionResponse.expiresAt,
       resourceId: provisionResponse.resourceId,
+      termsNotice: provisionResponse.terms.notice,
+      termsUrl: provisionResponse.terms.url,
       token: provisionResponse.token,
     })
 
@@ -110,6 +116,23 @@ describe('mintUnclaimedProject', () => {
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).resolves.toMatchObject({
       resourceId: provisionResponse.resourceId,
+    })
+  })
+
+  // The terms notice has to reach the user even when the API predates it, so it falls back to
+  // the bundled copy rather than joining the required-field check.
+  test.each([
+    ['omits terms', {}],
+    ['sends terms that are not an object', {terms: 'nope'}],
+    ['sends empty terms strings', {terms: {notice: '', url: ''}}],
+  ])('falls back to the bundled terms of service when the response %s', async (_, overrides) => {
+    mockRequest.mockResolvedValue(
+      jsonResponse({...provisionResponse, terms: undefined, ...overrides}),
+    )
+
+    await expect(mintUnclaimedProject({displayName: 'My Project'})).resolves.toMatchObject({
+      termsNotice: 'By continuing to use this project you accept the Sanity Terms of Service.',
+      termsUrl: 'https://www.sanity.io/legal/tos',
     })
   })
 
