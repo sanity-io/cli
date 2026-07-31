@@ -121,25 +121,38 @@ export const DefineAppInputSchema = z
     }),
   )
   .check(
-    // An app exposes one interface kind: an app view (`entry`) or panels.
+    // A navigable app view (`entry`) and dock panels are the mutually-exclusive
+    // navigable kinds. An `asset_source` view is a separate kind — a picker
+    // brokered to other apps — so it may sit alongside either.
     z.refine(
-      (input) => !(input.entry !== undefined && (input.views?.length ?? 0) > 0),
+      (input) =>
+        !(
+          input.entry !== undefined &&
+          (input.views?.some((view) => view.type === 'panel') ?? false)
+        ),
       'An app cannot expose both an app view (`entry`) and panel views. Declare one or the other.',
     ),
   )
   .check(
     z.refine(
-      (input) => (input.views?.length ?? 0) <= 1,
+      (input) => (input.views?.filter((view) => view.type === 'panel').length ?? 0) <= 1,
       'An app can expose at most one panel view.',
     ),
   )
 
+/** The `asset_source` variant of an app's `views`. @public */
+export type AssetSourceView = Extract<
+  NonNullable<z.output<typeof DefineAppInputSchema>['views']>[number],
+  {type: 'asset_source'}
+>
+
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
- * `applicationType`, `isSingleton`, and `config` — validated by the
- * schema but not part of the public surface (Sanity-owned apps set them via
- * `@ts-expect-error`). A union so an app declares an app `entry` or `views`,
- * never both.
+ * `applicationType`, `isSingleton`, and `config` — validated by the schema but
+ * not part of the public surface (Sanity-owned apps set them via
+ * `@ts-expect-error`). A union: an app declares an app `entry` (navigable) or
+ * panel `views`, never both — but an `asset_source` view is a separate kind and
+ * may accompany either.
  * @public
  */
 export type DefineAppInput = Omit<
@@ -148,7 +161,7 @@ export type DefineAppInput = Omit<
 > &
   (
     | {entry?: never; views?: NonNullable<z.output<typeof DefineAppInputSchema>['views']>}
-    | {entry?: string; views?: never}
+    | {entry?: string; views?: AssetSourceView[]}
   )
 
 /**

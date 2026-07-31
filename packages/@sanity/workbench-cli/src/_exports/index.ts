@@ -18,6 +18,8 @@ export type {
 } from '../defineService.js'
 export {unstable_defineView} from '../defineView.js'
 export type {
+  AssetSourceComponent,
+  AssetSourceViewComponents,
   DefinedView,
   PanelComponent,
   PanelViewComponents,
