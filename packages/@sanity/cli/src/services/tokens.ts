@@ -57,6 +57,7 @@ interface CreateTokenOptions {
   projectId: string
   role: SelectedTokenRole
 
+  expiresAt?: string
   sendNotification?: boolean
 }
 
@@ -68,7 +69,7 @@ interface CreateTokenOptions {
  * @internal
  */
 export async function createToken(options: CreateTokenOptions): Promise<RobotWithToken> {
-  const {label, projectId, role, sendNotification} = options
+  const {expiresAt, label, projectId, role, sendNotification} = options
 
   const client = await getClient()
 
@@ -76,6 +77,7 @@ export async function createToken(options: CreateTokenOptions): Promise<RobotWit
     body: {
       label,
       memberships: [{resourceId: projectId, resourceType: 'project', roleNames: [role.name]}],
+      ...(expiresAt === undefined ? {} : {expiresAt}),
     },
     method: 'POST',
     query: sendNotification === false ? {sendNotification: 'false'} : {},

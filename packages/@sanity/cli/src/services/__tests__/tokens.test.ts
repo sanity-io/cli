@@ -76,6 +76,29 @@ describe('createToken', () => {
     expect(result).toEqual(robotWithToken)
   })
 
+  test('includes expiresAt in the body when provided', async () => {
+    mockRequest.mockResolvedValue({...testRobot, token: 'sk_secret'})
+
+    await createToken({
+      expiresAt: '2030-01-01T00:00:00.000Z',
+      label: 'Test Robot',
+      projectId: testProjectId,
+      role: {name: 'editor', title: 'Editor'},
+    })
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: {
+          expiresAt: '2030-01-01T00:00:00.000Z',
+          label: 'Test Robot',
+          memberships: [
+            {resourceId: testProjectId, resourceType: 'project', roleNames: ['editor']},
+          ],
+        },
+      }),
+    )
+  })
+
   test('passes sendNotification=false as a query parameter', async () => {
     mockRequest.mockResolvedValue({...testRobot, token: 'sk_secret'})
 

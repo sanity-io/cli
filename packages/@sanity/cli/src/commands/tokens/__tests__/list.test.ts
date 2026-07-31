@@ -20,6 +20,7 @@ const defaultMocks = {
 const mockRobots = [
   {
     createdAt: '2023-01-01T00:00:00Z',
+    expiresAt: '2030-06-15T00:00:00Z',
     id: 'robot-1',
     label: 'Production API',
     memberships: [
@@ -89,15 +90,18 @@ describe('#tokens:list', () => {
     expect(stdout).toContain('Label')
     expect(stdout).toContain('ID')
     expect(stdout).toContain('Roles')
+    expect(stdout).toContain('Expires')
     expect(stdout).toContain('Production API')
     expect(stdout).toContain('robot-1')
     expect(stdout).toContain('admin, editor')
+    expect(stdout).toContain('2030-06-15')
     expect(stdout).toContain('Development API')
     expect(stdout).toContain('robot-2')
     expect(stdout).toContain('viewer')
     expect(stdout).toContain('Analytics Token')
     expect(stdout).toContain('robot-3')
     expect(stdout).toContain('No roles')
+    expect(stdout).toContain('Never')
   })
 
   test('displays robots as JSON when requested', async () => {

@@ -76,6 +76,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
         {alignment: 'left', maxLen: 40, name: 'label', title: 'Label'},
         {alignment: 'left', maxLen: 20, name: 'id', title: 'ID'},
         {alignment: 'left', maxLen: 30, name: 'roles', title: 'Roles'},
+        {alignment: 'left', maxLen: 12, name: 'expires', title: 'Expires'},
       ],
       title: `Found ${tokens.length} API tokens`,
     })
@@ -87,6 +88,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       const truncatedRoles = roles.length > 27 ? `${roles.slice(0, 27)}...` : roles
 
       table.addRow({
+        expires: token.expiresAt ? token.expiresAt.slice(0, 10) : 'Never',
         id: token.id,
         label: truncatedLabel,
         roles: truncatedRoles,

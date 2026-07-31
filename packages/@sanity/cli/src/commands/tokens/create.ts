@@ -2,6 +2,7 @@ import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 
+import {expiryInDays, parseExpiryDate} from '../../actions/tokens/expiry.js'
 import {type SelectedTokenRole} from '../../actions/tokens/types.js'
 import {validateRole} from '../../actions/tokens/validateRole.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -9,6 +10,9 @@ import {createToken, getTokenRoles} from '../../services/tokens.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const tokensCreateDebug = subdebug('tokens:create')
+
+// Mirrors the expiry presets offered by sanity.io/manage
+const EXPIRY_PRESET_DAYS = [30, 60, 90]
 
 export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand> {
   static override args = {
@@ -34,6 +38,10 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       description: 'Create a token in unattended mode',
     },
     {
+      command: '<%= config.bin %> <%= command.id %> "Build Token" --expires-at 2027-01-01',
+      description: 'Create a token that expires on a given date',
+    },
+    {
       command: '<%= config.bin %> <%= command.id %> "API Token" --json',
       description: 'Output token information as JSON',
     },
@@ -47,6 +55,10 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     ...getProjectIdFlag({
       description: 'Project ID to create token in',
       semantics: 'override',
+    }),
+    'expires-at': Flags.string({
+      description: 'Date or timestamp the token expires (ISO 8601; tokens never expire by default)',
+      helpValue: '2027-01-01',
     }),
     json: Flags.boolean({
       default: false,
@@ -77,6 +89,8 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       })
     }
 
+    const flagExpiresAt = this.parseExpiryFlag(flags['expires-at'])
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -91,12 +105,17 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       ? validateRole(role, projectId, this.output)
       : this.promptForRole(projectId))
 
+    const expiresAt =
+      flags['expires-at'] === undefined ? await this.promptForExpiry() : flagExpiresAt
+
     try {
       tokensCreateDebug(`Creating token for project ${projectId}`, {
+        expiresAt,
         label,
         roleName: selectedRole.name,
       })
       const token = await createToken({
+        expiresAt,
         label,
         projectId,
         role: selectedRole,
@@ -111,6 +130,9 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       this.log(`Label: ${token.label}`)
       this.log(`ID: ${token.id}`)
       this.log(`Role: ${selectedRole.title}`)
+      if (token.expiresAt) {
+        this.log(`Expires: ${token.expiresAt}`)
+      }
       this.log(`Token: ${token.token}`)
       this.log('')
       this.log("Copy the token now. It won't be shown again.")
@@ -120,6 +142,56 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       tokensCreateDebug(`Error creating token for project ${projectId}`, err)
       this.error(`Token creation failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
+  }
+
+  private parseExpiryFlag(value: string | undefined): string | undefined {
+    if (value === undefined) {
+      return undefined
+    }
+
+    const parsed = parseExpiryDate(value)
+    if ('error' in parsed) {
+      this.error(parsed.error, {exit: exitCodes.USAGE_ERROR})
+    }
+
+    return parsed.expiresAt
+  }
+
+  private async promptForExpiry(): Promise<string | undefined> {
+    if (this.isUnattended()) {
+      return undefined // Tokens never expire by default
+    }
+
+    const choice = await select({
+      choices: [
+        {name: 'Never', value: 'never'},
+        ...EXPIRY_PRESET_DAYS.map((days) => ({
+          name: `${days} days (${expiryInDays(days).slice(0, 10)})`,
+          value: String(days),
+        })),
+        {name: 'Custom date', value: 'custom'},
+      ],
+      default: 'never',
+      message: 'Token expiry:',
+    })
+
+    if (choice === 'never') {
+      return undefined
+    }
+
+    if (choice === 'custom') {
+      const value = await input({
+        message: 'Expiry date (ISO 8601, e.g. 2027-01-01):',
+        validate: (input) => {
+          const parsed = parseExpiryDate(input.trim())
+          return 'error' in parsed ? parsed.error : true
+        },
+      })
+      const parsed = parseExpiryDate(value.trim())
+      return 'error' in parsed ? undefined : parsed.expiresAt
+    }
+
+    return expiryInDays(Number(choice))
   }
 
   private async promptForLabel(): Promise<string> {
