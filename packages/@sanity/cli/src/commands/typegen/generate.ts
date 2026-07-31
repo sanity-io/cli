@@ -2,6 +2,7 @@ import {stat} from 'node:fs/promises'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {SanityCommand} from '@sanity/cli-core'
 import {spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {
@@ -152,8 +153,12 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         workDir,
       }
     } catch (err) {
+      // The config-file checks above already reported a user-facing error via
+      // `this.error()` (an oclif CLIError). Re-throw those as-is instead of
+      // wrapping them a second time and failing the spinner twice.
+      if (err instanceof CLIError) throw err
       spin.fail()
-      this.error(`An error occured during config loading ${err}`, {exit: 1})
+      this.error(`An error occurred during config loading: ${err}`, {exit: 1})
     }
   }
 
@@ -242,7 +247,12 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         })
         trace.complete()
 
-        await typegenWatcher.stop()
+        try {
+          await typegenWatcher.stop()
+        } catch {
+          // We're shutting down; a failure to close the watcher shouldn't hang
+          // the process or surface as an unhandled rejection.
+        }
         resolve()
       })
 

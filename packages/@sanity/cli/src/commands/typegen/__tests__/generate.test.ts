@@ -128,6 +128,8 @@ describe('#typegen:generate', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Typegen config file not found: ./does-not-exist.json')
+    // The specific config error must not be re-wrapped by the outer catch.
+    expect(error?.message).not.toContain('An error occurred during config loading')
     expect(error?.oclif?.exit).toBe(1)
     expect(runTypegenGenerate).not.toHaveBeenCalled()
   })
@@ -162,6 +164,35 @@ describe('#typegen:generate', () => {
     const [options] = runTypegenWatcher.mock.calls[0]
     expect(options.workDir).toBe(convertToSystemPath('/test/path'))
     expect(typeof options.onProgress).toBe('function')
+    expect(stop).toHaveBeenCalledOnce()
+    expect(process.listenerCount('SIGINT')).toBe(0)
+    expect(process.listenerCount('SIGTERM')).toBe(0)
+  })
+
+  test('still completes on SIGINT when the watcher fails to stop', async () => {
+    const stop = vi.fn().mockRejectedValue(new Error('watcher close failed'))
+    runTypegenWatcher.mockReturnValue({
+      getStats: () => ({
+        averageGenerationDuration: 0,
+        generationFailedCount: 0,
+        generationSuccessfulCount: 0,
+        watcherDuration: 0,
+      }),
+      stop,
+      watcher: {},
+    })
+
+    const promise = testCommand(TypegenGenerateCommand, ['--watch'], {mocks: defaultMocks})
+
+    await waitForSigintListener()
+    const sigintListener = process.listeners('SIGINT').at(-1)
+    if (!sigintListener) throw new Error('Expected a SIGINT listener to be registered')
+    sigintListener('SIGINT')
+
+    // A rejecting stop() must not hang the command or leak the rejection.
+    const {error} = await promise
+    if (error) throw error
+
     expect(stop).toHaveBeenCalledOnce()
     expect(process.listenerCount('SIGINT')).toBe(0)
     expect(process.listenerCount('SIGTERM')).toBe(0)
