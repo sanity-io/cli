@@ -77,7 +77,18 @@ async function runStudioDeployment(
     ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
     : ''
 
-  const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
+  const autoUpdatesConfigured = checkAutoUpdates(reporter, {cliConfig, flags})
+
+  // TODO: confirm the auto-updates story for federated studios with the studio team.
+  if (autoUpdatesConfigured && isWorkbenchApp) {
+    reporter.report({
+      message:
+        "Auto-updates aren't supported for federated studios yet — deploying with the installed package versions",
+      status: 'warn',
+    })
+  }
+
+  const isAutoUpdating = autoUpdatesConfigured && !isWorkbenchApp
 
   const version = await checkPackageVersion(reporter, {
     moduleName: STUDIO_PACKAGE,
@@ -111,6 +122,7 @@ async function runStudioDeployment(
     await checkStudioTarget(reporter, {
       appId,
       isWorkbenchApp: true,
+      organizationId,
       slug: workbench.slug,
       title: appTitle,
     })
@@ -149,6 +161,7 @@ async function runStudioDeployment(
       projectId,
       slug: workbench.slug,
       title: appTitle,
+      visibility: workbench.visibility,
     }))
     applicationCreated = true
   }
@@ -197,7 +210,7 @@ async function runStudioDeployment(
         icon: appIcon,
         isApp: false,
         isAutoUpdating,
-        label: 'Deploying to sanity.studio',
+        label: 'Deploying studio',
         // Once the deployment is live, a metadata-sync failure must not delete
         // the studio.
         onDeployed: () => {
@@ -206,6 +219,7 @@ async function runStudioDeployment(
         sourceDir,
         title: appTitle,
         version,
+        visibility: workbench.visibility,
         workspaces: toWorkspaces(studioManifest),
       })
       const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})

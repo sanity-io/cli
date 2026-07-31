@@ -14,6 +14,7 @@ import {
   checkStudioTarget,
   type DeployCheck,
   describeAppTarget,
+  describeStudioTarget,
 } from '../deployChecks.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from '../resolveDeployTarget.js'
 import {type DeployFlags} from '../types.js'
@@ -383,6 +384,34 @@ describe('describeAppTarget', () => {
   })
 })
 
+describe('describeStudioTarget', () => {
+  test('slug-taken → fail names the taken slug and how to reuse the existing id', () => {
+    const check = describeStudioTarget(
+      {
+        existing: {
+          appHost: 'my-studio',
+          id: 'existing-1',
+          title: 'My Studio',
+          url: 'https://org-1.sanity.run/studio/existing-1',
+        },
+        type: 'slug-taken',
+      },
+      {isExternal: false, isWorkbench: true},
+    )
+
+    expect(check).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
+    expect(check.message).toContain('slug "my-studio" is already taken')
+    expect(check.message).toContain('existing-1')
+    expect(check.solution).toContain("appId: 'existing-1'")
+    expect(check.target).toEqual({
+      action: 'update',
+      applicationId: 'existing-1',
+      title: 'My Studio',
+      url: 'https://org-1.sanity.run/studio/existing-1',
+    })
+  })
+})
+
 describe('checkStudioTarget (workbench backend)', () => {
   test('existing appId → pass check for the resolved studio, returns its target', async () => {
     mockGetApplication.mockResolvedValue(workbenchApp({slug: 'my-studio', type: 'studio'}))
@@ -402,7 +431,7 @@ describe('checkStudioTarget (workbench backend)', () => {
     expect(target?.url).toBe('https://org-1.sanity.run/studio/app-1')
   })
 
-  test('no appId with a studioHost → pass check for the studio that would be created', async () => {
+  test('no appId → pass check naming the slug the studio would be created at', async () => {
     const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {
@@ -413,9 +442,18 @@ describe('checkStudioTarget (workbench backend)', () => {
     })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
-    expect(reporter.results[0]?.message).toContain('Would create studio hostname my-studio')
-    expect(reporter.results[0]?.message).toContain('titled "New Studio"')
-    expect(reporter.results[0]?.target?.url).toBeNull()
+    expect(reporter.results[0]?.message).toBe(
+      'Would create a new studio "New Studio" with slug "my-studio"',
+    )
+    expect(reporter.results[0]?.message).not.toContain('hostname')
+    expect(reporter.results[0]?.message).not.toContain('checked on deploy')
+    expect(reporter.results[0]?.target).toEqual({
+      action: 'create',
+      applicationId: null,
+      slug: 'my-studio',
+      title: 'New Studio',
+      url: null,
+    })
     expect(mockGetApplication).not.toHaveBeenCalled()
   })
 })

@@ -48,6 +48,7 @@ type CommonDeployTargetResolution<App = DeployTargetApp> =
 export type StudioDeployTargetResolution<App = DeployTargetApp> =
   | CommonDeployTargetResolution<App>
   | {appHost: string; type: 'would-create'}
+  | {existing: App; type: 'slug-taken'}
 
 export type AppDeployTargetResolution<App = DeployTargetCoreApp> =
   | CommonDeployTargetResolution<App>
@@ -207,12 +208,30 @@ export async function resolveWorkbenchApp({
  */
 export async function resolveWorkbenchStudio({
   appId,
+  organizationId,
   slug,
 }: {
   appId: string | undefined
+  organizationId?: string
   slug: string
 }): Promise<StudioDeployTargetResolution> {
   if (appId) return resolveAppById(appId)
+
+  if (organizationId) {
+    const existing = (await listApplications(organizationId)).find((app) => app.slug === slug)
+    if (existing) {
+      return {
+        existing: {
+          appHost: existing.slug ?? '',
+          id: existing.id,
+          title: existing.title,
+          url: getApplicationUrl(existing),
+        },
+        type: 'slug-taken',
+      }
+    }
+  }
+
   return {appHost: slug, type: 'would-create'}
 }
 

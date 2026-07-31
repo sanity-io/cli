@@ -58,6 +58,7 @@ export async function createStudio(options: {
   projectId: string | undefined
   slug: string
   title: string
+  visibility?: AppVisibility
 }): Promise<CreatedApplication> {
   const spin = spinner('Creating studio...').start()
   try {

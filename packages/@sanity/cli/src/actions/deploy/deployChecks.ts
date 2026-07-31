@@ -370,18 +370,51 @@ export function describeStudioTarget(
         status: 'fail',
       }
     }
+    // Apps and studios share one slug namespace, so the holder may be either.
+    case 'slug-taken': {
+      const {existing: application} = resolution
+      return {
+        exitCode: exitCodes.USAGE_ERROR,
+        message: `The slug "${application.appHost}" is already taken in this organization (app ID ${application.id})`,
+        solution: `Add \`deployment: {appId: '${application.id}'}\` to sanity.cli.ts to redeploy it`,
+        status: 'fail',
+        target: {
+          action: 'update',
+          applicationId: application.id,
+          title: application.title,
+          url: application.url ?? null,
+        },
+      }
+    }
     case 'would-create': {
-      // A workbench studio's URL needs the application id, which only exists after the create.
-      const url = isWorkbench ? null : studioUrl(resolution.appHost)
       const titled = title ? ` titled "${title}"` : ''
+      // No URL yet: it needs the application id, minted by the create.
+      if (isWorkbench) {
+        return {
+          message: `Would create a new studio${title ? ` "${title}"` : ''} with slug "${resolution.appHost}"`,
+          status: 'pass',
+          target: {
+            action: 'create',
+            applicationId: null,
+            slug: resolution.appHost,
+            title: title || null,
+            url: null,
+          },
+        }
+      }
       return {
         message: isExternal
           ? `Would register external studio at ${resolution.appHost}${titled}`
-          : `Would create studio hostname ${url ?? resolution.appHost}${titled} (name availability is checked on deploy)`,
+          : `Would create studio hostname ${studioUrl(resolution.appHost)}${titled} (name availability is checked on deploy)`,
         status: 'pass',
         // `title || null`, not `?? null`, so target.title tracks the same
         // truthiness the message's `titled` suffix uses (an empty title is no title)
-        target: {action: 'create', applicationId: null, title: title || null, url},
+        target: {
+          action: 'create',
+          applicationId: null,
+          title: title || null,
+          url: studioUrl(resolution.appHost),
+        },
       }
     }
   }
@@ -407,13 +440,18 @@ export async function checkStudioTarget(
     | {
         appId: string | undefined
         isWorkbenchApp: true
+        organizationId?: string
         slug: string
         title?: string
       },
 ): Promise<DeployTarget | null> {
   const {title} = options
   const resolve = options.isWorkbenchApp
-    ? resolveWorkbenchStudio({appId: options.appId, slug: options.slug})
+    ? resolveWorkbenchStudio({
+        appId: options.appId,
+        organizationId: options.organizationId,
+        slug: options.slug,
+      })
     : resolveStudioDeployTarget(options)
   // Workbench studios always deploy to Sanity hosting, never an external URL.
   const isExternal = options.isWorkbenchApp ? false : options.isExternal
