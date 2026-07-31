@@ -1,34 +1,85 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {type SanityClient} from '@sanity/client'
 
-import {type ProjectRole, type Token, type TokenResponse} from '../actions/tokens/types.js'
+import {TOKENS_API_VERSION} from '../actions/tokens/constants.js'
+import {
+  type Membership,
+  type Robot,
+  type RobotWithToken,
+  type Role,
+  type SelectedTokenRole,
+} from '../actions/tokens/types.js'
 
-const TOKENS_API_VERSION = 'v2025-08-18'
+interface PaginatedResponse<T> {
+  data: T[]
+  nextCursor: string | null
+}
+
+function getClient(): Promise<SanityClient> {
+  return getGlobalCliClient({
+    apiVersion: TOKENS_API_VERSION,
+    requireUser: true,
+  })
+}
+
+async function fetchAllPages<T>(client: SanityClient, uri: string): Promise<T[]> {
+  const items: T[] = []
+  let cursor: string | null = null
+
+  do {
+    const response: PaginatedResponse<T> = await client.request<PaginatedResponse<T>>({
+      query: cursor === null ? {} : {nextCursor: cursor},
+      uri,
+    })
+    items.push(...response.data)
+    cursor = response.nextCursor
+  } while (cursor !== null)
+
+  return items
+}
+
+/**
+ * Get the membership granting a robot access to the given project
+ * @param robot - The robot to inspect
+ * @param projectId - The project ID
+ * @returns The project membership, if any
+ *
+ * @internal
+ */
+export function getProjectMembership(robot: Robot, projectId: string): Membership | undefined {
+  return robot.memberships.find(
+    (membership) => membership.resourceType === 'project' && membership.resourceId === projectId,
+  )
+}
 
 interface CreateTokenOptions {
   label: string
   projectId: string
-  roleName: string
+  role: SelectedTokenRole
+
+  sendNotification?: boolean
 }
 
 /**
  * Add a token to a project
  * @param options - The options for adding a token to a project
- * @returns A promise that resolves to the token response
+ * @returns A promise that resolves to the created robot, including its secret token
  *
  * @internal
  */
-export async function createToken(options: CreateTokenOptions): Promise<TokenResponse> {
-  const {label, projectId, roleName} = options
+export async function createToken(options: CreateTokenOptions): Promise<RobotWithToken> {
+  const {label, projectId, role, sendNotification} = options
 
-  const client = await getGlobalCliClient({
-    apiVersion: TOKENS_API_VERSION,
-    requireUser: true,
-  })
+  const client = await getClient()
 
-  return client.request<TokenResponse>({
-    body: {label, roleName},
+  return client.request<RobotWithToken>({
+    body: {
+      label,
+      memberships: [{resourceId: projectId, resourceType: 'project', roleNames: [role.name]}],
+    },
     method: 'POST',
-    uri: `/projects/${projectId}/tokens`,
+    query: sendNotification === false ? {sendNotification: 'false'} : {},
+    uri: `/access/project/${projectId}/robots`,
   })
 }
 
@@ -39,7 +90,8 @@ interface DeleteTokenOptions {
 
 /**
  * Delete a token from a project
- * @param options - The options for deleting a token from a project
+ * @param options - The options for deleting a token from a project; `tokenId`
+ * is the id reported by `getTokens`/`createToken`
  * @returns A promise that resolves when the token is deleted
  *
  * @internal
@@ -47,33 +99,28 @@ interface DeleteTokenOptions {
 export async function deleteToken(options: DeleteTokenOptions): Promise<void> {
   const {projectId, tokenId} = options
 
-  const client = await getGlobalCliClient({
-    apiVersion: TOKENS_API_VERSION,
-    requireUser: true,
-  })
+  const client = await getClient()
 
   return client.request({
     method: 'DELETE',
-    uri: `/projects/${projectId}/tokens/${tokenId}`,
+    uri: `/access/project/${projectId}/robots/${tokenId}`,
   })
 }
 
 /**
- * Get all tokens for a project
+ * Get all tokens for a project. Tokens managed by an organization are
+ * excluded: they cannot be managed at the project scope.
  * @param projectId - The project ID
- * @returns A promise that resolves to an array of tokens
+ * @returns A promise that resolves to an array of robots
  *
  * @internal
  */
-export async function getTokens(projectId: string): Promise<Token[]> {
-  const client = await getGlobalCliClient({
-    apiVersion: TOKENS_API_VERSION,
-    requireUser: true,
-  })
+export async function getTokens(projectId: string): Promise<Robot[]> {
+  const client = await getClient()
 
-  return client.request<Token[]>({
-    uri: `/projects/${projectId}/tokens`,
-  })
+  const robots = await fetchAllPages<Robot>(client, `/access/project/${projectId}/robots`)
+
+  return robots.filter((robot) => robot.managedBy?.resourceType !== 'organization')
 }
 
 /**
@@ -83,11 +130,8 @@ export async function getTokens(projectId: string): Promise<Token[]> {
  *
  * @internal
  */
-export async function getTokenRoles(projectId: string): Promise<ProjectRole[]> {
-  const client = await getGlobalCliClient({
-    apiVersion: TOKENS_API_VERSION,
-    requireUser: true,
-  })
+export async function getTokenRoles(projectId: string): Promise<Role[]> {
+  const client = await getClient()
 
-  return client.request<ProjectRole[]>({uri: `/projects/${projectId}/roles`})
+  return fetchAllPages<Role>(client, `/access/project/${projectId}/roles`)
 }

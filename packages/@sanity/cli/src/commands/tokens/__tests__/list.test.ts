@@ -17,44 +17,57 @@ const defaultMocks = {
   token: 'test-token',
 }
 
-const mockTokens = [
+const mockRobots = [
   {
     createdAt: '2023-01-01T00:00:00Z',
-    createdBy: 'user@example.com',
-    id: 'token-1',
+    id: 'robot-1',
     label: 'Production API',
-    lastUsedAt: '2023-12-01T00:00:00Z',
-    permissions: ['read', 'write'],
-    projectId: testProjectId,
-    projectUserId: 'user-1',
-    roles: [
-      {name: 'admin', title: 'Administrator'},
-      {name: 'editor', title: 'Editor'},
+    memberships: [
+      {
+        lastSeenAt: '2023-12-01T00:00:00Z',
+        resourceId: testProjectId,
+        resourceType: 'project',
+        resourceUserId: 'user-1',
+        roleNames: ['admin', 'editor'],
+      },
     ],
+    tokenId: 'robot-1-active-token',
   },
   {
     createdAt: '2023-02-01T00:00:00Z',
-    createdBy: 'dev@example.com',
-    id: 'token-2',
+    id: 'robot-2',
     label: 'Development API',
-    lastUsedAt: null,
-    permissions: ['read'],
-    projectId: testProjectId,
-    projectUserId: 'user-2',
-    roles: [{name: 'viewer', title: 'Viewer'}],
+    memberships: [
+      {
+        lastSeenAt: null,
+        resourceId: testProjectId,
+        resourceType: 'project',
+        resourceUserId: 'user-2',
+        roleNames: ['viewer'],
+      },
+    ],
+    tokenId: 'robot-2-active-token',
   },
   {
     createdAt: '2023-03-01T00:00:00Z',
-    createdBy: 'analytics@example.com',
-    id: 'token-3',
+    id: 'robot-3',
     label: 'Analytics Token',
-    lastUsedAt: '2023-11-15T00:00:00Z',
-    permissions: ['read'],
-    projectId: testProjectId,
-    projectUserId: 'user-3',
-    roles: [],
+    memberships: [
+      {
+        lastSeenAt: '2023-11-15T00:00:00Z',
+        resourceId: testProjectId,
+        resourceType: 'project',
+        resourceUserId: 'user-3',
+        roleNames: [],
+      },
+    ],
+    tokenId: 'robot-3-active-token',
   },
 ]
+
+function robotsPage(robots: unknown[]) {
+  return {data: robots, nextCursor: null}
+}
 
 describe('#tokens:list', () => {
   afterEach(() => {
@@ -67,52 +80,76 @@ describe('#tokens:list', () => {
   test('displays tokens in table format by default', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
-    }).reply(200, mockTokens)
+      uri: `/access/project/${testProjectId}/robots`,
+    }).reply(200, robotsPage(mockRobots))
 
     const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Found 3 API tokens')
     expect(stdout).toContain('Label')
-    expect(stdout).toContain('Token ID')
+    expect(stdout).toContain('ID')
     expect(stdout).toContain('Roles')
     expect(stdout).toContain('Production API')
-    expect(stdout).toContain('token-1')
-    expect(stdout).toContain('Administrator, Editor')
+    expect(stdout).toContain('robot-1')
+    expect(stdout).toContain('admin, editor')
     expect(stdout).toContain('Development API')
-    expect(stdout).toContain('token-2')
-    expect(stdout).toContain('Viewer')
+    expect(stdout).toContain('robot-2')
+    expect(stdout).toContain('viewer')
     expect(stdout).toContain('Analytics Token')
-    expect(stdout).toContain('token-3')
+    expect(stdout).toContain('robot-3')
     expect(stdout).toContain('No roles')
   })
 
-  test('displays tokens in JSON format when requested', async () => {
+  test('displays robots as JSON when requested', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
-    }).reply(200, mockTokens)
+      uri: `/access/project/${testProjectId}/robots`,
+    }).reply(200, robotsPage(mockRobots))
 
     const {stdout} = await testCommand(TokensListCommand, ['--json'], {mocks: defaultMocks})
 
     const parsed = JSON.parse(stdout)
-    expect(parsed).toHaveLength(3)
-    expect(parsed[0]).toMatchObject({
-      createdBy: 'user@example.com',
-      id: 'token-1',
-      label: 'Production API',
-      roles: [
-        {name: 'admin', title: 'Administrator'},
-        {name: 'editor', title: 'Editor'},
+    expect(parsed).toEqual(mockRobots)
+  })
+
+  test('excludes robots managed by an organization', async () => {
+    const orgManagedRobot = {
+      createdAt: '2023-04-01T00:00:00Z',
+      id: 'robot-org',
+      label: 'Org Managed Token',
+      managedBy: {resourceId: 'org-1', resourceType: 'organization'},
+      memberships: [
+        {
+          resourceId: testProjectId,
+          resourceType: 'project',
+          roleNames: ['viewer'],
+        },
       ],
-    })
+      tokenId: 'robot-org-active-token',
+    }
+    const projectManagedRobot = {
+      ...mockRobots[0],
+      managedBy: {resourceId: testProjectId, resourceType: 'project'},
+    }
+
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: `/access/project/${testProjectId}/robots`,
+    }).reply(200, robotsPage([orgManagedRobot, projectManagedRobot, mockRobots[1]]))
+
+    const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
+
+    expect(stdout).toContain('Found 2 API tokens')
+    expect(stdout).toContain('Production API')
+    expect(stdout).toContain('Development API')
+    expect(stdout).not.toContain('Org Managed Token')
   })
 
   test('handles empty tokens list', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
-    }).reply(200, [])
+      uri: `/access/project/${testProjectId}/robots`,
+    }).reply(200, robotsPage([]))
 
     const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
@@ -122,7 +159,7 @@ describe('#tokens:list', () => {
   test('displays an error if the API request fails', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
+      uri: `/access/project/${testProjectId}/robots`,
     }).reply(500, {message: 'Internal Server Error'})
 
     const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
@@ -182,7 +219,7 @@ describe('#tokens:list', () => {
   test('handles 404 error gracefully', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
+      uri: `/access/project/${testProjectId}/robots`,
     }).reply(404, {message: 'Project not found'})
 
     const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
@@ -196,7 +233,7 @@ describe('#tokens:list', () => {
   test('handles 403 forbidden error', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
+      uri: `/access/project/${testProjectId}/robots`,
     }).reply(403, {message: 'Forbidden'})
 
     const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
@@ -208,68 +245,68 @@ describe('#tokens:list', () => {
   })
 
   test('displays single token correctly', async () => {
-    const singleToken = [mockTokens[0]]
-
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
-    }).reply(200, singleToken)
+      uri: `/access/project/${testProjectId}/robots`,
+    }).reply(200, robotsPage([mockRobots[0]]))
 
     const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Found 1 API tokens')
     expect(stdout).toContain('Production API')
-    expect(stdout).toContain('token-1')
-    expect(stdout).toContain('Administrator, Editor')
+    expect(stdout).toContain('robot-1')
+    expect(stdout).toContain('admin, editor')
   })
 
   test('handles tokens with special characters in labels', async () => {
-    const specialTokens = [
-      {
-        createdAt: '2023-01-01T00:00:00Z',
-        createdBy: 'user@café.com',
-        id: 'token-special',
-        label: 'API Token (Test & Dev)',
-        lastUsedAt: null,
-        permissions: ['read'],
-        projectId: testProjectId,
-        projectUserId: 'user-special',
-        roles: [{name: 'viewer', title: 'Viewer'}],
-      },
-    ]
+    const specialRobot = {
+      createdAt: '2023-01-01T00:00:00Z',
+      id: 'robot-special',
+      label: 'API Token (Test & Dev)',
+      memberships: [
+        {
+          resourceId: testProjectId,
+          resourceType: 'project',
+          resourceUserId: 'user-special',
+          roleNames: ['viewer'],
+        },
+      ],
+      tokenId: 'robot-special-active-token',
+    }
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
-    }).reply(200, specialTokens)
+      uri: `/access/project/${testProjectId}/robots`,
+    }).reply(200, robotsPage([specialRobot]))
 
     const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('API Token (Test & Dev)')
-    expect(stdout).toContain('token-special')
-    expect(stdout).toContain('Viewer')
+    expect(stdout).toContain('robot-special')
+    expect(stdout).toContain('viewer')
   })
 
   test('truncates long labels correctly', async () => {
-    const longLabelTokens = [
-      {
-        createdAt: '2023-01-01T00:00:00Z',
-        createdBy: 'user@example.com',
-        id: 'token-long',
-        label:
-          'This is a very long token label that should be truncated because it exceeds the maximum length',
-        lastUsedAt: null,
-        permissions: ['read'],
-        projectId: testProjectId,
-        projectUserId: 'user-long',
-        roles: [{name: 'viewer', title: 'Viewer'}],
-      },
-    ]
+    const longLabelRobot = {
+      createdAt: '2023-01-01T00:00:00Z',
+      id: 'robot-long',
+      label:
+        'This is a very long token label that should be truncated because it exceeds the maximum length',
+      memberships: [
+        {
+          resourceId: testProjectId,
+          resourceType: 'project',
+          resourceUserId: 'user-long',
+          roleNames: ['viewer'],
+        },
+      ],
+      tokenId: 'robot-long-active-token',
+    }
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
-    }).reply(200, longLabelTokens)
+      uri: `/access/project/${testProjectId}/robots`,
+    }).reply(200, robotsPage([longLabelRobot]))
 
     const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
@@ -278,33 +315,29 @@ describe('#tokens:list', () => {
   })
 
   test('truncates long roles correctly', async () => {
-    const longRolesTokens = [
-      {
-        createdAt: '2023-01-01T00:00:00Z',
-        createdBy: 'user@example.com',
-        id: 'token-roles',
-        label: 'Multi Role Token',
-        lastUsedAt: null,
-        permissions: ['read'],
-        projectId: testProjectId,
-        projectUserId: 'user-roles',
-        roles: [
-          {name: 'administrator', title: 'Administrator'},
-          {name: 'editor', title: 'Editor'},
-          {name: 'viewer', title: 'Viewer'},
-          {name: 'contributor', title: 'Contributor'},
-        ],
-      },
-    ]
+    const longRolesRobot = {
+      createdAt: '2023-01-01T00:00:00Z',
+      id: 'robot-roles',
+      label: 'Multi Role Token',
+      memberships: [
+        {
+          resourceId: testProjectId,
+          resourceType: 'project',
+          resourceUserId: 'user-roles',
+          roleNames: ['administrator', 'editor', 'viewer', 'contributor'],
+        },
+      ],
+      tokenId: 'robot-roles-active-token',
+    }
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: `/projects/${testProjectId}/tokens`,
-    }).reply(200, longRolesTokens)
+      uri: `/access/project/${testProjectId}/robots`,
+    }).reply(200, robotsPage([longRolesRobot]))
 
     const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Multi Role Token')
-    expect(stdout).toContain('Administrator, Editor, View...')
+    expect(stdout).toContain('administrator, editor, view...')
   })
 })
