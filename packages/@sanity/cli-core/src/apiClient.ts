@@ -165,8 +165,12 @@ function authErrors(projectId?: string) {
 
       const statusCode = isHttpError(err) && err.statusCode
       if (statusCode === 401) {
-        if (projectId && isProjectUserNotFoundError(err.response.body)) {
-          err.message = `${err.message}. Add this account as a project member: ${getSanityUrl(`/manage/project/${encodeURIComponent(projectId)}/members`)}.`
+        if (isProjectUserNotFoundError(err.response.body, err.message)) {
+          const membersProjectId = projectId ?? getProjectIdFromMessage(err.message)
+          const membersUrl = membersProjectId
+            ? getSanityUrl(`/manage/project/${encodeURIComponent(membersProjectId)}/members`)
+            : getSanityUrl('/manage')
+          err.message = `${err.message}. This account is not a member of the project. Organization-level roles do not grant access to project content. Add this account as a project member: ${membersUrl}.`
           return err
         }
 
@@ -178,9 +182,14 @@ function authErrors(projectId?: string) {
   }
 }
 
-function isProjectUserNotFoundError(
-  body: unknown,
-): body is {error: {type: 'projectUserNotFoundError'}} {
+// The Content Lake reports the missing-membership case as plain text, e.g.
+// `project user not found for user ID "abc" in project "xyz"`, while other
+// APIs use a structured error type. Match both.
+const PROJECT_USER_NOT_FOUND_MESSAGE = /project user not found/i
+
+function isProjectUserNotFoundError(body: unknown, message: string): boolean {
+  if (PROJECT_USER_NOT_FOUND_MESSAGE.test(message)) return true
+
   if (typeof body !== 'object' || body === null || !('error' in body)) return false
 
   const {error} = body
@@ -190,6 +199,10 @@ function isProjectUserNotFoundError(
     'type' in error &&
     error.type === 'projectUserNotFoundError'
   )
+}
+
+function getProjectIdFromMessage(message: string): string | undefined {
+  return /in project "([a-z0-9-]+)"/i.exec(message)?.[1]
 }
 
 function isReqResError(err: Error): err is ClientError | ServerError {
