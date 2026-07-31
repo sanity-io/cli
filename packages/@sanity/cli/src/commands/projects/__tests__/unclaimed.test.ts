@@ -42,11 +42,14 @@ function outputText(): string {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime('2026-07-31T12:00:00.000Z')
   mockGet.mockReturnValue({[record.projectId]: record})
   mockGetProjectClaimStatus.mockResolvedValue('unclaimed')
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.clearAllMocks()
   process.exitCode = undefined
 })
@@ -81,6 +84,44 @@ describe('#projects:unclaimed', () => {
     expect(outputText()).not.toContain('No locally recorded unclaimed projects')
     expect(outputText()).not.toContain(record.claimUrl)
     expect(outputText()).not.toContain(robotToken)
+  })
+
+  test('removes expired records without checking remote claim status', async () => {
+    const expired = {...record, expiresAt: '2026-07-31T12:00:00.000Z'}
+    mockGet.mockReturnValue({[expired.projectId]: expired})
+
+    await UnclaimedProjectsCommand.run([])
+
+    expect(mockGetProjectClaimStatus).not.toHaveBeenCalled()
+    expect(mockDelete).toHaveBeenCalledWith('unclaimedProjects')
+    expect(outputText()).toContain(
+      `✔ Project "${expired.projectId}" expired. Local recovery details removed.`,
+    )
+    expect(outputText()).not.toContain(expired.claimUrl)
+    expect(outputText()).not.toContain(expired.token)
+  })
+
+  test('lists active records before expired project notices', async () => {
+    const expired = {
+      ...record,
+      claimToken: 'expired-secret',
+      claimUrl: 'https://www.sanity.io/claim/expired-secret',
+      expiresAt: '2026-07-31T11:59:59.999Z',
+      projectId: 'expired',
+      token: 'sk-expired-token',
+    }
+    mockGet.mockReturnValue({[expired.projectId]: expired, [record.projectId]: record})
+
+    await UnclaimedProjectsCommand.run([])
+
+    const output = outputText()
+    expect(mockGetProjectClaimStatus).toHaveBeenCalledOnce()
+    expect(mockGetProjectClaimStatus).toHaveBeenCalledWith(record.projectId, robotToken)
+    expect(output.indexOf(record.claimUrl)).toBeLessThan(
+      output.indexOf(`✔ Project "${expired.projectId}" expired. Local recovery details removed.`),
+    )
+    expect(output).not.toContain(expired.claimUrl)
+    expect(output).not.toContain(expired.token)
   })
 
   test('lists claimed project notices below remaining unclaimed projects', async () => {
@@ -191,6 +232,38 @@ describe('#projects:unclaimed', () => {
     )
     expect(outputText()).not.toContain(record.claimUrl)
     expect(outputText()).not.toContain(robotToken)
+  })
+
+  test('--project-id removes and reports an expired project without checking remotely', async () => {
+    const expired = {...record, expiresAt: '2026-07-31T11:59:59.999Z'}
+    mockGet.mockReturnValue({[expired.projectId]: expired})
+
+    await UnclaimedProjectsCommand.run(['--project-id', expired.projectId])
+
+    expect(mockGetProjectClaimStatus).not.toHaveBeenCalled()
+    expect(mockDelete).toHaveBeenCalledWith('unclaimedProjects')
+    expect(outputText()).toContain(
+      `✔ Project "${expired.projectId}" expired. Local recovery details removed.`,
+    )
+    expect(outputText()).not.toContain(expired.claimUrl)
+    expect(outputText()).not.toContain(expired.token)
+  })
+
+  test('does not print expired recovery details when local cleanup fails', async () => {
+    const expired = {...record, expiresAt: '2026-07-31T11:59:59.999Z'}
+    mockGet.mockReturnValue({[expired.projectId]: expired})
+    mockDelete.mockImplementationOnce(() => {
+      throw new Error('disk full')
+    })
+
+    await UnclaimedProjectsCommand.run(['--project-id', expired.projectId])
+
+    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+      `Project "${expired.projectId}" expired, but its local recovery details could not be removed. Run this command again to retry.`,
+    )
+    expect(mockGetProjectClaimStatus).not.toHaveBeenCalled()
+    expect(outputText()).not.toContain(expired.claimUrl)
+    expect(outputText()).not.toContain(expired.token)
   })
 
   test('--project-id keeps details and warns when claim status cannot be verified', async () => {

@@ -19,6 +19,10 @@ function recordRow(record: UnclaimedProjectRecord): string[] {
   return [record.projectId, record.dataset, record.mintedAt, record.expiresAt, record.claimUrl]
 }
 
+function isExpired(record: UnclaimedProjectRecord): boolean {
+  return Date.parse(record.expiresAt) <= Date.now()
+}
+
 function formatTable(fields: string[], rows: string[][]): string[] {
   const maxWidths = fields.map((field) => size(field))
   for (const row of rows) {
@@ -80,6 +84,13 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
         return
       }
 
+      if (isExpired(record)) {
+        if (this.removeExpiredProject(record)) {
+          this.logExpiredProject(record.projectId)
+        }
+        return
+      }
+
       const status = await getProjectClaimStatus(record.projectId, record.token)
       if (status === 'claimed') {
         if (this.removeClaimedProject(record)) {
@@ -109,8 +120,16 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
       return
     }
 
+    const expiredProjectIds: string[] = []
+    const activeRecords = records.filter((record) => {
+      if (!isExpired(record)) return true
+      if (this.removeExpiredProject(record)) {
+        expiredProjectIds.push(record.projectId)
+      }
+      return false
+    })
     const checked = await Promise.all(
-      records.map(async (record) => ({
+      activeRecords.map(async (record) => ({
         record,
         status: await getProjectClaimStatus(record.projectId, record.token),
       })),
@@ -133,7 +152,10 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
     }
 
     if (records.length === 0) {
-      if (claimedProjectIds.length > 0) {
+      if (claimedProjectIds.length > 0 || expiredProjectIds.length > 0) {
+        for (const expiredProjectId of expiredProjectIds) {
+          this.logExpiredProject(expiredProjectId)
+        }
         for (const claimedProjectId of claimedProjectIds) {
           this.logClaimedProject(claimedProjectId)
         }
@@ -151,8 +173,11 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
     )) {
       this.output.log(line)
     }
-    if (claimedProjectIds.length > 0) {
+    if (claimedProjectIds.length > 0 || expiredProjectIds.length > 0) {
       this.output.log()
+      for (const expiredProjectId of expiredProjectIds) {
+        this.logExpiredProject(expiredProjectId)
+      }
       for (const claimedProjectId of claimedProjectIds) {
         this.logClaimedProject(claimedProjectId)
       }
@@ -165,11 +190,27 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
     )
   }
 
+  private logExpiredProject(projectId: string): void {
+    this.output.log(
+      `${logSymbols.success} Project "${projectId}" expired. Local recovery details removed.`,
+    )
+  }
+
   private removeClaimedProject(record: UnclaimedProjectRecord): boolean {
     const removed = removeUnclaimedProject(record.projectId, record.claimToken)
     if (!removed) {
       this.output.warn(
         `Project "${record.projectId}" is claimed, but its local recovery details could not be removed. Run this command again to retry.`,
+      )
+    }
+    return removed
+  }
+
+  private removeExpiredProject(record: UnclaimedProjectRecord): boolean {
+    const removed = removeUnclaimedProject(record.projectId, record.claimToken)
+    if (!removed) {
+      this.output.warn(
+        `Project "${record.projectId}" expired, but its local recovery details could not be removed. Run this command again to retry.`,
       )
     }
     return removed
