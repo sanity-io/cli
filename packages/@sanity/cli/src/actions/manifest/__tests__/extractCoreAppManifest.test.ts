@@ -56,7 +56,6 @@ describe('extractCoreAppManifest', () => {
     mockGetCliConfig.mockResolvedValue({
       app: unstable_defineApp({
         group: 'dock.system',
-        name: 'my-app',
         organizationId: 'org-1',
         priority: 20,
         slug: 'my-slug',
@@ -78,7 +77,6 @@ describe('extractCoreAppManifest', () => {
   test('keeps priority 0 (not dropped as a falsy value)', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: unstable_defineApp({
-        name: 'my-app',
         organizationId: 'org-1',
         priority: 0,
         slug: 'my-slug',

@@ -14,7 +14,6 @@ import {getWorkbench} from '../getWorkbench.js'
 // than a hand-rolled stand-in.
 function workbench(overrides: Partial<DefineAppInput> = {}) {
   const app = unstable_defineApp({
-    name: 'test-app',
     organizationId: 'org-id',
     slug: 'test-app',
     title: 'Test App',

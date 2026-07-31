@@ -36,7 +36,6 @@ describe('the `app` config slot', () => {
     defineCliConfig({
       app: unstable_defineApp({
         group: 'dock.system',
-        name: 'my-app',
         organizationId: 'org-1',
         priority: 20,
         slug: 'my-app',
