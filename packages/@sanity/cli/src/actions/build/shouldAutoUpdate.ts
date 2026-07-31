@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {type DeployFlags} from '../deploy/types.js'
 import {type DevFlags} from '../dev/types.js'
@@ -20,6 +21,7 @@ type AutoUpdateIssue =
   | {flag: '--auto-updates' | '--no-auto-updates'; type: 'deprecated-flag'}
   | {type: 'conflicting-config'}
   | {type: 'deprecated-config'}
+  | {type: 'unsupported'}
 
 export interface AutoUpdateSettings {
   enabled: boolean
@@ -27,14 +29,25 @@ export interface AutoUpdateSettings {
 }
 
 /**
- * Owns the auto-update rules: flag-over-config precedence, the deprecated
- * top-level `autoUpdates` config, and the old/new config conflict.
- * Returns plain facts so each surface (deploy warnings, dry-run checks)
- * decides its own presentation.
+ * Owns the auto-update rules and returns plain facts, so each surface (build,
+ * dev, deploy warnings, dry-run checks) decides its own presentation.
  *
  * @internal
  */
-export function resolveAutoUpdates({cliConfig, flags}: AutoUpdateSources): AutoUpdateSettings {
+export function resolveAutoUpdates(sources: AutoUpdateSources): AutoUpdateSettings {
+  const settings = resolveConfiguredAutoUpdates(sources)
+
+  // A workbench app takes `sanity` from the shell's shared runtime, so it has no
+  // version of its own to pin.
+  // TODO(SDK-1045): confirm the long-term story with the studio team.
+  if (settings.enabled && isWorkbenchApp(sources.cliConfig?.app)) {
+    return {enabled: false, issue: {type: 'unsupported'}}
+  }
+
+  return settings
+}
+
+function resolveConfiguredAutoUpdates({cliConfig, flags}: AutoUpdateSources): AutoUpdateSettings {
   // Flags always take precedence over config
   if ('auto-updates' in flags) {
     const enabled = Boolean(flags['auto-updates'])
@@ -84,6 +97,9 @@ export function getAutoUpdateIssueMessage(issue: AutoUpdateIssue): string {
     case 'deprecated-flag': {
       return `The ${issue.flag} flag is deprecated for deploy and build commands. Set the autoUpdates option in the deployment section of sanity.cli.ts or sanity.cli.js instead.`
     }
+    case 'unsupported': {
+      return "Auto-updates aren't supported yet — using the installed package versions"
+    }
   }
 }
 
@@ -124,7 +140,8 @@ export function shouldAutoUpdate({
       output.warn(getAutoUpdateMigrationHint(cliConfig.autoUpdates))
       break
     }
-    case 'deprecated-flag': {
+    case 'deprecated-flag':
+    case 'unsupported': {
       output.warn(getAutoUpdateIssueMessage(issue))
       break
     }

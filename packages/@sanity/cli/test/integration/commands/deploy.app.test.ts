@@ -18,7 +18,8 @@ const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
 const mockCreateCoreApp = vi.hoisted(() => vi.fn())
 const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
-const mockListApplications = vi.hoisted(() => vi.fn())
+const mockFindApplicationBySlug = vi.hoisted(() => vi.fn())
+const mockIsStudioSlugAvailable = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -41,7 +42,8 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   checkBuiltOutput: mockCheckBuiltOutput,
   createCoreApp: mockCreateCoreApp,
   deployWorkbenchApp: mockDeployWorkbenchApp,
-  listApplications: mockListApplications,
+  findApplicationBySlug: mockFindApplicationBySlug,
+  isStudioSlugAvailable: mockIsStudioSlugAvailable,
 }))
 
 vi.mock(
@@ -106,8 +108,9 @@ describe('#deploy app', () => {
     })
     mockCheckDir.mockResolvedValue()
     mockCheckBuiltOutput.mockResolvedValue(undefined)
-    // No existing app at the app's slug, so a first deploy creates one.
-    mockListApplications.mockResolvedValue([])
+    // The app's slug is free, in this org and globally, so a first deploy creates one.
+    mockFindApplicationBySlug.mockResolvedValue(null)
+    mockIsStudioSlugAvailable.mockResolvedValue(true)
     // Default to empty manifest for app deployments
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
   })

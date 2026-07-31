@@ -1,5 +1,4 @@
 ---
-'@sanity/cli-build': patch
 '@sanity/cli': patch
 '@sanity/workbench-cli': patch
 ---

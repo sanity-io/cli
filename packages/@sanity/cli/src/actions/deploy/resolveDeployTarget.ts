@@ -1,4 +1,9 @@
-import {getApplication, getApplicationUrl, listApplications} from '@sanity/workbench-cli/deploy'
+import {
+  findApplicationBySlug,
+  getApplication,
+  getApplicationUrl,
+  isStudioSlugAvailable,
+} from '@sanity/workbench-cli/deploy'
 
 import {
   getUserApplication,
@@ -10,7 +15,7 @@ import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 /** The application fields a deploy-target verdict carries for reporting. */
-interface DeployTargetApp {
+export interface DeployTargetApp {
   appHost: string
   id: string
   title: string | null
@@ -47,13 +52,13 @@ type CommonDeployTargetResolution<App = DeployTargetApp> =
 
 export type StudioDeployTargetResolution<App = DeployTargetApp> =
   | CommonDeployTargetResolution<App>
+  | {appHost: string; existing?: App; type: 'slug-taken'}
   | {appHost: string; type: 'would-create'}
-  | {existing: App; type: 'slug-taken'}
 
 export type AppDeployTargetResolution<App = DeployTargetCoreApp> =
   | CommonDeployTargetResolution<App>
-  | {existing: App; type: 'slug-taken'}
-  | {type: 'would-create'}
+  | {appHost: string; existing?: App; type: 'slug-taken'}
+  | {appHost?: string; type: 'would-create'}
 
 /**
  * Owns the studio deploy-target rules: the --url flag over studioHost config,
@@ -163,11 +168,9 @@ export async function resolveAppDeployTarget(options: {
 }
 
 /**
- * The dry-run counterpart to a workbench app's create-on-deploy: a configured
- * `appId` is looked up read-only. Without one, a first deploy would create the
- * app at its slug — but if the org already holds an app at that slug (a
- * singleton redeployed without `deployment.appId`), a create would fail, so the
- * existing app is resolved instead and the report points at its id.
+ * The read-only counterpart to a workbench application's create-on-deploy, so a
+ * slug a create would be rejected for fails before the build.
+ *
  * @internal
  */
 export async function resolveWorkbenchApp({
@@ -181,58 +184,40 @@ export async function resolveWorkbenchApp({
 }): Promise<AppDeployTargetResolution> {
   if (appId) return resolveAppById(appId)
 
-  if (organizationId && slug) {
-    const existing = (await listApplications(organizationId)).find((app) => app.slug === slug)
-    if (existing) {
-      return {
-        existing: {
-          appHost: existing.slug ?? '',
-          id: existing.id,
-          organizationId: existing.organizationId,
-          title: existing.title,
-          url: getApplicationUrl(existing),
-        },
-        type: 'slug-taken',
-      }
+  const existing = organizationId && slug ? await findApplicationBySlug(organizationId, slug) : null
+  if (existing) {
+    return {
+      appHost: existing.slug ?? '',
+      existing: {
+        appHost: existing.slug ?? '',
+        id: existing.id,
+        organizationId: existing.organizationId,
+        title: existing.title,
+        url: existing.url,
+      },
+      type: 'slug-taken',
     }
   }
 
-  return {type: 'would-create'}
+  if (slug && !(await isStudioSlugAvailable(slug))) return {appHost: slug, type: 'slug-taken'}
+
+  return {appHost: slug, type: 'would-create'}
 }
 
 /**
- * The studio counterpart to {@link resolveWorkbenchApp}: a redeploy targets
- * `deployment.appId`, a first deploy creates the studio at its `slug`.
+ * {@link resolveWorkbenchApp} narrowed for a studio, whose slug is always configured.
  *
  * @internal
  */
-export async function resolveWorkbenchStudio({
-  appId,
-  organizationId,
-  slug,
-}: {
+export async function resolveWorkbenchStudio(options: {
   appId: string | undefined
   organizationId?: string
   slug: string
 }): Promise<StudioDeployTargetResolution> {
-  if (appId) return resolveAppById(appId)
-
-  if (organizationId) {
-    const existing = (await listApplications(organizationId)).find((app) => app.slug === slug)
-    if (existing) {
-      return {
-        existing: {
-          appHost: existing.slug ?? '',
-          id: existing.id,
-          title: existing.title,
-          url: getApplicationUrl(existing),
-        },
-        type: 'slug-taken',
-      }
-    }
-  }
-
-  return {appHost: slug, type: 'would-create'}
+  const resolution = await resolveWorkbenchApp(options)
+  return resolution.type === 'would-create'
+    ? {appHost: options.slug, type: 'would-create'}
+    : resolution
 }
 
 async function resolveAppById(

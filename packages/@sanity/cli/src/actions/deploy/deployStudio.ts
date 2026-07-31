@@ -77,18 +77,7 @@ async function runStudioDeployment(
     ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
     : ''
 
-  const autoUpdatesConfigured = checkAutoUpdates(reporter, {cliConfig, flags})
-
-  // TODO: confirm the auto-updates story for federated studios with the studio team.
-  if (autoUpdatesConfigured && isWorkbenchApp) {
-    reporter.report({
-      message:
-        "Auto-updates aren't supported for federated studios yet — deploying with the installed package versions",
-      status: 'warn',
-    })
-  }
-
-  const isAutoUpdating = autoUpdatesConfigured && !isWorkbenchApp
+  const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
   const version = await checkPackageVersion(reporter, {
     moduleName: STUDIO_PACKAGE,

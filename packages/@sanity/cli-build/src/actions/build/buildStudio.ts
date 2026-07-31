@@ -112,8 +112,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     ...eventListener,
   })
 
-  // A federated studio takes `sanity` from the shell's shared runtime.
-  let autoUpdatesEnabled = options.autoUpdatesEnabled && !options.isWorkbenchApp
+  let autoUpdatesEnabled = options.autoUpdatesEnabled
 
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []
@@ -231,7 +230,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   trace.start()
 
   let autoUpdates
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
     autoUpdates = {
       cssUrls: autoUpdatesCssUrls,
       imports: autoUpdatesImports,

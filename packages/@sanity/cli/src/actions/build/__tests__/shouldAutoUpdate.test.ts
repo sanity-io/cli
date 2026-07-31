@@ -1,6 +1,7 @@
 import {type Output} from '@sanity/cli-core'
-import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {beforeEach, describe, expect, it} from 'vitest'
 
+import {createMockOutput, workbenchApp} from '../../dev/__tests__/testHelpers.js'
 import {resolveAutoUpdates, shouldAutoUpdate} from '../shouldAutoUpdate'
 import {type BuildFlags} from '../types'
 
@@ -8,10 +9,7 @@ describe('shouldAutoUpdate', () => {
   let mockOutput: Output
 
   beforeEach(() => {
-    mockOutput = {
-      error: vi.fn(),
-      warn: vi.fn(),
-    } as unknown as Output
+    mockOutput = createMockOutput()
   })
 
   describe('when no config is provided', () => {
@@ -286,5 +284,31 @@ describe('resolveAutoUpdates', () => {
         flags: {'auto-updates': false} as BuildFlags,
       }),
     ).toEqual({enabled: false, issue: {flag: '--no-auto-updates', type: 'deprecated-flag'}})
+  })
+
+  describe('on a workbench app', () => {
+    const app = workbenchApp()
+
+    it('reports auto-updates as unsupported instead of enabling them', () => {
+      expect(
+        resolveAutoUpdates({
+          cliConfig: {app, deployment: {autoUpdates: true}},
+          flags: {} as BuildFlags,
+        }),
+      ).toEqual({enabled: false, issue: {type: 'unsupported'}})
+    })
+
+    it('reports it over the flag too, since the flag cannot make them apply', () => {
+      expect(
+        resolveAutoUpdates({cliConfig: {app}, flags: {'auto-updates': true} as BuildFlags}),
+      ).toEqual({enabled: false, issue: {type: 'unsupported'}})
+    })
+
+    it('stays quiet when auto-updates were never asked for', () => {
+      expect(resolveAutoUpdates({cliConfig: {app}, flags: {} as BuildFlags})).toEqual({
+        enabled: false,
+        issue: null,
+      })
+    })
   })
 })

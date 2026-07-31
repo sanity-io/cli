@@ -10,9 +10,11 @@ import {
   type BrettWorkspace,
   createApplication,
   createDeployment,
+  findApplicationBySlug,
   getApplication,
   getApplicationUrl,
   getWorkbenchUrl,
+  isStudioSlugAvailable,
   listApplications,
   updateApplication,
 } from '../applications.js'
@@ -89,6 +91,37 @@ describe('listApplications', () => {
       query: {limit: 'none', organizationId: 'org-1'},
       uri: '/applications',
     })
+  })
+})
+
+describe('isStudioSlugAvailable', () => {
+  test('asks the global studiohosts endpoint, not the organization', async () => {
+    mockClient.request.mockResolvedValueOnce({available: false})
+
+    expect(await isStudioSlugAvailable('my-studio')).toBe(false)
+    expect(mockClient.request).toHaveBeenCalledWith({uri: '/studiohosts/my-studio/availability'})
+  })
+})
+
+describe('findApplicationBySlug', () => {
+  const apps = [
+    {id: 'app_1', organizationId: 'org-1', slug: 'agent', title: 'Agent', type: 'coreApp'},
+    {id: 'studio_1', organizationId: 'org-1', slug: 'my-studio', title: 'Studio', type: 'studio'},
+  ]
+
+  test('resolves the holder of the slug with where it is served', async () => {
+    mockClient.request.mockResolvedValueOnce({data: apps})
+
+    expect(await findApplicationBySlug('org-1', 'my-studio')).toMatchObject({
+      id: 'studio_1',
+      url: 'https://org-1.sanity.run/studio/studio_1',
+    })
+  })
+
+  test('returns null when no application holds the slug', async () => {
+    mockClient.request.mockResolvedValueOnce({data: apps})
+
+    expect(await findApplicationBySlug('org-1', 'unused')).toBeNull()
   })
 })
 
