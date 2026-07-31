@@ -853,7 +853,6 @@ describe('#deploy studio (external)', () => {
       // Brand the config as a studio so the deploy command routes it through
       // deployStudio (the only path that accepts --external).
       const app = unstable_defineApp({
-        name: 'test-studio',
         organizationId: 'org-1',
         slug: 'test-studio',
         title: 'Test Studio',

@@ -22,14 +22,11 @@ export interface WorkbenchExposes {
 
 /** @public */
 export interface ResolvedWorkbenchApp {
-  /** The app's unique `name` from `unstable_defineApp`. */
-  readonly name: string
   /** Organization that owns the app — part of its build-id identity. */
   readonly organizationId: string
   /** Background worker services the app declares. */
   readonly services: NonNullable<DefineAppInput['services']>
 
-  /** Hostname the application is created at on first deploy. */
   readonly slug: string
 
   /** Dock panel views the app declares. */
@@ -68,7 +65,6 @@ export function resolveWorkbenchApp(
     entry: app.entry,
     icon: app.icon,
     isSingleton: app.isSingleton,
-    name: app.name,
     organizationId: app.organizationId,
     services: app.services ?? [],
     slug: app.slug,

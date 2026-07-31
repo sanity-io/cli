@@ -21,7 +21,6 @@ const WORKBENCH_APP = Symbol.for('sanity.workbench.defineApp')
  * `delete` one to assert it's required. A new required field only needs adding here.
  */
 const validInput = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
-  name: 'drop-desk',
   organizationId: 'org-1',
   slug: 'drop-desk',
   title: 'Drop',
@@ -30,35 +29,35 @@ const validInput = (overrides: Record<string, unknown> = {}): Record<string, unk
 
 describe('unstable_defineApp', () => {
   test('is identity at runtime — returns the same object reference', () => {
-    const input = {name: 'drop-desk', organizationId: 'org-1', title: 'Drop Desk'}
+    const input = {organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'}
     expect(unstable_defineApp(input)).toBe(input)
   })
 
   test('brands the result so the CLI can discriminate it', () => {
-    const app = unstable_defineApp({name: 'drop-desk', organizationId: 'org-1', title: 'Drop Desk'})
+    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
     expect(Object.getOwnPropertyDescriptor(app, WORKBENCH_APP)?.value).toBe(true)
   })
 
   test('leaves the brand non-enumerable so it does not leak into config spreads', () => {
-    const app = unstable_defineApp({name: 'drop-desk', organizationId: 'org-1', title: 'Drop Desk'})
-    expect(Object.keys(app)).toEqual(['name', 'organizationId', 'title'])
+    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
+    expect(Object.keys(app)).toEqual(['organizationId', 'slug', 'title'])
     expect(Object.getOwnPropertySymbols({...app})).not.toContain(WORKBENCH_APP)
   })
 
   test('preserves declared fields', () => {
     const app = unstable_defineApp({
       icon: './icon.svg',
-      name: 'athlete-desk',
       organizationId: 'org-1',
+      slug: 'athlete-desk',
       title: 'Athlete Desk',
     })
-    expect(app.name).toBe('athlete-desk')
+    expect(app.slug).toBe('athlete-desk')
     expect(app.title).toBe('Athlete Desk')
     expect(app.icon).toBe('./icon.svg')
   })
 
   test('is recognised by `isWorkbenchApp` (Symbol.for brand contract)', () => {
-    const app = unstable_defineApp({name: 'drop-desk', organizationId: 'org-1', title: 'Drop Desk'})
+    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
     expect(isWorkbenchApp(app)).toBe(true)
   })
 
@@ -76,15 +75,18 @@ describe('unstable_defineApp', () => {
 })
 
 describe('DefineAppInputSchema (build-time validation)', () => {
-  test('accepts a valid name', () => {
-    expect(DefineAppInputSchema.parse(validInput({name: 'drop_desk-1'})).name).toBe('drop_desk-1')
+  test('accepts a slug that is a valid DNS label', () => {
+    expect(DefineAppInputSchema.parse(validInput({slug: 'drop-desk-1'})).slug).toBe('drop-desk-1')
   })
 
-  test('rejects a name with illegal characters', () => {
-    const result = DefineAppInputSchema.safeParse(validInput({name: 'drop desk!'}))
-    expect(result.success).toBe(false)
-    expect(result.error?.issues[0]?.message).toMatch(/must match/)
-  })
+  test.each(['Drop-Desk', 'drop_desk', 'drop desk', '-drop-desk', 'drop-desk-'])(
+    'rejects the slug %j — it would not survive as a hostname',
+    (slug) => {
+      const result = DefineAppInputSchema.safeParse(validInput({slug}))
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0]?.message).toMatch(/must be lowercase/)
+    },
+  )
 
   test('requires a title', () => {
     const input = validInput()

@@ -3,7 +3,7 @@ import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 import {type BrettInterface} from '../../services/applications.js'
 
 interface BuildExposesContext {
-  appName: string
+  appSlug: string
   appTitle: string
   /** Whether the build exposes the app view (`./App`) — apps with an `entry`, and every studio. */
   exposesAppView: boolean
@@ -17,14 +17,14 @@ interface BuildExposesContext {
  */
 export function buildExposes(
   exposes: WorkbenchExposes,
-  {appName, appTitle, exposesAppView, version}: BuildExposesContext,
+  {appSlug, appTitle, exposesAppView, version}: BuildExposesContext,
 ): BrettInterface[] {
   const records: BrettInterface[] = []
   if (exposesAppView) {
     records.push({
       metadata: null,
-      moduleId: interfaceModuleId('app', appName),
-      name: appName,
+      moduleId: interfaceModuleId('app', appSlug),
+      name: appSlug,
       title: appTitle,
       type: 'app',
       version,

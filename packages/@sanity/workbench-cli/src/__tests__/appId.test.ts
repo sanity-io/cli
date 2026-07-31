@@ -13,7 +13,6 @@ describe('resolveAppId', () => {
 describe('buildAppId', () => {
   const app: ResolvedWorkbenchApp = {
     entry: './src/App.tsx',
-    name: 'drop-desk',
     organizationId: 'org-1',
     services: [{name: 'unread', src: './src/worker.ts', type: 'worker'}],
     slug: 'drop-desk',
@@ -44,7 +43,7 @@ describe('buildAppId', () => {
 
   test('changes when the declared shape changes', async () => {
     const base = await buildAppId(app)
-    expect(base).not.toBe(await buildAppId({...app, name: 'other'}))
+    expect(base).not.toBe(await buildAppId({...app, slug: 'other'}))
     expect(base).not.toBe(await buildAppId({...app, organizationId: 'org-2'}))
     expect(base).not.toBe(await buildAppId({...app, entry: './src/Other.tsx'}))
     expect(base).not.toBe(

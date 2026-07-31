@@ -77,7 +77,7 @@ async function runAppDeployment(
   const deployApplication = !workbench || workbench.hasInterfaces
 
   const appTitle = workbench
-    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.name
+    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
     : ''
 
   // A federated app with no entry, view or service would ship a remote with
@@ -284,7 +284,7 @@ async function runAppDeployment(
         applicationId,
         icon: appIcon,
         interfaces: buildExposes(workbench, {
-          appName: workbench.name,
+          appSlug: workbench.slug,
           appTitle,
           exposesAppView: workbench.entry !== undefined,
           version,
