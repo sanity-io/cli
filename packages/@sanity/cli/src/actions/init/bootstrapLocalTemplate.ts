@@ -4,6 +4,7 @@ import {styleText} from 'node:util'
 
 import {Output, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {toAppSlug} from '@sanity/workbench-cli/init'
 import deburr from 'lodash-es/deburr.js'
 
 import {copy} from '../../util/copy.js'
@@ -126,7 +127,7 @@ export async function bootstrapLocalTemplate(
   // project name. Fall back to a constant when the source slugifies to
   // nothing (e.g. a fully non-latin name): an empty `slug` fails app config
   // validation, which is exactly what pre-filling it is meant to avoid.
-  const slug = (isAppTemplate ? packageJsonName : slugify(title)) || 'sanity-app'
+  const slug = toAppSlug(isAppTemplate ? packageJsonName : title) ?? 'sanity-app'
 
   // Now create a package manifest (`package.json`) with the merged dependencies
   spin = spinner('Creating default project files').start()
@@ -150,7 +151,6 @@ export async function bootstrapLocalTemplate(
     ? createAppCliConfig({
         entry: template.entry!,
         isWorkbenchApp: variables.workbench,
-        name: packageJsonName,
         organizationId: variables.organizationId,
         slug,
         title,
@@ -159,7 +159,6 @@ export async function bootstrapLocalTemplate(
         autoUpdates: variables.autoUpdates,
         dataset: variables.dataset,
         isWorkbenchApp: variables.workbench,
-        name: packageJsonName,
         organizationId: variables.organizationId,
         projectId: variables.projectId,
         slug,

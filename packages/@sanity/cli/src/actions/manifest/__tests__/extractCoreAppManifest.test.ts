@@ -54,17 +54,36 @@ describe('extractCoreAppManifest', () => {
 
   test('merges group and priority into the manifest', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: {group: 'dock.system', organizationId: 'org-1', priority: 20, title: 'My App'},
+      app: unstable_defineApp({
+        group: 'dock.system',
+        name: 'my-app',
+        organizationId: 'org-1',
+        priority: 20,
+        slug: 'my-slug',
+        title: 'My App',
+      }),
     } as never)
 
     const result = await extractCoreAppManifest({workDir: '/project'})
 
-    expect(result).toEqual({group: 'dock.system', priority: 20, title: 'My App', version: '1'})
+    expect(result).toEqual({
+      group: 'dock.system',
+      priority: 20,
+      slug: 'my-slug',
+      title: 'My App',
+      version: '1',
+    })
   })
 
   test('keeps priority 0 (not dropped as a falsy value)', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: {organizationId: 'org-1', priority: 0, title: 'My App'},
+      app: unstable_defineApp({
+        name: 'my-app',
+        organizationId: 'org-1',
+        priority: 0,
+        slug: 'my-slug',
+        title: 'My App',
+      }),
     } as never)
 
     const result = await extractCoreAppManifest({workDir: '/project'})
@@ -75,7 +94,6 @@ describe('extractCoreAppManifest', () => {
   test('forwards slug from a workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: unstable_defineApp({
-        name: 'my-app',
         organizationId: 'org-1',
         slug: 'my-slug',
         title: 'My App',
@@ -87,9 +105,15 @@ describe('extractCoreAppManifest', () => {
     expect(result).toEqual({slug: 'my-slug', title: 'My App', version: '1'})
   })
 
-  test('does not forward slug for a non-workbench app', async () => {
+  test('drops slug and dock placement for a non-workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: {organizationId: 'org-1', slug: 'my-slug', title: 'My App'},
+      app: {
+        group: 'dock.system',
+        organizationId: 'org-1',
+        priority: 20,
+        slug: 'my-slug',
+        title: 'My App',
+      },
     } as never)
 
     const result = await extractCoreAppManifest({workDir: '/project'})

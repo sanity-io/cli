@@ -179,7 +179,7 @@ async function resolveConfigTarget({
         organizationId,
         projectId: null,
         summary: config ? [summarizeConfig(config)] : undefined,
-        title: workbench.name,
+        title: workbench.slug,
         type: 'coreApp',
         url: getWorkbenchUrl(organizationId),
       },

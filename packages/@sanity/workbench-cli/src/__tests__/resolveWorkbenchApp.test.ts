@@ -19,7 +19,6 @@ describe('resolveWorkbenchApp', () => {
   test('resolves a branded app with defaulted views/services and no singleton flag', () => {
     const config = asConfig(
       unstable_defineApp({
-        name: 'my-app',
         organizationId: 'org-123',
         slug: 'my-app',
         title: 'My App',
@@ -31,7 +30,6 @@ describe('resolveWorkbenchApp', () => {
       config: undefined,
       entry: undefined,
       isSingleton: undefined,
-      name: 'my-app',
       organizationId: 'org-123',
       services: [],
       slug: 'my-app',
@@ -43,7 +41,6 @@ describe('resolveWorkbenchApp', () => {
     const config = asConfig(
       unstable_defineApp({
         entry: './src/App.tsx',
-        name: 'my-app',
         organizationId: 'org-123',
         services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
         slug: 'my-app-host',
@@ -63,7 +60,6 @@ describe('resolveWorkbenchApp', () => {
   test('passes through declared panel views and services', () => {
     const config = asConfig(
       unstable_defineApp({
-        name: 'my-app',
         organizationId: 'org-123',
         services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
         slug: 'my-app-host',
@@ -82,7 +78,6 @@ describe('resolveWorkbenchApp', () => {
     const config = asConfig(
       unstable_defineApp({
         entry: './src/App.tsx',
-        name: 'my-app',
         organizationId: 'org-123',
         slug: 'my-app',
         title: 'My App',
@@ -104,7 +99,7 @@ describe('resolveWorkbenchApp', () => {
     const resolved = resolveWorkbenchApp(config)
     expect(resolved).toMatchObject({
       isSingleton: true,
-      name: 'media-library',
+      slug: 'media-library',
     })
     expect(resolved!.config).toEqual({
       appType: 'media-library',
@@ -117,7 +112,6 @@ describe('resolveWorkbenchApp', () => {
       unstable_defineApp({
         // @ts-expect-error -- config is internal; forcing the invalid combination
         config: {appType: 'media-library', fields: []},
-        name: 'my-app',
         organizationId: 'org-123',
         slug: 'my-app',
         title: 'My App',

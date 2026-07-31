@@ -4,7 +4,6 @@ import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../validateWorkben
 
 /** A minimal valid app; spread overrides to vary the fields under test. */
 const app = (overrides: Record<string, unknown> = {}) => ({
-  name: 'test-app',
   organizationId: 'org-1',
   slug: 'test-app',
   title: 'Test App',
@@ -19,8 +18,8 @@ describe('validateWorkbenchApp', () => {
   })
 
   test('validates the whole input, not just interfaces', () => {
-    expect(validateWorkbenchApp(app({name: 'bad name!'}))).toContainEqual(
-      expect.stringMatching(/name: App `name` must match/),
+    expect(validateWorkbenchApp(app({slug: 'Bad Slug!'}))).toContainEqual(
+      expect.stringMatching(/slug: App `slug` must be lowercase/),
     )
   })
 
@@ -48,11 +47,11 @@ describe('validateWorkbenchApp', () => {
     const errors = validateWorkbenchApp(
       app({
         entry: './src/App.tsx',
-        name: 'bad!',
+        slug: 'bad!',
         views: [panel, {name: 'inbox', src: './src/Inbox.tsx', type: 'panel'}],
       }),
     )
-    expect(errors).toContainEqual(expect.stringMatching(/name: App `name` must match/))
+    expect(errors).toContainEqual(expect.stringMatching(/slug: App `slug` must be lowercase/))
     expect(errors).toContainEqual(expect.stringContaining('cannot expose both an app view'))
     expect(errors).toContainEqual(expect.stringContaining('at most one panel view'))
   })

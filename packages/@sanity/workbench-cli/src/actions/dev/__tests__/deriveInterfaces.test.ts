@@ -45,7 +45,7 @@ describe('deriveInterfaces', () => {
   })
 
   test('derives an app interface from entry for an SDK app', () => {
-    const app = workbenchApp({entry: './src/App.tsx', name: 'my-app'})
+    const app = workbenchApp({entry: './src/App.tsx', slug: 'my-app'})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
         id: 'my-app-app-my-app',
@@ -97,8 +97,8 @@ describe('deriveInterfaces', () => {
 
   test('orders a panel view ahead of services', () => {
     const app = workbenchApp({
-      name: 'my-app',
       services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+      slug: 'my-app',
       views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
@@ -128,8 +128,8 @@ describe('deriveInterfaces', () => {
   test('places the app view after services', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      name: 'my-app',
       services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+      slug: 'my-app',
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -156,8 +156,8 @@ describe('deriveInterfaces', () => {
 
   test('derives a unique id per interface, disambiguating a view and service that share a name', () => {
     const app = workbenchApp({
-      name: 'my-app',
       services: [{name: 'sync', src: './src/sync.ts', type: 'worker'}],
+      slug: 'my-app',
       views: [{name: 'sync', src: './src/SyncPanel.tsx', type: 'panel'}],
     })
     const ids = deriveInterfaces(app, {isApp: true})?.map((iface) => iface.id) ?? []

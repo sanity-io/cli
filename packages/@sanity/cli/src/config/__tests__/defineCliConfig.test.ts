@@ -1,4 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {type DefineAppResult, unstable_defineApp} from '@sanity/workbench-cli'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {defineCliConfig} from '../defineCliConfig.js'
@@ -18,12 +19,48 @@ describe('#defineCliConfig', () => {
 
     const result = defineCliConfig(config)
 
-    // Returns the exact same object reference (no transformation)
     expect(result).toBe(config)
-    expect(result).toEqual(config)
   })
 
   test('defineCliConfig type is CliConfig', () => {
     expectTypeOf<ReturnType<typeof defineCliConfig>>().toEqualTypeOf<CliConfig>()
+  })
+})
+
+// An `unstable_defineApp(...)` result fits `CliConfig['app']` only because every
+// field declared there is optional; nothing in the type states the relationship.
+describe('the `app` config slot', () => {
+  test('accepts an `unstable_defineApp` result, workbench fields and all', () => {
+    expectTypeOf<DefineAppResult>().toExtend<CliConfig['app']>()
+
+    defineCliConfig({
+      app: unstable_defineApp({
+        group: 'dock.system',
+        name: 'my-app',
+        organizationId: 'org-1',
+        priority: 20,
+        slug: 'my-app',
+        title: 'My App',
+      }),
+    })
+  })
+
+  // One literal only ever reports its first excess property, so one call each.
+  test('rejects workbench fields written by hand', () => {
+    defineCliConfig({
+      app: {
+        // @ts-expect-error `group` comes from `unstable_defineApp`
+        group: 'dock.system',
+        organizationId: 'org-1',
+      },
+    })
+
+    defineCliConfig({
+      app: {
+        organizationId: 'org-1',
+        // @ts-expect-error `priority` comes from `unstable_defineApp`
+        priority: 20,
+      },
+    })
   })
 })

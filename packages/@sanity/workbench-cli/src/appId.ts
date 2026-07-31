@@ -32,9 +32,9 @@ export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
   const shape = JSON.stringify({
     config: app.config ?? null,
     entry: app.entry ?? null,
-    name: app.name,
     organizationId: app.organizationId,
     services: canonical(app.services),
+    slug: app.slug,
     views: canonical(app.views),
   })
   // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser

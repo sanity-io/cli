@@ -75,7 +75,7 @@ async function runStudioDeployment(
   }
 
   const appTitle = workbench
-    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.name
+    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
     : ''
 
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
@@ -196,7 +196,7 @@ async function runStudioDeployment(
         applicationId,
         icon: appIcon,
         interfaces: buildExposes(workbench, {
-          appName: workbench.name,
+          appSlug: workbench.slug,
           appTitle,
           exposesAppView: true,
           version,
