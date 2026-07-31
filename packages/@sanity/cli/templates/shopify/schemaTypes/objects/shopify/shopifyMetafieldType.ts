@@ -2,6 +2,7 @@ import {TagIcon} from '@sanity/icons'
 import {defineField} from 'sanity'
 
 import ShopifyMetafield from '../../../components/inputs/ShopifyMetafield'
+import {formatMetafieldValuePreview} from '../../../utils/formatMetafieldValue'
 
 export const shopifyMetafieldType = defineField({
   title: 'Metafield',
@@ -38,7 +39,7 @@ export const shopifyMetafieldType = defineField({
     prepare({key, namespace, type, value}) {
       const name = [namespace, key].filter(Boolean).join('.')
       return {
-        subtitle: typeof value === 'string' ? value : JSON.stringify(value),
+        subtitle: formatMetafieldValuePreview(type, value),
         title: type ? `${name} (${type})` : name,
       }
     },
