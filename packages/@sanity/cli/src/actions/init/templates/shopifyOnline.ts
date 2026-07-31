@@ -43,7 +43,7 @@ const shopifyTemplate: ProjectTemplate = {
     '@types/lodash.get': '^4.4.7',
     'lodash.get': '^4.4.2',
     'pluralize-esm': '^9.0.4',
-    'sanity-plugin-shopify-assets': '^1.1.0',
+    'sanity-plugin-shopify-assets': '^2.0.11',
   },
   typescriptOnly: true,
 }
