@@ -128,7 +128,7 @@ export function readUnclaimedProjects(): UnclaimedProjectRecord[] {
 
   return Object.entries(stored)
     .map(([projectId, record]) => parseRecord(projectId, record))
-    .toSorted((left, right) => right.mintedAt.localeCompare(left.mintedAt))
+    .toSorted((left, right) => Date.parse(left.expiresAt) - Date.parse(right.expiresAt))
 }
 
 /**

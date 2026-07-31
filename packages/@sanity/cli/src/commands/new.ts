@@ -16,6 +16,7 @@ import {
   STUDIO_ENV_FILE,
 } from '../actions/scaffold/scaffoldProject.js'
 import {type MintedProject, mintUnclaimedProject} from '../services/mintProject.js'
+import {formatClaimDeadline} from '../util/formatClaimDeadline.js'
 import {CLAIM_WINDOW_HOURS, SANITY_NEW_URL} from '../util/mintProjectConstants.js'
 import {renderNewCommandSplash} from '../util/newCommandSplash.js'
 import {recordUnclaimedProject} from '../util/unclaimedProjects.js'
@@ -74,24 +75,6 @@ function frontendInstallCommand(packageManager: ScaffoldResult['frontendPackageM
       return 'npm install next-sanity'
     }
   }
-}
-
-function formatClaimDeadline(expiresAt: string): string {
-  const deadline = new Date(expiresAt)
-  if (!Number.isFinite(deadline.getTime())) return expiresAt
-  return (
-    new Intl.DateTimeFormat('en-GB', {
-      day: 'numeric',
-      hour: '2-digit',
-      hour12: false,
-      minute: '2-digit',
-      month: 'long',
-      timeZone: 'UTC',
-      year: 'numeric',
-    })
-      .format(deadline)
-      .replace(' at ', ', ') + ' UTC'
-  )
 }
 
 export interface NewProjectResult {

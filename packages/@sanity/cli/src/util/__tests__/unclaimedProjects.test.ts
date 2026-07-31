@@ -147,17 +147,20 @@ describe('readUnclaimedProjects', () => {
     expect(mockSet).not.toHaveBeenCalled()
   })
 
-  test('returns validated records newest first without mutating the registry', () => {
+  test('returns validated records by claim deadline without mutating the registry', () => {
     mockGet.mockReturnValue({
       [minted.resourceId]: record,
-      older: {
+      urgent: {
         ...record,
-        mintedAt: '2026-07-28T12:00:00.000Z',
-        projectId: 'older',
+        expiresAt: '2026-07-31T12:00:00.000Z',
+        projectId: 'urgent',
       },
     })
 
-    expect(readUnclaimedProjects()).toEqual([record, expect.objectContaining({projectId: 'older'})])
+    expect(readUnclaimedProjects()).toEqual([
+      expect.objectContaining({projectId: 'urgent'}),
+      record,
+    ])
     expect(mockSet).not.toHaveBeenCalled()
   })
 
