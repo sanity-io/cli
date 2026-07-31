@@ -183,24 +183,37 @@ function authErrors(projectId?: string) {
   }
 }
 
-// The Content Lake's missing-membership 401 is prose (surfaced verbatim as
-// the client error message), and that sentence is also the only place the
-// project id appears. Match the full sentence so unrelated 401s can't
-// trigger; if the wording ever changes, detection degrades to the generic
-// 401 guidance below rather than misfiring.
+// Detection fallback for Content Lake responses that carry the
+// missing-membership 401 only as prose. Anchored to the full sentence so
+// unrelated 401s can't trigger; if the wording ever changes, detection
+// degrades to the generic 401 guidance below rather than misfiring.
 const PROJECT_USER_NOT_FOUND_MESSAGE =
-  /\bproject user not found for user ID "[^"]*" in project "([a-zA-Z0-9-]+)"/
+  /\bproject user not found for user ID "[^"]*" in project "[a-zA-Z0-9-]+"/
 
 function detectMissingProjectMembership(
   err: ClientError | ServerError,
 ): {projectId?: string} | undefined {
-  // Structured error type, where the API provides one
-  if (isProjectUserNotFoundErrorBody(err.response.body)) {
-    return {projectId: PROJECT_USER_NOT_FOUND_MESSAGE.exec(err.message)?.[1]}
+  const isMembershipError =
+    isProjectUserNotFoundErrorBody(err.response.body) ||
+    PROJECT_USER_NOT_FOUND_MESSAGE.test(err.message)
+
+  return isMembershipError ? {projectId: getProjectIdFromRequestUrl(err.response.url)} : undefined
+}
+
+// Data-plane requests address the project through the hostname
+// (`{projectId}.api.sanity.io`), so the failing request's URL identifies the
+// project without depending on error prose.
+function getProjectIdFromRequestUrl(url: unknown): string | undefined {
+  if (typeof url !== 'string') return undefined
+
+  let hostname: string
+  try {
+    hostname = new URL(url).hostname
+  } catch {
+    return undefined
   }
 
-  const match = PROJECT_USER_NOT_FOUND_MESSAGE.exec(err.message)
-  return match ? {projectId: match[1]} : undefined
+  return /^([a-z0-9-]+)\.api\.sanity\.(?:io|work)$/.exec(hostname)?.[1]
 }
 
 function isProjectUserNotFoundErrorBody(body: unknown): boolean {
