@@ -354,6 +354,12 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
           'No folders or env files were created. Use the project ID and dataset above in your own setup.',
         )
         flow.gap()
+        flow.link(`http://localhost:3333/#token=${encodeURIComponent(project.token)}`, {
+          label: 'Once a Studio is running on http://localhost:3333, sign in with:',
+        })
+        flow.gap()
+        flow.line('The token signs you in: there is no account yet.')
+        flow.gap()
       }
 
       flow.line('Your content is private until you claim, to read it, you need the token.')

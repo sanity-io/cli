@@ -186,11 +186,24 @@ describe('#new', () => {
     expect(mockMintUnclaimedProject).toHaveBeenCalledWith({displayName: 'Prompted Project'})
   })
 
-  test('--no-scaffold creates no child applications or env files', async () => {
+  test('--no-scaffold creates no child applications and prints the Studio sign-in link', async () => {
     await NewCommand.run(['My New Project', '--no-scaffold'])
 
     expect(mockScaffoldProject).not.toHaveBeenCalled()
-    expect(outputText()).toContain('No folders or env files were created')
+    const lines = outputLines()
+    const handoffIndex = lines.indexOf('◇  Project created without scaffolding')
+    expect(lines.slice(handoffIndex, handoffIndex + 7)).toEqual([
+      '◇  Project created without scaffolding',
+      '│  No folders or env files were created. Use the project ID and dataset above',
+      '│  in your own setup.',
+      '│',
+      '│  Once a Studio is running on http://localhost:3333, sign in with: http://localhost:3333/#token=sk-robot-token',
+      '│',
+      '│  The token signs you in: there is no account yet.',
+    ])
+    expect(outputLines()).toContain(`◇  Token: ${project.token}`)
+    expect(outputLines()).toContain(`│  Claim link: ${project.claimUrl}`)
+    expect(outputText()).toContain('Claim your project by 1 August 2026, 00:00 UTC')
   })
 
   test('refuses a non-empty Studio target before creating a project', async () => {
