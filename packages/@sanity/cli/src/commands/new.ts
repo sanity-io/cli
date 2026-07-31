@@ -228,21 +228,15 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
     if (!json) {
       flow.result(`Project ID: ${styleText('cyan', project.resourceId)}`)
       flow.result(`Dataset: ${styleText('cyan', project.datasetName)} (where your content lives)`)
-      flow.gap()
-      flow.highlight('Run a CLI command:')
-      flow.gap()
-      flow.command(`SANITY_AUTH_TOKEN="${project.token}" sanity <command>`)
+      flow.result(`Token: ${styleText('cyan', project.token)}`)
+      flow.link(project.claimUrl, {label: 'Claim link:'})
       flow.gap()
       flow.highlight(
-        `Claim your project by ${styleText('yellow', formatClaimDeadline(project.expiresAt))}`,
+        `Claim your project by ${styleText('yellow', formatClaimDeadline(project.expiresAt))} to avoid losing it.`,
       )
-      flow.link(project.claimUrl)
       flow.gap()
-      flow.line(
-        'Until then it is temporary: the project and everything in it is deleted at that deadline. ' +
-          'Claiming is free, takes about a minute, and nothing you have built changes. Treat the ' +
-          'link like a password: whoever opens it becomes the owner.',
-      )
+      flow.line('To use the Sanity CLI before claiming use your token by setting')
+      flow.command(`SANITY_AUTH_TOKEN="${project.token}" sanity "command"`)
       flow.gap()
       flow.note(
         styleText(
@@ -362,26 +356,16 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
         flow.gap()
       }
 
-      if (scaffold?.frontendPath) {
-        flow.note(`Your access token is in ./${STUDIO_ENV_FILE} and ./${FRONTEND_ENV_FILE}`)
-        flow.line('Keep both files out of version control.')
-      } else if (scaffold) {
-        flow.note(`Your access token is in ./${STUDIO_ENV_FILE}`)
-        flow.line('Keep that file out of version control.')
-      } else {
-        flow.note('Your access token is shown above.')
-        flow.line('Keep it out of version control.')
-      }
+      flow.line('Your content is private until you claim, to read it, you need the token.')
+      flow.line("Treat your token as a password and don't expose it publicly in your app.")
       flow.gap()
       flow.line(
-        'Your content is private until you claim, so anything reading it needs that token. Keep ' +
-          'those reads server-side and never expose the token to the browser: it can change ' +
-          'everything in this project. Claiming makes your content readable without it.',
+        'The claim link and token are printed above but you can recover them ' +
+          `with ${styleText('cyan', 'sanity projects unclaimed')} before the timer runs out on ${formatClaimDeadline(project.expiresAt)}.`,
       )
       flow.gap()
-      flow.link(SANITY_NEW_URL, {label: 'Framework setup, and what to do after claiming:'})
-      flow.gap()
-      flow.link(project.claimUrl, {label: 'Claim your project:', outro: true})
+      flow.line('For more information on how claiming works or how to build your app')
+      flow.link(SANITY_NEW_URL, {label: 'visit', outro: true})
     }
 
     return toResult(project)

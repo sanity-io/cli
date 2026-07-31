@@ -103,29 +103,24 @@ describe('#new', () => {
     )
   })
 
-  test('prints the project, claim, CLI, and tokenized Studio handoff', async () => {
+  test('prints scannable claim details before the scaffold handoff', async () => {
     await NewCommand.run(['My New Project'])
 
     const output = outputText()
     const lines = outputLines()
     expect(output).toContain(`Project ID: ${project.resourceId}`)
     expect(output).toContain(`Dataset: ${project.datasetName}`)
-    expect(output).not.toContain(`Access token: ${project.token}`)
-    expect(lines).toContain('◆  Run a CLI command:')
-    expect(lines).toContain(`│  SANITY_AUTH_TOKEN="${project.token}" sanity <command>`)
-    const cliInstructionIndex = lines.indexOf('◆  Run a CLI command:')
-    expect(lines.slice(cliInstructionIndex, cliInstructionIndex + 3)).toEqual([
-      '◆  Run a CLI command:',
-      '│',
-      `│  SANITY_AUTH_TOKEN="${project.token}" sanity <command>`,
-    ])
-    expect(output).toContain(project.claimUrl)
-    const claimInstructionIndex = lines.findIndex((line) =>
-      line.startsWith('◆  Claim your project by'),
+    expect(lines).toContain(`◇  Token: ${project.token}`)
+    expect(lines).toContain(`│  Claim link: ${project.claimUrl}`)
+    expect(lines).toContain('◆  Claim your project by 1 August 2026, 00:00 UTC to avoid losing it.')
+    expect(lines).toContain('│  To use the Sanity CLI before claiming use your token by setting')
+    expect(lines).toContain(`│  SANITY_AUTH_TOKEN="${project.token}" sanity "command"`)
+    const cliInstructionIndex = lines.indexOf(
+      '│  To use the Sanity CLI before claiming use your token by setting',
     )
-    expect(lines.slice(claimInstructionIndex, claimInstructionIndex + 2)).toEqual([
-      expect.stringMatching(/^◆ {2}Claim your project by/u),
-      `│  ${project.claimUrl}`,
+    expect(lines.slice(cliInstructionIndex, cliInstructionIndex + 2)).toEqual([
+      '│  To use the Sanity CLI before claiming use your token by setting',
+      `│  SANITY_AUTH_TOKEN="${project.token}" sanity "command"`,
     ])
     expect(output).toContain('http://localhost:3333/#token=sk-robot-token')
     const studioLinkIndex = lines.indexOf(
@@ -136,10 +131,26 @@ describe('#new', () => {
       '│',
       '│  The token signs you in: there is no account yet.',
     ])
-    expect(lines).toContain('│  Framework setup, and what to do after claiming: https://sanity.new')
+    expect(output).toContain(
+      'Your content is private until you claim, to read it, you need the token.',
+    )
+    expect(output).toContain(
+      "Treat your token as a password and don't expose it publicly in your app.",
+    )
+    expect(lines).toContain(
+      '│  The claim link and token are printed above but you can recover them with',
+    )
+    expect(lines).toContain(
+      '│  sanity projects unclaimed before the timer runs out on 1 August 2026, 00:00',
+    )
+    expect(lines).toContain('│  UTC.')
+    expect(lines).toContain(
+      '│  For more information on how claiming works or how to build your app',
+    )
+    expect(lines).toContain('└  visit https://sanity.new')
     expect(lines).toContain('◆  In a separate terminal, start your website:')
     expect(lines).toContain('│  Then open this link: http://localhost:3000')
-    expect(output).toContain('Your access token is in ./sanity/.env.local and ./web/.env.local')
+    expect(output.split(project.claimUrl)).toHaveLength(2)
     expect(output).not.toContain('./.env')
   })
 
@@ -214,7 +225,8 @@ describe('#new', () => {
     expect(outputText()).toContain('Automatic setup did not finish: template failed')
     expect(outputText()).toContain('The project was created. You do not need to create another one')
     expect(outputText()).toContain(project.claimUrl)
-    expect(outputText()).toContain(`SANITY_AUTH_TOKEN="${project.token}"`)
+    expect(outputText()).toContain(`Token: ${project.token}`)
+    expect(outputText()).toContain(`SANITY_AUTH_TOKEN="${project.token}" sanity "command"`)
     expect(outputText()).toContain(`Project ID: ${project.resourceId}`)
     expect(outputText()).toContain(`Dataset: ${project.datasetName}`)
     expect(outputText()).not.toContain('sanity init')
