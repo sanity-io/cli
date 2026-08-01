@@ -9,6 +9,7 @@ import {
   getProjectMembership,
   getTokenRoles,
   getTokens,
+  rotateToken,
 } from '../tokens.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
@@ -145,6 +146,32 @@ describe('deleteToken', () => {
     await expect(deleteToken({projectId: testProjectId, tokenId: 'missing'})).rejects.toThrow(
       'Not found',
     )
+  })
+})
+
+describe('rotateToken', () => {
+  test('authenticates with the provided token and posts to the rotate endpoint', async () => {
+    const rotatedRobot = {...testRobot, token: 'sk_new_secret'}
+    mockRequest.mockResolvedValue(rotatedRobot)
+
+    const result = await rotateToken('sk_old_secret')
+
+    expect(mockGetGlobalCliClient).toHaveBeenCalledWith({
+      apiVersion: TOKENS_API_VERSION,
+      requireUser: true,
+      token: 'sk_old_secret',
+    })
+    expect(mockRequest).toHaveBeenCalledWith({
+      method: 'POST',
+      uri: '/access/robots/me/rotate',
+    })
+    expect(result).toEqual(rotatedRobot)
+  })
+
+  test('propagates errors from the API', async () => {
+    mockRequest.mockRejectedValue(new Error('Too many requests'))
+
+    await expect(rotateToken('sk_old_secret')).rejects.toThrow('Too many requests')
   })
 })
 

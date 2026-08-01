@@ -15,10 +15,11 @@ interface PaginatedResponse<T> {
   nextCursor: string | null
 }
 
-function getClient(): Promise<SanityClient> {
+function getClient(token?: string): Promise<SanityClient> {
   return getGlobalCliClient({
     apiVersion: TOKENS_API_VERSION,
     requireUser: true,
+    ...(token === undefined ? {} : {token}),
   })
 }
 
@@ -106,6 +107,24 @@ export async function deleteToken(options: DeleteTokenOptions): Promise<void> {
   return client.request({
     method: 'DELETE',
     uri: `/access/project/${projectId}/robots/${tokenId}`,
+  })
+}
+
+/**
+ * Rotate a robot token, replacing its secret while preserving the robot,
+ * its roles, and the token's expiry. The request authenticates as the robot
+ * itself; the previous secret is revoked immediately.
+ * @param token - The current robot token secret
+ * @returns A promise that resolves to the robot with its new secret token
+ *
+ * @internal
+ */
+export async function rotateToken(token: string): Promise<RobotWithToken> {
+  const client = await getClient(token)
+
+  return client.request<RobotWithToken>({
+    method: 'POST',
+    uri: '/access/robots/me/rotate',
   })
 }
 
