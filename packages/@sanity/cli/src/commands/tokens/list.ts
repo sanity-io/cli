@@ -73,10 +73,10 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
 
     const table = new Table({
       columns: [
-        {alignment: 'left', maxLen: 40, name: 'label', title: 'Label'},
-        {alignment: 'left', maxLen: 20, name: 'id', title: 'ID'},
-        {alignment: 'left', maxLen: 30, name: 'roles', title: 'Roles'},
-        {alignment: 'left', maxLen: 12, name: 'expires', title: 'Expires'},
+        {alignment: 'left', name: 'label', title: 'Label'},
+        {alignment: 'left', name: 'id', title: 'ID'},
+        {alignment: 'left', name: 'roles', title: 'Roles'},
+        {alignment: 'left', name: 'expires', title: 'Expires'},
       ],
       title: `Found ${tokens.length} API tokens`,
     })
