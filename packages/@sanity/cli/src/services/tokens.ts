@@ -7,7 +7,6 @@ import {
   type Robot,
   type RobotWithToken,
   type Role,
-  type SelectedTokenRole,
 } from '../actions/tokens/types.js'
 
 interface PaginatedResponse<T> {
@@ -56,7 +55,7 @@ export function getProjectMembership(robot: Robot, projectId: string): Membershi
 interface CreateTokenOptions {
   label: string
   projectId: string
-  role: SelectedTokenRole
+  roleName: string
 
   expiresAt?: string
   sendNotification?: boolean
@@ -70,14 +69,14 @@ interface CreateTokenOptions {
  * @internal
  */
 export async function createToken(options: CreateTokenOptions): Promise<RobotWithToken> {
-  const {expiresAt, label, projectId, role, sendNotification} = options
+  const {expiresAt, label, projectId, roleName, sendNotification} = options
 
   const client = await getClient()
 
   return client.request<RobotWithToken>({
     body: {
       label,
-      memberships: [{resourceId: projectId, resourceType: 'project', roleNames: [role.name]}],
+      memberships: [{resourceId: projectId, resourceType: 'project', roleNames: [roleName]}],
       ...(expiresAt === undefined ? {} : {expiresAt}),
     },
     method: 'POST',

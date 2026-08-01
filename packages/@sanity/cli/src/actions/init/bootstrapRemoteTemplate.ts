@@ -38,8 +38,8 @@ const SANITY_DEFAULT_PORT = 3333
 const READ_TOKEN_LABEL = 'Live Preview API'
 const WRITE_TOKEN_LABEL = 'App Write Token'
 const INITIAL_COMMIT_MESSAGE = 'Initial commit from Sanity CLI'
-const API_READ_TOKEN_ROLE = {name: 'viewer', title: 'Viewer'}
-const API_WRITE_TOKEN_ROLE = {name: 'editor', title: 'Editor'}
+const API_READ_TOKEN_ROLE = 'viewer'
+const API_WRITE_TOKEN_ROLE = 'editor'
 
 export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Promise<void> {
   const {bearerToken, output, outputPath, packageName, repoInfo, variables} = opts
@@ -80,7 +80,7 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
         await createToken({
           label: READ_TOKEN_LABEL,
           projectId: variables.projectId,
-          role: API_READ_TOKEN_ROLE,
+          roleName: API_READ_TOKEN_ROLE,
         })
       ).token
     : undefined
@@ -89,7 +89,7 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
         await createToken({
           label: WRITE_TOKEN_LABEL,
           projectId: variables.projectId,
-          role: API_WRITE_TOKEN_ROLE,
+          roleName: API_WRITE_TOKEN_ROLE,
         })
       ).token
     : undefined

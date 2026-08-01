@@ -58,7 +58,7 @@ describe('createToken', () => {
     const result = await createToken({
       label: 'Test Robot',
       projectId: testProjectId,
-      role: {name: 'editor', title: 'Editor'},
+      roleName: 'editor',
     })
 
     expect(mockGetGlobalCliClient).toHaveBeenCalledWith({
@@ -84,7 +84,7 @@ describe('createToken', () => {
       expiresAt: '2030-01-01T00:00:00.000Z',
       label: 'Test Robot',
       projectId: testProjectId,
-      role: {name: 'editor', title: 'Editor'},
+      roleName: 'editor',
     })
 
     expect(mockRequest).toHaveBeenCalledWith(
@@ -106,7 +106,7 @@ describe('createToken', () => {
     await createToken({
       label: 'Test Robot',
       projectId: testProjectId,
-      role: {name: 'editor', title: 'Editor'},
+      roleName: 'editor',
       sendNotification: false,
     })
 
@@ -122,7 +122,7 @@ describe('createToken', () => {
       createToken({
         label: 'Test Robot',
         projectId: testProjectId,
-        role: {name: 'editor', title: 'Editor'},
+        roleName: 'editor',
       }),
     ).rejects.toThrow('Forbidden')
   })

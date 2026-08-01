@@ -118,7 +118,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
         expiresAt,
         label,
         projectId,
-        role: selectedRole,
+        roleName: selectedRole.name,
       })
 
       if (json) {
