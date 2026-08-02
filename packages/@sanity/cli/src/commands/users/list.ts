@@ -83,6 +83,11 @@ export class List extends SanityCommand<typeof List> {
       projectId,
     })
 
+    if (members.length === 0) {
+      this.log('No members found for this project.')
+      return
+    }
+
     const ordered = sortBy(
       members.map(({date, id, name, roles}) => [
         id,
@@ -118,6 +123,6 @@ export class List extends SanityCommand<typeof List> {
       })
     }
 
-    table.printTable()
+    this.log(table.render())
   }
 }

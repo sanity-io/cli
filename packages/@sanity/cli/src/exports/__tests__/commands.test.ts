@@ -7,6 +7,8 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {CORS_API_VERSION} from '../../services/cors.js'
+import {PROJECTS_API_VERSION} from '../../services/projects.js'
+import {USERS_API_VERSION} from '../../services/user.js'
 import {commandPolicies} from '../invokeSanityCli/commandPolicies/index.js'
 import {invokeSanityCli} from '../invokeSanityCli/index.js'
 
@@ -138,6 +140,81 @@ describe('invokeSanityCli', () => {
       if (previousEnv.sanityEnv === undefined) delete process.env.SANITY_INTERNAL_ENV
       else process.env.SANITY_INTERNAL_ENV = previousEnv.sanityEnv
     }
+  })
+
+  test('table output reaches the caller instead of the host console', async () => {
+    // Regression test: commands that rendered their table with
+    // `printTable()` wrote straight to `console.log`, which bypasses the
+    // execution context's stdout sink. The invocation still exited 0, so
+    // callers got a successful result carrying an empty string. Asserting
+    // that `process.stdout` is untouched is what makes this test meaningful —
+    // a test that only stubs `process.stdout.write` cannot tell the two paths
+    // apart, since `console.log` writes through that same stub.
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/invitations/project/${projectId}`,
+    }).reply(200, [])
+    mockApi({apiVersion: PROJECTS_API_VERSION, projectId, uri: `/projects/${projectId}`}).reply(
+      200,
+      {
+        id: projectId,
+        members: [
+          {id: 'user1', isRobot: false, roles: [{title: 'Administrator'}]},
+          {id: 'user2', isRobot: false, roles: [{title: 'Developer'}]},
+        ],
+      },
+    )
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/user1,user2'}).reply(200, [
+      {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},
+      {createdAt: '2023-01-02', displayName: 'User Two', id: 'user2'},
+    ])
+
+    const stdout = vi.spyOn(process.stdout, 'write')
+
+    try {
+      const result = await invokeSanityCli({
+        args: `users list --project-id ${projectId}`,
+        config,
+        source: 'mcp',
+        token: 'user-token',
+      })
+
+      expect(result.exitCode).toBe(0)
+      expect(result.commandId).toBe('users:list')
+      expect(result.output).not.toBe('')
+      expect(result.output).toContain('User One')
+      expect(result.output).toContain('Administrator')
+      expect(result.output).toContain('user2')
+      expect(result.output).toContain('2023-01-02')
+      expect(stdout).not.toHaveBeenCalled()
+    } finally {
+      stdout.mockRestore()
+    }
+  })
+
+  test('an empty table renders as a message rather than an empty result', async () => {
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/invitations/project/${projectId}`,
+    }).reply(200, [])
+    mockApi({apiVersion: PROJECTS_API_VERSION, projectId, uri: `/projects/${projectId}`}).reply(
+      200,
+      {id: projectId, members: []},
+    )
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/'}).reply(200, [])
+
+    const result = await invokeSanityCli({
+      args: `users list --project-id ${projectId}`,
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result).toEqual({
+      commandId: 'users:list',
+      exitCode: 0,
+      output: 'No members found for this project.',
+    })
   })
 
   test('runs a command from string args, using the provided token', async () => {

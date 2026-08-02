@@ -44,6 +44,22 @@ export default [
     },
   },
   {
+    files: ['src/commands/**/*.ts'],
+    rules: {
+      // `printTable()` writes straight to `console.log`, which bypasses the
+      // command output sink. Programmatic callers read only from that sink, so
+      // the table is silently dropped for them.
+      'no-restricted-properties': [
+        'error',
+        {
+          message:
+            'Use `this.log(table.render())` instead. `printTable()` writes directly to the console, so its output is lost for programmatic callers.',
+          property: 'printTable',
+        },
+      ],
+    },
+  },
+  {
     files: ['test/__fixtures__/**/*.ts'],
     rules: {
       'import-x/no-extraneous-dependencies': 'off',

@@ -73,6 +73,51 @@ describe('#list', () => {
     expect(stdout).toContain('2023-01-02')
   })
 
+  test('reports an empty project instead of printing a bare table header', async () => {
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({members: []}),
+      },
+    } as never)
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
+    }).reply(200, [])
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/'}).reply(200, [])
+
+    const {error, stdout} = await testCommand(List, [], {mocks: defaultMocks})
+
+    expect(error).toBeUndefined()
+    expect(stdout).toContain('No members found for this project.')
+    // The table is never rendered, so none of its column headers appear
+    expect(stdout).not.toContain('Roles')
+  })
+
+  test('falls back to a dash for members without roles', async () => {
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({
+          members: [{id: 'user1', isRobot: false, roles: undefined}],
+        }),
+      },
+    } as never)
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
+    }).reply(200, [])
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/user1'}).reply(200, [
+      {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},
+    ])
+
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
+
+    const row = stdout.split('\n').find((line) => line.includes('User One'))
+
+    expect(row).toBeDefined()
+    // The roles cell renders as a lone dash rather than an empty column
+    expect(row?.split('│').map((cell) => cell.trim())).toContain('-')
+  })
+
   test('displays pending invitations correctly', async () => {
     mockGetProjectCliClient.mockResolvedValue({
       projects: {

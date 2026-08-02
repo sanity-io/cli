@@ -174,7 +174,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
         })
       }
 
-      table.printTable()
+      this.log(table.render())
 
       listBackupDebug(
         `Successfully listed ${response.backups.length} backups for dataset ${dataset}`,
