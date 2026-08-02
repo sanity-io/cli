@@ -47,6 +47,6 @@ export class ListOrganizationsCommand extends SanityCommand<typeof ListOrganizat
       table.addRow({id, name, slug: slug ?? '-'})
     }
 
-    table.printTable()
+    this.log(table.render())
   }
 }
