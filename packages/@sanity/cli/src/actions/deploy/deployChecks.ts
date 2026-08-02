@@ -384,32 +384,37 @@ export function describeStudioTarget(
       return describeSlugTaken(resolution)
     }
     case 'would-create': {
-      // A workbench studio's `appHost` is a slug, not a host, and it has no URL
-      // until the create mints the application id.
-      if (isWorkbench) {
-        const slug = resolution.appHost
+      const appHost = resolution.appHost
+      const url = isWorkbench ? null : studioUrl(appHost)
+      const result = {
+        status: 'pass',
+        target: {
+          action: 'create',
+          applicationId: null,
+          title: title || null,
+          url,
+        },
+      } as const
+      const titled = title ? ` titled "${title}"` : ''
+
+      if (isExternal) {
         return {
-          message: `Would create a new studio${title ? ` "${title}"` : ''} with slug "${slug}"`,
-          status: 'pass',
-          target: {
-            action: 'create',
-            applicationId: null,
-            slug,
-            title: title || null,
-            url: null,
-          },
+          message: `Would register external studio at ${appHost}${titled}`,
+          ...result,
         }
       }
-      const url = studioUrl(resolution.appHost)
-      const titled = title ? ` titled "${title}"` : ''
+
+      if (isWorkbench) {
+        return {
+          message: `Would create a new studio${title ? ` "${title}"` : ''} with slug "${appHost}" (name availability is checked on deploy)`,
+          ...result,
+          target: {...result.target, slug: appHost},
+        }
+      }
+
       return {
-        message: isExternal
-          ? `Would register external studio at ${resolution.appHost}${titled}`
-          : `Would create studio hostname ${url}${titled} (name availability is checked on deploy)`,
-        status: 'pass',
-        // `title || null`, not `?? null`, so target.title tracks the same
-        // truthiness the message's `titled` suffix uses (an empty title is no title)
-        target: {action: 'create', applicationId: null, title: title || null, url},
+        message: `Would create studio hostname ${url}${titled} (name availability is checked on deploy)`,
+        ...result,
       }
     }
   }

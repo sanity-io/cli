@@ -403,13 +403,15 @@ describe('a workbench would-create', () => {
 
     expect(studio.target).toEqual(app.target)
     expect(studio.target?.slug).toBe('my-slug')
-    expect(studio.message).toBe('Would create a new studio "My Thing" with slug "my-slug"')
+    expect(studio.message).toBe(
+      'Would create a new studio "My Thing" with slug "my-slug" (name availability is checked on deploy)',
+    )
     expect(app.message).toBe('Would create a new application "My Thing" with slug "my-slug"')
   })
 
   test('an untitled studio still names the slug', () => {
     expect(describeStudioTarget(resolution, {isExternal: false, isWorkbench: true}).message).toBe(
-      'Would create a new studio with slug "my-slug"',
+      'Would create a new studio with slug "my-slug" (name availability is checked on deploy)',
     )
   })
 })
@@ -445,10 +447,9 @@ describe('checkStudioTarget (workbench backend)', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toBe(
-      'Would create a new studio "New Studio" with slug "my-studio"',
+      'Would create a new studio "New Studio" with slug "my-studio" (name availability is checked on deploy)',
     )
     expect(reporter.results[0]?.message).not.toContain('hostname')
-    expect(reporter.results[0]?.message).not.toContain('checked on deploy')
     expect(reporter.results[0]?.target).toEqual({
       action: 'create',
       applicationId: null,

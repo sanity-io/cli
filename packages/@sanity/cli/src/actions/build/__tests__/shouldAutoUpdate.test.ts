@@ -322,5 +322,21 @@ describe('resolveAutoUpdates', () => {
         ).toEqual({enabled: false, issue: {type: 'conflicting-config'}})
       },
     )
+
+    it('warns on the build/dev surface, which prints the issue', () => {
+      const output = createMockOutput()
+
+      expect(
+        shouldAutoUpdate({
+          cliConfig: {app, deployment: {autoUpdates: true}},
+          flags: {} as BuildFlags,
+          output,
+        }),
+      ).toBe(false)
+      expect(output.warn).toHaveBeenCalledWith(
+        "Auto-updates aren't supported yet — using the installed package versions",
+      )
+      expect(output.warn).toHaveBeenCalledTimes(1)
+    })
   })
 })
