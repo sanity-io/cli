@@ -111,11 +111,15 @@ describe('#list', () => {
 
     const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
-    const row = stdout.split('\n').find((line) => line.includes('User One'))
-
-    expect(row).toBeDefined()
-    // The roles cell renders as a lone dash rather than an empty column
-    expect(row?.split('│').map((cell) => cell.trim())).toContain('-')
+    // The rendered table reaches stdout, and the Roles cell holds a dash
+    expect(stdout).toMatchInlineSnapshot(`
+      "┌────────────────────────────────┬──────────────────────────────────────────┬────────────────────────────────┬──────────────┐
+      │ ID                             │ Name                                     │ Roles                          │ Date         │
+      ├────────────────────────────────┼──────────────────────────────────────────┼────────────────────────────────┼──────────────┤
+      │ user1                          │ User One                                 │ -                              │ 2023-01-01   │
+      └────────────────────────────────┴──────────────────────────────────────────┴────────────────────────────────┴──────────────┘
+      "
+    `)
   })
 
   test('displays pending invitations correctly', async () => {
