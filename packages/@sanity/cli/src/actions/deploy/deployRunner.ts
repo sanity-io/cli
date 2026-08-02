@@ -96,7 +96,8 @@ async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise
     exposes: reporter.results.find((check) => check.exposes)?.exposes ?? [],
     files: [],
     isSingleton: reporter.results.find((check) => check.isSingleton !== undefined)?.isSingleton,
-    target: reporter.results.find((check) => check.target)?.target ?? null,
+    target:
+      reporter.results.find((check) => check.target && check.status !== 'fail')?.target ?? null,
     type: spec.type,
     version: reporter.results.find((check) => check.version)?.version ?? null,
   }
