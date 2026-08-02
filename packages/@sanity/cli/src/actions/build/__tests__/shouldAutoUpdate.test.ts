@@ -310,5 +310,17 @@ describe('resolveAutoUpdates', () => {
         issue: null,
       })
     })
+
+    it.each([true, false])(
+      'keeps the config conflict a fail when deployment.autoUpdates is %s',
+      (autoUpdates) => {
+        expect(
+          resolveAutoUpdates({
+            cliConfig: {app, autoUpdates: true, deployment: {autoUpdates}},
+            flags: {} as BuildFlags,
+          }),
+        ).toEqual({enabled: false, issue: {type: 'conflicting-config'}})
+      },
+    )
   })
 })

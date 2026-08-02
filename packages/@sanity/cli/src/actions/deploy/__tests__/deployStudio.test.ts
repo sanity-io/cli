@@ -1,5 +1,5 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {createStudio, deployWorkbenchApp, findApplicationBySlug} from '@sanity/workbench-cli/deploy'
+import {createStudio, deployWorkbenchApp, listApplications} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../build/buildStudio.js'
@@ -13,7 +13,7 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   checkBuiltOutput: vi.fn(),
   createStudio: vi.fn(),
   deployWorkbenchApp: vi.fn(),
-  findApplicationBySlug: vi.fn(),
+  listApplications: vi.fn(),
 }))
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
@@ -29,7 +29,7 @@ vi.mock('../../../services/userApplications.js', () => ({createDeployment: vi.fn
 
 const mockCreateStudio = vi.mocked(createStudio)
 const mockDeployWorkbenchApp = vi.mocked(deployWorkbenchApp)
-const mockFindApplicationBySlug = vi.mocked(findApplicationBySlug)
+const mockListApplications = vi.mocked(listApplications)
 const mockBuildStudio = vi.mocked(buildStudio)
 
 // `getWorkbench` is left unmocked: it resolves the branded `app` below.
@@ -61,7 +61,7 @@ function deployedPayload(output: Output) {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockFindApplicationBySlug.mockResolvedValue(null)
+  mockListApplications.mockResolvedValue([])
   mockCreateStudio.mockResolvedValue({applicationId: 'studio-1', rollback: vi.fn()})
   vi.mocked(deployStudioSchemasAndManifests).mockResolvedValue({
     workspaces: [],
@@ -141,14 +141,15 @@ describe('deployStudio (federated studio)', () => {
     const error = vi.mocked(options.output.error).mockImplementation(() => {
       throw new Error('exit')
     })
-    mockFindApplicationBySlug.mockResolvedValue({
-      id: 'existing-1',
-      organizationId: 'org-1',
-      slug: 'my-studio',
-      title: 'Holder',
-      type: 'coreApp',
-      url: 'https://org-1.sanity.run/application/existing-1',
-    })
+    mockListApplications.mockResolvedValue([
+      {
+        id: 'existing-1',
+        organizationId: 'org-1',
+        slug: 'my-studio',
+        title: 'Holder',
+        type: 'coreApp',
+      },
+    ])
 
     await expect(deployStudio(options)).rejects.toThrow('exit')
 

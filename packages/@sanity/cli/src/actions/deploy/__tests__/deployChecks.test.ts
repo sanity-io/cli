@@ -1,5 +1,5 @@
 import {type CliConfig, exitCodes} from '@sanity/cli-core'
-import {type Application, getApplication, isStudioSlugAvailable} from '@sanity/workbench-cli/deploy'
+import {type Application, getApplication} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -30,13 +30,11 @@ vi.mock('../resolveDeployTarget.js', async (importOriginal) => ({
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   getApplication: vi.fn(),
-  isStudioSlugAvailable: vi.fn(),
 }))
 
 const mockResolveStudio = vi.mocked(resolveStudioDeployTarget)
 const mockResolveApp = vi.mocked(resolveAppDeployTarget)
 const mockGetApplication = vi.mocked(getApplication)
-const mockIsStudioSlugAvailable = vi.mocked(isStudioSlugAvailable)
 
 function application(overrides: Partial<UserApplication> = {}): UserApplication {
   return {
@@ -53,10 +51,7 @@ function application(overrides: Partial<UserApplication> = {}): UserApplication 
   }
 }
 
-beforeEach(() => {
-  vi.clearAllMocks()
-  mockIsStudioSlugAvailable.mockResolvedValue(true)
-})
+beforeEach(() => vi.clearAllMocks())
 
 const studioArgs = {
   appId: undefined,
@@ -371,16 +366,6 @@ describe('slug-taken', () => {
     url: 'https://org-1.sanity.run/application/existing-1',
   }
 
-  test('without a holder in this org, only a new slug gets the deploy through', () => {
-    const check = describeAppTarget({appHost: 'agent', type: 'slug-taken'})
-
-    expect(check).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
-    expect(check.message).toBe('The slug "agent" is already taken')
-    expect(check.solution).toBe('Pick a different `slug`')
-    // Nothing to target: the holder isn't ours to redeploy to.
-    expect(check.target).toBeUndefined()
-  })
-
   test('fails naming the existing app id and how to reuse it', () => {
     const check = describeAppTarget({appHost: 'agent', existing, type: 'slug-taken'})
 
@@ -472,25 +457,6 @@ describe('checkStudioTarget (workbench backend)', () => {
       url: null,
     })
     expect(mockGetApplication).not.toHaveBeenCalled()
-  })
-
-  test('a slug taken outside this organization → fail check, nothing to target', async () => {
-    mockIsStudioSlugAvailable.mockResolvedValue(false)
-    const reporter = createCollectingReporter<DeployCheck>()
-
-    await checkStudioTarget(reporter, {
-      appId: undefined,
-      isWorkbenchApp: true,
-      slug: 'my-studio',
-      title: 'New Studio',
-    })
-
-    expect(reporter.results[0]).toMatchObject({
-      exitCode: exitCodes.USAGE_ERROR,
-      message: 'The slug "my-studio" is already taken',
-      status: 'fail',
-    })
-    expect(reporter.results[0]?.target).toBeUndefined()
   })
 })
 

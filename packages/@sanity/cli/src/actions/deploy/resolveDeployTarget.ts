@@ -1,9 +1,4 @@
-import {
-  findApplicationBySlug,
-  getApplication,
-  getApplicationUrl,
-  isStudioSlugAvailable,
-} from '@sanity/workbench-cli/deploy'
+import {getApplication, getApplicationUrl, listApplications} from '@sanity/workbench-cli/deploy'
 
 import {
   getUserApplication,
@@ -52,12 +47,12 @@ type CommonDeployTargetResolution<App = DeployTargetApp> =
 
 export type StudioDeployTargetResolution<App = DeployTargetApp> =
   | CommonDeployTargetResolution<App>
-  | {appHost: string; existing?: App; type: 'slug-taken'}
+  | {appHost: string; existing: App; type: 'slug-taken'}
   | {appHost: string; type: 'would-create'}
 
 export type AppDeployTargetResolution<App = DeployTargetCoreApp> =
   | CommonDeployTargetResolution<App>
-  | {appHost: string; existing?: App; type: 'slug-taken'}
+  | {appHost: string; existing: App; type: 'slug-taken'}
   | {appHost?: string; type: 'would-create'}
 
 /**
@@ -168,8 +163,9 @@ export async function resolveAppDeployTarget(options: {
 }
 
 /**
- * The read-only counterpart to a workbench application's create-on-deploy, so a
- * slug a create would be rejected for fails before the build.
+ * The dry-run counterpart to a workbench app's create-on-deploy: without an
+ * `appId`, an org already holding the slug resolves to that app, so the report
+ * can name its id instead of a create that would fail.
  *
  * @internal
  */
@@ -184,22 +180,22 @@ export async function resolveWorkbenchApp({
 }): Promise<AppDeployTargetResolution> {
   if (appId) return resolveAppById(appId)
 
-  const existing = organizationId && slug ? await findApplicationBySlug(organizationId, slug) : null
-  if (existing) {
-    return {
-      appHost: existing.slug ?? '',
-      existing: {
+  if (organizationId && slug) {
+    const existing = (await listApplications(organizationId)).find((app) => app.slug === slug)
+    if (existing) {
+      return {
         appHost: existing.slug ?? '',
-        id: existing.id,
-        organizationId: existing.organizationId,
-        title: existing.title,
-        url: existing.url,
-      },
-      type: 'slug-taken',
+        existing: {
+          appHost: existing.slug ?? '',
+          id: existing.id,
+          organizationId: existing.organizationId,
+          title: existing.title,
+          url: getApplicationUrl(existing),
+        },
+        type: 'slug-taken',
+      }
     }
   }
-
-  if (slug && !(await isStudioSlugAvailable(slug))) return {appHost: slug, type: 'slug-taken'}
 
   return {appHost: slug, type: 'would-create'}
 }

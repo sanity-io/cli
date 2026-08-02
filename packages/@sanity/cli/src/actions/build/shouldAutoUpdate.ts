@@ -41,7 +41,10 @@ export function resolveAutoUpdates(sources: AutoUpdateSources): AutoUpdateSettin
   // version of its own to pin.
   // TODO(SDK-1045): confirm the long-term story with the studio team.
   if (settings.enabled && isWorkbenchApp(sources.cliConfig?.app)) {
-    return {enabled: false, issue: {type: 'unsupported'}}
+    // A config conflict still fails — it's a problem with the config itself.
+    return settings.issue?.type === 'conflicting-config'
+      ? {enabled: false, issue: settings.issue}
+      : {enabled: false, issue: {type: 'unsupported'}}
   }
 
   return settings

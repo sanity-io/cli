@@ -263,16 +263,8 @@ function describeSlugTaken({
   existing,
 }: {
   appHost: string
-  existing?: DeployTargetApp
+  existing: DeployTargetApp
 }): DeployCheck {
-  if (!existing) {
-    return {
-      exitCode: exitCodes.USAGE_ERROR,
-      message: `The slug "${appHost}" is already taken`,
-      solution: 'Pick a different `slug`',
-      status: 'fail',
-    }
-  }
   return {
     exitCode: exitCodes.USAGE_ERROR,
     message: `An application already exists at slug "${appHost}" in this organization (app ID ${existing.id})`,

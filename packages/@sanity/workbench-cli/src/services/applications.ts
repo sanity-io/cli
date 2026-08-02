@@ -85,27 +85,6 @@ export async function listApplications(organizationId: string): Promise<Applicat
   return data
 }
 
-export async function isStudioSlugAvailable(slug: string): Promise<boolean> {
-  const client = await getClient()
-  const {available}: {available: boolean} = await client.request({
-    uri: `/studiohosts/${slug}/availability`,
-  })
-  return available
-}
-
-/**
- * Studios and coreApps share one slug namespace, so the holder may be either
- * type. Scoped to one org because it exists to name an id the caller can
- * redeploy to; {@link isStudioSlugAvailable} owns the global rule a create is held to.
- */
-export async function findApplicationBySlug(
-  organizationId: string,
-  slug: string,
-): Promise<(Application & {url: string}) | null> {
-  const application = (await listApplications(organizationId)).find((app) => app.slug === slug)
-  return application ? {...application, url: getApplicationUrl(application)} : null
-}
-
 /**
  * Create an application record (no deployment), so the CLI can build with the
  * returned id, then ship it via {@link createDeployment}.

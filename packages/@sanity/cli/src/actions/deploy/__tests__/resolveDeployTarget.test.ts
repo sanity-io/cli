@@ -1,8 +1,4 @@
-import {
-  findApplicationBySlug,
-  getApplication,
-  isStudioSlugAvailable,
-} from '@sanity/workbench-cli/deploy'
+import {getApplication, listApplications} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -14,19 +10,14 @@ import {
 
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
-  findApplicationBySlug: vi.fn(),
   getApplication: vi.fn(),
-  isStudioSlugAvailable: vi.fn(),
+  listApplications: vi.fn(),
 }))
 
 const mockGetApplication = vi.mocked(getApplication)
-const mockFindApplicationBySlug = vi.mocked(findApplicationBySlug)
-const mockIsStudioSlugAvailable = vi.mocked(isStudioSlugAvailable)
+const mockListApplications = vi.mocked(listApplications)
 
-beforeEach(() => {
-  vi.clearAllMocks()
-  mockIsStudioSlugAvailable.mockResolvedValue(true)
-})
+beforeEach(() => vi.clearAllMocks())
 
 // These cases all short-circuit before any user-application lookup — they cover
 // the host/URL validation and the missing-config guards, no API access needed.
@@ -152,7 +143,7 @@ describe('resolveWorkbenchApp', () => {
     type: 'coreApp' as const,
   }
 
-  test('a configured appId is looked up by id, no slug lookup', async () => {
+  test('a configured appId is looked up by id, no org listing', async () => {
     mockGetApplication.mockResolvedValue(app)
 
     const result = await resolveWorkbenchApp({
@@ -162,11 +153,11 @@ describe('resolveWorkbenchApp', () => {
     })
 
     expect(result).toMatchObject({application: {id: 'app-1'}, type: 'found'})
-    expect(mockFindApplicationBySlug).not.toHaveBeenCalled()
+    expect(mockListApplications).not.toHaveBeenCalled()
   })
 
   test('no appId, slug free in the org → would-create carrying the slug', async () => {
-    mockFindApplicationBySlug.mockResolvedValue(null)
+    mockListApplications.mockResolvedValue([{...app, slug: 'other'}])
 
     const result = await resolveWorkbenchApp({
       appId: undefined,
@@ -178,10 +169,7 @@ describe('resolveWorkbenchApp', () => {
   })
 
   test('no appId, slug already taken → slug-taken carries the existing app id', async () => {
-    mockFindApplicationBySlug.mockResolvedValue({
-      ...app,
-      url: 'https://org-1.sanity.run/application/app-1',
-    })
+    mockListApplications.mockResolvedValue([app])
 
     const result = await resolveWorkbenchApp({
       appId: undefined,
@@ -202,47 +190,18 @@ describe('resolveWorkbenchApp', () => {
     })
   })
 
-  test('no appId and no org → would-create without a slug lookup', async () => {
+  test('no appId and no org → would-create without listing', async () => {
     const result = await resolveWorkbenchApp({appId: undefined, slug: 'agent'})
 
     expect(result).toEqual({appHost: 'agent', type: 'would-create'})
-    expect(mockFindApplicationBySlug).not.toHaveBeenCalled()
-  })
-
-  test('slug free in the org but taken globally → slug-taken with no holder', async () => {
-    mockFindApplicationBySlug.mockResolvedValue(null)
-    mockIsStudioSlugAvailable.mockResolvedValue(false)
-
-    const result = await resolveWorkbenchApp({
-      appId: undefined,
-      organizationId: 'org-1',
-      slug: 'agent',
-    })
-
-    expect(result).toEqual({appHost: 'agent', type: 'slug-taken'})
-  })
-
-  test('a holder in this org wins, so the id is offered without a global check', async () => {
-    mockFindApplicationBySlug.mockResolvedValue({
-      id: 'app-1',
-      organizationId: 'org-1',
-      slug: 'agent',
-      title: 'Agent',
-      type: 'coreApp',
-      url: 'https://org-1.sanity.run/application/app-1',
-    })
-
-    expect(
-      await resolveWorkbenchApp({appId: undefined, organizationId: 'org-1', slug: 'agent'}),
-    ).toMatchObject({type: 'slug-taken'})
-    expect(mockIsStudioSlugAvailable).not.toHaveBeenCalled()
+    expect(mockListApplications).not.toHaveBeenCalled()
   })
 
   test('no slug at all → would-create without one, since the API generates it', async () => {
     const result = await resolveWorkbenchApp({appId: undefined, organizationId: 'org-1'})
 
     expect(result).toEqual({type: 'would-create'})
-    expect(mockFindApplicationBySlug).not.toHaveBeenCalled()
+    expect(mockListApplications).not.toHaveBeenCalled()
   })
 })
 
@@ -250,7 +209,7 @@ describe('resolveWorkbenchApp', () => {
 // the lookups behind them, are covered above.
 describe('resolveWorkbenchStudio', () => {
   test('a studio always configures a slug, so would-create carries it', async () => {
-    mockFindApplicationBySlug.mockResolvedValue(null)
+    mockListApplications.mockResolvedValue([])
 
     const result = await resolveWorkbenchStudio({
       appId: undefined,
@@ -273,6 +232,6 @@ describe('resolveWorkbenchStudio', () => {
     const result = await resolveWorkbenchStudio({appId: 'studio-1', slug: 'my-studio'})
 
     expect(result).toMatchObject({application: {id: 'studio-1'}, type: 'found'})
-    expect(mockFindApplicationBySlug).not.toHaveBeenCalled()
+    expect(mockListApplications).not.toHaveBeenCalled()
   })
 })

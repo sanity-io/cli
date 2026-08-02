@@ -15,10 +15,8 @@ export {type DeployedExpose, summarizeInterfaces} from '../actions/deploy/summar
 export {
   type Application,
   type BrettWorkspace,
-  findApplicationBySlug,
   getApplication,
   getApplicationUrl,
   getWorkbenchUrl,
-  isStudioSlugAvailable,
   listApplications,
 } from '../services/applications.js'
