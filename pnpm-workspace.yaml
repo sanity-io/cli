@@ -35,7 +35,7 @@ catalog:
   babel-plugin-react-compiler: ^1.0.0
   typescript: ^6.0.3
   vite: ^8.2.0
-  '@vitejs/plugin-react': ^6.0.3
+  '@vitejs/plugin-react': ^6.0.5
   tsx: ^4.23.1
 
   # Testing
