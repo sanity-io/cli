@@ -1,7 +1,6 @@
 import {createRequire} from 'node:module'
 import {dirname} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
-import vm from 'node:vm'
 
 import {
   ESModulesEvaluator,
@@ -141,11 +140,13 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
       normalizedCode = normalizedCode.replace(/^#!.*/, (line) => ' '.repeat(line.length))
     }
 
+    // Use AsyncFunction (same as ESModulesEvaluator) so the shared `startOffset`
+    // ModuleRunner applies to inlined sourcemaps matches this wrapper's padding.
+    const AsyncFunction = async function () {}.constructor as new (
+      ...args: string[]
+    ) => (...args: unknown[]) => Promise<unknown>
     const parameterNames = Object.keys(cjsContext)
-    const wrappedCode = `'use strict';async (${parameterNames.join(',')})=>{${normalizedCode}\n}`
-    const script = new vm.Script(wrappedCode, {filename: __filename})
-
-    const runner = script.runInThisContext()
+    const runner = new AsyncFunction(...parameterNames, `"use strict";\n${normalizedCode}`)
     await runner(...parameterNames.map((name) => cjsContext[name]))
   }
 }
