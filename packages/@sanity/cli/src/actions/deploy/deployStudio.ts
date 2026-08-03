@@ -111,6 +111,7 @@ async function runStudioDeployment(
     await checkStudioTarget(reporter, {
       appId,
       isWorkbenchApp: true,
+      organizationId,
       slug: workbench.slug,
       title: appTitle,
     })
@@ -149,6 +150,7 @@ async function runStudioDeployment(
       projectId,
       slug: workbench.slug,
       title: appTitle,
+      visibility: workbench.visibility,
     }))
     applicationCreated = true
   }
@@ -197,7 +199,7 @@ async function runStudioDeployment(
         icon: appIcon,
         isApp: false,
         isAutoUpdating,
-        label: 'Deploying to sanity.studio',
+        label: 'Deploying studio',
         // Once the deployment is live, a metadata-sync failure must not delete
         // the studio.
         onDeployed: () => {
@@ -206,6 +208,7 @@ async function runStudioDeployment(
         sourceDir,
         title: appTitle,
         version,
+        visibility: workbench.visibility,
         workspaces: toWorkspaces(studioManifest),
       })
       const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
@@ -217,6 +220,7 @@ async function runStudioDeployment(
         target: {
           action: applicationCreated ? 'create' : 'update',
           applicationId,
+          ...(applicationCreated ? {slug: workbench.slug} : {}),
           title: appTitle,
           url,
         },

@@ -10,7 +10,7 @@ import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 /** The application fields a deploy-target verdict carries for reporting. */
-interface DeployTargetApp {
+export interface DeployTargetApp {
   appHost: string
   id: string
   title: string | null
@@ -47,12 +47,13 @@ type CommonDeployTargetResolution<App = DeployTargetApp> =
 
 export type StudioDeployTargetResolution<App = DeployTargetApp> =
   | CommonDeployTargetResolution<App>
+  | {appHost: string; existing: App; type: 'slug-taken'}
   | {appHost: string; type: 'would-create'}
 
 export type AppDeployTargetResolution<App = DeployTargetCoreApp> =
   | CommonDeployTargetResolution<App>
-  | {existing: App; type: 'slug-taken'}
-  | {type: 'would-create'}
+  | {appHost: string; existing: App; type: 'slug-taken'}
+  | {appHost?: string; type: 'would-create'}
 
 /**
  * Owns the studio deploy-target rules: the --url flag over studioHost config,
@@ -162,11 +163,10 @@ export async function resolveAppDeployTarget(options: {
 }
 
 /**
- * The dry-run counterpart to a workbench app's create-on-deploy: a configured
- * `appId` is looked up read-only. Without one, a first deploy would create the
- * app at its slug — but if the org already holds an app at that slug (a
- * singleton redeployed without `deployment.appId`), a create would fail, so the
- * existing app is resolved instead and the report points at its id.
+ * The dry-run counterpart to a workbench app's create-on-deploy: without an
+ * `appId`, an org already holding the slug resolves to that app, so the report
+ * can name its id instead of a create that would fail.
+ *
  * @internal
  */
 export async function resolveWorkbenchApp({
@@ -184,8 +184,9 @@ export async function resolveWorkbenchApp({
     const existing = (await listApplications(organizationId)).find((app) => app.slug === slug)
     if (existing) {
       return {
+        appHost: slug,
         existing: {
-          appHost: existing.slug ?? '',
+          appHost: slug,
           id: existing.id,
           organizationId: existing.organizationId,
           title: existing.title,
@@ -196,24 +197,23 @@ export async function resolveWorkbenchApp({
     }
   }
 
-  return {type: 'would-create'}
+  return {appHost: slug, type: 'would-create'}
 }
 
 /**
- * The studio counterpart to {@link resolveWorkbenchApp}: a redeploy targets
- * `deployment.appId`, a first deploy creates the studio at its `slug`.
+ * {@link resolveWorkbenchApp} narrowed for a studio, whose slug is always configured.
  *
  * @internal
  */
-export async function resolveWorkbenchStudio({
-  appId,
-  slug,
-}: {
+export async function resolveWorkbenchStudio(options: {
   appId: string | undefined
+  organizationId?: string
   slug: string
 }): Promise<StudioDeployTargetResolution> {
-  if (appId) return resolveAppById(appId)
-  return {appHost: slug, type: 'would-create'}
+  const resolution = await resolveWorkbenchApp(options)
+  return resolution.type === 'would-create'
+    ? {appHost: options.slug, type: 'would-create'}
+    : resolution
 }
 
 async function resolveAppById(

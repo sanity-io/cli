@@ -14,6 +14,7 @@ import {
   checkStudioTarget,
   type DeployCheck,
   describeAppTarget,
+  describeStudioTarget,
 } from '../deployChecks.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from '../resolveDeployTarget.js'
 import {type DeployFlags} from '../types.js'
@@ -356,18 +357,17 @@ describe('checkAppTarget (workbench backend)', () => {
   })
 })
 
-describe('describeAppTarget', () => {
-  test('slug-taken → fail names the existing app id and how to reuse it', () => {
-    const check = describeAppTarget({
-      existing: {
-        appHost: 'agent',
-        id: 'existing-1',
-        organizationId: 'org-1',
-        title: 'Agent',
-        url: 'https://org-1.sanity.run/application/existing-1',
-      },
-      type: 'slug-taken',
-    })
+describe('slug-taken', () => {
+  const existing = {
+    appHost: 'agent',
+    id: 'existing-1',
+    organizationId: 'org-1',
+    title: 'Agent',
+    url: 'https://org-1.sanity.run/application/existing-1',
+  }
+
+  test('fails naming the existing app id and how to reuse it', () => {
+    const check = describeAppTarget({appHost: 'agent', existing, type: 'slug-taken'})
 
     expect(check).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
     expect(check.message).toContain('already exists at slug "agent"')
@@ -380,6 +380,39 @@ describe('describeAppTarget', () => {
       title: 'Agent',
       url: 'https://org-1.sanity.run/application/existing-1',
     })
+    // A studio collides in the same namespace, so it gets the same diagnosis.
+    expect(
+      describeStudioTarget(
+        {appHost: 'agent', existing, type: 'slug-taken'},
+        {isExternal: false, isWorkbench: true},
+      ),
+    ).toEqual(check)
+  })
+})
+
+describe('a workbench would-create', () => {
+  const resolution = {appHost: 'my-slug', type: 'would-create'} as const
+
+  test('reports the same slug and target for a studio and an app', () => {
+    const studio = describeStudioTarget(resolution, {
+      isExternal: false,
+      isWorkbench: true,
+      title: 'My Thing',
+    })
+    const app = describeAppTarget(resolution, {title: 'My Thing'})
+
+    expect(studio.target).toEqual(app.target)
+    expect(studio.target?.slug).toBe('my-slug')
+    expect(studio.message).toBe(
+      'Would create a new studio "My Thing" with slug "my-slug" (name availability is checked on deploy)',
+    )
+    expect(app.message).toBe('Would create a new application "My Thing" with slug "my-slug"')
+  })
+
+  test('an untitled studio still names the slug', () => {
+    expect(describeStudioTarget(resolution, {isExternal: false, isWorkbench: true}).message).toBe(
+      'Would create a new studio with slug "my-slug" (name availability is checked on deploy)',
+    )
   })
 })
 
@@ -402,7 +435,7 @@ describe('checkStudioTarget (workbench backend)', () => {
     expect(target?.url).toBe('https://org-1.sanity.run/studio/app-1')
   })
 
-  test('no appId with a studioHost → pass check for the studio that would be created', async () => {
+  test('no appId → pass check naming the slug the studio would be created at', async () => {
     const reporter = createCollectingReporter<DeployCheck>()
 
     await checkStudioTarget(reporter, {
@@ -413,9 +446,17 @@ describe('checkStudioTarget (workbench backend)', () => {
     })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
-    expect(reporter.results[0]?.message).toContain('Would create studio hostname my-studio')
-    expect(reporter.results[0]?.message).toContain('titled "New Studio"')
-    expect(reporter.results[0]?.target?.url).toBeNull()
+    expect(reporter.results[0]?.message).toBe(
+      'Would create a new studio "New Studio" with slug "my-studio" (name availability is checked on deploy)',
+    )
+    expect(reporter.results[0]?.message).not.toContain('hostname')
+    expect(reporter.results[0]?.target).toEqual({
+      action: 'create',
+      applicationId: null,
+      slug: 'my-studio',
+      title: 'New Studio',
+      url: null,
+    })
     expect(mockGetApplication).not.toHaveBeenCalled()
   })
 })
