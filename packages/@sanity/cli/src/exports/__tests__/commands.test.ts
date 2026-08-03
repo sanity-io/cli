@@ -496,9 +496,23 @@ describe('invokeSanityCli', () => {
   })
 
   test.each([
-    ['long flag', 'api users/me --header "Authorization: Bearer other-user-token"'],
-    ['short flag with mixed casing', 'api users/me -H "aUtHoRiZaTiOn: Basic credentials"'],
-  ])('`api` Authorization headers using the %s are refused', async (_style, args) => {
+    [
+      'Authorization',
+      'long flag',
+      'api users/me --header "Authorization: Bearer other-user-token"',
+    ],
+    [
+      'Authorization',
+      'short flag with mixed casing',
+      'api users/me -H "aUtHoRiZaTiOn: Basic credentials"',
+    ],
+    ['Cookie', 'long flag', 'api users/me --anonymous --header "Cookie: sid=other-user-session"'],
+    [
+      'Cookie',
+      'short flag with mixed casing',
+      'api users/me --anonymous -H " cOoKiE : sid=other-user-session"',
+    ],
+  ])('`api` %s headers using the %s are refused', async (_header, _style, args) => {
     const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
@@ -536,6 +550,8 @@ describe('invokeSanityCli', () => {
     expect(validate({token: 'other-user-token'})).toBe(false)
     expect(validate({header: ['Authorization: Bearer other-user-token']})).toBe(false)
     expect(validate({header: [' aUtHoRiZaTiOn : Basic credentials']})).toBe(false)
+    expect(validate({header: ['Cookie: sid=other-user-session']})).toBe(false)
+    expect(validate({header: [' cOoKiE : sid=other-user-session']})).toBe(false)
     expect(validate({field: ['body=@payload.json']})).toBe(false)
     expect(validate({field: ['key=value', 'body=@-']})).toBe(false)
     expect(validate({}, 'https://user:pass@api.sanity.io/v1/users/me')).toBe(false)

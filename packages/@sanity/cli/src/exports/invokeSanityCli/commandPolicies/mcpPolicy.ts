@@ -27,9 +27,10 @@ function apiValidator({
   const headerOverridesAuthentication = headers.some((header) => {
     if (typeof header !== 'string') return false
     const separatorIndex = header.indexOf(':')
-    return (
-      separatorIndex > 0 && header.slice(0, separatorIndex).trim().toLowerCase() === 'authorization'
-    )
+    if (separatorIndex <= 0) return false
+
+    const name = header.slice(0, separatorIndex).trim().toLowerCase()
+    return name === 'authorization' || name === 'cookie'
   })
 
   if (headerOverridesAuthentication) return false
@@ -55,7 +56,7 @@ function apiValidator({
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful
   // to expose. Refuse authentication overrides and host input channels:
-  // `--token` and an Authorization header replace the MCP user's token,
+  // `--token`, Authorization, and Cookie headers replace the MCP user's authentication,
   // URL-embedded credentials replace it with Basic authentication,
   // `--input` reads the request body from the host's filesystem or stdin, and
   // `-F key=@<file>` / `-F key=@-` field values do the same.
