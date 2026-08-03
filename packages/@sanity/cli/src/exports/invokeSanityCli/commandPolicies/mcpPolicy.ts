@@ -6,7 +6,13 @@ import {
   deny,
 } from './policy.js'
 
-function apiValidator({flags}: {flags: Readonly<Record<string, unknown>>}): boolean {
+function apiValidator({
+  args,
+  flags,
+}: {
+  args: Readonly<Record<string, unknown>>
+  flags: Readonly<Record<string, unknown>>
+}): boolean {
   const fields: unknown[] = Array.isArray(flags.field) ? flags.field : []
 
   const fieldReadsFromHost = fields.some((field) => {
@@ -26,7 +32,13 @@ function apiValidator({flags}: {flags: Readonly<Record<string, unknown>>}): bool
     )
   })
 
-  return !headerOverridesAuthentication
+  if (headerOverridesAuthentication) return false
+
+  const endpoint = typeof args.endpoint === 'string' ? URL.parse(args.endpoint) : null
+  const urlEmbedsCredentials =
+    endpoint !== null && (endpoint.username !== '' || endpoint.password !== '')
+
+  return !urlEmbedsCredentials
 }
 
 /**
@@ -44,6 +56,7 @@ export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful
   // to expose. Refuse authentication overrides and host input channels:
   // `--token` and an Authorization header replace the MCP user's token,
+  // URL-embedded credentials replace it with Basic authentication,
   // `--input` reads the request body from the host's filesystem or stdin, and
   // `-F key=@<file>` / `-F key=@-` field values do the same.
   api: conditionalPolicy({
