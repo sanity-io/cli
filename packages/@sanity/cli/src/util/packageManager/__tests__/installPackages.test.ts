@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {execa, type Result} from 'execa'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
@@ -22,6 +22,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
     spinner: vi.fn(() => ({
       fail: vi.fn().mockReturnThis(),
       start: vi.fn().mockReturnThis(),
+      stop: vi.fn().mockReturnThis(),
       succeed: vi.fn().mockReturnThis(),
     })),
   }
@@ -40,6 +41,7 @@ const mockOutput: Output = {
 const mockSpinnerInstance = {
   fail: vi.fn().mockReturnThis(),
   start: vi.fn().mockReturnThis(),
+  stop: vi.fn().mockReturnThis(),
   succeed: vi.fn().mockReturnThis(),
 }
 
@@ -67,11 +69,16 @@ describe('installDeclaredPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
     expect(mockSpinnerInstance.fail).not.toHaveBeenCalled()
+    expect(mockSpinner).toHaveBeenCalledWith({
+      discardStdin: true,
+      text: 'Running npm install\n',
+    })
   })
 
   test('installs with yarn successfully', async () => {
@@ -88,6 +95,7 @@ describe('installDeclaredPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -107,6 +115,7 @@ describe('installDeclaredPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -126,6 +135,7 @@ describe('installDeclaredPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -148,11 +158,14 @@ describe('installDeclaredPackages', () => {
     }
     mockExeca.mockResolvedValueOnce(mockResult as Result)
 
-    await expect(installDeclaredPackages(workDir, 'npm', context))
+    await expect(installDeclaredPackages(workDir, 'npm', context)).rejects.toMatchObject({
+      message: 'Dependency installation failed',
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+    })
 
     expect(mockSpinnerInstance.fail).toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith('Error: Package not found')
-    expect(mockOutput.error).toHaveBeenCalledWith('Dependency installation failed', {exit: 1})
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 
   test('handles installation failure with failed flag', async () => {
@@ -163,11 +176,14 @@ describe('installDeclaredPackages', () => {
     }
     mockExeca.mockResolvedValueOnce(mockResult as Result)
 
-    await expect(installDeclaredPackages(workDir, 'npm', context))
+    await expect(installDeclaredPackages(workDir, 'npm', context)).rejects.toMatchObject({
+      message: 'Dependency installation failed',
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+    })
 
     expect(mockSpinnerInstance.fail).toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith('Command failed')
-    expect(mockOutput.error).toHaveBeenCalledWith('Dependency installation failed', {exit: 1})
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 })
 
@@ -190,10 +206,46 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+  })
+
+  test('propagates cancellation when the package manager exits successfully', async () => {
+    const controller = new AbortController()
+    const options = {packageManager: 'npm' as const, packages: ['next-sanity']}
+    controller.abort(new Error('SIGINT'))
+    mockExeca.mockResolvedValueOnce({exitCode: 0, failed: false} as Result)
+
+    await expect(
+      installNewPackages(options, {...context, cancelSignal: controller.signal}),
+    ).rejects.toThrow('SIGINT')
+
+    expect(mockExeca).toHaveBeenCalledWith(
+      'npm',
+      ['install', '--save', 'next-sanity'],
+      expect.objectContaining({cancelSignal: controller.signal}),
+    )
+    expect(mockSpinner).toHaveBeenCalledWith({
+      discardStdin: false,
+      text: 'Running npm install --save next-sanity\n',
+    })
+    expect(mockSpinnerInstance.fail).toHaveBeenCalledOnce()
+    expect(mockSpinnerInstance.stop).toHaveBeenCalledOnce()
+    expect(mockSpinnerInstance.succeed).not.toHaveBeenCalled()
+  })
+
+  test('fails and stops the spinner when the package manager throws', async () => {
+    const options = {packageManager: 'npm' as const, packages: ['next-sanity']}
+    mockExeca.mockRejectedValueOnce(new Error('Timed out'))
+
+    await expect(installNewPackages(options, context)).rejects.toThrow('Timed out')
+
+    expect(mockSpinnerInstance.fail).toHaveBeenCalledOnce()
+    expect(mockSpinnerInstance.stop).toHaveBeenCalledOnce()
+    expect(mockSpinnerInstance.succeed).not.toHaveBeenCalled()
   })
 
   test('installs multiple packages with yarn successfully', async () => {
@@ -214,6 +266,7 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -234,6 +287,7 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -254,6 +308,7 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
@@ -279,11 +334,14 @@ describe('installNewPackages', () => {
     }
     mockExeca.mockResolvedValueOnce(mockResult as Result)
 
-    await expect(installNewPackages(options, context))
+    await expect(installNewPackages(options, context)).rejects.toMatchObject({
+      message: 'Package installation failed',
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+    })
 
     expect(mockSpinnerInstance.fail).toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith('Error: Package not found')
-    expect(mockOutput.error).toHaveBeenCalledWith('Package installation failed', {exit: 1})
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 
   test('handles installation failure with failed flag', async () => {
@@ -295,11 +353,14 @@ describe('installNewPackages', () => {
     }
     mockExeca.mockResolvedValueOnce(mockResult as Result)
 
-    await expect(installNewPackages(options, context))
+    await expect(installNewPackages(options, context)).rejects.toMatchObject({
+      message: 'Package installation failed',
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+    })
 
     expect(mockSpinnerInstance.fail).toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith('Command execution failed')
-    expect(mockOutput.error).toHaveBeenCalledWith('Package installation failed', {exit: 1})
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 
   test('handles empty packages array', async () => {
@@ -317,9 +378,196 @@ describe('installNewPackages', () => {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
+      reject: false,
       stdio: 'pipe',
     })
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+  })
+})
+
+describe('pnpm ignored build scripts', () => {
+  const workDir = '/test/project'
+  const context = {output: mockOutput, workDir}
+
+  const approveBuildsNotice =
+    'pnpm skipped build scripts for some dependencies. Run "pnpm approve-builds" in the project directory to pick which dependencies should be allowed to run scripts.'
+
+  test('treats ignored esbuild build script as success without notice', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: [
+        ' ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: esbuild@0.28.0',
+        '',
+        'Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.',
+      ].join('\n'),
+      stdout: 'Packages: +123',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockSpinnerInstance.fail).not.toHaveBeenCalled()
+    expect(mockOutput.warn).not.toHaveBeenCalled()
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('treats ignored builds as success but prints notice for non-esbuild packages', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: [
+        ' ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: esbuild@0.28.0, sharp@0.34.1.',
+        '',
+        'Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.',
+      ].join('\n'),
+      stdout: 'Packages: +123',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockSpinnerInstance.fail).not.toHaveBeenCalled()
+    expect(mockOutput.warn).toHaveBeenCalledWith(approveBuildsNotice)
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('prints notice for scoped packages with ignored build scripts', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stdout: ' ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: @tailwindcss/oxide@4.0.0',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockOutput.warn).toHaveBeenCalledWith(approveBuildsNotice)
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('handles line-wrapped error output', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: [
+        ' ERR_PNPM_IGNORED_BUILDS  Ignored build',
+        'scripts: esbuild@0.28.0,',
+        'sharp@0.34.1.',
+        '',
+        'Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.',
+      ].join('\n'),
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockSpinnerInstance.fail).not.toHaveBeenCalled()
+    expect(mockOutput.warn).toHaveBeenCalledWith(approveBuildsNotice)
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('does not print notice when wrapped output only skips esbuild', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: [
+        ' ERR_PNPM_IGNORED_BUILDS  Ignored build',
+        'scripts: esbuild@0.28.0',
+        '',
+        'Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.',
+      ].join('\n'),
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockOutput.warn).not.toHaveBeenCalled()
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('applies to installNewPackages as well', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: ' ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: esbuild@0.28.0',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await installNewPackages({packageManager: 'pnpm', packages: ['lodash']}, context)
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockOutput.warn).not.toHaveBeenCalled()
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('does not apply ignored builds handling for other package managers', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stdout: ' ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: esbuild@0.28.0',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(installDeclaredPackages(workDir, 'npm', context)).rejects.toMatchObject({
+      message: 'Dependency installation failed',
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+    })
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.fail).toHaveBeenCalled()
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('prints notice for whitespace-separated package list', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stdout: ' ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: esbuild@0.28.0 sharp@0.34.1',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await installDeclaredPackages(workDir, 'pnpm', context)
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockOutput.warn).toHaveBeenCalledWith(approveBuildsNotice)
+    expect(mockOutput.error).not.toHaveBeenCalled()
+  })
+
+  test('still fails pnpm installs without the ignored builds marker', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: ' ERR_PNPM_FETCH_404  GET https://registry.npmjs.org/nope: Not Found - 404',
+      stdout: 'Packages: +0',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(installDeclaredPackages(workDir, 'pnpm', context)).rejects.toMatchObject({
+      message: 'Dependency installation failed',
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+    })
+
+    expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockSpinnerInstance.fail).toHaveBeenCalled()
+    expect(mockOutput.warn).not.toHaveBeenCalled()
+    // The actionable error lives on stderr, so it must be surfaced to the user.
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining('ERR_PNPM_FETCH_404  GET https://registry.npmjs.org/nope'),
+    )
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 })
 

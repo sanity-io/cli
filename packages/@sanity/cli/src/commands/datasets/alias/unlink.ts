@@ -1,5 +1,6 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
@@ -53,6 +54,20 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
     const {args, flags} = await this.parse(UnlinkAliasCommand)
     const {force} = flags
 
+    if (!args.aliasName && this.isUnattended()) {
+      this.error('Dataset alias name is required. Pass it as the `<aliasName>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
+    }
+
+    if (args.aliasName) {
+      const {apiName} = processAliasName(args.aliasName)
+      const nameError = validateDatasetAliasName(apiName)
+      if (nameError) {
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
+      }
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -69,7 +84,7 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
 
       const nameError = validateDatasetAliasName(apiName)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
 
       const aliases = await listAliases(projectId)
@@ -77,26 +92,34 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
       // get the current alias from the remote alias list
       const linkedAlias = aliases.find((elem) => elem.name === apiName)
       if (!linkedAlias) {
-        this.error(`Dataset alias "${displayName}" does not exist`, {exit: 1})
+        this.error(`Dataset alias "${displayName}" does not exist`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       if (!linkedAlias.datasetName) {
-        this.error(`Dataset alias "${displayName}" is not linked to a dataset`, {exit: 1})
+        this.error(`Dataset alias "${displayName}" is not linked to a dataset`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       if (force) {
         this.warn(`'--force' used: skipping confirmation, unlinking alias "${displayName}"`)
       } else {
+        if (this.isUnattended()) {
+          this.error('Unlinking a dataset alias requires confirmation. Re-run with `--force`.', {
+            exit: exitCodes.USAGE_ERROR,
+          })
+        }
         await this.confirmUnlink(linkedAlias.datasetName)
       }
 
       const result = await unlinkAlias(projectId, apiName)
       this.log(`Dataset alias ${displayName} unlinked from ${result.datasetName} successfully`)
     } catch (error) {
+      if (error instanceof CLIError) throw error
       unlinkAliasDebug('Error unlinking dataset alias', error)
       this.error(
         `Dataset alias unlink failed: ${error instanceof Error ? error.message : String(error)}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
   }

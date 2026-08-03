@@ -1,5 +1,174 @@
 # Changelog
 
+## [9.0.0](https://github.com/sanity-io/cli/compare/cli-test-v8.0.1...cli-test-v9.0.0)
+
+_2026-08-03_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.8.0
+
+## [8.0.1](https://github.com/sanity-io/cli/compare/cli-test-v8.0.0...cli-test-v8.0.1)
+
+_2026-07-29_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1558](https://github.com/sanity-io/cli/pull/1558)) ([0020787](https://github.com/sanity-io/cli/commit/00207879ad5018ebb3a7b54861052fb0f9ca9c05))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.1
+
+## [8.0.0](https://github.com/sanity-io/cli/compare/cli-test-v7.0.0...cli-test-v8.0.0)
+
+_2026-07-29_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.0
+
+## [7.0.0](https://github.com/sanity-io/cli/compare/cli-test-v6.0.1...cli-test-v7.0.0)
+
+_2026-07-28_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.6.0
+
+## [6.0.1](https://github.com/sanity-io/cli/compare/cli-test-v6.0.0...cli-test-v6.0.1)
+
+_2026-07-20_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.5.1
+
+## [6.0.0](https://github.com/sanity-io/cli/compare/cli-test-v5.0.0...cli-test-v6.0.0)
+
+_2026-07-17_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1419](https://github.com/sanity-io/cli/pull/1419)) ([dfbab41](https://github.com/sanity-io/cli/commit/dfbab41b47d1942c59532e30c5e475b03e1dcabd))
+- **deps:** update dependency tsx to ^4.23.1 ([#1543](https://github.com/sanity-io/cli/pull/1543)) ([307e5f4](https://github.com/sanity-io/cli/commit/307e5f403f5b6ba9022b802a1806d85111ea882c))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.5.0
+
+## [5.0.0](https://github.com/sanity-io/cli/compare/cli-test-v4.0.0...cli-test-v5.0.0)
+
+_2026-07-15_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.4.0
+
+## [4.0.0](https://github.com/sanity-io/cli/compare/cli-test-v3.0.1...cli-test-v4.0.0)
+
+_2026-07-13_
+
+### Features
+
+- **test:** granular exports for `cli-test` ([#1458](https://github.com/sanity-io/cli/pull/1458)) ([203a330](https://github.com/sanity-io/cli/commit/203a330a76e3a5dd01ab8667a9f57e3762684477))
+- **test:** `cli-test` now contains `cli-core` mocks ([#1448](https://github.com/sanity-io/cli/pull/1448)) ([f5f5f81](https://github.com/sanity-io/cli/commit/f5f5f81753879908ac8043914ca8007adf505800))
+
+### Bug Fixes
+
+- **test:** one more cli-test export ([#1460](https://github.com/sanity-io/cli/pull/1460)) ([277c65c](https://github.com/sanity-io/cli/commit/277c65c6c0e7df73314030b677d1fd9747172600))
+- **test:** fix default `getProjectRoot()` mock return value ([#1464](https://github.com/sanity-io/cli/pull/1464)) ([abe72c1](https://github.com/sanity-io/cli/commit/abe72c1091656fe22b6d9ba4a86e03e4c9746a11))
+- **test:** add missing ux.spinner and telemetry mocks to `cli-test` ([#1477](https://github.com/sanity-io/cli/pull/1477)) ([2777d86](https://github.com/sanity-io/cli/commit/2777d8661d5e4488e80820bf0c3f4b29c5b4e014))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.3.0
+
+## [3.0.1](https://github.com/sanity-io/cli/compare/cli-test-v3.0.0...cli-test-v3.0.1)
+
+_2026-07-07_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.2.1
+
+## [3.0.0](https://github.com/sanity-io/cli/compare/cli-test-v2.0.3...cli-test-v3.0.0)
+
+_2026-07-07_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.2.0
+
+## [2.0.3](https://github.com/sanity-io/cli/compare/cli-test-v2.0.2...cli-test-v2.0.3)
+
+_2026-07-01_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.3
+
+## [2.0.2](https://github.com/sanity-io/cli/compare/cli-test-v2.0.1...cli-test-v2.0.2)
+
+_2026-06-30_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.2
+
+## [2.0.1](https://github.com/sanity-io/cli/compare/cli-test-v2.0.0...cli-test-v2.0.1)
+
+_2026-06-23_
+
+### Bug Fixes
+
+- **deps:** remove rolldown overrides now that vite 8.1.0 ships rolldown 1.1.2 ([#1356](https://github.com/sanity-io/cli/pull/1356)) ([d96cf4f](https://github.com/sanity-io/cli/commit/d96cf4f37648f82416b11753b85d9eba1c3e1742))
+- **deps:** update dependency esbuild to ^0.28.1 ([#1358](https://github.com/sanity-io/cli/pull/1358)) ([7c51459](https://github.com/sanity-io/cli/commit/7c51459eec929c37fd8951f5457de0cdf0aa7ab4))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.1
+
+## [2.0.0](https://github.com/sanity-io/cli/compare/cli-test-v1.0.1...cli-test-v2.0.0)
+
+_2026-06-22_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1347](https://github.com/sanity-io/cli/pull/1347)) ([fbd5084](https://github.com/sanity-io/cli/commit/fbd5084525c8c1bbba024f8160d1076201091988))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.1.0
+
 ## [1.0.1](https://github.com/sanity-io/cli/compare/cli-test-v1.0.0...cli-test-v1.0.1)
 
 _2026-06-04_

@@ -257,7 +257,7 @@ describe('#init: staging env propagation', () => {
     if (error) throw error
 
     expect(setupSkills).toHaveBeenCalledTimes(1)
-    expect(setupSkills).toHaveBeenCalledWith({agents: ['claude-code']})
+    expect(setupSkills).toHaveBeenCalledWith({agents: ['claude-code'], output: expect.any(Object)})
   })
 
   test('writes SANITY_INTERNAL_ENV to .env when in staging (template bootstrap path)', async () => {
@@ -326,7 +326,7 @@ describe('#init: staging env propagation', () => {
     expect(mocks.createOrAppendEnvVars).not.toHaveBeenCalled()
   })
 
-  test('skips MCP setup when in staging environment', async () => {
+  test('prompts for MCP and auto-installs skills in staging environment', async () => {
     mocks.getSanityEnv.mockReturnValue('staging')
     setupInitSuccessMocks()
 
@@ -349,6 +349,11 @@ describe('#init: staging env propagation', () => {
       },
     )
 
-    expect(setupMCP).toHaveBeenCalledWith({editors: [], mode: 'skip', skillsMode: 'skip'})
+    expect(setupMCP).toHaveBeenCalledWith({
+      editors: [],
+      mode: 'prompt',
+      output: expect.any(Object),
+      skillsMode: 'auto',
+    })
   })
 })

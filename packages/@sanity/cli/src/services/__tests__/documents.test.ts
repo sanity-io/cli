@@ -92,14 +92,12 @@ describe('#exportDocuments', () => {
     expect(mockFetch).toHaveBeenCalledWith(
       expect.any(URL),
       expect.objectContaining({
-        // eslint-disable-next-line n/no-unsupported-features/node-builtins -- Headers is stable in modern Node.js
         headers: expect.any(Headers),
       }),
     )
 
     // Verify the authorization header was set
     const callArgs = mockFetch.mock.calls[0]
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- Headers is stable in modern Node.js
     const headers = callArgs[1]?.headers as Headers
     expect(headers.get('Authorization')).toBe('Bearer test-token')
 
@@ -121,7 +119,6 @@ describe('#exportDocuments', () => {
     await exportDocuments({dataset: 'production', projectId: 'test-project'})
 
     const callArgs = mockFetch.mock.calls[0]
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- Headers is stable in modern Node.js
     const headers = callArgs[1]?.headers as Headers
     expect(headers.get('Authorization')).toBeNull()
 

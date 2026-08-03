@@ -5,3 +5,11 @@ export type {CliApiConfig} from '../types.js'
 export {type CliClientOptions, getCliClient} from '../util/cliClient.js'
 export {loadEnv} from '../util/loadEnv.js'
 export type {CliConfig, UserViteConfig} from '@sanity/cli-core'
+
+export {
+  type DefineAppInput,
+  type DefineMediaLibraryInput,
+  type MediaLibraryField,
+  unstable_defineApp,
+  unstable_defineMediaLibrary,
+} from '@sanity/workbench-cli'

@@ -1,10 +1,11 @@
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import size from 'lodash-es/size.js'
 import sortBy from 'lodash-es/sortBy.js'
 
+import {getManageUrl} from '../../actions/projects/getManageUrl.js'
 import {listProjects} from '../../services/projects.js'
 
 const sortFields = ['id', 'members', 'name', 'url', 'created']
@@ -46,7 +47,7 @@ export class List extends SanityCommand<typeof List> {
       const projects = await listProjects()
       const ordered = sortBy(
         projects.map(({createdAt, displayName, id, members = []}) => {
-          const manage = `https://www.sanity.io/manage/project/${id}`
+          const manage = getManageUrl(id)
           return [id, members.length, displayName, manage, createdAt].map(String)
         }),
         [sortFields.indexOf(sort)],
@@ -71,7 +72,7 @@ export class List extends SanityCommand<typeof List> {
       for (const row of rows) this.log(printRow(row))
     } catch (error) {
       projectsDebug('Error listing projects', error)
-      this.error('Failed to list projects', {exit: 1})
+      this.error('Failed to list projects', {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

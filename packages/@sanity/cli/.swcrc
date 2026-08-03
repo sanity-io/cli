@@ -17,5 +17,6 @@
     "type": "nodenext"
   },
   "isModule": true,
-  "sourceMaps": true
+  "sourceMaps": true,
+  "exclude": ["\\.test\\.ts$", "__tests__"]
 }

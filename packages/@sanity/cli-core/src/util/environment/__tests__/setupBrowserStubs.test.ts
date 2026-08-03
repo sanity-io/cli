@@ -60,6 +60,39 @@ describe('setupBrowserStubs', () => {
     expect(await response.text()).toBe('ok')
   })
 
+  test('overwrites getter-only globals (e.g. Node 26 localStorage)', async () => {
+    // Simulate Node 26's getter-only `localStorage` descriptor, regardless of
+    // the Node version actually running the test. Plain assignment to a
+    // getter-only property throws in strict mode, so this verifies that setup
+    // uses `Object.defineProperty` and cleanup restores the original getter.
+    const key = 'localStorage'
+    const globals = globalThis as Record<string, unknown>
+    const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, key)
+    Object.defineProperty(globalThis, key, {
+      configurable: true,
+      enumerable: false,
+      get: () => 'original',
+    })
+
+    try {
+      cleanup = await setupBrowserStubs()
+      // JSDOM's localStorage is an object, not the string 'original'.
+      expect(globals[key]).not.toBe('original')
+      expect(typeof globals[key]).toBe('object')
+
+      cleanup()
+      cleanup = undefined
+
+      expect(globals[key]).toBe('original')
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(globalThis, key, originalDescriptor)
+      } else {
+        delete globals[key]
+      }
+    }
+  })
+
   test('prevents double-mocking by returning noop on second call', async () => {
     cleanup = await setupBrowserStubs()
 

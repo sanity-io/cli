@@ -4,16 +4,9 @@ End-to-end tests for the Sanity CLI. These tests pack the CLI to a tarball, inst
 
 For test-writing patterns and conventions (test structure, naming, common mistakes), see the [`writing-cli-e2e-tests` skill](../../../.claude/skills/writing-cli-e2e-tests/SKILL.md). This README covers setup, infrastructure, and how to run/debug the tests.
 
-## Unit vs E2E
+## Unit vs Integration vs E2E
 
-Two tiers of tests live in this repo. Pick the right one for what you're verifying:
-
-|                  | Unit (`packages/@sanity/cli/src/commands/__tests__/`) | E2E (this package)                                          |
-| ---------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
-| **Runs against** | Mocked HTTP/client                                    | Real CLI binary, real API                                   |
-| **Speed**        | Milliseconds                                          | Seconds (each invocation ~10–60s)                           |
-| **Driver**       | `testCommand()`                                       | `runCli()`                                                  |
-| **Use for**      | Flag parsing, validation, error messages, edge cases  | Full flows: files generated, APIs called, prompts displayed |
+Three tiers of tests live in this repo. Pick the right one for what you're verifying - this is convered in more detail in [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) under the Testing Requirements section.
 
 Default to unit tests. Reach for an e2e test when the test only has value if the binary actually runs end-to-end.
 
@@ -170,7 +163,7 @@ describe('sanity --help', () => {
 
 Two workflows run e2e tests:
 
-- **`.github/workflows/e2e.yml`** — runs on PRs that touch `packages/@sanity/cli*`, `packages/create-sanity`, `fixtures/`, or `pnpm-lock.yaml`, and on every push to `main`. Matrix: Node 20/22/24 × 2 vitest shards. Uses the working-tree CLI (packed by `globalSetup`).
+- **`.github/workflows/e2e.yml`** — runs on PRs that touch `packages/@sanity/cli*`, `packages/create-sanity`, `fixtures/`, or `pnpm-lock.yaml`, and on every push to `main`. Matrix: Node 22/24/26 × 2 vitest shards. Uses the working-tree CLI (packed by `globalSetup`).
 - **`.github/workflows/e2e-scheduled.yml`** — runs hourly (and on manual dispatch) against `sanity@latest` from npm. Catches regressions in the published artifact and posts to Slack on failure.
 
 To trigger the scheduled workflow manually against a specific version, use **Run workflow** on the Actions tab and supply a `cli_version` (e.g. `5.20.0`).

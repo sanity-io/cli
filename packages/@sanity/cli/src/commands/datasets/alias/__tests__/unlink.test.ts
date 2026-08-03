@@ -1,4 +1,5 @@
 import {NonInteractiveError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -23,6 +24,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -100,6 +102,36 @@ describe('#dataset:alias:unlink', () => {
     expect(mockInput).not.toHaveBeenCalled()
   })
 
+  test('requires --force instead of prompting in unattended mode', async () => {
+    mockApi({
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'staging'}])
+
+    const {error} = await testCommand(UnlinkAliasCommand, ['staging'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(
+      'Unlinking a dataset alias requires confirmation. Re-run with `--force`.',
+    )
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockInput).not.toHaveBeenCalled()
+  })
+
+  test('requires an alias name in unattended mode', async () => {
+    const {error} = await testCommand(UnlinkAliasCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(
+      'Dataset alias name is required. Pass it as the `<aliasName>` argument.',
+    )
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockInput).not.toHaveBeenCalled()
+  })
+
   test('prompts for alias name when no alias provided', async () => {
     mockApi({
       apiVersion: DATASET_ALIASES_API_VERSION,
@@ -166,7 +198,7 @@ describe('#dataset:alias:unlink', () => {
     expect(error?.message).toContain(
       'Alias name must only contain letters, numbers, dashes and underscores',
     )
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('shows error when alias does not exist', async () => {

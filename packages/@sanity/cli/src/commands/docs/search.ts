@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {readDoc, searchDocs, type SearchResult} from '../../services/docs.js'
@@ -66,7 +66,7 @@ export class DocsSearchCommand extends SanityCommand<typeof DocsSearchCommand> {
           ? error.message
           : 'The documentation search API is currently unavailable. Please try again later.'
       this.error(message, {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
 
@@ -114,7 +114,7 @@ export class DocsSearchCommand extends SanityCommand<typeof DocsSearchCommand> {
           this.error(
             `Failed to read article: ${error instanceof Error ? error.message : 'Unknown error'}`,
             {
-              exit: 1,
+              exit: exitCodes.RUNTIME_ERROR,
             },
           )
         }

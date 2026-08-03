@@ -11,7 +11,7 @@ import {
   useElementSize,
   useTheme,
 } from '@sanity/ui'
-import {CloseIcon} from '@sanity/icons'
+import {CloseIcon} from '@sanity/icons/Close'
 import {css, styled} from 'styled-components'
 
 const BlueColor = css`

@@ -1,5 +1,6 @@
 import {type CliConfig, getSanityEnvVar} from '@sanity/cli-core'
 
+import {determineIsApp} from './determineIsApp.js'
 import {ensureTrailingSlash} from './ensureTrailingSlash.js'
 import {toInt} from './toInt.js'
 
@@ -38,7 +39,7 @@ export function getSharedServerConfig({
   workDir,
 }: GetSharedServerConfigOptions): GetSharedServerConfigResult {
   // Order of preference: CLI flags, environment variables, user build config, default config
-  const isApp = cliConfig && 'app' in cliConfig
+  const isApp = cliConfig ? determineIsApp(cliConfig) : false
 
   const httpHost =
     flags.host ||

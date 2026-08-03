@@ -289,6 +289,22 @@ test('no token triggers login prompt', async () => {
 })
 ```
 
+## Testing Features Not Yet on `latest`
+
+The scheduled workflow runs the suite against `sanity@latest` from npm, not the working tree (see the README's CI section). A test for a feature that hasn't shipped to the `latest` dist-tag yet passes on PRs (working-tree CLI) but breaks the hourly scheduled run — it hits a published binary that doesn't have the feature.
+
+Guard those tests so they only run against a CLI that has the feature:
+
+```typescript
+const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
+
+describe.skipIf(isRegistryMode)('sanity dev (workbench)', () => {
+  // ...
+})
+```
+
+Remove the guard once the feature lands on `latest`.
+
 ## Timeouts
 
 Set timeouts at the `describe` block level. The vitest config provides defaults (`testTimeout: 30_000`). If a group of tests needs more time, set it once:
@@ -424,6 +440,7 @@ test('rejects deprecated --reconfigure flag', async () => {
 | Multiple abort tests at different prompt stages | One abort test at the earliest prompt is sufficient |
 | `describe` blocks that just label categories | Only use `describe` for shared setup/teardown or parameterization |
 | `skipIf(!hasToken)` for unauthed tests | Override with `env: {SANITY_AUTH_TOKEN: ''}` |
+| Testing an unreleased feature unguarded | `skipIf(isRegistryMode)` — it breaks the scheduled run against `sanity@latest` |
 | Asserting on dynamic API content | Use structural regex patterns |
 | Mutating `process.env` directly | Use `vi.stubEnv()` for env overrides |
 | Mocking functions, APIs, or services | Never mock in e2e tests — test real infrastructure |

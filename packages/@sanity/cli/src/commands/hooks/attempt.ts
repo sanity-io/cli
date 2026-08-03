@@ -1,5 +1,5 @@
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {formatFailure} from '../../actions/hook/formatFailure.js'
 import {type DeliveryAttempt} from '../../actions/hook/types.js'
@@ -55,7 +55,7 @@ export class AttemptHookCommand extends SanityCommand<typeof AttemptHookCommand>
     } catch (error) {
       const err = error as Error
       attemptDebug(`Error fetching hook attempt ${attemptId}`, err)
-      this.error(`Hook attempt retrieval failed:\n${err.message}`, {exit: 1})
+      this.error(`Hook attempt retrieval failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const {createdAt, failureReason, inProgress, resultBody, resultCode} = attempt

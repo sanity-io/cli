@@ -1,7 +1,8 @@
 import {styleText} from 'node:util'
 
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
@@ -53,11 +54,17 @@ export class DatasetEmbeddingsDisableCommand extends SanityCommand<
     })
 
     try {
-      ;({dataset} = await resolveDataset({dataset, projectId}))
+      ;({dataset} = await resolveDataset({
+        dataset,
+        isUnattended: this.isUnattended(),
+        output: this.output,
+        projectId,
+      }))
     } catch (error) {
+      if (error instanceof CLIError) throw error
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to resolve dataset: ${message}`, error)
-      this.error(message, {exit: 1})
+      this.error(message, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     try {
@@ -65,7 +72,7 @@ export class DatasetEmbeddingsDisableCommand extends SanityCommand<
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to disable embeddings: ${message}`, error)
-      this.error(`Failed to disable embeddings: ${message}`, {exit: 1})
+      this.error(`Failed to disable embeddings: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     this.log(styleText('green', `Disabled embeddings for dataset ${dataset}.`))

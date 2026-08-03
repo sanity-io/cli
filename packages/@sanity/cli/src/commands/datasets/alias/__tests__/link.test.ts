@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -35,6 +36,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -102,6 +104,52 @@ describe('#dataset:alias:link', () => {
     expect(stdout).toContain('Dataset alias ~staging linked to production successfully')
   })
 
+  test('requires --force instead of prompting to relink in unattended mode', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'development'}] as never)
+
+    mockApi({
+      apiVersion: DATASET_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: `/aliases`,
+    }).reply(200, [{datasetName: 'development', name: 'staging'}])
+
+    const {error} = await testCommand(LinkAliasCommand, ['staging', 'production'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(
+      'Relinking a dataset alias requires confirmation. Re-run with `--force`.',
+    )
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('requires all arguments in unattended mode', async () => {
+    const missingBoth = await testCommand(LinkAliasCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {}},
+        isInteractive: false,
+      },
+    })
+
+    expect(missingBoth.error?.message).toBe(
+      'Dataset alias name is required. Pass it as the `<aliasName>` argument.\n' +
+        'Error: Target dataset is required. Pass it as the `<targetDataset>` argument.',
+    )
+    expect(missingBoth.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+
+    const missingTarget = await testCommand(LinkAliasCommand, ['staging'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(missingTarget.error?.message).toBe(
+      'Target dataset is required. Pass it as the `<targetDataset>` argument.',
+    )
+    expect(missingTarget.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockListDatasets).not.toHaveBeenCalled()
+  })
+
   test('links unlinked alias without requiring confirmation', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
 
@@ -138,7 +186,7 @@ describe('#dataset:alias:link', () => {
     const {error} = await testCommand(LinkAliasCommand, [alias, dataset], {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('fails when no project ID', async () => {

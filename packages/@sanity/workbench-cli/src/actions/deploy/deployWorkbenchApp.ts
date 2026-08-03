@@ -1,0 +1,139 @@
+import {basename, dirname} from 'node:path'
+import {createGzip} from 'node:zlib'
+
+import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
+import {pack} from 'tar-fs'
+
+import {deriveInterfaces} from '../../deriveInterfaces.js'
+import {
+  type BrettInterface,
+  type BrettWorkspace,
+  createApplication,
+  createDeployment,
+  deleteApplication,
+  updateApplication,
+} from '../../services/applications.js'
+
+/**
+ * A freshly created application record: its id, plus a way to undo the creation.
+ * The caller builds and deploys with the id, and calls `rollback` if a later
+ * step fails so the record isn't stranded at its slug.
+ * @internal
+ */
+export interface CreatedApplication {
+  applicationId: string
+  rollback: () => Promise<void>
+}
+
+/**
+ * Create a coreApp record (no deployment), so the CLI can build with its id
+ * before shipping the first deployment. First deploy only.
+ * @internal
+ */
+export async function createCoreApp(options: {
+  isSingleton?: boolean
+  organizationId: string
+  slug: string
+  title: string
+  visibility?: AppVisibility
+}): Promise<CreatedApplication> {
+  const spin = spinner('Creating application...').start()
+  try {
+    const {id} = await createApplication({...options, type: 'coreApp'})
+    spin.succeed()
+    return {applicationId: id, rollback: () => deleteApplication(id)}
+  } catch (error) {
+    spin.fail()
+    throw error
+  }
+}
+
+/**
+ * Create a studio record (no deployment).
+ * @internal
+ */
+export async function createStudio(options: {
+  organizationId: string
+  projectId: string | undefined
+  slug: string
+  title: string
+  visibility?: AppVisibility
+}): Promise<CreatedApplication> {
+  const spin = spinner('Creating studio...').start()
+  try {
+    const {id} = await createApplication({...options, type: 'studio'})
+    spin.succeed()
+    return {applicationId: id, rollback: () => deleteApplication(id)}
+  } catch (error) {
+    spin.fail()
+    throw error
+  }
+}
+
+/**
+ * Ship a deployment to an already-created (or `deployment.appId`) application,
+ * then sync its mutable metadata (`title`, and `icon`/`visibility` when set)
+ * from config. The deploy endpoint ignores these, so a redeploy patches them
+ * here alongside the new deployment.
+ *
+ * `onDeployed` fires the instant the deployment is live, before the metadata
+ * sync — so a caller can disarm a create-time rollback that must not delete an
+ * application once it has an active deployment.
+ * @internal
+ */
+export async function deployWorkbenchApp(options: {
+  app: CliConfig['app']
+  applicationId: string
+  icon?: string
+  isApp: boolean
+  isAutoUpdating: boolean
+  label?: string
+  onDeployed?: () => void
+  sourceDir: string
+  title: string
+  version: string
+  visibility?: AppVisibility
+  workspaces?: readonly BrettWorkspace[]
+}): Promise<void> {
+  const {
+    app,
+    applicationId,
+    icon,
+    isApp,
+    isAutoUpdating,
+    label = 'Deploying...',
+    onDeployed,
+    sourceDir,
+    title,
+    version,
+    visibility,
+    workspaces,
+  } = options
+  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+
+  const spin = spinner(label).start()
+  try {
+    await createDeployment({
+      applicationId,
+      // Brett assigns the id and resolves modules by `moduleId`, so neither travels.
+      interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map(
+        ({id: _id, src: _src, ...iface}): BrettInterface => ({...iface, version}),
+      ),
+      isAutoUpdating,
+      tarball,
+      version,
+      workspaces,
+    })
+    onDeployed?.()
+    await updateApplication(applicationId, {
+      title,
+      ...(icon ? {icon} : {}),
+      ...(visibility ? {visibility} : {}),
+    })
+    spin.succeed()
+  } catch (error) {
+    spin.clear()
+    throw error
+  }
+}

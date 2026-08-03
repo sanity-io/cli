@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -41,6 +42,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -79,14 +81,15 @@ describe('#tokens:delete', () => {
     const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123'], {
       mocks: defaultMocks,
     })
-    expect(stdout).toBe('Token deleted successfully\n')
+    expect(stdout).toBe('API token deleted\n')
     expect(confirm).toHaveBeenCalledWith({
       default: false,
-      message: 'Are you sure you want to delete the token with ID "token-api-123"?',
+      message: 'Delete API token "token-api-123"?',
     })
   })
 
   test('deletes a specific token by ID with --yes flag (skips confirmation)', async () => {
+    const {confirm} = await import('@sanity/cli-core/ux')
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
@@ -96,7 +99,8 @@ describe('#tokens:delete', () => {
     const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'], {
       mocks: defaultMocks,
     })
-    expect(stdout).toBe('Token deleted successfully\n')
+    expect(stdout).toBe('API token deleted\n')
+    expect(confirm).not.toHaveBeenCalled()
   })
 
   test('deletes a specific token by ID with -y flag (skips confirmation)', async () => {
@@ -109,17 +113,43 @@ describe('#tokens:delete', () => {
     const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123', '-y'], {
       mocks: defaultMocks,
     })
-    expect(stdout).toBe('Token deleted successfully\n')
+    expect(stdout).toBe('API token deleted\n')
   })
 
   test('cancels deletion when user declines confirmation', async () => {
     const {confirm} = await import('@sanity/cli-core/ux')
     vi.mocked(confirm).mockResolvedValue(false)
 
-    const {error} = await testCommand(DeleteTokensCommand, ['token-api-123'], {mocks: defaultMocks})
+    const {error, stdout} = await testCommand(DeleteTokensCommand, ['token-api-123'], {
+      mocks: defaultMocks,
+    })
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Operation cancelled')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
+    expect(stdout).toBe('API token not deleted\n')
+  })
+
+  test('requires a token ID and --yes in unattended mode', async () => {
+    const {confirm, select} = await import('@sanity/cli-core/ux')
+    const missingId = await testCommand(DeleteTokensCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
+        isInteractive: false,
+      },
+    })
+    expect(missingId.error?.message).toBe(
+      'Token ID is required. Pass it as the `<tokenId>` argument.\n' +
+        'Error: Deletion requires confirmation. Pass `--yes` to delete the token.',
+    )
+    expect(missingId.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+
+    const missingConfirmation = await testCommand(DeleteTokensCommand, ['token-api-123'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+    expect(missingConfirmation.error?.message).toContain('--yes')
+    expect(missingConfirmation.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(confirm).not.toHaveBeenCalled()
+    expect(select).not.toHaveBeenCalled()
   })
 
   test('prompts user to select token when none specified', async () => {
@@ -139,7 +169,7 @@ describe('#tokens:delete', () => {
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
-    expect(stdout).toBe('Token deleted successfully\n')
+    expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
       choices: [
         {name: 'API Token (Editor)', value: 'token-api-123'},
@@ -174,7 +204,7 @@ describe('#tokens:delete', () => {
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
-    expect(stdout).toBe('Token deleted successfully\n')
+    expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
       choices: [{name: 'Multi Role Token (Editor, Viewer)', value: 'token-multi-123'}],
       message: 'Select token to delete:',
@@ -203,7 +233,7 @@ describe('#tokens:delete', () => {
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
-    expect(stdout).toBe('Token deleted successfully\n')
+    expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
       choices: [{name: 'No Role Token ()', value: 'token-no-role-123'}],
       message: 'Select token to delete:',
@@ -233,8 +263,7 @@ describe('#tokens:delete', () => {
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Token deletion failed')
-    expect(error?.message).toContain('No tokens found')
+    expect(error?.message).toBe('No API tokens found for this project.')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -265,7 +294,9 @@ describe('#tokens:delete', () => {
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Token with ID "undefined" not found')
+    expect(error?.message).toContain('Could not list API tokens')
+    expect(error?.message).toContain('Project not found')
+    expect(error?.message).toContain('Check the project ID and your access permissions')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -277,7 +308,7 @@ describe('#tokens:delete', () => {
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Token deletion failed')
+    expect(error?.message).toContain('Could not list API tokens')
     expect(error?.message).toContain('Internal Server Error')
     expect(error?.oclif?.exit).toBe(1)
   })
@@ -301,7 +332,7 @@ describe('#tokens:delete', () => {
     // Don't set up any mock to simulate network failure
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Token deletion failed')
+    expect(error?.message).toContain('Could not list API tokens')
     expect(error?.oclif?.exit).toBe(1)
   })
 

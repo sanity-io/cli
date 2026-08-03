@@ -34,7 +34,9 @@ export class Install extends SanityCommand<typeof Install> {
     const root = await this.getProjectRoot()
     const workDir = root.directory
 
-    const pkgManager = await getPackageManagerChoice(workDir, {interactive: true})
+    const pkgManager = await getPackageManagerChoice(workDir, {
+      interactive: !this.isUnattended(),
+    })
 
     await (packages.length > 0
       ? installNewPackages(

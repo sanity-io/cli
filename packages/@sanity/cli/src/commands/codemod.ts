@@ -3,7 +3,7 @@ import {existsSync} from 'node:fs'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {codemods} from '../actions/codemods/index.js'
 import {type CodeMod} from '../actions/codemods/types.js'
@@ -66,7 +66,7 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
     // Verify that mod exists
     const mod = normalizedMods.get(codemodName.toLowerCase())
     if (!mod) {
-      this.error(`Codemod with name "${codemodName}" not found`, {exit: 1})
+      this.error(`Codemod with name "${codemodName}" not found`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // Verify if there is any verification defined, and user has not opted out of it
@@ -76,7 +76,7 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
         codemodeDebug('Verification failed: %s', err.message)
-        this.error(`Verification failed: ${err.message}`, {exit: 1})
+        this.error(`Verification failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
       }
     }
 
@@ -133,12 +133,12 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
     try {
       const npxHelp = execSync('npx --help', {encoding: 'utf8'})
       if (!npxHelp.includes('npm')) {
-        this.error('Not the npx we expected', {exit: 1})
+        this.error('Not the npx we expected', {exit: exitCodes.RUNTIME_ERROR})
       }
     } catch {
       this.error(
         `Failed to run "npx" - required to run codemods. Do you have a recent version of npm installed?`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
   }

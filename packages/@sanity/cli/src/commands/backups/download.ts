@@ -6,7 +6,7 @@ import {finished} from 'node:stream/promises'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {boxen, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import pMap from 'p-map'
@@ -25,6 +25,7 @@ import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {type BackupItem, listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {humanFileSize} from '../../util/humanFileSize.js'
 import {isPathDirName} from '../../util/isPathDirName.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -97,8 +98,23 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
   static override hiddenAliases: string[] = ['backup:download']
 
   public async run(): Promise<void> {
-    const {args} = await this.parse(DownloadBackupCommand)
+    const {args, flags} = await this.parse(DownloadBackupCommand)
     let {dataset} = args
+
+    if (this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!dataset) {
+        errors.push('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.')
+      }
+      if (!flags['backup-id']) {
+        errors.push('Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.')
+      }
+
+      if (errors.length > 0) {
+        this.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
+      }
+    }
 
     const projectId = await this.getProjectId({
       fallback: () =>
@@ -114,15 +130,15 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       backupDownloadDebug(`Failed to list datasets: ${message}`, error)
-      this.error(`Failed to list datasets: ${message}`, {exit: 1})
+      this.error(`Failed to list datasets: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (datasets.length === 0) {
-      this.error('No datasets found in this project.', {exit: 1})
+      this.error('No datasets found in this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (dataset) {
-      assertDatasetExists(datasets, dataset)
+      assertDatasetExists(datasets, dataset, this.output)
     } else {
       dataset = await promptForDataset({allowCreation: false, datasets})
     }
@@ -214,7 +230,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       progressSpinner.fail()
       const message = error instanceof Error ? error.message : String(error)
       backupDownloadDebug(`Downloading dataset backup failed: ${message}`, error)
-      this.error(`Downloading dataset backup failed: ${message}`, {exit: 1})
+      this.error(`Downloading dataset backup failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     docOutStream.end()
@@ -231,7 +247,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       progressSpinner.fail()
       const message = err instanceof Error ? err.message : String(err)
       backupDownloadDebug(`Archiving backup failed: ${message}`, err)
-      this.error(`Archiving backup failed: ${message}`, {exit: 1})
+      this.error(`Archiving backup failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     progressSpinner.set({
@@ -252,8 +268,13 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     }
 
     const workDir = process.cwd()
+    const defaultPath = path.join(workDir, defaultOutFileName)
+    if (this.isUnattended()) {
+      return defaultPath
+    }
+
     const inputResult = await input({
-      default: path.join(workDir, defaultOutFileName),
+      default: defaultPath,
       message: 'Output path:',
     })
     return path.resolve(inputResult)
@@ -265,7 +286,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
   ): Promise<DownloadBackupOptions> {
     const err = validateDatasetName(datasetName)
     if (err) {
-      this.error(err, {exit: 1})
+      this.error(err, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const backupId = String(
@@ -276,7 +297,9 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       'concurrency' in this.flags &&
       (this.flags.concurrency < 1 || this.flags.concurrency > MAX_DOWNLOAD_CONCURRENCY)
     ) {
-      this.error(`concurrency should be in 1 to ${MAX_DOWNLOAD_CONCURRENCY} range`, {exit: 1})
+      this.error(`\`--concurrency\` must be between 1 and ${MAX_DOWNLOAD_CONCURRENCY}.`, {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     const defaultOutFileName = `${datasetName}-backup-${backupId}.tar.gz`
@@ -293,6 +316,11 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     )
     // If the file already exists, ask for confirmation if it should be overwritten.
     if (!this.flags.overwrite && exists) {
+      if (this.isUnattended()) {
+        this.error(`File "${out}" already exists. Pass \`--overwrite\` to replace it.`, {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
       const shouldOverwrite = await confirm({
         default: false,
         message: `File "${out}" already exists, would you like to overwrite it?`,
@@ -300,7 +328,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
 
       // If the user does not want to overwrite the file, cancel the operation.
       if (!shouldOverwrite) {
-        this.error('Operation cancelled.', {exit: 1})
+        this.error('Operation cancelled.', {exit: exitCodes.USER_ABORT})
       }
     }
 
@@ -326,7 +354,7 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       })
 
       if (!response?.backups?.length) {
-        this.error('No backups found', {exit: 1})
+        this.error('No backups found', {exit: exitCodes.RUNTIME_ERROR})
       }
 
       const backupIdChoices = response.backups.map((backup: BackupItem) => ({
@@ -346,7 +374,9 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       backupDownloadDebug(`Failed to fetch backups for dataset ${datasetName}: ${message}`, err)
-      this.error(`Failed to fetch backups for dataset ${datasetName}: ${message}`, {exit: 1})
+      this.error(`Failed to fetch backups for dataset ${datasetName}: ${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 }

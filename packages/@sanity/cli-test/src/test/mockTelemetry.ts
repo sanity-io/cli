@@ -1,4 +1,4 @@
-import {type CLITelemetryStore} from '@sanity/cli-core'
+import {type CLITelemetryStore} from '@sanity/cli-core/types'
 import {vi} from 'vitest'
 
 /**

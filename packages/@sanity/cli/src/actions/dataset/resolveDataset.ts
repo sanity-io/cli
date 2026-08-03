@@ -1,3 +1,4 @@
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {promptForDataset} from '../../prompts/promptForDataset.js'
@@ -5,9 +6,13 @@ import {listDatasets} from '../../services/datasets.js'
 import {assertDatasetExists} from '../backup/assertDatasetExist.js'
 
 interface ResolveDatasetOptions {
+  /** Output to use for user-facing messages from the calling command */
+  output: Output
+
   projectId: string
 
   dataset?: string
+  isUnattended?: boolean
 }
 
 interface ResolveDatasetResult {
@@ -22,8 +27,16 @@ interface ResolveDatasetResult {
  */
 export async function resolveDataset({
   dataset,
+  isUnattended,
+  output,
   projectId,
 }: ResolveDatasetOptions): Promise<ResolveDatasetResult> {
+  if (!dataset && isUnattended) {
+    output.error('Dataset name is required. Pass it as the `<dataset>` argument.', {
+      exit: exitCodes.USAGE_ERROR,
+    })
+  }
+
   const datasets = await listDatasets(projectId)
 
   if (datasets.length === 0) {
@@ -31,7 +44,7 @@ export async function resolveDataset({
   }
 
   if (dataset) {
-    assertDatasetExists(datasets, dataset)
+    assertDatasetExists(datasets, dataset, output)
   } else {
     dataset = await promptForDataset({datasets})
   }

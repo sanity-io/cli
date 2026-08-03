@@ -1,5 +1,152 @@
 # Changelog
 
+## [2.8.0](https://github.com/sanity-io/cli/compare/cli-core-v2.7.1...cli-core-v2.8.0)
+
+_2026-08-03_
+
+### Features
+
+- **cli:** add sanity new, sanity projects unclaimed ([#1622](https://github.com/sanity-io/cli/pull/1622)) ([558b79b](https://github.com/sanity-io/cli/commit/558b79bb5218e7ba6e3b970c2140121ed99e262e))
+
+### Bug Fixes
+
+- **config:** stop workbench types from leaking into app config ([#1632](https://github.com/sanity-io/cli/pull/1632)) ([b63bae4](https://github.com/sanity-io/cli/commit/b63bae404e8fc98cb3eefba1e0b978f7b3ae5975))
+
+## [2.7.1](https://github.com/sanity-io/cli/compare/cli-core-v2.7.0...cli-core-v2.7.1)
+
+_2026-07-29_
+
+### Bug Fixes
+
+- Stricter context for cli invoke ([#1618](https://github.com/sanity-io/cli/pull/1618)) ([f857468](https://github.com/sanity-io/cli/commit/f85746877a7913bbab5c7cf43c4d6dbacd09504e))
+
+## [2.7.0](https://github.com/sanity-io/cli/compare/cli-core-v2.6.0...cli-core-v2.7.0)
+
+_2026-07-29_
+
+### Features
+
+- support providing sanityEnv to execution context ([#1608](https://github.com/sanity-io/cli/pull/1608)) ([161efb5](https://github.com/sanity-io/cli/commit/161efb54ec091c2c9603b6e6e469deb12fd374a1))
+
+## [2.6.0](https://github.com/sanity-io/cli/compare/cli-core-v2.5.1...cli-core-v2.6.0)
+
+_2026-07-28_
+
+### Features
+
+- Invoke allowed commands from outside the cli ([#1598](https://github.com/sanity-io/cli/pull/1598)) ([93f54ec](https://github.com/sanity-io/cli/commit/93f54ecafb5fb039633b6d60024c96b9d733573c))
+
+### Bug Fixes
+
+- **cli:** stop printing "null" as the user when authenticating with a token ([#1604](https://github.com/sanity-io/cli/pull/1604)) ([513a5ab](https://github.com/sanity-io/cli/commit/513a5ab18f50f64b663a901de0dab5f0dc9deb10))
+
+## [2.5.1](https://github.com/sanity-io/cli/compare/cli-core-v2.5.0...cli-core-v2.5.1)
+
+_2026-07-20_
+
+### Bug Fixes
+
+- link to project members page when projectUserNotFoundError is thrown ([#1567](https://github.com/sanity-io/cli/pull/1567)) ([9a4b509](https://github.com/sanity-io/cli/commit/9a4b50985a0671a42cf9e6c43ef8df9c083d8a02))
+
+  `projectUserNotFoundError` errors now include a link to the project members page, where you can update access to the project to resolve the error.
+
+## [2.5.0](https://github.com/sanity-io/cli/compare/cli-core-v2.4.0...cli-core-v2.5.0)
+
+_2026-07-17_
+
+### Features
+
+- declare application visibility from the CLI config ([#1541](https://github.com/sanity-io/cli/pull/1541)) ([cc06484](https://github.com/sanity-io/cli/commit/cc06484481b6586c40320836b311ea1395119c47))
+
+### Bug Fixes
+
+- **cli-core:** prevent silent SIGABRT (exit 134) in `sanity schemas deploy` and other one-shot studio worker commands ([#1554](https://github.com/sanity-io/cli/pull/1554)) ([9baab95](https://github.com/sanity-io/cli/commit/9baab9594e17ffa7a64a61871d09dbfcaf95b36e))
+
+  With Vite 8, studio bundling runs through rolldown — a native addon with its own thread pool. The studio worker never closed its Vite server, and the main thread called `worker.terminate()` as soon as the worker posted its result, destroying the worker's event loop while rolldown's threads were still live. The next threadsafe-function call then aborted the whole process with no output (reliably on macOS, intermittently on Linux), affecting `schemas deploy`/`extract`/`validate`/`list`/`delete`, `graphql deploy`, `manifest extract`, and `deploy`.
+
+  One-shot studio workers now close their Vite server (bounded by a timeout) before posting any message to the main thread, and the main thread never force-terminates them — settled workers are unref'd and tear down with the process. Errors thrown while loading the studio config (e.g. a broken `sanity.config.ts`) are serialized and posted after cleanup, so the real error surfaces instead of exit 134.
+
+- **workbench:** forward app slug to the dev workbench ([#1537](https://github.com/sanity-io/cli/pull/1537)) ([a2e001c](https://github.com/sanity-io/cli/commit/a2e001c07cefdce2a2c51556a362f966a64c8073))
+
+## [2.4.0](https://github.com/sanity-io/cli/compare/cli-core-v2.3.0...cli-core-v2.4.0)
+
+_2026-07-15_
+
+### Features
+
+- **workbench:** undeploy through the applications API ([#1472](https://github.com/sanity-io/cli/pull/1472)) ([6ddf505](https://github.com/sanity-io/cli/commit/6ddf505229ebc19169572d225385d9ed6f22f4cb))
+- Allow boolean for reactCompiler config ([#1513](https://github.com/sanity-io/cli/pull/1513)) ([6a292b7](https://github.com/sanity-io/cli/commit/6a292b7dcca05137b7457f8dcd605f68aa76dac2))
+
+## [2.3.0](https://github.com/sanity-io/cli/compare/cli-core-v2.2.1...cli-core-v2.3.0)
+
+_2026-07-13_
+
+### Features
+
+- **undeploy:** add --dry-run flag ([#1470](https://github.com/sanity-io/cli/pull/1470)) ([f381c73](https://github.com/sanity-io/cli/commit/f381c73b29827f2f0c420a3dd9e9f53b082b4e8b))
+
+## [2.2.1](https://github.com/sanity-io/cli/compare/cli-core-v2.2.0...cli-core-v2.2.1)
+
+_2026-07-07_
+
+### Bug Fixes
+
+- **types:** export ConfigStore in both /config and /types cli-core export sub-paths ([#1447](https://github.com/sanity-io/cli/pull/1447)) ([eb54522](https://github.com/sanity-io/cli/commit/eb5452239dbf51c7a41f92e99359ca4843a8aa7d))
+
+## [2.2.0](https://github.com/sanity-io/cli/compare/cli-core-v2.1.3...cli-core-v2.2.0)
+
+_2026-07-07_
+
+### Features
+
+- **cli:** treat `--json` as unattended mode, so a command emitting machine-readable output never stops at a prompt a caller can't answer ([#1420](https://github.com/sanity-io/cli/pull/1420)) ([05f768b](https://github.com/sanity-io/cli/commit/05f768b998d6848f12c7bbeedb6b1fa5d0928486))
+- **workbench:** move the typed `isWorkbenchApp` to `@sanity/workbench-cli`, derived from the schema so it can't drift. `@sanity/cli-core` keeps a boolean `isWorkbenchApp` for compatibility. ([#1429](https://github.com/sanity-io/cli/pull/1429)) ([263bbf9](https://github.com/sanity-io/cli/commit/263bbf917da5de55c65f4b4a7d3215d87ed87b49))
+- **cli:** add `unstable_bundledDev` opt-in for Vite's experimental bundled dev mode ([#1413](https://github.com/sanity-io/cli/pull/1413)) ([37d1831](https://github.com/sanity-io/cli/commit/37d1831f8062535fbdf558f726f4f273822647fc))
+
+  Set `unstable_bundledDev: true` in `sanity.cli.ts` to make `sanity dev` serve a bundled module graph (Vite's `experimental.bundledDev`) instead of individual ES modules. This can significantly speed up dev-server startup and full page reloads for large studios, while HMR stays instant. The regular unbundled dev server remains the default and is unchanged when the option is absent.
+
+  Requires `vite@^8.1.3` — earlier 8.1.x releases ship a Rolldown codegen bug that crashes the bundled studio on startup. The option is unstable and may change or be removed while the underlying Vite feature is experimental.
+
+- **refactor:** granular cli-core exports ([#1439](https://github.com/sanity-io/cli/pull/1439)) ([da98c2c](https://github.com/sanity-io/cli/commit/da98c2c2e0c807df0c1adb51723835f8403d9f35))
+
+### Bug Fixes
+
+- **workbench:** add `unstable_defineMediaLibrary` ([#1423](https://github.com/sanity-io/cli/pull/1423)) ([2c7c00c](https://github.com/sanity-io/cli/commit/2c7c00c5f1d0136b95b085db840764a07612f345))
+
+  Declare the Sanity Media Library as a workbench app and define its installation config.
+
+## [2.1.3](https://github.com/sanity-io/cli/compare/cli-core-v2.1.2...cli-core-v2.1.3)
+
+_2026-07-01_
+
+### Bug Fixes
+
+- **deps:** unpin vite and bump to ^8.1.2 ([#1410](https://github.com/sanity-io/cli/pull/1410)) ([3801bd7](https://github.com/sanity-io/cli/commit/3801bd7ebc4aacf7f3e196b4dd73991f8a24d6b7))
+
+## [2.1.2](https://github.com/sanity-io/cli/compare/cli-core-v2.1.1...cli-core-v2.1.2)
+
+_2026-06-30_
+
+### Bug Fixes
+
+- **deps:** pin vite to 8.1.0 to avoid broken 8.1.1 studio builds ([#1408](https://github.com/sanity-io/cli/pull/1408)) ([596baa7](https://github.com/sanity-io/cli/commit/596baa753d6479f2ca30318ca299aff3a0ad2aa8))
+
+## [2.1.1](https://github.com/sanity-io/cli/compare/cli-core-v2.1.0...cli-core-v2.1.1)
+
+_2026-06-23_
+
+### Bug Fixes
+
+- **deps:** remove rolldown overrides now that vite 8.1.0 ships rolldown 1.1.2 ([#1356](https://github.com/sanity-io/cli/pull/1356)) ([d96cf4f](https://github.com/sanity-io/cli/commit/d96cf4f37648f82416b11753b85d9eba1c3e1742))
+
+## [2.1.0](https://github.com/sanity-io/cli/compare/cli-core-v2.0.1...cli-core-v2.1.0)
+
+_2026-06-22_
+
+### Features
+
+- add workbench under unstable flags ([#907](https://github.com/sanity-io/cli/pull/907)) ([a2deacf](https://github.com/sanity-io/cli/commit/a2deacf2ed71783bb34927aca9d2b9b41c2f0f3d))
+
 ## [2.0.1](https://github.com/sanity-io/cli/compare/cli-core-v2.0.0...cli-core-v2.0.1)
 
 _2026-06-04_

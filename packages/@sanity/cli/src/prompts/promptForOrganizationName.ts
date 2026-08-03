@@ -3,10 +3,11 @@ import {input} from '@sanity/cli-core/ux'
 
 import {validateOrganizationName} from '../actions/organizations/validateOrganizationName.js'
 
-export async function promptForOrganizationName(user: SanityOrgUser): Promise<string> {
-  return input({
+export async function promptForOrganizationName(user?: SanityOrgUser): Promise<string> {
+  const name = await input({
     default: user?.name,
     message: 'Organization name:',
     validate: validateOrganizationName,
   })
+  return name.trim()
 }

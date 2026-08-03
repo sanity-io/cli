@@ -27,7 +27,7 @@ export class Status extends SanityCommand<typeof Status> {
     const statusMessage = getStatusMessage(consentInfo)
     const learnMoreMessage = getLearnMoreMessage(consentInfo.status)
 
-    this.log(statusMessage)
-    this.log(`\n${learnMoreMessage}`)
+    this.output.log(statusMessage)
+    this.output.log(`\n${learnMoreMessage}`)
   }
 }

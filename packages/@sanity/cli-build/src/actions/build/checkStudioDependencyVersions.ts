@@ -1,6 +1,7 @@
 import path from 'node:path'
 
-import {getLocalPackageVersion, type Output, readPackageJson} from '@sanity/cli-core'
+import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core/package-manager'
+import {type Output} from '@sanity/cli-core/types'
 import {coerce, gtr, ltr, rcompare, satisfies, type SemVer} from 'semver'
 
 interface PackageInfo {

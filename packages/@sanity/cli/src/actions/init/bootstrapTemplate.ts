@@ -19,6 +19,7 @@ interface BootstrapTemplateOptions {
   templateName: string
 
   useTypeScript: boolean
+  workbench: boolean
 
   overwriteFiles?: boolean
 }
@@ -37,6 +38,7 @@ export async function bootstrapTemplate({
   remoteTemplateInfo,
   templateName,
   useTypeScript,
+  workbench,
 }: BootstrapTemplateOptions) {
   const bootstrapVariables: GenerateConfigOptions['variables'] = {
     autoUpdates,
@@ -44,6 +46,7 @@ export async function bootstrapTemplate({
     organizationId,
     projectId,
     projectName,
+    workbench,
   }
 
   if (remoteTemplateInfo) {

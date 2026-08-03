@@ -1,5 +1,11 @@
 import {Args, Flags} from '@oclif/core'
-import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {
+  colorizeJson,
+  exitCodes,
+  getProjectCliClient,
+  SanityCommand,
+  subdebug,
+} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -61,8 +67,8 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
-        'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',
-        {exit: 1},
+        'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
@@ -79,7 +85,9 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
       const doc = await projectClient.getDocument(documentId)
 
       if (!doc) {
-        this.error(`Document "${documentId}" not found in dataset "${targetDataset}"`, {exit: 1})
+        this.error(`Document "${documentId}" not found in dataset "${targetDataset}"`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       // Output the document
@@ -92,7 +100,7 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
       const err = error as Error
 
       getDocumentDebug(`Error fetching document ${documentId}`, err)
-      this.error(`Failed to fetch document: ${err.message}`, {exit: 1})
+      this.error(`Failed to fetch document: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

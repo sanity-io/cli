@@ -5,7 +5,8 @@ const mockHttpErrors = vi.hoisted(() => vi.fn())
 const mockHeaders = vi.hoisted(() => vi.fn())
 const mockDebug = vi.hoisted(() => vi.fn())
 const mockPromise = vi.hoisted(() => vi.fn())
-const mockReadPackageUpSync = vi.hoisted(() => vi.fn())
+const mockPackageUp = vi.hoisted(() => vi.fn())
+const mockReadFileSync = vi.hoisted(() => vi.fn())
 
 vi.mock('get-it', () => ({
   getIt: mockGetIt,
@@ -18,8 +19,12 @@ vi.mock('get-it/middleware', () => ({
   promise: mockPromise,
 }))
 
-vi.mock('read-package-up', () => ({
-  readPackageUpSync: mockReadPackageUpSync,
+vi.mock('empathic/package', () => ({
+  up: mockPackageUp,
+}))
+
+vi.mock('node:fs', () => ({
+  readFileSync: mockReadFileSync,
 }))
 
 describe('#createRequester', () => {
@@ -32,10 +37,8 @@ describe('#createRequester', () => {
     const mod = await import('../createRequester.js')
     createRequester = mod.createRequester
 
-    mockReadPackageUpSync.mockReturnValue({
-      packageJson: {name: '@sanity/cli-core', version: '1.0.0'},
-      path: '/packages/@sanity/cli-core/package.json',
-    })
+    mockPackageUp.mockReturnValue('/packages/@sanity/cli-core/package.json')
+    mockReadFileSync.mockReturnValue(JSON.stringify({name: '@sanity/cli-core', version: '1.0.0'}))
   })
 
   afterEach(() => {
@@ -79,13 +82,13 @@ describe('#createRequester', () => {
 
     createRequester()
 
-    expect(mockReadPackageUpSync).not.toHaveBeenCalled()
+    expect(mockPackageUp).not.toHaveBeenCalled()
 
     // Accessing the getter triggers the lazy resolution
     const headersObj = mockHeaders.mock.calls[0][0]
     expect(headersObj['User-Agent']).toBe('@sanity/cli-core@1.0.0')
 
-    expect(mockReadPackageUpSync).toHaveBeenCalledOnce()
+    expect(mockPackageUp).toHaveBeenCalledOnce()
   })
 
   test('caches package info across calls', () => {
@@ -103,8 +106,8 @@ describe('#createRequester', () => {
     expect(firstHeaders['User-Agent']).toBe('@sanity/cli-core@1.0.0')
     expect(secondHeaders['User-Agent']).toBe('@sanity/cli-core@1.0.0')
 
-    // readPackageUpSync should only be called once due to caching
-    expect(mockReadPackageUpSync).toHaveBeenCalledOnce()
+    // package resolution should only happen once due to caching
+    expect(mockPackageUp).toHaveBeenCalledOnce()
   })
 
   test('disables httpErrors when set to false', () => {
@@ -163,14 +166,14 @@ describe('#createRequester', () => {
     expect(mockGetIt).toHaveBeenCalledWith([httpErrorsResult, debugResult, promiseResult])
   })
 
-  test('does not call readPackageUpSync when headers disabled', () => {
+  test('does not resolve package info when headers disabled', () => {
     mockHttpErrors.mockReturnValue({})
     mockDebug.mockReturnValue({})
     mockPromise.mockReturnValue({})
 
     createRequester({middleware: {headers: false}})
 
-    expect(mockReadPackageUpSync).not.toHaveBeenCalled()
+    expect(mockPackageUp).not.toHaveBeenCalled()
   })
 
   test('merges custom headers with default User-Agent', () => {
@@ -201,7 +204,7 @@ describe('#createRequester', () => {
       expect.objectContaining({'User-Agent': 'custom-agent'}),
     )
     // Should not resolve package info when User-Agent is overridden
-    expect(mockReadPackageUpSync).not.toHaveBeenCalled()
+    expect(mockPackageUp).not.toHaveBeenCalled()
   })
 
   test('disables debug when set to false', () => {
@@ -248,7 +251,7 @@ describe('#createRequester', () => {
   })
 
   test('throws when package.json cannot be found', () => {
-    mockReadPackageUpSync.mockReturnValue(undefined)
+    mockPackageUp.mockReturnValue(undefined)
 
     mockHttpErrors.mockReturnValue({})
     mockHeaders.mockReturnValue({})

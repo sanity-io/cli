@@ -1,4 +1,5 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -141,8 +142,8 @@ describe('#documents:get', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No dataset specified')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Dataset is required')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles client errors gracefully', async () => {
@@ -165,7 +166,7 @@ describe('#documents:get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing 1 required arg')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   describe('outside project context', () => {
@@ -213,8 +214,8 @@ describe('#documents:get', () => {
       )
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('No dataset specified')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.message).toContain('Dataset is required')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('--project-id flag overrides CLI config projectId', async () => {

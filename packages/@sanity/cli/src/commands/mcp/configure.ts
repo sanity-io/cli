@@ -1,10 +1,10 @@
-import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage, toError} from '@sanity/cli-core/errors'
 
 import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
 import {setupMCP} from '../../actions/mcp/setupMCP.js'
 import {LoginError} from '../../errors/LoginError.js'
 import {MCPConfigureTrace} from '../../telemetry/mcp.telemetry.js'
-import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
 
 const debug = subdebug('mcp:configure')
 
@@ -32,17 +32,20 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       if (error instanceof LoginError) {
         this.error(
           `Failed to verify authentication credentials: ${error.message}. Try running \`sanity login\`.`,
-          {exit: 1},
+          {exit: exitCodes.RUNTIME_ERROR},
         )
       }
 
-      this.error(`Failed to check authentication: ${getErrorMessage(error)}`, {exit: 1})
+      this.error(`Failed to check authentication: ${getErrorMessage(error)}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     try {
       const mcpResult = await setupMCP({
         explicit: true,
         mode: isInteractive() ? 'prompt' : 'auto',
+        output: this.output,
         skillsMode: 'skip',
       })
 
@@ -58,7 +61,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       }
     } catch (error) {
       trace.error(toError(error))
-      this.error(getErrorMessage(error), {exit: 1})
+      this.error(getErrorMessage(error), {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

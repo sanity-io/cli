@@ -1,5 +1,12 @@
 import {Args, Flags} from '@oclif/core'
-import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {
+  colorizeJson,
+  exitCodes,
+  getProjectCliClient,
+  SanityCommand,
+  subdebug,
+} from '@sanity/cli-core'
+import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -48,7 +55,6 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     }),
     'api-version': Flags.string({
       description: `API version to use (defaults to ${DOCUMENTS_API_VERSION})`,
-      env: 'SANITY_CLI_QUERY_API_VERSION',
     }),
     pretty: Flags.boolean({
       default: false,
@@ -79,15 +85,18 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
-        'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',
-        {exit: 1},
+        'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
+        {exit: exitCodes.USAGE_ERROR},
       )
     }
 
     const targetDataset = dataset || cliConfig.api?.dataset
-    const targetApiVersion = apiVersion || DOCUMENTS_API_VERSION
+    const configuredApiVersion =
+      apiVersion ??
+      (getCliExecutionContext() ? undefined : process.env.SANITY_CLI_QUERY_API_VERSION)
+    const targetApiVersion = configuredApiVersion || DOCUMENTS_API_VERSION
 
-    if (!apiVersion) {
+    if (!configuredApiVersion) {
       this.warn(`--api-version not specified, using \`${DOCUMENTS_API_VERSION}\``)
     }
 
@@ -102,7 +111,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       const docs = await projectClient.fetch(query)
 
       if (!docs) {
-        this.error('Query returned no results', {exit: 1})
+        this.error('Query returned no results', {exit: exitCodes.RUNTIME_ERROR})
       }
 
       // Output the query results
@@ -121,7 +130,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
         ? `Invalid GROQ query syntax: ${err.message}`
         : `Failed to run query: ${err.message}`
 
-      this.error(`${errorMsg}\nQuery: ${query}`, {exit: 1})
+      this.error(`${errorMsg}\nQuery: ${query}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

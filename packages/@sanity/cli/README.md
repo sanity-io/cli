@@ -6,12 +6,14 @@ Code for sanity cli
 
 - [@sanity/cli](#sanitycli)
 - [Commands](#commands)
+
 <!-- tocstop -->
 
 # Commands
 
   <!-- commands -->
 
+- [`sanity api ENDPOINT`](#sanity-api-endpoint)
 - [`sanity backups disable [DATASET]`](#sanity-backups-disable-dataset)
 - [`sanity backups download [DATASET]`](#sanity-backups-download-dataset)
 - [`sanity backups enable [DATASET]`](#sanity-backups-enable-dataset)
@@ -93,20 +95,28 @@ Code for sanity cli
 - [`sanity migrations create [TITLE]`](#sanity-migrations-create-title)
 - [`sanity migrations list`](#sanity-migrations-list)
 - [`sanity migrations run [ID]`](#sanity-migrations-run-id)
+- [`sanity new [PROJECTNAME]`](#sanity-new-projectname)
 - [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
 - [`sanity openapi list`](#sanity-openapi-list)
+- [`sanity organizations create`](#sanity-organizations-create)
+- [`sanity organizations delete ORGANIZATIONID`](#sanity-organizations-delete-organizationid)
+- [`sanity organizations get ORGANIZATIONID`](#sanity-organizations-get-organizationid)
+- [`sanity organizations list`](#sanity-organizations-list)
+- [`sanity organizations update ORGANIZATIONID`](#sanity-organizations-update-organizationid)
 - [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
 - [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
 - [`sanity projects list`](#sanity-projects-list)
+- [`sanity projects unclaimed`](#sanity-projects-unclaimed)
 - [`sanity schemas delete`](#sanity-schemas-delete)
 - [`sanity schemas deploy`](#sanity-schemas-deploy)
 - [`sanity schemas extract`](#sanity-schemas-extract)
 - [`sanity schemas list`](#sanity-schemas-list)
 - [`sanity schemas validate`](#sanity-schemas-validate)
+- [`sanity skills install`](#sanity-skills-install)
 - [`sanity telemetry disable`](#sanity-telemetry-disable)
 - [`sanity telemetry enable`](#sanity-telemetry-enable)
 - [`sanity telemetry status`](#sanity-telemetry-status)
-- [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
+- [`sanity tokens create [LABEL]`](#sanity-tokens-create-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
 - [`sanity typegen generate`](#sanity-typegen-generate)
@@ -114,6 +124,93 @@ Code for sanity cli
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
+
+## `sanity api ENDPOINT`
+
+Make an authenticated HTTP request to a Sanity API
+
+```
+USAGE
+  $ sanity api ENDPOINT [-p <id>] [-d <name>] [--api-version <version>] [--global | --project-hosted] [-H
+    <key:value>...] [-i] [--input <file> | -F <key=value>... | -f <key=value>...] [-X <method>] [--pretty] [-t <token> |
+    --anonymous]
+
+ARGUMENTS
+  ENDPOINT  API path (eg "projects" or "data/query/{dataset}"), optionally with placeholders, or a full
+            https://*.api.sanity.io URL
+
+FLAGS
+  -F, --field=<key=value>...      Add a typed parameter (key=value): true/false/null and numbers are converted, @file
+                                  reads the value from a file, @- from stdin
+  -H, --header=<key:value>...     Add an HTTP request header (key: value)
+  -X, --method=<method>           HTTP method to use (default GET, or POST when fields or --input are provided)
+  -f, --raw-field=<key=value>...  Add a string parameter (key=value)
+  -i, --include                   Include the HTTP response status and headers in the output
+  -t, --token=<token>             API token to authenticate with, instead of the logged-in user token
+      --anonymous                 Send the request without an authorization token
+      --api-version=<version>     API version to use (eg v2025-02-19). Defaults to a version embedded in the endpoint
+                                  path, or the version from the matching OpenAPI spec
+      --global                    Force the request to the global API host (api.sanity.io)
+      --input=<file>              Read the raw request body from a file (use "-" for stdin). Sent without a default
+                                  Content-Type - provide one with -H when the API requires it
+      --pretty                    Colorize JSON output
+      --project-hosted            Force the request to the project API host (<projectId>.api.sanity.io)
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>   Dataset for {dataset} placeholders (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID for {projectId} placeholders and project-hosted APIs (overrides CLI configuration)
+
+DESCRIPTION
+  Make an authenticated HTTP request to a Sanity API
+
+  The endpoint argument is an API path as documented in the published OpenAPI
+  specifications - list them with "sanity openapi list" and inspect one with
+  "sanity openapi get <slug>". Paths can be copied verbatim from the specs:
+  {projectId} and {dataset} placeholders are filled in from flags or the CLI
+  configuration, and the API host (api.sanity.io or <projectId>.api.sanity.io)
+  is chosen based on the specs' routing information.
+
+  The default request method is GET, or POST when fields or --input are
+  provided. For GET/HEAD requests, fields are sent as query parameters;
+  otherwise they are combined into a JSON request body sent with
+  "Content-Type: application/json". Raw --input bodies are sent without a
+  default Content-Type - provide one with -H when the API requires it. The
+  response body is written to stdout.
+
+  Requests are authenticated with the token from "sanity login". To use a
+  specific token instead - for example in CI or when the CLI is not logged in
+  - pass --token or set the SANITY_AUTH_TOKEN environment variable. Pass
+  --anonymous to send no token at all.
+
+EXAMPLES
+  Get the current user
+
+    $ sanity api users/me
+
+  Get the current project (placeholder filled from CLI config)
+
+    $ sanity api projects/{projectId}
+
+  Run a GROQ query against the project host
+
+    $ sanity api 'data/query/{dataset}' -f query='*[_type == "movie"][0..2]'
+
+  Send a JSON body built from typed fields
+
+    $ sanity api projects/{projectId} -X PATCH -F displayName="My project"
+
+  Send a raw request body from stdin
+
+    echo '{"mutations": []}' | sanity api 'data/mutate/{dataset}' --input - -H 'Content-Type: application/json'
+
+  Include the response status and headers, pinning the API version
+
+    $ sanity api jobs/123 --include --api-version v2025-02-19
+
+  Authenticate with a specific token instead of the logged-in session
+
+    SANITY_AUTH_TOKEN=<token> sanity api users/me
+```
 
 ## `sanity backups disable [DATASET]`
 
@@ -372,6 +469,9 @@ DESCRIPTION
 
   Set SANITY_ASSET_TIMEOUT (seconds) to override the 60-second timeout for processing resource assets.
 
+  Exit codes: 0 deployed, 2 deployment failed, 75 deployment accepted but completion could not be confirmed (rerun
+  'blueprints info' to check).
+
 EXAMPLES
   $ sanity blueprints deploy
 
@@ -415,6 +515,9 @@ DESCRIPTION
 
   Use this to clean up test environments or decommission a Stack you no longer need.
 
+  Exit codes: 0 destroyed, 2 destruction failed, 75 destruction accepted but completion could not be confirmed (rerun
+  'blueprints info' to check).
+
 EXAMPLES
   $ sanity blueprints destroy
 
@@ -427,13 +530,12 @@ Diagnose potential issues with local Blueprint and remote Stack configuration
 
 ```
 USAGE
-  $ sanity blueprints doctor [--json] [-p <value>] [--verbose] [--fix]
+  $ sanity blueprints doctor [--json] [-p <value>] [--fix]
 
 FLAGS
   -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
       --fix           Interactively fix configuration issues
       --json          Format output as json
-      --[no-]verbose  Verbose output; defaults to true
 
 DESCRIPTION
   Diagnose potential issues with local Blueprint and remote Stack configuration
@@ -443,6 +545,8 @@ DESCRIPTION
 
   Run this command when encountering errors with other Blueprint commands. Use --fix to interactively resolve detected
   issues.
+
+  Supports --json for programmatic consumption of diagnostic results.
 
 EXAMPLES
   $ sanity blueprints doctor
@@ -495,7 +599,7 @@ USAGE
     --stack-id <value> | --stack-name <value>] [--project-id <value> | --organization-id <value>]
 
 ARGUMENTS
-  [DIR]  Directory to create the local Blueprint in
+  [DIR]  Directory to create the local Blueprint in (defaults to the current directory)
 
 FLAGS
   --blueprint-type=<option>  Blueprint manifest type to use for the local Blueprint
@@ -522,8 +626,13 @@ DESCRIPTION
 
   After initialization, use 'blueprints plan' to preview changes, then 'blueprints deploy' to apply them.
 
+  Running without a directory prompts to confirm the current directory. Run 'blueprints init .' to initialize in the
+  current directory without a prompt.
+
 EXAMPLES
   $ sanity blueprints init
+
+  $ sanity blueprints init .
 
   $ sanity blueprints init [directory]
 
@@ -789,13 +898,14 @@ Add a CORS origin to the project
 
 ```
 USAGE
-  $ sanity cors add ORIGIN [-p <id>] [--credentials]
+  $ sanity cors add ORIGIN [-p <id>] [--credentials] [-y]
 
 ARGUMENTS
   ORIGIN  Origin to allow (e.g., https://example.com)
 
 FLAGS
-  --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
+  -y, --yes               Confirm risky wildcard origins without prompting
+      --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to add CORS origin to (overrides CLI configuration)
@@ -1237,23 +1347,24 @@ Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 a
 ```
 USAGE
   $ sanity datasets export [NAME] [DESTINATION] [-p <id>] [--asset-concurrency <value>] [--mode stream|cursor]
-    [--no-assets] [--no-compress] [--no-drafts] [--overwrite] [--raw] [--types <value>]
+    [--no-assets] [--no-compress] [--no-drafts] [--no-strict-asset-verification] [--overwrite] [--raw] [--types <value>]
 
 ARGUMENTS
   [NAME]         Name of the dataset to export
   [DESTINATION]  Output destination file path
 
 FLAGS
-  --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-  --mode=<option>              [default: stream] Export mode ('cursor' is faster for large datasets but may miss
-                               concurrent changes)
-                               <options: stream|cursor>
-  --no-assets                  Export only non-asset documents and remove references to image assets
-  --no-compress                Skips compressing tarball entries (still generates a gzip file)
-  --no-drafts                  Export only published versions of documents
-  --overwrite                  Overwrite any file with the same name
-  --raw                        Extract only documents, without rewriting asset references
-  --types=<value>              Defines which document types to export (comma-separated)
+  --asset-concurrency=<value>     [default: 8] Concurrent number of asset downloads
+  --mode=<option>                 [default: stream] Export mode ('cursor' is faster for large datasets but may miss
+                                  concurrent changes)
+                                  <options: stream|cursor>
+  --no-assets                     Export only non-asset documents and remove references to image assets
+  --no-compress                   Skips compressing tarball entries (still generates a gzip file)
+  --no-drafts                     Export only published versions of documents
+  --no-strict-asset-verification  Do not abort the export when an asset fails hash or content-length verification
+  --overwrite                     Overwrite any file with the same name
+  --raw                           Extract only documents, without rewriting asset references
+  --types=<value>                 Defines which document types to export (comma-separated)
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to export dataset from (overrides CLI configuration)
@@ -1277,6 +1388,10 @@ EXAMPLES
   Export specific document types
 
     $ sanity datasets export staging staging.tar.gz --types products,shops
+
+  Export dataset without aborting on asset verification failures
+
+    $ sanity datasets export moviedb moviedb.tar.gz --no-strict-asset-verification
 ```
 
 ## `sanity datasets import SOURCE [TARGETDATASET]`
@@ -1432,20 +1547,24 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--external | --source-maps | --minify | --build]
-    [--schema-required] [--url <value>] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--dry-run] [--external | --source-maps | --minify | --build]
+    [-j] [--schema-required] [--title <value>] [--url <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
 
 FLAGS
+  -j, --json               Output the result as JSON
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Build the studio before deploying (use --no-build to deploy existing `dist/` output)
+      --dry-run            Report what would be deployed without uploading or creating anything
       --external           Register an externally hosted studio
       --[no-]minify        Minify built JavaScript (use --no-minify to skip for faster builds)
       --schema-required    Fail if schema deployment fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
+      --title=<value>      Title for a newly created application or studio. For apps it also skips the interactive title
+                           prompt, enabling unattended creation
       --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
                            hostname (e.g. "my-studio" or "my-studio.sanity.studio")
       --verbose            Enable verbose logging
@@ -1745,7 +1864,7 @@ ARGUMENTS
 
 FLAGS
   --anonymous            Send the query without any authorization token
-  --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to use (defaults to 2025-08-15)
+  --api-version=<value>  API version to use (defaults to 2025-08-15)
   --pretty               Colorize JSON output
 
 OVERRIDE FLAGS
@@ -1779,8 +1898,9 @@ Validate documents in a dataset against the studio schema
 
 ```
 USAGE
-  $ sanity documents validate [-p <id>] [-d <name>] [--file <value>] [--format <value>] [--level error|warning|info]
-    [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
+  $ sanity documents validate [-p <id>] [-d <name>] [--file <value>] [--format json|ndjson|pretty] [--level
+    error|warning|info] [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace
+    <value>] [-y]
 
 FLAGS
   -d, --dataset=<name>                             Override the dataset used. By default, this is derived from the given
@@ -1788,10 +1908,11 @@ FLAGS
   -p, --project-id=<id>                            Override the project ID used. By default, this is derived from the
                                                    given workspace
   -y, --yes                                        Skips the first confirmation prompt
-      --file=<value>                               Provide a path to either an .ndjson file or a tarball containing an
-                                                   .ndjson file
-      --format=<value>                             The output format used to print the found validation markers and
+      --file=<value>                               Path to an NDJSON file or tar archive containing an NDJSON file
+                                                   (optionally gzip-compressed)
+      --format=<option>                            The output format used to print the found validation markers and
                                                    report progress
+                                                   <options: json|ndjson|pretty>
       --level=<option>                             [default: warning] The minimum level reported. Defaults to warning
                                                    <options: error|warning|info>
       --max-custom-validation-concurrency=<value>  [default: 5] Specify how many custom validators can run concurrently
@@ -1953,7 +2074,7 @@ Add or set an environment variable for a deployed function
 
 ```
 USAGE
-  $ sanity functions env add NAME KEY VALUE [--json]
+  $ sanity functions env add NAME KEY VALUE [--json] [--stack <value>]
 
 ARGUMENTS
   NAME   The name of the Sanity Function
@@ -1961,7 +2082,8 @@ ARGUMENTS
   VALUE  The value of the environment variable
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Add or set an environment variable for a deployed function
@@ -1973,6 +2095,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
+
+  $ sanity functions env add --stack <name-or-id> MyFunction API_URL https://api.example.com/
 ```
 
 ## `sanity functions env list NAME`
@@ -1981,13 +2105,14 @@ List environment variables for a deployed function
 
 ```
 USAGE
-  $ sanity functions env list NAME [--json]
+  $ sanity functions env list NAME [--json] [--stack <value>]
 
 ARGUMENTS
   NAME  The name of the Sanity Function
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   List environment variables for a deployed function
@@ -1998,6 +2123,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env list MyFunction
+
+  $ sanity functions env list --stack <name-or-id> MyFunction
 ```
 
 ## `sanity functions env remove NAME KEY`
@@ -2006,14 +2133,15 @@ Remove an environment variable from a deployed function
 
 ```
 USAGE
-  $ sanity functions env remove NAME KEY [--json]
+  $ sanity functions env remove NAME KEY [--json] [--stack <value>]
 
 ARGUMENTS
   NAME  The name of the Sanity Function
   KEY   The name of the environment variable
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Remove an environment variable from a deployed function
@@ -2025,6 +2153,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env remove MyFunction API_URL
+
+  $ sanity functions env remove --stack <name-or-id> MyFunction API_URL
 ```
 
 ## `sanity functions logs [NAME]`
@@ -2399,7 +2529,7 @@ USAGE
     <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--import-dataset] [--mcp]
     [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path
     <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name <name>]
-    [--provider <provider>] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+    [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
   -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
@@ -2421,6 +2551,7 @@ FLAGS
       --project-name=<name>        Create a new project with the given name
       --project-plan=<name>        Optionally select a plan for a new project
       --provider=<provider>        Login provider to use
+      --[no-]skills                Install Sanity agent skills globally for detected AI editors
       --template=<template>        Project template to use [default: "clean"]
       --[no-]typescript            Enable TypeScript support
       --visibility=<mode>          Visibility mode for dataset
@@ -2497,14 +2628,14 @@ Log in to your Sanity account
 
 ```
 USAGE
-  $ sanity login [--open] [--provider <providerId> | --sso <slug> | --with-token] [--sso-provider <name> ]
+  $ sanity login [--with-token | --provider <providerId> | --sso <slug>] [--open] [--sso-provider <name> ]
 
 FLAGS
+  --with-token             Read token from standard input
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
-  --provider=<providerId>  Log in using the given provider
+  --provider=<providerId>  Log in using a provider ID (google, github, sanity, vercel)
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
-  --with-token             Read token from standard input
 
 DESCRIPTION
   Log in to your Sanity account
@@ -2513,6 +2644,10 @@ EXAMPLES
   Log in using default settings
 
     $ sanity login
+
+  Log in using a token from standard input
+
+    $ sanity login --with-token < token.txt
 
   Login with GitHub provider, but do not open a browser window automatically
 
@@ -2525,10 +2660,6 @@ EXAMPLES
   Log in using a specific SSO provider within an organization
 
     $ sanity login --sso my-organization --sso-provider "Okta SSO"
-
-  Log in using a token from standard input
-
-    $ sanity login --with-token < token.txt
 ```
 
 ## `sanity logout`
@@ -2605,7 +2736,11 @@ Create a new aspect definition file
 
 ```
 USAGE
-  $ sanity media create-aspect
+  $ sanity media create-aspect [--name <value>] [--title <value>]
+
+FLAGS
+  --name=<value>   Aspect name. Defaults to the title in camel case
+  --title=<value>  Aspect title
 
 DESCRIPTION
   Create a new aspect definition file
@@ -2629,7 +2764,7 @@ ARGUMENTS
 
 FLAGS
   --media-library-id=<value>  The id of the target media library
-  --yes                       Skip confirmation prompt
+  --yes                       Run without prompts and confirm deletion
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
@@ -2831,6 +2966,67 @@ EXAMPLES
     $ sanity migrations run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
+## `sanity new [PROJECTNAME]`
+
+Create a Sanity project without an account, and claim it within 72 hours to keep it.
+
+```
+USAGE
+  $ sanity new [PROJECTNAME] [--json] [--scaffold] [-y]
+
+ARGUMENTS
+  [PROJECTNAME]  Display name for the new project
+
+FLAGS
+  -y, --yes            Skip prompts and use defaults (project: "My Sanity project")
+      --[no-]scaffold  Set up a Studio in ./sanity and a Next.js website in ./web (on by default)
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Create a Sanity project without an account, and claim it within 72 hours to keep it.
+
+  Sets up two folders here: ./sanity, a Studio where you write and edit your
+  content, and ./web, a Next.js website that reads it. Both are already
+  connected to your new project, so you can start them straight away. Use
+  --no-scaffold if you just want the project and nothing else.
+
+  The project is real and works immediately, but it is only yours for 72 hours.
+  Claim it with a Sanity account before the deadline and everything you have
+  built stays exactly as it is. Claiming is free and takes about a minute. Miss
+  the deadline and the project and its content are deleted.
+
+  Two things to keep private: the claim link, because anyone who opens it
+  becomes the owner, and the access token saved in ./sanity/.env.local and
+  ./web/.env.local, because it can read and change everything in the project.
+  Keep both env files out of git, and never put the token in code that runs in
+  the browser.
+
+  Fetch https://sanity.new for full instructions, or point your AI agent at it.
+
+EXAMPLES
+  Create a project with a Studio and a website
+
+    $ sanity new
+
+  Create a project called "My New Project"
+
+    $ sanity new "My New Project"
+
+  Create a project without being asked anything
+
+    $ sanity new --yes
+
+  Create the project only, with no Studio or website
+
+    $ sanity new --no-scaffold
+
+  Create a project and print its details as JSON
+
+    $ sanity new --json
+```
+
 ## `sanity openapi get SLUG`
 
 Get an OpenAPI specification by slug
@@ -2895,6 +3091,132 @@ EXAMPLES
   Open HTTP Reference in browser
 
     $ sanity openapi list --web
+```
+
+## `sanity organizations create`
+
+Create a new organization
+
+```
+USAGE
+  $ sanity organizations create [--default-role <value>] [--name <value>]
+
+FLAGS
+  --default-role=<value>  Default role assigned to new members
+  --name=<value>          Organization name
+
+DESCRIPTION
+  Create a new organization
+
+EXAMPLES
+  Interactively create an organization
+
+    $ sanity organizations create
+
+  Create an organization named "Acme Corp"
+
+    $ sanity organizations create --name "Acme Corp"
+
+  Create an organization with a default member role
+
+    $ sanity organizations create --name "Acme Corp" --default-role member
+```
+
+## `sanity organizations delete ORGANIZATIONID`
+
+Delete an organization
+
+```
+USAGE
+  $ sanity organizations delete ORGANIZATIONID [--force]
+
+ARGUMENTS
+  ORGANIZATIONID  Organization ID to delete
+
+FLAGS
+  --force  Do not prompt for delete confirmation - forcefully delete
+
+DESCRIPTION
+  Delete an organization
+
+EXAMPLES
+  Delete an organization (prompts for confirmation)
+
+    $ sanity organizations delete org-abc123
+
+  Delete an organization without confirmation
+
+    $ sanity organizations delete org-abc123 --force
+```
+
+## `sanity organizations get ORGANIZATIONID`
+
+Get details of an organization
+
+```
+USAGE
+  $ sanity organizations get ORGANIZATIONID
+
+ARGUMENTS
+  ORGANIZATIONID  Organization ID
+
+DESCRIPTION
+  Get details of an organization
+
+EXAMPLES
+  Get details of a specific organization
+
+    $ sanity organizations get org-abc123
+```
+
+## `sanity organizations list`
+
+List organizations you are a member of
+
+```
+USAGE
+  $ sanity organizations list
+
+DESCRIPTION
+  List organizations you are a member of
+
+EXAMPLES
+  List all your organizations
+
+    $ sanity organizations list
+```
+
+## `sanity organizations update ORGANIZATIONID`
+
+Update an organization
+
+```
+USAGE
+  $ sanity organizations update ORGANIZATIONID [--default-role <value>] [--name <value>] [--slug <value>]
+
+ARGUMENTS
+  ORGANIZATIONID  Organization ID
+
+FLAGS
+  --default-role=<value>  New default role for new members
+  --name=<value>          New organization name
+  --slug=<value>          New URL slug (requires authSAML feature on the organization)
+
+DESCRIPTION
+  Update an organization
+
+EXAMPLES
+  Rename an organization
+
+    $ sanity organizations update org-abc123 --name "New Name"
+
+  Set the organization slug (requires authSAML feature)
+
+    $ sanity organizations update org-abc123 --slug new-slug
+
+  Change the default member role
+
+    $ sanity organizations update org-abc123 --default-role viewer
 ```
 
 ## `sanity preview [OUTPUTDIR]`
@@ -2996,16 +3318,41 @@ EXAMPLES
     $ sanity projects list --sort=members --order=asc
 ```
 
+## `sanity projects unclaimed`
+
+Recover details for unclaimed projects created on this machine
+
+```
+USAGE
+  $ sanity projects unclaimed [--project-id <value>]
+
+FLAGS
+  --project-id=<value>  Project ID to recover
+
+DESCRIPTION
+  Recover details for unclaimed projects created on this machine
+
+EXAMPLES
+  List locally recorded unclaimed projects
+
+    $ sanity projects unclaimed
+
+  Show recovery details for one project
+
+    $ sanity projects unclaimed --project-id abc123
+```
+
 ## `sanity schemas delete`
 
 Delete schema documents by id
 
 ```
 USAGE
-  $ sanity schemas delete --ids <value> [-p <id>] [-d <name>] [--verbose]
+  $ sanity schemas delete --ids <value> [-p <id>] [-d <name>] [--verbose] [-y]
 
 FLAGS
   -d, --dataset=<name>  Delete schemas from a specific dataset
+  -y, --yes             Delete schemas without prompting for confirmation
       --ids=<value>     (required) Comma-separated list of schema ids to delete
       --verbose         Enable verbose logging
 
@@ -3065,11 +3412,12 @@ Extract a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schemas extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
+  $ sanity schemas extract [--enforce-required-fields] [--force] [--format <format>] [--path <value>] [--watch]
     [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
   --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
+  --force                     Overwrite an existing schema file
   --format=<format>           [default: groq-type-nodes] Output format (currently only groq-type-nodes)
   --path=<value>              Optional path to specify destination of the schema file
   --watch                     Enable watch mode to re-extract schema on file changes
@@ -3173,6 +3521,24 @@ EXAMPLES
     $ sanity schemas validate --debug-metafile-path metafile.json
 ```
 
+## `sanity skills install`
+
+Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
+
+```
+USAGE
+  $ sanity skills install
+
+DESCRIPTION
+  Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor,
+  Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
+
+EXAMPLES
+  Install Sanity agent skills for detected AI editors
+
+    $ sanity skills install
+```
+
 ## `sanity telemetry disable`
 
 Disable telemetry for your account
@@ -3224,13 +3590,13 @@ EXAMPLES
     $ sanity telemetry telemetry status
 ```
 
-## `sanity tokens add [LABEL]`
+## `sanity tokens create [LABEL]`
 
 Create a new API token for the project
 
 ```
 USAGE
-  $ sanity tokens add [LABEL] [-p <id>] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [-p <id>] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
@@ -3238,10 +3604,10 @@ ARGUMENTS
 FLAGS
   -y, --yes          Skip prompts and use defaults (unattended mode)
       --json         Output as JSON
-      --role=viewer  Role to assign to the token
+      --role=viewer  Role to assign to the token (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to add token to (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
 
 DESCRIPTION
   Create a new API token for the project
@@ -3249,23 +3615,23 @@ DESCRIPTION
 EXAMPLES
   Create a token with a label
 
-    $ sanity tokens add "My API Token"
+    $ sanity tokens create "My API Token"
 
   Create a token with editor role
 
-    $ sanity tokens add "My API Token" --role=editor
+    $ sanity tokens create "My API Token" --role=editor
 
   Create a token in unattended mode
 
-    $ sanity tokens add "CI Token" --role=editor --yes
+    $ sanity tokens create "CI Token" --role=editor --yes
 
   Output token information as JSON
 
-    $ sanity tokens add "API Token" --json
+    $ sanity tokens create "API Token" --json
 
   Create a token for a specific project
 
-    $ sanity tokens add "My Token" --project-id abc123 --role=editor
+    $ sanity tokens create "My Token" --project-id abc123 --role=editor
 ```
 
 ## `sanity tokens delete [TOKENID]`
@@ -3387,13 +3753,28 @@ Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ sanity undeploy [-y]
+  $ sanity undeploy [--dry-run] [-j] [-y]
 
 FLAGS
-  -y, --yes  Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
+  -j, --json     Output the result as JSON
+  -y, --yes      Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
+      --dry-run  Report what would be undeployed without deleting anything
 
 DESCRIPTION
   Removes the deployed Sanity Studio/App from Sanity hosting
+
+EXAMPLES
+  Undeploy the studio or application after confirming
+
+    $ sanity undeploy
+
+  Report what would be undeployed without deleting anything
+
+    $ sanity undeploy --dry-run
+
+  Undeploy without prompting and report the result as JSON
+
+    $ sanity undeploy --json --yes
 ```
 
 ## `sanity users invite [EMAIL]`

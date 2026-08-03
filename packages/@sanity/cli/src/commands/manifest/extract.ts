@@ -1,6 +1,6 @@
 import {Flags} from '@oclif/core'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, findProjectRoot, SanityCommand} from '@sanity/cli-core'
 
 import {manifestDebug} from '../../actions/manifest/debug.js'
 import {extractManifest} from '../../actions/manifest/extractManifest.js'
@@ -36,7 +36,12 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
     const {flags} = await this.parse(ExtractManifestCommand)
 
     try {
-      await extractManifest(flags.path)
+      const projectRoot = await findProjectRoot(process.cwd())
+      await extractManifest({
+        outPath: flags.path,
+        path: projectRoot.path,
+        workDir: projectRoot.directory,
+      })
     } catch (error) {
       manifestDebug('Error extracting manifest in command', error)
       if (
@@ -45,12 +50,12 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
         error.validation.length > 0
       ) {
         this.output.log(formatSchemaValidation(error.validation))
-        this.exit(1)
+        this.exit(exitCodes.RUNTIME_ERROR)
       }
 
       this.error(
         `Failed to extract manifest:\n${error instanceof Error ? error.message : String(error)}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
   }

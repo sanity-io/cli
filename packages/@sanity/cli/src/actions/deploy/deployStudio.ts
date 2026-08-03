@@ -2,246 +2,457 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
-import {CLIError} from '@oclif/core/errors'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {exitCodes, getLocalPackageVersion, type Output} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {
+  type BrettWorkspace,
+  createStudio,
+  deployWorkbenchApp,
+  getApplicationUrl,
+  getWorkbench,
+} from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
 
-import {createDeployment} from '../../services/userApplications.js'
+import {createDeployment, type UserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {buildStudio} from '../build/buildStudio.js'
-import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
-import {checkDir} from './checkDir.js'
-import {createStudioUserApplication} from './createStudioUserApplication.js'
+import {readIconFromPath} from '../manifest/extractCoreAppManifest.js'
+import {createStudioUserApplication} from './createUserApplication.js'
+import {
+  checkAutoUpdates,
+  checkBuild,
+  checkPackageVersion,
+  checkStudioTarget,
+  type DeployCheckReporter,
+  verifyOutputDir,
+} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
+import {listDeploymentFiles, reportExposes} from './deploymentPlan.js'
+import {type DeployResult, runDeploy} from './deployRunner.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
-import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
+import {findUserApplicationForStudio} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
-import {normalizeUrl, validateUrl} from './urlUtils.js'
 
-export async function deployStudio(options: DeployAppOptions) {
-  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+const STUDIO_PACKAGE = 'sanity'
 
-  const workDir = projectRoot.directory
-  const configPath = projectRoot.path
+export function deployStudio(options: DeployAppOptions): Promise<void> {
+  return runDeploy(options, {
+    listFiles: ({flags, projectRoot, sourceDir}) =>
+      flags.external ? Promise.resolve([]) : listDeploymentFiles(sourceDir, projectRoot.directory),
+    run: runStudioDeployment,
+    type: 'studio',
+  })
+}
 
-  const appId = getAppId(cliConfig)
-  const projectId = cliConfig.api?.projectId
-  const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
-  const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
-
+/** Validates the deploy, extracts and uploads the schema, and ships the build. */
+async function runStudioDeployment(
+  options: DeployAppOptions,
+  reporter: DeployCheckReporter,
+): Promise<DeployResult | void> {
+  const {cliConfig, flags, output, sourceDir} = options
+  const workDir = options.projectRoot.directory
   const isExternal = !!flags.external
-  const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
+  const workbench = getWorkbench(cliConfig)
+  const isWorkbenchApp = workbench !== null
+  const projectId = cliConfig.api?.projectId
+  const organizationId = cliConfig.app?.organizationId
+  const appId = getAppId(cliConfig)
+  const dryRun = !!flags['dry-run']
 
-  // Resolve the app host from --url flag (takes precedence) or studioHost config
-  const appHost = resolveAppHost({flags, isExternal, output, studioHost: cliConfig.studioHost})
-
-  if (!installedSanityVersion) {
-    output.error(`Failed to find installed sanity version`, {exit: 1})
-    return
-  }
-
-  if (!projectId) {
-    output.error(NO_PROJECT_ID, {exit: 1})
-    return
-  }
-
-  let spin = spinner('Verifying local content')
-
-  try {
-    let userApplication = await findUserApplicationForStudio({
-      appHost,
-      appId,
-      output,
-      projectId,
-      unattended: !!flags.yes,
-      urlType,
+  // A federated app deploys through Sanity's build/hosting pipeline, which
+  // --external skips — fail before doing any other work.
+  if (isExternal && isWorkbenchApp) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'Deploying a federated application to an external host is not yet supported',
+      solution: 'Remove the --external flag to deploy to Sanity hosting',
+      status: 'fail',
     })
+  }
 
-    if (!userApplication) {
-      if (flags.yes) {
-        const flagHint = isExternal
-          ? 'Use --url to specify the external studio URL'
-          : 'Use --url to specify the studio hostname'
-        output.error(
-          `Cannot prompt for ${isExternal ? 'external studio URL' : 'studio hostname'} in unattended mode. ${flagHint}.`,
-          {exit: exitCodes.USAGE_ERROR},
-        )
-        return
-      }
+  const appTitle = workbench
+    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
+    : ''
 
-      if (isExternal) {
-        output.log('Your project has not been registered with an external studio URL.')
-        output.log('Please enter the full URL where your studio is hosted.')
-      } else {
-        output.log('Your project has not been assigned a studio hostname.')
-        output.log('To deploy your Sanity Studio to our hosted sanity.studio service,')
-        output.log('you will need one. Please enter the subdomain you want to use.')
-      }
+  const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
-      userApplication = await createStudioUserApplication({projectId, urlType})
+  const version = await checkPackageVersion(reporter, {
+    moduleName: STUDIO_PACKAGE,
+    workDir,
+  })
 
-      deployDebug('Created user application', userApplication)
-    }
+  reporter.report(
+    projectId
+      ? {message: `Project: ${projectId}`, status: 'pass'}
+      : {
+          message: NO_PROJECT_ID,
+          solution: 'Add `api.projectId` to sanity.cli.ts',
+          status: 'fail',
+        },
+  )
 
-    deployDebug('Found user application', userApplication)
+  // Workbench studios deploy to Brett (which needs the org); plain studios
+  // resolve/create on user-applications, unchanged.
+  let application: UserApplication | null = null
+  let studioCreated = false
+  if (workbench && !isExternal) {
+    reporter.report(
+      organizationId
+        ? {message: `Organization: ${organizationId}`, status: 'pass'}
+        : {
+            message: NO_ORGANIZATION_ID,
+            solution: 'Add `app.organizationId` to sanity.cli.ts',
+            status: 'fail',
+          },
+    )
+    await checkStudioTarget(reporter, {
+      appId,
+      isWorkbenchApp: true,
+      organizationId,
+      slug: workbench.slug,
+      title: appTitle,
+    })
+  } else {
+    ;({application, created: studioCreated} = await resolveStudioApplication(options, {
+      dryRun,
+      reporter,
+    }))
+  }
 
-    // Always build the project, unless --no-build is passed or --external is passed
-    const shouldBuild = flags.build && !isExternal
-    if (shouldBuild) {
-      deployDebug(`Building studio`)
-      await buildStudio({
-        autoUpdatesEnabled: isAutoUpdating,
-        calledFromDeploy: true,
-        cliConfig,
-        flags,
-        outDir: sourceDir,
-        output,
-        workDir,
-      })
-    }
+  // A first deploy mints the app id and the build inlines it; --no-build would
+  // ship an existing bundle carrying a different id, so it can't be a first deploy.
+  if (workbench && !isExternal && !appId && !flags.build) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'A first deploy cannot skip the build (--no-build)',
+      solution: 'Drop --no-build so the new application id is inlined into the build',
+      status: 'fail',
+    })
+  }
 
-    let studioManifest: StudioManifest | null = null
-    try {
-      studioManifest = await deployStudioSchemasAndManifests({
-        configPath,
-        isExternal,
-        outPath: `${sourceDir}/static`,
-        projectId,
-        schemaRequired: flags['schema-required'],
-        verbose: flags.verbose,
-        workDir,
-      })
-    } catch (error) {
-      deployDebug('Error deploying studio schemas and manifests', error)
-      if (error instanceof SchemaExtractionError) {
-        output.error(formatSchemaValidation(error.validation || []), {exit: 1})
-      }
-      output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
-    }
+  // Read up front so a bad icon path fails before we create or build.
+  const appIcon =
+    !dryRun && !isExternal && workbench?.icon
+      ? await readIconFromPath(workDir, workbench.icon)
+      : undefined
 
-    if (!studioManifest) {
-      output.error('Failed to generate studio manifest. Please check your schemas and manifests.', {
-        exit: 1,
-      })
-    }
+  // Create the studio before the build so the bundle carries its real id. A
+  // redeploy already has it from `deployment.appId`; a dry run skips creation.
+  let applicationId = appId
+  let applicationCreated = false
+  let rollbackApp: (() => Promise<void>) | undefined
+  if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
+    ;({applicationId, rollback: rollbackApp} = await createStudio({
+      organizationId,
+      projectId,
+      slug: workbench.slug,
+      title: appTitle,
+      visibility: workbench.visibility,
+    }))
+    applicationCreated = true
+  }
 
-    let tarball: Gzip | undefined
+  // A record created above is stranded at its slug (and blocks retries) if any
+  // step before it fully deploys fails, so undo the creation on failure.
+  try {
+    await checkBuild(reporter, {
+      build: () =>
+        buildStudio({
+          applicationId: workbench ? applicationId : undefined,
+          autoUpdatesEnabled: isAutoUpdating,
+          calledFromDeploy: true,
+          cliConfig,
+          flags,
+          outDir: sourceDir,
+          output,
+          workDir,
+        }),
+      skipReason: studioBuildSkipReason({build: flags.build, isExternal}),
+      successMessage: 'Studio built',
+    })
 
     if (!isExternal) {
-      // Ensure that the directory exists, is a directory and seems to have valid content
-      spin = spin.start()
-      try {
-        await checkDir(sourceDir)
-        spin.succeed()
-      } catch (err) {
-        spin.fail()
-        deployDebug('Error checking directory', err)
-        output.error('Error checking directory', {exit: 1})
-      }
-
-      // Create a tarball of the given directory
-      const parentDir = dirname(sourceDir)
-      const base = basename(sourceDir)
-      tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
+      await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
     }
 
-    spin = spinner(isExternal ? 'Registering studio' : 'Deploying to sanity.studio').start()
+    // Report the exposes deploying with the studio, both modes. External studios
+    // host their own bundle, so nothing registers.
+    const exposes = workbench && !isExternal ? reportExposes(reporter, workbench) : []
 
-    const {location} = await createDeployment({
-      applicationId: userApplication.id,
-      isApp: false,
+    // Dry run stops here — everything below mutates.
+    if (dryRun) return
+
+    // A real deploy has already exited if anything failed; landing here without a
+    // resolved version means the deploy target was never resolved.
+    if (!version) return
+
+    const studioManifest = await uploadStudioSchema(options, {isExternal})
+    // The studio was created (or resolved from `deployment.appId`) before the
+    // build, so this only ships the deployment; plain studios use user-applications.
+    if (workbench && !isExternal && organizationId && applicationId) {
+      await deployWorkbenchApp({
+        app: cliConfig.app,
+        applicationId,
+        icon: appIcon,
+        isApp: false,
+        isAutoUpdating,
+        label: 'Deploying studio',
+        // Once the deployment is live, a metadata-sync failure must not delete
+        // the studio.
+        onDeployed: () => {
+          rollbackApp = undefined
+        },
+        sourceDir,
+        title: appTitle,
+        version,
+        visibility: workbench.visibility,
+        workspaces: toWorkspaces(studioManifest),
+      })
+      const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
+      logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
+      return {
+        applicationType: 'studio',
+        applicationVersion: version,
+        ...(exposes.length > 0 ? {exposes} : {}),
+        target: {
+          action: applicationCreated ? 'create' : 'update',
+          applicationId,
+          ...(applicationCreated ? {slug: workbench.slug} : {}),
+          title: appTitle,
+          url,
+        },
+      }
+    }
+
+    if (!application) return
+    const location = await shipStudioDeployment({
+      application,
       isAutoUpdating,
-      manifest: studioManifest,
-      projectId,
-      tarball,
-      version: installedSanityVersion,
+      isExternal,
+      options,
+      studioManifest,
+      version,
     })
 
-    spin.succeed()
-
-    if (isExternal) {
-      output.log(`\nSuccess! Studio registered`)
-    } else {
-      output.log(`\nSuccess! Studio deployed to ${styleText('cyan', location)}`)
+    return {
+      applicationType: 'studio',
+      applicationVersion: version,
+      target: {
+        action: studioCreated ? 'create' : 'update',
+        applicationId: application.id,
+        title: application.title ?? null,
+        url: location,
+      },
     }
-
-    if (!appId) {
-      const example = `Example:
-export default defineCliConfig({
-  //…
-  deployment: {
-    ${styleText('cyan', `appId: '${userApplication.id}'`)},
-  },
-  //…
-})`
-      output.log(`\nAdd ${styleText('cyan', `appId: '${userApplication.id}'`)}`)
-      output.log(`to the \`deployment\` section in sanity.cli.js or sanity.cli.ts`)
-      output.log(`to avoid prompting for application id on next deploy.`)
-      output.log(`\n${example}`)
-    }
-  } catch (error) {
-    // if the error is a CLIError, we can just output the message and preserve its exit code
-    if (error instanceof CLIError) {
-      output.error(error.message, {exit: error.oclif?.exit ?? exitCodes.RUNTIME_ERROR})
-      return
-    }
-
-    spin.fail()
-    deployDebug('Error deploying studio', error)
-    output.error(`Error deploying studio: ${error}`, {exit: 1})
+  } catch (err) {
+    await rollbackApp?.()
+    throw err
   }
 }
 
-function resolveAppHost({
-  flags,
-  isExternal,
-  output,
-  studioHost,
-}: {
-  flags: DeployAppOptions['flags']
-  isExternal: boolean
-  output: Output
-  studioHost: string | undefined
-}): string | undefined {
-  const url = flags.url
-  if (!url) {
-    return studioHost
+/**
+ * Finds the application a real deploy targets, registering a studio host when
+ * none is configured. A dry run resolves and reports the target read-only instead.
+ */
+async function resolveStudioApplication(
+  options: DeployAppOptions,
+  {dryRun, reporter}: {dryRun: boolean; reporter: DeployCheckReporter},
+): Promise<{application: UserApplication | null; created: boolean}> {
+  const {cliConfig, flags, output} = options
+  const isExternal = !!flags.external
+  const appId = getAppId(cliConfig)
+  // Sets the title on a newly registered studio; blank falls back to undefined
+  const title = flags.title?.trim() || undefined
+
+  if (dryRun) {
+    await checkStudioTarget(reporter, {
+      appId,
+      isExternal,
+      projectId: cliConfig.api?.projectId,
+      studioHost: cliConfig.studioHost,
+      title,
+      urlFlag: flags.url,
+    })
+    return {application: null, created: false}
   }
 
-  if (isExternal) {
-    const normalized = normalizeUrl(url)
-    const validation = validateUrl(normalized)
-    if (validation !== true) {
-      output.error(validation, {exit: exitCodes.USAGE_ERROR})
-      return undefined
+  const projectId = cliConfig.api?.projectId ?? ''
+  // `created` is true when a configured-but-unregistered host was just registered.
+  const {application, created} = await findUserApplicationForStudio({
+    appId,
+    isExternal,
+    output,
+    projectId,
+    studioHost: cliConfig.studioHost,
+    title,
+    unattended: !!flags.yes,
+    urlFlag: flags.url,
+  })
+
+  if (!application) {
+    if (isExternal) {
+      output.log('Your project has not been registered with an external studio URL.')
+      output.log('Please enter the full URL where your studio is hosted.')
+    } else {
+      output.log('Your project has not been assigned a studio hostname.')
+      output.log('To deploy your Sanity Studio to our hosted sanity.studio service,')
+      output.log('you will need one. Please enter the subdomain you want to use.')
     }
-    return normalized
+
+    const registered = await createStudioUserApplication({
+      projectId,
+      title,
+      urlType: isExternal ? 'external' : 'internal',
+    })
+    deployDebug('Created user application', registered)
+    return {application: registered, created: true}
   }
 
-  // For internal deploys, strip protocol prefix and .sanity.studio suffix if present
-  const hostname = url.replace(/^https?:\/\//i, '').replace(/\.sanity\.studio\/?$/i, '')
+  deployDebug('Found user application', application)
+  return {application, created}
+}
 
-  // If the result still looks like a URL (contains dots), the user likely meant --external
-  if (hostname.includes('.')) {
-    output.error(
-      `"${hostname}" does not look like a sanity.studio hostname. Did you mean to use --external?`,
-      {exit: exitCodes.USAGE_ERROR},
+/** Extracts the studio schema and manifest and uploads them to the schema store. */
+async function uploadStudioSchema(
+  options: DeployAppOptions,
+  {isExternal}: {isExternal: boolean},
+): Promise<StudioManifest | null> {
+  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+
+  let studioManifest: StudioManifest | null = null
+  try {
+    studioManifest = await deployStudioSchemasAndManifests(
+      {
+        configPath: projectRoot.path,
+        isExternal,
+        outPath: `${sourceDir}/static`,
+        projectId: cliConfig.api?.projectId ?? '',
+        schemaRequired: flags['schema-required'],
+        verbose: flags.verbose,
+        workDir: projectRoot.directory,
+      },
+      output,
     )
-    return undefined
+  } catch (error) {
+    deployDebug('Error deploying studio schemas and manifests', error)
+    if (error instanceof SchemaExtractionError) {
+      output.error(formatSchemaValidation(error.validation || []), {exit: 1})
+    }
+    output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
   }
 
-  // Validate hostname characters (alphanumeric and hyphens only)
-  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(hostname)) {
-    output.error(
-      `Invalid studio hostname "${hostname}". Hostnames can only contain letters, numbers, and hyphens.`,
-      {exit: exitCodes.USAGE_ERROR},
-    )
-    return undefined
+  if (!studioManifest) {
+    output.error('Failed to generate studio manifest. Please check your schemas and manifests.', {
+      exit: 1,
+    })
   }
 
-  return hostname
+  return studioManifest
+}
+
+async function shipStudioDeployment({
+  application,
+  isAutoUpdating,
+  isExternal,
+  options,
+  studioManifest,
+  version,
+}: {
+  application: UserApplication
+  isAutoUpdating: boolean
+  isExternal: boolean
+  options: DeployAppOptions
+  studioManifest: StudioManifest | null
+  version: string
+}): Promise<string> {
+  const {cliConfig, output, sourceDir} = options
+
+  let tarball: Gzip | undefined
+  if (!isExternal) {
+    tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  }
+
+  const spin = spinner(isExternal ? 'Registering studio' : 'Deploying to sanity.studio').start()
+  let location: string
+  try {
+    ;({location} = await createDeployment({
+      applicationId: application.id,
+      isApp: false,
+      isAutoUpdating,
+      manifest: studioManifest,
+      projectId: cliConfig.api?.projectId,
+      tarball,
+      version,
+    }))
+  } catch (error) {
+    spin.fail()
+    throw error
+  }
+  spin.succeed()
+
+  const named = application.title ? ` — "${application.title}"` : ''
+  output.log(
+    isExternal
+      ? `\nSuccess! Studio registered${named}`
+      : `\nSuccess! Studio deployed to ${styleText('cyan', location)}${named}`,
+  )
+
+  if (getAppId(cliConfig)) return location
+
+  const example = `Example:
+export default defineCliConfig({
+  //…
+  deployment: {
+    ${styleText('cyan', `appId: '${application.id}'`)},
+  },
+  //…
+})`
+  output.log(`\nAdd ${styleText('cyan', `appId: '${application.id}'`)}`)
+  output.log(`to the \`deployment\` section in sanity.cli.js or sanity.cli.ts`)
+  output.log(`to avoid prompting for application id on next deploy.`)
+  output.log(`\n${example}`)
+
+  return location
+}
+
+function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
+  return (manifest?.workspaces ?? []).map((workspace) => ({
+    basePath: workspace.basePath,
+    dataset: workspace.dataset,
+    icon: workspace.icon,
+    name: workspace.name,
+    projectId: workspace.projectId,
+    schemaDescriptorId: workspace.schemaDescriptorId,
+    subtitle: workspace.subtitle,
+    title: workspace.title,
+  }))
+}
+
+/** Renders the workbench studio's deploy result; the appId hint shows only when none is configured. */
+function logWorkbenchStudioDeployed({
+  applicationId,
+  cliConfig,
+  output,
+  url,
+}: {
+  applicationId: string
+  cliConfig: DeployAppOptions['cliConfig']
+  output: DeployAppOptions['output']
+  url: string
+}): void {
+  output.log(`\nSuccess! Studio deployed to ${styleText('cyan', url)}`)
+  if (getAppId(cliConfig)) return
+
+  output.log(`\nAdd ${styleText('cyan', `appId: '${applicationId}'`)}`)
+  output.log(`to the \`deployment\` section in sanity.cli.js or sanity.cli.ts`)
+  output.log(`to avoid prompting for application id on next deploy.`)
+}
+
+function studioBuildSkipReason({build, isExternal}: {build: boolean; isExternal: boolean}) {
+  if (isExternal) return 'Build skipped for externally hosted studios'
+  if (!build) return 'Build skipped (--no-build) — validating existing output directory'
+  return
 }

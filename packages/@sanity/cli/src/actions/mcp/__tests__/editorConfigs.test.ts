@@ -61,17 +61,34 @@ describe('buildServerConfig', () => {
     })
   })
 
-  test('VS Code config includes Authorization header with token', () => {
-    const config = EDITOR_CONFIGS['VS Code'].buildServerConfig(testToken)
+  test('VS Code config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS['VS Code'].buildServerConfig()
 
     expect(config).toStrictEqual({
-      headers: {Authorization: `Bearer ${testToken}`},
       type: 'http',
       url: 'https://mcp.sanity.io',
     })
   })
 
-  test('Codex CLI uses http_headers instead of headers', () => {
+  test('VS Code Insiders config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS['VS Code Insiders'].buildServerConfig()
+
+    expect(config).toStrictEqual({
+      type: 'http',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('Codex CLI config uses OAuth (no http_headers)', () => {
+    const config = EDITOR_CONFIGS['Codex CLI'].buildServerConfig()
+
+    expect(config).toStrictEqual({
+      type: 'http',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('Codex CLI uses http_headers instead of headers when given a token', () => {
     const config = EDITOR_CONFIGS['Codex CLI'].buildServerConfig(testToken)
 
     expect(config).toStrictEqual({
@@ -81,18 +98,23 @@ describe('buildServerConfig', () => {
     })
   })
 
-  test('all editors except Cursor and Claude Code include auth credentials', () => {
+  test('OpenCode config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS.OpenCode.buildServerConfig()
+
+    expect(config).toStrictEqual({
+      type: 'remote',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('all editors except OAuth-only ones include auth credentials', () => {
     const editorsWithToken = [
       'Antigravity',
       'Cline',
       'Cline CLI',
-      'Codex CLI',
       'Gemini CLI',
       'GitHub Copilot CLI',
       'MCPorter',
-      'OpenCode',
-      'VS Code',
-      'VS Code Insiders',
       'Zed',
     ] as const
 

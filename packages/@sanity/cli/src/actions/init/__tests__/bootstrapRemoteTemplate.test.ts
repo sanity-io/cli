@@ -77,6 +77,7 @@ const baseOpts = {
     autoUpdates: false,
     dataset: 'production',
     projectId: 'test-project-id',
+    workbench: false,
   },
 }
 

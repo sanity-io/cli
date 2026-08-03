@@ -1,6 +1,8 @@
+import {readFileSync} from 'node:fs'
+
+import {up as packageUp} from 'empathic/package'
 import {getIt, type Requester} from 'get-it'
 import {debug, headers, httpErrors, promise} from 'get-it/middleware'
-import {readPackageUpSync} from 'read-package-up'
 
 let cachedPkg: {name: string; version: string} | undefined
 
@@ -83,14 +85,15 @@ export function createRequester(options?: {middleware?: MiddlewareOptions}): Req
 function getPackageInfo(): {name: string; version: string} {
   if (cachedPkg) return cachedPkg
 
-  const result = readPackageUpSync({cwd: import.meta.dirname})
-  if (!result) {
+  const pkgPath = packageUp({cwd: import.meta.dirname})
+  if (!pkgPath) {
     throw new Error('Unable to resolve @sanity/cli-core package root')
   }
 
+  const packageJson = JSON.parse(readFileSync(pkgPath, 'utf8'))
   cachedPkg = {
-    name: result.packageJson.name ?? '@sanity/cli-core',
-    version: result.packageJson.version ?? '0.0.0',
+    name: packageJson.name ?? '@sanity/cli-core',
+    version: packageJson.version ?? '0.0.0',
   }
   return cachedPkg
 }

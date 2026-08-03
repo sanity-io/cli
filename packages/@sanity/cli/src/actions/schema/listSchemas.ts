@@ -45,7 +45,7 @@ export async function listSchemas(options: ListSchemasOptions): Promise<void> {
   )
 
   const schemas = await getDatasetSchemas(projectDatasets, id)
-  const parsedSchemas = parseSchemas(schemas, output)
+  const parsedSchemas = parseSchemas(schemas, output, json)
 
   if (parsedSchemas.length === 0) {
     const datasetString = getDatasetsOutString(projectDatasets.map((dataset) => dataset.dataset))
@@ -76,7 +76,11 @@ async function getDatasetSchemas(projectDatasets: Workspace[], id?: string) {
   )
 }
 
-function parseSchemas(schemas: PromiseSettledResult<StoredWorkspaceSchema[]>[], output: Output) {
+function parseSchemas(
+  schemas: PromiseSettledResult<StoredWorkspaceSchema[]>[],
+  output: Output,
+  json: boolean,
+) {
   return schemas
     .map((schema) => {
       if (schema.status === 'fulfilled') return schema.value
@@ -91,7 +95,8 @@ function parseSchemas(schemas: PromiseSettledResult<StoredWorkspaceSchema[]>[], 
           'statusCode' in error.cause &&
           error.cause.statusCode === 401
         ) {
-          output.log(
+          const logDiagnostic = json ? output.warn.bind(output) : output.log.bind(output)
+          logDiagnostic(
             styleText(
               'yellow',
               `${logSymbols.warning} ↳ No permissions to read schema from "${error.dataset}". ${
@@ -102,7 +107,8 @@ function parseSchemas(schemas: PromiseSettledResult<StoredWorkspaceSchema[]>[], 
           return []
         }
 
-        output.log(
+        const logDiagnostic = json ? output.warn.bind(output) : output.log.bind(output)
+        logDiagnostic(
           styleText('red', `↳ Failed to fetch schema from "${error.dataset}":\n  ${error.message}`),
         )
         return []

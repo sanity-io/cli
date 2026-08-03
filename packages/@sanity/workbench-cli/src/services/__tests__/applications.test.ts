@@ -1,0 +1,243 @@
+import {Readable} from 'node:stream'
+import {type Gzip} from 'node:zlib'
+
+import {getGlobalCliClient} from '@sanity/cli-core'
+import FormData from 'form-data'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+
+import {
+  type BrettInterface,
+  type BrettWorkspace,
+  createApplication,
+  createDeployment,
+  getApplication,
+  getApplicationUrl,
+  getWorkbenchUrl,
+  listApplications,
+  updateApplication,
+} from '../applications.js'
+
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  getGlobalCliClient: vi.fn(),
+}))
+
+const mockClient = {request: vi.fn()}
+// A gzip stream is opaque to the service; a readable stands in for the tarball.
+const tarball = () => Readable.from(['remote']) as unknown as Gzip
+const interfaces: BrettInterface[] = [
+  {moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
+]
+const workspaces: BrettWorkspace[] = [
+  {
+    basePath: '/',
+    dataset: 'production',
+    name: 'default',
+    projectId: 'proj-1',
+    schemaDescriptorId: 'desc-1',
+    title: 'Default',
+  },
+]
+
+/** The (name, value) pairs a call appended to its FormData. */
+function appendedFields(): Array<[string, unknown]> {
+  return appendSpy.mock.calls.map((call: unknown[]) => [call[0], call[1]] as [string, unknown])
+}
+let appendSpy: ReturnType<typeof vi.spyOn>
+
+beforeEach(() => {
+  vi.mocked(getGlobalCliClient).mockResolvedValue(mockClient as never)
+  appendSpy = vi.spyOn(FormData.prototype, 'append')
+})
+
+afterEach(() => {
+  vi.clearAllMocks()
+  vi.restoreAllMocks()
+})
+
+describe('getApplication', () => {
+  test('resolves the application at vX with a user session', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_1', title: 'App', type: 'coreApp'})
+
+    expect(await getApplication('app_1')).toMatchObject({id: 'app_1'})
+    expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
+    expect(mockClient.request).toHaveBeenCalledWith({uri: '/applications/app_1'})
+  })
+
+  test('returns null when the application does not exist (404)', async () => {
+    mockClient.request.mockRejectedValueOnce({statusCode: 404})
+    expect(await getApplication('missing')).toBeNull()
+  })
+
+  test('rethrows any non-404 error', async () => {
+    mockClient.request.mockRejectedValueOnce({statusCode: 500})
+    await expect(getApplication('app_1')).rejects.toMatchObject({statusCode: 500})
+  })
+})
+
+describe('listApplications', () => {
+  test('GETs the organization’s applications in one page (limit=none)', async () => {
+    const apps = [
+      {id: 'app_1', organizationId: 'org-1', slug: 'agent', title: 'Agent', type: 'coreApp'},
+      {id: 'app_2', organizationId: 'org-1', slug: 'media-library', title: 'ML', type: 'coreApp'},
+    ]
+    mockClient.request.mockResolvedValueOnce({data: apps})
+
+    expect(await listApplications('org-1')).toEqual(apps)
+    expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
+    expect(mockClient.request).toHaveBeenCalledWith({
+      query: {limit: 'none', organizationId: 'org-1'},
+      uri: '/applications',
+    })
+  })
+})
+
+describe('createApplication', () => {
+  test('POSTs a coreApp create as JSON, without deployment parts or studio config', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_1'})
+
+    await createApplication({
+      organizationId: 'org-1',
+      slug: 'abc123',
+      title: 'Drop Desk',
+      type: 'coreApp',
+    })
+
+    // A record-only create is a plain JSON POST — no multipart, no deployment
+    // parts (version/interfaces/tarball/workspaces), no config, no isSingleton.
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk', type: 'coreApp'},
+      method: 'POST',
+      uri: '/applications',
+    })
+  })
+
+  test('includes visibility on create when set, omits it when unset', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_1'})
+    await createApplication({
+      organizationId: 'org-1',
+      slug: 'abc123',
+      title: 'Drop Desk',
+      type: 'coreApp',
+      visibility: 'unlisted',
+    })
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({visibility: 'unlisted'})
+
+    mockClient.request.mockResolvedValueOnce({id: 'app_2'})
+    await createApplication({
+      organizationId: 'org-1',
+      slug: 'def456',
+      title: 'Drop Desk',
+      type: 'coreApp',
+    })
+    expect(mockClient.request.mock.calls[1][0].body).not.toHaveProperty('visibility')
+  })
+
+  test('flags a singleton create when isSingleton is set', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_1'})
+
+    await createApplication({
+      isSingleton: true,
+      organizationId: 'org-1',
+      slug: 'dashboard',
+      title: 'Dashboard',
+      type: 'coreApp',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({isSingleton: true})
+  })
+
+  test('sends studio config for a studio create, no workspaces', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_1'})
+
+    await createApplication({
+      organizationId: 'org-1',
+      projectId: 'proj-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      type: 'studio',
+    })
+
+    const {body} = mockClient.request.mock.calls[0][0]
+    // Workspaces are deployment data — they ride createDeployment, not create.
+    expect(body).toMatchObject({config: {studio: {projectId: 'proj-1'}}, type: 'studio'})
+    expect(body).not.toHaveProperty('workspaces')
+  })
+})
+
+describe('updateApplication', () => {
+  test('PATCHes the given mutable fields', async () => {
+    mockClient.request.mockResolvedValueOnce(undefined)
+    const icon = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>'
+
+    await updateApplication('app_1', {icon})
+
+    expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {icon},
+      method: 'PATCH',
+      uri: '/applications/app_1',
+    })
+  })
+})
+
+describe('createDeployment', () => {
+  test('POSTs a redeploy to the application, no config part', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
+
+    await createDeployment({
+      applicationId: 'app_1',
+      interfaces,
+      isAutoUpdating: true,
+      tarball: tarball(),
+      version: '1.2.4',
+    })
+
+    const post = mockClient.request.mock.calls[0][0]
+    expect(post).toMatchObject({method: 'POST', uri: '/applications/app_1/deployments'})
+
+    const fields = appendedFields()
+    expect(fields).toContainEqual(['version', '1.2.4'])
+    expect(fields).toContainEqual(['isAutoUpdating', 'true'])
+    expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
+    expect(fields.map(([name]) => name)).not.toContain('config')
+    expect(fields.map(([name]) => name)).not.toContain('workspaces')
+  })
+
+  test('includes workspaces as a JSON part when provided', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
+
+    await createDeployment({
+      applicationId: 'app_1',
+      interfaces,
+      isAutoUpdating: false,
+      tarball: tarball(),
+      version: '3.0.1',
+      workspaces,
+    })
+
+    expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
+  })
+})
+
+describe('getWorkbenchUrl / getApplicationUrl', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('builds production URLs on sanity.run', () => {
+    expect(getWorkbenchUrl('org-1')).toBe('https://org-1.sanity.run')
+    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'coreApp'})).toBe(
+      'https://org-1.sanity.run/application/app-1',
+    )
+    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'studio'})).toBe(
+      'https://org-1.sanity.run/studio/app-1',
+    )
+  })
+
+  test('builds staging URLs on run.sanity.work', () => {
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
+    expect(getWorkbenchUrl('org-1')).toBe('https://org-1.run.sanity.work')
+    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'coreApp'})).toBe(
+      'https://org-1.run.sanity.work/application/app-1',
+    )
+  })
+})

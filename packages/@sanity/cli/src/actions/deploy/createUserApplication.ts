@@ -1,0 +1,142 @@
+import {CLIError} from '@oclif/core/errors'
+import {type AppVisibility} from '@sanity/cli-core'
+import {input, spinner} from '@sanity/cli-core/ux'
+import {customAlphabet} from 'nanoid'
+
+import {
+  createUserApplication as createUserApplicationRequest,
+  type UserApplication,
+  type UserApplicationResolved,
+} from '../../services/userApplications.js'
+import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
+import {deployDebug} from './deployDebug.js'
+import {normalizeUrl, validateUrl} from './urlUtils.js'
+
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
+
+// appHosts have some restrictions (no uppercase, must start with a letter)
+export function generateAppSlug(): string {
+  const firstChar = customAlphabet(LETTERS, 1)()
+  const rest = customAlphabet(`${LETTERS}0123456789`, 11)()
+  return `${firstChar}${rest}`
+}
+
+// TODO: replace with `Promise.withResolvers()` once it lands in node 22
+function promiseWithResolvers<T>() {
+  let resolve!: (t: T) => void
+  let reject!: (err: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return {promise, reject, resolve}
+}
+
+interface CreateStudioUserApplicationOptions {
+  projectId: string
+
+  title?: string
+  urlType?: 'external' | 'internal'
+}
+
+export async function createStudioUserApplication(options: CreateStudioUserApplicationOptions) {
+  const {projectId, title, urlType = 'internal'} = options
+  const {promise, resolve} = promiseWithResolvers<UserApplication>()
+
+  const isExternal = urlType === 'external'
+
+  await input({
+    message: isExternal ? 'Studio URL (https://...):' : 'Studio hostname (<value>.sanity.studio):',
+    // if a string is returned here, it is relayed to the user and prompt allows
+    // the user to try again until this function returns true
+    validate: async (inp: string) => {
+      let appHost: string
+
+      if (isExternal) {
+        const normalized = normalizeUrl(inp)
+        const validation = validateUrl(normalized)
+        if (validation !== true) {
+          return validation
+        }
+        appHost = normalized
+      } else {
+        appHost = inp.replace(/\.sanity\.studio$/i, '')
+      }
+
+      try {
+        const response = await createUserApplicationRequest({
+          appType: 'studio',
+          body: {appHost, title, type: 'studio', urlType},
+          projectId,
+        })
+        resolve(response)
+        return true
+      } catch (e) {
+        // if the name is taken, it should return a 409 so we relay to the user
+        if ([402, 409].includes(e?.statusCode)) {
+          return e?.response?.body?.message || 'Bad request' // just in case
+        }
+
+        deployDebug('Error creating user application', e)
+        // otherwise, it's a fatal error
+        throw new CLIError('Error creating user application', {exit: 1})
+      }
+    },
+  })
+
+  return await promise
+}
+
+export async function createUserApplication(
+  organizationId?: string,
+  title?: string,
+  visibility?: AppVisibility,
+): Promise<UserApplicationResolved> {
+  if (!organizationId) {
+    throw new Error(NO_ORGANIZATION_ID)
+  }
+
+  const resolvedTitle =
+    title ??
+    (await input({
+      message: 'Enter a title for your application:',
+      validate: (value: string) => value.length > 0 || 'Title is required',
+    }))
+
+  return tryCreateApp(resolvedTitle, organizationId, visibility)
+}
+
+const tryCreateApp = async (title: string, organizationId: string, visibility?: AppVisibility) => {
+  // we will likely prepend this with an org ID or other parameter in the future
+  const appHost = generateAppSlug()
+
+  const spin = spinner('Creating application').start()
+
+  try {
+    const response = await createUserApplicationRequest({
+      appType: 'coreApp',
+      body: {
+        appHost,
+        title,
+        type: 'coreApp',
+        urlType: 'internal',
+        ...(visibility ? {dashboardStatus: visibility} : {}),
+      },
+      organizationId,
+    })
+
+    spin.succeed()
+    return response
+  } catch (e) {
+    // if the name is taken, generate a new one and try again
+    if ([402, 409].includes(e?.statusCode)) {
+      deployDebug('App host taken, retrying with new host')
+      return tryCreateApp(title, organizationId, visibility)
+    }
+
+    spin.fail()
+
+    deployDebug('Error creating core application', e)
+    throw e
+  }
+}

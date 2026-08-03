@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
 interface OpenAPISpec {
@@ -56,7 +56,7 @@ export class ListOpenApiCommand extends SanityCommand<typeof ListOpenApiCommand>
       listOpenapiDebug('Error fetching OpenAPI specs', error)
 
       this.error('The OpenAPI service is currently unavailable. Please try again later.', {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
 

@@ -112,6 +112,7 @@ export default defineConfig(
             '**/vitest.mjs',
             '**/vitest.config.ts',
             '**/vitest.config.mts',
+            '**/vitest.config.*.ts',
             '**/package.bundle.ts',
             '**/package.config.ts',
             '**/knip.config.ts',

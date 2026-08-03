@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "2.0.1",
+  "version": "2.8.0",
   "description": "Sanity CLI core package",
   "keywords": [
     "cli",
@@ -27,23 +27,79 @@
   "type": "module",
   "sideEffects": false,
   "main": "./dist/_exports/index.js",
-  "types": "dist/_exports/index.d.ts",
+  "types": "./dist/_exports/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/_exports/index.ts",
       "default": "./dist/_exports/index.js"
     },
-    "./ux": {
-      "source": "./src/_exports/ux.ts",
-      "default": "./dist/_exports/ux.js"
+    "./apiClient": {
+      "source": "./src/apiClient.ts",
+      "default": "./dist/apiClient.js"
+    },
+    "./browser": {
+      "source": "./src/_exports/browser.ts",
+      "default": "./dist/_exports/browser.js"
+    },
+    "./config": {
+      "source": "./src/_exports/config.ts",
+      "default": "./dist/_exports/config.js"
+    },
+    "./debug": {
+      "source": "./src/_exports/debug.ts",
+      "default": "./dist/_exports/debug.js"
+    },
+    "./errors": {
+      "source": "./src/_exports/errors.ts",
+      "default": "./dist/_exports/errors.js"
+    },
+    "./executionContext": {
+      "source": "./src/executionContext.ts",
+      "default": "./dist/executionContext.js"
+    },
+    "./package-manager": {
+      "source": "./src/_exports/package-manager.ts",
+      "default": "./dist/_exports/package-manager.js"
     },
     "./request": {
       "source": "./src/_exports/request.ts",
       "default": "./dist/_exports/request.js"
     },
-    "./package-manager": {
-      "source": "./src/_exports/package-manager.ts",
-      "default": "./dist/_exports/package-manager.js"
+    "./schemas": {
+      "source": "./src/_exports/schemas.ts",
+      "default": "./dist/_exports/schemas.js"
+    },
+    "./tasks": {
+      "source": "./src/_exports/tasks.ts",
+      "default": "./dist/_exports/tasks.js"
+    },
+    "./telemetry": {
+      "source": "./src/_exports/telemetry.ts",
+      "default": "./dist/_exports/telemetry.js"
+    },
+    "./types": {
+      "source": "./src/_exports/types.ts",
+      "default": "./dist/_exports/types.js"
+    },
+    "./undeploy": {
+      "source": "./src/_exports/undeploy.ts",
+      "default": "./dist/_exports/undeploy.js"
+    },
+    "./util": {
+      "source": "./src/_exports/util.ts",
+      "default": "./dist/_exports/util.js"
+    },
+    "./ux": {
+      "source": "./src/_exports/ux.ts",
+      "default": "./dist/_exports/ux.js"
+    },
+    "./SanityCommand": {
+      "source": "./src/SanityCommand.ts",
+      "default": "./dist/SanityCommand.js"
+    },
+    "./ExitCodes": {
+      "source": "./src/exitCodes.ts",
+      "default": "./dist/exitCodes.js"
     },
     "./package.json": "./package.json"
   },
@@ -51,7 +107,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
@@ -68,7 +124,8 @@
     "@sanity/client": "catalog:",
     "boxen": "^8.0.1",
     "debug": "catalog:",
-    "get-it": "^8.7.2",
+    "empathic": "catalog:",
+    "get-it": "^8.8.0",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
     "jiti": "^2.7.0",
@@ -76,10 +133,10 @@
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
     "ora": "catalog:",
-    "read-package-up": "catalog:",
     "rxjs": "catalog:",
     "tsx": "catalog:",
     "vite": "catalog:",
+    "wrap-ansi": "^9.0.2",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -110,6 +167,6 @@
     }
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

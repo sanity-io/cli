@@ -1,9 +1,8 @@
 import {resolveLocalPackage} from '@sanity/cli-core'
-import DOMPurify from 'isomorphic-dompurify'
 
 import {manifestDebug} from './debug.js'
-import {config} from './purifyConfig.js'
 import {resolveSchemaIcon, type SchemaIconProps} from './resolveSchemaIcon.js'
+import {sanitizeIcon} from './sanitizeIcon.js'
 
 /**
  * Resolves an icon to a sanitized HTML string.
@@ -31,7 +30,7 @@ export const resolveIcon = async (props: SchemaIconProps): Promise<string | null
       chunks.push(value)
     }
     const html = new TextDecoder().decode(Buffer.concat(chunks))
-    return DOMPurify.sanitize(html.trim(), config)
+    return sanitizeIcon(html)
   } catch (error) {
     manifestDebug('Error resolving icon', error)
     return null

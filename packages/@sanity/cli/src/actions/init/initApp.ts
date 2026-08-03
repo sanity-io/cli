@@ -24,6 +24,7 @@ export async function initApp({
   remoteTemplateInfo,
   sluggedName,
   trace,
+  workbench,
   workDir,
 }: {
   datasetName: string
@@ -37,6 +38,7 @@ export async function initApp({
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
+  workbench: boolean
   workDir: string
 }): Promise<void> {
   const {
@@ -67,6 +69,7 @@ export async function initApp({
     templateName,
     trace,
     useTypeScript,
+    workbench,
     workDir,
   })
 

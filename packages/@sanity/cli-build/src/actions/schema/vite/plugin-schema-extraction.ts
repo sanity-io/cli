@@ -1,6 +1,6 @@
 import path, {isAbsolute} from 'node:path'
 
-import {type CLITelemetryStore} from '@sanity/cli-core'
+import {type CLITelemetryStore} from '@sanity/cli-core/types'
 import {logSymbols} from '@sanity/cli-core/ux'
 import debounce from 'lodash-es/debounce.js'
 import mean from 'lodash-es/mean.js'

@@ -152,59 +152,6 @@ describe('#dataset:list', () => {
     expect(stdout).toBe('production\n')
   })
 
-  test('shows error when no project ID is found', async () => {
-    const {error} = await testCommand(ListDatasetCommand, [], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {projectId: undefined}},
-      },
-    })
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('uses --project-id flag when provided', async () => {
-    mockListDatasets.mockResolvedValue([{name: 'production'} as never])
-    mockApi({
-      apiVersion: DATASET_API_VERSION,
-      method: 'get',
-      projectId: 'other-project',
-      uri: `/aliases`,
-    }).reply(200, [])
-
-    const {error, stdout} = await testCommand(
-      ListDatasetCommand,
-      ['--project-id', 'other-project'],
-      {mocks: defaultMocks},
-    )
-
-    expect(error).toBeUndefined()
-    expect(stdout).toContain('production')
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'other-project'}),
-    )
-  })
-
-  test('uses -p short flag when provided', async () => {
-    mockListDatasets.mockResolvedValue([{name: 'staging'} as never])
-    mockApi({
-      apiVersion: DATASET_API_VERSION,
-      method: 'get',
-      projectId: 'other-project',
-      uri: `/aliases`,
-    }).reply(200, [])
-
-    const {error, stdout} = await testCommand(ListDatasetCommand, ['-p', 'other-project'], {
-      mocks: defaultMocks,
-    })
-
-    expect(error).toBeUndefined()
-    expect(stdout).toContain('staging')
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'other-project'}),
-    )
-  })
-
   test('handles API errors when listing datasets ', async () => {
     const listError = new Error('Internal Server Error')
     Object.assign(listError, {statusCode: 500})

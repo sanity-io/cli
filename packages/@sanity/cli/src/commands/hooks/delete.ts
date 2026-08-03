@@ -1,5 +1,5 @@
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {type Hook} from '../../actions/hook/types'
@@ -46,6 +46,12 @@ export class Delete extends SanityCommand<typeof Delete> {
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 
+    if (!args.name && this.isUnattended()) {
+      this.error('Webhook name is required. Pass the name as an argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -63,7 +69,7 @@ export class Delete extends SanityCommand<typeof Delete> {
     } catch (error) {
       const err = error as Error
       deleteHookDebug(`Error deleting hook ${hookId} for project ${projectId}`, err)
-      this.error(`Hook deletion failed:\n${err.message}`, {exit: 1})
+      this.error(`Hook deletion failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -77,11 +83,11 @@ export class Delete extends SanityCommand<typeof Delete> {
     } catch (error) {
       const err = error as Error
       deleteHookDebug(`Error fetching hooks for project ${projectId}`, err)
-      this.error(`Failed to fetch hooks:\n${err.message}`, {exit: 1})
+      this.error(`Failed to fetch hooks:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (hooks.length === 0) {
-      this.error('No hooks configured for this project.', {exit: 1})
+      this.error('No hooks configured for this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // If hook name is specified, find it in the list
@@ -90,7 +96,7 @@ export class Delete extends SanityCommand<typeof Delete> {
       const selectedHook = hooks.find((hook) => hook.name.toLowerCase() === specifiedNameLower)
 
       if (!selectedHook) {
-        this.error(`Hook with name "${specifiedName}" not found`, {exit: 1})
+        this.error(`Hook with name "${specifiedName}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       return selectedHook.id

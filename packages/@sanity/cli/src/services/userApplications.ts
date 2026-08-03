@@ -1,7 +1,7 @@
 import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
-import {debug, getGlobalCliClient} from '@sanity/cli-core'
+import {type AppVisibility, debug, getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {type StudioManifest} from 'sanity'
 
@@ -32,12 +32,32 @@ export interface UserApplication {
   urlType: 'external' | 'internal'
 
   activeDeployment?: ActiveDeployment | null
+  /** Dashboard visibility. Defaults to `default` server-side when unset. */
+  dashboardStatus?: AppVisibility
+}
+
+/** A core app always belongs to an organization. */
+export interface UserApplicationResolved extends UserApplication {
+  organizationId: string
+  type: 'coreApp'
 }
 
 type GetUserApplicationOptions =
   | {appHost?: never; appId: string; isSdkApp: true; projectId?: never}
   | {appHost?: string; appId?: string; isSdkApp: false; projectId: string}
 
+export async function getUserApplication(options: {
+  appHost?: never
+  appId: string
+  isSdkApp: true
+  projectId?: never
+}): Promise<UserApplicationResolved | null>
+export async function getUserApplication(options: {
+  appHost?: string
+  appId?: string
+  isSdkApp: false
+  projectId: string
+}): Promise<UserApplication | null>
 export async function getUserApplication({
   appHost,
   appId,
@@ -105,6 +125,7 @@ export async function deleteUserApplication({
 }
 
 interface UpdateUserApplicationBody {
+  dashboardStatus?: AppVisibility
   title?: string
 }
 
@@ -120,7 +141,7 @@ export async function updateUserApplication({
   applicationId,
   appType,
   body,
-}: UpdateUserApplicationOptions): Promise<UserApplication> {
+}: UpdateUserApplicationOptions): Promise<UserApplicationResolved> {
   const client = await getGlobalCliClient({
     apiVersion: USER_APPLICATIONS_API_VERSION,
     requireUser: true,
@@ -141,7 +162,7 @@ export async function getUserApplications(options: {
 export async function getUserApplications(options: {
   appType: 'coreApp'
   organizationId: string
-}): Promise<UserApplication[]>
+}): Promise<UserApplicationResolved[]>
 export async function getUserApplications(
   options:
     | {
@@ -189,13 +210,15 @@ export async function getUserApplications(
 export async function createUserApplication(options: {
   appType: 'coreApp'
   body: Pick<UserApplication, 'appHost' | 'type' | 'urlType'> & {
+    dashboardStatus?: AppVisibility
     title?: string
   }
   organizationId?: string
-}): Promise<UserApplication>
+}): Promise<UserApplicationResolved>
 export async function createUserApplication(options: {
   appType: 'studio'
   body: Pick<UserApplication, 'appHost' | 'type' | 'urlType'> & {
+    dashboardStatus?: AppVisibility
     title?: string
   }
   projectId: string
@@ -203,6 +226,7 @@ export async function createUserApplication(options: {
 export async function createUserApplication(options: {
   appType: 'coreApp' | 'studio'
   body: Pick<UserApplication, 'appHost' | 'type' | 'urlType'> & {
+    dashboardStatus?: AppVisibility
     title?: string
   }
   organizationId?: string

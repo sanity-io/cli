@@ -1,7 +1,7 @@
 import {inspect, styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import groupBy from 'lodash-es/groupBy.js'
 
@@ -73,11 +73,11 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     } catch (error) {
       const err = error as Error
       logsHookDebug(`Error fetching hooks for project ${projectId}`, err)
-      this.error(`Hook list retrieval failed:\n${err.message}`, {exit: 1})
+      this.error(`Hook list retrieval failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (hooks.length === 0) {
-      this.error('No hooks currently registered', {exit: 1})
+      this.error('No hooks currently registered', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // If hook name is provided, find that specific hook
@@ -85,18 +85,26 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     if (args.name) {
       selectedHook = hooks.find((hook) => hook.name.toLowerCase() === args.name?.toLowerCase())
       if (!selectedHook) {
-        this.error(`Hook with name "${args.name}" not found`, {exit: 1})
+        this.error(`Hook with name "${args.name}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
     } else if (hooks.length === 1) {
       // If only one hook exists, use that
       selectedHook = hooks[0]
     } else {
       // Otherwise prompt user to select a hook
+      if (this.isUnattended()) {
+        this.error(
+          'Webhook name is required when multiple webhooks exist. Pass the name as an argument.',
+          {
+            exit: exitCodes.USAGE_ERROR,
+          },
+        )
+      }
       selectedHook = await this.selectHook(hooks)
     }
 
     if (!selectedHook) {
-      this.error('No hook selected', {exit: 1})
+      this.error('No hook selected', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // Fetch messages and attempts for the selected hook
@@ -116,7 +124,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     } catch (error) {
       const err = error as Error
       logsHookDebug(`Error fetching logs for hook ${selectedHook.id}`, err)
-      this.error(`Hook logs retrieval failed:\n${err.message}`, {exit: 1})
+      this.error(`Hook logs retrieval failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // Group attempts by message ID

@@ -1,4 +1,4 @@
-import {EarthGlobeIcon} from '@sanity/icons'
+import {EarthGlobeIcon} from '@sanity/icons/EarthGlobe'
 import {type DocumentActionDescription} from 'sanity'
 import {collectionUrl, productUrl, productVariantUrl} from '../../utils/shopifyUrls'
 import type {ShopifyDocument, ShopifyDocumentActionProps} from './types'

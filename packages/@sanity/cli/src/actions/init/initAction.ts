@@ -1,6 +1,11 @@
 import {styleText} from 'node:util'
 
-import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
+import {
+  exitCodes,
+  type SanityOrgUser,
+  subdebug,
+  type TelemetryUserProperties,
+} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
@@ -10,10 +15,12 @@ import {promptForConfigFiles} from '../../prompts/init/nextjs.js'
 import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
-import {getProviderName} from '../auth/getProviderName.js'
+import {getProviderName, getUserDisplayName} from '../auth/getProviderName.js'
 import {login} from '../auth/login/login.js'
+import {LOGIN_REQUIRED_MESSAGE} from '../auth/login/loginInstructions.js'
 import {detectAvailableEditors} from '../mcp/detectAvailableEditors.js'
 import {setupMCP} from '../mcp/setupMCP.js'
 import {setupSkills} from '../skills/setupSkills.js'
@@ -161,6 +168,67 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     return
   }
 
+  // Detect editors once, then share the result with MCP and skills setup so
+  // we don't pay the detection cost (filesystem probes + CLI execa calls) twice.
+  const detectedEditors =
+    options.mcpMode === 'skip' && options.skillsMode === 'skip'
+      ? []
+      : await detectAvailableEditors()
+
+  const mcpResult = await setupMCP({
+    editors: detectedEditors,
+    mode: options.mcpMode,
+    output,
+    skillsMode: options.skillsMode,
+  })
+
+  trace.log({
+    configuredEditors: mcpResult.configuredEditors,
+    detectedEditors: mcpResult.detectedEditors,
+    skipped: mcpResult.skipped,
+    step: 'mcpSetup',
+  })
+  if (mcpResult.error) {
+    trace.error(mcpResult.error)
+  }
+  const mcpConfigured = mcpResult.configuredEditors
+
+  async function installSkills(): Promise<void> {
+    if (mcpResult.skillsToInstall.length === 0) return
+    try {
+      const skillsResult = await setupSkills({
+        agents: mcpResult.skillsToInstall,
+        output,
+      })
+      trace.log({
+        installedAgents: skillsResult.installedAgents,
+        skipped: skillsResult.skipped,
+        step: 'skillsSetup',
+      })
+      if (skillsResult.error) {
+        trace.error(skillsResult.error)
+      }
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      debug('Unexpected error from setupSkills %O', err)
+      output.warn(`Could not install Sanity agent skills: ${err.message}`)
+      trace.error(err)
+    }
+  }
+
+  // Install skills right after the MCP/skills prompt so the progress + result
+  // surface in sequence, rather than trailing the studio "Success!" output.
+  await installSkills()
+
+  const {alreadyConfiguredEditors} = mcpResult
+  if (alreadyConfiguredEditors.length > 0) {
+    const label =
+      alreadyConfiguredEditors.length === 1
+        ? `${alreadyConfiguredEditors[0]} already configured for Sanity MCP`
+        : `${alreadyConfiguredEditors.length} editors already configured for Sanity MCP`
+    spinner(label).start().succeed()
+  }
+
   let initNext = flagOrDefault(options.nextjsAddConfigFiles, false)
   if (isNextJs && shouldPrompt(options.unattended, options.nextjsAddConfigFiles)) {
     initNext = await promptForConfigFiles()
@@ -189,59 +257,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     workDir,
   })
 
-  // Detect editors once, then share the result with MCP and skills setup so
-  // we don't pay the detection cost (filesystem probes + CLI execa calls) twice.
-  const detectedEditors =
-    options.mcpMode === 'skip' && options.skillsMode === 'skip'
-      ? []
-      : await detectAvailableEditors()
-
-  const mcpResult = await setupMCP({
-    editors: detectedEditors,
-    mode: options.mcpMode,
-    skillsMode: options.skillsMode,
-  })
-
-  trace.log({
-    configuredEditors: mcpResult.configuredEditors,
-    detectedEditors: mcpResult.detectedEditors,
-    skipped: mcpResult.skipped,
-    step: 'mcpSetup',
-  })
-  if (mcpResult.error) {
-    trace.error(mcpResult.error)
-  }
-  const mcpConfigured = mcpResult.configuredEditors
-
-  async function installSkills(): Promise<void> {
-    if (mcpResult.skillsToInstall.length === 0) return
-    try {
-      const skillsResult = await setupSkills({agents: mcpResult.skillsToInstall})
-      trace.log({
-        installedAgents: skillsResult.installedAgents,
-        skipped: skillsResult.skipped,
-        step: 'skillsSetup',
-      })
-      if (skillsResult.error) {
-        trace.error(skillsResult.error)
-      }
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error))
-      debug('Unexpected error from setupSkills %O', err)
-      output.warn(`Could not install Sanity agent skills: ${err.message}`)
-      trace.error(err)
-    }
-  }
-
-  const {alreadyConfiguredEditors} = mcpResult
-  if (alreadyConfiguredEditors.length > 0) {
-    const label =
-      alreadyConfiguredEditors.length === 1
-        ? `${alreadyConfiguredEditors[0]} already configured for Sanity MCP`
-        : `${alreadyConfiguredEditors.length} editors already configured for Sanity MCP`
-    spinner(label).start().succeed()
-  }
-
   if (isNextJs) {
     await checkNextJsReactCompatibility({
       detectedFramework,
@@ -262,7 +277,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       trace,
       workDir,
     })
-    await installSkills()
     trace.complete()
     return
   }
@@ -280,10 +294,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       outputPath,
     })
     await writeStagingEnvIfNeeded(output, outputPath)
-    await installSkills()
     trace.complete()
     return
   }
+
+  // Workbench is opt-in (no prompt): the flag swaps the scaffolded
+  // `sanity.cli.*` over to `unstable_defineApp` — the branded app is the sole
+  // workbench opt-in.
+  const workbench = flagOrDefault(options.unstableWorkbench, false)
 
   const sharedParams = {
     defaults,
@@ -295,6 +313,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     remoteTemplateInfo,
     sluggedName,
     trace,
+    workbench,
     workDir,
   }
 
@@ -308,8 +327,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
         projectId,
       }))
 
-  await installSkills()
-
   trace.complete()
 }
 
@@ -319,37 +336,48 @@ function checkFlagsInUnattendedMode(
 ): void {
   debug('Unattended mode, validating required options')
 
-  if (options.projectName && !options.organization) {
-    throw new InitError('`--project-name` requires `--organization <id>` in unattended mode', 1)
-  }
+  const errors: string[] = []
 
   if (isAppTemplate) {
     if (!options.outputPath) {
-      throw new InitError('`--output-path` must be specified in unattended mode', 1)
-    }
-
-    const hasProjectFlag = Boolean(options.project || options.projectName)
-
-    if (!hasProjectFlag && !options.organization) {
-      throw new InitError(
-        'The --organization flag is required for app templates in unattended mode. ' +
-          'Use --organization <id>, or pass --project <id> / --project-name <name>.',
-        1,
+      errors.push(
+        'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
       )
     }
 
-    return
+    if (options.projectName && !options.organization) {
+      errors.push(
+        'Organization is required when creating a project in unattended mode. Pass it with `--organization <id>`.',
+      )
+    } else if (!options.project && !options.organization) {
+      errors.push(
+        'Project or organization is required for app templates in unattended mode. ' +
+          'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+          '`--project-name <name>` with `--organization <id>`.',
+      )
+    }
+  } else {
+    if (!isNextJs && !options.bare && !options.outputPath) {
+      errors.push(
+        'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
+      )
+    }
+
+    if (!options.project && !options.projectName) {
+      errors.push(
+        'Project is required in unattended mode. Pass it with `--project <id>` or `--project-name <name>`.',
+      )
+    }
+
+    if (!options.project && !options.organization) {
+      errors.push(
+        'Organization is required when creating a project in unattended mode. Pass it with `--organization <id>`.',
+      )
+    }
   }
 
-  if (!isNextJs && !options.bare && !options.outputPath) {
-    throw new InitError('`--output-path` must be specified in unattended mode', 1)
-  }
-
-  if (!options.project && !options.projectName) {
-    throw new InitError(
-      '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
-      1,
-    )
+  if (errors.length > 0) {
+    throw new InitError(formatCliErrorMessages(errors), exitCodes.USAGE_ERROR)
   }
 }
 
@@ -363,19 +391,17 @@ async function ensureAuthenticated(
   if (user) {
     trace.log({alreadyLoggedIn: true, step: 'login'})
     output.log(
-      `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
+      `${logSymbols.success} You are logged in as ${getUserDisplayName(user)} using ${getProviderName(user.provider)}`,
     )
     return {user}
   }
 
   if (options.unattended) {
-    throw new InitError(
-      'Must be logged in to run this command in unattended mode, run `sanity login`',
-      1,
-    )
+    throw new InitError(LOGIN_REQUIRED_MESSAGE, exitCodes.RUNTIME_ERROR)
   }
 
   trace.log({step: 'login'})
+  output.warn(LOGIN_REQUIRED_MESSAGE)
 
   try {
     await login({
@@ -390,7 +416,7 @@ async function ensureAuthenticated(
   const loggedInUser = await getCliUser()
 
   output.log(
-    `${logSymbols.success} You are logged in as ${loggedInUser.email} using ${getProviderName(loggedInUser.provider)}`,
+    `${logSymbols.success} You are logged in as ${getUserDisplayName(loggedInUser)} using ${getProviderName(loggedInUser.provider)}`,
   )
   return {user: loggedInUser}
 }

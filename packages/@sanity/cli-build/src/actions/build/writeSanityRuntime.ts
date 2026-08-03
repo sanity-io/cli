@@ -1,7 +1,7 @@
-import fs from 'node:fs/promises'
+import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {tryFindStudioConfigPath} from '@sanity/cli-core'
+import {tryFindStudioConfigPath} from '@sanity/cli-core/config'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 
 import {buildDebug} from './buildDebug.js'
@@ -21,6 +21,7 @@ interface RuntimeOptions {
   basePath?: string
   entry?: string
   isApp?: boolean
+  isWorkbenchApp?: boolean
 }
 
 /**
@@ -31,12 +32,15 @@ interface RuntimeOptions {
  * @returns A watcher instance if watch is enabled, undefined otherwise
  * @internal
  */
-export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWatcher | undefined> {
-  const {appTitle, basePath, cwd, entry, isApp, reactStrictMode, watch} = options
+export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
+  entries: {relativeConfigLocation: string | null; relativeEntry: string | null}
+  watcher: FSWatcher | undefined
+}> {
+  const {appTitle, basePath, cwd, entry, isApp, isWorkbenchApp, reactStrictMode, watch} = options
   const runtimeDir = path.join(cwd, '.sanity', 'runtime')
 
   buildDebug('Making runtime directory')
-  await fs.mkdir(runtimeDir, {recursive: true})
+  await mkdir(runtimeDir, {recursive: true})
 
   async function renderAndWriteDocument() {
     buildDebug('Rendering document template')
@@ -57,20 +61,62 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWat
     )
 
     buildDebug('Writing index.html to runtime directory')
-    await fs.writeFile(path.join(runtimeDir, 'index.html'), indexHtml)
+    await writeFile(path.join(runtimeDir, 'index.html'), indexHtml)
   }
 
   let watcher: FSWatcher | undefined
 
   if (watch) {
-    watcher = chokidarWatch(getPossibleDocumentComponentLocations(cwd)).on('all', () =>
-      renderAndWriteDocument(),
+    // Skip the initial scan; the explicit renderAndWriteDocument() below handles first generation.
+    watcher = chokidarWatch(getPossibleDocumentComponentLocations(cwd), {ignoreInitial: true}).on(
+      'all',
+      () => renderAndWriteDocument(),
     )
   }
 
   await renderAndWriteDocument()
 
   buildDebug('Writing app.js to runtime directory')
+  const {relativeConfigLocation, relativeEntry} = await resolveEntries({
+    cwd,
+    entry,
+    isApp,
+    isWorkbenchApp,
+    runtimeDir,
+  })
+  const appJsContent = getEntryModule({
+    basePath,
+    entry: relativeEntry ?? undefined,
+    isApp,
+    reactStrictMode,
+    relativeConfigLocation,
+  })
+  await writeFile(path.join(runtimeDir, 'app.js'), appJsContent)
+
+  return {
+    entries: {
+      relativeConfigLocation,
+      relativeEntry,
+    },
+    watcher,
+  }
+}
+
+/**
+ * Resolves the relative entry paths for a Sanity project without writing any
+ * runtime files to disk. Used by federation builds that skip the full runtime
+ * generation but still need entry metadata for the vite plugin.
+ */
+export async function resolveEntries(options: {
+  cwd: string
+  entry?: string
+  isApp?: boolean
+  isWorkbenchApp?: boolean
+  runtimeDir?: string
+}): Promise<{relativeConfigLocation: string | null; relativeEntry: string | null}> {
+  const {cwd, entry, isApp, isWorkbenchApp} = options
+  const runtimeDir = options.runtimeDir ?? path.join(cwd, '.sanity', 'runtime')
+
   let relativeConfigLocation: string | null = null
   if (!isApp) {
     const studioConfigPath = await tryFindStudioConfigPath(cwd)
@@ -79,19 +125,18 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWat
       : null
   }
 
-  const relativeEntry = toForwardSlashes(
-    path.relative(runtimeDir, path.resolve(cwd, entry || './src/App')),
-  )
-  const appJsContent = getEntryModule({
-    basePath,
-    entry: relativeEntry,
-    isApp,
-    reactStrictMode,
-    relativeConfigLocation,
-  })
-  await fs.writeFile(path.join(runtimeDir, 'app.js'), appJsContent)
+  // Only a *branded* app (`unstable_defineApp`) that declares no `entry` has no
+  // navigable app view (sanity-io/workbench spec 002-workbench-extension-api,
+  // US5): `null` entry tells the runtime/federation to skip the `./App` render
+  // path. Non-branded (legacy SDK) apps keep the historical `./src/App` default,
+  // and studios ignore `relativeEntry` — so gating on `isApp` here would regress
+  // non-opted-in apps to the dock-only stub.
+  const relativeEntry =
+    isWorkbenchApp && !entry
+      ? null
+      : toForwardSlashes(path.relative(runtimeDir, path.resolve(cwd, entry || './src/App')))
 
-  return watcher
+  return {relativeConfigLocation, relativeEntry}
 }
 
 function toForwardSlashes(filePath: string): string {

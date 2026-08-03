@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -51,6 +52,7 @@ vi.mock('../../../prompts/promptForProject.js', async () => {
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -116,13 +118,45 @@ describe('#dataset:create', () => {
     expect(stdout).toContain('Dataset created successfully')
   })
 
+  test('requires a dataset name in unattended mode', async () => {
+    const {error} = await testCommand(CreateDatasetCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Dataset name is required. Pass it as the `<name>` argument.')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockCreateDataset).not.toHaveBeenCalled()
+  })
+
+  test('defaults to public visibility in unattended mode', async () => {
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+    mockCreateDataset.mockResolvedValue(undefined as never)
+
+    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error).toBeUndefined()
+    expect(mockSelect).not.toHaveBeenCalled()
+    expect(mockCreateDataset).toHaveBeenCalledWith('my-dataset', {
+      aclMode: 'public',
+    })
+  })
+
   test('errors when dataset name is invalid', async () => {
     const {error} = await testCommand(CreateDatasetCommand, ['Invalid-Dataset-Name'], {
       mocks: defaultMocks,
     })
 
     expect(error?.message).toContain('must be all lowercase')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('errors when dataset already exists', async () => {

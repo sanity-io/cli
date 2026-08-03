@@ -1,148 +1,58 @@
-import {getCliToken, isCi} from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {fetchTelemetryConsent} from '../../../services/telemetry.js'
-import {Disable} from '../disable.js'
+import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
 
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
-  return {
-    ...actual,
-    getCliToken: vi.fn(),
-    isCi: vi.fn(() => false),
-  }
+// First: create the mocks and mocked SanityCommand class
+const {MockedSanityCommand, mocks: cmdMocks} = createMockSanityCommand()
+// Second: install the mock on cli-core
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {...actual, SanityCommand: MockedSanityCommand}
 })
 
-vi.mock('../../../services/telemetry.js', async () => ({
-  ...(await vi.importActual('../../../services/telemetry.js')),
-  fetchTelemetryConsent: vi.fn(),
+// Third: mock telemetry enable command imports
+const mockSetConsent = vi.hoisted(() => vi.fn())
+const mockLearnMore = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../actions/telemetry/setConsent.js', () => ({setConsent: mockSetConsent}))
+vi.mock('../../../actions/telemetry/telemetryLearnMoreMessage.js', () => ({
+  telemetryLearnMoreMessage: mockLearnMore,
 }))
 
-const mockGetCliToken = vi.mocked(getCliToken)
-const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
-const mockIsCi = vi.mocked(isCi)
+// Finally, import the module under test: telemetry disable command
+const {Disable} = await import('../disable.js')
 
-describe('#disable', () => {
+describe('telemetry disable command', () => {
   beforeEach(() => {
+    mockSetConsent.mockResolvedValue(undefined)
+    mockLearnMore.mockReturnValue(undefined)
+  })
+  afterEach(() => {
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    vi.unstubAllEnvs()
+  test('should call setConsent action with status=denied and log returned message', async () => {
+    mockSetConsent.mockResolvedValue({message: 'heya'})
+    await Disable.run([])
+    expect(mockSetConsent).toHaveBeenCalledWith({status: 'denied'})
+    expect(cmdMocks.SanityCmdOutputLog).toHaveBeenCalledWith('heya')
   })
-
-  test('disables telemetry when user is authenticated and status is different', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    // Mock current status as granted
-    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
-
-    // Mock disable API call
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      method: 'put',
-      uri: '/users/me/consents/telemetry/status/denied',
-    }).reply(200)
-
-    // Mock updated status fetch
-    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'denied'})
-
-    const {stdout} = await testCommand(Disable, [])
-
-    expect(stdout).toContain(
-      "You've opted out of telemetry data collection.\nNo data will be collected from your Sanity account.",
+  test('should call learnMore action if setConsent status returns changed and output learn more action response', async () => {
+    mockSetConsent.mockResolvedValue({changed: true, message: 'heya'})
+    mockLearnMore.mockReturnValue('learn more')
+    await Disable.run([])
+    expect(mockLearnMore).toHaveBeenCalledWith('denied')
+    expect(cmdMocks.SanityCmdOutputLog).toHaveBeenCalledWith(expect.stringContaining('learn more'))
+  })
+  test('rejects invalid flags', async () => {
+    await expect(Disable.run(['--poop'])).rejects.toThrow('Nonexistent flag')
+  })
+  test('outputs error thrown by setConsent', async () => {
+    mockSetConsent.mockRejectedValue(new Error('boom'))
+    await Disable.run([])
+    expect(cmdMocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      'boom',
+      expect.objectContaining({exit: 1}),
     )
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('shows already disabled message when telemetry is already denied', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    // Mock current status as already denied
-    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'denied'})
-
-    const {stdout} = await testCommand(Disable, [])
-
-    expect(stdout).toContain(
-      "You've already opted out of telemetry data collection.\nNo data is collected from your Sanity account.",
-    )
-    expect(stdout).not.toContain('Learn more here:')
-  })
-
-  test('shows already disabled message with DO_NOT_TRACK when local override is active', async () => {
-    // Set DO_NOT_TRACK environment variable
-    vi.stubEnv('DO_NOT_TRACK', '1')
-
-    const {stdout} = await testCommand(Disable, [])
-
-    expect(stdout).toContain(
-      "You've already opted out of telemetry data collection.\nNo data is collected from your machine.\n\nUsing DO_NOT_TRACK environment variable.",
-    )
-  })
-
-  test('shows cannot set message in CI environment', async () => {
-    mockIsCi.mockReturnValue(true)
-
-    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
-
-    const {stdout} = await testCommand(Disable, [])
-
-    expect(stdout).toContain('Cannot set telemetry consent in CI environment')
-    mockIsCi.mockRestore()
-  })
-
-  test('shows login required message when user is not authenticated', async () => {
-    // User is not authenticated
-    mockGetCliToken.mockResolvedValue(undefined)
-
-    const {stdout} = await testCommand(Disable, [])
-
-    expect(stdout).toContain('You need to log in first to set telemetry preferences.')
-  })
-
-  test('shows error message when API call fails with 403', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    // Mock current status as granted
-    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
-
-    // Mock disable API call to fail with 403
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      method: 'put',
-      uri: '/users/me/consents/telemetry/status/denied',
-    }).reply(403, {message: 'Permission denied'})
-
-    const result = await testCommand(Disable, [])
-
-    expect(result.error).toMatchObject({
-      message: 'Failed to disable telemetry: Permission denied',
-    })
-  })
-
-  test('shows error message when API call fails with other error', async () => {
-    // Ensure user is authenticated
-    mockGetCliToken.mockResolvedValue('test-token')
-
-    // Mock current status as granted
-    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
-
-    // Mock disable API call to fail with 500
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      method: 'put',
-      uri: '/users/me/consents/telemetry/status/denied',
-    }).reply(500, {message: 'Internal server error'})
-
-    const result = await testCommand(Disable, [])
-
-    expect(result.error).toMatchObject({
-      message: 'Failed to disable telemetry: Internal server error',
-    })
   })
 })

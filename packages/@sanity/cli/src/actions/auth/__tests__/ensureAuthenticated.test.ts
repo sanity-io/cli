@@ -2,6 +2,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {LoginError} from '../../../errors/LoginError.js'
 import {ensureAuthenticated, validateSession} from '../ensureAuthenticated.js'
+import {LOGIN_REQUIRED_MESSAGE} from '../login/loginInstructions.js'
 
 const mockGetById = vi.hoisted(() => vi.fn())
 const mockGetCliToken = vi.hoisted(() => vi.fn())
@@ -137,6 +138,7 @@ describe('ensureAuthenticated', () => {
 
     expect(user).toEqual(expect.objectContaining({email: 'test@example.com'}))
     expect(mockLogin).not.toHaveBeenCalled()
+    expect(mockOutput.warn).not.toHaveBeenCalled()
   })
 
   test('triggers login when no token exists', async () => {
@@ -152,6 +154,7 @@ describe('ensureAuthenticated', () => {
     const user = await ensureAuthenticated({output: mockOutput, telemetry: mockTelemetry})
 
     expect(mockLogin).toHaveBeenCalledWith({output: mockOutput, telemetry: mockTelemetry})
+    expect(mockOutput.warn).toHaveBeenCalledWith(LOGIN_REQUIRED_MESSAGE)
     expect(user).toEqual(expect.objectContaining({email: 'new@example.com'}))
   })
 

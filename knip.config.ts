@@ -27,6 +27,14 @@ const baseConfig = {
       // Used for CLI
       ignoreDependencies: ['sanity'],
     },
+    'fixtures/media-library': {
+      // Config `src` files are referenced by string path in `sanity.cli.ts`, not
+      // imported — list them so knip sees them as used.
+      entry: ['src/**/*.{js,jsx,ts,tsx}'],
+      // Resolved at deploy/build time (SDK version check), not statically imported.
+      ignoreDependencies: ['@sanity/sdk-react'],
+      project,
+    },
     'fixtures/nextjs-app': {
       entry: ['app/**/*.{js,jsx,ts,tsx}'],
       project: ['app/**/*.{js,jsx,ts,tsx}'],
@@ -69,8 +77,6 @@ const baseConfig = {
         'src/**/*.worker.ts',
         'package.config.ts',
       ],
-      // debug is used for type checking
-      ignoreDependencies: ['@types/debug'],
       project,
     },
     'packages/@sanity/cli-core': {
@@ -89,6 +95,12 @@ const baseConfig = {
     },
     'packages/@sanity/cli-test': {
       entry: ['package.config.ts'],
+      project,
+    },
+    'packages/@sanity/workbench-cli': {
+      entry: ['package.config.ts'],
+      // System `ps` binary used to read process start times on Unix
+      ignoreBinaries: ['ps'],
       project,
     },
     'packages/create-sanity': {},

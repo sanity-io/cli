@@ -1,8 +1,8 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
 import {USERS_API_VERSION} from '../../../services/user.js'
-import {getErrorMessage} from '../../../util/getErrorMessage.js'
 
 export async function validateToken(token: string): Promise<string> {
   const trimmedToken = token.trim()

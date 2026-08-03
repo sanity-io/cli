@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {
@@ -46,7 +46,9 @@ export class List extends SanityCommand<typeof List> {
       const message = error instanceof Error ? error.message : String(error)
 
       listGraphQLDebug(`Error fetching GraphQL endpoints for project ${projectId}`, error)
-      this.error(`GraphQL endpoints list retrieval failed:\n${message}`, {exit: 1})
+      this.error(`GraphQL endpoints list retrieval failed:\n${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     if (!endpoints || endpoints.length === 0) {

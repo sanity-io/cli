@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deployApp} from '../actions/deploy/deployApp.js'
@@ -51,10 +51,19 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description:
         'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
     }),
+    'dry-run': Flags.boolean({
+      default: false,
+      description: 'Report what would be deployed without uploading or creating anything',
+    }),
     external: Flags.boolean({
       default: false,
       description: 'Register an externally hosted studio',
       exclusive: ['source-maps', 'minify', 'build'],
+    }),
+    json: Flags.boolean({
+      char: 'j',
+      default: false,
+      description: 'Output the result as JSON',
     }),
     minify: Flags.boolean({
       allowNo: true,
@@ -68,6 +77,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     'source-maps': Flags.boolean({
       default: false,
       description: 'Enable source maps for built bundles (increases size of bundle)',
+    }),
+    title: Flags.string({
+      description:
+        'Title for a newly created application or studio. For apps it also skips the interactive title prompt, enabling unattended creation',
     }),
     url: Flags.string({
       description:
@@ -103,27 +116,32 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         relativeOutput = `./${relativeOutput}`
       }
 
-      const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
-      // Prompt to delete the directory if it's not empty
-      const shouldProceed =
-        isEmpty ||
-        (await confirm({
-          default: false,
-          message: `"${relativeOutput}" is not empty, do you want to proceed?`,
-        }))
+      if (!this.isUnattended() && !flags['dry-run']) {
+        const isEmpty = await dirIsEmptyOrNonExistent(sourceDir)
+        const shouldProceed =
+          isEmpty ||
+          (await confirm({
+            default: false,
+            message: `"${relativeOutput}" is not empty, do you want to proceed?`,
+          }))
 
-      if (!shouldProceed) {
-        this.output.error('Cancelled.', {exit: 1})
+        if (!shouldProceed) {
+          this.output.error('Cancelled.', {exit: exitCodes.RUNTIME_ERROR})
+        }
       }
 
-      this.output.log(`Building to ${relativeOutput}\n`)
+      // Keep --json's stdout clean for the payload
+      if (!flags.json) this.output.log(`Building to ${relativeOutput}\n`)
     }
+
+    // Force yes downstream: build/app resolution otherwise prompts for prerelease/version choices
+    const deployFlags = this.isUnattended() || flags['dry-run'] ? {...flags, yes: true} : flags
 
     if (isApp) {
       deployDebug('Deploying app')
       await deployApp({
         cliConfig,
-        flags,
+        flags: deployFlags,
         output: this.output,
         projectRoot,
         sourceDir,
@@ -132,7 +150,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       deployDebug('Deploying studio')
       await deployStudio({
         cliConfig,
-        flags,
+        flags: deployFlags,
         output: this.output,
         projectRoot,
         sourceDir,

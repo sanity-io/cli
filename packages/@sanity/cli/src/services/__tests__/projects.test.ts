@@ -1,7 +1,7 @@
 import {getProjectCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {getProjectById, PROJECTS_API_VERSION} from '../projects.js'
+import {getProjectById, getProjectClaimStatus, PROJECTS_API_VERSION} from '../projects.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const actual = await importOriginal()
@@ -41,5 +41,37 @@ describe('#getProjectById', () => {
     })
     expect(mockClient.projects.getById).toHaveBeenCalledWith('test-project')
     expect(result).toBe(mockProject)
+  })
+})
+
+describe('#getProjectClaimStatus', () => {
+  test('reports an unclaimed project from its holding organization', async () => {
+    mockClient.projects.getById.mockResolvedValue({organizationId: 'oSystemUnclaimed'})
+
+    await expect(getProjectClaimStatus('test-project', 'robot-token')).resolves.toBe('unclaimed')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: PROJECTS_API_VERSION,
+      projectId: 'test-project',
+      requireUser: true,
+      token: 'robot-token',
+    })
+  })
+
+  test('reports a project in another organization as claimed', async () => {
+    mockClient.projects.getById.mockResolvedValue({organizationId: 'organization-id'})
+
+    await expect(getProjectClaimStatus('test-project', 'robot-token')).resolves.toBe('claimed')
+  })
+
+  test('reports an absent organization as unknown', async () => {
+    mockClient.projects.getById.mockResolvedValue({})
+
+    await expect(getProjectClaimStatus('test-project', 'robot-token')).resolves.toBe('unknown')
+  })
+
+  test('reports lookup failures as unknown', async () => {
+    mockClient.projects.getById.mockRejectedValue(new Error('offline'))
+
+    await expect(getProjectClaimStatus('test-project', 'robot-token')).resolves.toBe('unknown')
   })
 })

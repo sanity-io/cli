@@ -69,11 +69,17 @@ export async function getProvider({
       return undefined
     }
 
-    if (!isInteractive() && realProviderNames.length > 1) {
-      throw new Error(
-        `Multiple login providers available: ${realProviderNames.join(', ')}. ` +
-          'Use `--provider <name>` to select one in unattended mode.',
-      )
+    if (!isInteractive()) {
+      if (realProviderNames.length === 1) {
+        return providers.find((provider) => provider.name === realProviderNames[0])
+      }
+
+      if (realProviderNames.length > 1) {
+        throw new Error(
+          `Multiple login providers available: ${realProviderNames.join(', ')}. ` +
+            'Use `--provider <name>` to select one in unattended mode.',
+        )
+      }
     }
 
     const provider = await promptForProviders(providers)

@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {Table} from 'console-table-printer'
@@ -91,15 +91,19 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       listBackupDebug(`Failed to list datasets: ${message}`, error)
-      this.error(`Failed to list datasets: ${message}`, {exit: 1})
+      this.error(`Failed to list datasets: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (datasets.length === 0) {
-      this.error('No datasets found in this project.', {exit: 1})
+      this.error('No datasets found in this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (dataset) {
-      assertDatasetExists(datasets, dataset)
+      assertDatasetExists(datasets, dataset, this.output)
+    } else if (this.isUnattended()) {
+      this.error('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     } else {
       dataset = await this.promptForDataset(datasets)
     }
@@ -111,17 +115,19 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
         const parsedAfter = this.processDateFlag(flags.after, 'after')
 
         if (parsedAfter && parsedBefore && isAfter(parsedAfter, parsedBefore)) {
-          this.error('--after date must be before --before', {exit: 1})
+          this.error('--after date must be before --before', {exit: exitCodes.RUNTIME_ERROR})
         }
       } catch (err) {
-        this.error(`Parsing date flags: ${err instanceof Error ? err.message : err}`, {exit: 1})
+        this.error(`Parsing date flags: ${err instanceof Error ? err.message : err}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
     }
 
     // Validate limit flag
     if (flags.limit < 1 || flags.limit > Number.MAX_SAFE_INTEGER) {
       this.error(`Parsing --limit: must be an integer between 1 and ${Number.MAX_SAFE_INTEGER}`, {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
 
@@ -168,7 +174,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
         })
       }
 
-      table.printTable()
+      this.log(table.render())
 
       listBackupDebug(
         `Successfully listed ${response.backups.length} backups for dataset ${dataset}`,
@@ -176,7 +182,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       listBackupDebug(`Failed to list backups for dataset ${dataset}:`, error)
-      this.error(`List dataset backup failed: ${message}`, {exit: 1})
+      this.error(`List dataset backup failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -204,7 +210,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     } catch (error) {
       listBackupDebug(`Error selecting dataset`, error)
       this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
   }

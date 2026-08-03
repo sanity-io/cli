@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
@@ -130,41 +130,56 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     } catch (error) {
       exportDebug('Error listing datasets', error)
       this.error(`Failed to list datasets:\n${error instanceof Error ? error.message : error}`, {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
 
     // Determine dataset name
     let dataset = targetDataset
     if (!dataset) {
+      let defaultDataset: string | undefined
       try {
         // Get default dataset from config (only available when running from a project directory)
         const cliConfig = await this.tryGetCliConfig()
-        const defaultDataset = cliConfig.api?.dataset
-
-        if (defaultDataset) {
-          dataset = defaultDataset
-          this.log(`Using default dataset: ${dataset}`)
-        } else {
-          dataset = await promptForDataset({allowCreation: false, datasets})
-        }
+        defaultDataset = cliConfig.api?.dataset
       } catch (error) {
         exportDebug('Error selecting dataset', error)
         this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
+      }
+
+      if (defaultDataset) {
+        dataset = defaultDataset
+        this.log(`Using default dataset: ${dataset}`)
+      } else if (this.isUnattended()) {
+        this.error('Dataset name is required. Pass it as the `<name>` argument.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      } else {
+        try {
+          dataset = await promptForDataset({allowCreation: false, datasets})
+        } catch (error) {
+          exportDebug('Error selecting dataset', error)
+          this.error(
+            `Failed to select dataset:\n${error instanceof Error ? error.message : error}`,
+            {
+              exit: exitCodes.RUNTIME_ERROR,
+            },
+          )
+        }
       }
     }
 
     // Validate dataset name
     const dsError = validateDatasetName(dataset)
     if (dsError) {
-      this.error(dsError, {exit: 1})
+      this.error(dsError, {exit: exitCodes.USAGE_ERROR})
     }
 
     // Verify existence of dataset before trying to export from it
     if (!datasets.some((set) => set.name === dataset)) {
-      this.error(`Dataset with name "${dataset}" not found`, {exit: 1})
+      this.error(`Dataset with name "${dataset}" not found`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     this.log(
@@ -182,12 +197,14 @@ dataset: ${dataset.padEnd(46)}`,
     // Determine output path
     let destinationPath = targetDestination
     if (!destinationPath) {
-      destinationPath = await this.promptForDestination({dataset})
+      destinationPath = this.isUnattended()
+        ? path.join(process.cwd(), `${dataset}.tar.gz`)
+        : await this.promptForDestination({dataset})
     }
 
     const outputPath = await this.getOutputPath(destinationPath, dataset, flags)
     if (!outputPath) {
-      this.error('Cancelled', {exit: 1})
+      this.error('Cancelled', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // Prepare export options
@@ -216,7 +233,7 @@ dataset: ${dataset.padEnd(46)}`,
       fail()
       const err = error instanceof Error ? error : new Error(String(error))
       exportDebug('Export failed', err)
-      this.error(`Export failed: ${err.message}`, {exit: 1})
+      this.error(`Export failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -276,12 +293,12 @@ dataset: ${dataset.padEnd(46)}`,
           this.error(
             `Permission denied: Cannot create directory "${createPath}". Please check write permissions.`,
             {
-              exit: 1,
+              exit: exitCodes.RUNTIME_ERROR,
             },
           )
         } else {
           this.error(`Failed to create directory "${createPath}": ${err.message}`, {
-            exit: 1,
+            exit: exitCodes.RUNTIME_ERROR,
           })
         }
       }
@@ -291,8 +308,8 @@ dataset: ${dataset.padEnd(46)}`,
     const finalPathStats = await fs.stat(finalPath).catch(noop)
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
-      this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
-        exit: 1,
+      this.error(`File "${finalPath}" already exists. Pass \`--overwrite\` to replace it.`, {
+        exit: exitCodes.USAGE_ERROR,
       })
     }
 

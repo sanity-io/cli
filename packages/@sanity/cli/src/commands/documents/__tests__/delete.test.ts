@@ -1,4 +1,5 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -128,19 +129,6 @@ describe('#documents:delete', () => {
     )
   })
 
-  test('throws error when no project ID is configured', async () => {
-    const {error} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {dataset: testDataset, projectId: undefined}},
-      },
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('throws error when no dataset is configured and none provided', async () => {
     const {error} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
       mocks: {
@@ -150,8 +138,8 @@ describe('#documents:delete', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No dataset specified')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Dataset is required')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles transaction errors gracefully', async () => {
@@ -251,18 +239,6 @@ describe('#documents:delete', () => {
       )
     })
 
-    test('errors when no project root and no --project-id', async () => {
-      const {error} = await testCommand(
-        DeleteDocumentCommand,
-        ['test-doc', '--dataset', 'ext-dataset'],
-        {mocks: noProjectRootMocks},
-      )
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
     test('errors when no project root with --project-id but no --dataset', async () => {
       const {error} = await testCommand(
         DeleteDocumentCommand,
@@ -271,8 +247,8 @@ describe('#documents:delete', () => {
       )
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('No dataset specified')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.message).toContain('Dataset is required')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
   })
 })

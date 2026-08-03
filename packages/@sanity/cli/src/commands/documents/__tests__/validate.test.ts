@@ -1,319 +1,194 @@
-import {resolve} from 'node:path'
+import path from 'node:path'
 
-import {type CliConfig, getCliConfig, ProjectRootNotFoundError} from '@sanity/cli-core'
-import {testCommand, testFixture} from '@sanity/cli-test'
-import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
+import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {ValidateDocumentsCommand} from '../validate.js'
+import {ValidateDocumentsCommand} from '../validate'
 
-const VALID_DOCS_PATH = resolve(
-  import.meta.dirname,
-  '../../../../test/__fixtures__/valid-documents.ndjson',
+const mockValidateDocuments = vi.hoisted(() => vi.fn())
+const mockReporters = vi.hoisted(() => ({json: vi.fn(), ndjson: vi.fn(), pretty: vi.fn()}))
+const mockRootError = vi.hoisted(() => class extends Error {}) // TODO: consider adding to a cli-core/errors mock, as cli-core/errors pulls in @sanity/client, which is huge
+const mockStat = vi.hoisted(() => vi.fn())
+
+vi.mock('node:fs/promises', () => ({
+  stat: mockStat,
+}))
+vi.mock(
+  '@sanity/cli-core/SanityCommand',
+  () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
 )
-const INVALID_DOCS_PATH = resolve(
-  import.meta.dirname,
-  '../../../../test/__fixtures__/invalid-documents.ndjson',
-)
-
-const mocks = vi.hoisted(() => ({
-  confirm: vi.fn(),
-  getGlobalCliClient: vi.fn(),
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('@sanity/cli-core/errors', () => ({ProjectRootNotFoundError: mockRootError}))
+vi.mock('../../../actions/documents/types.js', () => ({}))
+vi.mock('../../../actions/documents/validate.js', () => ({
+  validateDocuments: mockValidateDocuments,
+}))
+vi.mock('../../../actions/documents/validation/reporters/index.js', () => ({
+  reporters: mockReporters,
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getGlobalCliClient: mocks.getGlobalCliClient,
-  }
-})
+const cliConfig = {studioHost: 'sanity.lol'}
 
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
-  return {
-    ...actual,
-    confirm: mocks.confirm,
-  }
-})
-
-function setupMocksFromConfig(cliConfig: CliConfig) {
-  mocks.getGlobalCliClient.mockResolvedValue({
-    config: () => ({
-      dataset: cliConfig.api?.dataset,
-      projectId: cliConfig.api?.projectId,
-      token: 'test-token',
-    }),
+describe('ValidateDocumentsCommand', () => {
+  beforeEach(() => {
+    mockValidateDocuments.mockResolvedValue('info')
+    uxMocks.confirm.mockResolvedValue(true)
+    mockStat.mockResolvedValue({isFile: () => true})
+    mocks.SanityCmdGetCliConfig.mockResolvedValue(cliConfig)
+    mocks.SanityCmdIsUnattended.mockReturnValue(false)
   })
-}
-
-const defaultMocks = {
-  cliConfig: {api: {dataset: 'test-dataset', projectId: 'test-project'}},
-  globalApiClient: {
-    config: vi.fn(() => ({
-      dataset: 'test-dataset',
-      projectId: 'test-project',
-    })),
-  } as never,
-  projectRoot: {
-    directory: '/test/path',
-    path: '/test/path/sanity.config.ts',
-    type: 'studio' as const,
-  },
-  token: 'test-token',
-}
-
-describe('#documents:validate', {timeout: 60 * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test.each([
-    {
-      args: ['--level', 'critical'],
-      description: 'unsupported level flag',
-      expectedError: 'Expected --level=critical to be one of: error, warning, info',
-    },
-    {
-      args: ['--max-custom-validation-concurrency', 'abc'],
-      description: 'non-integer max-custom-validation-concurrency',
-      expectedError: 'Expected an integer but received: abc',
-    },
-    {
-      args: ['--max-fetch-concurrency', 'xyz'],
-      description: 'non-integer max-fetch-concurrency',
-      expectedError: 'Expected an integer but received: xyz',
-    },
-  ])('throws error for $description', async ({args, expectedError}) => {
-    const {error} = await testCommand(ValidateDocumentsCommand, args, {
-      mocks: defaultMocks,
-    })
+  test('should hint at running from project dir if ProjectRootNotFoundError thrown', async () => {
+    mocks.SanityCmdGetProjectRoot.mockRejectedValueOnce(new mockRootError('derp'))
 
-    expect(error?.message).toContain(expectedError)
-    expect(error?.oclif?.exit).toBe(2)
+    await ValidateDocumentsCommand.run([])
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('must be run from within a Sanity project'),
+      {exit: 1},
+    )
   })
 
-  describe('basic-studio', () => {
-    let cwd: string
-    let cliConfig: CliConfig
+  test('bails if confirmation denied in attended mode', async () => {
+    uxMocks.confirm.mockResolvedValue(false)
 
-    beforeAll(async () => {
-      cwd = await testFixture('basic-studio')
-      cliConfig = await getCliConfig(cwd)
-    })
+    await ValidateDocumentsCommand.run([])
 
-    beforeEach(() => {
-      process.chdir(cwd)
-      setupMocksFromConfig(cliConfig)
-    })
-
-    test('exits if format is incorrect value', async () => {
-      const {error} = await testCommand(ValidateDocumentsCommand, [
-        '--yes',
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'xml',
-      ])
-
-      expect(error?.message).toContain(
-        "Did not recognize format 'xml'. Available formats are 'json', 'ndjson', and 'pretty'",
-      )
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
-    test('validates documents without markers and outputs empty NDJSON', async () => {
-      mocks.confirm.mockResolvedValue(true)
-
-      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'ndjson',
-      ])
-
-      if (error) throw error
-      expect(stdout).toContain('Warning:')
-      expect(stdout).toContain('reads all documents from your input file')
-      expect(stdout).toContain('Potential pitfalls:')
-      expect(stdout).toContain('processes them through your local schema')
-      expect(stdout).toContain('Checks for missing document references')
-      expect(mocks.confirm).toHaveBeenCalledWith({
-        default: true,
-        message: 'Are you sure you want to continue?',
-      })
-    })
-
-    test('aborts when user declines confirmation', async () => {
-      mocks.confirm.mockResolvedValue(false)
-
-      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'ndjson',
-      ])
-
-      expect(error?.message).toBe('User aborted')
-      expect(error?.oclif?.exit).toBe(1)
-      expect(stdout).toContain('Warning:')
-      expect(mocks.confirm).toHaveBeenCalledWith({
-        default: true,
-        message: 'Are you sure you want to continue?',
-      })
-    })
-
-    test('shows file-specific warning when using --file flag', async () => {
-      mocks.confirm.mockResolvedValue(true)
-
-      const {stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'ndjson',
-      ])
-
-      expect(stdout).toContain('reads all documents from your input file')
-      expect(stdout).toContain('Checks for missing document references')
-    })
-
-    test('errors when --file points to a directory', async () => {
-      mocks.confirm.mockResolvedValue(true)
-
-      const {error} = await testCommand(ValidateDocumentsCommand, [
-        '--file',
-        '.',
-        '--format',
-        'ndjson',
-      ])
-
-      expect(error?.message).toBe("'--file' must point to a valid ndjson file or tarball")
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
-    test('validates documents without markers and outputs empty JSON array', async () => {
-      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--yes',
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'json',
-      ])
-
-      if (error) throw error
-      const parsed = JSON.parse(stdout)
-      expect(Array.isArray(parsed)).toBe(true)
-      expect(parsed.length).toBe(0)
-    })
-
-    test('reports validation errors for documents with type mismatches', async () => {
-      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--yes',
-        '--file',
-        INVALID_DOCS_PATH,
-        '--format',
-        'ndjson',
-      ])
-
-      expect(error?.oclif?.exit).toBe(1)
-      expect(stdout).toContain('post-invalid-type')
-
-      const lines = stdout.trim().split('\n').filter(Boolean)
-      const invalidPost = lines.find((line) => {
-        const parsed = JSON.parse(line)
-        return parsed.documentId === 'post-invalid-type'
-      })
-      expect(invalidPost).toBeDefined()
-
-      const parsed = JSON.parse(invalidPost!)
-      expect(parsed.markers.length).toBeGreaterThan(0)
-      expect(parsed.markers.some((m: {level: string}) => m.level === 'error')).toBe(true)
-    })
-
-    test('filters markers by level correctly', async () => {
-      const {stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--yes',
-        '--file',
-        INVALID_DOCS_PATH,
-        '--format',
-        'ndjson',
-        '--level',
-        'error',
-      ])
-
-      const lines = stdout.trim().split('\n').filter(Boolean)
-      expect(lines.length).toBeGreaterThan(0)
-
-      for (const line of lines) {
-        const parsed = JSON.parse(line)
-        expect(parsed.markers.length).toBeGreaterThan(0)
-        for (const marker of parsed.markers) {
-          expect(marker.level).toBe('error')
-        }
-      }
-    })
+    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith('Validation cancelled')
+    expect(mocks.OclifCmdExit).toHaveBeenCalledWith(exitCodes.USER_ABORT)
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
   })
 
-  describe('outside project context', () => {
-    test('errors when run outside a Sanity project directory', async () => {
-      const {error} = await testCommand(
-        ValidateDocumentsCommand,
-        ['--yes', '--file', VALID_DOCS_PATH],
-        {
-          mocks: {
-            cliConfigError: new ProjectRootNotFoundError('No project root found'),
-            token: 'test-token',
-          },
-        },
-      )
+  test('bails if file provided cannot be validated', async () => {
+    mockStat.mockResolvedValueOnce({isFile: () => false})
 
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain(
-        'This command must be run from within a Sanity project directory',
-      )
-      expect(error?.oclif?.exit).toBe(1)
-    })
+    await ValidateDocumentsCommand.run(['--file', '/some/file'])
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('is not a file'),
+      {exit: exitCodes.USAGE_ERROR},
+    )
   })
 
-  describe('multi-workspace-studio', () => {
-    let cwd: string
-    let cliConfig: CliConfig
+  test('bails if file provided does not exist', async () => {
+    mockStat.mockRejectedValueOnce(new Error('not found'))
 
-    beforeAll(async () => {
-      cwd = await testFixture('multi-workspace-studio')
-      cliConfig = await getCliConfig(cwd)
+    await ValidateDocumentsCommand.run(['--file', '/some/file'])
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('File not found'),
+      {exit: exitCodes.USAGE_ERROR},
+    )
+  })
+
+  test('calls validateDocuments with all flags and does not error if return is not error', async () => {
+    const ndjsonFilePath = path.join('some', 'file')
+    const dataset = 'staging'
+    const workspace = 'homeoffice'
+    const level = 'info'
+    const maxCustomValidationConcurrency = 10
+    const maxFetchConcurrency = 10
+
+    await ValidateDocumentsCommand.run([
+      '--file',
+      ndjsonFilePath,
+      '--dataset',
+      dataset,
+      '--workspace',
+      workspace,
+      '--level',
+      level,
+      '--max-custom-validation-concurrency',
+      String(maxCustomValidationConcurrency),
+      '--max-fetch-concurrency',
+      String(maxFetchConcurrency),
+    ])
+
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mockValidateDocuments).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataset,
+        level,
+        maxCustomValidationConcurrency,
+        maxFetchConcurrency,
+        ndjsonFilePath: expect.stringContaining(ndjsonFilePath),
+        studioHost: cliConfig.studioHost,
+        workspace,
+      }),
+    )
+  })
+
+  test('calls validateDocuments with default values for flags and does not error if return is not error', async () => {
+    await ValidateDocumentsCommand.run([])
+
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mockValidateDocuments).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataset: undefined,
+        level: 'warning',
+        maxCustomValidationConcurrency: 5,
+        maxFetchConcurrency: 25,
+      }),
+    )
+  })
+
+  test('calls validateDocuments and exits if return is error', async () => {
+    mockValidateDocuments.mockResolvedValue('error')
+    const ndjsonFilePath = '/some/file'
+    const dataset = 'staging'
+
+    await ValidateDocumentsCommand.run(['--file', ndjsonFilePath, '--dataset', dataset])
+
+    expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+    expect(mocks.OclifCmdExit).toHaveBeenCalledWith(1)
+  })
+
+  test('calls validateDocuments and errors if it throws', async () => {
+    mockValidateDocuments.mockRejectedValue('boom')
+    const ndjsonFilePath = '/some/file'
+    const dataset = 'staging'
+
+    await ValidateDocumentsCommand.run(['--file', ndjsonFilePath, '--dataset', dataset])
+
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith('boom', {exit: 1})
+  })
+
+  describe('bad flags', () => {
+    test.each([
+      {
+        args: ['--level', 'critical'],
+        description: 'unsupported level flag',
+        expectedError: 'Expected --level=critical to be one of: error, warning, info',
+      },
+      {
+        args: ['--max-custom-validation-concurrency', 'abc'],
+        description: 'non-integer max-custom-validation-concurrency',
+        expectedError: 'Expected an integer but received: abc',
+      },
+      {
+        args: ['--max-fetch-concurrency', 'xyz'],
+        description: 'non-integer max-fetch-concurrency',
+        expectedError: 'Expected an integer but received: xyz',
+      },
+    ])('throws error for $description', async ({args, expectedError}) => {
+      await expect(ValidateDocumentsCommand.run(args)).rejects.toThrow(
+        expect.objectContaining({message: expect.stringContaining(expectedError)}),
+      )
     })
 
-    beforeEach(() => {
-      process.chdir(cwd)
-      setupMocksFromConfig(cliConfig)
-    })
-
-    test('works with multi-workspace studio using workspace flag', async () => {
-      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
-        '--yes',
-        '--file',
-        VALID_DOCS_PATH,
-        '--format',
-        'json',
-        '--workspace',
-        'production',
-      ])
-
-      if (error) throw error
-      const parsed = JSON.parse(stdout)
-      expect(Array.isArray(parsed)).toBe(true)
-    })
-
-    test('fails when multiple workspaces exist and no workspace flag provided', async () => {
-      const {error} = await testCommand(ValidateDocumentsCommand, [
-        '--yes',
-        '--file',
-        VALID_DOCS_PATH,
-      ])
-
-      expect(error?.message).toContain('Multiple workspaces found')
-      expect(error?.message).toContain('--workspace')
-      expect(error?.oclif?.exit).toBe(1)
+    test('errors with unrecognized format flag', async () => {
+      await expect(ValidateDocumentsCommand.run(['--format', 'xml'])).rejects.toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining(
+            'Expected --format=xml to be one of: json, ndjson, pretty',
+          ),
+        }),
+      )
     })
   })
 })

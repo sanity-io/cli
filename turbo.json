@@ -10,9 +10,17 @@
     "SANITY_E2E_TOKEN",
     "SANITY_E2E_DATASET"
   ],
+  "globalPassThroughEnv": [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "NODE_EXTRA_CA_CERTS",
+    "NODE_USE_ENV_PROXY"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/*.test.ts"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".sanity/**", "lib/**", "fixtures/**"]
     },
     "@sanity/cli-test#build": {
@@ -22,11 +30,12 @@
     },
     "build:types": {
       "dependsOn": ["^build", "^build:types", "build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/*.test.ts"],
       "outputs": ["dist/**/*.d.ts"]
     },
     "lint": {},
     "publint": {
-      "dependsOn": ["^build:types", "^publint"],
+      "dependsOn": ["build:types", "^build:types", "^publint"],
       "cache": false
     },
     "dev": {

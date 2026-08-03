@@ -1,7 +1,8 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
@@ -76,11 +77,17 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     })
 
     try {
-      ;({dataset} = await resolveDataset({dataset, projectId}))
+      ;({dataset} = await resolveDataset({
+        dataset,
+        isUnattended: this.isUnattended(),
+        output: this.output,
+        projectId,
+      }))
     } catch (error) {
+      if (error instanceof CLIError) throw error
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to resolve dataset: ${message}`, error)
-      this.error(message, {exit: 1})
+      this.error(message, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (projection) {
@@ -88,7 +95,7 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
         validateProjection(projection)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        this.error(`Invalid projection: ${message}`, {exit: 1})
+        this.error(`Invalid projection: ${message}`, {exit: exitCodes.USAGE_ERROR})
       }
     }
 
@@ -97,7 +104,7 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to enable embeddings: ${message}`, error)
-      this.error(`Failed to enable embeddings: ${message}`, {exit: 1})
+      this.error(`Failed to enable embeddings: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     this.log(styleText('green', `Embeddings enabled for dataset ${dataset}.`))
@@ -127,7 +134,9 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         spin.fail('Failed while waiting for embeddings.')
-        this.error(`Failed while waiting for embeddings: ${message}`, {exit: 1})
+        this.error(`Failed while waiting for embeddings: ${message}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
       debug(`Poll status: ${settings.status}, next interval: ${Math.round(interval)}ms`)
 
@@ -138,13 +147,17 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
 
       if (settings.status !== 'updating') {
         spin.fail(`Unexpected status: ${settings.status}`)
-        this.error(`Embeddings entered unexpected status: ${settings.status}`, {exit: 1})
+        this.error(`Embeddings entered unexpected status: ${settings.status}`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       spin.text = 'Still processing...'
     }
 
     spin.fail('Timed out waiting for embeddings.')
-    this.error('Timed out. Check status with: sanity dataset embeddings status', {exit: 1})
+    this.error('Timed out. Check status with: sanity dataset embeddings status', {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   }
 }

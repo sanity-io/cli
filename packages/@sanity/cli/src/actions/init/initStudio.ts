@@ -33,10 +33,12 @@ export async function initStudio({
   organizationId,
   output,
   outputPath,
+  preclaim = false,
   projectId,
   remoteTemplateInfo,
   sluggedName,
   trace,
+  workbench,
   workDir,
 }: {
   datasetName: string
@@ -48,10 +50,12 @@ export async function initStudio({
   organizationId: string | undefined
   output: Output
   outputPath: string
+  preclaim?: boolean
   projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
+  workbench: boolean
   workDir: string
 }): Promise<void> {
   const {importDataset, unattended} = options
@@ -80,11 +84,13 @@ export async function initStudio({
     step: 'importTemplateDataset',
   })
 
-  try {
-    await updateProjectInitializedAt(projectId)
-  } catch (err) {
-    // Non-critical update
-    debug('Failed to update cliInitializedAt metadata', err)
+  if (!preclaim) {
+    try {
+      await updateProjectInitializedAt(projectId)
+    } catch (err) {
+      // Non-critical update
+      debug('Failed to update cliInitializedAt metadata', err)
+    }
   }
 
   const {pkgManager} = await scaffoldAndInstall({
@@ -101,6 +107,7 @@ export async function initStudio({
     templateName,
     trace,
     useTypeScript,
+    workbench,
     workDir,
   })
 
@@ -134,6 +141,9 @@ export async function initStudio({
     output.log('and create a new clean dataset with')
     output.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
   }
+
+  // `sanity new` owns the combined Studio/frontend outro.
+  if (preclaim) return
 
   const devCommandMap: Record<PackageManager, string> = {
     bun: 'bun dev',

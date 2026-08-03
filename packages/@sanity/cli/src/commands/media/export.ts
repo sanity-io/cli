@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
 import prettyMs from 'pretty-ms'
@@ -83,17 +83,22 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
       this.error(
         `Failed to list media libraries:\n${error instanceof Error ? error.message : error}`,
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     }
 
     if (mediaLibraries.length === 0) {
-      this.error('No active media libraries found in this project', {exit: 1})
+      this.error('No active media libraries found in this project', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     let mediaLibraryId = flags['media-library-id']
     if (!mediaLibraryId) {
+      if (this.isUnattended()) {
+        this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
       try {
         mediaLibraryId = await promptForMediaLibrary({mediaLibraries})
       } catch (error) {
@@ -101,14 +106,16 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
         this.error(
           `Failed to select media library:\n${error instanceof Error ? error.message : error}`,
           {
-            exit: 1,
+            exit: exitCodes.RUNTIME_ERROR,
           },
         )
       }
     }
 
     if (!mediaLibraries.some((library) => library.id === mediaLibraryId)) {
-      this.error(`Media library with id "${mediaLibraryId}" not found`, {exit: 1})
+      this.error(`Media library with id "${mediaLibraryId}" not found`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     this.log(
@@ -125,12 +132,14 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
 
     let destinationPath = targetDestination
     if (!destinationPath) {
-      destinationPath = await this.promptForDestination({mediaLibraryId})
+      destinationPath = this.isUnattended()
+        ? path.join(process.cwd(), `${mediaLibraryId}-export.tar.gz`)
+        : await this.promptForDestination({mediaLibraryId})
     }
 
     const outputPath = await this.getOutputPath(destinationPath, mediaLibraryId, flags)
     if (!outputPath) {
-      this.error('Cancelled', {exit: 1})
+      this.error('Cancelled', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const {fail, onProgress, succeed} = this.createProgressHandler()
@@ -152,7 +161,7 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
       fail()
       const err = error instanceof Error ? error : new Error(String(error))
       exportDebug('Export failed', err)
-      this.error(`Export failed: ${err.message}`, {exit: 1})
+      this.error(`Export failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -205,7 +214,7 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
         this.error(`Failed to create directory "${createPath}": ${err.message}`, {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         })
       }
     }
@@ -216,8 +225,8 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
     const finalPathStats = await fs.stat(finalPath).catch(noop)
 
     if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
-      this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
-        exit: 1,
+      this.error(`File "${finalPath}" already exists. Pass \`--overwrite\` to replace it.`, {
+        exit: exitCodes.USAGE_ERROR,
       })
     }
 

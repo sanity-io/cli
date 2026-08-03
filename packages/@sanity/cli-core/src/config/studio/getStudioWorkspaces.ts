@@ -5,7 +5,7 @@ import {isMainThread} from 'node:worker_threads'
 import {firstValueFrom, of} from 'rxjs'
 import {type Workspace} from 'sanity'
 
-import {subdebug} from '../../debug.js'
+import {subdebug} from '../../_exports/debug.js'
 import {doImport} from '../../util/doImport.js'
 import {getEmptyAuth} from '../../util/getEmptyAuth.js'
 import {resolveLocalPackage} from '../../util/resolveLocalPackage.js'
@@ -57,9 +57,11 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
     ? config
     : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
 
+  const emptyAuth = {state: of(getEmptyAuth())}
+
   const unauthedWorkspaces = rawWorkspaces.map((workspace) => ({
     ...workspace,
-    auth: {state: of(getEmptyAuth())},
+    auth: emptyAuth,
   }))
 
   debug('Unauthed workspaces %o', unauthedWorkspaces)

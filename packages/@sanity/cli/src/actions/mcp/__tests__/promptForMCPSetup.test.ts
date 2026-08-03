@@ -33,13 +33,13 @@ describe('promptForMCPSetup', () => {
 
     await promptForMCPSetup({
       choices: [choice(makeEditor({name: 'Cursor'}), 'mcp-and-skill')],
-      message: 'Configure Sanity MCP and install agent skills for these editors?',
+      message: 'Configure Sanity MCP and agent skills for these editors?',
     })
 
     expect(mockCheckbox).toHaveBeenCalledWith(
       expect.objectContaining({
         choices: [{checked: true, name: 'Cursor', value: 'Cursor'}],
-        message: 'Configure Sanity MCP and install agent skills for these editors?',
+        message: 'Configure Sanity MCP and agent skills for these editors?',
       }),
     )
   })
@@ -91,7 +91,7 @@ describe('promptForMCPSetup', () => {
         choices: [
           {
             checked: true,
-            name: 'Cursor (skill only — MCP already configured)',
+            name: 'Cursor (skills only — MCP already configured)',
             value: 'Cursor',
           },
         ],

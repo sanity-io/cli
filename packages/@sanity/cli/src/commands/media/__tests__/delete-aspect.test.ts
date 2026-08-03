@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -24,6 +25,7 @@ const defaultMocks = {
       projectId: 'test-project-id',
     },
   },
+  isInteractive: true,
   projectRoot: {
     directory: '/test/project',
     path: '/test/project/sanity.config.ts',
@@ -49,7 +51,7 @@ describe('#media:delete-aspect', () => {
       aspectName  Name of the aspect to delete
       See more help with --help"
     `)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('should error if project ID is not configured', async () => {
@@ -104,32 +106,30 @@ describe('#media:delete-aspect', () => {
   })
 
   test('should skip confirmation with --yes flag', async () => {
-    // Mock the media libraries API call
-    mockApi({
-      apiVersion: MEDIA_LIBRARY_API_VERSION,
-      method: 'get',
-      query: {projectId: 'test-project-id'},
-      uri: '/media-libraries',
-    }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
-    })
-
-    mockSelect.mockResolvedValue('test-library-id')
-
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
       uri: '/media-libraries/test-library-id/mutate',
     }).reply(200, {results: [{id: 'myAspect'}]})
 
-    await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {mocks: defaultMocks})
+    await testCommand(
+      MediaDeleteAspectCommand,
+      ['myAspect', '--media-library-id', 'test-library-id', '--yes'],
+      {mocks: {...defaultMocks, isInteractive: false}},
+    )
 
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockSelect).not.toHaveBeenCalled()
+  })
+
+  test('should require the media library ID with --yes', async () => {
+    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockSelect).not.toHaveBeenCalled()
     expect(mockConfirm).not.toHaveBeenCalled()
   })
 
@@ -153,12 +153,38 @@ describe('#media:delete-aspect', () => {
     mockSelect.mockResolvedValue('test-library-id')
     mockConfirm.mockResolvedValue(false)
 
-    const {stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
+    const {error, stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
       mocks: defaultMocks,
     })
 
     expect(mockConfirm).toHaveBeenCalled()
     expect(stdout).toContain('Operation cancelled')
+    expect(error?.oclif?.exit).toBe(exitCodes.USER_ABORT)
+  })
+
+  test('requires the media library ID and confirmation in unattended mode', async () => {
+    const missingLibrary = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {},
+        isInteractive: false,
+      },
+    })
+    expect(missingLibrary.error?.message).toBe(
+      'Media library ID is required. Pass it with `--media-library-id <id>`.\n' +
+        'Error: Deletion requires confirmation. Pass `--yes` to delete the aspect.',
+    )
+    expect(missingLibrary.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+
+    const missingConfirmation = await testCommand(
+      MediaDeleteAspectCommand,
+      ['myAspect', '--media-library-id', 'test-library-id'],
+      {mocks: {...defaultMocks, isInteractive: false}},
+    )
+    expect(missingConfirmation.error?.message).toContain('--yes')
+    expect(missingConfirmation.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockSelect).not.toHaveBeenCalled()
+    expect(mockConfirm).not.toHaveBeenCalled()
   })
 
   test('should use --media-library-id flag when provided', async () => {
@@ -180,25 +206,6 @@ describe('#media:delete-aspect', () => {
   })
 
   test('should warn if aspect does not exist', async () => {
-    // Mock the media libraries API call
-    mockApi({
-      apiVersion: MEDIA_LIBRARY_API_VERSION,
-      method: 'get',
-      query: {projectId: 'test-project-id'},
-      uri: '/media-libraries',
-    }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
-    })
-
-    mockSelect.mockResolvedValue('test-library-id')
-    mockConfirm.mockResolvedValue(true)
-
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
@@ -207,7 +214,7 @@ describe('#media:delete-aspect', () => {
 
     const {stderr, stdout} = await testCommand(
       MediaDeleteAspectCommand,
-      ['nonExistentAspect', '--yes'],
+      ['nonExistentAspect', '--media-library-id', 'test-library-id', '--yes'],
       {mocks: defaultMocks},
     )
 
@@ -216,34 +223,17 @@ describe('#media:delete-aspect', () => {
   })
 
   test('should handle API errors gracefully', async () => {
-    // Mock the media libraries API call
-    mockApi({
-      apiVersion: MEDIA_LIBRARY_API_VERSION,
-      method: 'get',
-      query: {projectId: 'test-project-id'},
-      uri: '/media-libraries',
-    }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
-    })
-
-    mockSelect.mockResolvedValue('test-library-id')
-    mockConfirm.mockResolvedValue(true)
-
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
       uri: '/media-libraries/test-library-id/mutate',
     }).reply(500, {message: 'Network timeout'})
 
-    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {
-      mocks: defaultMocks,
-    })
+    const {error} = await testCommand(
+      MediaDeleteAspectCommand,
+      ['myAspect', '--media-library-id', 'test-library-id', '--yes'],
+      {mocks: defaultMocks},
+    )
 
     expect(error?.message).toContain('Failed to delete aspect')
     expect(error?.oclif?.exit).toBe(1)
@@ -275,7 +265,7 @@ describe('#media:delete-aspect', () => {
       uri: '/media-libraries/selected-library-id/mutate',
     }).reply(200, {results: [{id: 'myAspect'}]})
 
-    await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {mocks: defaultMocks})
+    await testCommand(MediaDeleteAspectCommand, ['myAspect'], {mocks: defaultMocks})
 
     expect(mockSelect).toHaveBeenCalledWith(
       expect.objectContaining({

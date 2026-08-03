@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -33,6 +34,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -47,6 +49,7 @@ describe('#dataset:embeddings:status', () => {
   afterEach(() => {
     const pending = pendingMocks()
     cleanAll()
+    vi.clearAllMocks()
     vi.restoreAllMocks()
     expect(pending, 'pending mocks').toEqual([])
   })
@@ -98,6 +101,17 @@ describe('#dataset:embeddings:status', () => {
 
     expect(mockSelect).toHaveBeenCalled()
     expect(stdout).toContain('Dataset:    staging')
+  })
+
+  test('should require a dataset without prompting in unattended mode', async () => {
+    const {error} = await testCommand(DatasetEmbeddingsStatusCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe('Dataset name is required. Pass it as the `<dataset>` argument.')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockListDatasets).not.toHaveBeenCalled()
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('should surface API errors from settings call', async () => {

@@ -12,6 +12,12 @@ vi.mock('../util/findConfigsPaths.js', () => ({
 }))
 
 const ROOT = '/mock/project'
+const BRAND = Symbol.for('sanity.workbench.defineApp')
+
+/** Mimics what `unstable_defineApp` returns: the input plus the brand. */
+function brandedApp(input: Record<string, unknown>) {
+  return Object.defineProperty({...input}, BRAND, {enumerable: false, value: true})
+}
 
 function setupSingleConfig(configPath = `${ROOT}/sanity.cli.ts`) {
   mockFindPathForFiles.mockResolvedValue([
@@ -42,6 +48,18 @@ describe('getCliConfig', () => {
     expect(mockImportModule).toHaveBeenCalledOnce()
   })
 
+  test('preserves unstable_bundledDev rather than stripping it on parse', async () => {
+    const getCliConfig = await freshImport()
+    setupSingleConfig()
+    mockImportModule.mockResolvedValue({unstable_bundledDev: true})
+
+    const config = await getCliConfig(ROOT)
+
+    // The schema declares `unstable_bundledDev`; without it zod would drop the
+    // key and the sanity.cli.ts opt-in would never reach the dev server.
+    expect(config).toEqual({unstable_bundledDev: true})
+  })
+
   test('throws when no config found', async () => {
     const getCliConfig = await freshImport()
     mockFindPathForFiles.mockResolvedValue([
@@ -68,6 +86,21 @@ describe('getCliConfig', () => {
     mockImportModule.mockRejectedValue(new Error('syntax error'))
 
     await expect(getCliConfig(ROOT)).rejects.toThrow('CLI config cannot be loaded')
+  })
+
+  test('routes a branded app through the workbench loader', async () => {
+    const getCliConfig = await freshImport()
+    setupSingleConfig()
+    const app = brandedApp({name: 'drop-desk', title: 'Drop Desk'})
+    mockImportModule.mockResolvedValue({api: {projectId: 'abc'}, app})
+
+    const config = await getCliConfig(ROOT)
+
+    // `/mock/project` has no `sanity.config.*`, so it resolves to a core app —
+    // proving the branch ran parseWorkbenchCliConfig and kept the brand.
+    expect((config.app as {applicationType?: string}).applicationType).toBe('coreApp')
+    expect(BRAND in (config.app as object)).toBe(true)
+    expect('applicationType' in app).toBe(false)
   })
 
   test('throws on schema validation failure', async () => {

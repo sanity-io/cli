@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-test",
-  "version": "1.0.1",
+  "version": "9.0.0",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
     "cli",
@@ -33,6 +33,66 @@
       "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./mocks/cli-core/apiClient": {
+      "source": "./src/mocks/cli-core/apiClient.ts",
+      "default": "./dist/mocks/cli-core/apiClient.js"
+    },
+    "./mocks/cli-core/browser": {
+      "source": "./src/mocks/cli-core/browser.ts",
+      "default": "./dist/mocks/cli-core/browser.js"
+    },
+    "./mocks/cli-core/config": {
+      "source": "./src/mocks/cli-core/config.ts",
+      "default": "./dist/mocks/cli-core/config.js"
+    },
+    "./mocks/cli-core/package-manager": {
+      "source": "./src/mocks/cli-core/package-manager.ts",
+      "default": "./dist/mocks/cli-core/package-manager.js"
+    },
+    "./mocks/cli-core/request": {
+      "source": "./src/mocks/cli-core/request.ts",
+      "default": "./dist/mocks/cli-core/request.js"
+    },
+    "./mocks/cli-core/tasks": {
+      "source": "./src/mocks/cli-core/tasks.ts",
+      "default": "./dist/mocks/cli-core/tasks.js"
+    },
+    "./mocks/cli-core/telemetry": {
+      "source": "./src/mocks/cli-core/telemetry.ts",
+      "default": "./dist/mocks/cli-core/telemetry.js"
+    },
+    "./mocks/cli-core/ux": {
+      "source": "./src/mocks/cli-core/ux.ts",
+      "default": "./dist/mocks/cli-core/ux.js"
+    },
+    "./mocks/cli-core/SanityCommand": {
+      "source": "./src/mocks/cli-core/SanityCommand.ts",
+      "default": "./dist/mocks/cli-core/SanityCommand.js"
+    },
+    "./paths": {
+      "source": "./src/utils/paths.ts",
+      "default": "./dist/utils/paths.js"
+    },
+    "./test/createTestClient": {
+      "source": "./src/test/createTestClient.ts",
+      "default": "./dist/test/createTestClient.js"
+    },
+    "./test/mockApi": {
+      "source": "./src/test/mockApi.ts",
+      "default": "./dist/test/mockApi.js"
+    },
+    "./test/oclif": {
+      "source": "./src/test/oclif.ts",
+      "default": "./dist/test/oclif.js"
+    },
+    "./test/setupFixtures": {
+      "source": "./src/test/setupFixtures.ts",
+      "default": "./dist/test/setupFixtures.js"
+    },
+    "./test/util": {
+      "source": "./src/test/util.ts",
+      "default": "./dist/test/util.js"
+    },
     "./vitest": {
       "source": "./src/vitest.ts",
       "default": "./dist/vitest.js"
@@ -62,9 +122,8 @@
     "@sanity/cli-core": "workspace:*",
     "@swc/core": "catalog:",
     "ansis": "^4.2.0",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "nock": "catalog:",
-    "ora": "catalog:",
     "tinyglobby": "catalog:"
   },
   "devDependencies": {
@@ -72,7 +131,7 @@
     "@oclif/core": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@sanity/client": "^7.22.1",
+    "@sanity/client": "^7.25.0",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
@@ -92,6 +151,6 @@
     "vitest": ">=3.0.0 <5.0.0"
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

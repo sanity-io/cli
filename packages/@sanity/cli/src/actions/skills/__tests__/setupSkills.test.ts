@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
-  SANITY_SKILL_NAME,
+  SANITY_SKILL_NAMES,
   SANITY_SKILLS_REPO,
   setupSkills,
   SKILLS_BIN_PATH,
@@ -13,13 +13,19 @@ vi.mock('execa', () => ({
   execa: mockExeca,
 }))
 
+const mockOutput = {
+  error: vi.fn() as never,
+  log: vi.fn(),
+  warn: vi.fn(),
+}
+
 describe('setupSkills', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
 
   test('returns skipped when no agents are passed', async () => {
-    const result = await setupSkills({agents: []})
+    const result = await setupSkills({agents: [], output: mockOutput})
 
     expect(result).toEqual({installedAgents: [], skipped: true})
     expect(mockExeca).not.toHaveBeenCalled()
@@ -28,7 +34,7 @@ describe('setupSkills', () => {
   test('installs globally for a single agent', async () => {
     mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
 
-    const result = await setupSkills({agents: ['cursor']})
+    const result = await setupSkills({agents: ['cursor'], output: mockOutput})
 
     expect(mockExeca).toHaveBeenCalledWith(
       process.execPath,
@@ -37,7 +43,7 @@ describe('setupSkills', () => {
         'add',
         SANITY_SKILLS_REPO,
         '--skill',
-        SANITY_SKILL_NAME,
+        ...SANITY_SKILL_NAMES,
         '-g',
         '-a',
         'cursor',
@@ -46,12 +52,17 @@ describe('setupSkills', () => {
       expect.objectContaining({stdio: 'pipe', timeout: 90_000}),
     )
     expect(result).toEqual({installedAgents: ['cursor'], skipped: false})
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Sanity agent skills installed: [sanity-best-practices, sanity-migration]',
+      ),
+    )
   })
 
   test('deduplicates repeated agent IDs', async () => {
     mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
 
-    const result = await setupSkills({agents: ['cline', 'cline', 'cursor']})
+    const result = await setupSkills({agents: ['cline', 'cline', 'cursor'], output: mockOutput})
 
     expect(result.installedAgents).toEqual(['cline', 'cursor'])
     expect(mockExeca).toHaveBeenCalledWith(
@@ -61,7 +72,7 @@ describe('setupSkills', () => {
         'add',
         SANITY_SKILLS_REPO,
         '--skill',
-        SANITY_SKILL_NAME,
+        ...SANITY_SKILL_NAMES,
         '-g',
         '-a',
         'cline',
@@ -76,7 +87,7 @@ describe('setupSkills', () => {
   test('passes every agent as a separate -a flag', async () => {
     mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
 
-    await setupSkills({agents: ['cursor', 'claude-code', 'github-copilot']})
+    await setupSkills({agents: ['cursor', 'claude-code', 'github-copilot'], output: mockOutput})
 
     expect(mockExeca).toHaveBeenCalledWith(
       process.execPath,
@@ -85,7 +96,7 @@ describe('setupSkills', () => {
         'add',
         SANITY_SKILLS_REPO,
         '--skill',
-        SANITY_SKILL_NAME,
+        ...SANITY_SKILL_NAMES,
         '-g',
         '-a',
         'cursor',
@@ -99,16 +110,37 @@ describe('setupSkills', () => {
     )
   })
 
+  test('prints a summary grouping universal agents and listing additional ones', async () => {
+    mockExeca.mockResolvedValue({exitCode: 0, stderr: '', stdout: ''})
+
+    await setupSkills({agents: ['cursor', 'github-copilot', 'claude-code'], output: mockOutput})
+
+    const logged = mockOutput.log.mock.calls.map((call) => String(call[0])).join('\n')
+    // Universal agents are grouped under a single shared-directory header.
+    expect(logged).toContain('Universal (~/.agents/skills)')
+    expect(logged).toContain('Cursor, GitHub Copilot')
+    // Non-universal agents (Claude Code) are listed separately with their dir.
+    expect(logged).toContain('Additional agents')
+    expect(logged).toContain('Claude Code (~/.claude/skills)')
+  })
+
   test('returns an error result when the skills CLI fails (does not throw)', async () => {
     const installErr = new Error('skills exited 1')
     mockExeca.mockRejectedValue(installErr)
 
-    const result = await setupSkills({agents: ['cursor']})
+    const result = await setupSkills({agents: ['cursor'], output: mockOutput})
 
     expect(result.skipped).toBe(false)
     expect(result.installedAgents).toEqual([])
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error?.message).toBe('skills exited 1')
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      'Could not install Sanity agent skills: skills exited 1',
+    )
+  })
+
+  test('installs both the best-practices and migration skills', () => {
+    expect(SANITY_SKILL_NAMES).toEqual(['sanity-best-practices', 'sanity-migration'])
   })
 
   test('resolves SKILLS_BIN_PATH to a path that points at the bundled cli', () => {

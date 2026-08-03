@@ -18,11 +18,6 @@ try {
   )
 } catch (error) {
   // eslint-disable-next-line no-console
-  console.error(
-    JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-      success: false,
-    }),
-  )
+  console.error(error)
   process.exit(1)
 }

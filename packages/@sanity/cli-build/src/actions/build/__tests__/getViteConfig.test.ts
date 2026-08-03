@@ -1,7 +1,7 @@
 import {join} from 'node:path'
 
-import {noopLogger} from '@sanity/cli-core'
-import {convertToSystemPath} from '@sanity/cli-test'
+import * as configMocks from '@sanity/cli-test/mocks/cli-core/config'
+import {convertToSystemPath} from '@sanity/cli-test/paths'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -13,14 +13,26 @@ import {
 } from '../getViteConfig.js'
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
+const mockWorkbenchVitePlugins = vi.hoisted(() => vi.fn())
+const mockWorkbenchOptimizeDeps = vi.hoisted(() => vi.fn())
+const mockFaviconsPlugin = vi.hoisted(() => vi.fn())
+const mockFaviconsPath = vi.hoisted(() => vi.fn())
+const mockNormalizeBasePaths = vi.hoisted(() => vi.fn())
 
-// Mock all external dependencies
-vi.mock('read-package-up', () => ({
-  readPackageUp: vi.fn(),
-}))
-
+// Mock all dependencies
 vi.mock('@rolldown/plugin-babel', () => ({
   default: vi.fn(() => ({name: 'babel-plugin'})),
+}))
+
+vi.mock('@sanity/cli-core/config', () => import('@sanity/cli-test/mocks/cli-core/config'))
+
+vi.mock('@sanity/cli-core/telemetry', () => ({
+  getCliTelemetry: vi.fn(),
+}))
+
+vi.mock('@sanity/workbench-cli/build', () => ({
+  workbenchOptimizeDeps: mockWorkbenchOptimizeDeps,
+  workbenchVitePlugins: mockWorkbenchVitePlugins,
 }))
 
 vi.mock('@vitejs/plugin-react', () => ({
@@ -37,12 +49,12 @@ vi.mock('../createExternalFromImportMap.js', () => ({
   createExternalFromImportMap: vi.fn(() => ['external1', 'external2']),
 }))
 
-vi.mock('../getBrowserAliases.js', () => ({
-  getSanityPkgExportAliases: vi.fn(() => Promise.resolve({alias1: 'path1', alias2: 'path2'})),
+vi.mock('../normalizeBasePath.js', () => ({
+  normalizeBasePath: mockNormalizeBasePaths,
 }))
 
-vi.mock('../normalizeBasePath.js', () => ({
-  normalizeBasePath: vi.fn((path: string) => `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/')),
+vi.mock('../writeFavicons.js', () => ({
+  getDefaultFaviconsPath: mockFaviconsPath,
 }))
 
 vi.mock('../vite/plugin-sanity-build-entries.js', () => ({
@@ -50,54 +62,61 @@ vi.mock('../vite/plugin-sanity-build-entries.js', () => ({
 }))
 
 vi.mock('../vite/plugin-sanity-favicons.js', () => ({
-  sanityFaviconsPlugin: vi.fn(() => ({name: 'sanity-favicons'})),
+  sanityFaviconsPlugin: mockFaviconsPlugin,
 }))
 
 vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
-vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
-  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
-    name: 'sanity/schema-extraction',
-  }),
+vi.mock('../vite/plugin-sanity-vendor-named-exports.js', () => ({
+  createVendorNamedExportsPlugin: vi.fn(() => ({name: 'sanity-vendor-named-exporters'})),
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
-  }
-})
+vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
+  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin,
+}))
 
 const mockTestCwd = convertToSystemPath('/test/cwd')
 const mockSanityPath = convertToSystemPath('/mock/path/to/sanity')
 const mockCustomOutput = convertToSystemPath('/custom/output')
+const mockEntries = {
+  relativeConfigLocation: '../../sanity.config.ts',
+  relativeEntry: '../../src/App',
+}
 
 function getEnvironmentVariables() {
   return {}
 }
 
 describe('#getViteConfig', () => {
-  beforeEach(async () => {
-    vi.clearAllMocks()
-
-    // Setup default mock for readPackageUp
-    const {readPackageUp} = await import('read-package-up')
-    vi.mocked(readPackageUp).mockResolvedValue({
-      packageJson: {name: 'sanity'},
-      path: join(mockSanityPath, 'package.json'),
+  beforeEach(() => {
+    mockWorkbenchVitePlugins.mockResolvedValue({
+      name: 'sanity/federation',
     })
+    mockWorkbenchOptimizeDeps.mockReturnValue({
+      entries: ['src/App.tsx'],
+      include: ['react', 'react-dom/client'],
+    })
+    mockExtractSchemaPlugin.mockReturnValue({
+      name: 'sanity/schema-extraction',
+    })
+    mockFaviconsPlugin.mockReturnValue({name: 'sanity-favicons'})
+    mockFaviconsPath.mockResolvedValue(join(mockSanityPath, 'static', 'favicons'))
+    mockNormalizeBasePaths.mockImplementation((path: string) =>
+      `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/'),
+    )
+    configMocks.findProjectRoot.mockResolvedValue({path: '/some/path'})
   })
 
   afterEach(() => {
-    vi.unstubAllEnvs()
+    vi.clearAllMocks()
   })
 
   test('should create basic vite config with default options', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables() {
         return {'process.env.STUDIO_VAR': '"studio-value"'}
       },
@@ -148,6 +167,7 @@ describe('#getViteConfig', () => {
   test('should create vite config for app mode', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables() {
         return {'process.env.APP_VAR': '"app-value"'}
       },
@@ -159,6 +179,7 @@ describe('#getViteConfig', () => {
     const config = await getViteConfig(options)
 
     expect(config.envPrefix).toBe('SANITY_APP_')
+    expect(config.server?.strictPort).toBe(false)
     expect(config.define).toMatchObject({
       'process.env.APP_VAR': '"app-value"',
     })
@@ -174,6 +195,7 @@ describe('#getViteConfig', () => {
   test('should create production config with minification', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       minify: true,
       mode: 'production' as const,
@@ -200,17 +222,13 @@ describe('#getViteConfig', () => {
       },
     })
 
-    // Externals are handled by esmExternalRequirePlugin (so external require() is
-    // rewritten to ESM imports), not by rolldownOptions.external.
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
-    const {esmExternalRequirePlugin} = await import('vite')
-    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
-    expect(config.plugins).toContainEqual({name: 'esm-external-require'})
   })
 
   test('should create production config without minification', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       minify: false,
       mode: 'production' as const,
@@ -228,6 +246,7 @@ describe('#getViteConfig', () => {
     const options = {
       basePath: 'custom/path',
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -241,6 +260,7 @@ describe('#getViteConfig', () => {
   test('should handle custom server options', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -269,6 +289,7 @@ describe('#getViteConfig', () => {
 
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: reactCompilerConfig,
@@ -284,11 +305,32 @@ describe('#getViteConfig', () => {
     })
   })
 
+  test('should handle react compiler boolean configuration', async () => {
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+
+    const options = {
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: true,
+    }
+
+    await getViteConfig(options)
+
+    expect(reactCompilerPreset).toHaveBeenCalledWith({})
+    expect(babel).toHaveBeenCalledWith({
+      presets: [expect.objectContaining({name: 'react-compiler-preset'})],
+    })
+  })
+
   test('should set staging flag when SANITY_INTERNAL_ENV is staging', async () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
 
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -299,45 +341,79 @@ describe('#getViteConfig', () => {
     expect(config.define?.__SANITY_STAGING__).toBe(true)
   })
 
-  test('should handle import map for external dependencies', async () => {
-    const importMap = {
-      imports: {
-        react: 'https://esm.sh/react@18',
-        'react-dom': 'https://esm.sh/react-dom@18',
+  test('should configure auto-updates builds with vendor chunks and import map', async () => {
+    const autoUpdates = {
+      imports: {sanity: 'https://sanity-cdn.example/sanity'},
+      vendor: {
+        entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
+        namesByChunkName: {'react/index': ['useState']},
+        specifiersByChunkName: {'react/index': 'react'},
       },
     }
 
     const options = {
+      autoUpdates,
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
-      importMap,
       mode: 'production' as const,
       reactCompiler: undefined,
     }
 
-    const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
     const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
+    const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
     const {esmExternalRequirePlugin} = await import('vite')
 
-    await getViteConfig(options)
+    const config = await getViteConfig(options)
 
-    expect(createExternalFromImportMap).toHaveBeenCalledWith(importMap)
-    // The import-map externals are handed to esmExternalRequirePlugin.
-    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
     expect(sanityBuildEntries).toHaveBeenCalledWith({
+      autoUpdates,
       basePath: '/',
       cwd: mockTestCwd,
-      importMap,
       isApp: undefined,
+    })
+
+    // Vendor entries become additional Rolldown inputs of the single build.
+    expect(config.build?.rolldownOptions?.input).toMatchObject({
+      'react/index': convertToSystemPath('/pkg/react/index.js'),
+      sanity: join(mockTestCwd, '.sanity/runtime/app.js'),
+    })
+    // Vendor entry exports must survive the app-style build.
+    expect(config.build?.rolldownOptions?.preserveEntrySignatures).toBe('exports-only')
+
+    // Both the CDN import map specifiers and the vendor specifiers are handed to
+    // esmExternalRequirePlugin (so external require() is rewritten to ESM imports),
+    // not to rolldownOptions.external.
+    expect(createExternalFromImportMap).toHaveBeenCalledWith({
+      imports: {react: '', sanity: 'https://sanity-cdn.example/sanity'},
+    })
+    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
+    expect(config.plugins).toContainEqual({name: 'esm-external-require'})
+    expect(config.build?.rolldownOptions).not.toHaveProperty('external')
+  })
+
+  test('should not install esmExternalRequirePlugin when auto-updates are disabled', async () => {
+    const {esmExternalRequirePlugin} = await import('vite')
+
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'production' as const,
+      reactCompiler: undefined,
+    })
+
+    expect(esmExternalRequirePlugin).not.toHaveBeenCalled()
+    expect(config.build?.rolldownOptions?.input).toEqual({
+      sanity: join(mockTestCwd, '.sanity/runtime/app.js'),
     })
   })
 
   test('should configure favicon plugin with correct paths', async () => {
-    const {sanityFaviconsPlugin} = await import('../vite/plugin-sanity-favicons.js')
-
     const options = {
       basePath: '/studio',
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -345,7 +421,7 @@ describe('#getViteConfig', () => {
 
     await getViteConfig(options)
 
-    expect(sanityFaviconsPlugin).toHaveBeenCalledWith({
+    expect(mockFaviconsPlugin).toHaveBeenCalledWith({
       customFaviconsPath: join(mockTestCwd, 'static'),
       defaultFaviconsPath: join(mockSanityPath, 'static/favicons'),
       staticUrlPath: '/studio/static',
@@ -355,6 +431,7 @@ describe('#getViteConfig', () => {
   test('should include schema extraction plugin when enabled', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -373,21 +450,22 @@ describe('#getViteConfig', () => {
       (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/schema-extraction',
     )
 
-    expect(mockExtractSchemaPlugin).toHaveBeenCalledWith({
-      additionalPatterns: ['custom/**/*.ts'],
-      configPath: '/mock/config/path',
-      enforceRequiredFields: true,
-      outputPath: 'custom-schema.json',
-      telemetryLogger: noopLogger,
-      workDir: mockTestCwd,
-      workspaceName: 'production',
-    })
+    expect(mockExtractSchemaPlugin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        additionalPatterns: ['custom/**/*.ts'],
+        enforceRequiredFields: true,
+        outputPath: 'custom-schema.json',
+        workDir: mockTestCwd,
+        workspaceName: 'production',
+      }),
+    )
     expect(schemaPlugin).toBeDefined()
   })
 
   test('should not include schema extraction plugin when disabled', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -415,6 +493,7 @@ describe('#getViteConfig', () => {
         },
       ],
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -427,6 +506,192 @@ describe('#getViteConfig', () => {
     )
 
     expect(typegenPlugin).toBeDefined()
+  })
+
+  test('should include additional plugins for workbench apps', async () => {
+    const options = {
+      additionalPlugins: [
+        {
+          name: 'sanity/typegen',
+        },
+      ],
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
+      getEnvironmentVariables,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const typegenPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
+    )
+
+    expect(typegenPlugin).toBeDefined()
+  })
+
+  test('should include federation plugin when enabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
+      getEnvironmentVariables,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockWorkbenchVitePlugins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: mockTestCwd,
+        entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
+      }),
+    )
+    expect(federationPlugin).toBeDefined()
+    // Workbench stacks the app server next to the workbench port, so it must
+    // be able to drift even when the project is a studio.
+    expect(config.server?.strictPort).toBe(false)
+  })
+
+  test('front-loads workbench exposes into optimizeDeps for the dev server', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', title: 'Panel', type: 'panel'}]},
+      getEnvironmentVariables,
+      isApp: true,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    })
+
+    // Runtime-relative entry/config resolve to absolute app sources; exposes pass
+    // through so the helper can add each declared view/service/config source.
+    expect(mockWorkbenchOptimizeDeps).toHaveBeenCalledWith({
+      appSources: [join(mockTestCwd, 'src/App'), join(mockTestCwd, 'sanity.config.ts')],
+      cwd: mockTestCwd,
+      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', title: 'Panel', type: 'panel'}]},
+    })
+    expect(config.optimizeDeps).toEqual({
+      entries: ['src/App.tsx'],
+      include: ['react', 'react-dom/client'],
+    })
+  })
+
+  test('does not set optimizeDeps for non-workbench apps', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isApp: true,
+      isWorkbenchApp: false,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    })
+
+    expect(mockWorkbenchOptimizeDeps).not.toHaveBeenCalled()
+    expect(config.optimizeDeps).toBeUndefined()
+  })
+
+  test('does not set optimizeDeps for workbench production builds', async () => {
+    // `optimizeDeps` is a dev-server concern; Vite ignores it at build.
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isApp: true,
+      isWorkbenchApp: true,
+      mode: 'production' as const,
+      reactCompiler: undefined,
+    })
+
+    expect(mockWorkbenchOptimizeDeps).not.toHaveBeenCalled()
+    expect(config.optimizeDeps).toBeUndefined()
+  })
+
+  test('should not require a sanity config for workbench apps', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: null, relativeEntry: '../../src/App'},
+      getEnvironmentVariables,
+      isApp: true,
+      isWorkbenchApp: true,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    expect(mockWorkbenchVitePlugins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entries: {relativeConfigLocation: null, relativeEntry: '../../src/App'},
+        isApp: true,
+      }),
+    )
+    expect(config.plugins).toContainEqual({name: 'sanity/federation'})
+  })
+
+  test('should not require a sanity config for non-workbench studios', async () => {
+    // The legacy build path has a designed no-config fallback
+    // (`noConfigEntryModule`), so it must keep working without one.
+    const options = {
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: null, relativeEntry: null},
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    expect(mockWorkbenchVitePlugins).not.toHaveBeenCalled()
+    expect(config.root).toBe(mockTestCwd)
+  })
+
+  test('should not include federation plugin when disabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isWorkbenchApp: false,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockWorkbenchVitePlugins).not.toHaveBeenCalled()
+    expect(federationPlugin).toBeUndefined()
+  })
+
+  test('should not include federation plugin when federation is undefined', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockWorkbenchVitePlugins).not.toHaveBeenCalled()
+    expect(federationPlugin).toBeUndefined()
   })
 })
 
@@ -442,45 +707,38 @@ describe('#finalizeViteConfig', () => {
     vi.unstubAllEnvs()
   })
 
-  test('should merge sanity entry into existing config', async () => {
+  test('should re-assert the default rolldown options over a userland config', async () => {
     const {mergeConfig} = await import('vite')
 
-    const inputConfig: InlineConfig = {
-      build: {
-        rolldownOptions: {
-          input: {
-            main: mockTestMain,
-          },
-        },
+    // The pristine config produced by getViteConfig, with the studio entry,
+    // vendor entries, and other critical rolldown options.
+    const defaultRolldownOptions = {
+      input: {
+        'react/index': convertToSystemPath('/pkg/react/index.js'),
+        sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
       },
+      preserveEntrySignatures: 'exports-only' as const,
+    }
+    const defaultConfig: InlineConfig = {
+      build: {rolldownOptions: defaultRolldownOptions},
       root: mockTestRoot,
     }
 
-    const expectedMerge = {
-      build: {
-        rolldownOptions: {
-          input: {
-            sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
-          },
-        },
-      },
+    // A userland vite hook returned a brand-new `rolldownOptions`, dropping
+    // the vendor entries and `preserveEntrySignatures`.
+    const userExtendedConfig: InlineConfig = {
+      build: {rolldownOptions: {input: {main: mockTestMain}}},
+      root: mockTestRoot,
     }
 
-    vi.mocked(mergeConfig).mockReturnValue({
-      ...inputConfig,
-      build: {
-        rolldownOptions: {
-          input: {
-            main: mockTestMain,
-            sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
-          },
-        },
-      },
+    await finalizeViteConfig(userExtendedConfig, defaultConfig)
+
+    // The defaults are deep-merged back over the userland config: userland
+    // additions (like the `main` input) survive the real mergeConfig, while
+    // replaced critical options are healed.
+    expect(mergeConfig).toHaveBeenCalledWith(userExtendedConfig, {
+      build: {rolldownOptions: defaultRolldownOptions},
     })
-
-    await finalizeViteConfig(inputConfig)
-
-    expect(mergeConfig).toHaveBeenCalledWith(inputConfig, expectedMerge)
   })
 
   test('should throw error when build.rolldownOptions.input is not an object', async () => {
@@ -493,7 +751,7 @@ describe('#finalizeViteConfig', () => {
       root: mockTestRoot,
     }
 
-    await expect(finalizeViteConfig(inputConfig)).rejects.toThrow(
+    await expect(finalizeViteConfig(inputConfig, {})).rejects.toThrow(
       'Vite config must contain `build.rolldownOptions.input`, and it must be an object',
     )
   })
@@ -509,7 +767,7 @@ describe('#finalizeViteConfig', () => {
       },
     }
 
-    await expect(finalizeViteConfig(inputConfig)).rejects.toThrow(
+    await expect(finalizeViteConfig(inputConfig, {})).rejects.toThrow(
       'Vite config must contain `root` property, and must point to the Sanity root directory',
     )
   })
@@ -584,7 +842,6 @@ describe('#extendViteConfigWithUserConfig', () => {
 
 describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
   test('should suppress useDebugValue unused import warnings', async () => {
-    // Test the internal suppressUnusedImport function by testing its behavior through onRoll#onRolldownWarn
     const mockWarn = vi.fn()
 
     // Create a warning that should be suppressed
@@ -594,10 +851,11 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
       names: ['useDebugValue', 'useState'],
     }
 
-    // Access the onRoll#onRolldownWarn function by testing getViteConfig in production mode
+    // Access the onRolldownWarn function by testing getViteConfig in production mode
     // which includes the onwarn callback
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -628,6 +886,7 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -651,6 +910,7 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -673,6 +933,7 @@ describe('#onRolldownWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
+      entries: mockEntries,
       getEnvironmentVariables,
       mode: 'production' as const,
       reactCompiler: undefined,

@@ -1,5 +1,6 @@
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
@@ -58,6 +59,26 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
   public async run(): Promise<void> {
     const {args} = await this.parse(CreateAliasCommand)
 
+    if (!args.aliasName && this.isUnattended()) {
+      this.error('Dataset alias name is required. Pass it as the `<aliasName>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
+    }
+
+    if (args.aliasName) {
+      const nameError = validateDatasetAliasName(args.aliasName)
+      if (nameError) {
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
+      }
+    }
+
+    if (args.targetDataset) {
+      const datasetErr = validateDatasetName(args.targetDataset)
+      if (datasetErr) {
+        this.error(datasetErr, {exit: exitCodes.USAGE_ERROR})
+      }
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -74,26 +95,12 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       canCreateAlias = features.includes('advancedDatasetManagement')
     } catch (error) {
       createAliasDebug(`Error getting project features`, error)
-      this.error('Failed to get project features', {exit: 1})
+      this.error('Failed to get project features', {exit: exitCodes.RUNTIME_ERROR})
     }
     if (!canCreateAlias) {
       this.error('This project cannot create a dataset alias - see https://www.sanity.io/pricing', {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
-    }
-
-    if (args.aliasName) {
-      const nameError = validateDatasetAliasName(args.aliasName)
-      if (nameError) {
-        this.error(nameError, {exit: 1})
-      }
-    }
-
-    if (args.targetDataset) {
-      const datasetErr = validateDatasetName(args.targetDataset)
-      if (datasetErr) {
-        this.error(datasetErr, {exit: 1})
-      }
     }
 
     try {
@@ -115,16 +122,19 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       }
 
       if (existingAliases.includes(aliasName)) {
-        this.error(`Dataset alias "${aliasOutputName}" already exists`, {exit: 1})
+        this.error(`Dataset alias "${aliasOutputName}" already exists`, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
 
       const targetDataset =
-        args.targetDataset || (datasets.length > 0 ? await selectDataset(datasets) : null)
+        args.targetDataset ||
+        (!this.isUnattended() && datasets.length > 0 ? await selectDataset(datasets) : null)
 
       if (targetDataset && !datasets.includes(targetDataset)) {
         this.error(
           `Dataset "${targetDataset}" does not exist. Available datasets: ${datasets.join(', ')}`,
-          {exit: 1},
+          {exit: exitCodes.RUNTIME_ERROR},
         )
       }
 
@@ -133,10 +143,11 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       const linkMessage = targetDataset ? ` and linked to ${targetDataset}` : ''
       this.log(`Dataset alias ${aliasOutputName} created${linkMessage} successfully`)
     } catch (error) {
+      if (error instanceof CLIError) throw error
       createAliasDebug(`Error creating dataset alias`, error)
       this.error(
         `Dataset alias creation failed: ${error instanceof Error ? error.message : String(error)}`,
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     }
   }

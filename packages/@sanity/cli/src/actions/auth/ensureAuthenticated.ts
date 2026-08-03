@@ -4,12 +4,13 @@ import {
   type Output,
   type SanityOrgUser,
 } from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
 import {LoginError} from '../../errors/LoginError.js'
 import {getCliUser} from '../../services/user.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {login} from './login/login.js'
+import {LOGIN_REQUIRED_MESSAGE} from './login/loginInstructions.js'
 
 /**
  * Ensure the user is authenticated. Validates the current token via /users/me
@@ -26,6 +27,8 @@ export async function ensureAuthenticated(options: {
 }): Promise<SanityOrgUser> {
   const user = await validateSession()
   if (user) return user
+
+  options.output.warn(LOGIN_REQUIRED_MESSAGE)
 
   try {
     await login({output: options.output, telemetry: options.telemetry})

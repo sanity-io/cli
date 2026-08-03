@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.3](https://github.com/sanity-io/cli/compare/eslint-config-cli-v1.1.2...eslint-config-cli-v1.1.3)
+
+_2026-07-17_
+
+### Bug Fixes
+
+- **deps:** update eslint-tooling ([#1374](https://github.com/sanity-io/cli/pull/1374)) ([f438c08](https://github.com/sanity-io/cli/commit/f438c08ec84487b2ec61772d4f1d3d6dd6b4a433))
+- **deps:** update dependency typescript-eslint to ^8.64.0 ([#1545](https://github.com/sanity-io/cli/pull/1545)) ([1ff53a0](https://github.com/sanity-io/cli/commit/1ff53a0e7cba089b51d9ee92d0c0bb448eef1d87))
+
 ## [1.1.2](https://github.com/sanity-io/cli/compare/eslint-config-cli-v1.1.1...eslint-config-cli-v1.1.2)
 
 _2026-06-04_

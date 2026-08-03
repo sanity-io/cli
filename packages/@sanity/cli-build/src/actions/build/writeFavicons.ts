@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {readPackageUp} from 'read-package-up'
+import {up as packageUp} from 'empathic/package'
 
 import {copyDir} from '../../util/copyDir.js'
 import {writeWebManifest} from './writeWebManifest.js'
@@ -10,7 +10,7 @@ import {writeWebManifest} from './writeWebManifest.js'
  * @internal
  */
 export async function getDefaultFaviconsPath(): Promise<string> {
-  const sanityCliPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
+  const sanityCliPkgPath = packageUp({cwd: import.meta.dirname})
   if (!sanityCliPkgPath) {
     throw new Error('Unable to resolve `@sanity/cli-build` module root')
   }

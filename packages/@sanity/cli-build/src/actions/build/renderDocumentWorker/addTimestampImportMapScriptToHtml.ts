@@ -22,10 +22,22 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   importMapEl.type = 'importmap';
   const newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
 
+  function isSanityCdnHost(hostname) {
+    return /^sanity-cdn\\.[a-zA-Z]+$/.test(hostname);
+  }
+
+  function isSanityCdnUrl(urlStr) {
+    try {
+      return isSanityCdnHost(new URL(urlStr).hostname);
+    } catch {
+      return false;
+    }
+  }
+
   function replaceTimestamp(urlStr) {
     try {
       const url = new URL(urlStr);
-      if (/^sanity-cdn\\.[a-zA-Z]+$/.test(url.hostname)) {
+      if (isSanityCdnHost(url.hostname)) {
         url.pathname = url.pathname.replace(/\\/t\\d+/, newTimestamp);
       }
       return url.toString();
@@ -48,6 +60,55 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
     linkEl.rel = 'stylesheet';
     linkEl.href = replaceTimestamp(cssUrl);
     document.head.appendChild(linkEl);
+  }
+
+  // The CDN serves the \`sanity\` module via a cross-origin 302
+  // (sanity-cdn.com -> modules.sanity-cdn.com). WebKit mishandles a
+  // \`modulepreload\` that follows a cross-origin redirect: it forces the CORS
+  // credentials flag true even for \`crossorigin="anonymous"\`, then rejects the
+  // redirect because the CDN sends no \`Access-Control-Allow-Credentials\`,
+  // which blanks the studio. (This is why these hints were reverted; see
+  // PR #1400.)
+  //
+  // \`preconnect\` only warms a socket; it never follows the redirect or fetches
+  // the module, so it is safe in every engine and runs unconditionally.
+  const firstCdnImport = Object.values(imports).find(isSanityCdnUrl);
+
+  if (firstCdnImport) {
+    const preconnectEl = document.createElement('link');
+    preconnectEl.rel = 'preconnect';
+    preconnectEl.href = new URL(firstCdnImport).origin;
+    // Module fetches are CORS; without crossorigin the warmed socket is not reused.
+    preconnectEl.crossOrigin = 'anonymous';
+    document.head.appendChild(preconnectEl);
+  }
+
+  // \`modulepreload\` is the hint that follows the redirect and can blank the
+  // studio in WebKit, so it is gated behind a positive allowlist: it runs only
+  // for engines confirmed to handle the cross-origin redirect, i.e. Chromium or
+  // Gecko. Every Chromium variant (Edge, Opera, Samsung Internet, ...) carries
+  // the \`Chrome\` token, so matching \`Chrom(e|ium)|Firefox\` covers them without
+  // enumerating brands. The iOS device-name exclusion is the hard guard for the
+  // brick-prone platform: every iOS browser is WebKit regardless of brand, and
+  // iOS in-app webviews carry messy UAs, so nothing on an iOS device is ever
+  // treated as safe. Anything unrecognised falls through to no preload, costing
+  // a missed download rather than bricking the studio.
+  const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent || '';
+  const isKnownSafeEngine =
+    !/\\b(iPad|iPhone|iPod)\\b/.test(userAgent) && /Chrom(e|ium)|Firefox/.test(userAgent);
+
+  // The href reuses replaceTimestamp so it matches the importmap entry exactly;
+  // a stale timestamp here would double-fetch the largest chunk.
+  const sanityModuleUrl = imports['sanity'];
+  if (isKnownSafeEngine && typeof sanityModuleUrl === 'string' && isSanityCdnUrl(sanityModuleUrl)) {
+    const preloadEl = document.createElement('link');
+    preloadEl.rel = 'modulepreload';
+    preloadEl.href = replaceTimestamp(sanityModuleUrl);
+    // Must match the preconnect's credentials mode, otherwise the browser
+    // treats them as separate connections and the warmed cross-origin socket
+    // is not reused for this fetch.
+    preloadEl.crossOrigin = 'anonymous';
+    document.head.appendChild(preloadEl);
   }
 </script>`
 

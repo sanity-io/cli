@@ -1,0 +1,14 @@
+*-debug.log
+*-error.log
+**/.DS_Store
+/.idea
+/dist
+/tmp
+/node_modules
+coverage
+
+yarn.lock
+package-lock.json
+
+# Worker js files, created for tests
+*.worker.js

@@ -1,6 +1,6 @@
 import {Command} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {setConsent} from '../../actions/telemetry/setConsent.js'
 import {telemetryLearnMoreMessage} from '../../actions/telemetry/telemetryLearnMoreMessage.js'
@@ -26,14 +26,14 @@ export class Enable extends SanityCommand<typeof Enable> {
         status: 'granted',
       })
 
-      this.log(result.message)
+      this.output.log(result.message)
 
       if (result.changed) {
-        this.log(`\n${telemetryLearnMoreMessage('granted')}`)
+        this.output.log(`\n${telemetryLearnMoreMessage('granted')}`)
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'An unknown error occurred'
-      this.error(message, {exit: 1})
+      return this.output.error(message, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

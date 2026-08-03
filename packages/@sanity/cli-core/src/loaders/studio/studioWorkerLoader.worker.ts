@@ -1,4 +1,4 @@
-import {isMainThread} from 'node:worker_threads'
+import {isMainThread, parentPort} from 'node:worker_threads'
 
 import {
   createServer,
@@ -9,14 +9,15 @@ import {
   mergeConfig,
 } from 'vite'
 
+import {subdebug} from '../../_exports/debug.js'
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types/cliConfig.js'
-import {subdebug} from '../../debug.js'
 import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
-import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
+import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js' // TODO: this imports jsdom!!! Unpacked Size (module + dependencies): 26 MB
 import {isRecord} from '../../util/isRecord.js'
 import {StudioModuleEvaluator} from './studioModuleEvaluator.js'
+import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
 
 if (isMainThread) {
   throw new Error('Should be child of thread, not the main thread')
@@ -131,52 +132,88 @@ debug('Creating Vite server with config: %o', viteConfig)
 // We include the inject plugin in order to provide the stubs for the undefined global APIs.
 const server = await createServer(viteConfig)
 
-// Bit of a hack, but seems necessary based on the `node-vite` binary implementation
-await server.pluginContainer.buildStart({})
+// One-shot tasks (`studioWorkerTask`) resolve on their first message, and the
+// main thread historically terminate()d the worker right after — destroying
+// the worker's libuv loop while rolldown's native threads were still live.
+// The next `napi_call_threadsafe_function` then locked a destroyed mutex and
+// aborted the whole process (silent SIGABRT / exit code 134, reliably
+// reproduced on macOS). The lifecycle closes the Vite server BEFORE any
+// message reaches the main thread, and the main thread no longer terminates
+// one-shot workers at all (see `terminateOnSettle` in promisifyWorker).
+const lifecycle =
+  process.env.STUDIO_WORKER_ONE_SHOT === '1' && parentPort
+    ? createOneShotWorkerLifecycle({
+        closeServer: async () => {
+          debug('Closing Vite server')
+          await server.close()
+          debug('Vite server closed')
+        },
+        onCloseError: (error) => debug('Failed to close Vite server: %o', error),
+        parentPort,
+      })
+    : undefined
 
-// Load environment variables from `.env` files in the same way as Vite does.
-// Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
-// and so we need to do the same here.
-// Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
-// vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
-// The ??= on the next line prevents overwriting existing process.env values.
-const env = loadEnv(server.config.mode, server.config.envDir, '')
-for (const key in env) {
-  process.env[key] ??= env[key]
-}
+try {
+  // Bit of a hack, but seems necessary based on the `node-vite` binary implementation
+  await server.pluginContainer.buildStart({})
 
-const ssrEnvironment = server.environments.ssr
-if (!isRunnableDevEnvironment(ssrEnvironment)) {
-  throw new Error('Expected SSR environment to be a runnable dev environment')
-}
-
-await ssrEnvironment.init()
-
-// Override fetchModule to support https:// imports and resolve relative imports from
-// remote modules (e.g. esm.sh re-exports with absolute paths).
-const defaultFetchModule = ssrEnvironment.fetchModule.bind(ssrEnvironment)
-ssrEnvironment.fetchModule = async (id, importer, options) => {
-  if (importer && isHttpsUrl(importer) && !isHttpsUrl(id)) {
-    id = new URL(id, importer).href
+  // Load environment variables from `.env` files in the same way as Vite does.
+  // Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
+  // and so we need to do the same here.
+  // Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
+  // vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
+  // The ??= on the next line prevents overwriting existing process.env values.
+  const env = loadEnv(server.config.mode, server.config.envDir, '')
+  for (const key in env) {
+    process.env[key] ??= env[key]
   }
-  if (isHttpsUrl(id)) {
-    const {code: rawCode} = await fetchHttpModule(id)
-    const result = await server.ssrTransform(rawCode, null, id)
-    return {
-      code: result?.code || rawCode,
-      file: null,
-      id,
-      invalidate: false,
-      url: id,
+
+  const ssrEnvironment = server.environments.ssr
+  if (!isRunnableDevEnvironment(ssrEnvironment)) {
+    throw new Error('Expected SSR environment to be a runnable dev environment')
+  }
+
+  await ssrEnvironment.init()
+
+  // Override fetchModule to support https:// imports and resolve relative imports from
+  // remote modules (e.g. esm.sh re-exports with absolute paths).
+  const defaultFetchModule = ssrEnvironment.fetchModule.bind(ssrEnvironment)
+  ssrEnvironment.fetchModule = async (id, importer, options) => {
+    if (importer && isHttpsUrl(importer) && !isHttpsUrl(id)) {
+      id = new URL(id, importer).href
     }
+    if (isHttpsUrl(id)) {
+      const {code: rawCode} = await fetchHttpModule(id)
+      const result = await server.ssrTransform(rawCode, null, id)
+      return {
+        code: result?.code || rawCode,
+        file: null,
+        id,
+        invalidate: false,
+        url: id,
+      }
+    }
+
+    return defaultFetchModule(id, importer, options)
   }
 
-  return defaultFetchModule(id, importer, options)
+  const runner = createServerModuleRunner(ssrEnvironment, {
+    evaluator: new StudioModuleEvaluator(),
+    hmr: false,
+  })
+
+  await runner.import(workerScriptPath)
+} catch (error) {
+  // Long-lived workers keep the original behavior: the error surfaces as a
+  // Worker 'error' event.
+  if (!lifecycle) {
+    throw error
+  }
+
+  // One-shot workers close the server first and post a serialized error the
+  // main thread rethrows, so the worker exits cleanly (code 0) and the real
+  // error (e.g. a broken `sanity.config.ts`) isn't masked by a teardown abort.
+  await lifecycle.postError(error)
+} finally {
+  await lifecycle?.close()
 }
-
-const runner = createServerModuleRunner(ssrEnvironment, {
-  evaluator: new StudioModuleEvaluator(),
-  hmr: false,
-})
-
-await runner.import(workerScriptPath)

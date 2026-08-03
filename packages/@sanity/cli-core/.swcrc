@@ -14,5 +14,6 @@
     "target": "es2023"
   },
   "isModule": true,
-  "sourceMaps": true
+  "sourceMaps": true,
+  "exclude": ["\\.test\\.ts$", "__tests__"]
 }

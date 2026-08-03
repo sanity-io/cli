@@ -1,22 +1,23 @@
-import {styleText} from 'node:util'
+import {format, styleText} from 'node:util'
 
 import {Command, Interfaces} from '@oclif/core'
 import {type CommandError} from '@oclif/core/interfaces'
 
-import {getCliConfig} from './config/cli/getCliConfig.js'
-import {type CliConfig} from './config/cli/types/cliConfig.js'
-import {findProjectRoot} from './config/findProjectRoot.js'
-import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
-import {subdebug} from './debug.js'
-import {NonInteractiveError} from './errors/NonInteractiveError.js'
-import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
-import {exitCodes} from './exitCodes.js'
+import {subdebug} from './_exports/debug.js'
 import {
   getGlobalCliClient,
   getProjectCliClient,
   type GlobalCliClientOptions,
   type ProjectCliClientOptions,
-} from './services/apiClient.js'
+} from './apiClient.js'
+import {getCliConfig} from './config/cli/getCliConfig.js'
+import {type CliConfig} from './config/cli/types/cliConfig.js'
+import {findProjectRoot} from './config/findProjectRoot.js'
+import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
+import {NonInteractiveError} from './errors/NonInteractiveError.js'
+import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
+import {getCliExecutionContext} from './executionContext.js'
+import {exitCodes} from './exitCodes.js'
 import {getCliTelemetry, reportCliTraceError} from './telemetry/getCliTelemetry.js'
 import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'
@@ -30,7 +31,27 @@ type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
 
 const debug = subdebug('sanityCommand')
 
-export abstract class SanityCommand<T extends typeof Command> extends Command {
+/**
+ * Interface for `SanityCommand`, a wrapper around OCLIF's Command class.
+ * Important to keep updated as `SanityCommand` evolves so that its mock implementation (enabling fast unit tests) stays up to date as well.
+ * @see https://oclif.io/docs/base_class/
+ */
+export interface SanityCommandInterface {
+  getCliConfig: () => Promise<CliConfig>
+  getProjectId: (options?: {
+    deprecatedFlagName?: string
+    fallback?: () => Promise<string>
+  }) => Promise<string>
+  getProjectRoot: () => Promise<ProjectRootResult>
+  isUnattended: () => boolean
+  output: Output
+  resolveIsInteractive: () => boolean
+}
+
+export abstract class SanityCommand<T extends typeof Command>
+  extends Command
+  implements SanityCommandInterface
+{
   protected args!: Args<T>
   protected flags!: Flags<T>
 
@@ -64,7 +85,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * this.output.error('Error')
    * ```
    */
-  protected output: Output = {
+  public output: Output = {
     error: this.error.bind(this),
     log: this.log.bind(this),
     warn: this.warn.bind(this),
@@ -92,6 +113,17 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
 
     // In other cases, we _do_ want to report the error
     reportCliTraceError(err)
+
+    // oclif's base `catch` sets `process.exitCode` as a side effect
+    // we do not want to write to the host's own exit status.
+    if (getCliExecutionContext()) {
+      if (this.jsonEnabled()) {
+        this.logJson(this.toErrorJson(err))
+        return
+      }
+      throw err
+    }
+
     return super.catch(err)
   }
 
@@ -100,7 +132,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns The CLI config.
    */
-  protected async getCliConfig(): Promise<CliConfig> {
+  public async getCliConfig(): Promise<CliConfig> {
     const root = await this.getProjectRoot()
 
     debug(`Using project root`, root)
@@ -123,7 +155,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns The project ID.
    */
-  protected async getProjectId(options?: {
+  public async getProjectId(options?: {
     deprecatedFlagName?: string
     fallback?: () => Promise<string>
   }): Promise<string> {
@@ -191,7 +223,12 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns The project root result.
    */
-  protected getProjectRoot(): Promise<ProjectRootResult> {
+  public getProjectRoot(): Promise<ProjectRootResult> {
+    if (getCliExecutionContext()) {
+      throw new ProjectRootNotFoundError(
+        'Project root resolution from the filesystem is disabled for programmatic invocations',
+      )
+    }
     return findProjectRoot(process.cwd())
   }
 
@@ -220,10 +257,51 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * Most commands should take an explicit `--yes` flag to enable unattended mode, but
    * some commands may also be run in unattended mode if `process.stdin` is not a TTY
-   * (eg when running in a CI environment).
+   * (eg when running in a CI environment), or when `--json` asks for machine-readable
+   * output (a caller parsing JSON can't answer a prompt).
    */
-  protected isUnattended(): boolean {
-    return this.flags.yes || !this.resolveIsInteractive()
+  public isUnattended(): boolean {
+    return this.flags.yes || this.flags.json || !this.resolveIsInteractive()
+  }
+
+  /**
+   * Write to stdout — or, when running under an execution context (e.g. from
+   * an MCP server), to the context's `stdout` sink. Mirrors oclif's `log`
+   * semantics: suppressed when `--json` is enabled, printf-style formatting.
+   */
+  public override log(message = '', ...args: unknown[]): void {
+    const context = getCliExecutionContext()
+    if (!context?.stdout) {
+      super.log(message, ...args)
+      return
+    }
+    if (!this.jsonEnabled()) context.stdout(format(message, ...args))
+  }
+
+  /**
+   * Pretty-print JSON to stdout — or plain (un-colorized) JSON to the
+   * execution context's `stdout` sink, so programmatic callers don't have to
+   * strip ANSI codes.
+   */
+  public override logJson(json: unknown): void {
+    const context = getCliExecutionContext()
+    if (!context?.stdout) {
+      super.logJson(json)
+      return
+    }
+    context.stdout(JSON.stringify(json, null, 2))
+  }
+
+  /**
+   * Like `log`, but for stderr / the context's `stderr` sink.
+   */
+  public override logToStderr(message = '', ...args: unknown[]): void {
+    const context = getCliExecutionContext()
+    if (!context?.stderr) {
+      super.logToStderr(message, ...args)
+      return
+    }
+    if (!this.jsonEnabled()) context.stderr(format(message, ...args))
   }
 
   /**
@@ -231,8 +309,21 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns Whether the terminal is interactive.
    */
-  protected resolveIsInteractive(): boolean {
+  public resolveIsInteractive(): boolean {
     return isInteractive()
+  }
+
+  /**
+   * Execute an already-constructed command without oclif's static runner:
+   * `Command.run()` performs a full `Config.load()` — filesystem reads, env
+   * consultation, and a process-global config cache write — on every call,
+   * which programmatic invocations must not repeat per request.
+   */
+  public runInExecutionContext<TResult>(): Promise<TResult> {
+    if (!getCliExecutionContext()) {
+      throw new Error('runInExecutionContext requires a CLI execution context')
+    }
+    return this._run<TResult>()
   }
 
   /**
@@ -250,5 +341,19 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
       if (!(err instanceof ProjectRootNotFoundError)) throw err
       return {}
     }
+  }
+
+  /**
+   * Emit a warning — routed to the execution context's `stderr` sink when one
+   * is active, otherwise through oclif's standard warning printer.
+   */
+  public override warn(input: Error | string): Error | string {
+    const context = getCliExecutionContext()
+    if (!context?.stderr) return super.warn(input)
+
+    if (!this.jsonEnabled()) {
+      context.stderr(`Warning: ${input instanceof Error ? input.message : input}`)
+    }
+    return input
   }
 }

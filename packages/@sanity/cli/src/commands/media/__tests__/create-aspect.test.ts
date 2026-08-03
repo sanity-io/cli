@@ -1,5 +1,6 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input} from '@sanity/cli-core/ux'
 import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -26,6 +27,7 @@ const defaultMocks = {
       aspectsPath: '/test/project/aspects',
     },
   },
+  isInteractive: true,
   projectRoot: {
     directory: '/test/project',
     path: '/test/project/sanity.config.ts',
@@ -89,6 +91,49 @@ describe('#media:create-aspect', () => {
       expect.stringMatching(/myComplexTitle/),
       expect.any(String),
     )
+  })
+
+  test('creates an aspect without prompting when flags are provided', async () => {
+    mockAccess.mockRejectedValue(new Error('ENOENT'))
+
+    const {error} = await testCommand(
+      MediaCreateAspectCommand,
+      ['--title', 'Product Details', '--name', 'productDetails'],
+      {mocks: {...defaultMocks, isInteractive: false}},
+    )
+
+    expect(error).toBeUndefined()
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('productDetails.ts'),
+      expect.stringContaining("title: 'Product Details'"),
+    )
+  })
+
+  test('defaults the aspect name from the title in unattended mode', async () => {
+    mockAccess.mockRejectedValue(new Error('ENOENT'))
+
+    const {error} = await testCommand(MediaCreateAspectCommand, ['--title', 'Product Details'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error).toBeUndefined()
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('productDetails.ts'),
+      expect.stringContaining("name: 'productDetails'"),
+    )
+  })
+
+  test('requires a title in unattended mode', async () => {
+    const {error} = await testCommand(MediaCreateAspectCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toContain('--title <title>')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockWriteFile).not.toHaveBeenCalled()
   })
 
   test('should handle file conflict gracefully', async () => {

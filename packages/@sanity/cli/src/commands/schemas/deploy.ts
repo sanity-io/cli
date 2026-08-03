@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
@@ -55,7 +55,12 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
       description: 'The name of the workspace to deploy a schema for',
       helpValue: '<name>',
       parse: async (input) => {
-        if (!input) throw new CLIError('workspace argument cannot be empty if specified', {exit: 1})
+        if (!input) {
+          throw new CLIError(
+            'Workspace name cannot be empty. Pass a value with `--workspace <name>`.',
+            {exit: exitCodes.USAGE_ERROR},
+          )
+        }
         return input
       },
     }),
@@ -87,12 +92,12 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
         error.validation.length > 0
       ) {
         this.output.log(formatSchemaValidation(error.validation))
-        this.exit(1)
+        this.exit(exitCodes.RUNTIME_ERROR)
       }
 
       schemasDeployDebug('Failed to deploy schemas', error)
       const errorMessage = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to deploy schemas:\n${errorMessage}`, {exit: 1})
+      this.error(`Failed to deploy schemas:\n${errorMessage}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

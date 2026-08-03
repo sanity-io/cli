@@ -1,7 +1,7 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {dirname} from 'node:path'
 
-import {studioWorkerTask} from '@sanity/cli-core'
+import {studioWorkerTask} from '@sanity/cli-core/tasks'
 import {type extractSchema as extractSchemaInternal} from '@sanity/schema/_internal'
 
 import {type ExtractOptions} from './getExtractOptions.js'

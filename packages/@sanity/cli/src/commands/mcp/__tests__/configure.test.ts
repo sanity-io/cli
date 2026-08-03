@@ -212,6 +212,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: 'Code/User/mcp.json',
     name: 'VS Code',
+    oauthOnly: true,
     platform: 'darwin',
   },
   {
@@ -222,6 +223,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: String.raw`AppData\Roaming\Code\User\mcp.json`,
     name: 'VS Code',
+    oauthOnly: true,
     platform: 'win32',
   },
   {
@@ -231,6 +233,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: 'Code - Insiders/User/mcp.json',
     name: 'VS Code Insiders',
+    oauthOnly: true,
     platform: 'darwin',
   },
   {
@@ -241,6 +244,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: String.raw`AppData\Roaming\Code - Insiders\User\mcp.json`,
     name: 'VS Code Insiders',
+    oauthOnly: true,
     platform: 'win32',
   },
   {
@@ -323,13 +327,15 @@ const editorTestCases: EditorTestCase[] = [
     detect: {cliCommands: ['opencode'], overridePlatform: 'darwin'},
     expectedConfigPath: '.config/opencode/opencode.json',
     name: 'OpenCode',
+    oauthOnly: true,
     platform: 'darwin',
   },
   {
     detect: {cliCommands: ['codex']},
     expectedConfigPath: '.codex/config.toml',
-    expectedContentChecks: ['[mcp_servers.Sanity]', '[mcp_servers.Sanity.http_headers]'],
+    expectedContentChecks: ['[mcp_servers.Sanity]'],
     name: 'Codex CLI',
+    oauthOnly: true,
   },
   {
     detect: {
@@ -343,6 +349,7 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: convertToSystemPath('/tmp/custom-codex-home/config.toml'),
     name: 'Codex CLI',
+    oauthOnly: true,
   },
   {
     detect: {
@@ -657,8 +664,6 @@ describe.sequential('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor', 'VS Code'])
 
-    mockMCPTokenCreation('multi-token-123')
-
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
     expect(mockWriteFile).toHaveBeenCalledTimes(2)
@@ -670,7 +675,7 @@ describe.sequential('#mcp:configure', () => {
     )
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('Code/User/mcp.json')),
-      expect.stringContaining('multi-token-123'),
+      expect.not.stringContaining('multi-token-123'),
       'utf8',
     )
 
@@ -685,14 +690,12 @@ describe.sequential('#mcp:configure', () => {
       throw new Error('Not installed')
     }) as never)
 
-    mockMCPTokenCreation('test-token-ci')
-
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
     expect(mockCheckbox).not.toHaveBeenCalled()
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.config/opencode/opencode.json')),
-      expect.stringContaining('test-token-ci'),
+      expect.not.stringContaining('test-token-ci'),
       'utf8',
     )
     expect(stdout).toContain('MCP configured for OpenCode')
@@ -703,12 +706,12 @@ describe.sequential('#mcp:configure', () => {
   // -------------------------------------------------------------------------
 
   test('handles token creation error gracefully', async () => {
-    mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'opencode') return EXECA_SUCCESS
-      throw new Error('Not installed')
-    }) as never)
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/.gemini/settings.json')
+    })
 
-    mockCheckbox.mockResolvedValue(['OpenCode'])
+    mockCheckbox.mockResolvedValue(['Gemini CLI'])
 
     mockCreateMCPToken.mockRejectedValueOnce(new Error('Not authenticated'))
 
@@ -726,8 +729,6 @@ describe.sequential('#mcp:configure', () => {
     }) as never)
 
     mockCheckbox.mockResolvedValue(['OpenCode'])
-
-    mockMCPTokenCreation('token-write-error')
 
     mockWriteFile.mockRejectedValue(new Error('Permission denied'))
 
@@ -785,8 +786,6 @@ describe.sequential('#mcp:configure', () => {
     )
 
     mockCheckbox.mockResolvedValue(['OpenCode'])
-
-    mockMCPTokenCreation('merge-token-123')
 
     await testCommand(ConfigureMcpCommand, [])
 

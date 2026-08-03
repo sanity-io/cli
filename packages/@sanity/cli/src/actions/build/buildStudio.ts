@@ -1,59 +1,23 @@
-import {rm} from 'node:fs/promises'
-import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {
-  buildDebug,
-  buildVendorDependencies,
-  checkStudioDependencyVersions,
-  StudioBuildTrace,
+  compareDependencyVersions,
+  buildStudio as internalBuildStudio,
 } from '@sanity/cli-build/_internal/build'
-import {
-  type CliConfig,
-  getCliTelemetry,
-  getLocalPackageVersion,
-  getTimer,
-  isInteractive,
-  type Output,
-  UserViteConfig,
-} from '@sanity/cli-core'
-import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
-import {parse as semverParse} from 'semver'
+import {confirm, logSymbols, select, spinner} from '@sanity/cli-core/ux'
+import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
-import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
-import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
-import {buildStaticFiles} from './buildStaticFiles.js'
-import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
-import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
-import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
+import {
+  checkDependenciesEventListenerFactory,
+  preReleaseEventListenerFactory,
+} from './eventListenerFactory.js'
 import {type BuildOptions} from './types.js'
-
-interface InternalBuildOptions {
-  appId: string | undefined
-  autoUpdatesEnabled: boolean
-  calledFromDeploy: boolean | undefined
-  determineBasePath: () => string
-  isApp: boolean
-  minify: boolean
-  outDir: string | undefined
-  output: Output
-  projectId: string | undefined
-  reactCompiler: CliConfig['reactCompiler']
-  schemaExtraction: CliConfig['schemaExtraction']
-  sourceMap: boolean
-  stats: boolean
-  unattendedMode: boolean
-  upgradePackages(options: {packages: [name: string, version: string][]}): Promise<void>
-  vite: UserViteConfig | undefined
-  workDir: string
-}
 
 /**
  * Build the Sanity Studio.
@@ -63,135 +27,90 @@ interface InternalBuildOptions {
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  const upgradePkgs = async (options: {
-    packages: [name: string, version: string][]
-  }): Promise<void> => {
-    await upgradePackages(
-      {
-        packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
-        packages: options.packages,
-      },
-      {output, workDir},
-    )
-  }
+  // `views`/`services` live on the branded `unstable_defineApp` result — resolve
+  // the workbench capability so it's gated on the brand, like the app build.
+  const workbench = resolveWorkbenchApp(cliConfig)
+  const exposes = workbench ? {services: workbench.services, views: workbench.views} : undefined
+
+  const appId = getAppId(cliConfig)
+
+  let cleanOutputDirSpinner: ReturnType<typeof spinner> | undefined
+  let buildSpinner: ReturnType<typeof spinner> | undefined
 
   await internalBuildStudio({
-    appId: getAppId(cliConfig),
+    appId,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
-    calledFromDeploy,
+    checkAppId: () => {
+      // Warn if auto updates enabled but no appId configured.
+      // Skip when called from deploy, since deploy handles appId itself
+      // (prompts the user and tells them to add it to config).
+      if (!appId && !calledFromDeploy) {
+        warnAboutMissingAppId({appType: 'studio', output, projectId: cliConfig?.api?.projectId})
+      }
+    },
+    compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
+    exposes,
     isApp: determineIsApp(cliConfig),
+    isWorkbenchApp: !!workbench,
     minify: Boolean(flags.minify),
     outDir,
     output,
-    projectId: cliConfig?.api?.projectId,
     reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
     sourceMap: Boolean(flags['source-maps']),
     stats: flags.stats,
     unattendedMode: Boolean(flags.yes),
-    upgradePackages: upgradePkgs,
     vite: cliConfig.vite,
+    // Shared with deploy: it passes the resolved application id (minted by the
+    // API on a first deploy) to inline; a plain build has none, so it hashes the shape.
+    workbenchAppId: workbench
+      ? (options.applicationId ?? (await buildAppId(workbench)))
+      : undefined,
     workDir,
-  })
-}
 
-/**
- * Internal build studio that avoids depending on flags for CLI config.
- * @param options - options for the build
- */
-async function internalBuildStudio(options: InternalBuildOptions): Promise<void> {
-  buildDebug(`Building studio`)
+    eventListener: {
+      ...preReleaseEventListenerFactory(output),
 
-  const timer = getTimer()
-  const {
-    appId,
-    determineBasePath,
-    isApp,
-    minify,
-    outDir,
-    output,
-    projectId,
-    reactCompiler,
-    schemaExtraction,
-    sourceMap,
-    stats,
-    unattendedMode,
-    upgradePackages,
-    vite,
-    workDir,
-  } = options
-  const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
-  const outputDir = path.resolve(outDir || defaultOutputDir)
+      ...checkDependenciesEventListenerFactory(output),
 
-  await checkStudioDependencyVersions(workDir, output)
+      onBuildEnd({message}) {
+        if (buildSpinner) {
+          buildSpinner.text = message
+          buildSpinner.succeed()
+        }
+      },
+      onBuildFail({message}) {
+        if (buildSpinner) {
+          buildSpinner.fail()
+        }
 
-  // If the check resulted in a dependency install, the CLI command will be re-run,
-  // thus we want to exit early
-  const {installedSanityVersion} = await checkRequiredDependencies({
-    isApp,
-    output,
-    workDir,
-  })
-
-  let autoUpdatesEnabled = options.autoUpdatesEnabled
-
-  let autoUpdatesImports = {}
-  let autoUpdatesCssUrls: string[] = []
-
-  if (autoUpdatesEnabled) {
-    // Get the clean version without build metadata: https://semver.org/#spec-item-10
-    const cleanSanityVersion = semverParse(installedSanityVersion)?.version
-    if (!cleanSanityVersion) {
-      throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
-    }
-
-    output.log(`${logSymbols.info} Building with auto-updates enabled`)
-
-    // Warn if auto updates enabled but no appId configured.
-    // Skip when called from deploy, since deploy handles appId itself
-    // (prompts the user and tells them to add it to config).
-    if (!appId && !options.calledFromDeploy) {
-      warnAboutMissingAppId({appType: 'studio', output, projectId})
-    }
-
-    const installedVisionVersion = await getLocalPackageVersion('@sanity/vision', workDir)
-    const cleanVisionVersion = installedVisionVersion
-      ? semverParse(installedVisionVersion)?.version
-      : undefined
-
-    const sanityDependencies = [
-      {cssFile: 'index.css', name: 'sanity', version: cleanSanityVersion},
-      ...(cleanVisionVersion
-        ? [{cssFile: 'index.css', name: '@sanity/vision' as const, version: cleanVisionVersion}]
-        : [{name: '@sanity/vision' as const, version: cleanSanityVersion}]),
-    ]
-    autoUpdatesImports = getAutoUpdatesImportMap(sanityDependencies, {appId})
-
-    autoUpdatesCssUrls = getAutoUpdatesCssUrls(sanityDependencies, {appId})
-
-    // Check the versions
-    const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
-      sanityDependencies,
-      workDir,
-      {appId},
-    )
-
-    if (unresolvedPrerelease.length > 0) {
-      await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
-      autoUpdatesImports = {}
-      autoUpdatesCssUrls = []
-      autoUpdatesEnabled = false
-    }
-
-    if (mismatched.length > 0 && autoUpdatesEnabled) {
-      const versionMismatchWarning =
-        `The following local package versions are different from the versions currently served at runtime.\n` +
-        `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
-        `${mismatched.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}`
-
-      // If it is non-interactive or in unattended mode, we don't want to prompt
-      if (isInteractive() && !unattendedMode) {
+        output.error(message, {exit: 1})
+      },
+      onBuildStart({message}) {
+        if (!buildSpinner) {
+          buildSpinner = spinner(message).start()
+        }
+      },
+      onCleanOutputDirEnd({message}) {
+        if (cleanOutputDirSpinner) {
+          cleanOutputDirSpinner.text = message
+          cleanOutputDirSpinner.succeed()
+        }
+      },
+      onCleanOutputDirStart({message}) {
+        if (!cleanOutputDirSpinner) {
+          cleanOutputDirSpinner = spinner(message).start()
+        }
+      },
+      async onInteractiveNonDefaultOutputDir({message}: {message: string}) {
+        const shouldClean = await confirm({
+          default: true,
+          message,
+        })
+        return {shouldClean}
+      },
+      async onVersionMismatchInInteractiveAutoUpdate({mismatched, versionMismatchWarning}) {
         const choice = await select({
           choices: [
             {
@@ -217,111 +136,26 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
 
         if (choice === 'cancel') {
           output.error('Declined to continue with build', {exit: 1})
-          return
+          return {stopBuild: true}
         }
 
         if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
-          await upgradePackages({
-            packages: mismatched.map((res) => [res.pkg, res.remote]),
-          })
+          await upgradePackages(
+            {
+              packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
+              packages: mismatched.map((res) => [res.pkg, res.remote]),
+            },
+            {output, workDir},
+          )
 
-          if (choice === 'upgrade') {
-            return
-          }
+          return {stopBuild: choice === 'upgrade'}
         }
-      } else {
-        // if non-interactive or unattended, just show the warning
-        output.warn(versionMismatchWarning)
-      }
-    }
-  }
 
-  const envVarKeys = Object.keys(getStudioEnvironmentVariables())
-  if (envVarKeys.length > 0) {
-    output.log('\nIncluding the following environment variables as part of the JavaScript bundle:')
-    for (const key of envVarKeys) {
-      output.log(`- ${key}`)
-    }
-    output.log('')
-  }
-
-  let shouldClean = true
-  if (outputDir !== defaultOutputDir && !unattendedMode && isInteractive()) {
-    shouldClean = await confirm({
-      default: true,
-      message: `Do you want to delete the existing directory (${outputDir}) first?`,
-    })
-  }
-
-  // Determine base path for built studio
-  const basePath = determineBasePath()
-
-  if (schemaExtraction?.enabled) {
-    output.log(`${logSymbols.info} Building with schema extraction enabled`)
-  }
-
-  let spin: SpinnerInstance
-  if (shouldClean) {
-    timer.start('cleanOutputFolder')
-    spin = spinner('Clean output folder').start()
-    await rm(outputDir, {force: true, recursive: true})
-    const cleanDuration = timer.end('cleanOutputFolder')
-    spin.text = `Clean output folder (${cleanDuration.toFixed(0)}ms)`
-    spin.succeed()
-  }
-
-  spin = spinner(`Build Sanity Studio`).start()
-
-  const trace = getCliTelemetry().trace(StudioBuildTrace)
-  trace.start()
-
-  let importMap
-
-  if (autoUpdatesEnabled) {
-    importMap = {
-      imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
-        ...autoUpdatesImports,
+        return {stopBuild: false}
       },
-    }
-  }
-
-  try {
-    timer.start('bundleStudio')
-
-    const bundle = await buildStaticFiles({
-      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
-      basePath,
-      cwd: workDir,
-      importMap,
-      minify,
-      outputDir,
-      reactCompiler,
-      schemaExtraction,
-      sourceMap,
-      vite,
-    })
-
-    trace.log({
-      outputSize: bundle.chunks
-        .flatMap((chunk) => chunk.modules.flatMap((mod) => mod.renderedLength))
-        .reduce((sum, n) => sum + n, 0),
-    })
-    const buildDuration = timer.end('bundleStudio')
-
-    spin.text = `Build Sanity Studio (${buildDuration.toFixed(0)}ms)`
-    spin.succeed()
-
-    trace.complete()
-    if (stats) {
-      output.log('\nLargest module files:')
-      output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
-    }
-  } catch (error) {
-    spin.fail()
-    trace.error(error)
-    const message = error instanceof Error ? error.message : String(error)
-    buildDebug(`Failed to build Sanity Studio`, {error})
-    output.error(`Failed to build Sanity Studio: ${message}`, {exit: 1})
-  }
+      onVersionMismatchInNonInteractiveAutoUpdate({versionMismatchWarning}) {
+        output.warn(versionMismatchWarning)
+      },
+    },
+  })
 }

@@ -1,4 +1,4 @@
-import {getSanityUrl, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, getSanityUrl, SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -41,13 +41,20 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
     } catch (error) {
       const err = error as Error
       createHookDebug(`Error fetching project info for project ${projectId}`, err)
-      this.error(`Failed to fetch project information:\n${err.message}`, {exit: 1})
+      this.error(`Failed to fetch project information:\n${err.message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const organizationId = projectInfo.organizationId || 'personal'
     const manageUrl = getSanityUrl(
       `/organizations/${organizationId}/project/${projectId}/api/webhooks/new`,
     )
+
+    if (this.isUnattended()) {
+      this.log(`Create a webhook at ${manageUrl}`)
+      return
+    }
 
     this.log(`Opening ${manageUrl}`)
 
@@ -56,7 +63,7 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
     } catch (error) {
       const err = error as Error
       createHookDebug('Error opening browser', err)
-      this.error(`Failed to open browser:\n${err.message}`, {exit: 1})
+      this.error(`Failed to open browser:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

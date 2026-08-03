@@ -42,6 +42,7 @@ describe('getEntryModule', () => {
 
   test('never references reactStrictMode for the app entry module', () => {
     const output = getEntryModule({
+      entry: './src/App',
       isApp: true,
       reactStrictMode: undefined,
       relativeConfigLocation: null,
@@ -49,5 +50,17 @@ describe('getEntryModule', () => {
 
     expect(output).not.toContain('reactStrictMode')
     expect(output).toContain('createRoot')
+  })
+
+  test('emits the no-app-view stub for an app without an entry', () => {
+    const output = getEntryModule({
+      isApp: true,
+      reactStrictMode: undefined,
+      relativeConfigLocation: null,
+    })
+
+    expect(output).not.toContain('reactStrictMode')
+    expect(output).not.toContain('createRoot')
+    expect(output).toContain('This application has no app view.')
   })
 })

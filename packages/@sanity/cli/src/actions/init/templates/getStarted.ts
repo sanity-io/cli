@@ -28,8 +28,8 @@ export default defineConfig({
 const getStartedTemplate: ProjectTemplate = {
   configTemplate,
   dependencies: {
-    '@sanity/icons': '^2.11.0',
-    '@sanity/ui': '^2.0.0',
+    '@sanity/icons': '^5.0.0',
+    '@sanity/ui': '^3.5.0',
   },
   typescriptOnly: true,
 }

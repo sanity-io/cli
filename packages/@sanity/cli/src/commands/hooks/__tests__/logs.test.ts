@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
@@ -18,6 +19,7 @@ const testProjectId = 'test-project'
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -290,6 +292,26 @@ describe('#hook:logs', () => {
     expect(stdout).toContain('Status: failure')
     expect(stdout).toContain('Result code: 500')
     expect(stdout).toContain('Failures: 1')
+  })
+
+  test('requires a hook name without prompting for multiple hooks in unattended mode', async () => {
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project',
+    }).reply(200, [
+      {id: 'first-hook-id', name: 'first-hook', type: 'document'},
+      {id: 'second-hook-id', name: 'second-hook', type: 'document'},
+    ])
+
+    const {error} = await testCommand(LogsHookCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toBe(
+      'Webhook name is required when multiple webhooks exist. Pass the name as an argument.',
+    )
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockedSelect).not.toHaveBeenCalled()
   })
 
   test('matches hook name case-insensitively', async () => {

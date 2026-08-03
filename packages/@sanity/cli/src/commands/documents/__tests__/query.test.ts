@@ -1,4 +1,6 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
+import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -103,86 +105,16 @@ describe('#documents:query', () => {
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
   })
 
-  test('--project-id flag overrides CLI config projectId', async () => {
-    const mockResults = [{_id: 'test', title: 'Test'}]
+  test('does not read the API version environment variable under an execution context', async () => {
+    vi.stubEnv('SANITY_CLI_QUERY_API_VERSION', 'v2023-01-01')
+    mockFetch.mockResolvedValue([{_id: 'test'}])
 
-    mockFetch.mockResolvedValue(mockResults)
-
-    const {stdout} = await testCommand(
-      QueryDocumentCommand,
-      ['*[_type == "movie"]', '--project-id', 'flag-project'],
-      {
-        mocks: defaultMocks,
-      },
+    await runWithCliExecutionContext({token: 'context-token'}, () =>
+      testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {mocks: defaultMocks}),
     )
 
-    expect(stdout).toContain('"_id": "test"')
-    // Verify that --project-id ('flag-project') was used, not config ('test-project')
     expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'flag-project'}),
-    )
-  })
-
-  test('uses deprecated --project flag when no --project-id or config', async () => {
-    const mockResults = [{_id: 'test', title: 'Test'}]
-
-    mockFetch.mockResolvedValue(mockResults)
-
-    const {stderr, stdout} = await testCommand(
-      QueryDocumentCommand,
-      ['*[_type == "movie"]', '--project', 'other-project'],
-      {
-        mocks: {
-          ...defaultMocks,
-          cliConfig: {api: {dataset: testDataset}},
-        },
-      },
-    )
-
-    expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('"project" flag has been deprecated')
-    expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
-  })
-
-  test('deprecated --project flag overrides CLI config projectId', async () => {
-    const mockResults = [{_id: 'test', title: 'Test'}]
-
-    mockFetch.mockResolvedValue(mockResults)
-
-    const {stderr, stdout} = await testCommand(
-      QueryDocumentCommand,
-      ['*[_type == "movie"]', '--project', 'override-project'],
-      {
-        mocks: defaultMocks,
-      },
-    )
-
-    expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('"project" flag has been deprecated')
-    // Verify that --project ('override-project') was used, not config ('test-project')
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'override-project'}),
-    )
-  })
-
-  test('--project-id takes precedence over deprecated --project', async () => {
-    const mockResults = [{_id: 'test', title: 'Test'}]
-
-    mockFetch.mockResolvedValue(mockResults)
-
-    const {stderr, stdout} = await testCommand(
-      QueryDocumentCommand,
-      ['*[_type == "movie"]', '--project-id', 'new-id', '--project', 'old-id'],
-      {
-        mocks: defaultMocks,
-      },
-    )
-
-    expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('"project" flag has been deprecated')
-    // Verify that --project-id ('new-id') was used, not --project ('old-id')
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({projectId: 'new-id'}),
+      expect.objectContaining({apiVersion: '2025-08-15'}),
     )
   })
 
@@ -234,19 +166,6 @@ describe('#documents:query', () => {
     expect(stdout).toContain('"_id": "test"')
   })
 
-  test('fails when no project ID is configured or provided', async () => {
-    const {error} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {dataset: testDataset}},
-      },
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('fails when no dataset is configured or provided', async () => {
     const {error} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
       mocks: {
@@ -256,8 +175,8 @@ describe('#documents:query', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No dataset specified')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Dataset is required')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('fails when query returns null/undefined', async () => {
@@ -302,6 +221,9 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({apiVersion: envApiVersion}),
+    )
   })
 
   describe('outside project context', () => {
@@ -337,20 +259,6 @@ describe('#documents:query', () => {
       )
     })
 
-    test('errors when no project root and no --project-id', async () => {
-      const {error} = await testCommand(
-        QueryDocumentCommand,
-        ['*[_type == "post"]', '--dataset', 'production'],
-        {
-          mocks: noProjectRootMocks,
-        },
-      )
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
     test('errors when no project root with --project-id but no --dataset', async () => {
       const {error} = await testCommand(
         QueryDocumentCommand,
@@ -361,8 +269,8 @@ describe('#documents:query', () => {
       )
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('No dataset specified')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.message).toContain('Dataset is required')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
   })
 })

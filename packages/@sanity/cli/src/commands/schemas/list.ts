@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
@@ -61,17 +61,16 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ListSchemaCommand)
+    const errors: string[] = []
+    const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
+    if (errors.length > 0) {
+      this.error(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`, {
+        exit: exitCodes.USAGE_ERROR,
+      })
+    }
 
     try {
       const projectRoot = await this.getProjectRoot()
-
-      const errors: string[] = []
-      const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
-      if (errors.length > 0) {
-        this.error(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`, {
-          exit: 1,
-        })
-      }
 
       await listSchemas({
         configPath: projectRoot.path,
@@ -84,7 +83,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       schemasListDebug('Failed to list schemas', error)
 
       const errorMessage = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to list schemas:\n${errorMessage}`, {exit: 1})
+      this.error(`Failed to list schemas:\n${errorMessage}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

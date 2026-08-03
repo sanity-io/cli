@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {testCommand} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
@@ -113,6 +114,7 @@ describe('#docs:read', () => {
       expect(result.error.message).toContain(
         'Invalid path or URL. Expected a Sanity docs path or URL.',
       )
+      expect(result.error.oclif.exit).toBe(exitCodes.USAGE_ERROR)
     }
   })
 
@@ -121,6 +123,7 @@ describe('#docs:read', () => {
     expect(result.error.message).toContain(
       'Invalid path or URL. Expected a Sanity docs path or URL.',
     )
+    expect(result.error.oclif.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('handles API errors', async () => {

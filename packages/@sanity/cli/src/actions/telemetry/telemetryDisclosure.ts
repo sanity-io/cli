@@ -1,6 +1,5 @@
 import {styleText} from 'node:util'
 
-import {ux} from '@oclif/core'
 import {getUserConfig, isCi} from '@sanity/cli-core'
 import {boxen} from '@sanity/cli-core/ux'
 
@@ -9,7 +8,16 @@ import {telemetryLearnMoreMessage} from './telemetryLearnMoreMessage.js'
 
 const TELEMETRY_DISCLOSED_CONFIG_KEY = 'telemetryDisclosed'
 
-export function telemetryDisclosure(): void {
+interface TelemetryDisclosureOptions {
+  /**
+   * Writes a plain (unprefixed) line to stderr. Injected by the caller so the
+   * disclosure goes through the calling hook/command rather than directly to
+   * the process streams.
+   */
+  logToStderr: (message: string) => void
+}
+
+export function telemetryDisclosure({logToStderr}: TelemetryDisclosureOptions): void {
   const userConfig = getUserConfig()
 
   if (isCi()) {
@@ -23,7 +31,7 @@ export function telemetryDisclosure(): void {
   }
 
   // Print to stderr to prevent garbling command output
-  ux.stderr(
+  logToStderr(
     boxen(
       `The Sanity CLI now collects telemetry data on general usage and errors.
 This helps us improve Sanity and prioritize features.

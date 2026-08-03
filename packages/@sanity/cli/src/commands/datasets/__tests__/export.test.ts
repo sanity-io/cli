@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 
 import {type CliConfig, getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {input, select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {exportDataset, type ExportResult} from '@sanity/export'
@@ -72,6 +73,7 @@ const ERROR_MESSAGES = {
 
 const defaultMocks = {
   cliConfig: {api: {dataset: TEST_CONFIG.DATASET, projectId: TEST_CONFIG.PROJECT_ID}},
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -265,6 +267,35 @@ describe('#dataset:export', () => {
       )
     })
 
+    test('requires a dataset in unattended mode when no default is configured', async () => {
+      const {mocks} = createTestContext({dataset: null})
+
+      const {error} = await testCommand(DatasetExportCommand, [], {
+        mocks: {...mocks, isInteractive: false},
+      })
+
+      expect(error?.message).toBe('Dataset name is required. Pass it as the `<name>` argument.')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockInput).not.toHaveBeenCalled()
+    })
+
+    test('uses the default output path in unattended mode', async () => {
+      const {mocks} = createTestContext({datasets: [{name: 'production'}]})
+
+      const {error} = await testCommand(DatasetExportCommand, ['production'], {
+        mocks: {...mocks, isInteractive: false},
+      })
+
+      expect(error).toBeUndefined()
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockExportDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          outputPath: expect.stringMatching(/production\.tar\.gz$/),
+        }),
+      )
+    })
+
     test('prompts for dataset when project was selected via prompt outside a project directory', async () => {
       // Simulates: user is outside a project directory, selects project interactively.
       // getCliConfig() throws ProjectRootNotFoundError for both getProjectId and dataset
@@ -283,6 +314,7 @@ describe('#dataset:export', () => {
       const {error} = await testCommand(DatasetExportCommand, [], {
         mocks: {
           cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          isInteractive: true,
           token: defaultMocks.token,
         },
       })
@@ -371,7 +403,7 @@ describe('#dataset:export', () => {
 
       expect(error?.message).toContain(ERROR_MESSAGES.ALREADY_EXISTS)
       expect(error?.message).toContain(ERROR_MESSAGES.USE_OVERWRITE)
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('allows overwrite with flag', async () => {
@@ -548,7 +580,7 @@ describe('#dataset:export', () => {
       )
 
       expect(error?.message).toContain('lowercase')
-      expect(error?.oclif?.exit).toBe(1)
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('handles dataset listing errors gracefully', async () => {

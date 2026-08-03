@@ -2,10 +2,8 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
+import {isStaging} from '@sanity/cli-core/util'
 import {logSymbols} from '@sanity/cli-core/ux'
-
-const baseUrl =
-  process.env.SANITY_INTERNAL_ENV === 'staging' ? 'https://sanity.work' : 'https://www.sanity.io'
 
 export function warnAboutMissingAppId({
   appType,
@@ -18,6 +16,7 @@ export function warnAboutMissingAppId({
   output: Output
   projectId?: string
 }) {
+  const baseUrl = isStaging() ? 'https://sanity.work' : 'https://www.sanity.io'
   const manageUrl = `${baseUrl}/manage${projectId ? `/project/${projectId}/studios` : ''}`
   const cliConfigFile = cliConfigPath ? path.basename(cliConfigPath) : 'sanity.cli.ts/.js'
   output.warn(

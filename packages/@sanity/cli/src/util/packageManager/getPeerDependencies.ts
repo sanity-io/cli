@@ -5,9 +5,9 @@ import {getPartialEnvWithNpmPath} from './packageManagerChoice.js'
 /**
  * Resolves the peer dependencies of a package by querying the npm registry.
  *
- * @param packageName - Package name with version (e.g. "next-sanity\@11")
+ * @param packageName - Package name with version (e.g. "next-sanity\@13")
  * @param cwd - Working directory (used to resolve local npm paths)
- * @returns Array of peer dependency strings (e.g. ["next\@^15.0.0", "react\@^19.0.0"])
+ * @returns Array of peer dependency strings (e.g. ["next\@^16.0.0", "react\@^19.0.0"])
  */
 export async function getPeerDependencies(packageName: string, cwd: string): Promise<string[]> {
   let stdout: string

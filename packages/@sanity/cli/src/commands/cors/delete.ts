@@ -1,5 +1,5 @@
 import {Args} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
@@ -43,6 +43,12 @@ export class Delete extends SanityCommand<typeof Delete> {
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 
+    if (!args.origin && this.isUnattended()) {
+      this.error('Origin is required. Pass it as the `<origin>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
+    }
+
     // Ensure we have project context
     const projectId = await this.getProjectId({
       fallback: () =>
@@ -61,7 +67,7 @@ export class Delete extends SanityCommand<typeof Delete> {
     } catch (error) {
       const err = error as Error
       deleteCorsDebug(`Error deleting CORS origin ${originId} for project ${projectId}`, err)
-      this.error(`Origin deletion failed:\n${err.message}`, {exit: 1})
+      this.error(`Origin deletion failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -75,11 +81,11 @@ export class Delete extends SanityCommand<typeof Delete> {
     } catch (error) {
       const err = error as Error
       deleteCorsDebug(`Error fetching CORS origins for project ${projectId}`, err)
-      this.error(`Failed to fetch CORS origins:\n${err.message}`, {exit: 1})
+      this.error(`Failed to fetch CORS origins:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (origins.length === 0) {
-      this.error('No CORS origins configured for this project.', {exit: 1})
+      this.error('No CORS origins configured for this project.', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     // If origin is specified, find it in the list
@@ -90,7 +96,7 @@ export class Delete extends SanityCommand<typeof Delete> {
       )
 
       if (!selectedOrigin) {
-        this.error(`Origin "${specifiedOrigin}" not found`, {exit: 1})
+        this.error(`Origin "${specifiedOrigin}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       return selectedOrigin.id

@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-build",
-  "version": "1.0.1",
+  "version": "5.1.0",
   "description": "Internal Sanity package for building studios and apps",
   "keywords": [
     "cli",
@@ -32,6 +32,10 @@
       "source": "./src/_exports/_internal/build.ts",
       "default": "./dist/_exports/_internal/build.js"
     },
+    "./_internal/env": {
+      "source": "./src/_exports/_internal/env.ts",
+      "default": "./dist/_exports/_internal/env.js"
+    },
     "./_internal/extract": {
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
@@ -42,7 +46,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
@@ -61,16 +65,18 @@
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@sanity/types": "catalog:",
+    "@sanity/workbench-cli": "workspace:^",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "cjs-module-lexer": "^2.2.0",
     "debug": "catalog:",
+    "empathic": "catalog:",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
+    "oneline": "^2.0.0",
     "picomatch": "^4.0.4",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "read-package-up": "catalog:",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "semver": "^7.8.1",
     "vite": "catalog:",
     "zod": "catalog:"
@@ -85,21 +91,19 @@
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/debug": "catalog:",
-    "@types/jsdom": "catalog:",
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
     "@types/picomatch": "^4.0.3",
-    "@types/react": "^19.2.16",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/semver": "^7.7.1",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
-    "jsdom": "catalog:",
     "magic-string": "^0.30.21",
     "publint": "catalog:",
     "sanity": "catalog:",
-    "styled-components": "^6.4.2",
+    "styled-components": "^6.4.3",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
@@ -112,6 +116,6 @@
     }
   },
   "engines": {
-    "node": ">=20.19.1 <22 || >=22.12"
+    "node": ">=22.12"
   }
 }

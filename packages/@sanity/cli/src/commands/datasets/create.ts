@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
@@ -80,9 +80,14 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     if (datasetName) {
       const nameError = validateDatasetName(datasetName)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        this.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     } else {
+      if (this.isUnattended()) {
+        this.error('Dataset name is required. Pass it as the `<name>` argument.', {
+          exit: exitCodes.USAGE_ERROR,
+        })
+      }
       datasetName = await promptForDatasetName()
     }
 
@@ -99,11 +104,11 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       createDatasetDebug(`Failed to fetch project data: ${message}`, error)
-      this.error(`Failed to fetch project data: ${message}`, {exit: 1})
+      this.error(`Failed to fetch project data: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (datasets.includes(datasetName)) {
-      this.error(`Dataset "${datasetName}" already exists`, {exit: 1})
+      this.error(`Dataset "${datasetName}" already exists`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     const canCreatePrivate = projectFeatures.includes('privateDataset')
@@ -114,6 +119,7 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
         datasetName,
         embeddings: flags.embeddings,
         embeddingsProjection: flags['embeddings-projection'],
+        isUnattended: this.isUnattended(),
         output: this.output,
         projectFeatures,
         projectId,
@@ -121,7 +127,7 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to create dataset: ${message}`, {exit: 1})
+      this.error(`Failed to create dataset: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 }

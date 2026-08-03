@@ -11,15 +11,21 @@ import {toForwardSlashes} from '../toForwardSlashes.js'
 type DetectablePackageManager = 'bun' | 'npm' | 'pnpm' | 'yarn'
 
 /**
- * Detects the preferred package manager for a project by examining lock files,
+ * Detects the preferred package manager for a project by examining the corepack
+ * `packageManager` field, the `devEngines.packageManager` declaration, lock files,
  * workspace configurations, and node_modules markers.
  */
 export function preferredPm(pkgPath: string): DetectablePackageManager | null {
+  const fromPackageManagerField = detectFromPackageManagerField(pkgPath)
+  if (fromPackageManagerField) return fromPackageManagerField
+
   const fromLockFile = detectFromLockFile(pkgPath)
   if (fromLockFile) return fromLockFile
 
   const fromParentPnpm = findUp('pnpm-lock.yaml', pkgPath) || findUp('pnpm-workspace.yaml', pkgPath)
-  if (fromParentPnpm) return 'pnpm'
+  if (fromParentPnpm) {
+    return detectFromPackageManagerField(path.dirname(fromParentPnpm)) ?? 'pnpm'
+  }
 
   const fromWorkspace = detectFromWorkspaceRoot(pkgPath)
   if (fromWorkspace) return fromWorkspace
@@ -27,13 +33,59 @@ export function preferredPm(pkgPath: string): DetectablePackageManager | null {
   return detectFromNodeModules(pkgPath)
 }
 
+/**
+ * Detects the package manager from the corepack `packageManager` field in the
+ * package.json at `dir`, e.g. `"pnpm@9.1.2"` or `"yarn@4.1.0+sha224.…"`, falling
+ * back to the `devEngines.packageManager` declaration.
+ */
+function detectFromPackageManagerField(dir: string): DetectablePackageManager | null {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))
+    const packageManager = manifest?.packageManager
+    if (typeof packageManager === 'string') {
+      const [tool] = packageManager.split('@', 1)
+      if (tool === 'npm' || tool === 'pnpm' || tool === 'yarn' || tool === 'bun') return tool
+    }
+    return detectFromDevEngines(manifest?.devEngines)
+  } catch {
+    // missing or malformed package.json — fall through to other detection strategies
+    return null
+  }
+}
+
+/**
+ * Detects the package manager from a `devEngines.packageManager` declaration
+ * (https://docs.npmjs.com/cli/configuring-npm/package-json#devengines).
+ * The field is an object (`{name: 'pnpm', …}`) or an array of such objects,
+ * where arrays represent alternatives rather than an order of preference. A
+ * single-entry array is unambiguous; arrays with multiple entries are ignored.
+ * Malformed shapes and unknown names are also ignored.
+ */
+function detectFromDevEngines(devEngines: unknown): DetectablePackageManager | null {
+  if (!devEngines || typeof devEngines !== 'object') return null
+  const packageManager = (devEngines as Record<string, unknown>).packageManager
+  if (Array.isArray(packageManager) && packageManager.length !== 1) return null
+  const entry = Array.isArray(packageManager) ? packageManager[0] : packageManager
+  if (!entry || typeof entry !== 'object') return null
+  const name = (entry as Record<string, unknown>).name
+  if (name === 'npm' || name === 'pnpm' || name === 'yarn' || name === 'bun') return name
+  return null
+}
+
 function detectFromLockFile(dir: string): DetectablePackageManager | null {
-  if (fs.existsSync(path.join(dir, 'package-lock.json'))) return 'npm'
   if (fs.existsSync(path.join(dir, 'yarn.lock'))) return 'yarn'
-  if (fs.existsSync(path.join(dir, 'pnpm-lock.yaml'))) return 'pnpm'
-  if (fs.existsSync(path.join(dir, 'shrinkwrap.yaml'))) return 'pnpm'
+  if (
+    fs.existsSync(path.join(dir, 'pnpm-lock.yaml')) ||
+    fs.existsSync(path.join(dir, 'shrinkwrap.yaml'))
+  )
+    return 'pnpm'
   if (fs.existsSync(path.join(dir, 'bun.lockb')) || fs.existsSync(path.join(dir, 'bun.lock')))
     return 'bun'
+  if (
+    fs.existsSync(path.join(dir, 'package-lock.json')) ||
+    fs.existsSync(path.join(dir, 'npm-shrinkwrap.json'))
+  )
+    return 'npm'
   return null
 }
 
@@ -80,7 +132,7 @@ function detectFromWorkspaceRoot(pkgPath: string): DetectablePackageManager | nu
           const matchDir = packageDir === dir ? resolvedPkgPath : packageDir
           const relativePath = toForwardSlashes(path.relative(dir, matchDir))
           if (relativePath === '' || picomatch.isMatch(relativePath, workspaces)) {
-            return detectFromLockFile(dir) ?? 'yarn'
+            return detectFromPackageManagerField(dir) ?? detectFromLockFile(dir) ?? 'yarn'
           }
         }
       } catch {

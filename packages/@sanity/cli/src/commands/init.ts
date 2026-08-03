@@ -5,7 +5,6 @@ import {SanityCommand} from '@sanity/cli-core'
 import {initAction} from '../actions/init/initAction.js'
 import {InitError} from '../actions/init/initError.js'
 import {flagsToInitOptions} from '../actions/init/types.js'
-import {getSanityEnv} from '../util/getSanityEnv.js'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
@@ -201,6 +200,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Enable TypeScript support',
       exclusive: ['bare'],
     }),
+    'unstable--workbench': Flags.boolean({
+      allowNo: true,
+      default: undefined,
+      description: 'Opt into workbench: scaffolds the CLI config with unstable_defineApp',
+      // Internal-only while workbench is unstable — keep it out of help/docs
+      hidden: true,
+    }),
     visibility: Flags.string({
       description: 'Visibility mode for dataset',
       helpValue: '<mode>',
@@ -216,16 +222,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   public async run(): Promise<void> {
     let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
-    if (!this.flags.mcp || !this.resolveIsInteractive() || getSanityEnv() !== 'production') {
+    if (!this.flags.mcp || !this.resolveIsInteractive()) {
       mcpMode = 'skip'
-    } else if (this.flags.yes) {
+    } else if (this.isUnattended()) {
+      // Any unattended run (e.g. --yes, --json) configures MCP with defaults rather than prompting
       mcpMode = 'auto'
     }
 
-    // Mirror MCP's environment gating: skip skills install in non-production
-    // Sanity envs so e2e / UI tests don't run the bundled skills CLI.
+    // Mirror MCP's environment gating: skip install in test environments
+    // ensure e2e / CI tests don't run the bundled skills CLI.
     let skillsMode: 'auto' | 'prompt' | 'skip' = 'auto'
-    if (!this.flags.skills || !this.resolveIsInteractive() || getSanityEnv() !== 'production') {
+    if (!this.flags.skills || !this.resolveIsInteractive()) {
       skillsMode = 'skip'
     }
 

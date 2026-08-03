@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
 const getOpenapiDebug = subdebug('openapi:get')
@@ -65,11 +65,11 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
       getOpenapiDebug(`Error fetching OpenAPI spec ${slug}`, error)
 
       if (error instanceof Response && error.status === 404) {
-        this.error(`OpenAPI specification not found. ${slug}`, {exit: 1})
+        this.error(`OpenAPI specification not found. ${slug}`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       this.error('The OpenAPI service is currently unavailable. Please try again later.', {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     }
   }

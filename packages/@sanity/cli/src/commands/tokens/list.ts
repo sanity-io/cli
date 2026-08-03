@@ -1,11 +1,11 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {Table} from 'console-table-printer'
 
 import {type Token} from '../../actions/tokens/types.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getTokens} from '../../services/tokens.js'
-import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listTokenDebug = subdebug('tokens:list')
@@ -58,7 +58,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     } catch (error) {
       const message = getErrorMessage(error)
       listTokenDebug(`Error fetching tokens for project ${projectId}`, error)
-      this.error(`Token list retrieval failed:\n${message}`, {exit: 1})
+      this.error(`Token list retrieval failed:\n${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
     if (outputJson) {
@@ -93,6 +93,6 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       })
     }
 
-    table.printTable()
+    this.log(table.render())
   }
 }

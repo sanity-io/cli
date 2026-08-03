@@ -1,12 +1,15 @@
-export {buildDebug} from '../../actions/build/buildDebug.js'
-export {buildVendorDependencies} from '../../actions/build/buildVendorDependencies.js'
+export {buildApp, type BuildAppEventListener} from '../../actions/build/buildApp.js'
+export {buildStaticFiles} from '../../actions/build/buildStaticFiles.js'
+export {buildStudio, type BuildStudioEventListener} from '../../actions/build/buildStudio.js'
+export {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
 export {checkStudioDependencyVersions} from '../../actions/build/checkStudioDependencyVersions.js'
-export {
-  extendViteConfigWithUserConfig,
-  finalizeViteConfig,
-  getViteConfig,
-} from '../../actions/build/getViteConfig.js'
-export {writeFavicons} from '../../actions/build/writeFavicons.js'
+export {extendViteConfigWithUserConfig, getViteConfig} from '../../actions/build/getViteConfig.js'
+export {resolveVendorBuildConfig} from '../../actions/build/resolveVendorBuildConfig.js'
 export {writeSanityRuntime} from '../../actions/build/writeSanityRuntime.js'
-export {AppBuildTrace, StudioBuildTrace} from '../../telemetry/build.telemetry.js'
-export {copyDir} from '../../util/copyDir.js'
+export {SANITY_CACHE_DIR} from '../../constants.js'
+export {
+  compareDependencyVersions,
+  type CompareDependencyVersions,
+  type CompareDependencyVersionsResult,
+  type UnresolvedPrerelease,
+} from '../../util/compareDependencyVersions.js'

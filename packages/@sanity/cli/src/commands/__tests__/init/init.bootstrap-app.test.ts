@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -30,11 +31,13 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
       return {
         projects: {
-          list: vi
-            .fn()
-            .mockResolvedValue([
-              {createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'},
-            ]),
+          list: vi.fn().mockResolvedValue([
+            {
+              createdAt: '2024-01-01T00:00:00Z',
+              displayName: 'Test',
+              id: 'test',
+            },
+          ]),
         },
         request: globalTestClient.request,
         users: {
@@ -206,6 +209,7 @@ describe('#init: bootstrap-app-initialization', () => {
       schemaUrl: undefined,
       templateName: 'blog',
       useTypeScript: true,
+      workbench: false,
     })
     expect(stdout).toContain('Success! Your Studio has been created')
     expect(stdout).toContain(
@@ -221,12 +225,61 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(stdout).toContain('npx sanity manage')
     expect(stdout).toContain('npx sanity help')
 
-    // Skills install runs after scaffolding has completed, with the agents
-    // setupMCP told us to install.
-    expect(mocks.setupSkills).toHaveBeenCalledWith({agents: ['cursor']})
+    // Skills install runs before scaffolding (and thus before the "Success!"
+    // message), so its progress + result surface above the success output.
+    expect(mocks.setupSkills).toHaveBeenCalledWith({
+      agents: ['cursor'],
+      output: expect.any(Object),
+    })
     const bootstrapOrder = mocks.bootstrapTemplate.mock.invocationCallOrder[0]
     const skillsOrder = mocks.setupSkills.mock.invocationCallOrder[0]
-    expect(skillsOrder).toBeGreaterThan(bootstrapOrder)
+    expect(skillsOrder).toBeLessThan(bootstrapOrder)
+  })
+
+  test('passes the workbench opt-in through to bootstrapTemplate', async () => {
+    setupInitSuccessMocks()
+
+    mocks.select.mockResolvedValueOnce('blog') // template
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {
+      message: 'Setup your Cursor IDE',
+    })
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+        '--typescript',
+        '--unstable--workbench',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+    if (error) throw error
+
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith(expect.objectContaining({workbench: true}))
   })
 
   test('initializes app with env file', async () => {
@@ -299,6 +352,7 @@ describe('#init: bootstrap-app-initialization', () => {
       remoteTemplateInfo: undefined,
       templateName: 'app-quickstart',
       useTypeScript: true,
+      workbench: false,
     })
 
     // App-specific success message (not Studio message)
@@ -361,6 +415,7 @@ describe('#init: bootstrap-app-initialization', () => {
       remoteTemplateInfo: undefined,
       templateName: 'app-quickstart',
       useTypeScript: true,
+      workbench: false,
     })
 
     // No prompts should have been called
@@ -385,9 +440,11 @@ describe('#init: bootstrap-app-initialization', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(1)
-    expect(error?.message).toContain(
-      'The --organization flag is required for app templates in unattended mode',
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(error?.message).toBe(
+      'Project or organization is required for app templates in unattended mode. ' +
+        'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+        '`--project-name <name>` with `--organization <id>`.',
     )
   })
 
@@ -431,6 +488,7 @@ describe('#init: bootstrap-app-initialization', () => {
       remoteTemplateInfo: undefined,
       templateName: 'app-quickstart',
       useTypeScript: true,
+      workbench: false,
     })
 
     // No prompts should have been called — CI detection makes init unattended
@@ -455,9 +513,36 @@ describe('#init: bootstrap-app-initialization', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(1)
-    expect(error?.message).toContain(
-      'The --organization flag is required for app templates in unattended mode',
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(error?.message).toBe(
+      'Project or organization is required for app templates in unattended mode. ' +
+        'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+        '`--project-name <name>` with `--organization <id>`.',
     )
+  })
+
+  test('reports missing app template options before scaffolding', async () => {
+    mocks.select.mockReset()
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--template=app-quickstart', '--package-manager=npm'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(error?.message).toBe(
+      'Output path is required in unattended mode. Pass it with `--output-path <path>`.\n' +
+        'Error: Project or organization is required for app templates in unattended mode. ' +
+        'Pass `--project <id>` or `--organization <id>`. To create a project, pass ' +
+        '`--project-name <name>` with `--organization <id>`.',
+    )
+    expect(mocks.select).not.toHaveBeenCalled()
+    expect(mocks.bootstrapTemplate).not.toHaveBeenCalled()
+    expect(mocks.createOrAppendEnvVars).not.toHaveBeenCalled()
   })
 })

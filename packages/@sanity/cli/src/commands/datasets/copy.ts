@@ -2,7 +2,10 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exit} from '@oclif/core/errors'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
+import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {spinner} from '@sanity/cli-core/ux'
 import {Table} from 'console-table-printer'
 import {formatDistance} from 'date-fns/formatDistance'
@@ -21,6 +24,7 @@ import {
   listDatasetCopyJobs,
   listDatasets,
 } from '../../services/datasets.js'
+import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const copyDatasetDebug = subdebug('dataset:copy')
@@ -126,6 +130,21 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CopyDatasetCommand)
 
+    if (!flags.list && !flags.attach && this.isUnattended()) {
+      const errors: string[] = []
+
+      if (!args.source) {
+        errors.push('Source dataset is required. Pass it as the `<source>` argument.')
+      }
+      if (!args.target) {
+        errors.push('Target dataset is required. Pass it as the `<target>` argument.')
+      }
+
+      if (errors.length > 0) {
+        this.output.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
+      }
+    }
+
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
@@ -208,23 +227,25 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       )
     }
 
-    table.printTable()
+    this.output.log(table.render())
   }
 
   private async handleAttachMode(projectId: string, jobId: string): Promise<void> {
     copyDatasetDebug('Attaching to copy job %s', jobId)
 
     if (jobId.trim() === '') {
-      this.error('Please supply a valid jobId', {exit: 1})
+      return this.output.error('Please supply a valid jobId', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     try {
       await this.subscribeToProgress(projectId, jobId)
-      this.log(`Job ${styleText('green', jobId)} completed`)
+      this.output.log(`Job ${styleText('green', jobId)} completed`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to attach to copy job: %s', message, error)
-      this.error(`Failed to attach to copy job: ${message}`, {exit: 1})
+      return this.output.error(`Failed to attach to copy job: ${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 
@@ -238,12 +259,21 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     const skipHistory = Boolean(flags['skip-history'])
     const skipContentReleases = Boolean(flags['skip-content-releases'])
 
+    // Surfaced before any prompting so the flag is still actionable: a copy job
+    // can't be canceled once started, so mentioning it after the job kicks off
+    // leaves nothing to decide.
+    if (!skipHistory) {
+      this.output.log(
+        `Note: You can run this command with flag '--skip-history'. The flag will reduce copy time in larger datasets.`,
+      )
+    }
+
     // Get and validate source dataset
     let sourceDataset = args.source
     if (sourceDataset) {
       const nameError = validateDatasetName(sourceDataset)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        return this.output.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     }
 
@@ -253,7 +283,9 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to fetch datasets: %s', message, error)
-      this.error(`Failed to fetch datasets: ${message}`, {exit: 1})
+      return this.output.error(`Failed to fetch datasets: ${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     const datasetNames = new Set(datasetsResponse.map((ds) => ds.name))
@@ -266,7 +298,9 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
 
     if (!datasetNames.has(sourceDataset)) {
-      this.error(`Source dataset "${sourceDataset}" doesn't exist`, {exit: 1})
+      return this.output.error(`Source dataset "${sourceDataset}" doesn't exist`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     // Get and validate target dataset
@@ -274,7 +308,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     if (targetDataset) {
       const nameError = validateDatasetName(targetDataset)
       if (nameError) {
-        this.error(nameError, {exit: 1})
+        return this.output.error(nameError, {exit: exitCodes.USAGE_ERROR})
       }
     } else {
       targetDataset = await promptForDatasetName({
@@ -283,20 +317,16 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
 
     if (datasetNames.has(targetDataset)) {
-      this.error(`Target dataset "${targetDataset}" already exists`, {exit: 1})
+      return this.output.error(`Target dataset "${targetDataset}" already exists`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
 
     // Start the copy job
     try {
-      this.log(
+      this.output.log(
         `Copying dataset ${styleText('green', sourceDataset)} to ${styleText('green', targetDataset)}...`,
       )
-
-      if (!skipHistory) {
-        this.log(
-          `Note: You can run this command with flag '--skip-history'. The flag will reduce copy time in larger datasets.`,
-        )
-      }
 
       const response = await copyDataset({
         projectId,
@@ -306,18 +336,20 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         targetDataset,
       })
 
-      this.log(`Job ${styleText('green', response.jobId)} started`)
+      this.output.log(`Job ${styleText('green', response.jobId)} started`)
 
       if (flags.detach) {
         return
       }
 
       await this.subscribeToProgress(projectId, response.jobId)
-      this.log(`Job ${styleText('green', response.jobId)} completed`)
+      this.output.log(`Job ${styleText('green', response.jobId)} completed`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Dataset copying failed: %s', message, error)
-      this.error(`Dataset copying failed: ${message}`, {exit: 1})
+      return this.output.error(`Dataset copying failed: ${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 
@@ -335,7 +367,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       })
 
       if (jobs.length === 0) {
-        this.log("This project doesn't have any dataset copy jobs")
+        this.output.log("This project doesn't have any dataset copy jobs")
         return
       }
 
@@ -343,13 +375,15 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to list dataset copy jobs: %s', message, error)
-      this.error(`Failed to list dataset copy jobs: ${message}`, {exit: 1})
+      return this.output.error(`Failed to list dataset copy jobs: ${message}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 
   private async subscribeToProgress(projectId: string, jobId: string): Promise<void> {
-    let currentProgress = 0
     const spin = spinner('').start()
+    const hasCliExecutionContext = Boolean(getCliExecutionContext())
 
     return new Promise<void>((resolve, reject) => {
       const sigintHandler = () => {
@@ -360,24 +394,23 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
       const subscription = followCopyJobProgress({jobId, projectId}).subscribe({
         complete: () => {
-          process.off('SIGINT', sigintHandler)
+          if (!hasCliExecutionContext) process.off('SIGINT', sigintHandler)
           spin.succeed('Copy finished.')
           resolve()
         },
         error: (err) => {
-          process.off('SIGINT', sigintHandler)
+          if (!hasCliExecutionContext) process.off('SIGINT', sigintHandler)
           spin.fail('Copy failed.')
           reject(err)
         },
         next: (event: CopyJobProgressEvent) => {
           if (typeof event.progress === 'number') {
-            currentProgress = event.progress
+            spin.text = `Copy in progress: ${event.progress}%`
           }
-          spin.text = `Copy in progress: ${currentProgress}%`
         },
       })
 
-      process.once('SIGINT', sigintHandler)
+      if (!hasCliExecutionContext) process.once('SIGINT', sigintHandler)
     })
   }
 }

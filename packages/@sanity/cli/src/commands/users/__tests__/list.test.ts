@@ -73,6 +73,55 @@ describe('#list', () => {
     expect(stdout).toContain('2023-01-02')
   })
 
+  test('reports an empty project instead of printing a bare table header', async () => {
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({members: []}),
+      },
+    } as never)
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
+    }).reply(200, [])
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/'}).reply(200, [])
+
+    const {error, stdout} = await testCommand(List, [], {mocks: defaultMocks})
+
+    expect(error).toBeUndefined()
+    expect(stdout).toContain('No members found for this project.')
+    // The table is never rendered, so none of its column headers appear
+    expect(stdout).not.toContain('Roles')
+  })
+
+  test('falls back to a dash for members without roles', async () => {
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({
+          members: [{id: 'user1', isRobot: false, roles: undefined}],
+        }),
+      },
+    } as never)
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
+    }).reply(200, [])
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/user1'}).reply(200, [
+      {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},
+    ])
+
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
+
+    // The rendered table reaches stdout, and the Roles cell holds a dash
+    expect(stdout).toMatchInlineSnapshot(`
+      "┌────────────────────────────────┬──────────────────────────────────────────┬────────────────────────────────┬──────────────┐
+      │ ID                             │ Name                                     │ Roles                          │ Date         │
+      ├────────────────────────────────┼──────────────────────────────────────────┼────────────────────────────────┼──────────────┤
+      │ user1                          │ User One                                 │ -                              │ 2023-01-01   │
+      └────────────────────────────────┴──────────────────────────────────────────┴────────────────────────────────┴──────────────┘
+      "
+    `)
+  })
+
   test('displays pending invitations correctly', async () => {
     mockGetProjectCliClient.mockResolvedValue({
       projects: {
@@ -115,16 +164,22 @@ describe('#list', () => {
   })
 
   test('displays an error if the API request fails', async () => {
-    // Wait for 50ms to ensure the Promise.all is called
-    setTimeout(
-      () => mockGetProjectCliClient.mockRejectedValue(new Error('Internal server error')),
-      50,
-    )
+    // Resolve the project lookup so the only failure originates from the awaited
+    // invitations request below. The previous version rejected getProjectById
+    // while the invitations request was still in flight, which left that request
+    // dangling: on slower runners (Windows CI) it settled after this test, then
+    // consumed the next test's matching mock. Failing an awaited request instead
+    // guarantees it is dispatched and consumed before the command settles.
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({members: []}),
+      },
+    } as never)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       uri: `/invitations/project/${testProjectId}`,
-    }).reply(200, [])
+    }).reply(500, {message: 'Internal server error'})
 
     const {error} = await testCommand(List, [], {mocks: defaultMocks})
 

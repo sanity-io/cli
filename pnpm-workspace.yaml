@@ -8,74 +8,78 @@ packages:
   - 'packages/@sanity/cli-e2e'
   - 'packages/@sanity/cli-test'
   - 'packages/@sanity/eslint-config-cli'
+  - 'packages/@sanity/workbench-cli'
   - 'packages/create-sanity'
   - 'fixtures/*'
   - 'tmp/*'
 
 catalog:
   # Linting
-  eslint: ^10.4.1
+  eslint: ^10.7.0
   '@eslint/compat': ^2.1.0
   publint: ^0.3.21
 
   # GROQ
-  groq-js: ^1.30.2
+  groq-js: ^1.30.3
 
   # Sanity
-  sanity: ^5.30.0
-  '@sanity/vision': ^5.30.0
-  '@sanity/types': ^5.30.0
-  '@sanity/schema': ^5.30.0
-  '@sanity/client': ^7.22.1
-  '@sanity/codegen': ^7.0.1
+  sanity: ^6.7.0
+  '@sanity/vision': ^6.7.0
+  '@sanity/types': ^6.7.0
+  '@sanity/schema': ^6.7.0
+  '@sanity/client': ^7.25.0
+  '@sanity/codegen': ^7.0.3
   '@sanity/telemetry': ^1.1.0
 
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
-  typescript: ^5.9.3
-  vite: ^8.0.16
-  '@vitejs/plugin-react': ^6.0.2
-  tsx: ^4.22.4
+  typescript: ^6.0.3
+  vite: ^8.1.5
+  '@vitejs/plugin-react': ^6.0.3
+  tsx: ^4.23.1
 
   # Testing
-  vitest: ^4.1.8
-  '@vitest/coverage-istanbul': ^4.1.8
+  vitest: ^4.1.10
+  '@vitest/coverage-istanbul': ^4.1.10
   nock: ^14.0.15
   node-pty: ^1.1.0
   dotenv: ^17.4.2
   strip-ansi: ^7.1.0
 
   # CLI Framework
-  '@oclif/core': ^4.11.4
-  '@oclif/plugin-help': ^6.2.50
-  '@oclif/plugin-not-found': ^3.2.87
+  '@oclif/core': ^4.11.14
+  '@oclif/plugin-help': ^6.2.53
+  '@oclif/plugin-not-found': ^3.2.88
 
   # Utilities
   debug: ^4.4.3
   jsdom: ^29.1.1
-  zod: ^4.3.6
+  zod: ^4.4.3
   'get-tsconfig': ^4.14.0
   'import-meta-resolve': ^4.2.0
   execa: ^9.6.0
-  read-package-up: ^12.0.0
+  empathic: ^2.0.1
   ora: ^9.0.0
   rxjs: ^7.8.2
   tinyglobby: ^0.2.17
   lodash-es: ^4.18.1
   '@types/lodash-es': ^4.17.12
   yaml: ^2.9.0
+  form-data: ^4.0.5
+  tar-fs: ^3.1.2
 
   # Build Tools
-  '@swc/core': ^1.15.40
+  '@swc/core': ^1.15.43
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.5.2
-  oxfmt: ^0.53.0
+  '@sanity/pkg-utils': ^11.0.17
+  oxfmt: ^0.59.0
 
   # Type Definitions
-  '@types/node': ^20.19.41
+  '@types/node': ^22.20.0
   '@types/debug': ^4.1.13
   '@types/jsdom': ^28.0.3
+  '@types/tar-fs': ^2.0.4
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
@@ -87,15 +91,41 @@ minimumReleaseAgeExclude:
   - 'lodash-es'
   - 'react-rx'
   - 'sanity'
+  - 'sanity-plugin-media'
   - 'use-effect-event'
   - 'dotenv'
   - 'oxfmt'
   - '@oxfmt/*'
   - 'vite'
   - '@vitejs/*'
+  # Vite's bundler; same trust domain and release cadence as vite itself.
+  # Needed so vite's `rolldown: ~x.y.z` range can pick up fresh patch fixes.
+  # `@rolldown/*` covers the per-platform native binding packages released in
+  # lockstep with `rolldown`.
+  - 'rolldown'
+  - '@rolldown/*'
   - 'vitest'
+  - 'postcss'
+  - '@module-federation/vite@1.16.14'
+  - '@module-federation/dts-plugin@2.7.0'
+  - '@module-federation/error-codes@2.7.0'
+  - '@module-federation/managers@2.7.0'
+  - '@module-federation/runtime@2.7.0'
+  - '@module-federation/runtime-core@2.7.0'
+  - '@module-federation/sdk@2.7.0'
+  - '@module-federation/third-party-dts-extractor@2.7.0'
   - '@vitest/*'
   # Bump for jiti with ts path support, can remove after ~May 9th
   - 'jiti@2.7.0'
   # Renovate security update: turbo@2.9.14
   - turbo@2.9.14
+  # Renovate security update: tar@7.5.16
+  - tar@7.5.16
+  # Renovate security update: esbuild@0.28.1
+  - esbuild@0.28.1
+  # Renovate security update: form-data@4.0.6
+  - form-data@4.0.6
+  # Renovate devDependency update: @changesets/cli@2.31.1
+  - '@changesets/cli@2.31.1'
+  # Renovate devDependency update: knip@6.27.0
+  - knip@6.27.0

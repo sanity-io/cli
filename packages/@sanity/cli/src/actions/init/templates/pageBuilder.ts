@@ -27,7 +27,7 @@ export default defineConfig({
 const pageBuilderTemplate: ProjectTemplate = {
   configTemplate,
   dependencies: {
-    '@sanity/presets': '^0.4.1',
+    '@sanity/presets': '^1.0.0',
   },
 }
 

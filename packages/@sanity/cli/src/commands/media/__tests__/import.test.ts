@@ -1,4 +1,5 @@
-import {type CliConfig, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {of, throwError} from 'rxjs'
@@ -33,6 +34,7 @@ const defaultMocks = {
   cliConfig: {
     api: {projectId: '1234'} as CliConfig['api'],
   },
+  isInteractive: true,
   projectRoot: {
     directory: '/test/path',
     path: '/test/path/sanity.config.ts',
@@ -48,18 +50,6 @@ describe('#media:import', () => {
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('show console error when no projectId is found', async () => {
-    const {error} = await testCommand(MediaImportCommand, ['test-source'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {}},
-      },
-    })
-
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('show console error when getMediaLibraries fails', async () => {
@@ -130,6 +120,25 @@ describe('#media:import', () => {
     expect(error?.message).toContain('Failed to select media library')
     expect(error?.message).toContain('User cancelled selection')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('requires a media library ID in unattended mode', async () => {
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
+    })
+
+    const {error} = await testCommand(MediaImportCommand, ['test-source'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('show console error when the media library id flag is not valid', async () => {
@@ -244,51 +253,5 @@ describe('#media:import', () => {
     expect(error).toBeDefined()
     expect(error?.message).toBe('Failed to upload asset')
     expect(error?.oclif?.exit).toBe(1)
-  })
-
-  describe('outside project context', () => {
-    const noProjectRootMocks = {
-      cliConfigError: new ProjectRootNotFoundError('No project root found'),
-      token: 'test-token',
-    }
-
-    test('works with --project-id flag when no project root', async () => {
-      mockApi({
-        apiVersion: MEDIA_LIBRARY_API_VERSION,
-        method: 'get',
-        query: {projectId: 'flag-project'},
-        uri: '/media-libraries',
-      }).reply(200, {
-        data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
-      })
-
-      const mockSpinnerInstance = {
-        start: vi.fn().mockReturnThis(),
-        succeed: vi.fn().mockReturnThis(),
-        text: '',
-      }
-      mockSpinner.mockReturnValue(mockSpinnerInstance as never)
-
-      mocks.importer.mockReturnValue(of({asset: {originalFilename: 'img1.jpg'}, fileCount: 1}))
-
-      const {error} = await testCommand(
-        MediaImportCommand,
-        ['test-source', '--project-id', 'flag-project', '--media-library-id', 'test-media-library'],
-        {mocks: noProjectRootMocks},
-      )
-      if (error) throw error
-
-      expect(mockSpinnerInstance.succeed).toHaveBeenCalledWith('Imported 1 assets')
-    })
-
-    test('errors when no project root and no --project-id', async () => {
-      const {error} = await testCommand(MediaImportCommand, ['test-source'], {
-        mocks: noProjectRootMocks,
-      })
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Unable to determine project ID')
-      expect(error?.oclif?.exit).toBe(1)
-    })
   })
 })

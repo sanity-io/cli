@@ -11,6 +11,15 @@ export interface TypeGenConfig {
 }
 
 /**
+ * Dashboard visibility an application can declare. Mirrors Brett's canonical
+ * `VISIBILITIES` — the source of truth lives in the application service.
+ * @public
+ */
+export const APP_VISIBILITIES = ['default', 'unlisted', 'disabled'] as const
+/** @public */
+export type AppVisibility = (typeof APP_VISIBILITIES)[number]
+
+/**
  * @public
  */
 export interface CliConfig {
@@ -35,6 +44,8 @@ export interface CliConfig {
     organizationId?: string
     /** The title of the custom app, as it is seen in Dashboard UI */
     title?: string
+    /** Dashboard visibility of the application. Defaults to `default`. */
+    visibility?: AppVisibility
   }
 
   /** @deprecated Use deployment.autoUpdates */
@@ -83,7 +94,7 @@ export interface CliConfig {
   }
 
   /** Configuration options for React Compiler */
-  reactCompiler?: ReactCompilerConfig
+  reactCompiler?: boolean | ReactCompilerConfig
 
   /** Wraps the Studio in \<React.StrictMode\> root to aid in flagging potential problems related to concurrent features (startTransition, useTransition, useDeferredValue, Suspense). Can also be enabled by setting SANITY_STUDIO_REACT_STRICT_MODE="true"|"false". It only applies to sanity dev in development mode and is ignored in sanity build and in production. Defaults to true. */
   reactStrictMode?: boolean
@@ -145,6 +156,33 @@ export interface CliConfig {
     enabled?: boolean
   }
 
+  /**
+   * Enable Vite's experimental bundled dev mode for `sanity dev`. This serves bundled
+   * files during development, which can speed up startup and reloads for large projects.
+   * Defaults to `false`.
+   *
+   * Unstable: may change or be removed without notice while the underlying Vite
+   * feature (`experimental.bundledDev`) is experimental.
+   * {@link https://vite.dev/guide/rolldown#full-bundle-mode}
+   */
+  unstable_bundledDev?: boolean
+
   /** Exposes the default Vite configuration for custom apps and the Studio so it can be changed and extended. */
   vite?: UserViteConfig
+}
+
+/**
+ * A raw key-value store for CLI user configuration.
+ * Unlike the typed `getCliUserConfig`/`setCliUserConfig`, this operates on
+ * arbitrary keys without schema validation.
+ *
+ * @public
+ */
+export interface ConfigStore {
+  /** Remove a key from the config file. */
+  delete: (key: string) => void
+  /** Read a value by key. Returns `undefined` if the key does not exist. */
+  get: (key: string) => unknown
+  /** Write a value by key, merging it into the existing config. */
+  set: (key: string, value: unknown) => void
 }
