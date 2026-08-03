@@ -184,9 +184,9 @@ export async function resolveWorkbenchApp({
     const existing = (await listApplications(organizationId)).find((app) => app.slug === slug)
     if (existing) {
       return {
-        appHost: existing.slug ?? '',
+        appHost: slug,
         existing: {
-          appHost: existing.slug ?? '',
+          appHost: slug,
           id: existing.id,
           organizationId: existing.organizationId,
           title: existing.title,
