@@ -27,6 +27,7 @@ export function createMockSpinner(
         throw new Error('Function not implemented.')
       },
       interval: 0,
+      isEnabled: true,
       isSpinning: false,
       prefixText: '',
       render: function (): SpinnerInstance {
@@ -54,6 +55,6 @@ export function createMockSpinner(
         throw new Error('Function not implemented.')
       },
       ...overrides,
-    }
+    } as SpinnerInstance
   })
 }
