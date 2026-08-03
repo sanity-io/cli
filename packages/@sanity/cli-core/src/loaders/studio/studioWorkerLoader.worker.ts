@@ -1,3 +1,4 @@
+import {fileURLToPath} from 'node:url'
 import {isMainThread, parentPort} from 'node:worker_threads'
 
 import {
@@ -191,6 +192,20 @@ try {
         id,
         invalidate: false,
         url: id,
+      }
+    }
+
+    // Module Runner's fetchModule skips Vite resolve for `file://` URLs, so TypeScript
+    // extension rewriting (`.js` → `.ts`/`.tsx`) never runs. vite-node always resolved
+    // through `resolveId` first; restore that for absolute file imports (e.g. lazy
+    // `doImport(new URL('iconResolver.js', import.meta.url))` in tests/source).
+    if (id.startsWith('file://')) {
+      const resolved = await ssrEnvironment.pluginContainer.resolveId(
+        fileURLToPath(id),
+        importer ?? undefined,
+      )
+      if (resolved?.id) {
+        id = resolved.id
       }
     }
 
