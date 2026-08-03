@@ -76,6 +76,30 @@ describe('sanityExtensionArtifacts', () => {
     expect(title).toContain('view.components["title"]')
   })
 
+  it('emits a single render-contract artifact for an asset_source view', () => {
+    const root = makeRoot()
+    runConfigResolved(
+      sanityExtensionArtifacts({
+        artifacts: workbenchArtifacts({
+          views: [
+            {name: 'library', src: './src/picker.tsx', title: 'library', type: 'asset_source'},
+          ],
+        }),
+      }),
+      root,
+    )
+
+    // An asset_source exposes a single `asset_source` island.
+    const libraryDir = path.join(root, '.sanity/federation/views/library')
+    expect(fs.readdirSync(libraryDir).toSorted()).toEqual(['asset_source.js'])
+
+    const picker = fs.readFileSync(path.join(libraryDir, 'asset_source.js'), 'utf8')
+    expect(picker).toContain('import view from "../../../../src/picker.tsx"')
+    expect(picker).toContain('view.components["asset_source"]')
+    expect(picker).toContain('export function render(rootElement, props')
+    expect(picker).toContain('import.meta.hot.accept')
+  })
+
   it('writes nothing when no views are declared', () => {
     const root = makeRoot()
     runConfigResolved(sanityExtensionArtifacts({artifacts: workbenchArtifacts({views: []})}), root)

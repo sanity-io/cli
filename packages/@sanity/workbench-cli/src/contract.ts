@@ -61,6 +61,7 @@ export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
  */
 const INTERFACE_CONTRACT_VERSIONS = {
   app: undefined,
+  asset_source: VIEW_CONTRACT_VERSION,
   panel: VIEW_CONTRACT_VERSION,
   worker: SERVICE_CONTRACT_VERSION,
 } as const

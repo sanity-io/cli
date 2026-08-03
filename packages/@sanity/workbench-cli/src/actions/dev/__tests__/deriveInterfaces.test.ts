@@ -29,6 +29,24 @@ describe('deriveInterfaces', () => {
     ])
   })
 
+  test('maps asset_source views to asset_source interfaces', () => {
+    const app = workbenchApp({
+      views: [{name: 'library', src: './src/Picker.tsx', title: 'library', type: 'asset_source'}],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-asset_source-library',
+        metadata: null,
+        moduleId: 'views/library',
+        name: 'library',
+        src: './src/Picker.tsx',
+        title: 'library',
+        type: 'asset_source',
+        version: '1',
+      },
+    ])
+  })
+
   test('maps services to worker interfaces', () => {
     const app = workbenchApp({
       services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],

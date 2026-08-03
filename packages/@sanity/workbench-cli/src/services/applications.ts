@@ -32,6 +32,7 @@ interface BrettInterfaceBase {
  */
 export type BrettInterface =
   | (BrettInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
+  | (BrettInterfaceBase & {metadata: null; type: 'asset_source'})
   | (BrettInterfaceBase & {metadata: null; type: 'panel'})
   | (BrettInterfaceBase & {metadata: null; type: 'worker'})
 

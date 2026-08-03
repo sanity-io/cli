@@ -26,6 +26,7 @@ interface DerivedInterfaceBase {
 /** @internal */
 export type DerivedInterface =
   | (DerivedInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
+  | (DerivedInterfaceBase & {metadata: null; type: 'asset_source'})
   | (DerivedInterfaceBase & {metadata: null; type: 'panel'})
   | (DerivedInterfaceBase & {metadata: null; type: 'worker'})
 
@@ -62,7 +63,7 @@ export function deriveInterfaces(
 
   return [
     ...(app.views ?? []).map(
-      (view): DerivedInterface => ({...shared('panel', view), metadata: null}),
+      (view): DerivedInterface => ({...shared(view.type, view), metadata: null}),
     ),
     ...(app.services ?? []).map(
       (service): DerivedInterface => ({...shared('worker', service), metadata: null}),
