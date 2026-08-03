@@ -153,6 +153,20 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(result.error?.issues[0]?.message).toBe('View `title` is required')
   })
 
+  test('accepts an asset_source view declaration', () => {
+    const parsed = DefineAppInputSchema.parse(
+      validInput({
+        views: [{name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'}],
+      }),
+    )
+    expect(parsed.views?.[0]).toEqual({
+      name: 'library',
+      src: './src/picker.tsx',
+      title: 'Library',
+      type: 'asset_source',
+    })
+  })
+
   test('rejects an unknown view type', () => {
     expect(
       DefineAppInputSchema.safeParse(
@@ -276,6 +290,28 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(result.error?.issues.some((issue) => /at most one panel view/.test(issue.message))).toBe(
       true,
     )
+  })
+
+  test('accepts an `entry` alongside an asset_source view', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        entry: './src/App.tsx',
+        views: [{name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'}],
+      }),
+    )
+    expect(result.success).toBe(true)
+  })
+
+  test('does not count an asset_source view toward the one-panel cap', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        views: [
+          {name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'},
+          {name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'},
+        ],
+      }),
+    )
+    expect(result.success).toBe(true)
   })
 
   test('rejects `entry` on a studio with a not-yet-implemented error', () => {

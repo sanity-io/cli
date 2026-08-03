@@ -5,6 +5,7 @@ import {
   resolveAppDeployTarget,
   resolveStudioDeployTarget,
   resolveWorkbenchApp,
+  resolveWorkbenchStudio,
 } from '../resolveDeployTarget.js'
 
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
@@ -155,7 +156,7 @@ describe('resolveWorkbenchApp', () => {
     expect(mockListApplications).not.toHaveBeenCalled()
   })
 
-  test('no appId, slug free in the org → would-create', async () => {
+  test('no appId, slug free in the org → would-create carrying the slug', async () => {
     mockListApplications.mockResolvedValue([{...app, slug: 'other'}])
 
     const result = await resolveWorkbenchApp({
@@ -164,7 +165,7 @@ describe('resolveWorkbenchApp', () => {
       slug: 'agent',
     })
 
-    expect(result).toEqual({type: 'would-create'})
+    expect(result).toEqual({appHost: 'agent', type: 'would-create'})
   })
 
   test('no appId, slug already taken → slug-taken carries the existing app id', async () => {
@@ -177,6 +178,7 @@ describe('resolveWorkbenchApp', () => {
     })
 
     expect(result).toEqual({
+      appHost: 'agent',
       existing: {
         appHost: 'agent',
         id: 'app-1',
@@ -191,7 +193,45 @@ describe('resolveWorkbenchApp', () => {
   test('no appId and no org → would-create without listing', async () => {
     const result = await resolveWorkbenchApp({appId: undefined, slug: 'agent'})
 
+    expect(result).toEqual({appHost: 'agent', type: 'would-create'})
+    expect(mockListApplications).not.toHaveBeenCalled()
+  })
+
+  test('no slug at all → would-create without one, since the API generates it', async () => {
+    const result = await resolveWorkbenchApp({appId: undefined, organizationId: 'org-1'})
+
     expect(result).toEqual({type: 'would-create'})
+    expect(mockListApplications).not.toHaveBeenCalled()
+  })
+})
+
+// Only narrows resolveWorkbenchApp's `would-create` — the other verdicts, and
+// the lookups behind them, are covered above.
+describe('resolveWorkbenchStudio', () => {
+  test('a studio always configures a slug, so would-create carries it', async () => {
+    mockListApplications.mockResolvedValue([])
+
+    const result = await resolveWorkbenchStudio({
+      appId: undefined,
+      organizationId: 'org-1',
+      slug: 'my-studio',
+    })
+
+    expect(result).toEqual({appHost: 'my-studio', type: 'would-create'})
+  })
+
+  test('every other verdict passes through unchanged', async () => {
+    mockGetApplication.mockResolvedValue({
+      id: 'studio-1',
+      organizationId: 'org-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      type: 'studio',
+    })
+
+    const result = await resolveWorkbenchStudio({appId: 'studio-1', slug: 'my-studio'})
+
+    expect(result).toMatchObject({application: {id: 'studio-1'}, type: 'found'})
     expect(mockListApplications).not.toHaveBeenCalled()
   })
 })

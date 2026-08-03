@@ -133,6 +133,33 @@ describe('createStudio', () => {
       uri: '/applications',
     })
   })
+
+  test('forwards visibility as a create-time field', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
+
+    await createStudio({
+      organizationId: 'org-1',
+      projectId: 'proj-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      visibility: 'unlisted',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({visibility: 'unlisted'})
+  })
+
+  test('omits visibility when none is declared', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
+
+    await createStudio({
+      organizationId: 'org-1',
+      projectId: 'proj-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).not.toHaveProperty('visibility')
+  })
 })
 
 describe('deployWorkbenchApp', () => {

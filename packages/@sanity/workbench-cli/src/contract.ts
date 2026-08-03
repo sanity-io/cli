@@ -31,6 +31,7 @@ export interface ViewComponentBaseProps<TView> {
  * @internal
  */
 export const VIEW_COMPONENTS = {
+  asset_source: ['asset_source'],
   panel: ['title', 'panel'],
 } as const satisfies Record<string, readonly string[]>
 
@@ -60,6 +61,7 @@ export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
  */
 const INTERFACE_CONTRACT_VERSIONS = {
   app: undefined,
+  asset_source: VIEW_CONTRACT_VERSION,
   panel: VIEW_CONTRACT_VERSION,
   worker: SERVICE_CONTRACT_VERSION,
 } as const
@@ -83,6 +85,7 @@ export function interfaceModuleId(type: string, name: string): string {
     case 'app': {
       return 'App'
     }
+    case 'asset_source':
     case 'panel': {
       return `views/${name}`
     }
@@ -118,8 +121,16 @@ const PanelViewSchema = z.object({
   ...interfaceDeclarationFields('View'),
 })
 
+const AssetSourceViewSchema = z.object({
+  type: z.literal('asset_source'),
+  ...interfaceDeclarationFields('View'),
+})
+
 /** @internal */
-export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [PanelViewSchema])
+export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [
+  PanelViewSchema,
+  AssetSourceViewSchema,
+])
 
 const WorkerServiceSchema = z.object({
   type: z.literal('worker'),
