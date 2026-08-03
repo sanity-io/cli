@@ -141,7 +141,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       for (const definedMigration of migrations) {
         table.addRow({id: definedMigration.id, title: definedMigration.migration.title})
       }
-      table.printTable()
+      this.log(table.render())
       this.log('\nRun `sanity migration run <ID>` to run a migration')
 
       this.exit(exitCodes.RUNTIME_ERROR)

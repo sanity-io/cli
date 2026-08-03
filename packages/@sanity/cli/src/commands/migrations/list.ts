@@ -44,7 +44,7 @@ export class ListMigrationCommand extends SanityCommand<typeof ListMigrationComm
       for (const definedMigration of migrations) {
         table.addRow({id: definedMigration.id, title: definedMigration.migration.title})
       }
-      table.printTable()
+      this.log(table.render())
       this.log('\nRun `sanity migration run <ID>` to run a migration')
       listMigrationDebug(`Successfully listed ${migrations.length} migrations`)
     } catch (error) {

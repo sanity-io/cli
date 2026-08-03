@@ -42,7 +42,7 @@ describe('resolveWorkbenchApp', () => {
       unstable_defineApp({
         entry: './src/App.tsx',
         organizationId: 'org-123',
-        services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
+        services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
         slug: 'my-app-host',
         title: 'My App',
         visibility: 'unlisted',
@@ -51,7 +51,7 @@ describe('resolveWorkbenchApp', () => {
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
       entry: './src/App.tsx',
-      services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
+      services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       slug: 'my-app-host',
       visibility: 'unlisted',
     })
@@ -61,16 +61,16 @@ describe('resolveWorkbenchApp', () => {
     const config = asConfig(
       unstable_defineApp({
         organizationId: 'org-123',
-        services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
+        services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
         slug: 'my-app-host',
         title: 'My App',
-        views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
+        views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
       }),
     )
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
-      services: [{name: 'worker', src: './src/worker.ts', type: 'worker'}],
-      views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
+      services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
+      views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
     })
   })
 
@@ -81,7 +81,7 @@ describe('resolveWorkbenchApp', () => {
         organizationId: 'org-123',
         slug: 'my-app',
         title: 'My App',
-        views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}],
+        views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
       } as unknown as DefineAppInput),
     )
 

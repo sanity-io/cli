@@ -12,9 +12,9 @@ import {
   getWorkbenchUrl,
 } from '../../services/applications.js'
 import {deleteConfig, listConfigs} from '../../services/installations.js'
-import {type DeployedExpose, summarizeExposes} from '../deploy/buildExposes.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
+import {type DeployedExpose, summarizeInterfaces} from '../deploy/summarizeInterfaces.js'
 
 /** The workbench extension of the shared target; serializes into `--json` as-is. */
 export type WorkbenchUndeployTarget =
@@ -95,7 +95,7 @@ async function resolveApplicationTarget({
     return {message: 'Application with the given ID does not exist', type: 'none'}
   }
 
-  const {exposes, lines} = summarizeExposes(workbench)
+  const {exposes, lines} = summarizeInterfaces(workbench)
   return {
     target: {
       activeDeployment: null,

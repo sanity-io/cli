@@ -93,6 +93,6 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       })
     }
 
-    table.printTable()
+    this.log(table.render())
   }
 }

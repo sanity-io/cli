@@ -1,5 +1,5 @@
 import React, {useState} from 'react'
-import {TrashIcon} from '@sanity/icons'
+import {TrashIcon} from '@sanity/icons/Trash'
 import {Stack, Text, useToast} from '@sanity/ui'
 import {
   type DocumentActionDescription,

@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {type DevServerConfig, type DevServerInterface} from '../deriveInterfaces.js'
+import {type DevServerConfig, type DevServerInterface} from '../deriveConfigs.js'
 import {createExposesTracker, exposesSetId, trackExposesSet} from '../exposesSetId.js'
 import {type DevServerManifest} from '../registry.js'
 

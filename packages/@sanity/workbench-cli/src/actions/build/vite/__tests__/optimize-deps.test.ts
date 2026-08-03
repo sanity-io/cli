@@ -22,7 +22,7 @@ describe('workbenchOptimizeDeps', () => {
         appType: 'media-library',
         fields: [{name: 'credit', src: './src/fields/credit.ts', title: 'Credit'}],
       },
-      services: [{name: 'reminders', src: './src/service.ts', type: 'worker'}],
+      services: [{name: 'reminders', src: './src/service.ts', title: 'reminders', type: 'worker'}],
       views: [
         {name: 'favorites', src: './src/FavoritesPanel.tsx', title: 'Favorites', type: 'panel'},
       ],
@@ -116,7 +116,9 @@ describe('workbenchOptimizeDeps', () => {
       const {entries} = workbenchOptimizeDeps({
         appSources: [],
         cwd: projectDir,
-        exposes: {services: [{name: 'reminders', src: './src/service', type: 'worker'}]},
+        exposes: {
+          services: [{name: 'reminders', src: './src/service', title: 'reminders', type: 'worker'}],
+        },
       })
 
       expect(entries).toEqual(['src/service.ts'])

@@ -10,7 +10,7 @@ const app = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-const panel = {name: 'feed', src: './src/Feed.tsx', type: 'panel'}
+const panel = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
 
 describe('validateWorkbenchApp', () => {
   test('returns no errors for a valid app', () => {
@@ -32,7 +32,9 @@ describe('validateWorkbenchApp', () => {
   test('reports more than one panel view', () => {
     expect(
       validateWorkbenchApp(
-        app({views: [panel, {name: 'inbox', src: './src/Inbox.tsx', type: 'panel'}]}),
+        app({
+          views: [panel, {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'}],
+        }),
       ),
     ).toContainEqual(expect.stringContaining('at most one panel view'))
   })
@@ -48,7 +50,7 @@ describe('validateWorkbenchApp', () => {
       app({
         entry: './src/App.tsx',
         slug: 'bad!',
-        views: [panel, {name: 'inbox', src: './src/Inbox.tsx', type: 'panel'}],
+        views: [panel, {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'}],
       }),
     )
     expect(errors).toContainEqual(expect.stringMatching(/slug: App `slug` must be lowercase/))

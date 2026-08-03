@@ -54,6 +54,26 @@ export const AppInterfaceMetadataSchema = z.object({
 export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
 
 /**
+ * The contract version each interface type advertises, so the host can check it
+ * renders/runs what it expects.
+ * @internal
+ */
+const INTERFACE_CONTRACT_VERSIONS = {
+  app: undefined,
+  panel: VIEW_CONTRACT_VERSION,
+  worker: SERVICE_CONTRACT_VERSION,
+} as const
+
+/** Every interface type an app exposes — an `app` view, a view, or a service. */
+export type InterfaceKind = keyof typeof INTERFACE_CONTRACT_VERSIONS
+
+/** @internal */
+export function interfaceContractVersion(type: InterfaceKind): string | undefined {
+  const version = INTERFACE_CONTRACT_VERSIONS[type]
+  return version === undefined ? undefined : String(version)
+}
+
+/**
  * The module-federation id a build exposes an interface at. Dev stamps the same
  * id a deploy would, so the workbench loads a local interface like a deployed one.
  * @internal
@@ -84,10 +104,13 @@ function extensionDeclarationFields(kind: 'Field' | 'Service' | 'View') {
   }
 }
 
-// Every interface (view, service) shares `name` + `src` + an optional display
-// `title` that defaults to `name` on deploy.
+// Every interface (view, service) shares `name` + `src` + a display `title`,
+// which Brett requires on the record each becomes.
 function interfaceDeclarationFields(kind: 'Service' | 'View') {
-  return {...extensionDeclarationFields(kind), title: z.optional(z.string())}
+  return {
+    ...extensionDeclarationFields(kind),
+    title: z.string(`${kind} \`title\` is required`),
+  }
 }
 
 const PanelViewSchema = z.object({

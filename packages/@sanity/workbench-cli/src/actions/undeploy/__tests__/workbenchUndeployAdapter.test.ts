@@ -20,7 +20,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 function workbenchApp(): DeployableWorkbenchApp {
   const app = getWorkbench({
     app: unstable_defineApp({
-      name: 'my-app',
       organizationId: 'org-1',
       slug: 'my-app',
       title: 'My App',

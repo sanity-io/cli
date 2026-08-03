@@ -4,7 +4,8 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type BrettInterface, type BrettWorkspace} from '../../../services/applications.js'
+import {unstable_defineApp} from '../../../defineApp.js'
+import {type BrettWorkspace} from '../../../services/applications.js'
 import {createCoreApp, createStudio, deployWorkbenchApp} from '../deployWorkbenchApp.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
@@ -19,9 +20,14 @@ vi.mock('@sanity/cli-core/ux', () => ({
 vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
-const interfaces: BrettInterface[] = [
-  {metadata: null, moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
-]
+const app = unstable_defineApp({
+  entry: './src/App.tsx',
+  name: 'drop-desk',
+  organizationId: 'org-1',
+  services: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
+  slug: 'drop-desk',
+  title: 'Drop Desk',
+})
 const workspaces: BrettWorkspace[] = [
   {
     basePath: '/',
@@ -134,8 +140,9 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app,
       applicationId: 'app_1',
-      interfaces,
+      isApp: true,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/app',
       title: 'Drop Desk',
@@ -148,7 +155,26 @@ describe('deployWorkbenchApp', () => {
     })
     const fields = appendedFields()
     expect(fields).toContainEqual(['version', '1.0.0'])
-    expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
+    // The app's interfaces, stamped with the deployment version and stripped of
+    // what Brett owns: the local id and `src`. The app view titles itself after the app.
+    expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
+      {
+        metadata: null,
+        moduleId: 'services/unread',
+        name: 'unread',
+        title: 'unread',
+        type: 'worker',
+        version: '1.0.0',
+      },
+      {
+        metadata: null,
+        moduleId: 'App',
+        name: 'drop-desk',
+        title: 'Drop Desk',
+        type: 'app',
+        version: '1.0.0',
+      },
+    ])
     expect(fields.map(([name]) => name)).toContain('tarball')
   })
 
@@ -156,8 +182,9 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app: {...app, entry: undefined},
       applicationId: 'studio_1',
-      interfaces,
+      isApp: false,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/studio',
       title: 'My Studio',
@@ -172,9 +199,10 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app,
       applicationId: 'app_1',
       icon,
-      interfaces,
+      isApp: true,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/app',
       title: 'Drop Desk',
@@ -192,8 +220,9 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app,
       applicationId: 'app_1',
-      interfaces,
+      isApp: true,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/app',
       title: 'Drop Desk',
@@ -211,8 +240,9 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app,
       applicationId: 'app_1',
-      interfaces,
+      isApp: true,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/app',
       title: 'Drop Desk',
@@ -238,8 +268,9 @@ describe('deployWorkbenchApp', () => {
 
     await expect(
       deployWorkbenchApp({
+        app,
         applicationId: 'app_1',
-        interfaces,
+        isApp: true,
         isAutoUpdating: false,
         onDeployed,
         sourceDir: '/tmp/build/app',
@@ -257,8 +288,9 @@ describe('deployWorkbenchApp', () => {
 
     await expect(
       deployWorkbenchApp({
+        app,
         applicationId: 'app_1',
-        interfaces,
+        isApp: true,
         isAutoUpdating: false,
         onDeployed,
         sourceDir: '/tmp/build/app',
