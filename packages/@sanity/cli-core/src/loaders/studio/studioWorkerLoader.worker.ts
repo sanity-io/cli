@@ -1,4 +1,4 @@
-import {fileURLToPath} from 'node:url'
+import {fileURLToPath, pathToFileURL} from 'node:url'
 import {isMainThread, parentPort} from 'node:worker_threads'
 
 import {
@@ -199,13 +199,15 @@ try {
     // extension rewriting (`.js` → `.ts`/`.tsx`) never runs. vite-node always resolved
     // through `resolveId` first; restore that for absolute file imports (e.g. lazy
     // `doImport(new URL('iconResolver.js', import.meta.url))` in tests/source).
+    // Keep the result as `file://` — on Windows, bare `C:/...` paths are treated as
+    // package imports by Module Runner's fetchModule and fail to load.
     if (id.startsWith('file://')) {
       const resolved = await ssrEnvironment.pluginContainer.resolveId(
         fileURLToPath(id),
         importer ?? undefined,
       )
-      if (resolved?.id) {
-        id = resolved.id
+      if (resolved?.id && !resolved.id.startsWith('\0')) {
+        id = pathToFileURL(resolved.id).href
       }
     }
 
