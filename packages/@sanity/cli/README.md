@@ -95,6 +95,7 @@ Code for sanity cli
 - [`sanity migrations create [TITLE]`](#sanity-migrations-create-title)
 - [`sanity migrations list`](#sanity-migrations-list)
 - [`sanity migrations run [ID]`](#sanity-migrations-run-id)
+- [`sanity new [PROJECTNAME]`](#sanity-new-projectname)
 - [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
 - [`sanity openapi list`](#sanity-openapi-list)
 - [`sanity organizations create`](#sanity-organizations-create)
@@ -105,6 +106,7 @@ Code for sanity cli
 - [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
 - [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
 - [`sanity projects list`](#sanity-projects-list)
+- [`sanity projects unclaimed`](#sanity-projects-unclaimed)
 - [`sanity schemas delete`](#sanity-schemas-delete)
 - [`sanity schemas deploy`](#sanity-schemas-deploy)
 - [`sanity schemas extract`](#sanity-schemas-extract)
@@ -2964,6 +2966,67 @@ EXAMPLES
     $ sanity migrations run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
+## `sanity new [PROJECTNAME]`
+
+Create a Sanity project without an account, and claim it within 72 hours to keep it.
+
+```
+USAGE
+  $ sanity new [PROJECTNAME] [--json] [--scaffold] [-y]
+
+ARGUMENTS
+  [PROJECTNAME]  Display name for the new project
+
+FLAGS
+  -y, --yes            Skip prompts and use defaults (project: "My Sanity project")
+      --[no-]scaffold  Set up a Studio in ./sanity and a Next.js website in ./web (on by default)
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Create a Sanity project without an account, and claim it within 72 hours to keep it.
+
+  Sets up two folders here: ./sanity, a Studio where you write and edit your
+  content, and ./web, a Next.js website that reads it. Both are already
+  connected to your new project, so you can start them straight away. Use
+  --no-scaffold if you just want the project and nothing else.
+
+  The project is real and works immediately, but it is only yours for 72 hours.
+  Claim it with a Sanity account before the deadline and everything you have
+  built stays exactly as it is. Claiming is free and takes about a minute. Miss
+  the deadline and the project and its content are deleted.
+
+  Two things to keep private: the claim link, because anyone who opens it
+  becomes the owner, and the access token saved in ./sanity/.env.local and
+  ./web/.env.local, because it can read and change everything in the project.
+  Keep both env files out of git, and never put the token in code that runs in
+  the browser.
+
+  Fetch https://sanity.new for full instructions, or point your AI agent at it.
+
+EXAMPLES
+  Create a project with a Studio and a website
+
+    $ sanity new
+
+  Create a project called "My New Project"
+
+    $ sanity new "My New Project"
+
+  Create a project without being asked anything
+
+    $ sanity new --yes
+
+  Create the project only, with no Studio or website
+
+    $ sanity new --no-scaffold
+
+  Create a project and print its details as JSON
+
+    $ sanity new --json
+```
+
 ## `sanity openapi get SLUG`
 
 Get an OpenAPI specification by slug
@@ -3253,6 +3316,30 @@ EXAMPLES
   List projects sorted by member count, ascending
 
     $ sanity projects list --sort=members --order=asc
+```
+
+## `sanity projects unclaimed`
+
+Recover details for unclaimed projects created on this machine
+
+```
+USAGE
+  $ sanity projects unclaimed [--project-id <value>]
+
+FLAGS
+  --project-id=<value>  Project ID to recover
+
+DESCRIPTION
+  Recover details for unclaimed projects created on this machine
+
+EXAMPLES
+  List locally recorded unclaimed projects
+
+    $ sanity projects unclaimed
+
+  Show recovery details for one project
+
+    $ sanity projects unclaimed --project-id abc123
 ```
 
 ## `sanity schemas delete`
