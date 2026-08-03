@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.8.0](https://github.com/sanity-io/cli/compare/cli-core-v2.7.1...cli-core-v2.8.0)
+
+_2026-08-03_
+
+### Features
+
+- **cli:** add sanity new, sanity projects unclaimed ([#1622](https://github.com/sanity-io/cli/pull/1622)) ([558b79b](https://github.com/sanity-io/cli/commit/558b79bb5218e7ba6e3b970c2140121ed99e262e))
+
+### Bug Fixes
+
+- **config:** stop workbench types from leaking into app config ([#1632](https://github.com/sanity-io/cli/pull/1632)) ([b63bae4](https://github.com/sanity-io/cli/commit/b63bae404e8fc98cb3eefba1e0b978f7b3ae5975))
+
 ## [2.7.1](https://github.com/sanity-io/cli/compare/cli-core-v2.7.0...cli-core-v2.7.1)
 
 _2026-07-29_

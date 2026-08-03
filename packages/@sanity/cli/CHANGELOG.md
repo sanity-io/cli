@@ -1,5 +1,33 @@
 # Change Log
 
+## [7.16.0](https://github.com/sanity-io/cli/compare/cli-v7.15.1...cli-v7.16.0)
+
+_2026-08-03_
+
+### Features
+
+- **workbench:** drop `name` from unstable_defineApp ([#1631](https://github.com/sanity-io/cli/pull/1631)) ([b11a64b](https://github.com/sanity-io/cli/commit/b11a64b65401e9baa93ad318486baa5c9c55480e))
+- **cli:** add sanity new, sanity projects unclaimed ([#1622](https://github.com/sanity-io/cli/pull/1622)) ([558b79b](https://github.com/sanity-io/cli/commit/558b79bb5218e7ba6e3b970c2140121ed99e262e))
+- **workbench:** register asset_source view type ([#1638](https://github.com/sanity-io/cli/pull/1638)) ([7eae909](https://github.com/sanity-io/cli/commit/7eae9097aa1278a5d97ff41e8526dbd41f040434))
+- **cli:** show terms of service in sanity new ([#1642](https://github.com/sanity-io/cli/pull/1642)) ([ccc4875](https://github.com/sanity-io/cli/commit/ccc487584317980ca44894795b82e9abb3ce8382))
+
+### Bug Fixes
+
+- **deploy:** build and deploy a federated studio with its installed package versions rather than silently ignoring `deployment.autoUpdates`, report the existing app id when its slug is already taken, and apply the app's `visibility` ([#1635](https://github.com/sanity-io/cli/pull/1635)) ([206c037](https://github.com/sanity-io/cli/commit/206c0371b56ab852ea779ccf258e1ddfc1488ac3))
+- **cli:** show table output when commands are run programmatically ([#1648](https://github.com/sanity-io/cli/pull/1648)) ([3798bbe](https://github.com/sanity-io/cli/commit/3798bbe275d1e92bb0a6f677f81b229361fa002d))
+
+  Commands that render tables, such as `sanity users list`, produced no output when invoked programmatically instead of from a terminal. `sanity users list` now also reports when a project has no members rather than printing an empty table.
+
+- **init:** use @sanity/icons v5 de-barrelled imports in templates ([#1623](https://github.com/sanity-io/cli/pull/1623)) ([5533567](https://github.com/sanity-io/cli/commit/5533567c49df404c8059b86f599a1db2a65c5b01))
+- **config:** stop workbench types from leaking into app config ([#1632](https://github.com/sanity-io/cli/pull/1632)) ([b63bae4](https://github.com/sanity-io/cli/commit/b63bae404e8fc98cb3eefba1e0b978f7b3ae5975))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.9.0
+    - @sanity/cli-core bumped to 2.8.0
+
 ## [7.15.1](https://github.com/sanity-io/cli/compare/cli-v7.15.0...cli-v7.15.1)
 
 _2026-07-29_
