@@ -78,6 +78,7 @@ const devServerInterfaceSchema = z.discriminatedUnion('type', [
     type: z.literal('app'),
   }),
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('panel')}),
+  z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('asset_source')}),
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('worker')}),
 ])
 

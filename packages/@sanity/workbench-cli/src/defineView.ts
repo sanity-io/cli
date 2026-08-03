@@ -1,3 +1,5 @@
+import {type AssetSourceComponentProps} from '@sanity/types'
+
 import {
   type InterfaceType,
   VIEW_CONTRACT_VERSION,
@@ -36,10 +38,29 @@ export interface PanelViewComponents {
 export type PanelComponent = keyof PanelViewComponents
 
 /**
+ * The component slots an `asset_source` view exposes — a single picker island,
+ * typed with the studio asset-source props it renders behind. The props are
+ * `@sanity/types`' `AssetSourceComponentProps` directly, so an authored picker
+ * receives exactly what a studio `AssetSource.component` does.
+ * @public
+ */
+export interface AssetSourceViewComponents {
+  asset_source: ViewComponent<AssetSourceComponentProps>
+}
+
+/**
+ * An asset source's view-component slot — the module-federation expose for its
+ * one island.
+ * @public
+ */
+export type AssetSourceComponent = keyof AssetSourceViewComponents
+
+/**
  * The components each interface type exposes, keyed by type.
  * @public
  */
 export interface ViewComponentsByType {
+  asset_source: AssetSourceViewComponents
   panel: PanelViewComponents
 }
 

@@ -67,6 +67,7 @@
   "dependencies": {
     "@module-federation/vite": "1.20.1",
     "@sanity/cli-core": "workspace:^",
+    "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",
     "tar-fs": "catalog:",
