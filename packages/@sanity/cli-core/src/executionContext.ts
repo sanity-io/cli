@@ -16,8 +16,11 @@ export type SanityEnvironment = 'production' | 'staging'
  *
  * - `token` takes precedence over `SANITY_AUTH_TOKEN` and the stored CLI
  *   config token, and never touches the process-wide token cache
+ * - the embedding process's `X_SANITY_LINEAGE` is never propagated to API
+ *   requests
  * - `stdout`/`stderr` receive the output that commands would otherwise write
  *   to the process streams
+ * - debug logging is disabled, even when the embedding process enables it
  * - interactivity checks report non-interactive, so commands fail fast with
  *   actionable errors instead of prompting
  * - project root resolution from the filesystem is disabled: commands never

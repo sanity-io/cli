@@ -11,6 +11,8 @@ import {
 } from '@sanity/client'
 
 import {getCliToken} from './config/cli/cliUserConfig.js'
+import {getCliExecutionContext} from './executionContext.js'
+import {createIsolatedRequester} from './request/createIsolatedRequester.js'
 import {generateHelpUrl} from './util/generateHelpUrl.js'
 import {getSanityUrl} from './util/getSanityUrl.js'
 import {isStaging} from './util/isStaging.js'
@@ -57,7 +59,8 @@ export async function getGlobalCliClient({
   unauthenticated,
   ...config
 }: GlobalCliClientOptions): Promise<SanityClient> {
-  const requester = defaultRequester.clone()
+  const context = getCliExecutionContext()
+  const requester = context ? createIsolatedRequester() : defaultRequester.clone()
   requester.use(authErrors())
 
   const apiHost = isStaging() ? STAGING_API_HOST : undefined
@@ -123,7 +126,8 @@ export async function getProjectCliClient({
   token: providedToken,
   ...config
 }: ProjectCliClientOptions): Promise<SanityClient> {
-  const requester = defaultRequester.clone()
+  const context = getCliExecutionContext()
+  const requester = context ? createIsolatedRequester() : defaultRequester.clone()
   requester.use(authErrors(config.projectId))
 
   const apiHost = isStaging() ? STAGING_API_HOST : undefined

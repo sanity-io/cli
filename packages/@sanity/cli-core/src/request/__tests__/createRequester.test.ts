@@ -222,6 +222,22 @@ describe('#createRequester', () => {
     expect(mockGetIt).toHaveBeenCalledWith([httpErrorsResult, headersResult, promiseResult])
   })
 
+  test('disables debug inside a CLI execution context', async () => {
+    const httpErrorsResult = {id: 'httpErrors'}
+    const headersResult = {id: 'headers'}
+    const promiseResult = {id: 'promise'}
+
+    mockHttpErrors.mockReturnValue(httpErrorsResult)
+    mockHeaders.mockReturnValue(headersResult)
+    mockPromise.mockReturnValue(promiseResult)
+
+    const {runWithCliExecutionContext} = await import('../../executionContext.js')
+    runWithCliExecutionContext({}, () => createRequester())
+
+    expect(mockDebug).not.toHaveBeenCalled()
+    expect(mockGetIt).toHaveBeenCalledWith([httpErrorsResult, headersResult, promiseResult])
+  })
+
   test('customizes debug options', () => {
     mockHttpErrors.mockReturnValue({})
     mockHeaders.mockReturnValue({})
