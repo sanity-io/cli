@@ -45,7 +45,17 @@ export function spawnProcess({
       const stderr = stderrChunks.join('')
 
       resolve({
-        error: exitCode === 0 ? undefined : new Error(stderr || `CLI exited with code ${exitCode}`),
+        // The CLI writes the actionable diagnostic (package manager output, stack traces)
+        // to stdout via oclif's `log`, while stderr often only carries a summary line like
+        // "Dependency installation failed". Carry both into the error so a thrown failure
+        // explains itself.
+        error:
+          exitCode === 0
+            ? undefined
+            : new Error(
+                [stderr, stdout].filter(Boolean).join('\n').trim() ||
+                  `CLI exited with code ${exitCode}`,
+              ),
         exitCode,
         stderr,
         stdout,

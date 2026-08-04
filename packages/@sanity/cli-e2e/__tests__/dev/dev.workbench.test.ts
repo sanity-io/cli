@@ -56,6 +56,6 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     expect(envSource).toContain(`"localhost-${port + 1}"`)
 
     session.sendControl('c')
-    await session.waitForExit(15_000).catch(() => session.kill())
+    await session.waitForExit('any', 15_000).catch(() => session.kill())
   })
 })
