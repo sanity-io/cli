@@ -1,5 +1,26 @@
 # Change Log
 
+## 7.17.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.16.0...cli-v7.17.0)
+
+_2026-08-04_
+
+### Features
+
+- **cli:** sanity -v now works as an alias for sanity --version ([#1649](https://github.com/sanity-io/cli/pull/1649)) ([75697ae](https://github.com/sanity-io/cli/commit/75697ae0943344c7be07b77aa68ab94b28fee361))
+- **workbench:** register tile view type ([#1659](https://github.com/sanity-io/cli/pull/1659)) ([1ae4d8e](https://github.com/sanity-io/cli/commit/1ae4d8e1ae625e08fca3ae1273fab46f91c33677))
+
+### Bug Fixes
+
+- **init:** bump shopify template plugin pins for sanity 6 compatibility ([#1643](https://github.com/sanity-io/cli/pull/1643)) ([280b621](https://github.com/sanity-io/cli/commit/280b62190264f63b6271c29b7bab9680087d0e78))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.10.0
+
 ## [7.16.0](https://github.com/sanity-io/cli/compare/cli-v7.15.1...cli-v7.16.0)
 
 _2026-08-03_

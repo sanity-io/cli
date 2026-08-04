@@ -1,5 +1,15 @@
 # Changelog
 
+## 9.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v9.0.0...cli-test-v9.0.1)
+
+_2026-08-04_
+
+### Bug Fixes
+
+- **deps:** update dependency @vitejs/plugin-react to ^6.0.5 ([#1651](https://github.com/sanity-io/cli/pull/1651)) ([49abbcf](https://github.com/sanity-io/cli/commit/49abbcf568c20d3626538145077b87128e177d48))
+
 ## [9.0.0](https://github.com/sanity-io/cli/compare/cli-test-v8.0.1...cli-test-v9.0.0)
 
 _2026-08-03_
