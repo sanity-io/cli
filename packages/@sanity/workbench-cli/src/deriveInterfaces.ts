@@ -6,6 +6,7 @@ import {
   interfaceContractVersion,
   type InterfaceKind,
   interfaceModuleId,
+  type TileInterfaceMetadata,
 } from './contract.js'
 import {isWorkbenchApp} from './defineApp.js'
 
@@ -29,6 +30,7 @@ export type DerivedInterface =
   | (DerivedInterfaceBase & {metadata: null; type: 'asset_source'})
   | (DerivedInterfaceBase & {metadata: null; type: 'panel'})
   | (DerivedInterfaceBase & {metadata: null; type: 'worker'})
+  | (DerivedInterfaceBase & {metadata: TileInterfaceMetadata; type: 'tile'})
 
 /**
  * `appTitle` titles the app view where a deploy resolved one through `--title`;
@@ -62,9 +64,20 @@ export function deriveInterfaces(
   })
 
   return [
-    ...(app.views ?? []).map(
-      (view): DerivedInterface => ({...shared(view.type, view), metadata: null}),
-    ),
+    ...(app.views ?? []).map((view): DerivedInterface => {
+      // Tile is the only view type with interface metadata: its footprint `size`
+      // (required) and an optional sort `priority`. Both authored top-level.
+      if (view.type === 'tile') {
+        return {
+          ...shared(view.type, view),
+          metadata:
+            view.priority === undefined
+              ? {size: view.size}
+              : {priority: view.priority, size: view.size},
+        }
+      }
+      return {...shared(view.type, view), metadata: null}
+    }),
     ...(app.services ?? []).map(
       (service): DerivedInterface => ({...shared('worker', service), metadata: null}),
     ),

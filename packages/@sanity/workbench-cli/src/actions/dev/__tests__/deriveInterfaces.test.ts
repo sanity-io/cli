@@ -47,6 +47,51 @@ describe('deriveInterfaces', () => {
     ])
   })
 
+  test('maps tile views to tile interfaces, carrying size and priority metadata', () => {
+    const app = workbenchApp({
+      views: [
+        {
+          name: 'agent',
+          priority: 100,
+          size: 'large',
+          src: './src/Tile.tsx',
+          title: 'agent',
+          type: 'tile',
+        },
+      ],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-tile-agent',
+        metadata: {priority: 100, size: 'large'},
+        moduleId: 'views/agent',
+        name: 'agent',
+        src: './src/Tile.tsx',
+        title: 'agent',
+        type: 'tile',
+        version: '1',
+      },
+    ])
+  })
+
+  test('maps a tile view without priority to size-only metadata', () => {
+    const app = workbenchApp({
+      views: [{name: 'agent', size: 'small', src: './src/Tile.tsx', title: 'agent', type: 'tile'}],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-tile-agent',
+        metadata: {size: 'small'},
+        moduleId: 'views/agent',
+        name: 'agent',
+        src: './src/Tile.tsx',
+        title: 'agent',
+        type: 'tile',
+        version: '1',
+      },
+    ])
+  })
+
   test('maps services to worker interfaces', () => {
     const app = workbenchApp({
       services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],

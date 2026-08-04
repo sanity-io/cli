@@ -1,5 +1,5 @@
 export {resolveAppId} from '../appId.js'
-export type {InterfaceType, ServiceType} from '../contract.js'
+export type {InterfaceType, ServiceType, TileSize} from '../contract.js'
 export {isWorkbenchApp, unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
 export type {
   DefineAppInput,
@@ -24,5 +24,8 @@ export type {
   PanelComponent,
   PanelViewComponents,
   PanelViewProps,
+  TileComponent,
+  TileViewComponents,
+  TileViewProps,
   ViewComponentsByType,
 } from '../defineView.js'
