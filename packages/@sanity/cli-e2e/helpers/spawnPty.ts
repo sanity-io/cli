@@ -167,7 +167,19 @@ export function spawnPty({args = [], command, cwd, env}: SpawnPtyOptions): Inter
           return
         }
 
+        const onExit = (code: number) => {
+          clearTimeout(timer)
+          resolve(code)
+        }
+
+        // `node-pty` exposes exit as a plain callback with no way to cancel a listener,
+        // so on the timeout path we deregister `onExit` ourselves. Otherwise a later exit
+        // would still invoke it against an already-rejected promise.
         const timer = setTimeout(() => {
+          const index = exitCallbacks.indexOf(onExit)
+          if (index !== -1) {
+            exitCallbacks.splice(index, 1)
+          }
           reject(
             new Error(
               `Process did not exit within ${timeout}ms\n\nCurrent output:\n${stripAnsi(output)}`,
@@ -175,10 +187,7 @@ export function spawnPty({args = [], command, cwd, env}: SpawnPtyOptions): Inter
           )
         }, timeout)
 
-        exitCallbacks.push((code) => {
-          clearTimeout(timer)
-          resolve(code)
-        })
+        exitCallbacks.push(onExit)
       })
 
       if (expected !== 'any' && exitCode !== expected) {
