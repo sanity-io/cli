@@ -1,5 +1,17 @@
 # Changelog
 
+## 9.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v9.0.1...cli-test-v9.0.2)
+
+_2026-08-04_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.8.1
+
 ## 9.0.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v9.0.0...cli-test-v9.0.1)
