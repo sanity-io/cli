@@ -505,11 +505,25 @@ describe('invokeSanityCli', () => {
     expect(result.output).toBe('This invocation of `api` is not supported here')
   })
 
+  test.each([
+    ['username and password', 'api https://user:pass@api.sanity.io/v1/users/me --anonymous'],
+    ['username only', 'api https://user@api.sanity.io/v1/users/me --anonymous'],
+  ])('`api` URLs embedding a %s are refused', async (_credentials, args) => {
+    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+
+    expect(result.exitCode).toBe(2)
+    expect(result.output).toBe('This invocation of `api` is not supported here')
+  })
+
   test('the api policy refuses authentication overrides and host input channels', () => {
     const policy = commandPolicies.mcp.api
-    const validate = (flags: Record<string, unknown>) => policy.validate({args: {}, flags})
+    const validate = (flags: Record<string, unknown>, endpoint: unknown = 'users/me') =>
+      policy.validate({args: {endpoint}, flags})
 
     expect(validate({})).toBe(true)
+    expect(validate({}, 'https://api.sanity.io/v1/users/me')).toBe(true)
+    expect(validate({}, 'not a URL')).toBe(true)
+    expect(validate({}, 42)).toBe(true)
     expect(validate({field: ['key=value', 'count=1']})).toBe(true)
     expect(validate({field: [42, 'invalid']})).toBe(true)
     expect(validate({header: ['Content-Type: application/json', 'X-Custom: value']})).toBe(true)
@@ -524,6 +538,9 @@ describe('invokeSanityCli', () => {
     expect(validate({header: [' aUtHoRiZaTiOn : Basic credentials']})).toBe(false)
     expect(validate({field: ['body=@payload.json']})).toBe(false)
     expect(validate({field: ['key=value', 'body=@-']})).toBe(false)
+    expect(validate({}, 'https://user:pass@api.sanity.io/v1/users/me')).toBe(false)
+    expect(validate({}, 'https://user@api.sanity.io/v1/users/me')).toBe(false)
+    expect(validate({}, 'https://:pass@api.sanity.io/v1/users/me')).toBe(false)
   })
 
   test('the api policy stops checking after finding a host-reading field', () => {
@@ -536,6 +553,19 @@ describe('invokeSanityCli', () => {
     }
 
     expect(policy.validate({args: {}, flags})).toBe(false)
+  })
+
+  test('the api policy stops checking after finding an authentication header', () => {
+    const policy = commandPolicies.mcp.api
+    const args = {
+      get endpoint(): never {
+        throw new Error('endpoint should not be read')
+      },
+    }
+
+    expect(
+      policy.validate({args, flags: {header: ['Authorization: Bearer other-user-token']}}),
+    ).toBe(false)
   })
 
   test('conditional policies see parsed flags, not raw tokens', async () => {
