@@ -86,7 +86,10 @@ describe('invokeSanityCli', () => {
   test('an allowed invocation does not consult or mutate representative host state', async () => {
     mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
       .matchHeader('authorization', 'Bearer invocation-token')
-      .reply(200, [corsOrigin('https://isolated.example.com')])
+      .reply(function () {
+        expect(this.req.headers['x-sanity-lineage']).toBeUndefined()
+        return [200, [corsOrigin('https://isolated.example.com')]]
+      })
 
     const globalRegistry = globalThis as Record<symbol, unknown>
     const previousTelemetry = globalRegistry[CLI_TELEMETRY_SYMBOL]
@@ -94,9 +97,11 @@ describe('invokeSanityCli', () => {
     globalRegistry[CLI_TELEMETRY_SYMBOL] = hostTelemetry
     const previousEnv = {
       authToken: process.env.SANITY_AUTH_TOKEN,
+      lineage: process.env.X_SANITY_LINEAGE,
       sanityEnv: process.env.SANITY_INTERNAL_ENV,
     }
     process.env.SANITY_AUTH_TOKEN = 'host-token'
+    process.env.X_SANITY_LINEAGE = 'host-lineage'
     process.env.SANITY_INTERNAL_ENV = 'staging'
 
     const cwd = vi.spyOn(process, 'cwd').mockImplementation(() => {
@@ -127,6 +132,7 @@ describe('invokeSanityCli', () => {
       expect(off).not.toHaveBeenCalledWith('SIGINT', expect.any(Function))
       expect(globalRegistry[CLI_TELEMETRY_SYMBOL]).toBe(hostTelemetry)
       expect(process.env.SANITY_AUTH_TOKEN).toBe('host-token')
+      expect(process.env.X_SANITY_LINEAGE).toBe('host-lineage')
       expect(process.env.SANITY_INTERNAL_ENV).toBe('staging')
     } finally {
       cwd.mockRestore()
@@ -137,6 +143,8 @@ describe('invokeSanityCli', () => {
       globalRegistry[CLI_TELEMETRY_SYMBOL] = previousTelemetry
       if (previousEnv.authToken === undefined) delete process.env.SANITY_AUTH_TOKEN
       else process.env.SANITY_AUTH_TOKEN = previousEnv.authToken
+      if (previousEnv.lineage === undefined) delete process.env.X_SANITY_LINEAGE
+      else process.env.X_SANITY_LINEAGE = previousEnv.lineage
       if (previousEnv.sanityEnv === undefined) delete process.env.SANITY_INTERNAL_ENV
       else process.env.SANITY_INTERNAL_ENV = previousEnv.sanityEnv
     }
