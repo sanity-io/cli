@@ -1,5 +1,6 @@
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
 import {rotateToken} from '../../services/tokens.js'
@@ -83,8 +84,9 @@ export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand>
         )
       }
 
-      const err = error as Error
-      this.error(`Token rotation failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
+      this.error(`Token rotation failed:\n${getErrorMessage(error)}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 
@@ -93,8 +95,7 @@ export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand>
     try {
       token = await readTokenFromStdin(TOKEN_USAGE_HINT)
     } catch (error) {
-      const err = error as Error
-      return this.error(err.message, {exit: exitCodes.USAGE_ERROR})
+      return this.error(getErrorMessage(error), {exit: exitCodes.USAGE_ERROR})
     }
 
     if (!token) {
