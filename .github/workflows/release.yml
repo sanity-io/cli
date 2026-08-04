@@ -105,3 +105,11 @@ jobs:
           repository_name: ${{ github.event.repository.name }}
           initial_state_id: 'c56956cd-c281-4ca5-889f-6189ce231a6d'
           done_state_id: '5a35b7bf-6d37-4cc2-854a-2f18d160e2e5'
+
+      - name: Mark AI Growth issues as done
+        uses: sanity-io/mark-issues-done-action@88e6a3e6bc5a9c86d45873c4dba3302a4cafcb65 # main
+        with:
+          linear_api_key: ${{ secrets.LINEAR_API_KEY }}
+          repository_name: ${{ github.event.repository.name }}
+          initial_state_id: 'f39e3f44-58e1-4c01-8cb7-8497b7f27e52'
+          done_state_id: 'c7fa599f-2b6e-4361-a229-d8db2a901f8a'
