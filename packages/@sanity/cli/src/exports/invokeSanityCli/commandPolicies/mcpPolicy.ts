@@ -6,23 +6,27 @@ import {
   deny,
 } from './policy.js'
 
-/**
- * A typed `-F/--field` value of `@<file>` or `@-` makes the `api` command
- * read the host's filesystem or stdin (raw `-f` fields are always verbatim).
- */
-function fieldReadsFromHost(field: unknown): boolean {
-  if (typeof field !== 'string') return false
-  const separatorIndex = field.indexOf('=')
-  return separatorIndex > 0 && field[separatorIndex + 1] === '@'
-}
+function apiValidator({flags}: {flags: Readonly<Record<string, unknown>>}): boolean {
+  const fields: unknown[] = Array.isArray(flags.field) ? flags.field : []
 
-/** A `-H/--header` value that replaces the invocation's authentication. */
-function headerOverridesAuthentication(header: unknown): boolean {
-  if (typeof header !== 'string') return false
-  const separatorIndex = header.indexOf(':')
-  return (
-    separatorIndex > 0 && header.slice(0, separatorIndex).trim().toLowerCase() === 'authorization'
-  )
+  const fieldReadsFromHost = fields.some((field) => {
+    if (typeof field !== 'string') return false
+    const separatorIndex = field.indexOf('=')
+    return separatorIndex > 0 && field[separatorIndex + 1] === '@'
+  })
+  if (fieldReadsFromHost) return false
+
+  const headers: unknown[] = Array.isArray(flags.header) ? flags.header : []
+
+  const headerOverridesAuthentication = headers.some((header) => {
+    if (typeof header !== 'string') return false
+    const separatorIndex = header.indexOf(':')
+    return (
+      separatorIndex > 0 && header.slice(0, separatorIndex).trim().toLowerCase() === 'authorization'
+    )
+  })
+
+  return !headerOverridesAuthentication
 }
 
 /**
@@ -44,10 +48,7 @@ export const mcpPolicy: CommandPolicySet = {
   // `-F key=@<file>` / `-F key=@-` field values do the same.
   api: conditionalPolicy({
     deniedFlags: ['input', 'token'],
-    validate: ({flags}) =>
-      (!Array.isArray(flags.field) || !flags.field.some((field) => fieldReadsFromHost(field))) &&
-      (!Array.isArray(flags.header) ||
-        !flags.header.some((header) => headerOverridesAuthentication(header))),
+    validate: apiValidator,
   }),
 
   'backups:disable': allow,
