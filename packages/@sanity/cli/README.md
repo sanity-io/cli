@@ -2972,13 +2972,14 @@ Create a Sanity project without an account, and claim it within 72 hours to keep
 
 ```
 USAGE
-  $ sanity new [PROJECTNAME] [--json] [--scaffold] [-y]
+  $ sanity new [PROJECTNAME] [--json] [--instructions] [--scaffold] [-y]
 
 ARGUMENTS
   [PROJECTNAME]  Display name for the new project
 
 FLAGS
   -y, --yes            Skip prompts and use defaults (project: "My Sanity project")
+      --instructions   Print the full setup guide from https://sanity.new and exit, creating nothing
       --[no-]scaffold  Set up a Studio in ./sanity and a Next.js website in ./web (on by default)
 
 GLOBAL FLAGS
@@ -3003,7 +3004,7 @@ DESCRIPTION
   Keep both env files out of git, and never put the token in code that runs in
   the browser.
 
-  Fetch https://sanity.new for full instructions, or point your AI agent at it.
+  Run this command with --instructions for the full agent setup guide.
 
 EXAMPLES
   Create a project with a Studio and a website
@@ -3025,6 +3026,10 @@ EXAMPLES
   Create a project and print its details as JSON
 
     $ sanity new --json
+
+  Print the full setup guide for an AI agent, without creating anything
+
+    $ sanity new --instructions
 ```
 
 ## `sanity openapi get SLUG`
