@@ -22,7 +22,6 @@ vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 const mockClient = {request: vi.fn()}
 const app = unstable_defineApp({
   entry: './src/App.tsx',
-  name: 'drop-desk',
   organizationId: 'org-1',
   services: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
   slug: 'drop-desk',

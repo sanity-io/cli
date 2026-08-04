@@ -5,12 +5,18 @@ import {createExposesTracker, exposesSetId, trackExposesSet} from '../exposesSet
 import {type DevServerManifest} from '../registry.js'
 
 const panel = (name: string, src = `./src/${name}.tsx`): DevServerInterface => ({
+  id: `test-app-panel-${name}`,
+  metadata: null,
+  moduleId: `views/${name}`,
   name,
   src,
   title: name,
   type: 'panel',
 })
 const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => ({
+  id: `test-app-worker-${name}`,
+  metadata: null,
+  moduleId: `services/${name}`,
   name,
   src,
   title: name,
