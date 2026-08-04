@@ -420,7 +420,7 @@ describe('DefineAppInputSchema (build-time validation)', () => {
 
 describe('type surface', () => {
   test('exposes title/icon/entry/organizationId/group/priority', () => {
-    expectTypeOf<DefineAppResult['name']>().toEqualTypeOf<string>()
+    expectTypeOf<DefineAppResult['slug']>().toEqualTypeOf<string>()
     expectTypeOf<DefineAppResult['title']>().toEqualTypeOf<string>()
     expectTypeOf<DefineAppResult['icon']>().toEqualTypeOf<string | undefined>()
     expectTypeOf<DefineAppResult['entry']>().toEqualTypeOf<string | undefined>()
@@ -437,8 +437,8 @@ describe('type surface', () => {
 })
 
 describe('interface union (entry vs views)', () => {
-  type Base = {name: string; organizationId: string; slug: string; title: string}
-  type PanelView = {name: string; src: string; type: 'panel'}
+  type Base = {organizationId: string; slug: string; title: string}
+  type PanelView = {name: string; src: string; title: string; type: 'panel'}
 
   test('allows an app entry without panel views', () => {
     expectTypeOf<Base & {entry: string}>().toExtend<DefineAppInput>()
