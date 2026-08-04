@@ -146,13 +146,19 @@ export type AssetSourceView = Extract<
   {type: 'asset_source'}
 >
 
+/** The `tile` variant of an app's `views`. @public */
+export type TileView = Extract<
+  NonNullable<z.output<typeof DefineAppInputSchema>['views']>[number],
+  {type: 'tile'}
+>
+
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
  * `applicationType`, `isSingleton`, and `config` — validated by the schema but
  * not part of the public surface (Sanity-owned apps set them via
  * `@ts-expect-error`). A union: an app declares an app `entry` (navigable) or
- * panel `views`, never both — but an `asset_source` view is a separate kind and
- * may accompany either.
+ * panel `views`, never both — but `asset_source` and `tile` views are separate
+ * kinds and may accompany either.
  * @public
  */
 export type DefineAppInput = Omit<
@@ -161,7 +167,7 @@ export type DefineAppInput = Omit<
 > &
   (
     | {entry?: never; views?: NonNullable<z.output<typeof DefineAppInputSchema>['views']>}
-    | {entry?: string; views?: AssetSourceView[]}
+    | {entry?: string; views?: (AssetSourceView | TileView)[]}
   )
 
 /**

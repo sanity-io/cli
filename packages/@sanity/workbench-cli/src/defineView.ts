@@ -2,6 +2,7 @@ import {type AssetSourceComponentProps} from '@sanity/types'
 
 import {
   type InterfaceType,
+  type TileSize,
   VIEW_CONTRACT_VERSION,
   type ViewComponent,
   type ViewComponentBaseProps,
@@ -56,12 +57,43 @@ export interface AssetSourceViewComponents {
 export type AssetSourceComponent = keyof AssetSourceViewComponents
 
 /**
+ * Props a tile component receives: its own interface record (name/src/title/
+ * type) plus its footprint `size`, so it can render per family. Mirrors the
+ * `tile` record the dashboard host renders from; drift is guarded by the stamped
+ * contract version. Placement `priority` is host-only metadata, not surfaced here.
+ * @public
+ */
+export type TileViewProps = ViewComponentBaseProps<{
+  name: string
+  size: TileSize
+  src: string
+  title: string
+  type: 'tile'
+}>
+
+/**
+ * The component slot a `tile` view exposes — a single island, typed with the
+ * tile props.
+ * @public
+ */
+export interface TileViewComponents {
+  tile: ViewComponent<TileViewProps>
+}
+
+/**
+ * A tile's view-component slot — the module-federation expose for its one island.
+ * @public
+ */
+export type TileComponent = keyof TileViewComponents
+
+/**
  * The components each interface type exposes, keyed by type.
  * @public
  */
 export interface ViewComponentsByType {
   asset_source: AssetSourceViewComponents
   panel: PanelViewComponents
+  tile: TileViewComponents
 }
 
 /**

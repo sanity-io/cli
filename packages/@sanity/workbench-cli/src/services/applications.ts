@@ -5,7 +5,7 @@ import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
-import {type AppInterfaceMetadata} from '../contract.js'
+import {type AppInterfaceMetadata, type TileInterfaceMetadata} from '../contract.js'
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
 export type ApplicationType = 'coreApp' | 'studio'
@@ -35,6 +35,7 @@ export type BrettInterface =
   | (BrettInterfaceBase & {metadata: null; type: 'asset_source'})
   | (BrettInterfaceBase & {metadata: null; type: 'panel'})
   | (BrettInterfaceBase & {metadata: null; type: 'worker'})
+  | (BrettInterfaceBase & {metadata: TileInterfaceMetadata; type: 'tile'})
 
 /** A studio workspace as Brett stores it. */
 export interface BrettWorkspace {
