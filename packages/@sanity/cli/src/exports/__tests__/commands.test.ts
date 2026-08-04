@@ -555,6 +555,19 @@ describe('invokeSanityCli', () => {
     expect(policy.validate({args: {}, flags})).toBe(false)
   })
 
+  test('the api policy stops checking after finding an authentication header', () => {
+    const policy = commandPolicies.mcp.api
+    const args = {
+      get endpoint(): never {
+        throw new Error('endpoint should not be read')
+      },
+    }
+
+    expect(
+      policy.validate({args, flags: {header: ['Authorization: Bearer other-user-token']}}),
+    ).toBe(false)
+  })
+
   test('conditional policies see parsed flags, not raw tokens', async () => {
     // `--web` after `--` is a positional argument, not a flag, so the policy
     // must not refuse it. The command is strict, so oclif's parser rejects
