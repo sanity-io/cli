@@ -526,6 +526,18 @@ describe('invokeSanityCli', () => {
     expect(validate({field: ['key=value', 'body=@-']})).toBe(false)
   })
 
+  test('the api policy stops checking after finding a host-reading field', () => {
+    const policy = commandPolicies.mcp.api
+    const flags = {
+      field: ['body=@payload.json'],
+      get header(): never {
+        throw new Error('header should not be read')
+      },
+    }
+
+    expect(policy.validate({args: {}, flags})).toBe(false)
+  })
+
   test('conditional policies see parsed flags, not raw tokens', async () => {
     // `--web` after `--` is a positional argument, not a flag, so the policy
     // must not refuse it. The command is strict, so oclif's parser rejects

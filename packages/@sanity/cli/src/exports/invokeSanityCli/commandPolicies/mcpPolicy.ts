@@ -8,13 +8,15 @@ import {
 
 function apiValidator({flags}: {flags: Readonly<Record<string, unknown>>}): boolean {
   const fields: unknown[] = Array.isArray(flags.field) ? flags.field : []
-  const headers: unknown[] = Array.isArray(flags.header) ? flags.header : []
 
   const fieldReadsFromHost = fields.some((field) => {
     if (typeof field !== 'string') return false
     const separatorIndex = field.indexOf('=')
     return separatorIndex > 0 && field[separatorIndex + 1] === '@'
   })
+  if (fieldReadsFromHost) return false
+
+  const headers: unknown[] = Array.isArray(flags.header) ? flags.header : []
 
   const headerOverridesAuthentication = headers.some((header) => {
     if (typeof header !== 'string') return false
@@ -24,7 +26,7 @@ function apiValidator({flags}: {flags: Readonly<Record<string, unknown>>}): bool
     )
   })
 
-  return !fieldReadsFromHost && !headerOverridesAuthentication
+  return !headerOverridesAuthentication
 }
 
 /**
