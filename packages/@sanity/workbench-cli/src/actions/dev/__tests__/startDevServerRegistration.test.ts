@@ -1,5 +1,6 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {DevServerIdTakenError} from '../registry.js'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
 import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
 
@@ -80,23 +81,33 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
   })
 
-  test('identifies the local app by host and port, not its deployment app id', async () => {
-    await register({server: mockServer({port: 3337}) as any})
+  test('identifies the local app by its slug, not its deployment app id', async () => {
+    await register()
 
-    expect(mockRegisterDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({id: 'localhost-3337'}),
-    )
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
 
-  test('keys the id on the configured port, not the shifted bound one', async () => {
-    // strictPort:false can bind a different port than requested; the bundle's
-    // compile-time `__SANITY_APP_ID__` uses the configured port, so the registry
-    // id must too — while it stays reachable at the bound port.
+  test('keeps the id when the server binds a port it did not ask for', async () => {
     await register({server: mockServer({boundPort: 3339, port: 3334}) as any})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({id: 'localhost-3334', port: 3339}),
+      expect.objectContaining({id: 'test-app', port: 3339}),
     )
+  })
+
+  test('warns and keeps the dev server up when another app already serves the slug', async () => {
+    mockRegisterDevServer.mockImplementation(() => {
+      throw new DevServerIdTakenError('test-app', {pid: 4242, port: 3334})
+    })
+    const output = createMockOutput()
+
+    const handle = await register({output})
+
+    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('already served'))
+    expect(output.error).not.toHaveBeenCalled()
+    // Nothing registered, so nothing to watch or release either.
+    expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
+    await expect(handle.close()).resolves.toBeUndefined()
   })
 
   test('forwards api.projectId to registerDevServer', async () => {

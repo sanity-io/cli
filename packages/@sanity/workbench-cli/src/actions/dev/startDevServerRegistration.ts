@@ -1,12 +1,12 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
-import {resolveAppId} from '../../appId.js'
+import {isWorkbenchApp} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs} from './deriveConfigs.js'
 import {trackExposesSet} from './exposesSetId.js'
-import {type DevServerManifest, registerDevServer} from './registry.js'
+import {DevServerIdTakenError, type DevServerManifest, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
@@ -81,19 +81,27 @@ export async function startDevServerRegistration(
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
   const configs = await deriveConfigs(cliConfig.app)
 
-  const registration = registerDevServer({
-    configs,
-    host: appHost,
-    // Keyed by where it's served (not the deployment id), so a running app can't
-    // collide with its deployed twin — on the configured port, not the bound one,
-    // to match `__SANITY_APP_ID__`, compiled before any non-strict shift.
-    id: resolveAppId({host: appHost, port: server.config.server.port ?? appPort}),
-    interfaces,
-    port: appPort,
-    projectId: cliConfig?.api?.projectId,
-    type: isApp ? 'coreApp' : 'studio',
-    workDir,
-  })
+  let registration: ReturnType<typeof registerDevServer>
+  try {
+    registration = registerDevServer({
+      configs,
+      host: appHost,
+      // The slug, not the deployment id, so a running app can't collide with its
+      // deployed twin. It's also what `__SANITY_APP_ID__` is compiled from.
+      id: isWorkbenchApp(cliConfig.app) ? cliConfig.app.slug : undefined,
+      interfaces,
+      port: appPort,
+      projectId: cliConfig?.api?.projectId,
+      type: isApp ? 'coreApp' : 'studio',
+      workDir,
+    })
+  } catch (err) {
+    // A taken slug leaves the app out of the workbench, but the server itself is
+    // fine — stay up and say why, like an invalid config does.
+    if (!(err instanceof DevServerIdTakenError)) throw err
+    output.warn(err.message)
+    return {close: async () => {}}
+  }
 
   const exposesSet = trackExposesSet({configs, interfaces})
 

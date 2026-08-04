@@ -137,6 +137,23 @@ describe('registerDevServer', () => {
     expect(fsMock.module.existsSync(manifestPath())).toBe(false)
   })
 
+  test('refuses to register an id another live dev server already serves', () => {
+    fsMock.files.set(
+      join(REGISTRY_DIR, '4242.json'),
+      JSON.stringify({...liveManifest(3334), id: 'test-app', pid: process.pid}),
+    )
+
+    expect(() =>
+      registerDevServer({
+        host: 'localhost',
+        id: 'test-app',
+        port: 3335,
+        type: 'coreApp',
+        workDir: '/tmp/other-checkout',
+      }),
+    ).toThrow(/"test-app" is already served/)
+  })
+
   test('persists id and projectId when provided', () => {
     registerDevServer({
       host: 'localhost',
