@@ -1,11 +1,10 @@
-import {text} from 'node:stream/consumers'
-
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {login} from '../actions/auth/login/login.js'
 import {LOGIN_PROVIDER_IDS} from '../actions/auth/login/loginInstructions.js'
+import {readTokenFromStdin} from '../util/readTokenFromStdin.js'
 
 export class LoginCommand extends SanityCommand<typeof LoginCommand> {
   static override description = 'Log in to your Sanity account'
@@ -69,7 +68,11 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
     const {'sso-provider': ssoProvider, 'with-token': withToken, ...loginFlags} = flags
 
     try {
-      const token = withToken ? await readTokenFromStdin() : undefined
+      const token = withToken
+        ? await readTokenFromStdin(
+            'Token is required on standard input. Run `sanity login --with-token < token.txt`.',
+          )
+        : undefined
 
       await login({
         ...loginFlags,
@@ -84,14 +87,4 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       this.error(`Login failed: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
-}
-
-async function readTokenFromStdin(): Promise<string> {
-  if (process.stdin.isTTY) {
-    throw new Error(
-      'Token is required on standard input. Run `sanity login --with-token < token.txt`.',
-    )
-  }
-
-  return text(process.stdin)
 }

@@ -228,6 +228,8 @@ export const mcpPolicy: CommandPolicySet = {
   'tokens:delete': deny,
   // Exposes authentication credential metadata.
   'tokens:list': deny,
+  // Replaces authentication credentials and exposes the new secret.
+  'tokens:rotate': deny,
 
   // Loads local CLI and workbench configuration to identify the deployed Studio or application.
   undeploy: deny,
