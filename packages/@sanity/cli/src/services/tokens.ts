@@ -1,5 +1,5 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
-import {type SanityClient} from '@sanity/client'
+import {isHttpError, type SanityClient} from '@sanity/client'
 
 import {TOKENS_API_VERSION} from '../actions/tokens/constants.js'
 import {
@@ -93,7 +93,9 @@ interface DeleteTokenOptions {
 /**
  * Delete a token from a project
  * @param options - The options for deleting a token from a project; `tokenId`
- * is the id reported by `getTokens`/`createToken`
+ * is the id reported by `getTokens`/`createToken`. Ids issued before the
+ * Access API migration are transparently resolved: they live on as the
+ * robot's `tokenId`, so a failed delete retries against the matching robot.
  * @returns A promise that resolves when the token is deleted
  *
  * @internal
@@ -103,10 +105,27 @@ export async function deleteToken(options: DeleteTokenOptions): Promise<void> {
 
   const client = await getClient()
 
-  return client.request({
-    method: 'DELETE',
-    uri: `/access/project/${projectId}/robots/${tokenId}`,
-  })
+  try {
+    return await client.request({
+      method: 'DELETE',
+      uri: `/access/project/${projectId}/robots/${tokenId}`,
+    })
+  } catch (error) {
+    if (!isHttpError(error) || error.statusCode !== 404) {
+      throw error
+    }
+
+    const robots = await fetchAllPages<Robot>(client, `/access/project/${projectId}/robots`)
+    const robot = robots.find((candidate) => candidate.tokenId === tokenId)
+    if (!robot) {
+      throw error
+    }
+
+    return await client.request({
+      method: 'DELETE',
+      uri: `/access/project/${projectId}/robots/${robot.id}`,
+    })
+  }
 }
 
 /**
