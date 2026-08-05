@@ -96,15 +96,11 @@ export async function startWorkbenchPreview(
     checkForDeprecatedAppId()
     const configPath = (await findProjectRoot(workDir)).path
     const workbench = resolveWorkbenchApp(cliConfig)
-    // Read the id the build inlined so start matches it even for a deploy build
-    // (which carries the API id, not the shape hash); fall back for older builds.
+
+    if (!workbench) throw new Error('`sanity start` was invoked in a non-workbench application')
     const inlinedId = await readInlinedAppId(outDir)
     const configs = await deriveConfigs(cliConfig.app)
-    // `start` serves a build, so it advertises the build's inlined id (matching
-    // the bundle's `__SANITY_APP_ID__`), not the dev host-port.
-    const id = workbench
-      ? (inlinedId ?? (await buildAppId(workbench)))
-      : `${remote.host}-${remote.port}`
+    const id = inlinedId ?? (await buildAppId(workbench))
     const registration = registerDevServer({
       configs,
       host: remote.host,

@@ -1,9 +1,9 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {DevServerIdTakenError} from '../registry.js'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
 import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
 
+const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
 const mockExtractManifest = vi.hoisted(() => vi.fn())
@@ -14,10 +14,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
-// Only the registry write is mocked; `deriveInterfaces`/`trackExposesSet` are
+// Only the registry I/O is mocked; `deriveInterfaces`/`trackExposesSet` are
 // pure and run for real.
 vi.mock('../registry.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../registry.js')>()),
+  getRegisteredServers: mockGetRegisteredServers,
   registerDevServer: mockRegisterDevServer,
 }))
 vi.mock('../startDevManifestWatcher.js', () => ({
@@ -52,6 +53,7 @@ function register(overrides: Partial<RegistrationOptions> = {}) {
 
 describe('startDevServerRegistration', () => {
   beforeEach(() => {
+    mockGetRegisteredServers.mockReturnValue([])
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockExtractManifest.mockResolvedValue(undefined)
@@ -95,19 +97,30 @@ describe('startDevServerRegistration', () => {
     )
   })
 
-  test('warns and keeps the dev server up when another app already serves the slug', async () => {
-    mockRegisterDevServer.mockImplementation(() => {
-      throw new DevServerIdTakenError('test-app', {pid: 4242, port: 3334})
-    })
+  test('logs an error and keeps the dev server up when another app already serves the slug', async () => {
+    mockGetRegisteredServers.mockReturnValue([{id: 'test-app', pid: 4242, port: 3334}])
     const output = createMockOutput()
 
     const handle = await register({output})
 
-    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('already served'))
-    expect(output.error).not.toHaveBeenCalled()
-    // Nothing registered, so nothing to watch or release either.
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('"test-app" is already served'),
+      {exit: false},
+    )
+    // Nothing registered, so the workbench never sees it — and nothing to watch or release.
+    expect(mockRegisterDevServer).not.toHaveBeenCalled()
     expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
     await expect(handle.close()).resolves.toBeUndefined()
+  })
+
+  test('registers when a live dev server holds a different slug', async () => {
+    mockGetRegisteredServers.mockReturnValue([{id: 'other-app', pid: 4242, port: 3334}])
+    const output = createMockOutput()
+
+    await register({output})
+
+    expect(output.error).not.toHaveBeenCalled()
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
 
   test('forwards api.projectId to registerDevServer', async () => {

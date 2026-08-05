@@ -73,8 +73,6 @@ export function getDevServerConfig({
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
-    // Inline the same id the dev registry advertises so the app's bus identity
-    // matches how the workbench addresses it.
     workbenchAppId: isWorkbenchApp(app) ? app.slug : undefined,
   }
 }

@@ -6,7 +6,7 @@ import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs} from './deriveConfigs.js'
 import {trackExposesSet} from './exposesSetId.js'
-import {DevServerIdTakenError, type DevServerManifest, registerDevServer} from './registry.js'
+import {type DevServerManifest, getRegisteredServers, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
@@ -48,7 +48,6 @@ interface DevServerRegistrationHandle {
 function reportConfigErrors(app: CliConfig['app'], output: Output): void {
   const errors = validateWorkbenchApp(app)
   if (errors.length === 0) return
-  // `output.error` exits the process; `warn` keeps the dev server alive.
   output.warn(formatWorkbenchAppErrors(errors))
 }
 
@@ -81,27 +80,30 @@ export async function startDevServerRegistration(
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
   const configs = await deriveConfigs(cliConfig.app)
 
-  let registration: ReturnType<typeof registerDevServer>
-  try {
-    registration = registerDevServer({
-      configs,
-      host: appHost,
-      // The slug, not the deployment id, so a running app can't collide with its
-      // deployed twin. It's also what `__SANITY_APP_ID__` is compiled from.
-      id: isWorkbenchApp(cliConfig.app) ? cliConfig.app.slug : undefined,
-      interfaces,
-      port: appPort,
-      projectId: cliConfig?.api?.projectId,
-      type: isApp ? 'coreApp' : 'studio',
-      workDir,
-    })
-  } catch (err) {
-    // A taken slug leaves the app out of the workbench, but the server itself is
-    // fine — stay up and say why, like an invalid config does.
-    if (!(err instanceof DevServerIdTakenError)) throw err
-    output.warn(err.message)
+  const id = isWorkbenchApp(cliConfig.app) ? cliConfig.app.slug : undefined
+
+  const devServer = id ? getRegisteredServers().find((server) => server.id === id) : undefined
+
+  if (id && devServer) {
+    output.error(
+      `The app "${id}" is already served by another dev server running on port ${devServer.port}, ` +
+        "so the workbench can't tell them apart and this one stays out of it. " +
+        'Stop that server, or give this app its own `slug` in sanity.cli.ts.',
+      {exit: false},
+    )
     return {close: async () => {}}
   }
+
+  const registration = registerDevServer({
+    configs,
+    host: appHost,
+    id,
+    interfaces,
+    port: appPort,
+    projectId: cliConfig?.api?.projectId,
+    type: isApp ? 'coreApp' : 'studio',
+    workDir,
+  })
 
   const exposesSet = trackExposesSet({configs, interfaces})
 

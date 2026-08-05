@@ -216,30 +216,11 @@ interface DevServerRegistration {
  * fields post-registration. Uses synchronous I/O so the file exists before
  * any signal handler could fire.
  */
-/** A live dev server already answers to this id — see {@link registerDevServer}. */
-export class DevServerIdTakenError extends Error {
-  constructor(id: string, taken: {pid: number; port: number}) {
-    super(
-      `The app "${id}" is already served by another dev server (pid ${taken.pid}, port ${taken.port}), ` +
-        "so the workbench can't tell them apart and this one stays out of it. " +
-        'Stop that server, or give this app its own `slug` in sanity.cli.ts.',
-    )
-    this.name = 'DevServerIdTakenError'
-  }
-}
-
 export function registerDevServer(
   manifest: Omit<DevServerManifest, 'pid' | 'startedAt' | 'version'>,
 ): DevServerRegistration {
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
-
-  // The id is the app's slug, which the workbench addresses it by — two servers
-  // answering to one id would each render as the other's app.
-  const taken = manifest.id
-    ? getRegisteredServers().find((server) => server.id === manifest.id)
-    : undefined
-  if (taken && manifest.id) throw new DevServerIdTakenError(manifest.id, taken)
 
   let current: DevServerManifest = {
     ...manifest,
