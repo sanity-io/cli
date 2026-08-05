@@ -1,14 +1,7 @@
 import {describe, expect, test} from 'vitest'
 
-import {buildAppId, resolveAppId} from '../appId.js'
+import {buildAppId} from '../appId.js'
 import {type ResolvedWorkbenchApp} from '../resolveWorkbenchApp.js'
-
-describe('resolveAppId', () => {
-  test('dev: the host and port the server bound', () => {
-    expect(resolveAppId({host: 'localhost', port: 3333})).toBe('localhost-3333')
-    expect(resolveAppId({host: '0.0.0.0', port: 8080})).toBe('0.0.0.0-8080')
-  })
-})
 
 describe('buildAppId', () => {
   const app: ResolvedWorkbenchApp = {
@@ -52,11 +45,5 @@ describe('buildAppId', () => {
         views: [{name: 'feed', src: './moved.tsx', title: 'feed', type: 'panel'}],
       }),
     )
-  })
-
-  test('never collides with a dev host-port', async () => {
-    const id = await buildAppId(app)
-    expect(id).not.toBe(resolveAppId({host: 'localhost', port: 3333}))
-    expect(id).not.toContain('-')
   })
 })

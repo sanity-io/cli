@@ -17,7 +17,7 @@ describe('getDevServerConfig', () => {
     vi.unstubAllEnvs()
   })
 
-  test('inlines the workbench app id as `${host}-${port}`, and omits it for a plain project', () => {
+  test("inlines the workbench app's slug as its id, and omits it for a plain project", () => {
     const workbench = getDevServerConfig({
       cliConfig: {app: workbenchApp()} as CliConfig,
       flags: FLAGS,
@@ -25,7 +25,7 @@ describe('getDevServerConfig', () => {
       output: createMockOutput(),
       workDir: '/tmp',
     })
-    expect(workbench.workbenchAppId).toBe('localhost-3333')
+    expect(workbench.workbenchAppId).toBe('test-app')
 
     const plain = getDevServerConfig({
       cliConfig: {},
