@@ -69,6 +69,10 @@ const INSTRUCTIONS_MARKDOWN = [
   '```',
 ].join('\n')
 
+const studioUrl =
+  'http://localhost:3333/#token=sk-robot-token' +
+  '&claim=https%3A%2F%2Fwww.sanity.io%2Fclaim%2Fclaim-token'
+
 const {NewCommand} = await import('../new.js')
 const {InstructionsUnavailableError} = await import('../../services/newInstructions.js')
 
@@ -142,12 +146,10 @@ describe('#new', () => {
       '│  To use the Sanity CLI before claiming use your token by setting',
       `│  SANITY_AUTH_TOKEN="${project.token}" sanity "command"`,
     ])
-    expect(output).toContain('http://localhost:3333/#token=sk-robot-token')
-    const studioLinkIndex = lines.indexOf(
-      '│  Then open this link: http://localhost:3333/#token=sk-robot-token',
-    )
+    expect(output).toContain(studioUrl)
+    const studioLinkIndex = lines.indexOf(`│  Then open this link: ${studioUrl}`)
     expect(lines.slice(studioLinkIndex, studioLinkIndex + 3)).toEqual([
-      '│  Then open this link: http://localhost:3333/#token=sk-robot-token',
+      `│  Then open this link: ${studioUrl}`,
       '│',
       '│  The token signs you in: there is no account yet.',
     ])
@@ -217,7 +219,7 @@ describe('#new', () => {
       '│  No folders or env files were created. Use the project ID and dataset above',
       '│  in your own setup.',
       '│',
-      '│  Once a Studio is running on http://localhost:3333, sign in with: http://localhost:3333/#token=sk-robot-token',
+      `│  Once a Studio is running on http://localhost:3333, sign in with: ${studioUrl}`,
       '│',
       '│  The token signs you in: there is no account yet.',
     ])
