@@ -14,6 +14,7 @@ export {getWorkbench} from '../actions/deploy/getWorkbench.js'
 export {type DeployedExpose, summarizeInterfaces} from '../actions/deploy/summarizeInterfaces.js'
 export {
   type Application,
+  type BrettAccess,
   type BrettWorkspace,
   getApplication,
   getApplicationUrl,

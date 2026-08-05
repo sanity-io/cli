@@ -6,6 +6,7 @@ import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
+  type BrettAccess,
   type BrettWorkspace,
   createStudio,
   deployWorkbenchApp,
@@ -194,6 +195,7 @@ async function runStudioDeployment(
     // build, so this only ships the deployment; plain studios use user-applications.
     if (workbench && !isExternal && organizationId && applicationId) {
       await deployWorkbenchApp({
+        access: toAccess(studioManifest),
         app: cliConfig.app,
         applicationId,
         icon: appIcon,
@@ -416,6 +418,19 @@ export default defineCliConfig({
   output.log(`\n${example}`)
 
   return location
+}
+
+/**
+ * One `datasets` access entry per unique workspace dataset, with a `resourceId`
+ * of `"<projectId>.<dataset>"`. Deduped, since workspaces can share a dataset.
+ */
+function toAccess(manifest: StudioManifest | null): BrettAccess[] {
+  const resourceIds = new Set(
+    (manifest?.workspaces ?? []).map((w) => `${w.projectId}.${w.dataset}`),
+  )
+  return [...resourceIds].map(
+    (resourceId) => ({resourceId, resourceType: 'dataset'}) satisfies BrettAccess,
+  )
 }
 
 function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {

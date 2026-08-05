@@ -37,6 +37,15 @@ export type BrettInterface =
   | (BrettInterfaceBase & {metadata: null; type: 'worker'})
   | (BrettInterfaceBase & {metadata: TileInterfaceMetadata; type: 'tile'})
 
+/**
+ * A resource a deployment may interact with, as Brett stores it. Per-deployment
+ * and forbidden for singletons (the server 400s).
+ */
+export interface BrettAccess {
+  resourceId: string
+  resourceType: 'canvas' | 'dashboard' | 'dataset' | 'media-library'
+}
+
 /** A studio workspace as Brett stores it. */
 export interface BrettWorkspace {
   dataset: string
@@ -136,6 +145,7 @@ export async function updateApplication(
 
 /** Deploy a new active version to an existing application. */
 export async function createDeployment(options: {
+  access?: readonly BrettAccess[]
   applicationId: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
@@ -143,10 +153,10 @@ export async function createDeployment(options: {
   version: string
   workspaces?: readonly BrettWorkspace[]
 }): Promise<{id: string}> {
-  const {applicationId, interfaces, isAutoUpdating, tarball, version, workspaces} = options
+  const {access, applicationId, interfaces, isAutoUpdating, tarball, version, workspaces} = options
   const formData = new FormData()
   formData.append('isAutoUpdating', isAutoUpdating.toString())
-  appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
+  appendDeploymentParts(formData, {access, interfaces, tarball, version, workspaces})
   return request(`/applications/${applicationId}/deployments`, formData)
 }
 
@@ -163,11 +173,13 @@ export async function deleteApplication(applicationId: string): Promise<void> {
 function appendDeploymentParts(
   formData: FormData,
   {
+    access,
     interfaces,
     tarball,
     version,
     workspaces,
   }: {
+    access?: readonly BrettAccess[]
     interfaces: readonly BrettInterface[]
     tarball: Gzip
     version: string
@@ -178,6 +190,8 @@ function appendDeploymentParts(
   appendJson(formData, 'interfaces', interfaces)
   // Studio-only — the server rejects a workspaces part on non-studio types.
   if (workspaces?.length) appendJson(formData, 'workspaces', workspaces)
+  // Per-deployment; forbidden for singletons, so callers omit it there.
+  if (access?.length) appendJson(formData, 'access', access)
   formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
 }
 
