@@ -119,6 +119,7 @@ Code for sanity cli
 - [`sanity tokens create [LABEL]`](#sanity-tokens-create-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
+- [`sanity tokens rotate`](#sanity-tokens-rotate)
 - [`sanity typegen generate`](#sanity-typegen-generate)
 - [`sanity undeploy`](#sanity-undeploy)
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
@@ -3601,15 +3602,16 @@ Create a new API token for the project
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [-p <id>] [--expires-at 2027-01-01] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes          Skip prompts and use defaults (unattended mode)
-      --json         Output as JSON
-      --role=viewer  Role to assign to the token (defaults to viewer in unattended mode)
+  -y, --yes                    Skip prompts and use defaults (unattended mode)
+      --expires-at=2027-01-01  Date or timestamp the token expires (ISO 8601; tokens never expire by default)
+      --json                   Output as JSON
+      --role=viewer            Role to assign to the token (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
@@ -3629,6 +3631,10 @@ EXAMPLES
   Create a token in unattended mode
 
     $ sanity tokens create "CI Token" --role=editor --yes
+
+  Create a token that expires on a given date
+
+    $ sanity tokens create "Build Token" --expires-at 2027-01-01
 
   Output token information as JSON
 
@@ -3706,6 +3712,35 @@ EXAMPLES
   List tokens for a specific project
 
     $ sanity tokens list --project-id abc123
+```
+
+## `sanity tokens rotate`
+
+Rotate an API token, replacing its secret with a new one
+
+```
+USAGE
+  $ sanity tokens rotate [--json] [-t <token>]
+
+FLAGS
+  -t, --token=<token>  Token to rotate (prefer standard input to keep it out of shell history)
+      --json           Output as JSON
+
+DESCRIPTION
+  Rotate an API token, replacing its secret with a new one
+
+EXAMPLES
+  Rotate the token piped on standard input
+
+    echo "$SANITY_TOKEN" | sanity tokens rotate
+
+  Rotate a token read from a file
+
+    $ sanity tokens rotate < token.txt
+
+  Output the rotated token as JSON
+
+    echo "$SANITY_TOKEN" | sanity tokens rotate --json
 ```
 
 ## `sanity typegen generate`
