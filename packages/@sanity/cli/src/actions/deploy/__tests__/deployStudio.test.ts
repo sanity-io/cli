@@ -1,4 +1,5 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {createStudio, deployWorkbenchApp, listApplications} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -156,5 +157,23 @@ describe('deployStudio (federated studio)', () => {
     expect(error.mock.calls[0][0]).toContain('already exists at slug "my-studio"')
     expect(mockCreateStudio).not.toHaveBeenCalled()
     expect(mockBuildStudio).not.toHaveBeenCalled()
+  })
+
+  test('reports schema extraction errors without validation details', async () => {
+    const options = deployOptions()
+    vi.mocked(deployStudioSchemasAndManifests).mockRejectedValue(
+      new SchemaExtractionError('Workspace base paths must share the same first segment'),
+    )
+    const outputError = vi.mocked(options.output.error).mockImplementation((message) => {
+      throw new Error(String(message))
+    })
+
+    await expect(deployStudio(options)).rejects.toThrow(
+      'Workspace base paths must share the same first segment',
+    )
+    expect(outputError).toHaveBeenCalledWith(
+      expect.stringContaining('Workspace base paths must share the same first segment'),
+      {exit: 1},
+    )
   })
 })

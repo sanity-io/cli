@@ -338,8 +338,8 @@ async function uploadStudioSchema(
     )
   } catch (error) {
     deployDebug('Error deploying studio schemas and manifests', error)
-    if (error instanceof SchemaExtractionError) {
-      output.error(formatSchemaValidation(error.validation || []), {exit: 1})
+    if (error instanceof SchemaExtractionError && error.validation?.length) {
+      output.error(formatSchemaValidation(error.validation), {exit: 1})
     }
     output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
   }
