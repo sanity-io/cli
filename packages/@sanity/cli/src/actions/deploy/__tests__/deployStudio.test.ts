@@ -1,5 +1,5 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
+import {type CliConfig, type Output} from '@sanity/cli-core'
 import {createStudio, deployWorkbenchApp, listApplications} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
