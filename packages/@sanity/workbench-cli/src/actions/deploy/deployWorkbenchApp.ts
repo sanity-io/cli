@@ -7,6 +7,7 @@ import {pack} from 'tar-fs'
 
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {
+  type BrettAccess,
   type BrettInterface,
   type BrettWorkspace,
   createApplication,
@@ -83,6 +84,7 @@ export async function createStudio(options: {
  * @internal
  */
 export async function deployWorkbenchApp(options: {
+  access?: readonly BrettAccess[]
   app: CliConfig['app']
   applicationId: string
   icon?: string
@@ -97,6 +99,7 @@ export async function deployWorkbenchApp(options: {
   workspaces?: readonly BrettWorkspace[]
 }): Promise<void> {
   const {
+    access,
     app,
     applicationId,
     icon,
@@ -115,6 +118,7 @@ export async function deployWorkbenchApp(options: {
   const spin = spinner(label).start()
   try {
     await createDeployment({
+      access,
       applicationId,
       // Brett assigns the id and resolves modules by `moduleId`, so neither travels.
       interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map(
