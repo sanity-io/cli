@@ -134,6 +134,34 @@ describe('deployStudio (federated studio)', () => {
     expect(target).not.toHaveProperty('slug')
   })
 
+  test('derives one deduped datasets access entry per unique workspace dataset', async () => {
+    // Two workspaces share proj-1.production; a third adds proj-1.staging.
+    vi.mocked(deployStudioSchemasAndManifests).mockResolvedValue({
+      workspaces: [
+        {dataset: 'production', projectId: 'proj-1'},
+        {dataset: 'production', projectId: 'proj-1'},
+        {dataset: 'staging', projectId: 'proj-1'},
+      ],
+    } as unknown as Awaited<ReturnType<typeof deployStudioSchemasAndManifests>>)
+
+    await deployStudio(deployOptions())
+
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        access: [
+          {resourceId: 'proj-1.production', resourceType: 'dataset'},
+          {resourceId: 'proj-1.staging', resourceType: 'dataset'},
+        ],
+      }),
+    )
+  })
+
+  test('derives empty access when the manifest has no workspaces', async () => {
+    await deployStudio(deployOptions())
+
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(expect.objectContaining({access: []}))
+  })
+
   test('a taken slug blocks the deploy before anything is created', async () => {
     const options = deployOptions()
     // A real run exits inside output.error; throwing stands in for that, and

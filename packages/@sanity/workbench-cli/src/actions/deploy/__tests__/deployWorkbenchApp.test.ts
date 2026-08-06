@@ -5,7 +5,7 @@ import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {unstable_defineApp} from '../../../defineApp.js'
-import {type BrettWorkspace} from '../../../services/applications.js'
+import {type BrettAccess, type BrettWorkspace} from '../../../services/applications.js'
 import {createCoreApp, createStudio, deployWorkbenchApp} from '../deployWorkbenchApp.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
@@ -37,6 +37,7 @@ const workspaces: BrettWorkspace[] = [
     title: 'Default',
   },
 ]
+const access: BrettAccess[] = [{resourceId: 'proj-1.production', resourceType: 'dataset'}]
 const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
 
 /** The (name, value) pairs a call appended to its FormData. */
@@ -262,6 +263,24 @@ describe('deployWorkbenchApp', () => {
     })
 
     expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
+  })
+
+  test('forwards access to the deployment when provided', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    await deployWorkbenchApp({
+      access,
+      app: {...app, entry: undefined},
+      applicationId: 'studio_1',
+      isApp: false,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/studio',
+      title: 'My Studio',
+      version: '3.0.0',
+      workspaces,
+    })
+
+    expect(appendedFields()).toContainEqual(['access', JSON.stringify(access)])
   })
 
   test('syncs the title and icon after shipping the deployment', async () => {
