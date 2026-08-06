@@ -22,7 +22,6 @@ vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 const mockClient = {request: vi.fn()}
 const app = unstable_defineApp({
   entry: './src/App.tsx',
-  name: 'drop-desk',
   organizationId: 'org-1',
   services: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
   slug: 'drop-desk',
@@ -203,6 +202,49 @@ describe('deployWorkbenchApp', () => {
       },
     ])
     expect(fields.map(([name]) => name)).toContain('tarball')
+  })
+
+  test('sends a tile interface carrying its size + priority as metadata', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    const tileApp = unstable_defineApp({
+      entry: './src/App.tsx',
+      organizationId: 'org-1',
+      slug: 'drop-desk',
+      title: 'Drop Desk',
+      views: [
+        {
+          name: 'agent',
+          priority: 100,
+          size: 'large',
+          src: './src/tile.tsx',
+          title: 'Agent',
+          type: 'tile',
+        },
+      ],
+    })
+
+    await deployWorkbenchApp({
+      app: tileApp,
+      applicationId: 'app_1',
+      isApp: true,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
+
+    const fields = appendedFields()
+    const interfaces = JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))
+    // Brett owns `id`/`src`, so they're stripped; `size`/`priority` ride as metadata.
+    expect(interfaces).toContainEqual({
+      metadata: {priority: 100, size: 'large'},
+      moduleId: 'views/agent',
+      name: 'agent',
+      title: 'Agent',
+      type: 'tile',
+      version: '1.0.0',
+    })
   })
 
   test('sends workspaces for a studio deployment', async () => {

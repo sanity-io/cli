@@ -3,9 +3,9 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {Table} from 'console-table-printer'
 
-import {type Token} from '../../actions/tokens/types.js'
+import {type Robot} from '../../actions/tokens/types.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {getTokens} from '../../services/tokens.js'
+import {getProjectMembership, getTokens} from '../../services/tokens.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listTokenDebug = subdebug('tokens:list')
@@ -52,7 +52,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
         }),
     })
 
-    let tokens: Token[]
+    let tokens: Robot[]
     try {
       tokens = await getTokens(projectId)
     } catch (error) {
@@ -73,20 +73,22 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
 
     const table = new Table({
       columns: [
-        {alignment: 'left', maxLen: 40, name: 'label', title: 'Label'},
-        {alignment: 'left', maxLen: 20, name: 'id', title: 'Token ID'},
-        {alignment: 'left', maxLen: 30, name: 'roles', title: 'Roles'},
+        {alignment: 'left', name: 'label', title: 'Label'},
+        {alignment: 'left', name: 'id', title: 'ID'},
+        {alignment: 'left', name: 'roles', title: 'Roles'},
+        {alignment: 'left', name: 'expires', title: 'Expires'},
       ],
       title: `Found ${tokens.length} API tokens`,
     })
 
     for (const token of tokens) {
-      const roles = token.roles?.map((role) => role.title).join(', ') || 'No roles'
+      const roles = getProjectMembership(token, projectId)?.roleNames.join(', ') || 'No roles'
       const truncatedLabel =
         token.label.length > 37 ? `${token.label.slice(0, 37)}...` : token.label
       const truncatedRoles = roles.length > 27 ? `${roles.slice(0, 27)}...` : roles
 
       table.addRow({
+        expires: token.expiresAt ? token.expiresAt.slice(0, 10) : 'Never',
         id: token.id,
         label: truncatedLabel,
         roles: truncatedRoles,

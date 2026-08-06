@@ -1,12 +1,18 @@
 import {type AssetSourceComponentProps} from '@sanity/types'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
-import {VIEW_CONTRACT_VERSION} from '../contract.js'
-import {type DefinedView, type PanelViewProps, unstable_defineView} from '../defineView.js'
+import {type TileSize, VIEW_CONTRACT_VERSION} from '../contract.js'
+import {
+  type DefinedView,
+  type PanelViewProps,
+  type TileViewProps,
+  unstable_defineView,
+} from '../defineView.js'
 
 const title = ({view}: PanelViewProps) => view.name
 const panel = ({view}: PanelViewProps) => view.name
 const assetSource = (props: AssetSourceComponentProps) => props.assetSource.name
+const tile = ({view}: TileViewProps) => view.size
 
 describe('unstable_defineView', () => {
   test('returns the view type, contract version, and the author components', () => {
@@ -78,5 +84,39 @@ describe('asset_source view', () => {
   test('rejects a panel component record for an asset_source view', () => {
     // @ts-expect-error — asset_source exposes only the `asset_source` slot.
     unstable_defineView('asset_source', {panel: () => null, title: () => null})
+  })
+})
+
+describe('tile view', () => {
+  test('returns the view type, contract version, and the author component', () => {
+    const view = unstable_defineView('tile', {tile})
+
+    expect(view.type).toBe('tile')
+    expect(view.version).toBe(VIEW_CONTRACT_VERSION)
+    expect(view.components.tile).toBe(tile)
+  })
+
+  test('narrows the component record and props (incl. footprint size) from the view type argument', () => {
+    const view = unstable_defineView('tile', {
+      tile: (props) => {
+        expectTypeOf(props).toEqualTypeOf<TileViewProps>()
+        expectTypeOf(props.view).toEqualTypeOf<{
+          name: string
+          size: TileSize
+          src: string
+          title: string
+          type: 'tile'
+        }>()
+        return null
+      },
+    })
+
+    expectTypeOf(view).toEqualTypeOf<DefinedView<'tile'>>()
+    expectTypeOf(view.components).toHaveProperty('tile')
+  })
+
+  test('rejects a panel component record for a tile view', () => {
+    // @ts-expect-error — tile exposes only the `tile` slot.
+    unstable_defineView('tile', {panel: () => null, title: () => null})
   })
 })

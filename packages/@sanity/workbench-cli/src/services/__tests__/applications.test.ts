@@ -26,7 +26,7 @@ const mockClient = {request: vi.fn()}
 // A gzip stream is opaque to the service; a readable stands in for the tarball.
 const tarball = () => Readable.from(['remote']) as unknown as Gzip
 const interfaces: BrettInterface[] = [
-  {moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
+  {metadata: null, moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
 ]
 const workspaces: BrettWorkspace[] = [
   {

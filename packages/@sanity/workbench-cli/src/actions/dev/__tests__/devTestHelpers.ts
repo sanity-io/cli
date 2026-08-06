@@ -69,10 +69,10 @@ export function createDevOptions(
  * flow reads (bound address, config, ws channel, lifecycle). */
 export function createMockViteServer({host, port = 3333}: {host?: string; port?: number} = {}) {
   return {
-    close: vi.fn().mockResolvedValue(),
+    close: vi.fn<() => Promise<void>>().mockResolvedValue(),
     config: {server: {host, port}},
     httpServer: {address: vi.fn().mockReturnValue({address: '127.0.0.1', family: 'IPv4', port})},
-    listen: vi.fn().mockResolvedValue(),
+    listen: vi.fn<() => Promise<void>>().mockResolvedValue(),
     ws: {on: vi.fn(), send: vi.fn()},
   }
 }
@@ -86,7 +86,7 @@ export function mockWorkbenchServer(
   } = {},
 ) {
   return {
-    close: vi.fn().mockResolvedValue(),
+    close: vi.fn<() => Promise<void>>().mockResolvedValue(),
     httpHost: 'localhost',
     workbenchAvailable: true,
     workbenchPort: 3333,

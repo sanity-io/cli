@@ -1,5 +1,56 @@
 # Change Log
 
+## 7.18.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.17.0...cli-v7.18.0)
+
+_2026-08-04_
+
+### Features
+
+- **new:** add `sanity new --instructions` to print the sanity.new setup guide verbatim ([#1666](https://github.com/sanity-io/cli/pull/1666)) ([aa934e2](https://github.com/sanity-io/cli/commit/aa934e29d24581b044ba5c0857e7b862325c30b9))
+
+### Bug Fixes
+
+- **cli:** disallow setting cookies in programmatic `sanity api` invocations ([#1657](https://github.com/sanity-io/cli/pull/1657)) ([9361c25](https://github.com/sanity-io/cli/commit/9361c25c32136f4cab5becc8a4904ce39b07ccd4))
+
+  Fixes a bug that allows users to provide a `Cookie` header to `sanity api` when using `run_sanity_cli` via the Sanity MCP server.
+
+- **cli:** disallow url-embedded credentials in programmatic `sanity api` invocations ([#1655](https://github.com/sanity-io/cli/pull/1655)) ([67041e5](https://github.com/sanity-io/cli/commit/67041e5594f911475cc4065e72a561d96f700c36))
+
+  Fixes a bug that allows users to specify a username and password in the URL passed to `sanity api` when using `run_sanity_cli` via the Sanity MCP server.
+
+- ensure programmatic CLI calls don't use host lineage or debug configuration ([#1658](https://github.com/sanity-io/cli/pull/1658)) ([858a487](https://github.com/sanity-io/cli/commit/858a487e53b4f475c829e52267770f571d311cfa))
+
+  Fixes a bug where programmatic CLI use would inherit the host's [Sanity lineage](https://www.sanity.io/docs/functions/functions-cheatsheet#k7a3b783ece7d) and `DEBUG` configuration
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.8.1
+
+## 7.17.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.16.0...cli-v7.17.0)
+
+_2026-08-04_
+
+### Features
+
+- **cli:** sanity -v now works as an alias for sanity --version ([#1649](https://github.com/sanity-io/cli/pull/1649)) ([75697ae](https://github.com/sanity-io/cli/commit/75697ae0943344c7be07b77aa68ab94b28fee361))
+- **workbench:** register tile view type ([#1659](https://github.com/sanity-io/cli/pull/1659)) ([1ae4d8e](https://github.com/sanity-io/cli/commit/1ae4d8e1ae625e08fca3ae1273fab46f91c33677))
+
+### Bug Fixes
+
+- **init:** bump shopify template plugin pins for sanity 6 compatibility ([#1643](https://github.com/sanity-io/cli/pull/1643)) ([280b621](https://github.com/sanity-io/cli/commit/280b62190264f63b6271c29b7bab9680087d0e78))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.10.0
+
 ## [7.16.0](https://github.com/sanity-io/cli/compare/cli-v7.15.1...cli-v7.16.0)
 
 _2026-08-03_

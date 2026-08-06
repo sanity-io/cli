@@ -314,6 +314,87 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(result.success).toBe(true)
   })
 
+  test('accepts a tile view declaration with a footprint size and optional priority', () => {
+    const parsed = DefineAppInputSchema.parse(
+      validInput({
+        views: [
+          {
+            name: 'agent-widget',
+            priority: 100,
+            size: 'large',
+            src: './src/tile.tsx',
+            title: 'Agent',
+            type: 'tile',
+          },
+        ],
+      }),
+    )
+    expect(parsed.views?.[0]).toEqual({
+      name: 'agent-widget',
+      priority: 100,
+      size: 'large',
+      src: './src/tile.tsx',
+      title: 'Agent',
+      type: 'tile',
+    })
+  })
+
+  test('requires a size on a tile view', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        views: [{name: 'agent-widget', src: './src/tile.tsx', title: 'Agent', type: 'tile'}],
+      }),
+    )
+    expect(result.success).toBe(false)
+  })
+
+  test('rejects an unknown tile size', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        views: [
+          {name: 'agent-widget', size: 'huge', src: './src/tile.tsx', title: 'Agent', type: 'tile'},
+        ],
+      }),
+    )
+    expect(result.success).toBe(false)
+  })
+
+  test('accepts an `entry` alongside a tile view', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        entry: './src/App.tsx',
+        views: [
+          {
+            name: 'agent-widget',
+            size: 'banner',
+            src: './src/tile.tsx',
+            title: 'Agent',
+            type: 'tile',
+          },
+        ],
+      }),
+    )
+    expect(result.success).toBe(true)
+  })
+
+  test('does not count a tile view toward the one-panel cap', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        views: [
+          {name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'},
+          {
+            name: 'agent-widget',
+            size: 'small',
+            src: './src/tile.tsx',
+            title: 'Agent',
+            type: 'tile',
+          },
+        ],
+      }),
+    )
+    expect(result.success).toBe(true)
+  })
+
   test('rejects `entry` on a studio with a not-yet-implemented error', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({applicationType: 'studio', entry: './src/App.tsx'}),
@@ -339,7 +420,7 @@ describe('DefineAppInputSchema (build-time validation)', () => {
 
 describe('type surface', () => {
   test('exposes title/icon/entry/organizationId/group/priority', () => {
-    expectTypeOf<DefineAppResult['name']>().toEqualTypeOf<string>()
+    expectTypeOf<DefineAppResult['slug']>().toEqualTypeOf<string>()
     expectTypeOf<DefineAppResult['title']>().toEqualTypeOf<string>()
     expectTypeOf<DefineAppResult['icon']>().toEqualTypeOf<string | undefined>()
     expectTypeOf<DefineAppResult['entry']>().toEqualTypeOf<string | undefined>()
@@ -356,8 +437,8 @@ describe('type surface', () => {
 })
 
 describe('interface union (entry vs views)', () => {
-  type Base = {name: string; organizationId: string; slug: string; title: string}
-  type PanelView = {name: string; src: string; type: 'panel'}
+  type Base = {organizationId: string; slug: string; title: string}
+  type PanelView = {name: string; src: string; title: string; type: 'panel'}
 
   test('allows an app entry without panel views', () => {
     expectTypeOf<Base & {entry: string}>().toExtend<DefineAppInput>()

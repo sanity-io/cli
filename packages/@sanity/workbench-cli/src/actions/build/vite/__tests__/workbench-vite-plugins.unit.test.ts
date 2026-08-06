@@ -86,8 +86,8 @@ describe('workbenchVitePlugins', () => {
   })
 
   test('passes the declared views and services through to federation', async () => {
-    const views = [{name: 'feed', src: './src/panel.tsx', type: 'panel' as const}]
-    const services = [{name: 'sync', src: './src/sync.ts', type: 'worker' as const}]
+    const views = [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel' as const}]
+    const services = [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker' as const}]
     await workbenchVitePlugins({
       cwd,
       entries: {relativeConfigLocation: null, relativeEntry: '../../src/App'},

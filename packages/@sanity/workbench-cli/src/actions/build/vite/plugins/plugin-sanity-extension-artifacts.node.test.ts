@@ -100,6 +100,30 @@ describe('sanityExtensionArtifacts', () => {
     expect(picker).toContain('import.meta.hot.accept')
   })
 
+  it('emits a single render-contract artifact for a tile view', () => {
+    const root = makeRoot()
+    runConfigResolved(
+      sanityExtensionArtifacts({
+        artifacts: workbenchArtifacts({
+          views: [
+            {name: 'agent', size: 'large', src: './src/tile.tsx', title: 'agent', type: 'tile'},
+          ],
+        }),
+      }),
+      root,
+    )
+
+    // A tile exposes a single `tile` island.
+    const agentDir = path.join(root, '.sanity/federation/views/agent')
+    expect(fs.readdirSync(agentDir).toSorted()).toEqual(['tile.js'])
+
+    const tile = fs.readFileSync(path.join(agentDir, 'tile.js'), 'utf8')
+    expect(tile).toContain('import view from "../../../../src/tile.tsx"')
+    expect(tile).toContain('view.components["tile"]')
+    expect(tile).toContain('export function render(rootElement, props')
+    expect(tile).toContain('import.meta.hot.accept')
+  })
+
   it('writes nothing when no views are declared', () => {
     const root = makeRoot()
     runConfigResolved(sanityExtensionArtifacts({artifacts: workbenchArtifacts({views: []})}), root)

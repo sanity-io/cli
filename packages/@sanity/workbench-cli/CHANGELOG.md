@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 1.10.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.9.0...workbench-cli-v1.10.0)
+
+_2026-08-04_
+
+### Features
+
+- **workbench:** register tile view type ([#1659](https://github.com/sanity-io/cli/pull/1659)) ([1ae4d8e](https://github.com/sanity-io/cli/commit/1ae4d8e1ae625e08fca3ae1273fab46f91c33677))
+
 ## [1.9.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.8.0...workbench-cli-v1.9.0)
 
 _2026-08-03_

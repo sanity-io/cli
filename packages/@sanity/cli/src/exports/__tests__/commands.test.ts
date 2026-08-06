@@ -86,7 +86,10 @@ describe('invokeSanityCli', () => {
   test('an allowed invocation does not consult or mutate representative host state', async () => {
     mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
       .matchHeader('authorization', 'Bearer invocation-token')
-      .reply(200, [corsOrigin('https://isolated.example.com')])
+      .reply(function () {
+        expect(this.req.headers['x-sanity-lineage']).toBeUndefined()
+        return [200, [corsOrigin('https://isolated.example.com')]]
+      })
 
     const globalRegistry = globalThis as Record<symbol, unknown>
     const previousTelemetry = globalRegistry[CLI_TELEMETRY_SYMBOL]
@@ -94,9 +97,11 @@ describe('invokeSanityCli', () => {
     globalRegistry[CLI_TELEMETRY_SYMBOL] = hostTelemetry
     const previousEnv = {
       authToken: process.env.SANITY_AUTH_TOKEN,
+      lineage: process.env.X_SANITY_LINEAGE,
       sanityEnv: process.env.SANITY_INTERNAL_ENV,
     }
     process.env.SANITY_AUTH_TOKEN = 'host-token'
+    process.env.X_SANITY_LINEAGE = 'host-lineage'
     process.env.SANITY_INTERNAL_ENV = 'staging'
 
     const cwd = vi.spyOn(process, 'cwd').mockImplementation(() => {
@@ -127,6 +132,7 @@ describe('invokeSanityCli', () => {
       expect(off).not.toHaveBeenCalledWith('SIGINT', expect.any(Function))
       expect(globalRegistry[CLI_TELEMETRY_SYMBOL]).toBe(hostTelemetry)
       expect(process.env.SANITY_AUTH_TOKEN).toBe('host-token')
+      expect(process.env.X_SANITY_LINEAGE).toBe('host-lineage')
       expect(process.env.SANITY_INTERNAL_ENV).toBe('staging')
     } finally {
       cwd.mockRestore()
@@ -137,6 +143,8 @@ describe('invokeSanityCli', () => {
       globalRegistry[CLI_TELEMETRY_SYMBOL] = previousTelemetry
       if (previousEnv.authToken === undefined) delete process.env.SANITY_AUTH_TOKEN
       else process.env.SANITY_AUTH_TOKEN = previousEnv.authToken
+      if (previousEnv.lineage === undefined) delete process.env.X_SANITY_LINEAGE
+      else process.env.X_SANITY_LINEAGE = previousEnv.lineage
       if (previousEnv.sanityEnv === undefined) delete process.env.SANITY_INTERNAL_ENV
       else process.env.SANITY_INTERNAL_ENV = previousEnv.sanityEnv
     }
@@ -496,9 +504,33 @@ describe('invokeSanityCli', () => {
   })
 
   test.each([
-    ['long flag', 'api users/me --header "Authorization: Bearer other-user-token"'],
-    ['short flag with mixed casing', 'api users/me -H "aUtHoRiZaTiOn: Basic credentials"'],
-  ])('`api` Authorization headers using the %s are refused', async (_style, args) => {
+    [
+      'Authorization',
+      'long flag',
+      'api users/me --header "Authorization: Bearer other-user-token"',
+    ],
+    [
+      'Authorization',
+      'short flag with mixed casing',
+      'api users/me -H "aUtHoRiZaTiOn: Basic credentials"',
+    ],
+    ['Cookie', 'long flag', 'api users/me --anonymous --header "Cookie: sid=other-user-session"'],
+    [
+      'Cookie',
+      'short flag with mixed casing',
+      'api users/me --anonymous -H " cOoKiE : sid=other-user-session"',
+    ],
+  ])('`api` %s headers using the %s are refused', async (_header, _style, args) => {
+    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+
+    expect(result.exitCode).toBe(2)
+    expect(result.output).toBe('This invocation of `api` is not supported here')
+  })
+
+  test.each([
+    ['username and password', 'api https://user:pass@api.sanity.io/v1/users/me --anonymous'],
+    ['username only', 'api https://user@api.sanity.io/v1/users/me --anonymous'],
+  ])('`api` URLs embedding a %s are refused', async (_credentials, args) => {
     const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
@@ -507,10 +539,15 @@ describe('invokeSanityCli', () => {
 
   test('the api policy refuses authentication overrides and host input channels', () => {
     const policy = commandPolicies.mcp.api
-    const validate = (flags: Record<string, unknown>) => policy.validate({args: {}, flags})
+    const validate = (flags: Record<string, unknown>, endpoint: unknown = 'users/me') =>
+      policy.validate({args: {endpoint}, flags})
 
     expect(validate({})).toBe(true)
+    expect(validate({}, 'https://api.sanity.io/v1/users/me')).toBe(true)
+    expect(validate({}, 'not a URL')).toBe(true)
+    expect(validate({}, 42)).toBe(true)
     expect(validate({field: ['key=value', 'count=1']})).toBe(true)
+    expect(validate({field: [42, 'invalid']})).toBe(true)
     expect(validate({header: ['Content-Type: application/json', 'X-Custom: value']})).toBe(true)
     expect(validate({header: [42, 'invalid']})).toBe(true)
     // Raw `-f` fields are always verbatim strings — `@` has no meaning there.
@@ -521,8 +558,38 @@ describe('invokeSanityCli', () => {
     expect(validate({token: 'other-user-token'})).toBe(false)
     expect(validate({header: ['Authorization: Bearer other-user-token']})).toBe(false)
     expect(validate({header: [' aUtHoRiZaTiOn : Basic credentials']})).toBe(false)
+    expect(validate({header: ['Cookie: sid=other-user-session']})).toBe(false)
+    expect(validate({header: [' cOoKiE : sid=other-user-session']})).toBe(false)
     expect(validate({field: ['body=@payload.json']})).toBe(false)
     expect(validate({field: ['key=value', 'body=@-']})).toBe(false)
+    expect(validate({}, 'https://user:pass@api.sanity.io/v1/users/me')).toBe(false)
+    expect(validate({}, 'https://user@api.sanity.io/v1/users/me')).toBe(false)
+    expect(validate({}, 'https://:pass@api.sanity.io/v1/users/me')).toBe(false)
+  })
+
+  test('the api policy stops checking after finding a host-reading field', () => {
+    const policy = commandPolicies.mcp.api
+    const flags = {
+      field: ['body=@payload.json'],
+      get header(): never {
+        throw new Error('header should not be read')
+      },
+    }
+
+    expect(policy.validate({args: {}, flags})).toBe(false)
+  })
+
+  test('the api policy stops checking after finding an authentication header', () => {
+    const policy = commandPolicies.mcp.api
+    const args = {
+      get endpoint(): never {
+        throw new Error('endpoint should not be read')
+      },
+    }
+
+    expect(
+      policy.validate({args, flags: {header: ['Authorization: Bearer other-user-token']}}),
+    ).toBe(false)
   })
 
   test('conditional policies see parsed flags, not raw tokens', async () => {

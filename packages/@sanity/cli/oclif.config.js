@@ -1,4 +1,5 @@
 export default {
+  additionalVersionFlags: ['-v'],
   bin: 'sanity',
   commands: './dist/commands',
   dirname: 'sanity',

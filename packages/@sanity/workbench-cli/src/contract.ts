@@ -33,10 +33,23 @@ export interface ViewComponentBaseProps<TView> {
 export const VIEW_COMPONENTS = {
   asset_source: ['asset_source'],
   panel: ['title', 'panel'],
+  tile: ['tile'],
 } as const satisfies Record<string, readonly string[]>
 
 /** @public */
 export type InterfaceType = keyof typeof VIEW_COMPONENTS
+
+/**
+ * A tile's footprint family — the shape it occupies on the dashboard. Modelled
+ * on iOS WidgetKit families, not a linear scale: `banner` is full-width and
+ * shallow, which a `small`→`large` magnitude can't express. The host maps a
+ * family to a layout slot; the component reads it to render per footprint.
+ * @public
+ */
+export const TileSizeSchema = z.enum(['small', 'large', 'banner'])
+
+/** @public */
+export type TileSize = z.infer<typeof TileSizeSchema>
 
 /** @public */
 export type ServiceType = 'worker'
@@ -55,6 +68,21 @@ export const AppInterfaceMetadataSchema = z.object({
 export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
 
 /**
+ * A tile's interface metadata: its footprint `size` and an optional `priority`
+ * the dashboard sorts on, ascending. Both are authored as top-level view fields
+ * (see {@link InterfaceDeclarationSchema}) but stored on the record as metadata.
+ * Mirrors `app`'s dock metadata; tile is the first view type to carry any.
+ * @internal
+ */
+export const TileInterfaceMetadataSchema = z.object({
+  priority: z.optional(z.number()),
+  size: TileSizeSchema,
+})
+
+/** @internal */
+export type TileInterfaceMetadata = z.infer<typeof TileInterfaceMetadataSchema>
+
+/**
  * The contract version each interface type advertises, so the host can check it
  * renders/runs what it expects.
  * @internal
@@ -63,6 +91,7 @@ const INTERFACE_CONTRACT_VERSIONS = {
   app: undefined,
   asset_source: VIEW_CONTRACT_VERSION,
   panel: VIEW_CONTRACT_VERSION,
+  tile: VIEW_CONTRACT_VERSION,
   worker: SERVICE_CONTRACT_VERSION,
 } as const
 
@@ -86,7 +115,8 @@ export function interfaceModuleId(type: string, name: string): string {
       return 'App'
     }
     case 'asset_source':
-    case 'panel': {
+    case 'panel':
+    case 'tile': {
       return `views/${name}`
     }
     case 'worker': {
@@ -126,10 +156,20 @@ const AssetSourceViewSchema = z.object({
   ...interfaceDeclarationFields('View'),
 })
 
+const TileViewSchema = z.object({
+  type: z.literal('tile'),
+  ...interfaceDeclarationFields('View'),
+  /** Sort position within its layout track, ascending. Optional. */
+  priority: z.optional(z.number()),
+  /** Footprint family the dashboard lays the tile out by. */
+  size: TileSizeSchema,
+})
+
 /** @internal */
 export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [
   PanelViewSchema,
   AssetSourceViewSchema,
+  TileViewSchema,
 ])
 
 const WorkerServiceSchema = z.object({

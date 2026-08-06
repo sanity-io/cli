@@ -6,23 +6,40 @@ import {
   deny,
 } from './policy.js'
 
-/**
- * A typed `-F/--field` value of `@<file>` or `@-` makes the `api` command
- * read the host's filesystem or stdin (raw `-f` fields are always verbatim).
- */
-function fieldReadsFromHost(field: unknown): boolean {
-  if (typeof field !== 'string') return false
-  const separatorIndex = field.indexOf('=')
-  return separatorIndex > 0 && field[separatorIndex + 1] === '@'
-}
+function apiValidator({
+  args,
+  flags,
+}: {
+  args: Readonly<Record<string, unknown>>
+  flags: Readonly<Record<string, unknown>>
+}): boolean {
+  const fields: unknown[] = Array.isArray(flags.field) ? flags.field : []
 
-/** A `-H/--header` value that replaces the invocation's authentication. */
-function headerOverridesAuthentication(header: unknown): boolean {
-  if (typeof header !== 'string') return false
-  const separatorIndex = header.indexOf(':')
-  return (
-    separatorIndex > 0 && header.slice(0, separatorIndex).trim().toLowerCase() === 'authorization'
-  )
+  const fieldReadsFromHost = fields.some((field) => {
+    if (typeof field !== 'string') return false
+    const separatorIndex = field.indexOf('=')
+    return separatorIndex > 0 && field[separatorIndex + 1] === '@'
+  })
+  if (fieldReadsFromHost) return false
+
+  const headers: unknown[] = Array.isArray(flags.header) ? flags.header : []
+
+  const headerOverridesAuthentication = headers.some((header) => {
+    if (typeof header !== 'string') return false
+    const separatorIndex = header.indexOf(':')
+    if (separatorIndex <= 0) return false
+
+    const name = header.slice(0, separatorIndex).trim().toLowerCase()
+    return name === 'authorization' || name === 'cookie'
+  })
+
+  if (headerOverridesAuthentication) return false
+
+  const endpoint = typeof args.endpoint === 'string' ? URL.parse(args.endpoint) : null
+  const urlEmbedsCredentials =
+    endpoint !== null && (endpoint.username !== '' || endpoint.password !== '')
+
+  return !urlEmbedsCredentials
 }
 
 /**
@@ -39,15 +56,13 @@ function headerOverridesAuthentication(header: unknown): boolean {
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful
   // to expose. Refuse authentication overrides and host input channels:
-  // `--token` and an Authorization header replace the MCP user's token,
+  // `--token`, Authorization, and Cookie headers replace the MCP user's authentication,
+  // URL-embedded credentials replace it with Basic authentication,
   // `--input` reads the request body from the host's filesystem or stdin, and
   // `-F key=@<file>` / `-F key=@-` field values do the same.
   api: conditionalPolicy({
     deniedFlags: ['input', 'token'],
-    validate: ({flags}) =>
-      (!Array.isArray(flags.field) || !flags.field.some((field) => fieldReadsFromHost(field))) &&
-      (!Array.isArray(flags.header) ||
-        !flags.header.some((header) => headerOverridesAuthentication(header))),
+    validate: apiValidator,
   }),
 
   'backups:disable': allow,
@@ -213,6 +228,8 @@ export const mcpPolicy: CommandPolicySet = {
   'tokens:delete': deny,
   // Exposes authentication credential metadata.
   'tokens:list': deny,
+  // Replaces authentication credentials and exposes the new secret.
+  'tokens:rotate': deny,
 
   // Loads local CLI and workbench configuration to identify the deployed Studio or application.
   undeploy: deny,

@@ -119,6 +119,7 @@ Code for sanity cli
 - [`sanity tokens create [LABEL]`](#sanity-tokens-create-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
+- [`sanity tokens rotate`](#sanity-tokens-rotate)
 - [`sanity typegen generate`](#sanity-typegen-generate)
 - [`sanity undeploy`](#sanity-undeploy)
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
@@ -2972,13 +2973,14 @@ Create a Sanity project without an account, and claim it within 72 hours to keep
 
 ```
 USAGE
-  $ sanity new [PROJECTNAME] [--json] [--scaffold] [-y]
+  $ sanity new [PROJECTNAME] [--json] [--instructions] [--scaffold] [-y]
 
 ARGUMENTS
   [PROJECTNAME]  Display name for the new project
 
 FLAGS
   -y, --yes            Skip prompts and use defaults (project: "My Sanity project")
+      --instructions   Print the full setup guide from https://sanity.new and exit, creating nothing
       --[no-]scaffold  Set up a Studio in ./sanity and a Next.js website in ./web (on by default)
 
 GLOBAL FLAGS
@@ -3003,7 +3005,7 @@ DESCRIPTION
   Keep both env files out of git, and never put the token in code that runs in
   the browser.
 
-  Fetch https://sanity.new for full instructions, or point your AI agent at it.
+  Run this command with --instructions for the full agent setup guide.
 
 EXAMPLES
   Create a project with a Studio and a website
@@ -3025,6 +3027,10 @@ EXAMPLES
   Create a project and print its details as JSON
 
     $ sanity new --json
+
+  Print the full setup guide for an AI agent, without creating anything
+
+    $ sanity new --instructions
 ```
 
 ## `sanity openapi get SLUG`
@@ -3596,15 +3602,16 @@ Create a new API token for the project
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [-p <id>] [--expires-at 2027-01-01] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes          Skip prompts and use defaults (unattended mode)
-      --json         Output as JSON
-      --role=viewer  Role to assign to the token (defaults to viewer in unattended mode)
+  -y, --yes                    Skip prompts and use defaults (unattended mode)
+      --expires-at=2027-01-01  Date or timestamp the token expires (ISO 8601; tokens never expire by default)
+      --json                   Output as JSON
+      --role=viewer            Role to assign to the token (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
@@ -3624,6 +3631,10 @@ EXAMPLES
   Create a token in unattended mode
 
     $ sanity tokens create "CI Token" --role=editor --yes
+
+  Create a token that expires on a given date
+
+    $ sanity tokens create "Build Token" --expires-at 2027-01-01
 
   Output token information as JSON
 
@@ -3701,6 +3712,35 @@ EXAMPLES
   List tokens for a specific project
 
     $ sanity tokens list --project-id abc123
+```
+
+## `sanity tokens rotate`
+
+Rotate an API token, replacing its secret with a new one
+
+```
+USAGE
+  $ sanity tokens rotate [--json] [-t <token>]
+
+FLAGS
+  -t, --token=<token>  Token to rotate (prefer standard input to keep it out of shell history)
+      --json           Output as JSON
+
+DESCRIPTION
+  Rotate an API token, replacing its secret with a new one
+
+EXAMPLES
+  Rotate the token piped on standard input
+
+    echo "$SANITY_TOKEN" | sanity tokens rotate
+
+  Rotate a token read from a file
+
+    $ sanity tokens rotate < token.txt
+
+  Output the rotated token as JSON
+
+    echo "$SANITY_TOKEN" | sanity tokens rotate --json
 ```
 
 ## `sanity typegen generate`

@@ -60,13 +60,13 @@ const shopifyTemplate: ProjectTemplate = {
   configTemplate,
   dependencies: {
     '@sanity/asset-utils': '^2.3.0',
-    '@sanity/color-input': '^6.0.4',
+    '@sanity/color-input': '^6.0.6',
     '@sanity/icons': '^5.0.0',
     '@sanity/ui': '^3.5.0',
     'lodash.get': '^4.4.2',
     'pluralize-esm': '^9.0.2',
     'sanity-plugin-hotspot-array': '^5.0.11',
-    'sanity-plugin-media': '^6.0.9',
+    'sanity-plugin-media': '^4.3.1',
     slug: '^8.2.2',
   },
   devDependencies: {

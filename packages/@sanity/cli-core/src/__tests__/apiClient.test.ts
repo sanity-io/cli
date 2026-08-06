@@ -9,6 +9,7 @@ const mockRequesterUse = vi.hoisted(() => vi.fn())
 const mockGetCliToken = vi.hoisted(() => vi.fn())
 const mockGenerateHelpUrl = vi.hoisted(() => vi.fn())
 const mockIsHttpError = vi.hoisted(() => vi.fn())
+const mockCreateIsolatedRequester = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/client', () => ({
   createClient: mockCreateClient,
@@ -22,6 +23,10 @@ vi.mock('../config/cli/cliUserConfig.js', () => ({
   getCliToken: mockGetCliToken,
 }))
 
+vi.mock('../request/createIsolatedRequester.js', () => ({
+  createIsolatedRequester: mockCreateIsolatedRequester,
+}))
+
 vi.mock('../util/generateHelpUrl.js', () => ({
   generateHelpUrl: mockGenerateHelpUrl,
 }))
@@ -30,6 +35,7 @@ describe('getGlobalCliClient', () => {
   beforeEach(() => {
     const mockRequester = {use: mockRequesterUse}
     mockRequesterClone.mockReturnValueOnce(mockRequester)
+    mockCreateIsolatedRequester.mockReturnValue(mockRequester)
   })
   afterEach(() => {
     vi.clearAllMocks()
@@ -160,6 +166,16 @@ describe('getGlobalCliClient', () => {
     )
   })
 
+  test('uses an isolated requester inside an execution context', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+
+    await runWithCliExecutionContext({}, () => getGlobalCliClient({apiVersion: '2021-06-07'}))
+
+    expect(mockCreateIsolatedRequester).toHaveBeenCalledOnce()
+    expect(mockRequesterClone).not.toHaveBeenCalled()
+  })
+
   test('explicit client apiHost overrides invocation environment', async () => {
     mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
@@ -183,6 +199,7 @@ describe('getProjectCliClient', () => {
   beforeEach(() => {
     const mockRequester = {use: mockRequesterUse}
     mockRequesterClone.mockReturnValueOnce(mockRequester)
+    mockCreateIsolatedRequester.mockReturnValue(mockRequester)
   })
   afterEach(() => {
     vi.clearAllMocks()
