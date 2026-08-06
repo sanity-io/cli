@@ -117,8 +117,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
     await session.waitForText(/Package manager to use/i)
     await session.selectOption('pnpm')
 
-    const exitCode = await session.waitForExit(90_000)
-    expect(exitCode).toBe(0)
+    await session.waitForExit(0, 90_000)
 
     expect(existsSync(`${tmp.path}/src/App.tsx`)).toBe(true)
     expect(existsSync(`${tmp.path}/package.json`)).toBe(true)
