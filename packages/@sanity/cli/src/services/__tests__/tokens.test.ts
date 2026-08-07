@@ -1,6 +1,7 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {httpError} from '../../../test/helpers/httpError.js'
 import {TOKENS_API_VERSION} from '../../actions/tokens/constants.js'
 import {type Membership, type Robot} from '../../actions/tokens/types.js'
 import {
@@ -134,10 +135,53 @@ describe('deleteToken', () => {
 
     await deleteToken({projectId: testProjectId, tokenId: 'robot-1'})
 
+    expect(mockRequest).toHaveBeenCalledTimes(1)
     expect(mockRequest).toHaveBeenCalledWith({
       method: 'DELETE',
       uri: `/access/project/${testProjectId}/robots/robot-1`,
     })
+  })
+
+  test('resolves a legacy token id to its robot on 404', async () => {
+    mockRequest
+      .mockRejectedValueOnce(httpError(404))
+      .mockResolvedValueOnce({data: [testRobot], nextCursor: null})
+      .mockResolvedValueOnce(undefined)
+
+    await deleteToken({projectId: testProjectId, tokenId: 'robot-1-active-token'})
+
+    expect(mockRequest).toHaveBeenNthCalledWith(1, {
+      method: 'DELETE',
+      uri: `/access/project/${testProjectId}/robots/robot-1-active-token`,
+    })
+    expect(mockRequest).toHaveBeenNthCalledWith(2, {
+      query: {},
+      uri: `/access/project/${testProjectId}/robots`,
+    })
+    expect(mockRequest).toHaveBeenNthCalledWith(3, {
+      method: 'DELETE',
+      uri: `/access/project/${testProjectId}/robots/robot-1`,
+    })
+  })
+
+  test('rethrows the 404 when no robot matches the legacy id', async () => {
+    mockRequest
+      .mockRejectedValueOnce(httpError(404))
+      .mockResolvedValueOnce({data: [testRobot], nextCursor: null})
+
+    await expect(deleteToken({projectId: testProjectId, tokenId: 'unknown-id'})).rejects.toThrow(
+      'HTTP 404',
+    )
+    expect(mockRequest).toHaveBeenCalledTimes(2)
+  })
+
+  test('does not attempt legacy resolution for non-404 errors', async () => {
+    mockRequest.mockRejectedValueOnce(httpError(403))
+
+    await expect(deleteToken({projectId: testProjectId, tokenId: 'robot-1'})).rejects.toThrow(
+      'HTTP 403',
+    )
+    expect(mockRequest).toHaveBeenCalledTimes(1)
   })
 
   test('propagates errors from the API', async () => {

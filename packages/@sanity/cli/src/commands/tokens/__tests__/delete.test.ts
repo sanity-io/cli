@@ -247,12 +247,45 @@ describe('#tokens:delete', () => {
       uri: '/access/project/test-project/robots/nonexistent-token',
     }).reply(404, {message: 'Token not found'})
 
+    // A 404 triggers legacy token id resolution against the robots list
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: '/access/project/test-project/robots',
+    }).reply(200, robotsPage([TEST_ROBOTS.API_TOKEN]))
+
     const {error} = await testCommand(DeleteTokensCommand, ['nonexistent-token', '--yes'], {
       mocks: defaultMocks,
     })
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token with ID "nonexistent-token" not found')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('deletes by a legacy token id via the robot it belongs to', async () => {
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      method: 'delete',
+      uri: '/access/project/test-project/robots/token-api-123-active-token',
+    }).reply(404, {message: 'Robot not found'})
+
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: '/access/project/test-project/robots',
+    }).reply(200, robotsPage([TEST_ROBOTS.API_TOKEN]))
+
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      method: 'delete',
+      uri: '/access/project/test-project/robots/token-api-123',
+    }).reply(204)
+
+    const {error, stdout} = await testCommand(
+      DeleteTokensCommand,
+      ['token-api-123-active-token', '--yes'],
+      {mocks: defaultMocks},
+    )
+    expect(error).toBeUndefined()
+    expect(stdout).toBe('API token deleted\n')
   })
 
   test('throws error when no tokens exist in project', async () => {
