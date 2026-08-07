@@ -1,5 +1,16 @@
 # @sanity/workbench-cli
 
+## 1.11.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.10.0...workbench-cli-v1.11.0)
+
+_2026-08-07_
+
+### Features
+
+- **workbench:** key a dev app's id on its slug ([#1667](https://github.com/sanity-io/cli/pull/1667)) ([e11a2d3](https://github.com/sanity-io/cli/commit/e11a2d3d7f72beb5575f0cde1f455cc8e39a01d0))
+- send deployment access array for workbench studios ([#1676](https://github.com/sanity-io/cli/pull/1676)) ([3601ecf](https://github.com/sanity-io/cli/commit/3601ecfa7ff232ed42caf67d9e7b98847222b605))
+
 ## 1.10.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.9.0...workbench-cli-v1.10.0)
