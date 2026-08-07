@@ -14,6 +14,14 @@ export default defineType({
       name: 'status',
       title: 'Status',
     },
+    {
+      name: 'metafields',
+      title: 'Metafields',
+      options: {
+        collapsed: true,
+        collapsible: true,
+      },
+    },
   ],
   fields: [
     // Created at
@@ -97,6 +105,18 @@ export default defineType({
       name: 'sortOrder',
       title: 'Sort order',
       type: 'string',
+    }),
+    // Metafields
+    defineField({
+      fieldset: 'metafields',
+      name: 'metafields',
+      title: 'Metafields',
+      type: 'array',
+      description: 'Read-only. Replaced in full on every sync',
+      // Shopify owns the order, and `readOnly` does not remove the drag handles on its own.
+      options: {sortable: false},
+      // Keep one member type: synced metafields have no `_type`, which only resolves when `of` has one.
+      of: [{type: 'shopifyMetafield'}],
     }),
     // Shop details
     defineField({

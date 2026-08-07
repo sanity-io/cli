@@ -1,4 +1,4 @@
-import {defineField} from 'sanity'
+import {defineArrayMember, defineField} from 'sanity'
 
 export const shopifyCollectionType = defineField({
   name: 'shopifyCollection',
@@ -13,6 +13,14 @@ export const shopifyCollectionType = defineField({
     {
       name: 'status',
       title: 'Status',
+    },
+    {
+      name: 'metafields',
+      title: 'Metafields',
+      options: {
+        collapsed: true,
+        collapsible: true,
+      },
     },
   ],
   fields: [
@@ -79,6 +87,16 @@ export const shopifyCollectionType = defineField({
     defineField({
       name: 'sortOrder',
       type: 'string',
+    }),
+    defineField({
+      fieldset: 'metafields',
+      name: 'metafields',
+      type: 'array',
+      description: 'Read-only. Replaced in full on every sync',
+      // Shopify owns the order, and `readOnly` does not remove the drag handles on its own.
+      options: {sortable: false},
+      // Keep one member type: synced metafields have no `_type`, which only resolves when `of` has one.
+      of: [defineArrayMember({type: 'shopifyMetafield'})],
     }),
   ],
 })

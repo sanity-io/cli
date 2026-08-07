@@ -29,6 +29,14 @@ export const shopifyProductType = defineField({
         collapsible: true,
       },
     },
+    {
+      name: 'metafields',
+      title: 'Metafields',
+      options: {
+        collapsed: true,
+        collapsible: true,
+      },
+    },
   ],
   fields: [
     defineField({
@@ -126,6 +134,16 @@ export const shopifyProductType = defineField({
           to: [{type: 'productVariant'}],
         }),
       ],
+    }),
+    defineField({
+      fieldset: 'metafields',
+      name: 'metafields',
+      type: 'array',
+      description: 'Read-only. Replaced in full on every sync',
+      // Shopify owns the order, and `readOnly` does not remove the drag handles on its own.
+      options: {sortable: false},
+      // Keep one member type: synced metafields have no `_type`, which only resolves when `of` has one.
+      of: [defineArrayMember({type: 'shopifyMetafield'})],
     }),
   ],
 })
