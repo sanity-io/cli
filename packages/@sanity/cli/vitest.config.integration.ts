@@ -8,6 +8,8 @@ export default defineConfig({
     },
     disableConsoleIntercept: true, // helps oclif test helpers
     env: {
+      // Fix EMFILE errors on macOS
+      ...(process.platform === 'darwin' ? {CHOKIDAR_USEPOLLING: '1'} : {}),
       OCLIF_TEST_ROOT: 'packages/@sanity/cli',
     },
     environment: 'node',
