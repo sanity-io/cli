@@ -80,4 +80,29 @@ describe('responsiveTable', () => {
       expect(stringWidth(line)).toBeLessThanOrEqual(40)
     }
   })
+
+  test('hard-wraps table titles to the rendered table width', () => {
+    Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 20})
+    const table = new Table({
+      columns: [
+        {alignment: 'left', name: 'name', title: 'Name'},
+        {alignment: 'left', name: 'role', title: 'Role'},
+      ],
+      shouldDisableColors: true,
+      title: 'averylongunbrokentabletitle',
+    })
+
+    table.addRow({name: 'Ada', role: 'Admin'})
+
+    const output = table.render()
+    const renderedTitle = output
+      .split('\n')
+      .slice(0, 2)
+      .map((line) => line.trim())
+      .join('')
+    expect(renderedTitle).toBe('averylongunbrokentabletitle')
+    for (const line of output.split('\n')) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(20)
+    }
+  })
 })

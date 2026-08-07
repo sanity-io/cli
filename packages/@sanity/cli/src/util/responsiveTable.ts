@@ -71,6 +71,7 @@ export class Table {
       excessWidth -= 1
     }
 
+    const tableWidth = borderWidth + columnWidths.reduce((total, width) => total + width, 0)
     const table = new ConsoleTable({
       rowSeparator: true,
       ...this.#options,
@@ -89,6 +90,6 @@ export class Table {
       table.addRow(wrappedCells, options)
     }
 
-    return table.render()
+    return wrapAnsi(table.render(), tableWidth, {hard: true, trim: false})
   }
 }
