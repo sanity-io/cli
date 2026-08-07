@@ -39,8 +39,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     await session.waitForText(/Select project|Create.*project/i)
     session.sendControl('c')
 
-    const exitCode = await session.waitForExit()
-    expect(exitCode).toBe(130)
+    await session.waitForExit(130)
   })
 
   test('produces working studio when flags bypass prompts', async () => {
@@ -64,8 +63,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
       interactive: true,
     })
 
-    const exitCode = await session.waitForExit(90_000)
-    expect(exitCode).toBe(0)
+    await session.waitForExit(0, 90_000)
 
     expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
     expect(existsSync(`${tmp.path}/sanity.cli.ts`)).toBe(true)
@@ -103,8 +101,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     await session.waitForText(/package manager|npm|yarn|pnpm/i)
     session.sendKey('Enter')
 
-    const exitCode = await session.waitForExit(90_000)
-    expect(exitCode).toBe(0)
+    await session.waitForExit(0, 90_000)
 
     expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
     expect(existsSync(`${tmp.path}/sanity.cli.ts`)).toBe(true)
@@ -133,8 +130,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
       interactive: true,
     })
 
-    const exitCode = await session.waitForExit(90_000)
-    expect(exitCode).toBe(0)
+    await session.waitForExit(0, 90_000)
 
     const output = session.getOutput()
     expect(output).not.toMatch(/Select.*package manager/i)
@@ -171,8 +167,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
 
     await session.waitForText(/Imported \d+ documents/i, {timeout: 90_000})
 
-    const exitCode = await session.waitForExit(90_000)
-    expect(exitCode).toBe(0)
+    await session.waitForExit(0, 90_000)
   })
 
   test('skips import when declined', async () => {
@@ -203,8 +198,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
 
     await session.waitForText(/installing|Success/i, {timeout: 90_000})
 
-    const exitCode = await session.waitForExit(90_000)
-    expect(exitCode).toBe(0)
+    await session.waitForExit(0, 90_000)
 
     const output = session.getOutput()
     expect(output).not.toMatch(/Imported \d+ documents/i)
