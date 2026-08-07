@@ -1,12 +1,10 @@
-import {styleText} from 'node:util'
-
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
-import size from 'lodash-es/size.js'
 import sortBy from 'lodash-es/sortBy.js'
 
 import {getManageUrl} from '../../actions/projects/getManageUrl.js'
 import {listProjects} from '../../services/projects.js'
+import {Table} from '../../util/responsiveTable.js'
 
 const sortFields = ['id', 'members', 'name', 'url', 'created']
 
@@ -54,22 +52,21 @@ export class List extends SanityCommand<typeof List> {
       )
 
       const rows = order === 'asc' ? ordered : ordered.toReversed()
+      const table = new Table({
+        columns: [
+          {alignment: 'left', name: 'id', title: 'ID'},
+          {alignment: 'left', name: 'members', title: 'Members'},
+          {alignment: 'left', name: 'name', title: 'Name'},
+          {alignment: 'left', name: 'url', title: 'URL'},
+          {alignment: 'left', name: 'created', title: 'Created'},
+        ],
+      })
 
-      // Initialize maxWidths with the width of each header
-      const maxWidths = sortFields.map((str) => size(str))
-
-      // Calculate maximum width for each column
-      for (const row of rows) {
-        for (const [i, element] of row.entries()) {
-          maxWidths[i] = Math.max(size(element), maxWidths[i])
-        }
+      for (const [id, members, name, url, created] of rows) {
+        table.addRow({created: created.split('T')[0], id, members, name, url})
       }
 
-      const printRow = (row: string[]) =>
-        row.map((col, i) => `${col}`.padEnd(maxWidths[i])).join('   ')
-
-      this.log(styleText('cyan', printRow(sortFields)))
-      for (const row of rows) this.log(printRow(row))
+      this.log(table.render())
     } catch (error) {
       projectsDebug('Error listing projects', error)
       this.error('Failed to list projects', {exit: exitCodes.RUNTIME_ERROR})

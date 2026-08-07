@@ -1,9 +1,9 @@
 import {styleText} from 'node:util'
 
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
-import {Table} from 'console-table-printer'
 
 import {resolveMigrations} from '../../actions/migration/resolveMigrations.js'
+import {Table} from '../../util/responsiveTable.js'
 
 const listMigrationDebug = subdebug('migration:list')
 

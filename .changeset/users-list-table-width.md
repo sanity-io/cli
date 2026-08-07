@@ -2,6 +2,6 @@
 '@sanity/cli': patch
 ---
 
-fix(cli): keep the users list table within the terminal width
+fix(cli): keep table output within the terminal width
 
-The users list now wraps long names and roles instead of rendering a table wider than the terminal. Dates are shown as `YYYY-MM-DD` to keep the table compact.
+CLI tables now wrap long values instead of overflowing the terminal or truncating content.
