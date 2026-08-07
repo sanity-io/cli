@@ -717,6 +717,9 @@ importers:
       string-argv:
         specifier: ^0.3.2
         version: 0.3.2
+      string-width:
+        specifier: ^7.2.0
+        version: 7.2.0
       tar:
         specifier: ^7.5.18
         version: 7.5.22
@@ -741,6 +744,9 @@ importers:
       which:
         specifier: ^6.0.1
         version: 6.0.1
+      wrap-ansi:
+        specifier: ^9.0.2
+        version: 9.0.2
       yaml:
         specifier: 'catalog:'
         version: 2.9.0
