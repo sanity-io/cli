@@ -100,7 +100,7 @@ describe('#projects:create', () => {
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringMatching(/Failed to retrieve an organization.*boom/i),
       {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       },
     )
   })
@@ -113,7 +113,7 @@ describe('#projects:create', () => {
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringMatching(/Failed to create project.*boom/i),
       {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       },
     )
   })

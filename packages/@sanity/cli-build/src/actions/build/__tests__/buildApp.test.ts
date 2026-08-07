@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -129,7 +130,7 @@ describe('#buildApp', () => {
 
     expect(output.error).toHaveBeenCalledWith(
       'Failed to find installed @sanity/sdk-react version',
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
   })
 
@@ -142,7 +143,7 @@ describe('#buildApp', () => {
 
     expect(output.error).toHaveBeenCalledWith(
       'Failed to build Sanity application: build static files error',
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
   })
 
@@ -189,7 +190,9 @@ describe('#buildApp', () => {
       }),
     )
 
-    expect(output.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
+    expect(output.error).toHaveBeenCalledWith('Declined to continue with build', {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   })
 
   test('should continue build when user confirms version diff prompt', async () => {

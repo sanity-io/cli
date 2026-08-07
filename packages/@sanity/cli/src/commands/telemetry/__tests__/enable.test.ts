@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockSanityCommand} from '../../../../test/mockSanityCommand.js'
@@ -52,7 +53,7 @@ describe('telemetry enable command', () => {
     await Enable.run([])
     expect(cmdMocks.SanityCmdOutputError).toHaveBeenCalledWith(
       'boom',
-      expect.objectContaining({exit: 1}),
+      expect.objectContaining({exit: exitCodes.RUNTIME_ERROR}),
     )
   })
 })

@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 
 const wildcardReplacement = 'a-wild-card-r3pl4c3m3n7-a'
 const portReplacement = ':7777777'
@@ -19,7 +19,9 @@ export async function filterAndValidateOrigin(
 
   // Special validation for file:// protocols
   if (/^file:\/\//.test(givenOrigin)) {
-    output.error('Only a local file wildcard is currently allowed: file:///*', {exit: 1})
+    output.error('Only a local file wildcard is currently allowed: file:///*', {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   }
 
   try {
@@ -43,7 +45,7 @@ export async function filterAndValidateOrigin(
     return `${parsed.protocol}//${host}`
   } catch {
     output.error(`Invalid origin "${givenOrigin}", must include protocol (https://some.host)`, {
-      exit: 1,
+      exit: exitCodes.RUNTIME_ERROR,
     })
   }
 }

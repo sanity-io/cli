@@ -5,7 +5,7 @@ import {
   checkStudioDependencyVersions,
   compareDependencyVersions,
 } from '@sanity/cli-build/_internal/build'
-import {getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
+import {exitCodes, getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 import {parse as semverParse} from 'semver'
@@ -114,7 +114,7 @@ export async function startStudioDevServer(
 
   if (loadInDashboard) {
     if (!projectId) {
-      output.error('Project Id is required to load in dashboard', {exit: 1})
+      output.error('Project Id is required to load in dashboard', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     try {
@@ -122,7 +122,7 @@ export async function startStudioDevServer(
       organizationId = project.organizationId!
     } catch (error) {
       devDebug('Error getting organization id from project id', error)
-      output.error('Failed to get organization id from project id', {exit: 1})
+      output.error('Failed to get organization id from project id', {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 

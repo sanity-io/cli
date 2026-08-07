@@ -91,7 +91,9 @@ describe('runUndeploy dry run', () => {
     expect(output.log).toHaveBeenCalledWith(
       expect.stringContaining('Failed to resolve undeploy target: network down'),
     )
-    expect(output.error).toHaveBeenCalledWith('Undeploy blocked by failing checks.', {exit: 1})
+    expect(output.error).toHaveBeenCalledWith('Undeploy blocked by failing checks.', {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   })
 })
 
@@ -192,7 +194,9 @@ describe('runUndeploy real run', () => {
       }),
     )
 
-    expect(output.error).toHaveBeenCalledWith('Error undeploying studio: boom', {exit: 1})
+    expect(output.error).toHaveBeenCalledWith('Error undeploying studio: boom', {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   })
 
   test('a failed config deletion is labeled as the installation config', async () => {
@@ -211,7 +215,7 @@ describe('runUndeploy real run', () => {
     )
 
     expect(output.error).toHaveBeenCalledWith('Error undeploying installation config: boom', {
-      exit: 1,
+      exit: exitCodes.RUNTIME_ERROR,
     })
   })
 
@@ -285,7 +289,9 @@ describe('runUndeploy --json', () => {
     const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
     expect(payload.undeployed).toBe(false)
     expect(payload.error.message).toContain('boom')
-    expect(output.error).toHaveBeenCalledWith(payload.error.message, {exit: 1})
+    expect(output.error).toHaveBeenCalledWith(payload.error.message, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   })
 })
 

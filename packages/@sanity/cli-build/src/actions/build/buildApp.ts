@@ -2,6 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type Output, type UserViteConfig} from '@sanity/cli-core/types'
@@ -71,7 +72,9 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
 
   if (!installedSdkVersion) {
-    output.error(`Failed to find installed @sanity/sdk-react version`, {exit: 1})
+    output.error(`Failed to find installed @sanity/sdk-react version`, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
     return
   }
 
@@ -82,7 +85,9 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
     const cleanSDKVersion = semverParse(installedSdkVersion)?.version
     if (!cleanSDKVersion) {
-      output.error(`Failed to parse installed SDK version: ${installedSdkVersion}`, {exit: 1})
+      output.error(`Failed to parse installed SDK version: ${installedSdkVersion}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
       return
     }
 
@@ -135,7 +140,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
         })
 
         if (!shouldContinue) {
-          output.error('Declined to continue with build', {exit: 1})
+          output.error('Declined to continue with build', {exit: exitCodes.RUNTIME_ERROR})
           return
         }
       } else {
@@ -228,6 +233,6 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     trace.error(error)
     const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity application`, {error})
-    output.error(`Failed to build Sanity application: ${message}`, {exit: 1})
+    output.error(`Failed to build Sanity application: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
   }
 }
