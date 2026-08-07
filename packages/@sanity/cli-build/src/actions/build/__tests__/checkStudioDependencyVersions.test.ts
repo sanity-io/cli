@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type Output} from '@sanity/cli-core/types'
 import {
   getLocalPackageVersion,
@@ -115,15 +116,15 @@ describe('checkStudioDependencyVersions', () => {
         expect.stringContaining(
           'The following package versions are no longer supported and needs to be upgraded:',
         ),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react (installed: 16.14.0, want: ^19.2.2)'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('To upgrade, run either:'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
 
@@ -139,11 +140,11 @@ describe('checkStudioDependencyVersions', () => {
         expect.stringContaining(
           'The following package versions are no longer supported and needs to be upgraded:',
         ),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react (installed: 18.2.0, want: ^19.2.2)'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
 
@@ -240,7 +241,7 @@ describe('checkStudioDependencyVersions', () => {
       // Should error about unsupported versions
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react (installed: 16.14.0, want: ^19.2.2)'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
   })
@@ -275,7 +276,7 @@ describe('checkStudioDependencyVersions', () => {
       // Should still generate instructions even with invalid version range
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('To upgrade, run either:'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
       vi.mocked(coerce).mockReset()
     })
@@ -290,19 +291,19 @@ describe('checkStudioDependencyVersions', () => {
 
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('npm install "react@^19.2.2"'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('yarn add "react@^19.2.2"'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('pnpm add "react@^19.2.2"'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('Read more at https://www.sanity.io/docs/help/upgrade-packages'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
 
@@ -341,11 +342,11 @@ describe('checkStudioDependencyVersions', () => {
 
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react (installed: 16.14.0, want: ^19.2.2)'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react-dom (installed: 16.14.0, want: ^19.2.2)'),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
   })

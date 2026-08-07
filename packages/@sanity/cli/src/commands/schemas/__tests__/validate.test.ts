@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -25,7 +26,7 @@ describe('schema validate command', () => {
     mockValidateAction.mockRejectedValue(new Error('boom'))
     await SchemaValidate.run([])
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith('Error validating schema: boom', {
-      exit: 1,
+      exit: exitCodes.RUNTIME_ERROR,
     })
   })
 })

@@ -1,5 +1,6 @@
 import {styleText} from 'node:util'
 
+import {exitCodes} from '@sanity/cli-core'
 import {isWorkbenchApp as determineIsWorkbenchApp} from '@sanity/workbench-cli'
 
 import {startDevServer} from '../../../server/devServer.js'
@@ -37,7 +38,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
 
   if (!organizationId) {
     output.error(`Apps require an organization ID (orgId) specified in your sanity.cli.ts file`, {
-      exit: 1,
+      exit: exitCodes.RUNTIME_ERROR,
     })
     return {reason: 'missing-organization-id', started: false}
   }

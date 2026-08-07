@@ -1,5 +1,6 @@
 import {stripVTControlCharacters} from 'node:util'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -294,7 +295,7 @@ describe('#projects:unclaimed', () => {
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('No local recovery record found for project "missing"'),
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
 
     expect(outputText()).not.toContain(robotToken)
@@ -310,7 +311,7 @@ describe('#projects:unclaimed', () => {
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('Could not read local unclaimed projects'),
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
 
     const errorCalls = vi.mocked(mocks.SanityCmdOutput.error).mock.calls.flat().join('\n')

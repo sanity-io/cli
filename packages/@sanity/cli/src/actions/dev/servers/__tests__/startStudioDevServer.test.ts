@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig, exitCodes} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -179,7 +179,7 @@ describe('startStudioDevServer', () => {
       )
 
       expect(output.error).toHaveBeenCalledWith('Project Id is required to load in dashboard', {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     })
 

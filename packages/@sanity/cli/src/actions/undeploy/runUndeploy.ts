@@ -133,7 +133,9 @@ async function undeployApp(
     spin.fail()
     undeployDebug(`Error undeploying ${label}`, error)
     // Labeled here, where the target is known — `normalizeFailure` only sees the adapter type.
-    throw new CLIError(`Error undeploying ${label}: ${getErrorMessage(error)}`, {exit: 1})
+    throw new CLIError(`Error undeploying ${label}: ${getErrorMessage(error)}`, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   }
   spin.succeed()
 
@@ -231,5 +233,8 @@ function normalizeFailure(
   }
   const label = type === 'coreApp' ? 'application' : 'studio'
   undeployDebug(`Error undeploying ${label}`, error)
-  return {exit: 1, message: `Error undeploying ${label}: ${getErrorMessage(error)}`}
+  return {
+    exit: exitCodes.RUNTIME_ERROR,
+    message: `Error undeploying ${label}: ${getErrorMessage(error)}`,
+  }
 }

@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {describe, expect, test, vi} from 'vitest'
 
 import {
@@ -21,7 +21,7 @@ describe('createFailFastReporter', () => {
   test('a fail without an exit code defaults to 1', () => {
     const output = mockOutput()
     createFailFastReporter(output).report({message: 'boom', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom', {exit: 1})
+    expect(output.error).toHaveBeenCalledWith('boom', {exit: exitCodes.RUNTIME_ERROR})
   })
 
   test('a warn prints and does not exit', () => {
@@ -43,7 +43,7 @@ describe('createFailFastReporter', () => {
   test('a fail appends its solution to the message', () => {
     const output = mockOutput()
     createFailFastReporter(output).report({message: 'boom', solution: 'do X', status: 'fail'})
-    expect(output.error).toHaveBeenCalledWith('boom: do X', {exit: 1})
+    expect(output.error).toHaveBeenCalledWith('boom: do X', {exit: exitCodes.RUNTIME_ERROR})
   })
 
   test('a warn appends its solution to the message', () => {
