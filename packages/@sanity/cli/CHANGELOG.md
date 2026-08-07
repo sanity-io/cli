@@ -1,5 +1,49 @@
 # Change Log
 
+## 8.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.18.0...cli-v8.0.0)
+
+_2026-08-07_
+
+### ⚠ BREAKING CHANGES
+
+- **tokens:** migrate token management to the Access API ([#1646](https://github.com/sanity-io/cli/pull/1646)) ([11e6818](https://github.com/sanity-io/cli/commit/11e6818f9a5ae180c2e7ea69404693d7c17d0505))
+
+  The `tokens create`, `tokens list` and `tokens delete` commands are now backed by the Access API, and `--json` output returns its token shape verbatim. To migrate:
+
+  - `tokens create --json`: read the secret from `.token` instead of `.key`
+  - `tokens list --json`: roles now live in `.memberships[].roleNames` instead of `.roles[].name`; `createdBy`, `permissions`, `projectUserId` and `lastUsedAt` are no longer returned
+  - `.id` is still the identifier to pass to `tokens delete`, but existing ids change with the backing API
+  - `tokens list` shows role names instead of display titles, and no longer includes organization-managed tokens, which cannot be managed at project scope
+
+### Features
+
+- **workbench:** key a dev app's id on its slug ([#1667](https://github.com/sanity-io/cli/pull/1667)) ([e11a2d3](https://github.com/sanity-io/cli/commit/e11a2d3d7f72beb5575f0cde1f455cc8e39a01d0))
+- **cli:** add claim url to studio url hash fragment ([#1645](https://github.com/sanity-io/cli/pull/1645)) ([573b5c1](https://github.com/sanity-io/cli/commit/573b5c1c596c43dde9030a39c119402459a93a1e))
+- send deployment access array for workbench studios ([#1676](https://github.com/sanity-io/cli/pull/1676)) ([3601ecf](https://github.com/sanity-io/cli/commit/3601ecfa7ff232ed42caf67d9e7b98847222b605))
+- **tokens:** support token expiry on create and in list output ([#1646](https://github.com/sanity-io/cli/pull/1646)) ([11e6818](https://github.com/sanity-io/cli/commit/11e6818f9a5ae180c2e7ea69404693d7c17d0505))
+
+  `tokens create --expires-at <date>` sets an expiry (ISO 8601 date or timestamp); interactive runs offer the same presets as sanity.io/manage. `tokens list` shows expiry in a new Expires column.
+
+- **tokens:** add tokens rotate command ([#1646](https://github.com/sanity-io/cli/pull/1646)) ([11e6818](https://github.com/sanity-io/cli/commit/11e6818f9a5ae180c2e7ea69404693d7c17d0505))
+
+  `echo "$SANITY_TOKEN" | sanity tokens rotate` replaces a token's secret while preserving its roles and expiry. The token is read from standard input to keep secrets out of shell history (`-t, --token` is also accepted); the previous secret is revoked immediately.
+
+### Bug Fixes
+
+- **deploy:** show schema extraction errors during studio deploy ([#1677](https://github.com/sanity-io/cli/pull/1677)) ([9a272d3](https://github.com/sanity-io/cli/commit/9a272d30219f86fa489382689f032c360c51193c))
+- **deps:** refresh transitive dependencies and remove brittle security overrides ([#1664](https://github.com/sanity-io/cli/pull/1664)) ([469ffd1](https://github.com/sanity-io/cli/commit/469ffd1293197e54ae000a830d99ff8e7149548a))
+- **cli:** keep table output within the terminal width ([#1680](https://github.com/sanity-io/cli/pull/1680)) ([7271125](https://github.com/sanity-io/cli/commit/7271125a899828a54d360d96986b7379a6fa4b16))
+
+  CLI tables now wrap long values instead of overflowing the terminal or truncating content.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.11.0
+
 ## 7.18.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.17.0...cli-v7.18.0)
