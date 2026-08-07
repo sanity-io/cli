@@ -151,6 +151,7 @@ export function DefaultDocument(props: DefaultDocumentProps): React.JSX.Element 
       </head>
       <body>
         <div id="sanity" />
+        <script type="application/json" id="sanity-resource-bindings">[]</script>
         <script src={entryPath} type="module" />
         <NoJavascript />
       </body>
