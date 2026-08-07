@@ -1,3 +1,5 @@
+import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {spinner} from '@sanity/cli-core/ux'
 import {describe, expect, test, vi} from 'vitest'
 
 import {createTypegenProgressRenderer} from '../renderTypegenProgress.js'
@@ -9,7 +11,6 @@ function createFakeSpinner() {
       calls.push({method: 'fail', text})
       return spin
     }),
-    isSpinning: true,
     start: vi.fn((text?: string) => {
       calls.push({method: 'start', text})
       return spin
@@ -72,8 +73,8 @@ describe('createTypegenProgressRenderer', () => {
     expect(success?.text).toContain('sanity.types.ts')
   })
 
-  test('fails spinner for each module error', () => {
-    const {spin} = createFakeSpinner()
+  test('fails spinner for each module error, then restarts it', () => {
+    const {calls, spin} = createFakeSpinner()
     const render = createTypegenProgressRenderer(spin, {
       formatGeneratedCode: false,
       generates: 'sanity.types.ts',
@@ -81,7 +82,7 @@ describe('createTypegenProgressRenderer', () => {
     })
 
     render({
-      errors: ['boom'],
+      errors: ['boom', 'bang'],
       evaluatedFiles: 1,
       expectedFileCount: 1,
       queriesCount: 0,
@@ -90,6 +91,35 @@ describe('createTypegenProgressRenderer', () => {
     })
 
     expect(spin.fail).toHaveBeenCalledWith('boom')
+    expect(spin.fail).toHaveBeenCalledWith('bang')
+    expect(calls.map((c) => c.method)).toEqual(['fail', 'fail', 'start'])
+  })
+
+  test('does not restart the spinner for error-free modules', () => {
+    const {calls, spin} = createFakeSpinner()
+    const render = createTypegenProgressRenderer(spin, {
+      formatGeneratedCode: false,
+      generates: 'sanity.types.ts',
+      schema: 'schema.json',
+    })
+
+    for (let evaluatedFiles = 1; evaluatedFiles <= 3; evaluatedFiles++) {
+      render({
+        errors: [],
+        evaluatedFiles,
+        expectedFileCount: 3,
+        queriesCount: evaluatedFiles,
+        queryFilesCount: evaluatedFiles,
+        type: 'moduleEvaluated',
+      })
+    }
+
+    // A disabled (non-interactive) spinner writes a line on every `start`, so
+    // progress must be reported through `text` alone while nothing fails.
+    expect(calls).toEqual([])
+    expect(spin.text).toBe(
+      'Generating query types… (100.0%)\n  └─ Processed 3 of 3 files. Found 3 queries from 3 files.',
+    )
   })
 
   test('sets spinner text on formatting', () => {
@@ -152,6 +182,41 @@ describe('createTypegenProgressRenderer', () => {
     expect(spin.succeed).toHaveBeenCalledWith(
       expect.stringContaining('formatted the generated code with prettier'),
     )
+  })
+
+  test('reports the summary, but not progress, through an execution context sink', () => {
+    const lines: string[] = []
+
+    runWithCliExecutionContext({stderr: (line) => lines.push(line)}, () => {
+      const spin = spinner({}).start('Loading schema…')
+      const render = createTypegenProgressRenderer(spin, {
+        formatGeneratedCode: false,
+        generates: 'sanity.types.ts',
+        schema: 'schema.json',
+      })
+
+      render({type: 'schemaLoaded'})
+      render({expectedFileCount: 2, type: 'typegenStarted'})
+      render({schemaTypesCount: 4, type: 'schemaTypesGenerated'})
+      for (let evaluatedFiles = 1; evaluatedFiles <= 2; evaluatedFiles++) {
+        render({
+          errors: [],
+          evaluatedFiles,
+          expectedFileCount: 2,
+          queriesCount: evaluatedFiles,
+          queryFilesCount: evaluatedFiles,
+          type: 'moduleEvaluated',
+        })
+      }
+      render({result, type: 'complete'})
+    })
+
+    expect(lines).toEqual([
+      '✔ Schema loaded from schema.json',
+      '✔ Successfully generated types to sanity.types.ts in 12ms' +
+        '\n  └─ 2 queries and 4 schema types' +
+        '\n  └─ found queries in 2 files after evaluating 2 files',
+    ])
   })
 
   test('success text mentions a formatting error when formatting failed', () => {

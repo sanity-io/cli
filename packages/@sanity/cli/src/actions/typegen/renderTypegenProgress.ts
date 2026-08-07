@@ -15,7 +15,6 @@ import {percent} from './percent.js'
  */
 export interface TypegenSpinner {
   fail(text?: string): void
-  isSpinning: boolean
   start(text?: string): void
   succeed(text?: string): void
   text: string
@@ -86,10 +85,15 @@ export function createTypegenProgressRenderer(
         queriesCount = event.queriesCount
         queryFilesCount = event.queryFilesCount
 
+        // `fail` stops the spinner, so it has to be restarted to keep rendering
+        // progress. Restarting only after a failure (rather than whenever the
+        // spinner reports it is not spinning) keeps non-interactive output
+        // quiet: a disabled spinner never reports itself as spinning, and each
+        // `start` writes a line, which would emit progress once per source file.
         for (const message of event.errors) {
           spin.fail(message)
         }
-        if (!spin.isSpinning) {
+        if (event.errors.length > 0) {
           spin.start()
         }
 
