@@ -13,10 +13,7 @@ export default {
       './dist/hooks/prerun/warnings.js',
     ],
   },
-  // Note: do not add '@sanity/migrate' here. The `migrations` commands now ship
-  // natively (see commands/migrations/); re-adding the plugin would register
-  // duplicate command ids.
-  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/codegen'],
+  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli'],
   topics: {
     backups: {description: 'Manage dataset backups'},
     cors: {description: 'Manage CORS origins for your project'},
@@ -36,6 +33,7 @@ export default {
     skills: {description: 'Install Sanity agent skills for AI agents'},
     telemetry: {description: 'Manage telemetry consent'},
     tokens: {description: 'Manage API tokens for your project'},
+    typegen: {description: 'Generate TypeScript types for schema and GROQ'},
     users: {description: 'Manage project users and invitations'},
   },
   topicSeparator: ' ',
