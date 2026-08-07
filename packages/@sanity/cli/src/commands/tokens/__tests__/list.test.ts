@@ -1,5 +1,6 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
+import stringWidth from 'string-width'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
@@ -73,6 +74,7 @@ function robotsPage(robots: unknown[]) {
 describe('#tokens:list', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    Reflect.deleteProperty(process.stdout, 'columns')
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'pending mocks').toEqual([])
@@ -290,12 +292,13 @@ describe('#tokens:list', () => {
     expect(stdout).toContain('viewer')
   })
 
-  test('truncates long labels correctly', async () => {
+  test('wraps long labels without truncating them', async () => {
+    Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 60})
     const longLabelRobot = {
       createdAt: '2023-01-01T00:00:00Z',
       id: 'robot-long',
       label:
-        'This is a very long token label that should be truncated because it exceeds the maximum length',
+        'This is a very long token label that should be wrapped because it exceeds the maximum length',
       memberships: [
         {
           resourceId: testProjectId,
@@ -314,11 +317,17 @@ describe('#tokens:list', () => {
 
     const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
-    expect(stdout).toContain('This is a very long token label that ...')
-    expect(stdout).not.toContain('because it exceeds the maximum length')
+    expect(stdout).toContain('This is a very')
+    expect(stdout).toContain('maximum')
+    expect(stdout).toContain('length')
+    expect(stdout).not.toContain('...')
+    for (const line of stdout.trim().split('\n')) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(60)
+    }
   })
 
-  test('truncates long roles correctly', async () => {
+  test('wraps long roles without truncating them', async () => {
+    Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 60})
     const longRolesRobot = {
       createdAt: '2023-01-01T00:00:00Z',
       id: 'robot-roles',
@@ -341,7 +350,12 @@ describe('#tokens:list', () => {
 
     const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
-    expect(stdout).toContain('Multi Role Token')
-    expect(stdout).toContain('administrator, editor, view...')
+    expect(stdout).toContain('Multi Role')
+    expect(stdout).toContain('Token')
+    expect(stdout).toContain('administrator')
+    expect(stdout).toContain('editor')
+    expect(stdout).toContain('viewer')
+    expect(stdout).toContain('contributor')
+    expect(stdout).not.toContain('...')
   })
 })

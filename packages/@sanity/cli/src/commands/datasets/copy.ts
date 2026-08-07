@@ -7,7 +7,6 @@ import {subdebug} from '@sanity/cli-core/debug'
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {spinner} from '@sanity/cli-core/ux'
-import {Table} from 'console-table-printer'
 import {formatDistance} from 'date-fns/formatDistance'
 import {formatDistanceToNow} from 'date-fns/formatDistanceToNow'
 import {parseISO} from 'date-fns/parseISO'
@@ -25,6 +24,7 @@ import {
   listDatasets,
 } from '../../services/datasets.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
+import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const copyDatasetDebug = subdebug('dataset:copy')

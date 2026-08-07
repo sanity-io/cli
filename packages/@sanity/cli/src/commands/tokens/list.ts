@@ -1,11 +1,11 @@
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {Table} from 'console-table-printer'
 
 import {type Robot} from '../../actions/tokens/types.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getProjectMembership, getTokens} from '../../services/tokens.js'
+import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listTokenDebug = subdebug('tokens:list')
@@ -83,15 +83,12 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
 
     for (const token of tokens) {
       const roles = getProjectMembership(token, projectId)?.roleNames.join(', ') || 'No roles'
-      const truncatedLabel =
-        token.label.length > 37 ? `${token.label.slice(0, 37)}...` : token.label
-      const truncatedRoles = roles.length > 27 ? `${roles.slice(0, 27)}...` : roles
 
       table.addRow({
         expires: token.expiresAt ? token.expiresAt.slice(0, 10) : 'Never',
         id: token.id,
-        label: truncatedLabel,
-        roles: truncatedRoles,
+        label: token.label,
+        roles,
       })
     }
 

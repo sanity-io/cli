@@ -2,11 +2,11 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import {Table} from 'console-table-printer'
 import sortBy from 'lodash-es/sortBy.js'
 
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
+import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const sortFields = ['id', 'name', 'role', 'date']
@@ -101,16 +101,17 @@ export class List extends SanityCommand<typeof List> {
       [sortFields.indexOf(sort)],
     )
 
-    const rows = order === 'asc' ? ordered : ordered.toReversed()
+    const rows = (order === 'asc' ? ordered : ordered.toReversed()).map(
+      ([id, name, roles, date]) => [id, name, roles, date.split('T')[0]],
+    )
 
     const table = new Table({
       columns: [
-        {alignment: 'left', maxLen: 30, name: 'id', title: 'ID'},
-        {alignment: 'left', maxLen: 40, name: 'name', title: 'Name'},
-        {alignment: 'left', maxLen: 30, name: 'roles', title: 'Roles'},
-        {alignment: 'left', maxLen: 12, name: 'date', title: 'Date'},
+        {alignment: 'left', name: 'id', title: 'ID'},
+        {alignment: 'left', name: 'name', title: 'Name'},
+        {alignment: 'left', name: 'roles', title: 'Roles'},
+        {alignment: 'left', name: 'date', title: 'Date'},
       ],
-      rowSeparator: true,
     })
 
     for (const [id, name, roles, date] of rows) {

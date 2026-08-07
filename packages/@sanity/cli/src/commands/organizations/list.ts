@@ -1,9 +1,9 @@
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {Table} from 'console-table-printer'
 
 import {listOrganizations} from '../../services/organizations.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
+import {Table} from '../../util/responsiveTable.js'
 
 const listOrgsDebug = subdebug('organizations:list')
 
