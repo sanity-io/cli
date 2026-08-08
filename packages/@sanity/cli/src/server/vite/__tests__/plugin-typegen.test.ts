@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import {CLITelemetryStore} from '@sanity/cli-core'
 import {createMockHttpServer, createMockWatcher} from '@sanity/cli-test'
+import {configDefinition} from '@sanity/codegen'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {sanityTypegenPlugin} from '../plugin-typegen.js'
@@ -272,7 +273,7 @@ describe('sanityTypegenPlugin', () => {
     })
   })
 
-  it('applies default config values', async () => {
+  it('applies the same default config values as `sanity typegen generate`', async () => {
     vi.useRealTimers()
 
     const plugin = sanityTypegenPlugin({
@@ -288,12 +289,7 @@ describe('sanityTypegenPlugin', () => {
     await buildEnd()
 
     expect(runTypegenGenerate).toHaveBeenCalledWith({
-      config: expect.objectContaining({
-        formatGeneratedCode: false,
-        generates: 'sanity.types.ts',
-        overloadClientMethods: false,
-        schema: 'schema.json',
-      }),
+      config: configDefinition.parse({}),
       workDir: TEST_PROJECT_DIR,
     })
   })
