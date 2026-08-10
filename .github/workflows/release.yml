@@ -116,74 +116,31 @@ jobs:
           echo "$PUBLISHED_PACKAGES" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Wait for packages to be installable
-        # Poll until every version npm just accepted has cleared scanning and
-        # resolves. On timeout the job fails with `latest` still pointing at the
-        # previous, mutually consistent set of versions.
+      - name: Resolve published specs
+        id: specs
         if: ${{ steps.changesets.outputs.published == 'true' }}
         env:
           PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
         run: |
-          mapfile -t pending < <(jq -r '.[] | "\(.name)@\(.version)"' <<<"$PUBLISHED_PACKAGES")
-
-          echo "Waiting for ${#pending[@]} package(s) to resolve on the registry: ${pending[*]}"
-
-          deadline=$((SECONDS + 20 * 60))
-          while true; do
-            still_pending=()
-            for spec in "${pending[@]}"; do
-              if resolved=$(npm view "$spec" version --prefer-online 2>/dev/null) && [ -n "$resolved" ]; then
-                echo "✅ $spec is installable"
-              else
-                still_pending+=("$spec")
-              fi
-            done
-            pending=("${still_pending[@]}")
-
-            if [ "${#pending[@]}" -eq 0 ]; then
-              echo "✅ All published packages are installable"
-              break
-            fi
-
-            if [ "$SECONDS" -ge "$deadline" ]; then
-              echo "Error: timed out waiting for these packages to become installable:"
-              printf ' - %s\n' "${pending[@]}"
-              exit 1
-            fi
-
-            echo "⏳ Still waiting on ${#pending[@]} package(s): ${pending[*]} (retrying in 15s)"
-            sleep 15
-          done
+          {
+            echo 'specs<<SPECS_EOF'
+            jq -r '.[] | "\(.name)@\(.version)"' <<<"$PUBLISHED_PACKAGES"
+            echo 'SPECS_EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Promote packages to latest
-        # Only now is the whole set installable, so it is safe to move `latest`.
-        # OIDC trusted publishing only covers `npm publish`, so this needs the
-        # npm token - the same one snapshot-release.yml publishes with.
-        # https://docs.npmjs.com/trusted-publishers/
+        # Waits until the whole set has cleared npm's scan, then moves `latest`.
+        # If it times out the job fails with `latest` still pointing at the
+        # previous, mutually consistent set of versions; recover by re-running
+        # promote-latest.yml, which picks the versions back up from the holding
+        # tag (a re-run of this workflow will not, since changesets reports
+        # nothing as newly published the second time around).
         if: ${{ steps.changesets.outputs.published == 'true' && steps.publish-mode.outputs.promote == 'true' }}
-        env:
-          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
-        run: |
-          # Single-quoted so the token is resolved from the environment at run
-          # time rather than written to disk
-          echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' >> .npmrc
-
-          mapfile -t specs < <(jq -r '.[] | "\(.name)@\(.version)"' <<<"$PUBLISHED_PACKAGES")
-
-          for spec in "${specs[@]}"; do
-            echo "Tagging $spec as latest"
-            npm dist-tag add "$spec" latest
-          done
-
-          # Drop the holding tag now that latest points at these versions
-          for spec in "${specs[@]}"; do
-            name="${spec%@*}"
-            npm dist-tag rm "$name" "$HOLDING_TAG" ||
-              echo "Warning: could not remove the '$HOLDING_TAG' tag from $name"
-          done
-
-          echo "✅ Promoted ${#specs[@]} package(s) to latest"
+        uses: ./.github/actions/promote-npm-packages
+        with:
+          specs: ${{ steps.specs.outputs.specs }}
+          holding-tag: ${{ env.HOLDING_TAG }}
+          npm-token: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
   post-release:
     runs-on: ubuntu-latest
