@@ -72,24 +72,36 @@ export class Table {
     }
 
     const tableWidth = borderWidth + columnWidths.reduce((total, width) => total + width, 0)
-    const table = new ConsoleTable({
-      rowSeparator: true,
-      ...this.#options,
-      columns: columns.map((column, index) => ({
-        ...column,
-        maxLen: columnWidths[index],
-        title: wrapAnsi(columnTitles[index], columnWidths[index], {hard: true}),
-      })),
-    })
+    const renderTable = (title?: string) => {
+      const table = new ConsoleTable({
+        rowSeparator: true,
+        ...this.#options,
+        columns: columns.map((column, index) => ({
+          ...column,
+          maxLen: columnWidths[index],
+          title: wrapAnsi(columnTitles[index], columnWidths[index], {hard: true}),
+        })),
+        title,
+      })
 
-    for (const {cells, options} of this.#rows) {
-      const wrappedCells = {...cells}
-      for (const [index, {name}] of columns.entries()) {
-        wrappedCells[name] = wrapAnsi(cellText(cells[name]), columnWidths[index], {hard: true})
+      for (const {cells, options} of this.#rows) {
+        const wrappedCells = {...cells}
+        for (const [index, {name}] of columns.entries()) {
+          wrappedCells[name] = wrapAnsi(cellText(cells[name]), columnWidths[index], {hard: true})
+        }
+        table.addRow(wrappedCells, options)
       }
-      table.addRow(wrappedCells, options)
+
+      return table.render()
     }
 
-    return wrapAnsi(table.render(), tableWidth, {hard: true, trim: false})
+    const renderedTable = renderTable()
+    if (!this.#options.title) return renderedTable
+
+    const renderedWithTitle = renderTable(this.#options.title)
+    const tableSuffix = `\n${renderedTable}`
+    const renderedTitle = renderedWithTitle.slice(0, -tableSuffix.length)
+    const wrappedTitle = wrapAnsi(renderedTitle, tableWidth, {hard: true, trim: false})
+    return `${wrappedTitle}${tableSuffix}`
   }
 }

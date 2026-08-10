@@ -4,4 +4,4 @@
 
 fix(cli): keep table output within the terminal width
 
-CLI tables now wrap long values instead of overflowing the terminal or truncating content.
+CLI tables now wrap long values instead of truncating content and preserve borders when Unicode width estimates differ.

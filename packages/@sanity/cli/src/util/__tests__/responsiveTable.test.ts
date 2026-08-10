@@ -57,6 +57,30 @@ describe('responsiveTable', () => {
     }
   })
 
+  test('keeps borders intact for multi-code-point emoji', () => {
+    Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 20})
+    const table = new Table({
+      columns: [
+        {alignment: 'left', name: 'emoji', title: 'Emoji'},
+        {alignment: 'left', name: 'value', title: 'Value'},
+      ],
+      shouldDisableColors: true,
+    })
+
+    table.addRow({emoji: '👨‍👩‍👧‍👦', value: 'Cafe'})
+
+    const output = table.render()
+    const lines = output.split('\n')
+    expect(output).toContain('👨‍👩‍👧‍👦')
+    expect(output).toContain('Cafe')
+    expect(lines[0]).toMatch(/^┌.*┐$/u)
+    expect(lines.at(-1)).toMatch(/^└.*┘$/u)
+    for (const line of lines.slice(1, -1)) {
+      expect(line).toMatch(/^(?:│.*│|├.*┤)$/u)
+      expect(stringWidth(line)).toBeLessThanOrEqual(20)
+    }
+  })
+
   test('wraps column titles within the terminal width', () => {
     Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 40})
     const table = new Table({
