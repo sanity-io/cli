@@ -95,7 +95,7 @@ export const shopifyCollectionType = defineField({
       description: 'Read-only. Replaced in full on every sync',
       // Shopify owns the order, and `readOnly` does not remove the drag handles on its own.
       options: {sortable: false},
-      // Keep one member type: synced metafields have no `_type`, which only resolves when `of` has one.
+      // Keep exactly one member type: synced data only resolves against a single-member array.
       of: [defineArrayMember({type: 'shopifyMetafield'})],
     }),
   ],
