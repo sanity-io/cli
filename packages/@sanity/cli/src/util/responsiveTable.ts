@@ -72,14 +72,16 @@ export class Table {
     }
 
     const tableWidth = borderWidth + columnWidths.reduce((total, width) => total + width, 0)
+    const renderedColumns = columns.map((column, index) => ({
+      ...column,
+      maxLen: columnWidths[index],
+      title: wrapAnsi(columnTitles[index], columnWidths[index], {hard: true}),
+    }))
     const table = new ConsoleTable({
       rowSeparator: true,
       ...this.#options,
-      columns: columns.map((column, index) => ({
-        ...column,
-        maxLen: columnWidths[index],
-        title: wrapAnsi(columnTitles[index], columnWidths[index], {hard: true}),
-      })),
+      columns: renderedColumns,
+      title: undefined,
     })
 
     for (const {cells, options} of this.#rows) {
@@ -90,6 +92,23 @@ export class Table {
       table.addRow(wrappedCells, options)
     }
 
-    return wrapAnsi(table.render(), tableWidth, {hard: true, trim: false})
+    const renderedTable = table.render()
+    if (!this.#options.title) return renderedTable
+
+    // Use empty tables to preserve the printer's title styling without invoking row callbacks again.
+    const titleTableOptions = {
+      ...this.#options,
+      columns: renderedColumns,
+      rows: undefined,
+    }
+    const renderedTitleTable = new ConsoleTable({
+      ...titleTableOptions,
+      title: this.#options.title,
+    }).render()
+    const renderedEmptyTable = new ConsoleTable({...titleTableOptions, title: undefined}).render()
+    const emptyTableSuffix = `\n${renderedEmptyTable}`
+    const renderedTitle = renderedTitleTable.slice(0, -emptyTableSuffix.length)
+    const wrappedTitle = wrapAnsi(renderedTitle, tableWidth, {hard: true, trim: false})
+    return `${wrappedTitle}\n${renderedTable}`
   }
 }

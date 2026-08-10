@@ -1,5 +1,5 @@
 import stringWidth from 'string-width'
-import {afterEach, describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {Table} from '../responsiveTable.js'
 
@@ -57,6 +57,41 @@ describe('responsiveTable', () => {
     }
   })
 
+  test('keeps borders intact for multi-code-point emoji', () => {
+    Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 20})
+    const table = new Table({
+      columns: [
+        {alignment: 'left', name: 'emoji', title: 'Emoji'},
+        {alignment: 'left', name: 'value', title: 'Value'},
+      ],
+      shouldDisableColors: true,
+    })
+
+    table.addRow({emoji: '👨‍👩‍👧‍👦', value: 'Cafe'})
+
+    const output = table.render()
+    const lines = output.split('\n')
+    expect(output).toContain('👨‍👩‍👧‍👦')
+    expect(output).toContain('Cafe')
+
+    // The family emoji is a ZWJ sequence that `string-width` measures as 2 columns and
+    // `console-table-printer` as 8. That disagreement pushes the rendered table past the
+    // width this helper estimated, which is what previously let `wrap-ansi` reflow the
+    // finished output and split the horizontal rules across lines.
+    //
+    // The guarantee under test is that every border survives on a single line. Note that
+    // the table is 20 columns wide while the helper estimated 17, so the disagreement is
+    // still visible: the data row pads to the printer's 8-column reading of the emoji and
+    // renders short wherever the sequence composes into a single glyph. Asserting an
+    // overall width bound here would only pass by coincidence.
+    expect(lines).toHaveLength(5)
+    expect(lines[0]).toBe('┌──────────┬───────┐')
+    expect(lines[2]).toBe('├──────────┼───────┤')
+    expect(lines[4]).toBe('└──────────┴───────┘')
+    expect(lines[1]).toMatch(/^│.*│$/u)
+    expect(lines[3]).toMatch(/^│.*│$/u)
+  })
+
   test('wraps column titles within the terminal width', () => {
     Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 40})
     const table = new Table({
@@ -104,5 +139,30 @@ describe('responsiveTable', () => {
     for (const line of output.split('\n')) {
       expect(stringWidth(line)).toBeLessThanOrEqual(20)
     }
+  })
+
+  test('filters titled table rows only once', () => {
+    let remainingRows = 1
+    const filter = vi.fn(() => remainingRows-- > 0)
+    const table = new Table({
+      columns: [
+        {alignment: 'left', name: 'name', title: 'Name'},
+        {alignment: 'left', name: 'role', title: 'Role'},
+      ],
+      filter,
+      shouldDisableColors: true,
+      title: 'Users',
+    })
+
+    table.addRows([
+      {name: 'Ada', role: 'Administrator'},
+      {name: 'Grace', role: 'Developer'},
+    ])
+
+    const output = table.render()
+    expect(output).toContain('Users')
+    expect(output).toContain('Ada')
+    expect(output).not.toContain('Grace')
+    expect(filter).toHaveBeenCalledTimes(2)
   })
 })
