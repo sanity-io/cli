@@ -380,6 +380,18 @@ describe('invokeSanityCli', () => {
     expect(result.output).toContain('Nonexistent flag')
   })
 
+  test.each(['hook list --no-such-flag', 'hook:list --no-such-flag'])(
+    'resolves the topic alias in `%s` before applying the MCP policy',
+    async (args) => {
+      const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+
+      expect(result.exitCode).toBe(2)
+      expect(result.commandId).toBe('hooks:list')
+      expect(result.output).toContain('Nonexistent flag')
+      expect(result.output).not.toContain('Unknown or unsupported command')
+    },
+  )
+
   test('never resolves project context from the host filesystem', async () => {
     // Run from inside a fixture that has a resolvable sanity.cli.ts. Without
     // the execution-context guard, the command would walk up from cwd, find
@@ -640,6 +652,19 @@ describe('invokeSanityCli', () => {
       expect(result.output).toContain('cors list')
     },
   )
+
+  test('resolves topic aliases for help', async () => {
+    const result = await invokeSanityCli({
+      args: 'hook list --help',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(0)
+    expect(result.commandId).toBe('hooks:list')
+    expect(result.output).toContain('List webhooks for the project')
+  })
 
   test('`-h` is not a help flag, matching the regular CLI dispatch', async () => {
     const result = await invokeSanityCli({
