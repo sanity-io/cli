@@ -653,18 +653,24 @@ describe('invokeSanityCli', () => {
     },
   )
 
-  test('resolves topic aliases for help', async () => {
-    const result = await invokeSanityCli({
-      args: 'hook list --help',
-      config,
-      source: 'mcp',
-      token: 'user-token',
-    })
+  test.each(['hook --help', 'help hook'])('`%s` resolves topic aliases for help', async (args) => {
+    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(0)
-    expect(result.commandId).toBe('hooks:list')
-    expect(result.output).toContain('List webhooks for the project')
+    expect(result.commandId).toBeUndefined()
+    expect(result.output).toContain('hooks list')
   })
+
+  test.each(['hook list --help', 'help hook list'])(
+    '`%s` resolves topic aliases for command help',
+    async (args) => {
+      const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+
+      expect(result.exitCode).toBe(0)
+      expect(result.commandId).toBe('hooks:list')
+      expect(result.output).toContain('List webhooks for the project')
+    },
+  )
 
   test('`-h` is not a help flag, matching the regular CLI dispatch', async () => {
     const result = await invokeSanityCli({
