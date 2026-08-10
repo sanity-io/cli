@@ -27,6 +27,7 @@ import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-co
 import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {parseArgsStringToArgv} from 'string-argv'
 
+import {resolveTopicAliasInArgv} from '../../topicAliases.js'
 import {commandPolicies} from './commandPolicies/index.js'
 import {
   type CommandPolicySet,
@@ -201,6 +202,7 @@ async function invokeSanityCliInContext(
       ? parseArgsStringToArgv(args).map((t) => stripFlagQuotes(t))
       : [...args]
   if (argv[0] === 'sanity') argv = argv.slice(1)
+  argv = resolveTopicAliasInArgv(argv)
 
   // Help requests are routed through oclif's help system, scoped to the
   // source's policy: root help for a bare request, topic/command help when a
