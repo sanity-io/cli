@@ -65,6 +65,56 @@ function isEsbuild(ignoredEntry: string): boolean {
   return ignoredEntry.replace(/@[^@]+$/, '') === 'esbuild'
 }
 
+/**
+ * Extracts the package spec a package manager could not resolve, eg
+ * `@typescript-eslint/scope-manager@8.67.0`, from install output.
+ *
+ * npm scans newly published packages before they become installable, so a version can be
+ * tagged `latest` minutes before any client can resolve it - and a package that pins its
+ * siblings to exact versions is unresolvable for as long as one of them is still pending.
+ * Every package manager reports this as a plain "no matching version" failure, which reads
+ * like a broken dependency rather than a transient registry state.
+ *
+ * @see https://github.blog/changelog/2026-07-28-npm-publish-time-malware-scanning-and-dual-use-metadata/
+ */
+function getUnavailableVersion(commandOutput: string): string | undefined {
+  // Package managers wrap these messages, so match against whitespace-normalized output
+  const output = commandOutput.replaceAll(/\s+/g, ' ')
+
+  // pnpm: `ERR_PNPM_NO_MATCHING_VERSION No matching version found for <spec> while fetching…`
+  // npm: `npm error notarget No matching version found for <spec>.`
+  const noMatchingVersion = output.match(/No matching version found for (\S+)/)
+  if (noMatchingVersion) {
+    // npm ends the sentence here, pnpm continues, so only npm leaves trailing punctuation
+    return noMatchingVersion[1].replace(/[.,]+$/, '')
+  }
+
+  // yarn: `Couldn't find any versions for "<name>" that matches "<range>"`
+  const yarnNoVersions = output.match(
+    /Couldn't find any versions for "([^"]+)" that matches "([^"]+)"/,
+  )
+  if (yarnNoVersions) {
+    return `${yarnNoVersions[1]}@${yarnNoVersions[2]}`
+  }
+
+  // bun: `error: No version matching "<range>" found for specifier "<name>"`
+  const bunNoVersion = output.match(/No version matching "([^"]+)" found for specifier "([^"]+)"/)
+  if (bunNoVersion) {
+    return `${bunNoVersion[2]}@${bunNoVersion[1]}`
+  }
+
+  return undefined
+}
+
+function getUnavailableVersionNotice(spec: string, command: string, cwd: Options['cwd']): string {
+  const location = typeof cwd === 'string' ? ` in ${cwd}` : ''
+  return [
+    `${spec} isn't available from the npm registry yet.`,
+    'New releases are scanned before they become installable, which usually takes a few minutes.',
+    `Run '${command}'${location} again shortly, or check that the version exists on npm.`,
+  ].join(' ')
+}
+
 async function executePackageManagerCommand(
   packageManager: PackageManagerLibs,
   args: string[],
@@ -117,6 +167,18 @@ async function executePackageManagerCommand(
       // Log both streams - package managers often print the actionable error
       // details to stderr, so logging stdout alone can hide the failure reason.
       output.log(commandOutput)
+
+      const unavailableVersion = getUnavailableVersion(commandOutput)
+      if (unavailableVersion) {
+        output.warn(
+          getUnavailableVersionNotice(
+            unavailableVersion,
+            `${packageManager} ${args.join(' ')}`,
+            execOptions.cwd,
+          ),
+        )
+      }
+
       throw new CLIError(errorMessage, {exit: exitCodes.RUNTIME_ERROR})
     } else {
       succeed()

@@ -90,6 +90,26 @@ jobs:
           echo "$PUBLISHED_PACKAGES" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+      # npm scans new versions before making them installable, so a successful publish
+      # doesn't mean consumers can install yet. Our packages reference each other with
+      # `^` ranges, so a partially-available release is an unresolvable tree. A version
+      # can also be held for review or blocked outright - `timeout-minutes` turns that
+      # into a failed job rather than a wait with no end.
+      - name: Wait for published versions to become installable
+        if: ${{ steps.changesets.outputs.published == 'true' }}
+        timeout-minutes: 20
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          for spec in $(jq -r '.[] | "\(.name)@\(.version)"' <<< "$PUBLISHED_PACKAGES"); do
+            echo "Waiting for $spec"
+            until npm view "$spec" version > /dev/null 2>&1; do
+              echo "  not installable yet, retrying in 15s"
+              sleep 15
+            done
+            echo "  installable"
+          done
+
   post-release:
     runs-on: ubuntu-latest
     needs: release

@@ -571,6 +571,148 @@ describe('pnpm ignored build scripts', () => {
   })
 })
 
+describe('versions that are published but not yet installable', () => {
+  const workDir = '/test/project'
+  const context = {output: mockOutput, workDir}
+
+  test('explains the pnpm failure and how to retry', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: [
+        ' ERR_PNPM_NO_MATCHING_VERSION  No matching version found for @typescript-eslint/scope-manager@8.67.0 while fetching it from https://registry.npmjs.org/',
+        '',
+        'This error happened while installing the dependencies of @sanity/eslint-config-studio@6.0.0',
+        ' at typescript-eslint@8.67.0',
+        '',
+        'The latest release of @typescript-eslint/scope-manager is "8.66.0".',
+      ].join('\n'),
+      stdout: 'Progress: resolved 526, reused 526, downloaded 0, added 0',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(installDeclaredPackages(workDir, 'pnpm', context)).rejects.toMatchObject({
+      message: 'Dependency installation failed',
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+    })
+
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      "@typescript-eslint/scope-manager@8.67.0 isn't available from the npm registry yet. " +
+        'New releases are scanned before they become installable, which usually takes a few minutes. ' +
+        "Run 'pnpm install' in /test/project again shortly, or check that the version exists on npm.",
+    )
+  })
+
+  test('strips the trailing period npm puts after the spec', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: 'npm error notarget No matching version found for @sanity/cli-core@2.8.1.',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(installDeclaredPackages(workDir, 'npm', context)).rejects.toThrow(
+      'Dependency installation failed',
+    )
+
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining("@sanity/cli-core@2.8.1 isn't available from the npm registry yet."),
+    )
+  })
+
+  test('recognizes the yarn wording', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: 'error Couldn\'t find any versions for "sanity" that matches "^6.9.2"',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(installDeclaredPackages(workDir, 'yarn', context)).rejects.toThrow(
+      'Dependency installation failed',
+    )
+
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining("sanity@^6.9.2 isn't available from the npm registry yet."),
+    )
+  })
+
+  test('recognizes the bun wording, which names the range before the package', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: 'error: No version matching "8.67.0" found for specifier "typescript-eslint"',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(installDeclaredPackages(workDir, 'bun', context)).rejects.toThrow(
+      'Dependency installation failed',
+    )
+
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "typescript-eslint@8.67.0 isn't available from the npm registry yet.",
+      ),
+    )
+  })
+
+  test('handles output wrapped across lines', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: [
+        ' ERR_PNPM_NO_MATCHING_VERSION  No matching version found',
+        'for @typescript-eslint/utils@8.67.0 while fetching it from',
+        'https://registry.npmjs.org/',
+      ].join('\n'),
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(installDeclaredPackages(workDir, 'pnpm', context)).rejects.toThrow(
+      'Dependency installation failed',
+    )
+
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "@typescript-eslint/utils@8.67.0 isn't available from the npm registry yet.",
+      ),
+    )
+  })
+
+  test('points at the command that failed when adding packages', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr:
+        ' ERR_PNPM_NO_MATCHING_VERSION  No matching version found for next-sanity@11.0.0 while fetching it from https://registry.npmjs.org/',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(
+      installNewPackages({packageManager: 'pnpm', packages: ['next-sanity']}, context),
+    ).rejects.toThrow('Package installation failed')
+
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Run 'pnpm add --save-prod next-sanity' in /test/project again"),
+    )
+  })
+
+  test('stays quiet for failures that are not a missing version', async () => {
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: ' ERR_PNPM_FETCH_401  GET https://registry.npmjs.org/private-pkg: Unauthorized',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await expect(installDeclaredPackages(workDir, 'pnpm', context)).rejects.toThrow(
+      'Dependency installation failed',
+    )
+
+    expect(mockOutput.warn).not.toHaveBeenCalled()
+  })
+})
+
 describe('error handling edge cases', () => {
   const workDir = '/test/project'
   const context = {output: mockOutput, workDir}
