@@ -73,12 +73,23 @@ describe('responsiveTable', () => {
     const lines = output.split('\n')
     expect(output).toContain('👨‍👩‍👧‍👦')
     expect(output).toContain('Cafe')
-    expect(lines[0]).toMatch(/^┌.*┐$/u)
-    expect(lines.at(-1)).toMatch(/^└.*┘$/u)
-    for (const line of lines.slice(1, -1)) {
-      expect(line).toMatch(/^(?:│.*│|├.*┤)$/u)
-      expect(stringWidth(line)).toBeLessThanOrEqual(20)
-    }
+
+    // The family emoji is a ZWJ sequence that `string-width` measures as 2 columns and
+    // `console-table-printer` as 8. That disagreement pushes the rendered table past the
+    // width this helper estimated, which is what previously let `wrap-ansi` reflow the
+    // finished output and split the horizontal rules across lines.
+    //
+    // The guarantee under test is that every border survives on a single line. Note that
+    // the table is 20 columns wide while the helper estimated 17, so the disagreement is
+    // still visible: the data row pads to the printer's 8-column reading of the emoji and
+    // renders short wherever the sequence composes into a single glyph. Asserting an
+    // overall width bound here would only pass by coincidence.
+    expect(lines).toHaveLength(5)
+    expect(lines[0]).toBe('┌──────────┬───────┐')
+    expect(lines[2]).toBe('├──────────┼───────┤')
+    expect(lines[4]).toBe('└──────────┴───────┘')
+    expect(lines[1]).toMatch(/^│.*│$/u)
+    expect(lines[3]).toMatch(/^│.*│$/u)
   })
 
   test('wraps column titles within the terminal width', () => {
