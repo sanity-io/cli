@@ -67,7 +67,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
     expect(existsSync(`${tmp.path}/sanity.config.js`)).toBe(false)
   })
 
-  test.each(['clean', 'blog', 'page-builder'])(
+  test.each(['clean', 'blog', 'page-builder', 'shopify', 'shopify-online-storefront'])(
     'creates studio with %s template',
     async (template) => {
       const {error} = await runCli({
@@ -89,7 +89,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
       if (error) throw error
       expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
       expect(existsSync(`${tmp.path}/package.json`)).toBe(true)
-      if (template === 'blog' || template === 'page-builder') {
+      if (template !== 'clean') {
         expect(existsSync(`${tmp.path}/schemaTypes`)).toBe(true)
       }
     },
