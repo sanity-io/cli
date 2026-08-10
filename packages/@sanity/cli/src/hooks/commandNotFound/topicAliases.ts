@@ -26,16 +26,16 @@ const hook: Hook.CommandNotFound = async function (opts) {
   // Standardize the ID (handles topic separator differences)
   const standardId = toStandardizedId(id, config)
   const parts = standardId.split(':')
+  const hasTopic = parts.length === 1
   const rewrittenId = resolveTopicAlias(standardId)
 
   const aliasExists =
-    rewrittenId &&
-    (parts.length === 1 ? config.findTopic(rewrittenId) : config.findCommand(rewrittenId))
+    rewrittenId && (hasTopic ? config.findTopic(rewrittenId) : config.findCommand(rewrittenId))
   if (aliasExists) {
     debug('Rewriting topic: %s -> %s', parts[0], rewrittenId.split(':')[0])
 
     // Bare topic (eg "sanity dataset" with no subcommand) -> show topic help
-    if (parts.length === 1) {
+    if (hasTopic) {
       return config.runCommand('help', [rewrittenId])
     }
 
