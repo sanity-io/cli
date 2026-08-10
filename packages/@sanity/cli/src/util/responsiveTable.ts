@@ -72,36 +72,43 @@ export class Table {
     }
 
     const tableWidth = borderWidth + columnWidths.reduce((total, width) => total + width, 0)
-    const renderTable = (title?: string) => {
-      const table = new ConsoleTable({
-        rowSeparator: true,
-        ...this.#options,
-        columns: columns.map((column, index) => ({
-          ...column,
-          maxLen: columnWidths[index],
-          title: wrapAnsi(columnTitles[index], columnWidths[index], {hard: true}),
-        })),
-        title,
-      })
+    const renderedColumns = columns.map((column, index) => ({
+      ...column,
+      maxLen: columnWidths[index],
+      title: wrapAnsi(columnTitles[index], columnWidths[index], {hard: true}),
+    }))
+    const table = new ConsoleTable({
+      rowSeparator: true,
+      ...this.#options,
+      columns: renderedColumns,
+      title: undefined,
+    })
 
-      for (const {cells, options} of this.#rows) {
-        const wrappedCells = {...cells}
-        for (const [index, {name}] of columns.entries()) {
-          wrappedCells[name] = wrapAnsi(cellText(cells[name]), columnWidths[index], {hard: true})
-        }
-        table.addRow(wrappedCells, options)
+    for (const {cells, options} of this.#rows) {
+      const wrappedCells = {...cells}
+      for (const [index, {name}] of columns.entries()) {
+        wrappedCells[name] = wrapAnsi(cellText(cells[name]), columnWidths[index], {hard: true})
       }
-
-      return table.render()
+      table.addRow(wrappedCells, options)
     }
 
-    const renderedTable = renderTable()
+    const renderedTable = table.render()
     if (!this.#options.title) return renderedTable
 
-    const renderedWithTitle = renderTable(this.#options.title)
-    const tableSuffix = `\n${renderedTable}`
-    const renderedTitle = renderedWithTitle.slice(0, -tableSuffix.length)
+    // Use empty tables to preserve the printer's title styling without invoking row callbacks again.
+    const titleTableOptions = {
+      ...this.#options,
+      columns: renderedColumns,
+      rows: undefined,
+    }
+    const renderedTitleTable = new ConsoleTable({
+      ...titleTableOptions,
+      title: this.#options.title,
+    }).render()
+    const renderedEmptyTable = new ConsoleTable({...titleTableOptions, title: undefined}).render()
+    const emptyTableSuffix = `\n${renderedEmptyTable}`
+    const renderedTitle = renderedTitleTable.slice(0, -emptyTableSuffix.length)
     const wrappedTitle = wrapAnsi(renderedTitle, tableWidth, {hard: true, trim: false})
-    return `${wrappedTitle}${tableSuffix}`
+    return `${wrappedTitle}\n${renderedTable}`
   }
 }

@@ -1,5 +1,5 @@
 import stringWidth from 'string-width'
-import {afterEach, describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {Table} from '../responsiveTable.js'
 
@@ -139,5 +139,30 @@ describe('responsiveTable', () => {
     for (const line of output.split('\n')) {
       expect(stringWidth(line)).toBeLessThanOrEqual(20)
     }
+  })
+
+  test('filters titled table rows only once', () => {
+    let remainingRows = 1
+    const filter = vi.fn(() => remainingRows-- > 0)
+    const table = new Table({
+      columns: [
+        {alignment: 'left', name: 'name', title: 'Name'},
+        {alignment: 'left', name: 'role', title: 'Role'},
+      ],
+      filter,
+      shouldDisableColors: true,
+      title: 'Users',
+    })
+
+    table.addRows([
+      {name: 'Ada', role: 'Administrator'},
+      {name: 'Grace', role: 'Developer'},
+    ])
+
+    const output = table.render()
+    expect(output).toContain('Users')
+    expect(output).toContain('Ada')
+    expect(output).not.toContain('Grace')
+    expect(filter).toHaveBeenCalledTimes(2)
   })
 })
