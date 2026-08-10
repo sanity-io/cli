@@ -1,14 +1,17 @@
 import {mkdirSync} from 'node:fs'
+import path from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {runWithCliExecutionContext} from '../../../executionContext.js'
+import {getSanityConfigDir} from '../../../util/getSanityConfigDir.js'
 import {readJsonFileSync} from '../../../util/readJsonFileSync'
 import {writeJsonFileSync} from '../../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedToken, setCachedToken} from '../cliTokenCache.js'
 import {
   _internals,
   getCliToken,
+  getCliTokenInfo,
   getCliUserConfig,
   getUserConfig,
   setCliUserConfig,
@@ -69,7 +72,7 @@ describe('cliUserConfig', () => {
     })
 
     test('should return cached token if available', async () => {
-      vi.mocked(getCachedToken).mockReturnValue('cached-token')
+      vi.mocked(getCachedToken).mockReturnValue({source: 'cached-source', token: 'cached-token'})
       const token = await getCliToken()
       expect(token).toEqual('cached-token')
     })
@@ -80,7 +83,10 @@ describe('cliUserConfig', () => {
 
       const token = await getCliToken()
       expect(token).toEqual('cached-env-token')
-      expect(vi.mocked(setCachedToken)).toHaveBeenCalledWith('cached-env-token')
+      expect(vi.mocked(setCachedToken)).toHaveBeenCalledWith({
+        source: 'SANITY_AUTH_TOKEN environment variable',
+        token: 'cached-env-token',
+      })
       expect(mockGetCliUserConfig).not.toHaveBeenCalled()
     })
 
@@ -90,7 +96,10 @@ describe('cliUserConfig', () => {
 
       const token = await getCliToken()
       expect(token).toEqual('cached-config-token')
-      expect(vi.mocked(setCachedToken)).toHaveBeenCalledWith('cached-config-token')
+      expect(vi.mocked(setCachedToken)).toHaveBeenCalledWith({
+        source: expect.stringContaining('config.json'),
+        token: 'cached-config-token',
+      })
       expect(mockGetCliUserConfig).toHaveBeenCalledTimes(1)
     })
 
@@ -101,7 +110,7 @@ describe('cliUserConfig', () => {
     })
 
     test('should prefer execution context token over env, config and cache', async () => {
-      vi.mocked(getCachedToken).mockReturnValue('cached-token')
+      vi.mocked(getCachedToken).mockReturnValue({source: 'cached-source', token: 'cached-token'})
       vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
 
       const token = await runWithCliExecutionContext({token: 'context-token'}, () => getCliToken())
@@ -115,7 +124,7 @@ describe('cliUserConfig', () => {
     })
 
     test('execution context without token never falls back to host resolution', async () => {
-      vi.mocked(getCachedToken).mockReturnValue('cached-token')
+      vi.mocked(getCachedToken).mockReturnValue({source: 'cached-source', token: 'cached-token'})
       vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
 
       const token = await runWithCliExecutionContext({}, () => getCliToken())
@@ -138,6 +147,54 @@ describe('cliUserConfig', () => {
       const secondCall = await getCliToken()
       expect(secondCall).toBe('second-token')
       expect(mockGetCliUserConfig).toHaveBeenCalledTimes(2)
+    })
+
+    test('returns the execution context as the token source', async () => {
+      const tokenInfo = await runWithCliExecutionContext({token: 'context-token'}, () =>
+        getCliTokenInfo(),
+      )
+
+      expect(tokenInfo).toEqual({source: 'CLI execution context', token: 'context-token'})
+    })
+
+    test('returns the environment variable as the token source', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+
+      const tokenInfo = await getCliTokenInfo()
+
+      expect(tokenInfo).toEqual({
+        source: 'SANITY_AUTH_TOKEN environment variable',
+        token: 'env-token',
+      })
+    })
+
+    test('returns the custom config path as the token source', async () => {
+      vi.stubEnv('SANITY_CLI_CONFIG_PATH', '/test/custom-config.json')
+      mockGetCliUserConfig.mockReturnValue('config-token')
+
+      const tokenInfo = await getCliTokenInfo()
+
+      expect(tokenInfo).toEqual({source: '/test/custom-config.json', token: 'config-token'})
+    })
+
+    test('returns the default config path as the token source', async () => {
+      mockGetCliUserConfig.mockReturnValue('config-token')
+
+      const tokenInfo = await getCliTokenInfo()
+
+      expect(tokenInfo).toEqual({
+        source: path.join(getSanityConfigDir(), 'config.json'),
+        token: 'config-token',
+      })
+    })
+
+    test('returns the cached token and its original source', async () => {
+      const cachedTokenInfo = {source: 'cached-source', token: 'cached-token'}
+      vi.mocked(getCachedToken).mockReturnValue(cachedTokenInfo)
+
+      const tokenInfo = await getCliTokenInfo()
+
+      expect(tokenInfo).toBe(cachedTokenInfo)
     })
   })
 

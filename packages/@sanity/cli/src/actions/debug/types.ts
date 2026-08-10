@@ -8,6 +8,7 @@ export interface UserInfo {
 
 export interface AuthInfo {
   authToken: string | undefined
+  authTokenSource: string | undefined
   hasToken: boolean
   userType: string
 }
