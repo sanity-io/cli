@@ -731,6 +731,35 @@ This creates a changeset file in `.changeset/`. If you do this, write `N/A` in t
 3. **Merging the Version Packages PR** triggers publishing to npm
 4. **GitHub Releases** are automatically created for each published package
 
+### The `pending` Dist-Tag
+
+Step 3 does not publish straight to `latest`. npm [scans new versions for malware at publish time](https://github.blog/changelog/2026-07-28-npm-publish-time-malware-scanning-and-dual-use-metadata/) and holds each one for roughly 5-15 minutes before it resolves on the registry. Our packages pin each other (`create-sanity` pins `@sanity/cli` exactly), so if one package clears the scan before a dependency does, `latest` would point at a version nobody can install and `npm create sanity` would break.
+
+So the Release workflow:
+
+1. Publishes everything under a temporary `pending` dist-tag, leaving `latest` on the previous, mutually consistent set of versions
+2. Polls the registry until every published version resolves (up to 20 minutes)
+3. Moves `latest` onto the new versions and drops the `pending` tag
+
+While this is running, `npm install @sanity/cli@latest` keeps returning the previous release. That is intentional.
+
+Note that step 3 needs the `NPM_PUBLISH_TOKEN` secret rather than OIDC, because npm's trusted publishing only covers `npm publish`, not `npm dist-tag` ([npm/cli#8547](https://github.com/npm/cli/issues/8547)).
+
+### Recovering From a Stuck Release
+
+If the Release workflow fails **after** publishing (most likely the wait in step 2 timing out because npm's scan is slow, or the job being cancelled), the new versions are on npm but still parked on `pending`, and `latest` has not moved. Users are unaffected, but the release has not landed.
+
+**Do not re-run the Release workflow.** It will not finish the job: changesets sees the versions as already published, reports nothing as newly published, and skips promotion entirely.
+
+Instead:
+
+1. Go to **Actions** → **Promote to latest** → **Run workflow**
+2. It finds every package with a version on `pending`, waits for those versions to become installable, then moves `latest` onto them
+
+The workflow takes no input and reads the versions off the registry, so it can only promote what the Release workflow already parked. If nothing is on `pending` it fails with a message saying so, which means either the release completed normally or it failed before publishing anything.
+
+If it keeps timing out, check [npm status](https://status.npmjs.org/) before digging further. A held-for-manual-review publish will not clear on its own.
+
 ### Propagating Releases to the Sanity Monorepo
 
 Publishing `@sanity/cli` and `create-sanity` to npm is only the first step. Most users do not depend on `@sanity/cli` directly — they invoke it through `npx sanity` or as a transitive dependency of the `sanity` package. For a release to actually reach those users, the CLI version must also be bumped in the [sanity-io/sanity](https://github.com/sanity-io/sanity) monorepo.
