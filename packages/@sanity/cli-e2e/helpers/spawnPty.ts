@@ -28,8 +28,13 @@ export interface InteractiveSession {
   /** Send a named key (maps to escape sequence internally) */
   sendKey(key: KeyName): void
 
-  /** Wait for process exit, returns exit code. Throws on timeout. */
-  waitForExit(timeout?: number): Promise<number>
+  /**
+   * Wait for the process to exit with `expected` exit code, or pass `'any'` to accept
+   * whatever code it exits with. Throws on timeout and on a mismatched exit code; both
+   * errors include the captured output. Returns nothing on purpose — there is no bare
+   * exit code to assert on, so a failure always carries the session output with it.
+   */
+  waitForExit(expected: 'any' | number, timeout?: number): Promise<void>
 
   /** Wait until stripped output matches pattern, or throw after timeout */
   waitForText(pattern: RegExp, opts?: {timeout?: number}): Promise<void>
@@ -155,21 +160,41 @@ export function spawnPty({args = [], command, cwd, env}: SpawnPtyOptions): Inter
       ptyProcess.write(sequence)
     },
 
-    async waitForExit(timeout = DEFAULT_TIMEOUT): Promise<number> {
-      if (exitResult !== null) {
-        return exitResult.exitCode
-      }
+    async waitForExit(expected: 'any' | number, timeout = DEFAULT_TIMEOUT): Promise<void> {
+      const exitCode = await new Promise<number>((resolve, reject) => {
+        if (exitResult !== null) {
+          resolve(exitResult.exitCode)
+          return
+        }
 
-      return new Promise<number>((resolve, reject) => {
+        const onExit = (code: number) => {
+          clearTimeout(timer)
+          resolve(code)
+        }
+
+        // `node-pty` exposes exit as a plain callback with no way to cancel a listener,
+        // so on the timeout path we deregister `onExit` ourselves. Otherwise a later exit
+        // would still invoke it against an already-rejected promise.
         const timer = setTimeout(() => {
-          reject(new Error(`Process did not exit within ${timeout}ms`))
+          const index = exitCallbacks.indexOf(onExit)
+          if (index !== -1) {
+            exitCallbacks.splice(index, 1)
+          }
+          reject(
+            new Error(
+              `Process did not exit within ${timeout}ms\n\nCurrent output:\n${stripAnsi(output)}`,
+            ),
+          )
         }, timeout)
 
-        exitCallbacks.push((exitCode) => {
-          clearTimeout(timer)
-          resolve(exitCode)
-        })
+        exitCallbacks.push(onExit)
       })
+
+      if (expected !== 'any' && exitCode !== expected) {
+        throw new Error(
+          `Process exited with code ${exitCode}, expected ${expected}\n\nCurrent output:\n${stripAnsi(output)}`,
+        )
+      }
     },
 
     async waitForText(pattern: RegExp, opts?: {timeout?: number}): Promise<void> {

@@ -1836,6 +1836,51 @@ describe('#deploy studio', () => {
       expect(error?.oclif?.exit).toBe(1)
     })
 
+    test('should show the worker error when SchemaExtractionError has no validation details', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+
+      mockStudioWorkerTask.mockResolvedValue({
+        error: 'Workspace base paths must share the same first segment',
+        type: 'error',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      expect(error?.message).toContain('Workspace base paths must share the same first segment')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
     test('should handle worker generic error', async () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd

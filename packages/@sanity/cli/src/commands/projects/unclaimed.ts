@@ -1,40 +1,18 @@
-import {styleText} from 'node:util'
-
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
-import size from 'lodash-es/size.js'
 
 import {formatKeyValue, sectionHeader} from '../../actions/debug/output.js'
 import {getProjectClaimStatus} from '../../services/projects.js'
+import {Table} from '../../util/responsiveTable.js'
 import {
   readUnclaimedProjects,
   removeUnclaimedProject,
   type UnclaimedProjectRecord,
 } from '../../util/unclaimedProjects.js'
 
-const listFields = ['id', 'dataset', 'created', 'claim deadline', 'claim url']
-
-function recordRow(record: UnclaimedProjectRecord): string[] {
-  return [record.projectId, record.dataset, record.mintedAt, record.expiresAt, record.claimUrl]
-}
-
 function isExpired(record: UnclaimedProjectRecord): boolean {
   return Date.parse(record.expiresAt) <= Date.now()
-}
-
-function formatTable(fields: string[], rows: string[][]): string[] {
-  const maxWidths = fields.map((field) => size(field))
-  for (const row of rows) {
-    for (const [index, value] of row.entries()) {
-      maxWidths[index] = Math.max(size(value), maxWidths[index])
-    }
-  }
-
-  const formatRow = (row: string[]) =>
-    row.map((value, index) => value.padEnd(maxWidths[index])).join('   ')
-
-  return [styleText('cyan', formatRow(fields)), ...rows.map((row) => formatRow(row))]
 }
 
 export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProjectsCommand> {
@@ -167,12 +145,25 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
       return
     }
 
-    for (const line of formatTable(
-      listFields,
-      records.map((record) => recordRow(record)),
-    )) {
-      this.output.log(line)
+    const table = new Table({
+      columns: [
+        {alignment: 'left', name: 'id', title: 'ID'},
+        {alignment: 'left', name: 'dataset', title: 'Dataset'},
+        {alignment: 'left', name: 'created', title: 'Created'},
+        {alignment: 'left', name: 'claimDeadline', title: 'Claim deadline'},
+        {alignment: 'left', name: 'claimUrl', title: 'Claim URL'},
+      ],
+    })
+    for (const record of records) {
+      table.addRow({
+        claimDeadline: record.expiresAt,
+        claimUrl: record.claimUrl,
+        created: record.mintedAt,
+        dataset: record.dataset,
+        id: record.projectId,
+      })
     }
+    this.output.log(table.render())
     if (claimedProjectIds.length > 0 || expiredProjectIds.length > 0) {
       this.output.log()
       for (const expiredProjectId of expiredProjectIds) {

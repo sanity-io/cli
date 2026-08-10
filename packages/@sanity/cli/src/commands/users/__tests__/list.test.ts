@@ -1,6 +1,7 @@
 import {getProjectCliClient} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
+import stringWidth from 'string-width'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
@@ -32,6 +33,7 @@ const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 describe('#list', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    Reflect.deleteProperty(process.stdout, 'columns')
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'pending mocks').toEqual([])
@@ -111,15 +113,54 @@ describe('#list', () => {
 
     const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
-    // The rendered table reaches stdout, and the Roles cell holds a dash
-    expect(stdout).toMatchInlineSnapshot(`
-      "┌────────────────────────────────┬──────────────────────────────────────────┬────────────────────────────────┬──────────────┐
-      │ ID                             │ Name                                     │ Roles                          │ Date         │
-      ├────────────────────────────────┼──────────────────────────────────────────┼────────────────────────────────┼──────────────┤
-      │ user1                          │ User One                                 │ -                              │ 2023-01-01   │
-      └────────────────────────────────┴──────────────────────────────────────────┴────────────────────────────────┴──────────────┘
-      "
-    `)
+    expect(stdout).toMatch(/│ user1\s+│ User One\s+│ -\s+│ 2023-01-01\s+│/)
+  })
+
+  test('wraps long values within the terminal width', async () => {
+    Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 60})
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({
+          members: [
+            {
+              id: 'user1',
+              isRobot: false,
+              roles: [
+                {title: 'Administrator'},
+                {title: 'Editor'},
+                {title: 'Viewer'},
+                {title: 'Developer'},
+              ],
+            },
+          ],
+        }),
+      },
+    } as never)
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
+    }).reply(200, [])
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/user1'}).reply(200, [
+      {
+        createdAt: '2023-01-01T12:34:56.789Z',
+        displayName: 'A deliberately overlong display name 日本語の折り返し確認用 🎉',
+        id: 'user1',
+      },
+    ])
+
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
+
+    expect(stdout).toContain('deliberately')
+    expect(stdout).toContain('overlong')
+    expect(stdout).toContain('日本語')
+    expect(stdout).toContain('Administrator')
+    expect(stdout).toContain('Developer')
+    expect(stdout).toContain('2023-01-01')
+    expect(stdout).not.toContain('12:34:56.789Z')
+    expect(stdout).not.toContain('...')
+    for (const line of stdout.trim().split('\n')) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(60)
+    }
   })
 
   test('displays pending invitations correctly', async () => {

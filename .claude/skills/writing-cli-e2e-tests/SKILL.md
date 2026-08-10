@@ -71,7 +71,7 @@ Every command should have both interactive and non-interactive tests. Non-intera
 
 Some tests cannot run to completion by design. These are the only acceptable exceptions to the "complete flows" principle:
 
-- **Abort handling (Ctrl+C):** One test per command that sends `sendControl('c')` at the earliest prompt and asserts `expect(exitCode).toBe(130)` (SIGINT). One abort test is sufficient — the abort mechanism is the same regardless of which prompt stage it fires at, so testing Ctrl+C at multiple stages adds cost without value.
+- **Abort handling (Ctrl+C):** One test per command that sends `sendControl('c')` at the earliest prompt and awaits `session.waitForExit(130)` (SIGINT). One abort test is sufficient — the abort mechanism is the same regardless of which prompt stage it fires at, so testing Ctrl+C at multiple stages adds cost without value.
 - **Unauthenticated prompts:** Tests that verify login prompts appear when no token is provided. These can't complete because there's no real login flow in tests.
 
 Keep these minimal — one of each per command, at the top level (no `describe` wrapper). Every other test should run to completion.
@@ -187,8 +187,7 @@ test('walks through template, TypeScript, and package manager prompts', async ()
   await session.waitForText(/package manager/i)
   session.sendKey('Enter')
 
-  const exitCode = await session.waitForExit(90_000)
-  expect(exitCode).toBe(0)
+  await session.waitForExit(0, 90_000)
   expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
 })
 ```
@@ -265,8 +264,7 @@ test('complete interactive flow selects project and dataset', async () => {
   await session.waitForText(/Package manager to use/i)
   await session.selectOption('pnpm')
 
-  const exitCode = await session.waitForExit(90_000)
-  expect(exitCode).toBe(0)
+  await session.waitForExit(0, 90_000)
 
   expect(existsSync(`${tmp.path}/src/App.tsx`)).toBe(true)
 })
