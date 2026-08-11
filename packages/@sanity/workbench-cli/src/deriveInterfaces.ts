@@ -78,10 +78,9 @@ export function deriveInterfaces(
       }
       return {...shared(view.type, view), metadata: null}
     }),
-    ...(app.services ?? []).map((service): DerivedInterface => ({
-      ...shared('worker', service),
-      metadata: null,
-    })),
+    ...(app.services ?? []).map(
+      (service): DerivedInterface => ({...shared('worker', service), metadata: null}),
+    ),
     ...(entry === undefined
       ? []
       : [
