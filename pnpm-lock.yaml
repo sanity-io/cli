@@ -88,8 +88,8 @@ catalogs:
       specifier: ^4.14.0
       version: 4.14.0
     groq-js:
-      specifier: ^1.30.3
-      version: 1.30.3
+      specifier: ^2.0.0
+      version: 2.0.0
     import-meta-resolve:
       specifier: ^4.2.0
       version: 4.2.0
@@ -638,7 +638,7 @@ importers:
         version: 6.0.1
       groq-js:
         specifier: 'catalog:'
-        version: 1.30.3
+        version: 2.0.0
       gunzip-maybe:
         specifier: ^1.4.2
         version: 1.4.2
