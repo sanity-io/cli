@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.8.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v2.8.0...cli-core-v2.8.1)
+
+_2026-08-04_
+
+### Bug Fixes
+
+- ensure programmatic CLI calls don't use host lineage or debug configuration ([#1658](https://github.com/sanity-io/cli/pull/1658)) ([858a487](https://github.com/sanity-io/cli/commit/858a487e53b4f475c829e52267770f571d311cfa))
+
+  Fixes a bug where programmatic CLI use would inherit the host's [Sanity lineage](https://www.sanity.io/docs/functions/functions-cheatsheet#k7a3b783ece7d) and `DEBUG` configuration
+
+## [2.8.0](https://github.com/sanity-io/cli/compare/cli-core-v2.7.1...cli-core-v2.8.0)
+
+_2026-08-03_
+
+### Features
+
+- **cli:** add sanity new, sanity projects unclaimed ([#1622](https://github.com/sanity-io/cli/pull/1622)) ([558b79b](https://github.com/sanity-io/cli/commit/558b79bb5218e7ba6e3b970c2140121ed99e262e))
+
+### Bug Fixes
+
+- **config:** stop workbench types from leaking into app config ([#1632](https://github.com/sanity-io/cli/pull/1632)) ([b63bae4](https://github.com/sanity-io/cli/commit/b63bae404e8fc98cb3eefba1e0b978f7b3ae5975))
+
+## [2.7.1](https://github.com/sanity-io/cli/compare/cli-core-v2.7.0...cli-core-v2.7.1)
+
+_2026-07-29_
+
+### Bug Fixes
+
+- Stricter context for cli invoke ([#1618](https://github.com/sanity-io/cli/pull/1618)) ([f857468](https://github.com/sanity-io/cli/commit/f85746877a7913bbab5c7cf43c4d6dbacd09504e))
+
+## [2.7.0](https://github.com/sanity-io/cli/compare/cli-core-v2.6.0...cli-core-v2.7.0)
+
+_2026-07-29_
+
+### Features
+
+- support providing sanityEnv to execution context ([#1608](https://github.com/sanity-io/cli/pull/1608)) ([161efb5](https://github.com/sanity-io/cli/commit/161efb54ec091c2c9603b6e6e469deb12fd374a1))
+
 ## [2.6.0](https://github.com/sanity-io/cli/compare/cli-core-v2.5.1...cli-core-v2.6.0)
 
 _2026-07-28_

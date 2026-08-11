@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import {join} from 'node:path'
 
+import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {writeWorkbenchRuntime} from '../writeWorkbenchRuntime.js'
@@ -82,6 +83,18 @@ describe('writeWorkbenchRuntime', () => {
 
       const html = written('index.html')
       expect(html).toContain(`<script>globalThis.__SANITY_STAGING__ = ${expected}</script>`)
+    })
+
+    test('prefers the invocation environment', async () => {
+      vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
+
+      await runWithCliExecutionContext({sanityEnv: 'staging'}, () =>
+        writeWorkbenchRuntime({cwd: CWD, reactStrictMode: false}),
+      )
+
+      expect(written('index.html')).toContain(
+        '<script>globalThis.__SANITY_STAGING__ = true</script>',
+      )
     })
   })
 

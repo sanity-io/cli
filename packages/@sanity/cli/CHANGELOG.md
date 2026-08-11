@@ -1,5 +1,122 @@
 # Change Log
 
+## 7.18.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.17.0...cli-v7.18.0)
+
+_2026-08-04_
+
+### Features
+
+- **new:** add `sanity new --instructions` to print the sanity.new setup guide verbatim ([#1666](https://github.com/sanity-io/cli/pull/1666)) ([aa934e2](https://github.com/sanity-io/cli/commit/aa934e29d24581b044ba5c0857e7b862325c30b9))
+
+### Bug Fixes
+
+- **cli:** disallow setting cookies in programmatic `sanity api` invocations ([#1657](https://github.com/sanity-io/cli/pull/1657)) ([9361c25](https://github.com/sanity-io/cli/commit/9361c25c32136f4cab5becc8a4904ce39b07ccd4))
+
+  Fixes a bug that allows users to provide a `Cookie` header to `sanity api` when using `run_sanity_cli` via the Sanity MCP server.
+
+- **cli:** disallow url-embedded credentials in programmatic `sanity api` invocations ([#1655](https://github.com/sanity-io/cli/pull/1655)) ([67041e5](https://github.com/sanity-io/cli/commit/67041e5594f911475cc4065e72a561d96f700c36))
+
+  Fixes a bug that allows users to specify a username and password in the URL passed to `sanity api` when using `run_sanity_cli` via the Sanity MCP server.
+
+- ensure programmatic CLI calls don't use host lineage or debug configuration ([#1658](https://github.com/sanity-io/cli/pull/1658)) ([858a487](https://github.com/sanity-io/cli/commit/858a487e53b4f475c829e52267770f571d311cfa))
+
+  Fixes a bug where programmatic CLI use would inherit the host's [Sanity lineage](https://www.sanity.io/docs/functions/functions-cheatsheet#k7a3b783ece7d) and `DEBUG` configuration
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.8.1
+
+## 7.17.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.16.0...cli-v7.17.0)
+
+_2026-08-04_
+
+### Features
+
+- **cli:** sanity -v now works as an alias for sanity --version ([#1649](https://github.com/sanity-io/cli/pull/1649)) ([75697ae](https://github.com/sanity-io/cli/commit/75697ae0943344c7be07b77aa68ab94b28fee361))
+- **workbench:** register tile view type ([#1659](https://github.com/sanity-io/cli/pull/1659)) ([1ae4d8e](https://github.com/sanity-io/cli/commit/1ae4d8e1ae625e08fca3ae1273fab46f91c33677))
+
+### Bug Fixes
+
+- **init:** bump shopify template plugin pins for sanity 6 compatibility ([#1643](https://github.com/sanity-io/cli/pull/1643)) ([280b621](https://github.com/sanity-io/cli/commit/280b62190264f63b6271c29b7bab9680087d0e78))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.10.0
+
+## [7.16.0](https://github.com/sanity-io/cli/compare/cli-v7.15.1...cli-v7.16.0)
+
+_2026-08-03_
+
+### Features
+
+- **workbench:** drop `name` from unstable_defineApp ([#1631](https://github.com/sanity-io/cli/pull/1631)) ([b11a64b](https://github.com/sanity-io/cli/commit/b11a64b65401e9baa93ad318486baa5c9c55480e))
+- **cli:** add sanity new, sanity projects unclaimed ([#1622](https://github.com/sanity-io/cli/pull/1622)) ([558b79b](https://github.com/sanity-io/cli/commit/558b79bb5218e7ba6e3b970c2140121ed99e262e))
+- **workbench:** register asset_source view type ([#1638](https://github.com/sanity-io/cli/pull/1638)) ([7eae909](https://github.com/sanity-io/cli/commit/7eae9097aa1278a5d97ff41e8526dbd41f040434))
+- **cli:** show terms of service in sanity new ([#1642](https://github.com/sanity-io/cli/pull/1642)) ([ccc4875](https://github.com/sanity-io/cli/commit/ccc487584317980ca44894795b82e9abb3ce8382))
+
+### Bug Fixes
+
+- **deploy:** build and deploy a federated studio with its installed package versions rather than silently ignoring `deployment.autoUpdates`, report the existing app id when its slug is already taken, and apply the app's `visibility` ([#1635](https://github.com/sanity-io/cli/pull/1635)) ([206c037](https://github.com/sanity-io/cli/commit/206c0371b56ab852ea779ccf258e1ddfc1488ac3))
+- **cli:** show table output when commands are run programmatically ([#1648](https://github.com/sanity-io/cli/pull/1648)) ([3798bbe](https://github.com/sanity-io/cli/commit/3798bbe275d1e92bb0a6f677f81b229361fa002d))
+
+  Commands that render tables, such as `sanity users list`, produced no output when invoked programmatically instead of from a terminal. `sanity users list` now also reports when a project has no members rather than printing an empty table.
+
+- **init:** use @sanity/icons v5 de-barrelled imports in templates ([#1623](https://github.com/sanity-io/cli/pull/1623)) ([5533567](https://github.com/sanity-io/cli/commit/5533567c49df404c8059b86f599a1db2a65c5b01))
+- **config:** stop workbench types from leaking into app config ([#1632](https://github.com/sanity-io/cli/pull/1632)) ([b63bae4](https://github.com/sanity-io/cli/commit/b63bae404e8fc98cb3eefba1e0b978f7b3ae5975))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 1.9.0
+    - @sanity/cli-core bumped to 2.8.0
+
+## [7.15.1](https://github.com/sanity-io/cli/compare/cli-v7.15.0...cli-v7.15.1)
+
+_2026-07-29_
+
+### Bug Fixes
+
+- Stricter context for cli invoke ([#1618](https://github.com/sanity-io/cli/pull/1618)) ([f857468](https://github.com/sanity-io/cli/commit/f85746877a7913bbab5c7cf43c4d6dbacd09504e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.1
+
+## [7.15.0](https://github.com/sanity-io/cli/compare/cli-v7.14.0...cli-v7.15.0)
+
+_2026-07-29_
+
+### Features
+
+- support providing sanityEnv to execution context ([#1608](https://github.com/sanity-io/cli/pull/1608)) ([161efb5](https://github.com/sanity-io/cli/commit/161efb54ec091c2c9603b6e6e469deb12fd374a1))
+- return commandId in InvokeSanityCliResult ([#1609](https://github.com/sanity-io/cli/pull/1609)) ([29d220a](https://github.com/sanity-io/cli/commit/29d220a9bdcf698189402159f85b2909ca30aa99))
+
+### Bug Fixes
+
+- **cli:** update MCP policy command set to prevent authentication overrides for `sanity api` ([#1611](https://github.com/sanity-io/cli/pull/1611)) ([c508d5e](https://github.com/sanity-io/cli/commit/c508d5e6c8154b1ce5e94d4424c53a20e3e556dc))
+- bump Sanity package baselines in catalog and CLI manifest ([#1606](https://github.com/sanity-io/cli/pull/1606)) ([fdfd3e4](https://github.com/sanity-io/cli/commit/fdfd3e4dac329955337fb2fb802fc9c2e7c475f1))
+- **cli:** move --with-token argument to be first in sanity login ([#1589](https://github.com/sanity-io/cli/pull/1589)) ([32d18dc](https://github.com/sanity-io/cli/commit/32d18dcb613180b90b561d9c011e65df39372cd9))
+- **cli:** handle `PrettyPrintableError`s thrown during `invokeSanityCli()` execution, including error code, suggestions, and references ([#1612](https://github.com/sanity-io/cli/pull/1612)) ([20896ec](https://github.com/sanity-io/cli/commit/20896eccaa9fe66bb26e56e481a7e6227cc9ea08))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 5.1.0
+    - @sanity/cli-core bumped to 2.7.0
+    - @sanity/workbench-cli bumped to 1.8.0
+
 ## [7.14.0](https://github.com/sanity-io/cli/compare/cli-v7.13.0...cli-v7.14.0)
 
 _2026-07-28_

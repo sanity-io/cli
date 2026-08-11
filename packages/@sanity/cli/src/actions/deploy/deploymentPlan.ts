@@ -3,7 +3,7 @@ import {join, relative, sep} from 'node:path'
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
-import {type DeployedExpose, summarizeExposes} from '@sanity/workbench-cli/deploy'
+import {type DeployedExpose, summarizeInterfaces} from '@sanity/workbench-cli/deploy'
 
 import {checkStatusIcon, nestLines, renderIssues} from '../../util/checks.js'
 import {pluralize} from '../../util/pluralize.js'
@@ -125,9 +125,9 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
  */
 export function reportExposes(
   reporter: DeployCheckReporter,
-  app: Parameters<typeof summarizeExposes>[0],
+  app: Parameters<typeof summarizeInterfaces>[0],
 ): DeployedExpose[] {
-  const {exposes, lines} = summarizeExposes(app)
+  const {exposes, lines} = summarizeInterfaces(app)
   for (const [index, message] of lines.entries()) {
     reporter.report({exposes: index === 0 ? exposes : undefined, message, status: 'pass'})
   }

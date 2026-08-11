@@ -1,17 +1,20 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {deriveConfigEntries, deriveConfigs, deriveInterfaces} from '../deriveInterfaces.js'
+import {deriveInterfaces} from '../../../deriveInterfaces.js'
+import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
 import {workbenchApp} from './devTestHelpers.js'
 
 describe('deriveInterfaces', () => {
-  test('returns undefined for a non-branded app (no unstable_defineApp)', () => {
-    expect(deriveInterfaces({title: 'Plain'} as CliConfig['app'], {isApp: true})).toBeUndefined()
-    expect(deriveInterfaces(undefined, {isApp: true})).toBeUndefined()
+  test('derives nothing for a non-branded app (no unstable_defineApp)', () => {
+    expect(deriveInterfaces({title: 'Plain'} as CliConfig['app'], {isApp: true})).toEqual([])
+    expect(deriveInterfaces(undefined, {isApp: true})).toEqual([])
   })
 
   test('maps views to panel interfaces', () => {
-    const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
+    const app = workbenchApp({
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+    })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
         id: 'test-app-panel-feed',
@@ -26,9 +29,72 @@ describe('deriveInterfaces', () => {
     ])
   })
 
+  test('maps asset_source views to asset_source interfaces', () => {
+    const app = workbenchApp({
+      views: [{name: 'library', src: './src/Picker.tsx', title: 'library', type: 'asset_source'}],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-asset_source-library',
+        metadata: null,
+        moduleId: 'views/library',
+        name: 'library',
+        src: './src/Picker.tsx',
+        title: 'library',
+        type: 'asset_source',
+        version: '1',
+      },
+    ])
+  })
+
+  test('maps tile views to tile interfaces, carrying size and priority metadata', () => {
+    const app = workbenchApp({
+      views: [
+        {
+          name: 'agent',
+          priority: 100,
+          size: 'large',
+          src: './src/Tile.tsx',
+          title: 'agent',
+          type: 'tile',
+        },
+      ],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-tile-agent',
+        metadata: {priority: 100, size: 'large'},
+        moduleId: 'views/agent',
+        name: 'agent',
+        src: './src/Tile.tsx',
+        title: 'agent',
+        type: 'tile',
+        version: '1',
+      },
+    ])
+  })
+
+  test('maps a tile view without priority to size-only metadata', () => {
+    const app = workbenchApp({
+      views: [{name: 'agent', size: 'small', src: './src/Tile.tsx', title: 'agent', type: 'tile'}],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-tile-agent',
+        metadata: {size: 'small'},
+        moduleId: 'views/agent',
+        name: 'agent',
+        src: './src/Tile.tsx',
+        title: 'agent',
+        type: 'tile',
+        version: '1',
+      },
+    ])
+  })
+
   test('maps services to worker interfaces', () => {
     const app = workbenchApp({
-      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -45,7 +111,7 @@ describe('deriveInterfaces', () => {
   })
 
   test('derives an app interface from entry for an SDK app', () => {
-    const app = workbenchApp({entry: './src/App.tsx', name: 'my-app'})
+    const app = workbenchApp({entry: './src/App.tsx', slug: 'my-app'})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
         id: 'my-app-app-my-app',
@@ -61,8 +127,8 @@ describe('deriveInterfaces', () => {
 
   test('stamps the moduleId a deploy would, so a local interface resolves like a deployed one', () => {
     const panelApp = workbenchApp({
-      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
+      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
     })
     expect(deriveInterfaces(panelApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
       'views/feed',
@@ -71,7 +137,7 @@ describe('deriveInterfaces', () => {
 
     const entryApp = workbenchApp({
       entry: './src/App.tsx',
-      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(entryApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
       'services/unread',
@@ -82,7 +148,7 @@ describe('deriveInterfaces', () => {
   test('carries null metadata on every interface (not yet populated)', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})?.every((iface) => iface.metadata === null)).toBe(
       true,
@@ -90,16 +156,18 @@ describe('deriveInterfaces', () => {
   })
 
   test('omits the app interface for a dock-only app (no entry)', () => {
-    const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
+    const app = workbenchApp({
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+    })
     const result = deriveInterfaces(app, {isApp: true})
     expect(result?.some((iface) => iface.type === 'app')).toBe(false)
   })
 
   test('orders a panel view ahead of services', () => {
     const app = workbenchApp({
-      name: 'my-app',
-      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
+      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      slug: 'my-app',
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -128,8 +196,8 @@ describe('deriveInterfaces', () => {
   test('places the app view after services', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      name: 'my-app',
-      services: [{name: 'unread', src: './src/service.ts', type: 'worker'}],
+      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      slug: 'my-app',
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -156,9 +224,9 @@ describe('deriveInterfaces', () => {
 
   test('derives a unique id per interface, disambiguating a view and service that share a name', () => {
     const app = workbenchApp({
-      name: 'my-app',
-      services: [{name: 'sync', src: './src/sync.ts', type: 'worker'}],
-      views: [{name: 'sync', src: './src/SyncPanel.tsx', type: 'panel'}],
+      services: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
+      slug: 'my-app',
+      views: [{name: 'sync', src: './src/SyncPanel.tsx', title: 'sync', type: 'panel'}],
     })
     const ids = deriveInterfaces(app, {isApp: true})?.map((iface) => iface.id) ?? []
     expect(ids).toEqual(['my-app-panel-sync', 'my-app-worker-sync'])
@@ -170,7 +238,7 @@ describe('deriveInterfaces', () => {
     // stays pure, so an invalid combination still maps to its records.
     const app = workbenchApp({
       entry: './src/App.tsx',
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
     })
     expect(deriveInterfaces(app, {isApp: true})?.map((iface) => iface.type)).toEqual([
       'panel',
@@ -185,7 +253,7 @@ describe('deriveInterfaces', () => {
         fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
       },
       isSingleton: true,
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
     })
     // only the panel — the config rides deriveConfigs, not interfaces
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
@@ -209,8 +277,10 @@ describe('deriveInterfaces', () => {
     )
   })
 
-  test('a studio without entry still derives its panels/workers', () => {
-    const app = workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]})
+  test('derives a studio app interface from the generated entry, after its panels/workers', () => {
+    const app = workbenchApp({
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+    })
     expect(deriveInterfaces(app, {isApp: false})).toEqual([
       {
         id: 'test-app-panel-feed',
@@ -221,6 +291,15 @@ describe('deriveInterfaces', () => {
         title: 'feed',
         type: 'panel',
         version: '1',
+      },
+      {
+        id: 'test-app-app-test-app',
+        metadata: null,
+        moduleId: 'App',
+        name: 'test-app',
+        src: './.sanity/federation/remote-entry.jsx',
+        title: 'Test App',
+        type: 'app',
       },
     ])
   })
@@ -234,7 +313,9 @@ describe('deriveConfigs', () => {
 
   test('[] for an app with no config', async () => {
     await expect(
-      deriveConfigs(workbenchApp({views: [{name: 'feed', src: './f.tsx', type: 'panel'}]})),
+      deriveConfigs(
+        workbenchApp({views: [{name: 'feed', src: './f.tsx', title: 'feed', type: 'panel'}]}),
+      ),
     ).resolves.toEqual([])
   })
 

@@ -1,5 +1,55 @@
 # @sanity/workbench-cli
 
+## 1.10.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.9.0...workbench-cli-v1.10.0)
+
+_2026-08-04_
+
+### Features
+
+- **workbench:** register tile view type ([#1659](https://github.com/sanity-io/cli/pull/1659)) ([1ae4d8e](https://github.com/sanity-io/cli/commit/1ae4d8e1ae625e08fca3ae1273fab46f91c33677))
+
+## [1.9.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.8.0...workbench-cli-v1.9.0)
+
+_2026-08-03_
+
+### Features
+
+- **workbench:** drop `name` from unstable_defineApp ([#1631](https://github.com/sanity-io/cli/pull/1631)) ([b11a64b](https://github.com/sanity-io/cli/commit/b11a64b65401e9baa93ad318486baa5c9c55480e))
+- **workbench:** register asset_source view type ([#1638](https://github.com/sanity-io/cli/pull/1638)) ([7eae909](https://github.com/sanity-io/cli/commit/7eae9097aa1278a5d97ff41e8526dbd41f040434))
+- **workbench:** deploy and forward asset_source views ([#1639](https://github.com/sanity-io/cli/pull/1639)) ([6e2d902](https://github.com/sanity-io/cli/commit/6e2d9022ce2c9165a6d1355cd84ece372280ce48))
+- **workbench:** derive an app's interfaces once, for dev and deploy alike ([#1630](https://github.com/sanity-io/cli/pull/1630)) ([e39886f](https://github.com/sanity-io/cli/commit/e39886f4ad0ebd765ec1716a36ca77ea266e3dfa))
+
+### Bug Fixes
+
+- **deploy:** build and deploy a federated studio with its installed package versions rather than silently ignoring `deployment.autoUpdates`, report the existing app id when its slug is already taken, and apply the app's `visibility` ([#1635](https://github.com/sanity-io/cli/pull/1635)) ([206c037](https://github.com/sanity-io/cli/commit/206c0371b56ab852ea779ccf258e1ddfc1488ac3))
+- **deps:** update dependency @module-federation/vite to v1.20.1 ([#1650](https://github.com/sanity-io/cli/pull/1650)) ([f934f32](https://github.com/sanity-io/cli/commit/f934f324c98d469c9354ae4f4504af6d6e0d41a5))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.8.0
+
+## [1.8.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.2...workbench-cli-v1.8.0)
+
+_2026-07-29_
+
+### Features
+
+- support providing sanityEnv to execution context ([#1608](https://github.com/sanity-io/cli/pull/1608)) ([161efb5](https://github.com/sanity-io/cli/commit/161efb54ec091c2c9603b6e6e469deb12fd374a1))
+
+### Bug Fixes
+
+- **workbench:** forward an app interface for a local workbench studio ([#1605](https://github.com/sanity-io/cli/pull/1605)) ([a0735b1](https://github.com/sanity-io/cli/commit/a0735b1f5bf0e465a86ef7dd3ddd3f4a8f3519cb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.0
+
 ## [1.7.2](https://github.com/sanity-io/cli/compare/workbench-cli-v1.7.1...workbench-cli-v1.7.2)
 
 _2026-07-28_

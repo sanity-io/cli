@@ -13,7 +13,6 @@ import {
   type MigrationProgress,
   run,
 } from '@sanity/migrate'
-import {Table} from 'console-table-printer'
 
 import {DEFAULT_API_VERSION, MIGRATIONS_DIRECTORY} from '../../actions/migration/constants.js'
 import {ensureApiVersionFormat} from '../../actions/migration/ensureApiVersionFormat.js'
@@ -23,6 +22,7 @@ import {
   isLoadableMigrationScript,
   resolveMigrationScript,
 } from '../../actions/migration/resolveMigrationScript.js'
+import {Table} from '../../util/responsiveTable.js'
 
 const runMigrationDebug = subdebug('migration:run')
 
@@ -141,7 +141,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       for (const definedMigration of migrations) {
         table.addRow({id: definedMigration.id, title: definedMigration.migration.title})
       }
-      table.printTable()
+      this.log(table.render())
       this.log('\nRun `sanity migration run <ID>` to run a migration')
 
       this.exit(exitCodes.RUNTIME_ERROR)

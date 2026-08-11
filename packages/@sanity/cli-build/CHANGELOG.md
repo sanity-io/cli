@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.1.0](https://github.com/sanity-io/cli/compare/cli-build-v5.0.0...cli-build-v5.1.0)
+
+_2026-07-29_
+
+### Features
+
+- support providing sanityEnv to execution context ([#1608](https://github.com/sanity-io/cli/pull/1608)) ([161efb5](https://github.com/sanity-io/cli/commit/161efb54ec091c2c9603b6e6e469deb12fd374a1))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.7.0
+    - @sanity/workbench-cli bumped to 1.8.0
+
 ## [5.0.0](https://github.com/sanity-io/cli/compare/cli-build-v4.1.1...cli-build-v5.0.0)
 
 _2026-07-23_

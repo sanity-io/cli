@@ -38,12 +38,12 @@ const shopifyTemplate: ProjectTemplate = {
   configTemplate,
   dependencies: {
     '@portabletext/toolkit': '^2.0.1',
-    '@sanity/icons': '^3.7.4',
-    '@sanity/ui': '^3.1.14',
+    '@sanity/icons': '^5.0.0',
+    '@sanity/ui': '^3.5.0',
     '@types/lodash.get': '^4.4.7',
     'lodash.get': '^4.4.2',
     'pluralize-esm': '^9.0.4',
-    'sanity-plugin-shopify-assets': '^1.1.0',
+    'sanity-plugin-shopify-assets': '^2.0.11',
   },
   typescriptOnly: true,
 }

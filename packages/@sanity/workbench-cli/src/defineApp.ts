@@ -1,9 +1,7 @@
 import {z} from 'zod/mini'
 
+import {APP_SLUG_PATTERN} from './appSlug.js'
 import {ConfigSchema, InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
-
-/** Allowed characters for an app `name`. */
-const APP_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
 
 /**
  * Dashboard visibility values. Mirrors `APP_VISIBILITIES` in `@sanity/cli-core`
@@ -63,8 +61,6 @@ export const DefineAppInputSchema = z
      * @internal
      */
     isSingleton: z.optional(z.boolean()),
-    /** Unique app identifier — must match `APP_NAME_PATTERN`. */
-    name: z.string().check(z.regex(APP_NAME_PATTERN, 'App `name` must match /^[a-zA-Z0-9_-]+$/')),
     /** Organization that owns the app — the workbench runs and deploys against it. */
     organizationId: z.string(
       "App `organizationId` is required — pass the owning organization's ID to `unstable_defineApp`",
@@ -82,7 +78,14 @@ export const DefineAppInputSchema = z
           ),
         ),
     ),
-    slug: z.string('App `slug` is required — the hostname the application is created at on deploy'),
+    slug: z
+      .string('App `slug` is required — the hostname the application is created at on deploy')
+      .check(
+        z.regex(
+          APP_SLUG_PATTERN,
+          'App `slug` must be lowercase alphanumerics and hyphens, starting with a letter and ending with an alphanumeric',
+        ),
+      ),
     /** User-facing app title. Wins over studio.config.ts title on merge. */
     title: z.string(),
     /** Views the app exposes (e.g. dock panels). */
@@ -118,25 +121,44 @@ export const DefineAppInputSchema = z
     }),
   )
   .check(
-    // An app exposes one interface kind: an app view (`entry`) or panels.
+    // A navigable app view (`entry`) and dock panels are the mutually-exclusive
+    // navigable kinds. An `asset_source` view is a separate kind — a picker
+    // brokered to other apps — so it may sit alongside either.
     z.refine(
-      (input) => !(input.entry !== undefined && (input.views?.length ?? 0) > 0),
+      (input) =>
+        !(
+          input.entry !== undefined &&
+          (input.views?.some((view) => view.type === 'panel') ?? false)
+        ),
       'An app cannot expose both an app view (`entry`) and panel views. Declare one or the other.',
     ),
   )
   .check(
     z.refine(
-      (input) => (input.views?.length ?? 0) <= 1,
+      (input) => (input.views?.filter((view) => view.type === 'panel').length ?? 0) <= 1,
       'An app can expose at most one panel view.',
     ),
   )
 
+/** The `asset_source` variant of an app's `views`. @public */
+export type AssetSourceView = Extract<
+  NonNullable<z.output<typeof DefineAppInputSchema>['views']>[number],
+  {type: 'asset_source'}
+>
+
+/** The `tile` variant of an app's `views`. @public */
+export type TileView = Extract<
+  NonNullable<z.output<typeof DefineAppInputSchema>['views']>[number],
+  {type: 'tile'}
+>
+
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
- * `applicationType`, `isSingleton`, and `config` — validated by the
- * schema but not part of the public surface (Sanity-owned apps set them via
- * `@ts-expect-error`). A union so an app declares an app `entry` or `views`,
- * never both.
+ * `applicationType`, `isSingleton`, and `config` — validated by the schema but
+ * not part of the public surface (Sanity-owned apps set them via
+ * `@ts-expect-error`). A union: an app declares an app `entry` (navigable) or
+ * panel `views`, never both — but `asset_source` and `tile` views are separate
+ * kinds and may accompany either.
  * @public
  */
 export type DefineAppInput = Omit<
@@ -145,7 +167,7 @@ export type DefineAppInput = Omit<
 > &
   (
     | {entry?: never; views?: NonNullable<z.output<typeof DefineAppInputSchema>['views']>}
-    | {entry?: string; views?: never}
+    | {entry?: string; views?: (AssetSourceView | TileView)[]}
   )
 
 /**
@@ -197,7 +219,7 @@ export function readConfig(app: WorkbenchApp): WorkbenchApp['config'] | undefine
 /**
  * Declare a Sanity Workbench application. Identity at runtime — returns the same
  * object reference, tagged with the workbench brand. Field validation (the
- * `name` pattern etc.) runs at build time in the CLI via `DefineAppInputSchema`;
+ * `slug` pattern etc.) runs at build time in the CLI via `DefineAppInputSchema`;
  * this helper stays a thin, pure identity wrapper.
  * @public
  */
@@ -245,7 +267,6 @@ export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): Def
     applicationType: 'media-library',
     config: input.fields?.length ? {appType: 'media-library', fields: input.fields} : undefined,
     isSingleton: true,
-    name: 'media-library',
     organizationId: input.organizationId,
     slug: 'media-library',
     title: 'Media Library',

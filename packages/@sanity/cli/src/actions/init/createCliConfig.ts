@@ -24,7 +24,6 @@ interface GenerateCliConfigOptions {
   autoUpdates: boolean
   dataset: string
   isWorkbenchApp: boolean
-  name: string
   projectId: string
   slug: string
   title: string

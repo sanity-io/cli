@@ -6,6 +6,7 @@ import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
+  type BrettAccess,
   type BrettInterface,
   type BrettWorkspace,
   createApplication,
@@ -26,7 +27,7 @@ const mockClient = {request: vi.fn()}
 // A gzip stream is opaque to the service; a readable stands in for the tarball.
 const tarball = () => Readable.from(['remote']) as unknown as Gzip
 const interfaces: BrettInterface[] = [
-  {moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
+  {metadata: null, moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
 ]
 const workspaces: BrettWorkspace[] = [
   {
@@ -38,6 +39,7 @@ const workspaces: BrettWorkspace[] = [
     title: 'Default',
   },
 ]
+const access: BrettAccess[] = [{resourceId: 'proj-1.production', resourceType: 'dataset'}]
 
 /** The (name, value) pairs a call appended to its FormData. */
 function appendedFields(): Array<[string, unknown]> {
@@ -202,6 +204,7 @@ describe('createDeployment', () => {
     expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
     expect(fields.map(([name]) => name)).not.toContain('config')
     expect(fields.map(([name]) => name)).not.toContain('workspaces')
+    expect(fields.map(([name]) => name)).not.toContain('access')
   })
 
   test('includes workspaces as a JSON part when provided', async () => {
@@ -217,6 +220,36 @@ describe('createDeployment', () => {
     })
 
     expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
+  })
+
+  test('includes access as a JSON part when provided', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
+
+    await createDeployment({
+      access,
+      applicationId: 'app_1',
+      interfaces,
+      isAutoUpdating: false,
+      tarball: tarball(),
+      version: '3.0.1',
+    })
+
+    expect(appendedFields()).toContainEqual(['access', JSON.stringify(access)])
+  })
+
+  test('omits the access part when the array is empty', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
+
+    await createDeployment({
+      access: [],
+      applicationId: 'app_1',
+      interfaces,
+      isAutoUpdating: false,
+      tarball: tarball(),
+      version: '3.0.1',
+    })
+
+    expect(appendedFields().map(([name]) => name)).not.toContain('access')
   })
 })
 

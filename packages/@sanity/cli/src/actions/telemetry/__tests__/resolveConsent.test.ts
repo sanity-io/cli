@@ -1,3 +1,4 @@
+import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {resolveConsent} from '../resolveConsent.js'
@@ -55,6 +56,17 @@ describe('actions telemetry resolveConsent', () => {
     mockFetchTelemetry.mockResolvedValue({status: 'granted'})
     const res = await resolveConsent()
     expect(res.status).toEqual('granted')
+  })
+  test('ignores host CI and DO_NOT_TRACK state under an execution context', async () => {
+    mockIsCi.mockReturnValue(true)
+    vi.stubEnv('DO_NOT_TRACK', 'true')
+    mockFetchTelemetry.mockResolvedValue({status: 'granted'})
+
+    const res = await runWithCliExecutionContext({token: 'context-token'}, () => resolveConsent())
+
+    expect(res.status).toEqual('granted')
+    expect(mockIsCi).not.toHaveBeenCalled()
+    expect(mockFetchTelemetry).toHaveBeenCalled()
   })
   test('should return undetermined status from telemetry fetch if it throws', async () => {
     mockFetchTelemetry.mockRejectedValue({message: 'boom'})

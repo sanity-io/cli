@@ -4,6 +4,7 @@ import babel from '@rolldown/plugin-babel'
 import {findProjectRoot} from '@sanity/cli-core/config'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
+import {isStaging} from '@sanity/cli-core/util'
 import {
   type WorkbenchExposes,
   workbenchOptimizeDeps,
@@ -186,7 +187,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     configFile: false,
     define: {
       __SANITY_BUILD_TIMESTAMP__: JSON.stringify(Date.now()),
-      __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
+      __SANITY_STAGING__: isStaging(),
       'process.env.MODE': JSON.stringify(mode),
       'process.env.PKG_BUILD_VERSION': JSON.stringify(process.env.PKG_BUILD_VERSION),
       /**

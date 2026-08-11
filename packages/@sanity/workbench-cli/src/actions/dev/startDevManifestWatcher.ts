@@ -4,7 +4,7 @@ import {basename, dirname} from 'node:path'
 import {findProjectRoot, type Output, subdebug} from '@sanity/cli-core'
 
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
-import {type DevServerConfig, type DevServerInterface} from './deriveInterfaces.js'
+import {type DevServerConfig, type DevServerInterface} from './deriveConfigs.js'
 
 const devDebug = subdebug('dev')
 

@@ -1,5 +1,6 @@
 import {afterEach, describe, expect, test} from 'vitest'
 
+import {runWithCliExecutionContext} from '../../executionContext.js'
 import {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
@@ -28,6 +29,17 @@ describe('#getCliTelemetry', () => {
 
   test('returns noop logger when not initialized', () => {
     const result = getCliTelemetry()
+
+    expect(result).toBe(noopLogger)
+  })
+
+  test('returns noop logger without reading host telemetry state under an execution context', () => {
+    const mockTelemetry = {
+      log: () => {},
+    } as unknown as CLITelemetryStore
+    setCliTelemetry(mockTelemetry)
+
+    const result = runWithCliExecutionContext({}, () => getCliTelemetry())
 
     expect(result).toBe(noopLogger)
   })

@@ -224,6 +224,11 @@ export abstract class SanityCommand<T extends typeof Command>
    * @returns The project root result.
    */
   public getProjectRoot(): Promise<ProjectRootResult> {
+    if (getCliExecutionContext()) {
+      throw new ProjectRootNotFoundError(
+        'Project root resolution from the filesystem is disabled for programmatic invocations',
+      )
+    }
     return findProjectRoot(process.cwd())
   }
 
@@ -306,6 +311,19 @@ export abstract class SanityCommand<T extends typeof Command>
    */
   public resolveIsInteractive(): boolean {
     return isInteractive()
+  }
+
+  /**
+   * Execute an already-constructed command without oclif's static runner:
+   * `Command.run()` performs a full `Config.load()` — filesystem reads, env
+   * consultation, and a process-global config cache write — on every call,
+   * which programmatic invocations must not repeat per request.
+   */
+  public runInExecutionContext<TResult>(): Promise<TResult> {
+    if (!getCliExecutionContext()) {
+      throw new Error('runInExecutionContext requires a CLI execution context')
+    }
+    return this._run<TResult>()
   }
 
   /**

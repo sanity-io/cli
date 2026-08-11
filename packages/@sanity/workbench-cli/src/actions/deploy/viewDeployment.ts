@@ -7,7 +7,7 @@ import {z} from 'zod/mini'
 const viewRecordSchema = z.looseObject({
   name: z.string().check(z.regex(/^[a-zA-Z0-9_-]+$/, 'View `name` must match /^[a-zA-Z0-9_-]+$/')),
   src: z.string(),
-  type: z.enum(['panel']),
+  type: z.enum(['panel', 'asset_source', 'tile']),
 })
 
 /**

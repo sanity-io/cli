@@ -1,8 +1,11 @@
-const MODULES_HOST =
-  process.env.SANITY_MODULES_HOST ||
-  (process.env.SANITY_INTERNAL_ENV === 'staging'
-    ? 'https://sanity-cdn.work'
-    : 'https://sanity-cdn.com')
+import {isStaging} from '@sanity/cli-core/util'
+
+function getModulesHost() {
+  return (
+    process.env.SANITY_MODULES_HOST ||
+    (isStaging() ? 'https://sanity-cdn.work' : 'https://sanity-cdn.com')
+  )
+}
 
 function currentUnixTime(): number {
   return Math.floor(Date.now() / 1000)
@@ -51,7 +54,7 @@ export function getModuleUrl(
 
 function getLegacyModuleUrl(pkg: Package, options: {baseUrl?: string; timestamp: number}) {
   const encodedMinVer = encodeURIComponent(`^${pkg.version}`)
-  return `${options.baseUrl || MODULES_HOST}/v1/modules/${rewriteScopedPackage(pkg.name)}/default/${encodedMinVer}/t${options.timestamp}`
+  return `${options.baseUrl || getModulesHost()}/v1/modules/${rewriteScopedPackage(pkg.name)}/default/${encodedMinVer}/t${options.timestamp}`
 }
 
 function getByAppModuleUrl(
@@ -59,7 +62,7 @@ function getByAppModuleUrl(
   options: {appId: string; baseUrl?: string; timestamp: number},
 ) {
   const encodedMinVer = encodeURIComponent(`^${pkg.version}`)
-  return `${options.baseUrl || MODULES_HOST}/v1/modules/by-app/${options.appId}/t${options.timestamp}/${encodedMinVer}/${rewriteScopedPackage(pkg.name)}`
+  return `${options.baseUrl || getModulesHost()}/v1/modules/by-app/${options.appId}/t${options.timestamp}/${encodedMinVer}/${rewriteScopedPackage(pkg.name)}`
 }
 
 /**

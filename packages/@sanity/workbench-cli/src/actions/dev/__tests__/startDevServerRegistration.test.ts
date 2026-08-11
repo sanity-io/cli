@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
 import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
 
+const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
 const mockExtractManifest = vi.hoisted(() => vi.fn())
@@ -13,10 +14,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getCliConfigUncached: mockGetCliConfigUncached,
 }))
-// Only the registry write is mocked; `deriveInterfaces`/`trackExposesSet` are
+// Only the registry I/O is mocked; `deriveInterfaces`/`trackExposesSet` are
 // pure and run for real.
 vi.mock('../registry.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../registry.js')>()),
+  getRegisteredServers: mockGetRegisteredServers,
   registerDevServer: mockRegisterDevServer,
 }))
 vi.mock('../startDevManifestWatcher.js', () => ({
@@ -51,6 +53,7 @@ function register(overrides: Partial<RegistrationOptions> = {}) {
 
 describe('startDevServerRegistration', () => {
   beforeEach(() => {
+    mockGetRegisteredServers.mockReturnValue([])
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockExtractManifest.mockResolvedValue(undefined)
@@ -80,23 +83,44 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
   })
 
-  test('identifies the local app by host and port, not its deployment app id', async () => {
-    await register({server: mockServer({port: 3337}) as any})
+  test('identifies the local app by its slug, not its deployment app id', async () => {
+    await register()
 
-    expect(mockRegisterDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({id: 'localhost-3337'}),
-    )
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
 
-  test('keys the id on the configured port, not the shifted bound one', async () => {
-    // strictPort:false can bind a different port than requested; the bundle's
-    // compile-time `__SANITY_APP_ID__` uses the configured port, so the registry
-    // id must too — while it stays reachable at the bound port.
+  test('keeps the id when the server binds a port it did not ask for', async () => {
     await register({server: mockServer({boundPort: 3339, port: 3334}) as any})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({id: 'localhost-3334', port: 3339}),
+      expect.objectContaining({id: 'test-app', port: 3339}),
     )
+  })
+
+  test('logs an error and keeps the dev server up when another app already serves the slug', async () => {
+    mockGetRegisteredServers.mockReturnValue([{id: 'test-app', pid: 4242, port: 3334}])
+    const output = createMockOutput()
+
+    const handle = await register({output})
+
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('"test-app" is already served'),
+      {exit: false},
+    )
+    // Nothing registered, so the workbench never sees it — and nothing to watch or release.
+    expect(mockRegisterDevServer).not.toHaveBeenCalled()
+    expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
+    await expect(handle.close()).resolves.toBeUndefined()
+  })
+
+  test('registers when a live dev server holds a different slug', async () => {
+    mockGetRegisteredServers.mockReturnValue([{id: 'other-app', pid: 4242, port: 3334}])
+    const output = createMockOutput()
+
+    await register({output})
+
+    expect(output.error).not.toHaveBeenCalled()
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
 
   test('forwards api.projectId to registerDevServer', async () => {
@@ -113,8 +137,8 @@ describe('startDevServerRegistration', () => {
       cliConfig: workbenchCliConfig({
         app: workbenchApp({
           views: [
-            {name: 'feed', src: './src/Feed.tsx', type: 'panel'},
-            {name: 'inbox', src: './src/Inbox.tsx', type: 'panel'},
+            {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'},
+            {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'},
           ],
         }),
       }),
@@ -194,7 +218,9 @@ describe('startDevServerRegistration', () => {
     // A fresh config read with a panel → the watcher re-derives + forwards it
     // alongside the manifest (which stays pure).
     mockGetCliConfigUncached.mockResolvedValue({
-      app: workbenchApp({views: [{name: 'feed', src: './src/FeedPanel.tsx', type: 'panel'}]}),
+      app: workbenchApp({
+        views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      }),
     })
 
     await register({isApp: true})
@@ -282,7 +308,7 @@ describe('startDevServerRegistration', () => {
 
   // Adding/removing a view or service must rebuild the federation remote so the
   // new interface gets an expose + artifact. The watcher drives it.
-  const feed = {name: 'feed', src: './src/Feed.tsx', type: 'panel'}
+  const feed = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
 
   test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {
     const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)
@@ -309,7 +335,9 @@ describe('startDevServerRegistration', () => {
 
     await register({
       cliConfig: {
-        app: workbenchApp({views: [{name: 'feed', src: './src/Feed.tsx', type: 'panel'}]}),
+        app: workbenchApp({
+          views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+        }),
       } as any,
       isApp: true,
       onInterfaceSetChange,

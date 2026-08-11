@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto'
 
 import {getCliToken, getGlobalCliClient, getUserConfig} from '@sanity/cli-core'
+import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {telemetryDebug} from '../actions/telemetry/telemetryDebug.js'
@@ -95,6 +96,10 @@ export function getTelemetryConsentCacheKey(token: string | undefined): string {
 export async function fetchTelemetryConsent(): Promise<{
   status: ValidApiConsentStatus
 }> {
+  // Programmatic invocations must not use the host user's disk-backed consent
+  // cache. The request is already authenticated with the invocation token.
+  if (getCliExecutionContext()) return getTelemetryConsent()
+
   const token = await getCliToken()
   const cacheKey = getTelemetryConsentCacheKey(token)
 

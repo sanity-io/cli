@@ -8,7 +8,6 @@ export default defineCliConfig({
   // Calling `unstable_defineApp` opts this studio into workbench (a
   // `sanity.config.ts` is present, so it resolves to `applicationType: 'studio'`).
   app: unstable_defineApp({
-    name: 'federated-studio',
     organizationId: 'oSyH1iET5',
     slug: 'federated-studio',
     title: 'Federated Studio',

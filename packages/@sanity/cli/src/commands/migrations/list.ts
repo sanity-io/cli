@@ -1,9 +1,9 @@
 import {styleText} from 'node:util'
 
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
-import {Table} from 'console-table-printer'
 
 import {resolveMigrations} from '../../actions/migration/resolveMigrations.js'
+import {Table} from '../../util/responsiveTable.js'
 
 const listMigrationDebug = subdebug('migration:list')
 
@@ -44,7 +44,7 @@ export class ListMigrationCommand extends SanityCommand<typeof ListMigrationComm
       for (const definedMigration of migrations) {
         table.addRow({id: definedMigration.id, title: definedMigration.migration.title})
       }
-      table.printTable()
+      this.log(table.render())
       this.log('\nRun `sanity migration run <ID>` to run a migration')
       listMigrationDebug(`Successfully listed ${migrations.length} migrations`)
     } catch (error) {

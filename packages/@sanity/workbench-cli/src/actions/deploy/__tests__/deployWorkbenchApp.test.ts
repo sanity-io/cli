@@ -4,7 +4,8 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type BrettInterface, type BrettWorkspace} from '../../../services/applications.js'
+import {unstable_defineApp} from '../../../defineApp.js'
+import {type BrettAccess, type BrettWorkspace} from '../../../services/applications.js'
 import {createCoreApp, createStudio, deployWorkbenchApp} from '../deployWorkbenchApp.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
@@ -19,9 +20,13 @@ vi.mock('@sanity/cli-core/ux', () => ({
 vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
-const interfaces: BrettInterface[] = [
-  {metadata: null, moduleId: 'App', name: 'app', title: 'App', type: 'app', version: '1.0.0'},
-]
+const app = unstable_defineApp({
+  entry: './src/App.tsx',
+  organizationId: 'org-1',
+  services: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
+  slug: 'drop-desk',
+  title: 'Drop Desk',
+})
 const workspaces: BrettWorkspace[] = [
   {
     basePath: '/',
@@ -32,6 +37,7 @@ const workspaces: BrettWorkspace[] = [
     title: 'Default',
   },
 ]
+const access: BrettAccess[] = [{resourceId: 'proj-1.production', resourceType: 'dataset'}]
 const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
 
 /** The (name, value) pairs a call appended to its FormData. */
@@ -127,6 +133,33 @@ describe('createStudio', () => {
       uri: '/applications',
     })
   })
+
+  test('forwards visibility as a create-time field', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
+
+    await createStudio({
+      organizationId: 'org-1',
+      projectId: 'proj-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      visibility: 'unlisted',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({visibility: 'unlisted'})
+  })
+
+  test('omits visibility when none is declared', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
+
+    await createStudio({
+      organizationId: 'org-1',
+      projectId: 'proj-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).not.toHaveProperty('visibility')
+  })
 })
 
 describe('deployWorkbenchApp', () => {
@@ -134,8 +167,9 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app,
       applicationId: 'app_1',
-      interfaces,
+      isApp: true,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/app',
       title: 'Drop Desk',
@@ -148,16 +182,79 @@ describe('deployWorkbenchApp', () => {
     })
     const fields = appendedFields()
     expect(fields).toContainEqual(['version', '1.0.0'])
-    expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
+    // The app's interfaces, stamped with the deployment version and stripped of
+    // what Brett owns: the local id and `src`. The app view titles itself after the app.
+    expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
+      {
+        metadata: null,
+        moduleId: 'services/unread',
+        name: 'unread',
+        title: 'unread',
+        type: 'worker',
+        version: '1.0.0',
+      },
+      {
+        metadata: null,
+        moduleId: 'App',
+        name: 'drop-desk',
+        title: 'Drop Desk',
+        type: 'app',
+        version: '1.0.0',
+      },
+    ])
     expect(fields.map(([name]) => name)).toContain('tarball')
+  })
+
+  test('sends a tile interface carrying its size + priority as metadata', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    const tileApp = unstable_defineApp({
+      entry: './src/App.tsx',
+      organizationId: 'org-1',
+      slug: 'drop-desk',
+      title: 'Drop Desk',
+      views: [
+        {
+          name: 'agent',
+          priority: 100,
+          size: 'large',
+          src: './src/tile.tsx',
+          title: 'Agent',
+          type: 'tile',
+        },
+      ],
+    })
+
+    await deployWorkbenchApp({
+      app: tileApp,
+      applicationId: 'app_1',
+      isApp: true,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
+
+    const fields = appendedFields()
+    const interfaces = JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))
+    // Brett owns `id`/`src`, so they're stripped; `size`/`priority` ride as metadata.
+    expect(interfaces).toContainEqual({
+      metadata: {priority: 100, size: 'large'},
+      moduleId: 'views/agent',
+      name: 'agent',
+      title: 'Agent',
+      type: 'tile',
+      version: '1.0.0',
+    })
   })
 
   test('sends workspaces for a studio deployment', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app: {...app, entry: undefined},
       applicationId: 'studio_1',
-      interfaces,
+      isApp: false,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/studio',
       title: 'My Studio',
@@ -168,13 +265,32 @@ describe('deployWorkbenchApp', () => {
     expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
   })
 
+  test('forwards access to the deployment when provided', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    await deployWorkbenchApp({
+      access,
+      app: {...app, entry: undefined},
+      applicationId: 'studio_1',
+      isApp: false,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/studio',
+      title: 'My Studio',
+      version: '3.0.0',
+      workspaces,
+    })
+
+    expect(appendedFields()).toContainEqual(['access', JSON.stringify(access)])
+  })
+
   test('syncs the title and icon after shipping the deployment', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app,
       applicationId: 'app_1',
       icon,
-      interfaces,
+      isApp: true,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/app',
       title: 'Drop Desk',
@@ -192,8 +308,9 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app,
       applicationId: 'app_1',
-      interfaces,
+      isApp: true,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/app',
       title: 'Drop Desk',
@@ -211,8 +328,9 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
+      app,
       applicationId: 'app_1',
-      interfaces,
+      isApp: true,
       isAutoUpdating: false,
       sourceDir: '/tmp/build/app',
       title: 'Drop Desk',
@@ -238,8 +356,9 @@ describe('deployWorkbenchApp', () => {
 
     await expect(
       deployWorkbenchApp({
+        app,
         applicationId: 'app_1',
-        interfaces,
+        isApp: true,
         isAutoUpdating: false,
         onDeployed,
         sourceDir: '/tmp/build/app',
@@ -257,8 +376,9 @@ describe('deployWorkbenchApp', () => {
 
     await expect(
       deployWorkbenchApp({
+        app,
         applicationId: 'app_1',
-        interfaces,
+        isApp: true,
         isAutoUpdating: false,
         onDeployed,
         sourceDir: '/tmp/build/app',

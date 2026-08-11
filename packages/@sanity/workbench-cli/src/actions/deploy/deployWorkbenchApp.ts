@@ -1,11 +1,13 @@
 import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
-import {type AppVisibility} from '@sanity/cli-core'
+import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
+import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {
+  type BrettAccess,
   type BrettInterface,
   type BrettWorkspace,
   createApplication,
@@ -57,6 +59,7 @@ export async function createStudio(options: {
   projectId: string | undefined
   slug: string
   title: string
+  visibility?: AppVisibility
 }): Promise<CreatedApplication> {
   const spin = spinner('Creating studio...').start()
   try {
@@ -81,9 +84,11 @@ export async function createStudio(options: {
  * @internal
  */
 export async function deployWorkbenchApp(options: {
+  access?: readonly BrettAccess[]
+  app: CliConfig['app']
   applicationId: string
   icon?: string
-  interfaces: readonly BrettInterface[]
+  isApp: boolean
   isAutoUpdating: boolean
   label?: string
   onDeployed?: () => void
@@ -94,9 +99,11 @@ export async function deployWorkbenchApp(options: {
   workspaces?: readonly BrettWorkspace[]
 }): Promise<void> {
   const {
+    access,
+    app,
     applicationId,
     icon,
-    interfaces,
+    isApp,
     isAutoUpdating,
     label = 'Deploying...',
     onDeployed,
@@ -111,8 +118,12 @@ export async function deployWorkbenchApp(options: {
   const spin = spinner(label).start()
   try {
     await createDeployment({
+      access,
       applicationId,
-      interfaces,
+      // Brett assigns the id and resolves modules by `moduleId`, so neither travels.
+      interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map(
+        ({id: _id, src: _src, ...iface}): BrettInterface => ({...iface, version}),
+      ),
       isAutoUpdating,
       tarball,
       version,

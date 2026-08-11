@@ -1,4 +1,4 @@
-import {SunIcon} from '@sanity/icons'
+import {SunIcon} from '@sanity/icons/Sun'
 import {defineField, defineType} from 'sanity'
 
 export default defineType({

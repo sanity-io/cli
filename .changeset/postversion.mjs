@@ -99,6 +99,8 @@ function transformChangelog(content, packageName, currentVersion) {
 
   const versionStart = match.index
   const afterHeading = content.slice(versionStart + match[0].length)
+  if (afterHeading.trimStart().startsWith('[Compare changes](')) return content
+
   const nextVersionMatch = afterHeading.match(/^## /m)
   const sectionEnd = nextVersionMatch
     ? versionStart + match[0].length + nextVersionMatch.index
@@ -118,9 +120,11 @@ function transformChangelog(content, packageName, currentVersion) {
     ? `${REPO_URL}/compare/${tagPrefix}${previousVersion}...${tagPrefix}${currentVersion}`
     : `${REPO_URL}/releases/tag/${tagPrefix}${currentVersion}`
 
+  // changesets/action finds a release entry by matching the version heading exactly.
+  // Keep the heading plain and put the comparison link below it.
   section = section.replace(
     `## ${currentVersion}`,
-    `## [${currentVersion}](${compareUrl})\n\n_${today}_`,
+    `## ${currentVersion}\n\n[Compare changes](${compareUrl})\n\n_${today}_`,
   )
 
   for (const [from, to] of Object.entries(SECTION_MAP)) {

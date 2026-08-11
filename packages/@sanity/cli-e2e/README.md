@@ -99,8 +99,7 @@ await session.selectOption('clean')
 await session.waitForText(/Do you want to use TypeScript/i)
 session.sendKey('Enter')
 
-const exitCode = await session.waitForExit(90_000)
-expect(exitCode).toBe(0)
+await session.waitForExit(0, 90_000)
 ```
 
 Interactive sessions speak through `node-pty` and expose:
@@ -111,7 +110,7 @@ Interactive sessions speak through `node-pty` and expose:
 - `sendControl('c')` — send Ctrl+C (SIGINT, exits with 130)
 - `write(text)` — write raw text to stdin (for free-text prompts)
 - `getOutput()` — full output buffer so far (with ANSI)
-- `waitForExit(timeout?)` — resolve with the exit code, reject on timeout
+- `waitForExit(expected, timeout?)` — wait for the process to exit with `expected` code (or `'any'`); rejects on timeout or a mismatched code, with the session output attached to the error. The expected code is required so a failure can never be reported without its output.
 - `kill(signal?)` — kill the process
 
 Always prefer `selectOption(pattern)` over counting `ArrowDown` presses — option order is not stable across template/dataset/project changes.

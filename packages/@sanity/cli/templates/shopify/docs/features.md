@@ -12,6 +12,30 @@ Inside `/schemaTypes` you'll find schema definitions for all the content types.
 - `/schemaTypes/documents/`: Document types determines the shape of the JSON documents that's stored in your content lake. This is where you define the content forms for things like collections, products, product variants, as well as articles.
 - `/schemaTypes/objects/`: General purpose & re-usable content structures, such as links, custom product options and modules.
 
+## Shopify metafields
+
+If you've selected metafield namespaces to import in Sanity Connect, your product and collection metafields are synced to `store.metafields` and shown under a **Metafields** fieldset.
+
+Each entry holds the metafield's `namespace`, `key`, Shopify `type` and `value`:
+
+```json
+{
+  "_key": "custom.snowboard_length",
+  "namespace": "custom",
+  "key": "snowboard_length",
+  "type": "dimension",
+  "value": {"value": 180, "unit": "CENTIMETERS"}
+}
+```
+
+`value` isn't declared on the `shopifyMetafield` schema type. Its shape follows the Shopify metafield type — a string, number, boolean, list or object — and no Sanity field type accepts all of those. `/components/inputs/ShopifyMetafield.tsx` reads it from the raw value instead.
+
+`/utils/formatMetafieldValue.ts` decides how a value is shown, using a small map keyed by metafield type. `dimension`, `weight`, `volume`, `money`, `rating` and `list.single_line_text_field` are there as examples.
+
+Anything not listed falls back to the raw value — a string as-is, anything else as JSON — so your own metafields still display. To show one of them nicely, add an entry to `formatters`. Shopify's [list of data types](https://shopify.dev/docs/apps/build/custom-data/metafields/list-of-data-types) gives the shape of every value.
+
+Metafields are read-only and the whole array is replaced on every sync, so edits made here are overwritten. Variant metafields and metaobjects aren't synced.
+
 ## Structure
 
 Sanity Studio will automatically list all your [document types][docs-document-types] out of the box. Sometimes you want a more streamlined editor experience. That's why you'll find a custom [structure][docs-structure] that's defined in `/structure`. It does the following things:
