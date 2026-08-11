@@ -335,7 +335,15 @@ describe('#deploy app', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    mockCreateCoreApp.mockResolvedValue({applicationId: 'app_new'})
+    mockCreateCoreApp.mockResolvedValue({
+      application: {
+        id: 'app_new',
+        organizationId,
+        slug: 'drop-desk-host',
+        title: 'Workbench App',
+        type: 'coreApp',
+      },
+    })
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',
@@ -360,11 +368,10 @@ describe('#deploy app', () => {
     )
     const result = JSON.parse(stdout)
     expect(result.deployed).toBe(true)
-    expect(result.target).toMatchObject({
-      applicationId: 'app_new',
-      slug: 'drop-desk-host',
-      url: `https://${organizationId}.sanity.run/application/app_new`,
-    })
+    expect(result.action).toBe('create')
+    expect(result.url).toBe(`https://${organizationId}.sanity.run/application/app_new`)
+    expect(result.payload).toMatchObject({appId: null, slug: 'drop-desk-host', type: 'coreApp'})
+    expect(result.application).toMatchObject({id: 'app_new', slug: 'drop-desk-host'})
   })
 
   test('rolls back a freshly created app when the build fails, so its slug is free to retry', async () => {
@@ -372,7 +379,16 @@ describe('#deploy app', () => {
     process.cwd = () => cwd
 
     const rollback = vi.fn()
-    mockCreateCoreApp.mockResolvedValue({applicationId: 'app_new', rollback})
+    mockCreateCoreApp.mockResolvedValue({
+      application: {
+        id: 'app_new',
+        organizationId,
+        slug: 'drop-desk-host',
+        title: 'Workbench App',
+        type: 'coreApp',
+      },
+      rollback,
+    })
     mockBuildApp.mockRejectedValueOnce(new Error('build blew up'))
 
     const app = unstable_defineApp({
@@ -432,14 +448,15 @@ describe('#deploy app', () => {
 
     if (error) throw error
     const plan = JSON.parse(stdout)
-    expect(plan.isDeployable).toBe(true)
-    expect(plan.target).toEqual({
-      action: 'create',
-      applicationId: null,
+    expect(plan.canDeploy).toBe(true)
+    expect(plan.action).toBe('create')
+    expect(plan.payload).toMatchObject({
+      appId: null,
       slug: 'drop-desk-host',
       title: 'Workbench App',
-      url: null,
+      type: 'coreApp',
     })
+    expect(plan.application).toBeNull()
     expect(mockCreateCoreApp).not.toHaveBeenCalled()
     expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
   })
@@ -481,7 +498,15 @@ describe('#deploy app', () => {
     process.cwd = () => cwd
     await writeFile(join(cwd, 'icon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><rect /></svg>')
 
-    mockCreateCoreApp.mockResolvedValue({applicationId: 'app_new'})
+    mockCreateCoreApp.mockResolvedValue({
+      application: {
+        id: 'app_new',
+        organizationId,
+        slug: 'drop-desk-host',
+        title: 'Workbench App',
+        type: 'coreApp',
+      },
+    })
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',

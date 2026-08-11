@@ -1,6 +1,10 @@
 import {type Output} from '@sanity/cli-core'
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
-import {type UndeployAdapter, type UndeployApplicationTarget} from '@sanity/cli-core/undeploy'
+import {
+  type UndeployAdapter,
+  type UndeployApplicationTarget,
+  type UndeployConfigTarget,
+} from '@sanity/cli-core/undeploy'
 import {confirm} from '@sanity/cli-test/mocks/cli-core/ux'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -32,12 +36,17 @@ function target(overrides: Partial<UndeployApplicationTarget> = {}): UndeployApp
     deletes: 'application',
     id: 'app-1',
     organizationId: null,
+    payload: {appId: 'app-1', type: 'studio'},
     projectId: 'project-1',
     title: null,
     type: 'studio',
     url: 'https://my-studio.sanity.studio',
     ...overrides,
   }
+}
+
+function configTarget(overrides: Partial<UndeployConfigTarget> = {}): UndeployConfigTarget {
+  return {...target(), deletes: 'config', id: null, ...overrides}
 }
 
 function adapter(overrides: Partial<UndeployAdapter> = {}): UndeployAdapter {
@@ -201,7 +210,7 @@ describe('runUndeploy real run', () => {
       options(output, {yes: true}),
       adapter({
         resolveTarget: async () => ({
-          target: {...target(), deletes: 'config' as const, id: null},
+          target: configTarget(),
           type: 'found',
         }),
         undeploy: async () => {
@@ -238,7 +247,7 @@ describe('runUndeploy --json', () => {
     expect(logged).toHaveLength(1)
     const payload = JSON.parse(logged[0]!)
     expect(payload.canUndeploy).toBe(true)
-    expect(payload.application.id).toBe('app-1')
+    expect(payload.payload.appId).toBe('app-1')
   })
 
   test('a real run emits an {undeployed: true} envelope with the target', async () => {
@@ -247,7 +256,7 @@ describe('runUndeploy --json', () => {
 
     const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
     expect(payload.undeployed).toBe(true)
-    expect(payload.application.id).toBe('app-1')
+    expect(payload.payload.appId).toBe('app-1')
   })
 
   test("without `yes` the runner still confirms — unattended consent is the command's job", async () => {
@@ -260,6 +269,28 @@ describe('runUndeploy --json', () => {
     expect(undeploy).not.toHaveBeenCalled()
   })
 
+  // `summary` is a report-only field on the target, so it must not be filtered
+  // out of the backend record, which reaches `--json` verbatim.
+  test('a backend field named summary survives into the reported record', async () => {
+    const output = mockOutput()
+    await runUndeploy(
+      options(output, {json: true, yes: true}),
+      adapter({
+        resolveTarget: async () => ({
+          target: {
+            ...target(),
+            application: {id: 'app-1', summary: 'from the server'},
+            summary: ['report only'],
+          },
+          type: 'found',
+        }),
+      }),
+    )
+
+    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
+    expect(payload.application.summary).toBe('from the server')
+  })
+
   test('nothing to undeploy emits {undeployed: false} with the reason', async () => {
     const output = mockOutput()
     await runUndeploy(
@@ -268,7 +299,12 @@ describe('runUndeploy --json', () => {
     )
 
     const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
-    expect(payload).toEqual({reason: 'No application ID provided', undeployed: false})
+    expect(payload).toEqual({
+      application: null,
+      payload: null,
+      reason: 'No application ID provided',
+      undeployed: false,
+    })
   })
 
   test('a failed deletion emits a {undeployed: false} error envelope and still errors on stderr', async () => {
@@ -364,10 +400,13 @@ describe('undeployPlanToJson', () => {
     })
 
     expect(json).toEqual({
-      application: target(),
+      application: null,
       canUndeploy: false,
+      deletes: 'application',
       errors: {boom: 'do X'},
-      reason: null,
+      payload: {appId: 'app-1', type: 'studio'},
+      reason: 'boom',
+      url: 'https://my-studio.sanity.studio',
       warnings: ['heads up'],
     })
   })
@@ -384,12 +423,19 @@ describe('undeployPlanToJson', () => {
     expect(json.errors).toEqual({})
     expect(json.reason).toBe('No application ID provided')
     expect(json.application).toBeNull()
+    expect(json.payload).toBeNull()
   })
 
-  test('an undeployable plan reports the full target', () => {
-    const json = undeployPlanToJson({checks: [], reason: null, target: target(), type: 'studio'})
+  test('reports the local payload, never the backend record', () => {
+    const json = undeployPlanToJson({
+      checks: [],
+      reason: null,
+      target: {...target(), application: {id: 'app-1', slug: 'my-studio'}},
+      type: 'studio',
+    })
     expect(json.canUndeploy).toBe(true)
-    expect(json.application).toEqual(target())
+    expect(json.payload).toEqual({appId: 'app-1', type: 'studio'})
+    expect(json.application).toBeNull()
   })
 })
 
@@ -481,11 +527,7 @@ describe('renderUndeployPlan', () => {
       {
         checks: [{message: 'boom', status: 'fail'}],
         reason: null,
-        target: {
-          ...target({title: 'media-library', type: 'coreApp'}),
-          deletes: 'config',
-          id: null,
-        },
+        target: configTarget({title: 'media-library', type: 'coreApp'}),
         type: 'coreApp',
       },
       output,
@@ -507,7 +549,7 @@ describe('renderUndeployPlan target summary', () => {
       {
         checks: [],
         reason: null,
-        target: target({summary: ['Views:\n  Insights (insights)', 'Singleton: true']}),
+        target: {...target(), summary: ['Views:\n  Insights (insights)', 'Singleton: true']},
         type: 'studio',
       },
       output,

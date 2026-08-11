@@ -62,7 +62,7 @@ describe('createCoreApp', () => {
 
     expect(
       await createCoreApp({organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk'}),
-    ).toMatchObject({applicationId: 'app_new'})
+    ).toMatchObject({application: {id: 'app_new'}})
     // A record-only create is a plain JSON POST (no multipart, no tarball).
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk', type: 'coreApp'},
@@ -110,7 +110,7 @@ describe('createCoreApp', () => {
 })
 
 describe('createStudio', () => {
-  test('creates a studio at the given slug and returns the id', async () => {
+  test('creates a studio at the given slug and returns the record', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
 
     expect(
@@ -120,7 +120,7 @@ describe('createStudio', () => {
         slug: 'my-studio',
         title: 'My Studio',
       }),
-    ).toMatchObject({applicationId: 'studio_new'})
+    ).toMatchObject({application: {id: 'studio_new'}})
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {
         config: {studio: {projectId: 'proj-1'}},

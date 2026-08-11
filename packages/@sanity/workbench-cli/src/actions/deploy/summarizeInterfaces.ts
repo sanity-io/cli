@@ -1,7 +1,7 @@
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 
 /** A view or service as the deploy report and `--json` output surface it. */
-export interface DeployedExpose {
+export interface DeployedInterface {
   name: string
   src: string
   title: string
@@ -15,7 +15,7 @@ const label = (item: {name: string; title: string}) =>
  * One `Title (name): src` report line per declared entry point.
  * @internal
  */
-export function summarizeExposeGroup(
+export function summarizeGroup(
   heading: string,
   items: readonly {name: string; src: string; title: string}[],
 ): string {
@@ -23,25 +23,25 @@ export function summarizeExposeGroup(
 }
 
 /**
- * The deploy summary of an app's exposes: the structured records (for `--json`)
- * and one report line per non-empty group (for the human report).
+ * One report line per non-empty group, alongside the records `--json` reports.
  * @internal
  */
 export function summarizeInterfaces({services, views}: WorkbenchExposes): {
-  exposes: DeployedExpose[]
   lines: string[]
+  services: DeployedInterface[]
+  views: DeployedInterface[]
 } {
-  const toExpose = (decl: DeployedExpose): DeployedExpose => ({
+  const toInterface = (decl: DeployedInterface): DeployedInterface => ({
     name: decl.name,
     src: decl.src,
     title: decl.title,
     type: decl.type,
   })
-  const viewExposes = (views ?? []).map((view) => toExpose(view))
-  const serviceExposes = (services ?? []).map((service) => toExpose(service))
+  const deployedViews = (views ?? []).map((view) => toInterface(view))
+  const deployedServices = (services ?? []).map((service) => toInterface(service))
 
   const lines: string[] = []
-  if (viewExposes.length > 0) lines.push(summarizeExposeGroup('Views', viewExposes))
-  if (serviceExposes.length > 0) lines.push(summarizeExposeGroup('Services', serviceExposes))
-  return {exposes: [...viewExposes, ...serviceExposes], lines}
+  if (deployedViews.length > 0) lines.push(summarizeGroup('Views', deployedViews))
+  if (deployedServices.length > 0) lines.push(summarizeGroup('Services', deployedServices))
+  return {lines, services: deployedServices, views: deployedViews}
 }

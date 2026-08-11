@@ -7,7 +7,7 @@ import {pack} from 'tar-fs'
 
 import {getWorkbenchUrl} from '../../services/applications.js'
 import {createConfig, resolveSingletonInstallationId} from '../../services/installations.js'
-import {summarizeExposeGroup} from './summarizeInterfaces.js'
+import {summarizeGroup} from './summarizeInterfaces.js'
 
 const debug = subdebug('deploy')
 
@@ -41,7 +41,7 @@ export function summarizeConfig(config: {
 }): string {
   switch (config.appType) {
     case 'media-library': {
-      return summarizeExposeGroup('Media library fields', config.fields)
+      return summarizeGroup('Media library fields', config.fields)
     }
     default: {
       throw new Error(`Cannot create config for unknown app type: ${config.appType}`)

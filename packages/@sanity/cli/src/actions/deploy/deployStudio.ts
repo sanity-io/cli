@@ -31,8 +31,8 @@ import {
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {listDeploymentFiles, reportExposes} from './deploymentPlan.js'
-import {type DeployResult, runDeploy} from './deployRunner.js'
+import {declaredInterfaces, listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
+import {type DeployPayload, type DeployResult, runDeploy} from './deployRunner.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
@@ -99,6 +99,7 @@ async function runStudioDeployment(
   // resolve/create on user-applications, unchanged.
   let application: UserApplication | null = null
   let studioCreated = false
+  let workbenchApp: object | undefined
   if (workbench && !isExternal) {
     reporter.report(
       organizationId
@@ -109,13 +110,15 @@ async function runStudioDeployment(
             status: 'fail',
           },
     )
-    await checkStudioTarget(reporter, {
-      appId,
-      isWorkbenchApp: true,
-      organizationId,
-      slug: workbench.slug,
-      title: appTitle,
-    })
+    workbenchApp = (
+      await checkStudioTarget(reporter, {
+        appId,
+        isWorkbenchApp: true,
+        organizationId,
+        slug: workbench.slug,
+        title: appTitle,
+      })
+    )?.application
   } else {
     ;({application, created: studioCreated} = await resolveStudioApplication(options, {
       dryRun,
@@ -146,13 +149,16 @@ async function runStudioDeployment(
   let applicationCreated = false
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
-    ;({applicationId, rollback: rollbackApp} = await createStudio({
+    const created = await createStudio({
       organizationId,
       projectId,
       slug: workbench.slug,
       title: appTitle,
       visibility: workbench.visibility,
-    }))
+    })
+    workbenchApp = created.application
+    applicationId = created.application.id
+    rollbackApp = created.rollback
     applicationCreated = true
   }
 
@@ -179,12 +185,23 @@ async function runStudioDeployment(
       await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
     }
 
-    // Report the exposes deploying with the studio, both modes. External studios
-    // host their own bundle, so nothing registers.
-    const exposes = workbench && !isExternal ? reportExposes(reporter, workbench) : []
+    // An external studio hosts its own bundle, so nothing registers.
+    const interfaces = workbench && !isExternal ? reportInterfaces(reporter, workbench) : null
+
+    const payload: DeployPayload = {
+      appId: appId ?? null,
+      ...declaredInterfaces(interfaces),
+      isAutoUpdating,
+      ...(organizationId ? {organizationId} : {}),
+      ...(projectId ? {projectId} : {}),
+      ...(workbench ? {slug: workbench.slug, title: appTitle} : {}),
+      type: 'studio',
+      version,
+      ...(workbench?.visibility ? {visibility: workbench.visibility} : {}),
+    }
 
     // Dry run stops here — everything below mutates.
-    if (dryRun) return
+    if (dryRun) return {application: null, payload}
 
     // A real deploy has already exited if anything failed; landing here without a
     // resolved version means the deploy target was never resolved.
@@ -216,16 +233,10 @@ async function runStudioDeployment(
       const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
       logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
       return {
-        applicationType: 'studio',
-        applicationVersion: version,
-        ...(exposes.length > 0 ? {exposes} : {}),
-        target: {
-          action: applicationCreated ? 'create' : 'update',
-          applicationId,
-          ...(applicationCreated ? {slug: workbench.slug} : {}),
-          title: appTitle,
-          url,
-        },
+        action: applicationCreated ? 'create' : 'update',
+        application: workbenchApp ?? null,
+        payload,
+        url,
       }
     }
 
@@ -240,14 +251,10 @@ async function runStudioDeployment(
     })
 
     return {
-      applicationType: 'studio',
-      applicationVersion: version,
-      target: {
-        action: studioCreated ? 'create' : 'update',
-        applicationId: application.id,
-        title: application.title ?? null,
-        url: location,
-      },
+      action: studioCreated ? 'create' : 'update',
+      application,
+      payload,
+      url: location,
     }
   } catch (err) {
     await rollbackApp?.()

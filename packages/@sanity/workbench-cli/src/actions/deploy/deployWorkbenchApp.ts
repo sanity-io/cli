@@ -7,6 +7,7 @@ import {pack} from 'tar-fs'
 
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {
+  type Application,
   type BrettAccess,
   type BrettInterface,
   type BrettWorkspace,
@@ -17,13 +18,11 @@ import {
 } from '../../services/applications.js'
 
 /**
- * A freshly created application record: its id, plus a way to undo the creation.
- * The caller builds and deploys with the id, and calls `rollback` if a later
- * step fails so the record isn't stranded at its slug.
+ * `rollback` undoes the creation, so a later failure leaves no record stranded at the slug.
  * @internal
  */
 export interface CreatedApplication {
-  applicationId: string
+  application: Application
   rollback: () => Promise<void>
 }
 
@@ -41,9 +40,9 @@ export async function createCoreApp(options: {
 }): Promise<CreatedApplication> {
   const spin = spinner('Creating application...').start()
   try {
-    const {id} = await createApplication({...options, type: 'coreApp'})
+    const application = await createApplication({...options, type: 'coreApp'})
     spin.succeed()
-    return {applicationId: id, rollback: () => deleteApplication(id)}
+    return {application, rollback: () => deleteApplication(application.id)}
   } catch (error) {
     spin.fail()
     throw error
@@ -63,9 +62,9 @@ export async function createStudio(options: {
 }): Promise<CreatedApplication> {
   const spin = spinner('Creating studio...').start()
   try {
-    const {id} = await createApplication({...options, type: 'studio'})
+    const application = await createApplication({...options, type: 'studio'})
     spin.succeed()
-    return {applicationId: id, rollback: () => deleteApplication(id)}
+    return {application, rollback: () => deleteApplication(application.id)}
   } catch (error) {
     spin.fail()
     throw error
