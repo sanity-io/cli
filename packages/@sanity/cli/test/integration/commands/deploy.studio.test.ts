@@ -275,6 +275,46 @@ describe('#deploy studio', () => {
     expect(stdout).not.toContain('Success! Studio deployed')
   })
 
+  test('a plain studio collects no workbench data into the --json payload', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+    await mkdir(join(cwd, 'dist'), {recursive: true})
+    await writeFile(join(cwd, 'dist', 'index.html'), '<html></html>')
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appHost: studioHost, appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: 'studio-app-id',
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--dry-run', '--json'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {api: {projectId}, studioHost}},
+    })
+
+    if (error) throw error
+    const {payload} = JSON.parse(stdout)
+    expect(Object.keys(payload).toSorted()).toEqual([
+      'appId',
+      'isAutoUpdating',
+      'projectId',
+      'type',
+      'version',
+    ])
+  })
+
   test('runs the dry-run build unattended so it cannot prompt', async () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd

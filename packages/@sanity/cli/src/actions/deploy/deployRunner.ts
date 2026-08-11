@@ -1,7 +1,7 @@
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {type DeployedExpose} from '@sanity/workbench-cli/deploy'
+import {type DeployedInterface} from '@sanity/workbench-cli/deploy'
 
 import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
 import {toStderrOutput} from '../../util/toStderrOutput.js'
@@ -16,25 +16,34 @@ import {
 } from './deploymentPlan.js'
 import {type DeployAppOptions} from './types.js'
 
-/** What a real deploy produced — the payload `--json` reports. */
 export interface DeployResult {
-  applicationType: 'coreApp' | 'studio'
-  /** Installed framework version the deploy used (`sanity` or `@sanity/sdk-react`). */
-  applicationVersion: string
-  /**
-   * The deployed application/studio, in the same shape the dry-run plan reports
-   * so the two modes can't drift; `null` for a config-only singleton deploy.
-   */
-  target: DeployTarget | null
+  application: object | null
+  payload: DeployPayload
 
-  /** Media-library config summary, when a singleton config deployed. */
-  config?: string
-  /** Workbench views and services registered with the deploy. */
-  exposes?: DeployedExpose[]
-  /** Set when a media-library singleton deployed its config. */
+  action?: DeployTarget['action']
+  /** Resolved server-side, so it stays out of the local payload. */
   installationId?: string
-  /** The app's explicit `isSingleton` flag; omitted when the app doesn't set it. */
+  url?: string | null
+}
+
+/** Collected locally, so a dry run reports it too. */
+export interface DeployPayload {
+  /** The configured `deployment.appId`; `null` when the deploy would mint one. */
+  appId: string | null
+  isAutoUpdating: boolean
+  type: 'coreApp' | 'studio'
+  version: string | null
+
+  /** Media-library config summary. */
+  config?: string
   isSingleton?: boolean
+  organizationId?: string
+  projectId?: string
+  services?: DeployedInterface[]
+  slug?: string
+  title?: string
+  views?: DeployedInterface[]
+  visibility?: string
 }
 
 /**
@@ -74,13 +83,19 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
     }
 
     const result = await spec.run(runOptions, createFailFastReporter(runOptions.output))
-    if (json && result) emitJson({deployed: true, ...result})
+    if (json && result) emitJson({deployed: true, reason: null, ...result})
   } catch (error) {
     const failure = normalizeFailure(error, spec.type)
     // A blocked dry run reaches this catch too (its exit throws) and already
     // printed its plan, so only a real deploy adds the {deployed: false} envelope.
     if (json && !options.flags['dry-run']) {
-      emitJson({deployed: false, error: {message: failure.message}})
+      emitJson({
+        application: null,
+        deployed: false,
+        error: {message: failure.message},
+        payload: null,
+        reason: failure.message,
+      })
     }
     output.error(failure.message, {exit: failure.exit})
   }
@@ -89,17 +104,14 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
 /** Runs the step sequence read-only and gathers the plan a dry run reports. */
 async function collectPlan(options: DeployAppOptions, spec: DeploySpec): Promise<DeploymentPlan> {
   const reporter = createCollectingReporter<DeployCheck>()
-  await spec.run(options, reporter)
+  const result = await spec.run(options, reporter)
   const plan: DeploymentPlan = {
     checks: reporter.results,
-    config: reporter.results.find((check) => check.config)?.config ?? null,
-    exposes: reporter.results.find((check) => check.exposes)?.exposes ?? [],
     files: [],
-    isSingleton: reporter.results.find((check) => check.isSingleton !== undefined)?.isSingleton,
+    payload: result?.payload ?? null,
     target:
       reporter.results.find((check) => check.target && check.status !== 'fail')?.target ?? null,
     type: spec.type,
-    version: reporter.results.find((check) => check.version)?.version ?? null,
   }
   // A blocked deploy uploads nothing, so only enumerate files for a deployable plan.
   if (isDeployable(plan)) plan.files = await spec.listFiles(options)

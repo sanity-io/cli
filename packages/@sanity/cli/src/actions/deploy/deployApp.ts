@@ -43,8 +43,8 @@ import {
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {listDeploymentFiles, reportExposes} from './deploymentPlan.js'
-import {type DeployResult, runDeploy} from './deployRunner.js'
+import {declaredInterfaces, listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
+import {type DeployPayload, type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
@@ -119,6 +119,7 @@ async function runAppDeployment(
 
   let application: UserApplicationResolved | null = null
   let appCreated = false
+  let workbenchApp: object | undefined
   if (flags.external) {
     reporter.report({
       message: EXTERNAL_APP_NOT_SUPPORTED,
@@ -126,13 +127,15 @@ async function runAppDeployment(
       status: 'fail',
     })
   } else if (deployApplication && workbench) {
-    await checkAppTarget(reporter, {
-      appId,
-      isWorkbenchApp: true,
-      organizationId,
-      slug: workbench.slug,
-      title: appTitle,
-    })
+    workbenchApp = (
+      await checkAppTarget(reporter, {
+        appId,
+        isWorkbenchApp: true,
+        organizationId,
+        slug: workbench.slug,
+        title: appTitle,
+      })
+    )?.application
   } else if (deployApplication) {
     ;({application, created: appCreated} = await resolveAppApplication(options, {dryRun, reporter}))
   }
@@ -158,13 +161,16 @@ async function runAppDeployment(
   let applicationCreated = false
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && deployApplication && workbench && organizationId && !applicationId) {
-    ;({applicationId, rollback: rollbackApp} = await createCoreApp({
+    const created = await createCoreApp({
       isSingleton: workbench.isSingleton,
       organizationId,
       slug: workbench.slug,
       title: appTitle,
       visibility: workbench.visibility,
-    }))
+    })
+    workbenchApp = created.application
+    applicationId = created.application.id
+    rollbackApp = created.rollback
     applicationCreated = true
   }
 
@@ -217,7 +223,7 @@ async function runAppDeployment(
       config = summarizeConfig(workbench.config)
       reporter.report(
         installationId
-          ? {config, message: config, status: 'pass'}
+          ? {message: config, status: 'pass'}
           : {
               exitCode: exitCodes.USAGE_ERROR,
               message: `No active "${configAppType}" installation for organization "${organizationId}"`,
@@ -228,16 +234,11 @@ async function runAppDeployment(
       )
     }
 
-    // Report the exposes deploying with the application, both modes.
-    const exposes = deployApplication && workbench ? reportExposes(reporter, workbench) : []
+    const interfaces = deployApplication && workbench ? reportInterfaces(reporter, workbench) : null
 
     // Surface the app's explicit singleton flag when set, both modes.
     if (deployApplication && workbench?.isSingleton !== undefined) {
-      reporter.report({
-        isSingleton: workbench.isSingleton,
-        message: `Singleton: ${workbench.isSingleton}`,
-        status: 'pass',
-      })
+      reporter.report({message: `Singleton: ${workbench.isSingleton}`, status: 'pass'})
     }
 
     // Applied after the app is live (see below) so a failed deploy never leaves
@@ -255,20 +256,27 @@ async function runAppDeployment(
       }
     }
 
+    const payload: DeployPayload = {
+      appId: appId ?? null,
+      ...(config ? {config} : {}),
+      ...declaredInterfaces(interfaces),
+      isAutoUpdating,
+      ...(workbench?.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
+      ...(organizationId ? {organizationId} : {}),
+      ...(workbench ? {slug: workbench.slug, title: appTitle} : {}),
+      type: 'coreApp',
+      version,
+      ...(workbench?.visibility ? {visibility: workbench.visibility} : {}),
+    }
+
     // Dry run stops here — everything below mutates.
-    if (dryRun) return
+    if (dryRun) return {application: null, payload}
 
     // A config-only singleton ships no application, only its config.
     if (!deployApplication) {
       await deployApplicationConfig()
       if (installationId && version) {
-        return {
-          applicationType: 'coreApp',
-          applicationVersion: version,
-          ...(config ? {config} : {}),
-          installationId,
-          target: null,
-        }
+        return {application: null, installationId, payload}
       }
       return
     }
@@ -307,18 +315,10 @@ async function runAppDeployment(
         url,
       })
       return {
-        applicationType: 'coreApp',
-        applicationVersion: version,
-        ...(exposes.length > 0 ? {exposes} : {}),
-        ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
-        target: {
-          action: applicationCreated ? 'create' : 'update',
-          applicationId,
-          // A redeploy targets an existing app; only a create reports the slug.
-          ...(applicationCreated ? {slug: workbench.slug} : {}),
-          title: appTitle,
-          url,
-        },
+        action: applicationCreated ? 'create' : 'update',
+        application: workbenchApp ?? null,
+        payload,
+        url,
       }
     }
 
@@ -342,14 +342,10 @@ async function runAppDeployment(
       title: application.title,
     })
     return {
-      applicationType: 'coreApp',
-      applicationVersion: version,
-      target: {
-        action: appCreated ? 'create' : 'update',
-        applicationId: application.id,
-        title: application.title ?? null,
-        url: getCoreAppUrl(application.organizationId, application.id),
-      },
+      action: appCreated ? 'create' : 'update',
+      application,
+      payload,
+      url: getCoreAppUrl(application.organizationId, application.id),
     }
   } catch (err) {
     await rollbackApp?.()

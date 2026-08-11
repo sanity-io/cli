@@ -1,9 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
-import {
-  type UndeployAdapter,
-  type UndeployApplicationTarget,
-  type UndeployTarget,
-} from '@sanity/cli-core/undeploy'
+import {type UndeployAdapter, type UndeployApplicationTarget} from '@sanity/cli-core/undeploy'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 
 import {
@@ -81,22 +77,19 @@ export function createStudioUndeployAdapter(
 
 function toUndeployTarget(
   application: UserApplication,
-  type: UndeployTarget['type'],
+  type: UndeployApplicationTarget['type'],
 ): UndeployApplicationTarget {
   return {
-    activeDeployment: application.activeDeployment
-      ? {
-          deployedAt: application.activeDeployment.deployedAt,
-          deployedBy: application.activeDeployment.deployedBy,
-        }
-      : null,
-    appHost: application.appHost ?? null,
-    createdAt: application.createdAt ?? null,
+    activeDeployment: application.activeDeployment ?? null,
+    appHost: application.appHost,
+    application,
+    createdAt: application.createdAt,
     deletes: 'application',
     id: application.id,
-    organizationId: application.organizationId ?? null,
-    projectId: application.projectId ?? null,
-    title: application.title ?? null,
+    organizationId: application.organizationId,
+    payload: {appId: application.id, type},
+    projectId: application.projectId,
+    title: application.title,
     type,
     url: resolveTargetUrl(application, type),
   }
@@ -104,7 +97,7 @@ function toUndeployTarget(
 
 function resolveTargetUrl(
   application: UserApplication,
-  type: UndeployTarget['type'],
+  type: UndeployApplicationTarget['type'],
 ): string | null {
   if (type === 'coreApp') {
     return application.organizationId

@@ -180,10 +180,11 @@ describe('resolveWorkbenchApp', () => {
     expect(result).toEqual({
       appHost: 'agent',
       existing: {
-        appHost: 'agent',
         id: 'app-1',
         organizationId: 'org-1',
+        slug: 'agent',
         title: 'Agent',
+        type: 'coreApp',
         url: 'https://org-1.sanity.run/application/app-1',
       },
       type: 'slug-taken',

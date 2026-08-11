@@ -1,6 +1,11 @@
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {createStudio, deployWorkbenchApp, listApplications} from '@sanity/workbench-cli/deploy'
+import {
+  createStudio,
+  deployWorkbenchApp,
+  getApplication,
+  listApplications,
+} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../build/buildStudio.js'
@@ -14,6 +19,7 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   checkBuiltOutput: vi.fn(),
   createStudio: vi.fn(),
   deployWorkbenchApp: vi.fn(),
+  getApplication: vi.fn(),
   listApplications: vi.fn(),
 }))
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
@@ -30,6 +36,7 @@ vi.mock('../../../services/userApplications.js', () => ({createDeployment: vi.fn
 
 const mockCreateStudio = vi.mocked(createStudio)
 const mockDeployWorkbenchApp = vi.mocked(deployWorkbenchApp)
+const mockGetApplication = vi.mocked(getApplication)
 const mockListApplications = vi.mocked(listApplications)
 const mockBuildStudio = vi.mocked(buildStudio)
 
@@ -63,7 +70,16 @@ function deployedPayload(output: Output) {
 beforeEach(() => {
   vi.clearAllMocks()
   mockListApplications.mockResolvedValue([])
-  mockCreateStudio.mockResolvedValue({applicationId: 'studio-1', rollback: vi.fn()})
+  mockCreateStudio.mockResolvedValue({
+    application: {
+      id: 'studio-1',
+      organizationId: 'org-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      type: 'studio',
+    },
+    rollback: vi.fn(),
+  })
   vi.mocked(deployStudioSchemasAndManifests).mockResolvedValue({
     workspaces: [],
   } as unknown as Awaited<ReturnType<typeof deployStudioSchemasAndManifests>>)
@@ -114,25 +130,31 @@ describe('deployStudio (federated studio)', () => {
     await deployStudio(options)
 
     expect(deployedPayload(options.output)).toMatchObject({
+      action: 'create',
+      application: {id: 'studio-1', slug: 'my-studio'},
       deployed: true,
-      target: {
-        action: 'create',
-        applicationId: 'studio-1',
-        slug: 'my-studio',
-        url: 'https://org-1.sanity.run/studio/studio-1',
-      },
+      payload: {appId: null, slug: 'my-studio', type: 'studio'},
+      url: 'https://org-1.sanity.run/studio/studio-1',
     })
   })
 
-  test('a redeploy targets `deployment.appId` and omits the slug', async () => {
+  test('a redeploy targets `deployment.appId` and reports the resolved record', async () => {
+    mockGetApplication.mockResolvedValue({
+      id: 'studio-9',
+      organizationId: 'org-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      type: 'studio',
+    })
     const options = deployOptions({cliConfig: {deployment: {appId: 'studio-9'}}})
 
     await deployStudio(options)
 
     expect(mockCreateStudio).not.toHaveBeenCalled()
-    const {target} = deployedPayload(options.output)
-    expect(target).toMatchObject({action: 'update', applicationId: 'studio-9'})
-    expect(target).not.toHaveProperty('slug')
+    const {action, application, payload} = deployedPayload(options.output)
+    expect(action).toBe('update')
+    expect(payload.appId).toBe('studio-9')
+    expect(application).toMatchObject({id: 'studio-9', slug: 'my-studio'})
   })
 
   test('derives one deduped datasets access entry per unique workspace dataset', async () => {

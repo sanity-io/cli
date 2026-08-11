@@ -519,10 +519,8 @@ describe('#undeploy', () => {
 
     const payload = JSON.parse(stdout)
     expect(payload.canUndeploy).toBe(true)
-    expect(payload.application).toMatchObject({
-      id: 'app-id',
-      url: 'https://my-host.sanity.studio',
-    })
+    expect(payload.payload).toEqual({appId: 'app-id', type: 'studio'})
+    expect(payload.url).toBe('https://my-host.sanity.studio')
   })
 
   test('--json with --yes undeploys and emits the result envelope', async () => {
@@ -554,7 +552,7 @@ describe('#undeploy', () => {
 
     const payload = JSON.parse(stdout)
     expect(payload.undeployed).toBe(true)
-    expect(payload.application.id).toBe('app-id')
+    expect(payload.payload.appId).toBe('app-id')
   })
 
   test('--json without --yes reports the required confirmation as JSON', async () => {
@@ -580,9 +578,12 @@ describe('#undeploy', () => {
     expect(confirm).not.toHaveBeenCalled()
     const payload = JSON.parse(stdout)
     expect(payload).toEqual({
+      application: null,
       error: {
         message: 'Undeploy requires confirmation. Pass --yes to continue.',
       },
+      payload: null,
+      reason: 'Undeploy requires confirmation. Pass --yes to continue.',
       undeployed: false,
     })
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
@@ -653,11 +654,10 @@ describe('#undeploy', () => {
 
     const payload = JSON.parse(stdout)
     expect(payload.undeployed).toBe(true)
-    expect(payload.application).toMatchObject({
-      deletes: 'application',
-      id: 'wb-app-1',
-      url: 'https://org-1.sanity.run/application/wb-app-1',
-    })
+    expect(payload.deletes).toBe('application')
+    expect(payload.payload).toMatchObject({appId: 'wb-app-1'})
+    expect(payload.url).toBe('https://org-1.sanity.run/application/wb-app-1')
+    expect(payload.application).toMatchObject({id: 'wb-app-1', slug: 'my-app-x1'})
   })
 
   test('media library dry run reports the installation config', async () => {
@@ -698,7 +698,7 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Undeploys the installation config')
-    expect(stdout).toContain('at 2024-01-01T00:00:00Z by gustav@sanity.io')
+    expect(stdout).toContain('Served since 2024-01-01T00:00:00Z by gustav@sanity.io')
     expect(stdout).not.toContain('1.0.0')
     expect(stdout).toContain('Alt text (alt): ./src/alt.ts')
     expect(stdout).not.toContain('Config snapshots')
@@ -743,21 +743,11 @@ describe('#undeploy', () => {
 
     const payload = JSON.parse(stdout)
     expect(payload.canUndeploy).toBe(true)
-    expect(payload.application).toMatchObject({
-      activeDeployment: {
-        deployedAt: '2024-01-01T00:00:00Z',
-        deployedBy: 'gustav@sanity.io',
-      },
-      configs: [expect.objectContaining({id: 'cfg-1'})],
-      deletes: 'config',
-    })
-    expect(payload.application.summary).toBeUndefined()
-    // Workbench internals and versions never reach the machine payload
-    expect(payload.application.fields).toBeUndefined()
-    expect(payload.application.installationId).toBeUndefined()
-    expect(payload.application.isSingleton).toBeUndefined()
-    expect(payload.application.activeDeployment.version).toBeUndefined()
-    expect(payload.application.configs[0].version).toBeUndefined()
+    expect(payload.deletes).toBe('config')
+    expect(payload.payload.config).toContain('Media library fields')
+    expect(payload.payload.fields).toBeUndefined()
+    expect(payload.payload.installationId).toBeUndefined()
+    expect(payload.payload.isSingleton).toBeUndefined()
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {

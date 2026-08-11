@@ -1,9 +1,7 @@
 /**
  * What an undeploy deletes, resolved once and read by every report — the
  * dry-run plan, the `--json` payloads, and the real run's confirmation prompt —
- * so the human and machine outputs can't drift. Adapters may extend the
- * variants with backend-specific fields; they serialize into `--json` as-is,
- * except the report-only `summary`.
+ * so the human and machine outputs can't drift.
  */
 export type UndeployTarget = UndeployApplicationTarget | UndeployConfigTarget
 
@@ -20,7 +18,6 @@ export interface UndeployConfigTarget extends UndeployTargetDetails {
 }
 
 interface UndeployTargetDetails {
-  /** Details of the deployment currently being served; `null` when none is live. */
   activeDeployment: {deployedAt: string; deployedBy: string} | null
   /** Hostname the application is served from; freed for anyone to claim after undeploy. */
   appHost: string | null
@@ -29,15 +26,24 @@ interface UndeployTargetDetails {
   projectId: string | null
   title: string | null
   type: 'coreApp' | 'studio'
-  /** Where the deployed studio/app is currently reachable. */
   url: string | null
 
-  /**
-   * Adapter-authored report lines about what gets deleted (interfaces, config
-   * snapshots, …), rendered under the target details. Built from the same data
-   * the adapter puts on its target, so the report can't drift from the payload.
-   */
+  application?: object
+  payload?: UndeployPayload
+  /** Human-report lines only; never serialized. */
   summary?: string[]
+}
+
+/** Collected locally, so a dry run reports it too. */
+export interface UndeployPayload {
+  /** The configured `deployment.appId`; `null` when none is set. */
+  appId: string | null
+  type: 'coreApp' | 'studio'
+
+  /** Media-library config summary. */
+  config?: string
+  services?: object[]
+  views?: object[]
 }
 
 export type UndeployTargetResolution<TTarget extends UndeployTarget = UndeployTarget> =

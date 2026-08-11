@@ -32,13 +32,7 @@ export function undeployLabel(target: UndeployTarget | null, type: 'coreApp' | '
  * fix, warnings as messages. Derived from the same checks and target the human
  * report renders, so the two can't drift.
  */
-export function undeployPlanToJson(plan: UndeployPlan): {
-  application: UndeployTarget | null
-  canUndeploy: boolean
-  errors: Record<string, string | null>
-  reason: string | null
-  warnings: string[]
-} {
+export function undeployPlanToJson(plan: UndeployPlan): UndeployPlanJson {
   const errors: Record<string, string | null> = {}
   const warnings: string[] = []
   for (const check of plan.checks) {
@@ -47,12 +41,27 @@ export function undeployPlanToJson(plan: UndeployPlan): {
   }
 
   return {
-    application: plan.target,
+    // Only a successful undeploy reports the backend's record.
+    application: null,
     canUndeploy: canUndeploy(plan),
+    deletes: plan.target?.deletes ?? null,
     errors,
-    reason: plan.reason,
+    payload: plan.target?.payload ?? null,
+    reason: plan.reason ?? plan.checks.find((check) => check.status === 'fail')?.message ?? null,
+    url: plan.target?.url ?? null,
     warnings,
   }
+}
+
+interface UndeployPlanJson {
+  application: null
+  canUndeploy: boolean
+  deletes: UndeployTarget['deletes'] | null
+  errors: Record<string, string | null>
+  payload: UndeployTarget['payload'] | null
+  reason: string | null
+  url: string | null
+  warnings: string[]
 }
 
 /**
