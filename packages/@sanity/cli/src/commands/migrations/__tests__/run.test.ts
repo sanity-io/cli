@@ -865,7 +865,7 @@ describe('#migration:run', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe(
-      'Migration "my-migration" failed: the outcome of 2 transactions are unknown. See the transaction log details above.',
+      'Migration "my-migration" failed: the outcomes of 2 transactions are unknown. See the transaction log details above.',
     )
     expect(error?.oclif?.exit).toBe(1)
   })

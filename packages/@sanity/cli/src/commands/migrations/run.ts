@@ -323,9 +323,9 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
 
         const count = err.transactionIds.length
         this.error(
-          `Migration "${id}" failed: the outcome of ${count} ${
-            count === 1 ? 'transaction is' : 'transactions are'
-          } unknown. See the transaction log details above.`,
+          `Migration "${id}" failed: the ${count === 1 ? 'outcome' : 'outcomes'} of ${count} ${
+            count === 1 ? 'transaction' : 'transactions'
+          } ${count === 1 ? 'is' : 'are'} unknown. See the transaction log details above.`,
           {exit: exitCodes.RUNTIME_ERROR},
         )
       }
