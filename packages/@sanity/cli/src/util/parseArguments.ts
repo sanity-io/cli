@@ -36,6 +36,52 @@ interface ParsedArguments<F = Record<string, string>> {
   groupOrCommand: string
 }
 
+const SENSITIVE_TELEMETRY_OPTIONS = ['--file', '--filename'] as const
+
+function getSensitiveTelemetryOption(argument: string): string | undefined {
+  return SENSITIVE_TELEMETRY_OPTIONS.find(
+    (option) => argument === option || argument.startsWith(`${option}=`),
+  )
+}
+
+function redactSensitiveTelemetryValues(arguments_: string[]): string[] {
+  const redactedArguments: string[] = []
+
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index]
+    const sensitiveOption = getSensitiveTelemetryOption(argument)
+
+    if (!sensitiveOption) {
+      redactedArguments.push(argument)
+      continue
+    }
+
+    redactedArguments.push(sensitiveOption)
+    if (argument === sensitiveOption) index += 1
+  }
+
+  return redactedArguments
+}
+
+function collectOptionArguments(arguments_: string[]): string[] {
+  const optionArguments: string[] = []
+
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index]
+    const sensitiveOption = getSensitiveTelemetryOption(argument)
+
+    if (sensitiveOption) {
+      optionArguments.push(sensitiveOption)
+      if (argument === sensitiveOption) index += 1
+      continue
+    }
+
+    if (argument.startsWith('-')) optionArguments.push(argument)
+  }
+
+  return optionArguments
+}
+
 /**
  * Parse the arguments from the command line
  *
@@ -58,9 +104,12 @@ export function parseArguments(argv = process.argv): ParsedArguments {
 
   const [groupOrCommand, ...argsWithoutOptions] = _
 
+  const argumentSeparatorIndex = args.indexOf('--')
+  const argumentsBeforeSeparator =
+    argumentSeparatorIndex === -1 ? args : args.slice(0, argumentSeparatorIndex)
   const finalExtraArguments = [
-    ...(extraArguments || []),
-    ...argv.filter((arg) => arg.startsWith('-')),
+    ...redactSensitiveTelemetryValues(extraArguments || []),
+    ...collectOptionArguments(argumentsBeforeSeparator),
   ]
 
   // oclif allows to run `sanity help` or `sanity help <command>`
