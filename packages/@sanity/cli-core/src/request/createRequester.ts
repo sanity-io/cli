@@ -4,6 +4,8 @@ import {up as packageUp} from 'empathic/package'
 import {getIt, type Requester} from 'get-it'
 import {debug, headers, httpErrors, promise} from 'get-it/middleware'
 
+import {getCliExecutionContext} from '../executionContext.js'
+
 let cachedPkg: {name: string; version: string} | undefined
 
 /**
@@ -60,7 +62,8 @@ export function createRequester(options?: {middleware?: MiddlewareOptions}): Req
   }
 
   // 3. debug
-  if (opts?.debug !== false) {
+  // A programmatic invocation must not inherit the embedding process's DEBUG setting or write request/response bodies outside its output sinks.
+  if (!getCliExecutionContext() && opts?.debug !== false) {
     const debugDefaults = {namespace: 'sanity:cli', verbose: true}
     const customDebug = typeof opts?.debug === 'object' ? opts.debug : {}
     middleware.push(debug({...debugDefaults, ...customDebug}))

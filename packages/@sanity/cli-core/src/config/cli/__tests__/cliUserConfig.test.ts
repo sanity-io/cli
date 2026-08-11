@@ -114,12 +114,15 @@ describe('cliUserConfig', () => {
       expect(mockGetCliUserConfig).not.toHaveBeenCalled()
     })
 
-    test('execution context without token falls back to normal resolution', async () => {
+    test('execution context without token never falls back to host resolution', async () => {
+      vi.mocked(getCachedToken).mockReturnValue('cached-token')
       vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
 
       const token = await runWithCliExecutionContext({}, () => getCliToken())
 
-      expect(token).toBe('env-token')
+      expect(token).toBeUndefined()
+      expect(getCachedToken).not.toHaveBeenCalled()
+      expect(mockGetCliUserConfig).not.toHaveBeenCalled()
     })
 
     test('should re-read after clearCliTokenCache', async () => {
@@ -252,6 +255,13 @@ describe('cliUserConfig', () => {
   })
 
   describe('getUserConfig', () => {
+    test('is unavailable under an execution context', () => {
+      expect(() => runWithCliExecutionContext({}, () => getUserConfig())).toThrow(
+        'Host CLI user configuration is unavailable',
+      )
+      expect(readJsonFileSync).not.toHaveBeenCalled()
+    })
+
     test('get returns raw value from file', () => {
       vi.mocked(readJsonFileSync).mockReturnValueOnce({
         myKey: 'myValue',

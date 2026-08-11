@@ -4,7 +4,7 @@ import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {deleteToken, getTokens} from '../../services/tokens.js'
+import {deleteToken, getProjectMembership, getTokens} from '../../services/tokens.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
@@ -141,7 +141,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }
 
     const choices = tokens.map((token) => ({
-      name: `${token.label} (${(token.roles || []).map((r) => r.title).join(', ')})`,
+      name: `${token.label} (${getProjectMembership(token, this.projectId)?.roleNames.join(', ') ?? ''})`,
       value: token.id,
     }))
 

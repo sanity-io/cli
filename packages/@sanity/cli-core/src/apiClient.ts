@@ -11,12 +11,13 @@ import {
 } from '@sanity/client'
 
 import {getCliToken} from './config/cli/cliUserConfig.js'
+import {getCliExecutionContext} from './executionContext.js'
+import {createIsolatedRequester} from './request/createIsolatedRequester.js'
 import {generateHelpUrl} from './util/generateHelpUrl.js'
 import {getSanityUrl} from './util/getSanityUrl.js'
+import {isStaging} from './util/isStaging.js'
 
-const apiHosts: Record<string, string | undefined> = {
-  staging: 'https://api.sanity.work',
-}
+const STAGING_API_HOST = 'https://api.sanity.work'
 
 const CLI_REQUEST_TAG_PREFIX = 'sanity.cli'
 
@@ -58,12 +59,11 @@ export async function getGlobalCliClient({
   unauthenticated,
   ...config
 }: GlobalCliClientOptions): Promise<SanityClient> {
-  const requester = defaultRequester.clone()
+  const context = getCliExecutionContext()
+  const requester = context ? createIsolatedRequester() : defaultRequester.clone()
   requester.use(authErrors())
 
-  const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production'
-
-  const apiHost = apiHosts[sanityEnv]
+  const apiHost = isStaging() ? STAGING_API_HOST : undefined
 
   // Use the provided token if set, otherwise fall back to the stored CLI token (unless unauthenticated)
   const token = providedToken || (unauthenticated ? undefined : await getCliToken())
@@ -126,12 +126,11 @@ export async function getProjectCliClient({
   token: providedToken,
   ...config
 }: ProjectCliClientOptions): Promise<SanityClient> {
-  const requester = defaultRequester.clone()
+  const context = getCliExecutionContext()
+  const requester = context ? createIsolatedRequester() : defaultRequester.clone()
   requester.use(authErrors(config.projectId))
 
-  const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production'
-
-  const apiHost = apiHosts[sanityEnv]
+  const apiHost = isStaging() ? STAGING_API_HOST : undefined
 
   // Use the provided token if it is set, otherwise get the token from the config file
   const token = providedToken || (await getCliToken())

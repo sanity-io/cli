@@ -1,11 +1,6 @@
 import {type CliConfig} from '@sanity/cli-core'
 
-import {
-  interfaceModuleId,
-  MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
-  SERVICE_CONTRACT_VERSION,
-  VIEW_CONTRACT_VERSION,
-} from '../../contract.js'
+import {MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../contract.js'
 import {isWorkbenchApp, readConfig} from '../../defineApp.js'
 import {type DevServerManifest} from './registry.js'
 
@@ -14,69 +9,6 @@ export type DevServerInterface = NonNullable<DevServerManifest['interfaces']>[nu
 
 /** One forwarded config on the dev-server registry entry. */
 export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
-
-/**
- * Map a workbench app's declarations to its registry interface records:
- * `views` → panels, `services` → workers, `entry` → the `app` view. Each mirrors
- * a deployed record so the workbench loads a local interface like a deployed one.
- * `undefined` for a non-branded app; a studio that declares `entry` is rejected
- * (studio app views aren't implemented yet).
- */
-export function deriveInterfaces(
-  app: CliConfig['app'],
-  options: {isApp: boolean},
-): DevServerInterface[] | undefined {
-  if (!isWorkbenchApp(app)) return undefined
-
-  if (!options.isApp && app.entry !== undefined) {
-    throw new Error('App views for studios are not implemented yet')
-  }
-
-  const interfaceId = (type: string, name: string): string => `${app.name}-${type}-${name}`
-
-  const views = (app.views ?? []).map(
-    (view): DevServerInterface => ({
-      id: interfaceId('panel', view.name),
-      metadata: null,
-      moduleId: interfaceModuleId('panel', view.name),
-      name: view.name,
-      src: view.src,
-      title: view.title ?? view.name,
-      type: 'panel',
-      version: String(VIEW_CONTRACT_VERSION),
-    }),
-  )
-
-  const services = (app.services ?? []).map(
-    (service): DevServerInterface => ({
-      id: interfaceId('worker', service.name),
-      metadata: null,
-      moduleId: interfaceModuleId('worker', service.name),
-      name: service.name,
-      src: service.src,
-      title: service.title ?? service.name,
-      type: 'worker',
-      version: String(SERVICE_CONTRACT_VERSION),
-    }),
-  )
-
-  const appView: DevServerInterface[] =
-    app.entry === undefined
-      ? []
-      : [
-          {
-            id: interfaceId('app', app.name),
-            metadata: null,
-            moduleId: interfaceModuleId('app', app.name),
-            name: app.name,
-            src: app.entry,
-            title: app.title,
-            type: 'app',
-          },
-        ]
-
-  return [...views, ...services, ...appView]
-}
 
 /**
  * The named source files a config's generated module is built from, dispatched
@@ -116,7 +48,7 @@ export async function deriveConfigs(app: CliConfig['app']): Promise<DevServerCon
       src: field.src,
       title: field.title,
     })),
-    moduleName: app.name,
+    moduleName: app.slug,
     version: String(MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION),
   }
   return [{...entry, id: await contentHash(JSON.stringify(entry))}]

@@ -82,7 +82,7 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
           projectId: variables.projectId,
           roleName: API_READ_TOKEN_ROLE,
         })
-      ).key
+      ).token
     : undefined
   const writeToken = needsWriteToken
     ? (
@@ -91,7 +91,7 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
           projectId: variables.projectId,
           roleName: API_WRITE_TOKEN_ROLE,
         })
-      ).key
+      ).token
     : undefined
 
   for (const pkg of packages ?? ['']) {

@@ -2,7 +2,7 @@ import {
   deriveConfigEntries,
   type DevServerConfig,
   type DevServerInterface,
-} from './deriveInterfaces.js'
+} from './deriveConfigs.js'
 import {type DevServerManifest} from './registry.js'
 
 interface ExposeSet {

@@ -1,6 +1,6 @@
 import React from 'react'
 import {defineField, defineType} from 'sanity'
-import {PackageIcon} from '@sanity/icons'
+import {PackageIcon} from '@sanity/icons/Package'
 import pluralize from 'pluralize-esm'
 import CollectionHiddenInput from '../../components/inputs/CollectionHidden'
 import ShopifyIcon from '../../components/icons/Shopify'

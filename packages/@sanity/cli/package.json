@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli",
-  "version": "7.14.0",
+  "version": "7.18.0",
   "description": "Sanity CLI tool for managing Sanity projects and organizations",
   "keywords": [
     "cli",
@@ -96,7 +96,7 @@
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^6.0.3",
     "@sanity/migrate": "^8.0.1",
-    "@sanity/runtime-cli": "^17.3.0",
+    "@sanity/runtime-cli": "^17.4.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@sanity/template-validator": "^3.1.0",
@@ -140,7 +140,8 @@
     "skills": "^1.5.9",
     "smol-toml": "^1.6.1",
     "string-argv": "^0.3.2",
-    "tar": "^7.5.15",
+    "string-width": "^7.2.0",
+    "tar": "^7.5.18",
     "tar-fs": "catalog:",
     "tar-stream": "^3.2.0",
     "tinyglobby": "catalog:",
@@ -148,6 +149,7 @@
     "typeid-js": "^1.2.0",
     "vite": "catalog:",
     "which": "^6.0.1",
+    "wrap-ansi": "^9.0.2",
     "yaml": "catalog:",
     "zod": "catalog:"
   },

@@ -16,6 +16,7 @@ import {checkDir} from './checkDir.js'
 import {deployDebug} from './deployDebug.js'
 import {
   type AppDeployTargetResolution,
+  type DeployTargetApp,
   resolveAppDeployTarget,
   resolveStudioDeployTarget,
   resolveWorkbenchApp,
@@ -190,7 +191,7 @@ export async function verifyOutputDir({
  */
 export function describeAppTarget(
   resolution: AppDeployTargetResolution,
-  {slug, title}: {slug?: string; title?: string} = {},
+  {title}: {title?: string} = {},
 ): DeployCheck {
   switch (resolution.type) {
     case 'blocked': {
@@ -226,33 +227,20 @@ export function describeAppTarget(
         status: 'fail',
       }
     }
-    // A deployment with no `appId` collides with an app already at this slug —
-    // point at the existing app's id so a redeploy targets it instead of failing.
     case 'slug-taken': {
-      const {existing: application} = resolution
-      return {
-        exitCode: exitCodes.USAGE_ERROR,
-        message: `An application already exists at slug "${application.appHost}" in this organization (app ID ${application.id})`,
-        solution: `Add \`deployment: {appId: '${application.id}'}\` to sanity.cli.ts to redeploy it`,
-        status: 'fail',
-        target: {
-          action: 'update',
-          applicationId: application.id,
-          title: application.title,
-          url: application.url ?? null,
-        },
-      }
+      return describeSlugTaken(resolution)
     }
     // Without --title, creating an app needs a prompt no unattended run can answer
     case 'would-create': {
+      const {appHost} = resolution
       if (title) {
         return {
-          message: `Would create a new application "${title}"${slug ? ` with slug "${slug}"` : ''}`,
+          message: `Would create a new application "${title}"${appHost ? ` with slug "${appHost}"` : ''}`,
           status: 'pass',
           target: {
             action: 'create',
             applicationId: null,
-            ...(slug ? {slug} : {}),
+            ...(appHost ? {slug: appHost} : {}),
             title,
             url: null,
           },
@@ -266,6 +254,28 @@ export function describeAppTarget(
         status: 'fail',
       }
     }
+  }
+}
+
+/** One diagnosis for both the app and studio verdicts: they share a slug namespace. */
+function describeSlugTaken({
+  appHost,
+  existing,
+}: {
+  appHost: string
+  existing: DeployTargetApp
+}): DeployCheck {
+  return {
+    exitCode: exitCodes.USAGE_ERROR,
+    message: `An application already exists at slug "${appHost}" in this organization (app ID ${existing.id})`,
+    solution: `Add \`deployment: {appId: '${existing.id}'}\` to sanity.cli.ts to redeploy it`,
+    status: 'fail',
+    target: {
+      action: 'update',
+      applicationId: existing.id,
+      title: existing.title,
+      url: existing.url ?? null,
+    },
   }
 }
 
@@ -305,7 +315,7 @@ export async function checkAppTarget(
       name: 'target',
       work: async () => {
         const resolution = await resolveWorkbenchApp({appId, organizationId, slug})
-        const check = describeAppTarget(resolution, {slug, title})
+        const check = describeAppTarget(resolution, {title})
         reporter.report(check)
         return check.target ?? null
       },
@@ -370,18 +380,41 @@ export function describeStudioTarget(
         status: 'fail',
       }
     }
+    case 'slug-taken': {
+      return describeSlugTaken(resolution)
+    }
     case 'would-create': {
-      // A workbench studio's URL needs the application id, which only exists after the create.
-      const url = isWorkbench ? null : studioUrl(resolution.appHost)
-      const titled = title ? ` titled "${title}"` : ''
-      return {
-        message: isExternal
-          ? `Would register external studio at ${resolution.appHost}${titled}`
-          : `Would create studio hostname ${url ?? resolution.appHost}${titled} (name availability is checked on deploy)`,
+      const appHost = resolution.appHost
+      const url = isWorkbench ? null : studioUrl(appHost)
+      const result = {
         status: 'pass',
-        // `title || null`, not `?? null`, so target.title tracks the same
-        // truthiness the message's `titled` suffix uses (an empty title is no title)
-        target: {action: 'create', applicationId: null, title: title || null, url},
+        target: {
+          action: 'create',
+          applicationId: null,
+          title: title || null,
+          url,
+        },
+      } as const
+      const titled = title ? ` titled "${title}"` : ''
+
+      if (isExternal) {
+        return {
+          message: `Would register external studio at ${appHost}${titled}`,
+          ...result,
+        }
+      }
+
+      if (isWorkbench) {
+        return {
+          message: `Would create a new studio${title ? ` "${title}"` : ''} with slug "${appHost}" (name availability is checked on deploy)`,
+          ...result,
+          target: {...result.target, slug: appHost},
+        }
+      }
+
+      return {
+        message: `Would create studio hostname ${url}${titled} (name availability is checked on deploy)`,
+        ...result,
       }
     }
   }
@@ -407,13 +440,14 @@ export async function checkStudioTarget(
     | {
         appId: string | undefined
         isWorkbenchApp: true
+        organizationId?: string
         slug: string
         title?: string
       },
 ): Promise<DeployTarget | null> {
   const {title} = options
   const resolve = options.isWorkbenchApp
-    ? resolveWorkbenchStudio({appId: options.appId, slug: options.slug})
+    ? resolveWorkbenchStudio(options)
     : resolveStudioDeployTarget(options)
   // Workbench studios always deploy to Sanity hosting, never an external URL.
   const isExternal = options.isWorkbenchApp ? false : options.isExternal

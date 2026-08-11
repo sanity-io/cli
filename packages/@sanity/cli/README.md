@@ -95,6 +95,7 @@ Code for sanity cli
 - [`sanity migrations create [TITLE]`](#sanity-migrations-create-title)
 - [`sanity migrations list`](#sanity-migrations-list)
 - [`sanity migrations run [ID]`](#sanity-migrations-run-id)
+- [`sanity new [PROJECTNAME]`](#sanity-new-projectname)
 - [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
 - [`sanity openapi list`](#sanity-openapi-list)
 - [`sanity organizations create`](#sanity-organizations-create)
@@ -105,6 +106,7 @@ Code for sanity cli
 - [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
 - [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
 - [`sanity projects list`](#sanity-projects-list)
+- [`sanity projects unclaimed`](#sanity-projects-unclaimed)
 - [`sanity schemas delete`](#sanity-schemas-delete)
 - [`sanity schemas deploy`](#sanity-schemas-deploy)
 - [`sanity schemas extract`](#sanity-schemas-extract)
@@ -117,6 +119,7 @@ Code for sanity cli
 - [`sanity tokens create [LABEL]`](#sanity-tokens-create-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
+- [`sanity tokens rotate`](#sanity-tokens-rotate)
 - [`sanity typegen generate`](#sanity-typegen-generate)
 - [`sanity undeploy`](#sanity-undeploy)
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
@@ -528,13 +531,12 @@ Diagnose potential issues with local Blueprint and remote Stack configuration
 
 ```
 USAGE
-  $ sanity blueprints doctor [--json] [-p <value>] [--verbose] [--fix]
+  $ sanity blueprints doctor [--json] [-p <value>] [--fix]
 
 FLAGS
   -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
       --fix           Interactively fix configuration issues
       --json          Format output as json
-      --[no-]verbose  Verbose output; defaults to true
 
 DESCRIPTION
   Diagnose potential issues with local Blueprint and remote Stack configuration
@@ -544,6 +546,8 @@ DESCRIPTION
 
   Run this command when encountering errors with other Blueprint commands. Use --fix to interactively resolve detected
   issues.
+
+  Supports --json for programmatic consumption of diagnostic results.
 
 EXAMPLES
   $ sanity blueprints doctor
@@ -1861,7 +1865,7 @@ ARGUMENTS
 
 FLAGS
   --anonymous            Send the query without any authorization token
-  --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to use (defaults to 2025-08-15)
+  --api-version=<value>  API version to use (defaults to 2025-08-15)
   --pretty               Colorize JSON output
 
 OVERRIDE FLAGS
@@ -2071,7 +2075,7 @@ Add or set an environment variable for a deployed function
 
 ```
 USAGE
-  $ sanity functions env add NAME KEY VALUE [--json]
+  $ sanity functions env add NAME KEY VALUE [--json] [--stack <value>]
 
 ARGUMENTS
   NAME   The name of the Sanity Function
@@ -2079,7 +2083,8 @@ ARGUMENTS
   VALUE  The value of the environment variable
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Add or set an environment variable for a deployed function
@@ -2091,6 +2096,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
+
+  $ sanity functions env add --stack <name-or-id> MyFunction API_URL https://api.example.com/
 ```
 
 ## `sanity functions env list NAME`
@@ -2099,13 +2106,14 @@ List environment variables for a deployed function
 
 ```
 USAGE
-  $ sanity functions env list NAME [--json]
+  $ sanity functions env list NAME [--json] [--stack <value>]
 
 ARGUMENTS
   NAME  The name of the Sanity Function
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   List environment variables for a deployed function
@@ -2116,6 +2124,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env list MyFunction
+
+  $ sanity functions env list --stack <name-or-id> MyFunction
 ```
 
 ## `sanity functions env remove NAME KEY`
@@ -2124,14 +2134,15 @@ Remove an environment variable from a deployed function
 
 ```
 USAGE
-  $ sanity functions env remove NAME KEY [--json]
+  $ sanity functions env remove NAME KEY [--json] [--stack <value>]
 
 ARGUMENTS
   NAME  The name of the Sanity Function
   KEY   The name of the environment variable
 
 FLAGS
-  --json  Format output as json
+  --json           Format output as json
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Remove an environment variable from a deployed function
@@ -2143,6 +2154,8 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity functions env remove MyFunction API_URL
+
+  $ sanity functions env remove --stack <name-or-id> MyFunction API_URL
 ```
 
 ## `sanity functions logs [NAME]`
@@ -2616,14 +2629,14 @@ Log in to your Sanity account
 
 ```
 USAGE
-  $ sanity login [--open] [--provider <providerId> | --sso <slug> | --with-token] [--sso-provider <name> ]
+  $ sanity login [--with-token | --provider <providerId> | --sso <slug>] [--open] [--sso-provider <name> ]
 
 FLAGS
+  --with-token             Read token from standard input
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
   --provider=<providerId>  Log in using a provider ID (google, github, sanity, vercel)
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
-  --with-token             Read token from standard input
 
 DESCRIPTION
   Log in to your Sanity account
@@ -2632,6 +2645,10 @@ EXAMPLES
   Log in using default settings
 
     $ sanity login
+
+  Log in using a token from standard input
+
+    $ sanity login --with-token < token.txt
 
   Login with GitHub provider, but do not open a browser window automatically
 
@@ -2644,10 +2661,6 @@ EXAMPLES
   Log in using a specific SSO provider within an organization
 
     $ sanity login --sso my-organization --sso-provider "Okta SSO"
-
-  Log in using a token from standard input
-
-    $ sanity login --with-token < token.txt
 ```
 
 ## `sanity logout`
@@ -2954,6 +2967,72 @@ EXAMPLES
     $ sanity migrations run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
+## `sanity new [PROJECTNAME]`
+
+Create a Sanity project without an account, and claim it within 72 hours to keep it.
+
+```
+USAGE
+  $ sanity new [PROJECTNAME] [--json] [--instructions] [--scaffold] [-y]
+
+ARGUMENTS
+  [PROJECTNAME]  Display name for the new project
+
+FLAGS
+  -y, --yes            Skip prompts and use defaults (project: "My Sanity project")
+      --instructions   Print the full setup guide from https://sanity.new and exit, creating nothing
+      --[no-]scaffold  Set up a Studio in ./sanity and a Next.js website in ./web (on by default)
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Create a Sanity project without an account, and claim it within 72 hours to keep it.
+
+  Sets up two folders here: ./sanity, a Studio where you write and edit your
+  content, and ./web, a Next.js website that reads it. Both are already
+  connected to your new project, so you can start them straight away. Use
+  --no-scaffold if you just want the project and nothing else.
+
+  The project is real and works immediately, but it is only yours for 72 hours.
+  Claim it with a Sanity account before the deadline and everything you have
+  built stays exactly as it is. Claiming is free and takes about a minute. Miss
+  the deadline and the project and its content are deleted.
+
+  Two things to keep private: the claim link, because anyone who opens it
+  becomes the owner, and the access token saved in ./sanity/.env.local and
+  ./web/.env.local, because it can read and change everything in the project.
+  Keep both env files out of git, and never put the token in code that runs in
+  the browser.
+
+  Run this command with --instructions for the full agent setup guide.
+
+EXAMPLES
+  Create a project with a Studio and a website
+
+    $ sanity new
+
+  Create a project called "My New Project"
+
+    $ sanity new "My New Project"
+
+  Create a project without being asked anything
+
+    $ sanity new --yes
+
+  Create the project only, with no Studio or website
+
+    $ sanity new --no-scaffold
+
+  Create a project and print its details as JSON
+
+    $ sanity new --json
+
+  Print the full setup guide for an AI agent, without creating anything
+
+    $ sanity new --instructions
+```
+
 ## `sanity openapi get SLUG`
 
 Get an OpenAPI specification by slug
@@ -3245,6 +3324,30 @@ EXAMPLES
     $ sanity projects list --sort=members --order=asc
 ```
 
+## `sanity projects unclaimed`
+
+Recover details for unclaimed projects created on this machine
+
+```
+USAGE
+  $ sanity projects unclaimed [--project-id <value>]
+
+FLAGS
+  --project-id=<value>  Project ID to recover
+
+DESCRIPTION
+  Recover details for unclaimed projects created on this machine
+
+EXAMPLES
+  List locally recorded unclaimed projects
+
+    $ sanity projects unclaimed
+
+  Show recovery details for one project
+
+    $ sanity projects unclaimed --project-id abc123
+```
+
 ## `sanity schemas delete`
 
 Delete schema documents by id
@@ -3499,15 +3602,16 @@ Create a new API token for the project
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [-p <id>] [--expires-at 2027-01-01] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes          Skip prompts and use defaults (unattended mode)
-      --json         Output as JSON
-      --role=viewer  Role to assign to the token (defaults to viewer in unattended mode)
+  -y, --yes                    Skip prompts and use defaults (unattended mode)
+      --expires-at=2027-01-01  Date or timestamp the token expires (ISO 8601; tokens never expire by default)
+      --json                   Output as JSON
+      --role=viewer            Role to assign to the token (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
@@ -3527,6 +3631,10 @@ EXAMPLES
   Create a token in unattended mode
 
     $ sanity tokens create "CI Token" --role=editor --yes
+
+  Create a token that expires on a given date
+
+    $ sanity tokens create "Build Token" --expires-at 2027-01-01
 
   Output token information as JSON
 
@@ -3604,6 +3712,35 @@ EXAMPLES
   List tokens for a specific project
 
     $ sanity tokens list --project-id abc123
+```
+
+## `sanity tokens rotate`
+
+Rotate an API token, replacing its secret with a new one
+
+```
+USAGE
+  $ sanity tokens rotate [--json] [-t <token>]
+
+FLAGS
+  -t, --token=<token>  Token to rotate (prefer standard input to keep it out of shell history)
+      --json           Output as JSON
+
+DESCRIPTION
+  Rotate an API token, replacing its secret with a new one
+
+EXAMPLES
+  Rotate the token piped on standard input
+
+    echo "$SANITY_TOKEN" | sanity tokens rotate
+
+  Rotate a token read from a file
+
+    $ sanity tokens rotate < token.txt
+
+  Output the rotated token as JSON
+
+    echo "$SANITY_TOKEN" | sanity tokens rotate --json
 ```
 
 ## `sanity typegen generate`

@@ -20,15 +20,30 @@ describe('ServiceDeclarationSchema', () => {
     const parsed = ServiceDeclarationSchema.parse({
       name: 'unread',
       src: './src/service.ts',
+      title: 'Unread',
       type: 'worker',
     })
     expect(parsed.type).toBe('worker')
   })
 
+  test('requires a title, which Brett stores on the interface', () => {
+    const result = ServiceDeclarationSchema.safeParse({
+      name: 'unread',
+      src: './src/service.ts',
+      type: 'worker',
+    })
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]?.message).toBe('Service `title` is required')
+  })
+
   test('rejects a name with illegal characters', () => {
     expect(
-      ServiceDeclarationSchema.safeParse({name: 'un read', src: './src/service.ts', type: 'worker'})
-        .success,
+      ServiceDeclarationSchema.safeParse({
+        name: 'un read',
+        src: './src/service.ts',
+        title: 'un read',
+        type: 'worker',
+      }).success,
     ).toBe(false)
   })
 

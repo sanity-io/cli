@@ -17,7 +17,7 @@ import {
 } from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
-import {AppInterfaceMetadataSchema} from '../../contract.js'
+import {AppInterfaceMetadataSchema, TileInterfaceMetadataSchema} from '../../contract.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
@@ -78,6 +78,12 @@ const devServerInterfaceSchema = z.discriminatedUnion('type', [
     type: z.literal('app'),
   }),
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('panel')}),
+  z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('asset_source')}),
+  z.object({
+    ...interfaceBaseFields,
+    metadata: TileInterfaceMetadataSchema,
+    type: z.literal('tile'),
+  }),
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('worker')}),
 ])
 
@@ -103,7 +109,7 @@ const devServerManifestSchema = z.object({
         // Content hash of the config — the workbench's change-detection key
         // (see deriveConfigs).
         id: z.string(),
-        // The app's `unstable_defineApp` name — the module-federation alias the
+        // The app's `unstable_defineApp` slug — the module-federation alias the
         // workbench loads this config's live values from.
         moduleName: z.optional(z.string()),
         // The version the workbench federates this config's module under —

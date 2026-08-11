@@ -291,7 +291,7 @@ export async function initNextJs({
   trace.log({selectedOption: chosen, step: 'selectPackageManager'})
   const packages = ['@sanity/vision@5', 'sanity@5', '@sanity/image-url@2', 'styled-components@6']
   if (templateToUse === 'blog') {
-    packages.push('@sanity/icons')
+    packages.push('@sanity/icons@5')
   }
   await installNewPackages(
     {

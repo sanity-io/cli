@@ -1,4 +1,5 @@
 import {type CliConfig, type Output, resolveLocalPackage, subdebug} from '@sanity/cli-core'
+import {isStaging} from '@sanity/cli-core/util'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from 'vite'
 import {z} from 'zod/mini'
@@ -275,7 +276,7 @@ async function createWorkbenchViteServer(
     cacheDir,
     configFile: false,
     define: {
-      __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
+      __SANITY_STAGING__: isStaging(),
       'import.meta.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL': JSON.stringify(remoteUrl),
     },
     logLevel: 'warn',

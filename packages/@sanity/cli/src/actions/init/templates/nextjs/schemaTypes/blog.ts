@@ -1,6 +1,6 @@
 // Types
 
-const authorType = `import {UserIcon} from '@sanity/icons'
+const authorType = `import {UserIcon} from '@sanity/icons/User'
 import {defineArrayMember, defineField, defineType} from 'sanity'
 
 export const authorType = defineType({
@@ -49,7 +49,7 @@ export const authorType = defineType({
 `
 
 const blockContentType = `import {defineType, defineArrayMember} from 'sanity'
-import {ImageIcon} from '@sanity/icons'
+import {ImageIcon} from '@sanity/icons/Image'
 
 /**
  * This is the schema type for block content used in the post document type
@@ -126,7 +126,7 @@ export const blockContentType = defineType({
 })
 `
 
-const categoryType = `import {TagIcon} from '@sanity/icons'
+const categoryType = `import {TagIcon} from '@sanity/icons/Tag'
 import {defineField, defineType} from 'sanity'
 
 export const categoryType = defineType({
@@ -154,7 +154,7 @@ export const categoryType = defineType({
 })
 `
 
-const postType = `import {DocumentTextIcon} from '@sanity/icons'
+const postType = `import {DocumentTextIcon} from '@sanity/icons/DocumentText'
 import {defineArrayMember, defineField, defineType} from 'sanity'
 
 export const postType = defineType({

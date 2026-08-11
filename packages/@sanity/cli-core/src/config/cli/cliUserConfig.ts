@@ -30,10 +30,8 @@ export async function getCliToken(): Promise<string | undefined> {
   // server) takes precedence and must bypass the process-wide cache entirely:
   // reading the cache would leak another invocation's token, and writing it
   // would leak this one's.
-  const contextToken = getCliExecutionContext()?.token
-  if (contextToken) {
-    return contextToken
-  }
+  const context = getCliExecutionContext()
+  if (context) return context.token
 
   const cached = getCachedToken()
   if (cached !== undefined) {
@@ -64,6 +62,7 @@ const cliUserConfigSchema = {
  * @internal
  */
 export function setCliUserConfig(prop: 'authToken', value: string | undefined): void {
+  assertCanAccessHostUserConfig()
   const config = readConfig()
   const result = cliUserConfigSchema[prop].safeParse(value)
   if (!result.success) {
@@ -98,6 +97,7 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
  * @returns The value of the given property
  */
 export function getCliUserConfig(prop: 'authToken'): string | undefined {
+  assertCanAccessHostUserConfig()
   const config = readConfig()
   const result = cliUserConfigSchema[prop].safeParse(config[prop])
   if (!result.success) {
@@ -125,6 +125,7 @@ export function getCliUserConfig(prop: 'authToken'): string | undefined {
  * @public
  */
 export function getUserConfig(): ConfigStore {
+  assertCanAccessHostUserConfig()
   return {
     get(key: string): unknown {
       const config = readConfig()
@@ -147,6 +148,12 @@ export function getUserConfig(): ConfigStore {
       writeJsonFileSync(getCliUserConfigPath(), rest, {pretty: true})
       if (key === 'authToken') clearCliTokenCache()
     },
+  }
+}
+
+function assertCanAccessHostUserConfig(): void {
+  if (getCliExecutionContext()) {
+    throw new Error('Host CLI user configuration is unavailable during programmatic invocations')
   }
 }
 

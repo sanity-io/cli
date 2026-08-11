@@ -1,4 +1,4 @@
-import {BulbOutlineIcon} from '@sanity/icons'
+import {BulbOutlineIcon} from '@sanity/icons/BulbOutline'
 import {defineField, defineType} from 'sanity'
 
 export default defineType({

@@ -308,7 +308,6 @@ describe('#deploy app', () => {
     process.cwd = () => cwd
 
     const app = unstable_defineApp({
-      name: 'workbench-app',
       organizationId,
       slug: 'workbench-app',
       title: 'Workbench App',
@@ -340,7 +339,6 @@ describe('#deploy app', () => {
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',
-      name: 'workbench-app',
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -379,7 +377,6 @@ describe('#deploy app', () => {
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',
-      name: 'workbench-app',
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -401,7 +398,6 @@ describe('#deploy app', () => {
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',
-      name: 'workbench-app',
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -424,7 +420,6 @@ describe('#deploy app', () => {
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',
-      name: 'workbench-app',
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -464,7 +459,6 @@ describe('#deploy app', () => {
 
     const app = unstable_defineApp({
       entry: './src/App.tsx',
-      name: 'workbench-app',
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -492,7 +486,6 @@ describe('#deploy app', () => {
     const app = unstable_defineApp({
       entry: './src/App.tsx',
       icon: './icon.svg',
-      name: 'workbench-app',
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -517,7 +510,6 @@ describe('#deploy app', () => {
     const app = unstable_defineApp({
       entry: './src/App.tsx',
       icon: './missing-icon.svg',
-      name: 'workbench-app',
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',

@@ -220,6 +220,14 @@ describe('#login', {timeout: 10_000}, () => {
     expect(LoginCommand.flags.provider.description).toContain(LOGIN_PROVIDER_IDS.join(', '))
   })
 
+  test('defines --with-token as the first visible flag', () => {
+    const visibleFlags = Object.entries(LoginCommand.flags)
+      .filter(([, flag]) => !flag.hidden)
+      .map(([name]) => name)
+
+    expect(visibleFlags[0]).toBe('with-token')
+  })
+
   describe('Token Login', () => {
     test('stores a valid token', async () => {
       mockedGetCliToken.mockResolvedValue('')

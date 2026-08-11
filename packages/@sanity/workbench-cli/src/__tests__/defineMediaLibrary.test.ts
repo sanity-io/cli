@@ -26,11 +26,11 @@ describe('unstable_defineMediaLibrary', () => {
     expect(isWorkbenchApp(app)).toBe(true)
   })
 
-  test('declares a media-library singleton with a stable name', () => {
+  test('declares a media-library singleton with a stable slug', () => {
     const app = mediaLibrary({organizationId: 'org-1'})
     expect(app.applicationType).toBe('media-library')
     expect(app.isSingleton).toBe(true)
-    expect(app.name).toBe('media-library')
+    expect(app.slug).toBe('media-library')
   })
 
   test('collects all fields into one config', () => {

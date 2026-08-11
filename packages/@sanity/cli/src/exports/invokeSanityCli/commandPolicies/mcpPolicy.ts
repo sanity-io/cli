@@ -6,14 +6,40 @@ import {
   deny,
 } from './policy.js'
 
-/**
- * A typed `-F/--field` value of `@<file>` or `@-` makes the `api` command
- * read the host's filesystem or stdin (raw `-f` fields are always verbatim).
- */
-function fieldReadsFromHost(field: unknown): boolean {
-  if (typeof field !== 'string') return false
-  const separatorIndex = field.indexOf('=')
-  return separatorIndex > 0 && field[separatorIndex + 1] === '@'
+function apiValidator({
+  args,
+  flags,
+}: {
+  args: Readonly<Record<string, unknown>>
+  flags: Readonly<Record<string, unknown>>
+}): boolean {
+  const fields: unknown[] = Array.isArray(flags.field) ? flags.field : []
+
+  const fieldReadsFromHost = fields.some((field) => {
+    if (typeof field !== 'string') return false
+    const separatorIndex = field.indexOf('=')
+    return separatorIndex > 0 && field[separatorIndex + 1] === '@'
+  })
+  if (fieldReadsFromHost) return false
+
+  const headers: unknown[] = Array.isArray(flags.header) ? flags.header : []
+
+  const headerOverridesAuthentication = headers.some((header) => {
+    if (typeof header !== 'string') return false
+    const separatorIndex = header.indexOf(':')
+    if (separatorIndex <= 0) return false
+
+    const name = header.slice(0, separatorIndex).trim().toLowerCase()
+    return name === 'authorization' || name === 'cookie'
+  })
+
+  if (headerOverridesAuthentication) return false
+
+  const endpoint = typeof args.endpoint === 'string' ? URL.parse(args.endpoint) : null
+  const urlEmbedsCredentials =
+    endpoint !== null && (endpoint.username !== '' || endpoint.password !== '')
+
+  return !urlEmbedsCredentials
 }
 
 /**
@@ -29,13 +55,14 @@ function fieldReadsFromHost(field: unknown): boolean {
  */
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful
-  // to expose. Only the host input channels are refused: `--input` reads the
-  // request body from the host's filesystem or stdin, and `-F key=@<file>` /
-  // `-F key=@-` field values do the same.
+  // to expose. Refuse authentication overrides and host input channels:
+  // `--token`, Authorization, and Cookie headers replace the MCP user's authentication,
+  // URL-embedded credentials replace it with Basic authentication,
+  // `--input` reads the request body from the host's filesystem or stdin, and
+  // `-F key=@<file>` / `-F key=@-` field values do the same.
   api: conditionalPolicy({
-    deniedFlags: ['input'],
-    validate: ({flags}) =>
-      !Array.isArray(flags.field) || !flags.field.some((field) => fieldReadsFromHost(field)),
+    deniedFlags: ['input', 'token'],
+    validate: apiValidator,
   }),
 
   'backups:disable': allow,
@@ -154,6 +181,9 @@ export const mcpPolicy: CommandPolicySet = {
   // Executes local migration code that may perform arbitrary document mutations.
   'migrations:run': deny,
 
+  // Writes project setup values and scaffolds local applications.
+  new: deny,
+
   // --web opens a browser on the machine running the MCP server.
   'openapi:get': conditionalDenyFlags('web'),
   'openapi:list': conditionalDenyFlags('web'),
@@ -169,6 +199,8 @@ export const mcpPolicy: CommandPolicySet = {
 
   'projects:create': allow,
   'projects:list': allow,
+  // Reads locally stored claim URLs and robot tokens.
+  'projects:unclaimed': deny,
 
   // Loads the local Studio configuration to resolve the datasets containing each schema.
   'schemas:delete': deny,
@@ -196,6 +228,11 @@ export const mcpPolicy: CommandPolicySet = {
   'tokens:delete': deny,
   // Exposes authentication credential metadata.
   'tokens:list': deny,
+  // Replaces authentication credentials and exposes the new secret.
+  'tokens:rotate': deny,
+
+  // Reads the local schema and source files and writes generated types to the project.
+  'typegen:generate': deny,
 
   // Loads local CLI and workbench configuration to identify the deployed Studio or application.
   undeploy: deny,

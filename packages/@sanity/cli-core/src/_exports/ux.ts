@@ -7,6 +7,7 @@ export {
   type Spacing,
 } from '../ux/boxen.js'
 export {colorizeJson} from '../ux/colorizeJson.js'
+export {createFlow, type Flow} from '../ux/flowOutput.js'
 export {logSymbols} from '../ux/logSymbols.js'
 export {
   checkbox,

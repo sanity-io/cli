@@ -6,8 +6,8 @@ import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
+  type BrettAccess,
   type BrettWorkspace,
-  buildExposes,
   createStudio,
   deployWorkbenchApp,
   getApplicationUrl,
@@ -75,7 +75,7 @@ async function runStudioDeployment(
   }
 
   const appTitle = workbench
-    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.name
+    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
     : ''
 
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
@@ -112,6 +112,7 @@ async function runStudioDeployment(
     await checkStudioTarget(reporter, {
       appId,
       isWorkbenchApp: true,
+      organizationId,
       slug: workbench.slug,
       title: appTitle,
     })
@@ -150,6 +151,7 @@ async function runStudioDeployment(
       projectId,
       slug: workbench.slug,
       title: appTitle,
+      visibility: workbench.visibility,
     }))
     applicationCreated = true
   }
@@ -193,16 +195,13 @@ async function runStudioDeployment(
     // build, so this only ships the deployment; plain studios use user-applications.
     if (workbench && !isExternal && organizationId && applicationId) {
       await deployWorkbenchApp({
+        access: toAccess(studioManifest),
+        app: cliConfig.app,
         applicationId,
         icon: appIcon,
-        interfaces: buildExposes(workbench, {
-          appName: workbench.name,
-          appTitle,
-          exposesAppView: true,
-          version,
-        }),
+        isApp: false,
         isAutoUpdating,
-        label: 'Deploying to sanity.studio',
+        label: 'Deploying studio',
         // Once the deployment is live, a metadata-sync failure must not delete
         // the studio.
         onDeployed: () => {
@@ -211,6 +210,7 @@ async function runStudioDeployment(
         sourceDir,
         title: appTitle,
         version,
+        visibility: workbench.visibility,
         workspaces: toWorkspaces(studioManifest),
       })
       const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
@@ -222,6 +222,7 @@ async function runStudioDeployment(
         target: {
           action: applicationCreated ? 'create' : 'update',
           applicationId,
+          ...(applicationCreated ? {slug: workbench.slug} : {}),
           title: appTitle,
           url,
         },
@@ -339,8 +340,8 @@ async function uploadStudioSchema(
     )
   } catch (error) {
     deployDebug('Error deploying studio schemas and manifests', error)
-    if (error instanceof SchemaExtractionError) {
-      output.error(formatSchemaValidation(error.validation || []), {exit: 1})
+    if (error instanceof SchemaExtractionError && error.validation?.length) {
+      output.error(formatSchemaValidation(error.validation), {exit: 1})
     }
     output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
   }
@@ -417,6 +418,19 @@ export default defineCliConfig({
   output.log(`\n${example}`)
 
   return location
+}
+
+/**
+ * One `datasets` access entry per unique workspace dataset, with a `resourceId`
+ * of `"<projectId>.<dataset>"`. Deduped, since workspaces can share a dataset.
+ */
+function toAccess(manifest: StudioManifest | null): BrettAccess[] {
+  const resourceIds = new Set(
+    (manifest?.workspaces ?? []).map((w) => `${w.projectId}.${w.dataset}`),
+  )
+  return [...resourceIds].map(
+    (resourceId) => ({resourceId, resourceType: 'dataset'}) satisfies BrettAccess,
+  )
 }
 
 function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
