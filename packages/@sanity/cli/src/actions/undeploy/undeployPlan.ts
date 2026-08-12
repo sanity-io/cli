@@ -130,7 +130,6 @@ function renderTarget(target: UndeployTarget, output: Output): void {
     ['Title', target.title],
     ['ID', target.id],
     ['URL', target.url],
-    ['Deployed', formatDeployment(target.activeDeployment)],
   ]
 
   output.log('')
@@ -142,13 +141,4 @@ function renderTarget(target: UndeployTarget, output: Output): void {
   for (const entry of target.summary ?? []) {
     for (const line of entry.split('\n')) output.log(`    ${line}`)
   }
-}
-
-function formatDeployment(deployment: UndeployTarget['activeDeployment']): string | null {
-  if (!deployment) return null
-  const parts = [
-    deployment.deployedAt ? `at ${deployment.deployedAt}` : null,
-    deployment.deployedBy ? `by ${deployment.deployedBy}` : null,
-  ].filter(Boolean)
-  return parts.length > 0 ? parts.join(' ') : null
 }

@@ -14,6 +14,7 @@ import {
   getWorkbench,
   resolveInstallationId,
   summarizeConfig,
+  toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
 import {pack} from 'tar-fs'
 
@@ -43,7 +44,7 @@ import {
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {declaredInterfaces, listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
+import {listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
 import {type DeployPayload, type DeployResult, runDeploy} from './deployRunner.js'
 import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
@@ -258,15 +259,11 @@ async function runAppDeployment(
 
     const payload: DeployPayload = {
       appId: appId ?? null,
-      ...(config ? {config} : {}),
-      ...declaredInterfaces(interfaces),
       isAutoUpdating,
-      ...(workbench?.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
       ...(organizationId ? {organizationId} : {}),
-      ...(workbench ? {slug: workbench.slug, title: appTitle} : {}),
       type: 'coreApp',
       version,
-      ...(workbench?.visibility ? {visibility: workbench.visibility} : {}),
+      ...toWorkbenchPayload(workbench, {config, interfaces, title: appTitle}),
     }
 
     // Dry run stops here — everything below mutates.

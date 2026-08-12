@@ -30,14 +30,9 @@ const options = (output: Output, flags: Partial<UndeployOptions['flags']> = {}):
 
 function target(overrides: Partial<UndeployApplicationTarget> = {}): UndeployApplicationTarget {
   return {
-    activeDeployment: null,
-    appHost: 'my-studio',
-    createdAt: null,
     deletes: 'application',
     id: 'app-1',
-    organizationId: null,
     payload: {appId: 'app-1', type: 'studio'},
-    projectId: 'project-1',
     title: null,
     type: 'studio',
     url: 'https://my-studio.sanity.studio',
@@ -464,13 +459,7 @@ describe('renderUndeployPlan', () => {
       {
         checks: [],
         reason: null,
-        target: target({
-          activeDeployment: {
-            deployedAt: '2024-01-02T00:00:00Z',
-            deployedBy: 'gustav@sanity.io',
-          },
-          title: 'My Studio',
-        }),
+        target: target({title: 'My Studio'}),
         type: 'studio',
       },
       output,
@@ -483,7 +472,6 @@ describe('renderUndeployPlan', () => {
     expect(logged).toContain('My Studio')
     expect(logged).toContain('app-1')
     expect(logged).toContain('https://my-studio.sanity.studio')
-    expect(logged).toContain('at 2024-01-02T00:00:00Z by gustav@sanity.io')
   })
 
   test('no target renders "Nothing to undeploy." without a verdict', () => {

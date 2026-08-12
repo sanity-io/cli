@@ -8,7 +8,6 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {createCollectingReporter} from '../../../util/checks.js'
 import {type DeployCheck} from '../deployChecks.js'
 import {
-  declaredInterfaces,
   type DeploymentFile,
   type DeploymentPlan,
   deploymentPlanToJson,
@@ -166,23 +165,6 @@ describe('reportInterfaces', () => {
     const reporter = createCollectingReporter<DeployCheck>()
     expect(reportInterfaces(reporter, {})).toEqual({services: [], views: []})
     expect(reporter.results).toEqual([])
-  })
-})
-
-describe('declaredInterfaces', () => {
-  const views = [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}]
-
-  test('omits both keys for a plain app', () => {
-    expect(declaredInterfaces(null)).toEqual({})
-  })
-
-  // A real run and a dry run gate on the same rule, so the two modes can't drift.
-  test('omits both keys for a workbench app that declares neither', () => {
-    expect(declaredInterfaces({services: [], views: []})).toEqual({})
-  })
-
-  test('reports both keys when either kind is declared', () => {
-    expect(declaredInterfaces({services: [], views})).toEqual({services: [], views})
   })
 })
 

@@ -248,6 +248,42 @@ describe('#deploy app', () => {
     expect(stdout).toContain('— "Existing App"')
   })
 
+  test('a plain core app collects no workbench data into the --json payload', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--dry-run', '--json'], {
+      config: {root: cwd},
+      mocks: defaultMocks,
+    })
+
+    if (error) throw error
+    const {payload} = JSON.parse(stdout)
+    expect(Object.keys(payload).toSorted()).toEqual([
+      'appId',
+      'isAutoUpdating',
+      'organizationId',
+      'type',
+      'version',
+    ])
+  })
+
   test('should report the target and files in a dry run without deploying', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd

@@ -4,6 +4,7 @@ export {
   resolveInstallationId,
   summarizeConfig,
 } from '../actions/deploy/deployConfig.js'
+export {toWorkbenchPayload, type WorkbenchDeployPayload} from '../actions/deploy/deployPayload.js'
 export {
   createCoreApp,
   type CreatedApplication,
