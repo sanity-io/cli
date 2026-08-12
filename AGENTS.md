@@ -31,6 +31,39 @@ All commands are run from the root of the repo.
 
 `packages/@sanity/cli-core/src/ux/flowOutput.ts` is reserved for the `new.ts` command. Before reusing its [`@clack/prompts`-style output](https://www.npmjs.com/package/@clack/prompts) in another CLI feature, clearly articulate the compelling use case to the end user or harness.
 
+# Telemetry input classification
+
+Raw command inputs are redacted by default. A normal flag declaration records only the flag name:
+
+```ts
+static flags = {
+  output: Flags.string({description: 'Output path'}),
+}
+// telemetry: ["--output"]
+```
+
+To retain a value, add a typed command-level opt-in. Only use this for a closed enum, validated API version, operational number, or resolved project ID:
+
+```ts
+const flags = {
+  format: Flags.string({options: ['json', 'ndjson', 'pretty']}),
+}
+
+static flags = flags
+static telemetry = defineCommandTelemetry(flags, {
+  flags: {
+    format: telemetry.enum(['json', 'ndjson', 'pretty']),
+  },
+})
+// telemetry: ["--format=json"]
+```
+
+Never add a general string opt-in. Do not collect paths, filenames, free text, opaque IDs, URLs, headers, tokens, request bodies, or forwarded arguments.
+
+Oclif rejects unregistered flags even when a command sets `static strict = false`; that setting only permits additional positional arguments. Telemetry records registered flag presence for these commands under the same redaction policy as every other command. It continues to omit positional and `--`-forwarded inputs.
+
+Before opting in, state the debugging or support question the value answers and why command ID, flag presence, runtime data, and error category are insufficient. Then weigh the value's PII, customer-data, and security implications against that concrete triage benefit. Add focused coverage for spaced, inline, and short option forms, and update the telemetry input inventory when command inputs or their telemetry category changes.
+
 # Testing Rules
 
 Follow all instructions and guidance laid out in the Testing Requirements section in `CONTRIBUTING.md`.

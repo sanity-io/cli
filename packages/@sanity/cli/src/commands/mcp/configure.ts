@@ -5,19 +5,24 @@ import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
 import {setupMCP} from '../../actions/mcp/setupMCP.js'
 import {LoginError} from '../../errors/LoginError.js'
 import {MCPConfigureTrace} from '../../telemetry/mcp.telemetry.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const debug = subdebug('mcp:configure')
+const flags = {}
 
 export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpCommand> {
   static override description =
     'Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)'
-
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
       description: 'Configure Sanity MCP server for detected AI editors',
     },
   ]
+
+  static override flags = flags
+
+  static telemetry = defineCommandTelemetry(flags, {})
 
   public async run(): Promise<void> {
     const trace = this.telemetry.trace(MCPConfigureTrace)

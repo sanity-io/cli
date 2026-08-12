@@ -25,6 +25,11 @@ import {flushTelemetryFiles} from '../../../../src/util/telemetry/flushTelemetry
 import {readNDJSON} from '../../../../src/util/telemetry/readNDJSON.js'
 import {getCommandAndConfig} from '../../../helpers/getCommandAndConfig.js'
 
+const mockTelemetryDebug = vi.hoisted(() => {
+  const debug = vi.fn()
+  return Object.assign(debug, {enabled: false, extend: () => debug})
+})
+
 // Mock external dependencies
 vi.mock('node:os', () => ({tmpdir: vi.fn()}))
 vi.mock('node:child_process', async () => {
@@ -41,6 +46,9 @@ vi.mock('@sanity/cli-core', async () => ({
   getUserConfig: vi.fn(),
   isCi: vi.fn(() => false),
 }))
+vi.mock('../../../../src/actions/telemetry/telemetryDebug.js', () => ({
+  telemetryDebug: mockTelemetryDebug,
+}))
 
 const mockTmpdir = vi.mocked(tmpdir)
 const mockSpawn = vi.mocked(spawn)
@@ -49,7 +57,7 @@ const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockGetUserConfig = vi.mocked(getUserConfig)
 const mockIsCi = vi.mocked(isCi)
 
-const {config} = await getCommandAndConfig('help')
+const {Command, config} = await getCommandAndConfig('help')
 
 // Create mock functions for getUserConfig get/set methods
 const mockGet = vi.fn()
@@ -221,6 +229,18 @@ describe('setupTelemetry integration test', () => {
     const timestamp = mockSet.mock.calls[0][1]
     expect(timestamp).toBeGreaterThanOrEqual(beforeTime)
     expect(timestamp).toBeLessThanOrEqual(afterTime)
+  })
+
+  test('records help from the resolved command', async () => {
+    await testHook<'prerun'>(setupTelemetry, {Command, config})
+
+    expect(mockTelemetryDebug).toHaveBeenCalledWith(
+      'Starting command trace',
+      expect.objectContaining({
+        coreOptions: expect.objectContaining({help: true}),
+        groupOrCommand: 'help',
+      }),
+    )
   })
 
   test('should handle complete telemetry lifecycle from initialization to flush', async () => {
