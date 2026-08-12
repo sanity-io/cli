@@ -31,6 +31,25 @@ All commands are run from the root of the repo.
 
 `packages/@sanity/cli-core/src/ux/flowOutput.ts` is reserved for the `new.ts` command. Before reusing its [`@clack/prompts`-style output](https://www.npmjs.com/package/@clack/prompts) in another CLI feature, clearly articulate the compelling use case to the end user or harness.
 
+# Telemetry redaction
+
+Flag telemetry keeps its existing value unless the command opts into redaction with `defineCommandTelemetry`:
+
+```ts
+const flags = {
+  file: Flags.string({description: 'Input file'}),
+  format: Flags.string({options: ['json', 'ndjson']}),
+}
+static flags = flags
+static telemetry = defineCommandTelemetry(flags, {
+  redact: ['file'],
+})
+// --file=private.ndjson --format=json
+// telemetry: ["--file", "--format=json"]
+```
+
+The helper type-checks names against the command's option flags and applies the declaration to registered aliases. When configuring a command, consider whether an input can contain PII, customer data, credentials, local paths, or other unbounded user content, and weigh that risk against any concrete support or debugging need for the value. Add focused coverage for the flag forms the command supports.
+
 # Testing Rules
 
 Follow all instructions and guidance laid out in the Testing Requirements section in `CONTRIBUTING.md`.
