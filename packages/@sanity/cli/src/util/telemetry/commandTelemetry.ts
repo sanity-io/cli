@@ -2,8 +2,7 @@ import {type Interfaces} from '@oclif/core'
 
 interface RedactedFlag {
   canonical: string
-  long: readonly string[]
-  short: readonly string[]
+  flags: readonly string[]
 }
 
 /** @internal */
@@ -32,14 +31,12 @@ export function defineCommandTelemetry<const Flags extends Interfaces.FlagInput>
 
       return {
         canonical: `--${name}`,
-        long: [name, ...aliases.filter((alias) => alias.length > 1)].map((alias) => `--${alias}`),
-        short: [
-          flag?.char,
-          ...(flag?.charAliases ?? []),
-          ...aliases.filter((alias) => alias.length === 1),
-        ]
-          .filter(Boolean)
-          .map((alias) => `-${alias}`),
+        flags: [
+          `--${name}`,
+          ...aliases.map((alias) => `${alias.length === 1 ? '-' : '--'}${alias}`),
+          ...(flag?.char ? [`-${flag.char}`] : []),
+          ...(flag?.charAliases ?? []).map((alias) => `-${alias}`),
+        ],
       }
     }),
   }
@@ -60,11 +57,12 @@ export function redactTelemetryArguments(
     if (forwarding) return argument
 
     const isShortOption = argument.startsWith('-') && !argument.startsWith('--')
-    const redactedFlag = commandTelemetry?.redactedFlags.find(
-      ({long, short}) =>
-        long.some((syntax) => argument === syntax || argument.startsWith(`${syntax}=`)) ||
-        (isShortOption &&
-          short.some((syntax) => argument === syntax || argument.startsWith(syntax))),
+    const redactedFlag = commandTelemetry?.redactedFlags.find(({flags}) =>
+      flags.some((syntax) =>
+        syntax.startsWith('--')
+          ? argument === syntax || argument.startsWith(`${syntax}=`)
+          : isShortOption && argument.startsWith(syntax),
+      ),
     )
 
     return redactedFlag?.canonical ?? argument
