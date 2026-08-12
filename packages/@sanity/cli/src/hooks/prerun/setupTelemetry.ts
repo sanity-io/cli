@@ -1,7 +1,7 @@
 import {spawn} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
-import {Flags, type Hook} from '@oclif/core'
+import {type Hook} from '@oclif/core'
 import {
   type CliConfig,
   debug,
@@ -16,11 +16,11 @@ import {telemetryDebug} from '../../actions/telemetry/telemetryDebug.js'
 import {telemetryDisclosure} from '../../actions/telemetry/telemetryDisclosure.js'
 import {CliCommandTelemetry, type CLITraceData} from '../../telemetry/cli.telemetry.js'
 import {detectRuntime} from '../../util/detectRuntime.js'
-import {parseCommandArguments} from '../../util/parseArguments.js'
+import {parseArguments} from '../../util/parseArguments.js'
 import {type CommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 import {createTelemetryStore} from '../../util/telemetry/createTelemetryStore.js'
 
-export const setupTelemetry: Hook.Prerun = async function ({argv, Command, config}) {
+export const setupTelemetry: Hook.Prerun = async function ({Command, config}) {
   // Show telemetry disclosure
   telemetryDisclosure({logToStderr: (message) => process.stderr.write(`${message}\n`)})
 
@@ -48,28 +48,20 @@ export const setupTelemetry: Hook.Prerun = async function ({argv, Command, confi
     runtimeVersion: process.version,
   })
 
-  const commandId = Command?.id ?? 'unknown'
   const commandTelemetry = (
     Command as (typeof Command & {telemetry?: CommandTelemetry}) | undefined
   )?.telemetry
-  const commandFlags = {
-    ...(Command?.enableJsonFlag ? {json: Flags.boolean()} : {}),
-    ...Command?.baseFlags,
-    ...Command?.flags,
-  }
-  const args = await parseCommandArguments(argv, commandFlags, commandTelemetry, {
-    isHelpCommand: commandId === 'help',
-  })
+  const args = parseArguments(process.argv, commandTelemetry)
 
   const traceOptions: CLITraceData = {
-    commandArguments: [],
+    commandArguments: args.argsWithoutOptions,
     coreOptions: {
       debug: args.coreOptions.debug ?? undefined,
       help: args.coreOptions.help ?? undefined,
       version: args.coreOptions.version ?? undefined,
     },
     extraArguments: args.extraArguments,
-    groupOrCommand: commandId,
+    groupOrCommand: args.groupOrCommand,
   }
 
   telemetryDebug('Starting command trace', traceOptions)
@@ -78,7 +70,7 @@ export const setupTelemetry: Hook.Prerun = async function ({argv, Command, confi
   cliCommandTrace.start()
 
   // Set the global telemetry store and trace error reporter
-  setCliTelemetry(cliCommandTrace.newContext(commandId), {
+  setCliTelemetry(cliCommandTrace.newContext(args.groupOrCommand), {
     reportTraceError: (error) => cliCommandTrace.error(error),
   })
 

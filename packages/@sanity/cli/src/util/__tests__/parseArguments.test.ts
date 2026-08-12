@@ -1,131 +1,146 @@
 import {Flags} from '@oclif/core'
 import {describe, expect, test} from 'vitest'
 
-import {parseArguments, parseCommandArguments} from '../parseArguments.js'
-import {defineCommandTelemetry, telemetry} from '../telemetry/commandTelemetry.js'
+import {parseArguments} from '../parseArguments.js'
+import {defineCommandTelemetry} from '../telemetry/commandTelemetry.js'
 
 describe('parseArguments', () => {
   const flags = {
     dataset: Flags.string(),
+    file: Flags.string(),
     format: Flags.string({
-      aliases: ['output-format'],
+      aliases: ['output-format', 'p'],
       char: 'f',
+      charAliases: ['o'],
     }),
-    header: Flags.string({multiple: true}),
-    mcp: Flags.boolean({allowNo: true}),
+    header: Flags.string({char: 'H', multiple: true}),
     token: Flags.string({char: 't'}),
-    type: Flags.string(),
   }
 
   const commandTelemetry = defineCommandTelemetry(flags, {
-    flags: {
-      format: telemetry.enum(['json', 'ndjson', 'pretty']),
-    },
+    redact: ['file', 'format', 'header', 'token'],
   })
 
-  test('preserves the full process argv contract', async () => {
-    const result = await parseArguments(
-      ['/path/to/node', '/path/to/sanity', '--dataset=production'],
-      flags,
+  test('reads process argv by default', () => {
+    const originalArgv = process.argv
+    process.argv = ['node', 'sanity', 'documents', 'validate']
+
+    try {
+      expect(parseArguments().groupOrCommand).toBe('documents')
+    } finally {
+      process.argv = originalArgv
+    }
+  })
+
+  test('preserves the full process argv contract', () => {
+    const argv = ['/path/to/node', '/path/to/sanity', 'documents', 'validate']
+    const result = parseArguments(argv)
+
+    expect(result.argv).toBe(argv)
+    expect(result.groupOrCommand).toBe('documents')
+    expect(result.argsWithoutOptions).toEqual(['validate'])
+  })
+
+  test('preserves option telemetry by default', () => {
+    const result = parseArguments([
+      'node',
+      'sanity',
+      'documents',
+      'validate',
+      '--dataset=production',
+      '--file=/Users/jane/private.ndjson',
+      '-tsecret-token',
+    ])
+
+    expect(result.extraArguments).toEqual([
+      '--dataset=production',
+      '--file=/Users/jane/private.ndjson',
+      '-tsecret-token',
+    ])
+  })
+
+  test('redacts declared inline and concatenated option values', () => {
+    const result = parseArguments(
+      [
+        'node',
+        'sanity',
+        'documents',
+        'validate',
+        '--file=/Users/jane/private.ndjson',
+        '--header=Authorization: Bearer secret-token',
+        '-tsecret-token',
+      ],
+      commandTelemetry,
     )
 
-    expect(result.argv).toEqual(['--dataset=production'])
-    expect(result.extraArguments).toEqual(['--dataset'])
+    expect(result.extraArguments).toEqual(['--file', '--header', '--token'])
+    expect(result.extraArguments.join(' ')).not.toContain('jane')
+    expect(result.extraArguments.join(' ')).not.toContain('secret-token')
   })
 
-  test('detects help from full process argv', async () => {
-    const result = await parseArguments(['/path/to/node', '/path/to/sanity', 'help', 'dataset'])
+  test('uses the canonical name when redacting aliases', () => {
+    const result = parseArguments(
+      [
+        'node',
+        'sanity',
+        'documents',
+        'validate',
+        '--output-format=private-format',
+        '-fprivate-format',
+        '-oprivate-format',
+        '-pprivate-format',
+      ],
+      commandTelemetry,
+    )
+
+    expect(result.extraArguments).toEqual(['--format', '--format', '--format', '--format'])
+  })
+
+  test('redacts the canonical syntax when the flag definition is missing', () => {
+    const result = parseArguments(
+      ['node', 'sanity', 'documents', 'validate', '--missing=private-value'],
+      defineCommandTelemetry(flags as Record<string, (typeof flags)[keyof typeof flags]>, {
+        redact: ['missing'],
+      }),
+    )
+
+    expect(result.extraArguments).toEqual(['--missing'])
+  })
+
+  test('does not match long options against short flag syntax', () => {
+    const result = parseArguments(
+      ['node', 'sanity', 'documents', 'validate', '--file=public', '--tokenize=public'],
+      defineCommandTelemetry(flags, {redact: ['format', 'token']}),
+    )
+
+    expect(result.extraArguments).toEqual(['--file=public', '--tokenize=public'])
+  })
+
+  test('keeps the existing name-only telemetry for spaced option values', () => {
+    const result = parseArguments(
+      ['node', 'sanity', 'documents', 'validate', '--file', 'private.ndjson', '-t', 'secret'],
+      commandTelemetry,
+    )
+
+    expect(result.extraArguments).toEqual(['--file', '--token'])
+  })
+
+  test('preserves forwarded argument telemetry', () => {
+    const result = parseArguments(
+      ['node', 'sanity', 'exec', 'script.ts', '--', '--token=forwarded-secret'],
+      commandTelemetry,
+    )
+
+    expect(result.extraArguments).toEqual([
+      '--token=forwarded-secret',
+      '--',
+      '--token=forwarded-secret',
+    ])
+  })
+
+  test('detects help from full process argv', () => {
+    const result = parseArguments(['/path/to/node', '/path/to/sanity', 'help', 'dataset'])
 
     expect(result.coreOptions.help).toBe(true)
-  })
-
-  test('uses resolved command metadata for help with command-scoped argv', async () => {
-    const positionalHelp = await parseCommandArguments(['help'])
-    const helpCommand = await parseCommandArguments(['dataset'], {}, {}, {isHelpCommand: true})
-
-    expect(positionalHelp.coreOptions.help).toBe(false)
-    expect(helpCommand.coreOptions.help).toBe(true)
-  })
-
-  test('records option names without user-supplied values', async () => {
-    const result = await parseCommandArguments(
-      [
-        'private.ndjson',
-        '--token=secret-token',
-        '--dataset',
-        'production',
-        '--type=image',
-        '--header=Authorization: Bearer secret-token',
-      ],
-      flags,
-    )
-
-    expect(result.extraArguments).toEqual(['--token', '--dataset', '--type', '--header'])
-    expect(result.extraArguments.join(' ')).not.toContain('secret-token')
-    expect(result.extraArguments.join(' ')).not.toContain('image')
-  })
-
-  test('records registered flags alongside additional positional arguments', async () => {
-    const result = await parseCommandArguments(
-      ['script.ts', 'additional.ts', '--token=secret-token'],
-      flags,
-      commandTelemetry,
-    )
-
-    expect(result.extraArguments).toEqual(['--token'])
-  })
-
-  test('rejects unregistered flags while allowing additional positional arguments', async () => {
-    await expect(
-      parseCommandArguments(['script.ts', 'additional.ts', '--api-key=secret-key'], flags),
-    ).rejects.toThrow('Nonexistent flag: --api-key')
-  })
-
-  test('uses command flag registration to normalize concatenated short options', async () => {
-    const result = await parseCommandArguments(['-tsecret-token'], flags)
-
-    expect(result.extraArguments).toEqual(['--token'])
-  })
-
-  test('records boolean presence using the canonical flag name', async () => {
-    const result = await parseCommandArguments(['--mcp', '--no-mcp'], flags)
-
-    expect(result.extraArguments).toEqual(['--mcp', '--mcp'])
-  })
-
-  test('retains declared enum values across spaced and inline forms', async () => {
-    const result = await parseCommandArguments(
-      ['--format', 'json', '--format=pretty'],
-      flags,
-      commandTelemetry,
-    )
-
-    expect(result.extraArguments).toEqual(['--format=json', '--format=pretty'])
-  })
-
-  test('uses the canonical flag name for declared aliases', async () => {
-    const result = await parseCommandArguments(
-      ['--output-format=json', '-f', 'ndjson'],
-      flags,
-      commandTelemetry,
-    )
-
-    expect(result.extraArguments).toEqual(['--format=json', '--format=ndjson'])
-  })
-
-  test('redacts values outside a declared enum', async () => {
-    const result = await parseCommandArguments(['--format=private-format'], flags, commandTelemetry)
-
-    expect(result.extraArguments).toEqual(['--format'])
-  })
-
-  test('does not record arguments forwarded after the argument separator', async () => {
-    const result = await parseCommandArguments(
-      ['script.ts', '--', '--format=json', '--api-key=secret-key', 'private-value'],
-      flags,
-      commandTelemetry,
-    )
-
-    expect(result.extraArguments).toEqual([])
   })
 })
