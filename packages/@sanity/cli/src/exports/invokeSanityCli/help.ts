@@ -33,9 +33,15 @@ function visibleTopicNames(commandIds: Set<string>): Set<string> {
 class NotInvokableError extends Error {}
 
 /**
- * A copy of `command` without the policy's denied flags, and without examples
- * that use them (under any spelling: `--web`, `--w`, `-w`), so rendered help
- * only advertises invocations the policy accepts.
+ * A copy of `command` without the policy's denied flags, without examples
+ * that use them, and without the description paragraphs that document them
+ * (under any spelling: `--web`, `--w`, `-w`), so rendered help only
+ * advertises invocations the policy accepts.
+ *
+ * Description scrubbing works at paragraph granularity: a command whose
+ * flags can be denied should keep the guidance for each such flag in its own
+ * blank-line separated paragraph, so dropping it leaves the surrounding
+ * prose intact.
  */
 function withoutDeniedFlags(command: Command.Loadable, policy?: CommandPolicy): Command.Loadable {
   if (!policy || !isConditionalInvocationPolicy(policy)) return {...command}
@@ -54,15 +60,26 @@ function withoutDeniedFlags(command: Command.Loadable, policy?: CommandPolicy): 
     delete flags[name]
   }
 
+  // A spelling counts as mentioned when it stands on its own: preceded by
+  // whitespace (or the start of the text) and followed by whitespace, `=`,
+  // sentence punctuation, or the end of the text.
+  const mentionsDeniedFlag = (text: string) =>
+    spellings.some((spelling) =>
+      new RegExp(String.raw`(^|\s)${spelling}(?=$|[\s=.,;:)])`).test(text),
+    )
+
   const usesDeniedFlag = (example: Command.Example) => {
     const text = typeof example === 'string' ? example : example.command
-    return spellings.some((spelling) =>
-      new RegExp(String.raw`(^|\s)${spelling}(=|\s|$)`).test(text ?? ''),
-    )
+    return mentionsDeniedFlag(text ?? '')
   }
+
+  const paragraphs = command.description
+    ?.split(/\n{2,}/)
+    .filter((paragraph) => !mentionsDeniedFlag(paragraph))
 
   return {
     ...command,
+    description: paragraphs?.length ? paragraphs.join('\n\n') : undefined,
     examples: command.examples?.filter((example) => !usesDeniedFlag(example)),
     flags,
   }

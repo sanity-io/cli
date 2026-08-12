@@ -728,9 +728,12 @@ describe('invokeSanityCli', () => {
   test.each([
     ['docs read --help', '--web'],
     ['graphql undeploy --help', '--api'],
+    ['api --help', '--input'],
+    ['api --help', '--token'],
   ])('`%s` omits the policy-denied %s flag', async (args, deniedFlag) => {
     // Help must not advertise surface the policy refuses: the flag disappears
-    // from FLAGS/USAGE and examples demonstrating it are dropped.
+    // from FLAGS/USAGE, examples demonstrating it are dropped, and so are the
+    // description paragraphs documenting it.
     const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(0)
@@ -738,7 +741,9 @@ describe('invokeSanityCli', () => {
     expect(result.output).not.toContain(deniedFlag)
   })
 
-  test('`api --help` omits the policy-denied --token flag definition', async () => {
+  test('`api --help` keeps the description prose that survives flag scrubbing', async () => {
+    // Dropping the --input/--token paragraphs must not gut the rest of the
+    // description, including the bracket syntax for building nested bodies.
     const result = await invokeSanityCli({
       args: 'api --help',
       config,
@@ -747,7 +752,9 @@ describe('invokeSanityCli', () => {
     })
 
     expect(result.exitCode).toBe(0)
-    expect(result.output).not.toContain('-t, --token=')
+    expect(result.output).toContain('DESCRIPTION')
+    expect(result.output).toContain('stdout')
+    expect(result.output).toContain('brackets')
   })
 
   test('help output is stable across invocations sharing a config', async () => {
