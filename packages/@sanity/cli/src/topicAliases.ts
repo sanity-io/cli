@@ -19,6 +19,7 @@
  * (plural to singular) makes the CLI predictable for users.
  */
 export const topicAliases: Record<string, string[]> = {
+  assets: ['asset'],
   backups: ['backup'],
   blueprints: ['blueprint'],
   datasets: ['dataset'],
