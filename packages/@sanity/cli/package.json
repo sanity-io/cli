@@ -95,7 +95,7 @@
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^6.0.3",
-    "@sanity/migrate": "^8.0.1",
+    "@sanity/migrate": "^8.0.2",
     "@sanity/runtime-cli": "^17.4.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
