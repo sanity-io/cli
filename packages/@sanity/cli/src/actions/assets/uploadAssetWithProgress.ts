@@ -99,9 +99,7 @@ export async function uploadAssetWithProgress(options: UploadAssetWithProgressOp
   } catch (error) {
     const activeProgress = assetDocumentProgress ?? uploadProgress
     activeProgress.stop()
-    if (uploadController.signal.aborted) {
-      throw uploadController.signal.reason
-    }
+    uploadController.signal.throwIfAborted()
     throw error
   } finally {
     if (handlesInterrupt) process.off('SIGINT', interruptUpload)
