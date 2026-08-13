@@ -52,6 +52,16 @@ export async function uploadAssetWithProgress(options: UploadAssetWithProgressOp
   const handlesInterrupt = !executionContext
   if (handlesInterrupt) process.once('SIGINT', interruptUpload)
 
+  // Ora uses raw mode for Ctrl+C, but its input listener does not always make stdin flow.
+  const resumesInterruptInput =
+    handlesInterrupt &&
+    isTTY &&
+    uploadProgress.isSpinning &&
+    process.stdin.isTTY &&
+    process.stdin.isRaw &&
+    process.stdin.readableFlowing !== true
+  if (resumesInterruptInput) process.stdin.resume()
+
   try {
     const asset = await uploadAssetFromFile({
       ...uploadOptions,
@@ -95,5 +105,6 @@ export async function uploadAssetWithProgress(options: UploadAssetWithProgressOp
     throw error
   } finally {
     if (handlesInterrupt) process.off('SIGINT', interruptUpload)
+    if (resumesInterruptInput) process.stdin.pause()
   }
 }

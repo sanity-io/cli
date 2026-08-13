@@ -134,6 +134,60 @@ describe('uploadAssetWithProgress', () => {
     }
   })
 
+  test('lets Ora receive Ctrl+C when it has put stdin in raw mode', async () => {
+    const stdinDescriptors = Object.fromEntries(
+      ['isTTY', 'isRaw', 'readableFlowing'].map((property) => [
+        property,
+        Object.getOwnPropertyDescriptor(process.stdin, property),
+      ]),
+    )
+    Object.defineProperties(process.stdin, {
+      isRaw: {configurable: true, value: true},
+      isTTY: {configurable: true, value: true},
+      readableFlowing: {configurable: true, value: null},
+    })
+
+    const uploadProgress = spinner.getMockImplementation()?.()
+    if (!uploadProgress) throw new Error('Expected a spinner mock implementation')
+    Object.defineProperty(uploadProgress, 'isSpinning', {value: true})
+    spinner.mockReturnValueOnce(uploadProgress)
+
+    const stdinResumeSpy = vi.spyOn(process.stdin, 'resume').mockReturnValue(process.stdin)
+    const stdinPauseSpy = vi.spyOn(process.stdin, 'pause').mockReturnValue(process.stdin)
+    let interruptUpload: (() => void) | undefined
+    const onceSpy = vi.spyOn(process, 'once').mockImplementation((event, listener) => {
+      if (event === 'SIGINT') interruptUpload = listener as () => void
+      return process
+    })
+    const offSpy = vi.spyOn(process, 'off').mockReturnValue(process)
+    mockUploadAssetFromFile.mockImplementation(
+      ({signal}: {signal: AbortSignal}) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason), {once: true})
+        }),
+    )
+
+    try {
+      const upload = uploadAssetWithProgress({...defaultOptions, isInteractive: true})
+      await vi.waitFor(() => expect(mockUploadAssetFromFile).toHaveBeenCalledOnce())
+      expect(stdinResumeSpy).toHaveBeenCalledOnce()
+
+      interruptUpload?.()
+
+      await expect(upload).rejects.toThrow('SIGINT')
+      expect(stdinPauseSpy).toHaveBeenCalledOnce()
+    } finally {
+      onceSpy.mockRestore()
+      offSpy.mockRestore()
+      stdinResumeSpy.mockRestore()
+      stdinPauseSpy.mockRestore()
+      for (const [property, descriptor] of Object.entries(stdinDescriptors)) {
+        if (descriptor) Object.defineProperty(process.stdin, property, descriptor)
+        else delete (process.stdin as unknown as Record<string, unknown>)[property]
+      }
+    }
+  })
+
   test('stops progress and preserves upload errors', async () => {
     const error = new Error('upload failed')
     mockUploadAssetFromFile.mockRejectedValue(error)
