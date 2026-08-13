@@ -65,8 +65,7 @@ export const mcpPolicy: CommandPolicySet = {
     validate: apiValidator,
   }),
 
-  // Reads a file from the machine running the command. The MCP asset bridge
-  // returns this command for a client to run locally; Mellon must not run it.
+  // Reads a file from the machine running the command and must only run locally.
   'assets:upload': deny,
 
   'backups:disable': allow,
