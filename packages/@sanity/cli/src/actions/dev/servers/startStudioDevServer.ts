@@ -16,6 +16,7 @@ import {getProjectById} from '../../../services/projects.js'
 import {getAppId} from '../../../util/appId.js'
 import {getPackageManagerChoice} from '../../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../../util/packageManager/upgradePackages.js'
+import {hasLocalUnclaimedProject} from '../../../util/unclaimedProjects.js'
 import {checkDependenciesEventListenerFactory} from '../../build/eventListenerFactory.js'
 import {shouldAutoUpdate} from '../../build/shouldAutoUpdate.js'
 import {devDebug} from '../devDebug.js'
@@ -152,7 +153,10 @@ export async function startStudioDevServer(
       )
     } else {
       const startupDuration = Date.now() - startTime
-      const url = `http://${httpHost || 'localhost'}:${port}${config.basePath}`
+      const url = withUnclaimedSignInHash(
+        `http://${httpHost || 'localhost'}:${port}${config.basePath}`,
+        projectId,
+      )
       const appType = 'Sanity Studio'
 
       const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
@@ -171,4 +175,10 @@ export async function startStudioDevServer(
     devDebug('Error starting studio dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
+}
+
+function withUnclaimedSignInHash(url: string, projectId: string | undefined): string {
+  const token = process.env.SANITY_AUTH_TOKEN
+  if (!token || !projectId || !hasLocalUnclaimedProject(projectId)) return url
+  return `${url}#token=${encodeURIComponent(token)}`
 }
