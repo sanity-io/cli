@@ -3,7 +3,6 @@ import {Readable} from 'node:stream'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {AssetFileError} from '../assetFileError.js'
 import {uploadAssetFromFile} from '../uploadAssetFromFile.js'
 
 const mockUploadAsset = vi.hoisted(() => vi.fn())
@@ -78,7 +77,7 @@ describe('uploadAssetFromFile', () => {
         filePath: '/private/tmp/fixtures',
         projectId: 'test-project',
       }),
-    ).rejects.toMatchObject<AssetFileError>({reason: 'not-file'})
+    ).rejects.toMatchObject({reason: 'not-file'})
 
     expect(fileHandle.close).toHaveBeenCalledOnce()
     expect(mockUploadAsset).not.toHaveBeenCalled()
@@ -95,7 +94,7 @@ describe('uploadAssetFromFile', () => {
         filePath: '/private/tmp/missing.png',
         projectId: 'test-project',
       }),
-    ).rejects.toMatchObject<AssetFileError>({reason: 'unreadable'})
+    ).rejects.toMatchObject({reason: 'unreadable'})
 
     expect(mockUploadAsset).not.toHaveBeenCalled()
   })
