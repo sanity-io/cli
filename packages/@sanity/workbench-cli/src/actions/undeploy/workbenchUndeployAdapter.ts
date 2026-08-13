@@ -93,15 +93,10 @@ async function resolveApplicationTarget({
   const {lines, services, views} = summarizeInterfaces(workbench)
   return {
     target: {
-      activeDeployment: null,
-      appHost: application.slug,
       application,
-      createdAt: null,
       deletes: 'application',
       id: application.id,
-      organizationId: application.organizationId,
       payload: {appId: application.id, services, type, views},
-      projectId: null,
       services,
       summary: [
         ...lines,
@@ -156,28 +151,19 @@ async function resolveConfigTarget({
     }
   }
 
-  const active = configs.find((snapshot) => snapshot.isActive)
   return {
     installationId,
     resolution: {
       target: {
-        activeDeployment: null,
-        appHost: null,
         configs,
-        createdAt: null,
         deletes: 'config',
         id: null,
-        organizationId,
         payload: {
           appId: null,
           ...(config ? {config: summarizeConfig(config)} : {}),
           type: 'coreApp',
         },
-        projectId: null,
-        summary: [
-          ...(active ? [`Served since ${active.createdAt} by ${active.deployedBy}`] : []),
-          ...(config ? [summarizeConfig(config)] : []),
-        ],
+        summary: config ? [summarizeConfig(config)] : [],
         title: workbench.slug,
         type: 'coreApp',
         url: getWorkbenchUrl(organizationId),

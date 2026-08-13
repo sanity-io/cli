@@ -1,7 +1,7 @@
 import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {type DeployedInterface} from '@sanity/workbench-cli/deploy'
+import {type WorkbenchDeployPayload} from '@sanity/workbench-cli/deploy'
 
 import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
 import {toStderrOutput} from '../../util/toStderrOutput.js'
@@ -27,23 +27,15 @@ export interface DeployResult {
 }
 
 /** Collected locally, so a dry run reports it too. */
-export interface DeployPayload {
+export interface DeployPayload extends Partial<WorkbenchDeployPayload> {
   /** The configured `deployment.appId`; `null` when the deploy would mint one. */
   appId: string | null
   isAutoUpdating: boolean
   type: 'coreApp' | 'studio'
   version: string | null
 
-  /** Media-library config summary. */
-  config?: string
-  isSingleton?: boolean
   organizationId?: string
   projectId?: string
-  services?: DeployedInterface[]
-  slug?: string
-  title?: string
-  views?: DeployedInterface[]
-  visibility?: string
 }
 
 /**

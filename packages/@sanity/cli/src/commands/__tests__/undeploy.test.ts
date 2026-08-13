@@ -430,7 +430,6 @@ describe('#undeploy', () => {
     expect(confirm).not.toHaveBeenCalled()
     expect(stdout).toContain('Dry run — no changes made.')
     expect(stdout).toContain('Undeploys studio https://my-host.sanity.studio')
-    expect(stdout).toContain('at 2024-01-02T00:00:00Z by gustav@sanity.io')
     expect(stdout).not.toContain('3.99.0')
   })
 
@@ -521,6 +520,17 @@ describe('#undeploy', () => {
     expect(payload.canUndeploy).toBe(true)
     expect(payload.payload).toEqual({appId: 'app-id', type: 'studio'})
     expect(payload.url).toBe('https://my-host.sanity.studio')
+    // A plain studio has no workbench data, at either level of the output
+    expect(Object.keys(payload).toSorted()).toEqual([
+      'application',
+      'canUndeploy',
+      'deletes',
+      'errors',
+      'payload',
+      'reason',
+      'url',
+      'warnings',
+    ])
   })
 
   test('--json with --yes undeploys and emits the result envelope', async () => {
@@ -698,7 +708,6 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Undeploys the installation config')
-    expect(stdout).toContain('Served since 2024-01-01T00:00:00Z by gustav@sanity.io')
     expect(stdout).not.toContain('1.0.0')
     expect(stdout).toContain('Alt text (alt): ./src/alt.ts')
     expect(stdout).not.toContain('Config snapshots')

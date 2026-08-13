@@ -12,6 +12,7 @@ import {
   deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
+  toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
@@ -31,7 +32,7 @@ import {
   verifyOutputDir,
 } from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
-import {declaredInterfaces, listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
+import {listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
 import {type DeployPayload, type DeployResult, runDeploy} from './deployRunner.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplication.js'
@@ -190,14 +191,12 @@ async function runStudioDeployment(
 
     const payload: DeployPayload = {
       appId: appId ?? null,
-      ...declaredInterfaces(interfaces),
       isAutoUpdating,
       ...(organizationId ? {organizationId} : {}),
       ...(projectId ? {projectId} : {}),
-      ...(workbench ? {slug: workbench.slug, title: appTitle} : {}),
       type: 'studio',
       version,
-      ...(workbench?.visibility ? {visibility: workbench.visibility} : {}),
+      ...toWorkbenchPayload(workbench, {interfaces, title: appTitle}),
     }
 
     // Dry run stops here — everything below mutates.

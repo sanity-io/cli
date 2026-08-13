@@ -109,15 +109,6 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
   }
 }
 
-/** Workbench-only, and both or neither. */
-export function declaredInterfaces(
-  declared: {services: DeployedInterface[]; views: DeployedInterface[]} | null,
-): {services?: DeployedInterface[]; views?: DeployedInterface[]} {
-  if (!declared) return {}
-  const {services, views} = declared
-  return services.length > 0 || views.length > 0 ? {services, views} : {}
-}
-
 export function reportInterfaces(
   reporter: DeployCheckReporter,
   app: Parameters<typeof summarizeInterfaces>[0],
