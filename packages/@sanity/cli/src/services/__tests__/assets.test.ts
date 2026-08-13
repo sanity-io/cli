@@ -1,4 +1,3 @@
-import {createReadStream} from 'node:fs'
 import {Readable} from 'node:stream'
 
 import {getProjectCliClient} from '@sanity/cli-core'
@@ -7,17 +6,11 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ASSETS_API_VERSION, uploadAsset} from '../assets.js'
 
-vi.mock('node:fs', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('node:fs')>()),
-  createReadStream: vi.fn(),
-}))
-
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   getProjectCliClient: vi.fn(),
 }))
 
-const mockCreateReadStream = vi.mocked(createReadStream)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 function uploadResponse(asset: {_id: string}) {
@@ -42,16 +35,15 @@ describe('uploadAsset', () => {
     const asset = {_id: 'image-abc-1x1-png'}
     const upload = vi.fn(uploadResponse(asset))
     const onProgress = vi.fn()
-    mockCreateReadStream.mockReturnValue(stream as never)
     mockGetProjectCliClient.mockResolvedValue({observable: {assets: {upload}}} as never)
 
     await expect(
       uploadAsset({
         assetType: 'image',
+        body: stream,
         contentType: 'image/png',
         dataset: 'production',
         filename: 'hero.png',
-        filePath: '/private/tmp/hero.png',
         fileSize: 100,
         onProgress,
         projectId: 'test-project',
@@ -65,7 +57,6 @@ describe('uploadAsset', () => {
       requestTagPrefix: 'sanity.assets.upload',
       requireUser: true,
     })
-    expect(mockCreateReadStream).toHaveBeenCalledWith('/private/tmp/hero.png')
     expect(upload).toHaveBeenCalledWith('image', expect.any(Readable), {
       contentType: 'image/png',
       filename: 'hero.png',
@@ -76,14 +67,13 @@ describe('uploadAsset', () => {
 
   test('lets the client infer content type when none is supplied', async () => {
     const upload = vi.fn(uploadResponse({_id: 'file-abc-txt'}))
-    mockCreateReadStream.mockReturnValue(Readable.from([Buffer.from('notes')]) as never)
     mockGetProjectCliClient.mockResolvedValue({observable: {assets: {upload}}} as never)
 
     await uploadAsset({
       assetType: 'file',
+      body: Readable.from([Buffer.from('notes')]),
       dataset: 'production',
       filename: 'notes.txt',
-      filePath: '/private/tmp/notes.txt',
       fileSize: 5,
       projectId: 'test-project',
     })
@@ -100,14 +90,13 @@ describe('uploadAsset', () => {
     const requestTeardown = vi.fn()
     const upload = vi.fn(() => new Observable(() => requestTeardown))
     const controller = new AbortController()
-    mockCreateReadStream.mockReturnValue(stream as never)
     mockGetProjectCliClient.mockResolvedValue({observable: {assets: {upload}}} as never)
 
     const result = uploadAsset({
       assetType: 'image',
+      body: stream,
       dataset: 'production',
       filename: 'hero.png',
-      filePath: '/private/tmp/hero.png',
       fileSize: 100,
       projectId: 'test-project',
       signal: controller.signal,

@@ -1,5 +1,4 @@
-import {createReadStream} from 'node:fs'
-import {Transform} from 'node:stream'
+import {type Readable, Transform} from 'node:stream'
 
 import {getProjectCliClient} from '@sanity/cli-core'
 import {filter, lastValueFrom, map, Observable, race} from 'rxjs'
@@ -10,9 +9,9 @@ export type AssetType = 'file' | 'image'
 
 interface UploadAssetOptions {
   assetType: AssetType
+  body: Readable
   dataset: string
   filename: string
-  filePath: string
   fileSize: number
   projectId: string
 
@@ -23,10 +22,10 @@ interface UploadAssetOptions {
 
 export async function uploadAsset({
   assetType,
+  body,
   contentType,
   dataset,
   filename,
-  filePath,
   fileSize,
   onProgress,
   projectId,
@@ -44,7 +43,6 @@ export async function uploadAsset({
   signal?.throwIfAborted()
 
   let uploadedBytes = 0
-  const fileStream = createReadStream(filePath)
   const uploadStream = new Transform({
     transform(chunk: Buffer, _encoding, callback) {
       uploadedBytes += chunk.length
@@ -52,7 +50,7 @@ export async function uploadAsset({
       callback(null, chunk)
     },
   })
-  fileStream.on('error', (error) => uploadStream.destroy(error)).pipe(uploadStream)
+  body.on('error', (error) => uploadStream.destroy(error)).pipe(uploadStream)
 
   const response$ = client.observable.assets
     .upload(assetType, uploadStream, {
@@ -69,7 +67,7 @@ export async function uploadAsset({
 
   const abort$ = new Observable<never>((subscriber) => {
     const abortUpload = () => {
-      fileStream.destroy()
+      body.destroy()
       uploadStream.destroy()
       subscriber.error(signal.reason instanceof Error ? signal.reason : new Error('SIGINT'))
     }

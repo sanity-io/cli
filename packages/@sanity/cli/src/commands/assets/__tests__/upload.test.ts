@@ -6,18 +6,15 @@ import {testCommand} from '@sanity/cli-test'
 import {spinner, spinnerSucceed, spinnerText} from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {AssetFileError} from '../../../actions/assets/assetFileError.js'
 import {parseArguments} from '../../../util/parseArguments.js'
 import {UploadAssetCommand} from '../upload.js'
 
-const mockStat = vi.hoisted(() => vi.fn())
-const mockUploadAsset = vi.hoisted(() => vi.fn())
+const mockUploadAssetFromFile = vi.hoisted(() => vi.fn())
 
-vi.mock('node:fs/promises', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('node:fs/promises')>()),
-  stat: mockStat,
+vi.mock('../../../actions/assets/uploadAssetFromFile.js', () => ({
+  uploadAssetFromFile: mockUploadAssetFromFile,
 }))
-
-vi.mock('../../../services/assets.js', () => ({uploadAsset: mockUploadAsset}))
 vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 const defaultMocks = {
@@ -63,8 +60,7 @@ describe('#assets:upload', () => {
   })
 
   test('uploads an image and prints a reusable image reference', async () => {
-    mockStat.mockResolvedValue({isFile: () => true, size: 123})
-    mockUploadAsset.mockImplementation(async ({onProgress}) => {
+    mockUploadAssetFromFile.mockImplementation(async ({onProgress}) => {
       onProgress(8)
       onProgress(23)
       onProgress(27)
@@ -79,13 +75,12 @@ describe('#assets:upload', () => {
     )
 
     if (error) throw error
-    expect(mockUploadAsset).toHaveBeenCalledWith({
+    expect(mockUploadAssetFromFile).toHaveBeenCalledWith({
       assetType: 'image',
       contentType: 'image/png',
       dataset: 'production',
       filename: 'hero.png',
       filePath: resolve('./hero.png'),
-      fileSize: 123,
       onProgress: expect.any(Function),
       projectId: 'test-project',
       signal: expect.any(AbortSignal),
@@ -112,8 +107,7 @@ describe('#assets:upload', () => {
 
   test('reports bounded progress through the agent execution context', async () => {
     const progress: string[] = []
-    mockStat.mockResolvedValue({isFile: () => true, size: 123})
-    mockUploadAsset.mockImplementation(async ({onProgress}) => {
+    mockUploadAssetFromFile.mockImplementation(async ({onProgress}) => {
       onProgress(26)
       onProgress(51)
       onProgress(76)
@@ -139,8 +133,7 @@ describe('#assets:upload', () => {
   })
 
   test('supports file assets and explicit target metadata outside a project', async () => {
-    mockStat.mockResolvedValue({isFile: () => true, size: 123})
-    mockUploadAsset.mockResolvedValue({
+    mockUploadAssetFromFile.mockResolvedValue({
       ...imageAsset,
       _id: 'file-def-pdf',
       _type: 'sanity.fileAsset',
@@ -167,7 +160,7 @@ describe('#assets:upload', () => {
     )
 
     if (error) throw error
-    expect(mockUploadAsset).toHaveBeenCalledWith(
+    expect(mockUploadAssetFromFile).toHaveBeenCalledWith(
       expect.objectContaining({
         assetType: 'file',
         dataset: 'staging',
@@ -181,8 +174,7 @@ describe('#assets:upload', () => {
   test('preserves completed upload phases in a terminal', async () => {
     const isTTYDescriptor = Object.getOwnPropertyDescriptor(process.stderr, 'isTTY')
     Object.defineProperty(process.stderr, 'isTTY', {configurable: true, value: true})
-    mockStat.mockResolvedValue({isFile: () => true, size: 123})
-    mockUploadAsset.mockImplementation(async ({onProgress}) => {
+    mockUploadAssetFromFile.mockImplementation(async ({onProgress}) => {
       onProgress(50)
       onProgress(100)
       return imageAsset
@@ -223,8 +215,7 @@ describe('#assets:upload', () => {
       return process
     })
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
-    mockStat.mockResolvedValue({isFile: () => true, size: 123})
-    mockUploadAsset.mockImplementation(
+    mockUploadAssetFromFile.mockImplementation(
       ({signal}: {signal: AbortSignal}) =>
         new Promise((_resolve, reject) => {
           signal.addEventListener('abort', () => reject(signal.reason), {once: true})
@@ -237,7 +228,7 @@ describe('#assets:upload', () => {
         ['--file', './hero.png', '--content-type', 'image/png'],
         {mocks: defaultMocks},
       )
-      await vi.waitFor(() => expect(mockUploadAsset).toHaveBeenCalledOnce())
+      await vi.waitFor(() => expect(mockUploadAssetFromFile).toHaveBeenCalledOnce())
       expect(interruptUpload).toBeDefined()
       interruptUpload?.()
       expect(exitSpy).toHaveBeenCalledWith(exitCodes.SIGINT)
@@ -266,8 +257,7 @@ describe('#assets:upload', () => {
     const stdinResumeSpy = vi.spyOn(process.stdin, 'resume').mockReturnValue(process.stdin)
     const stdinPauseSpy = vi.spyOn(process.stdin, 'pause').mockReturnValue(process.stdin)
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
-    mockStat.mockResolvedValue({isFile: () => true, size: 123})
-    mockUploadAsset.mockImplementation(
+    mockUploadAssetFromFile.mockImplementation(
       ({signal}: {signal: AbortSignal}) =>
         new Promise((_resolve, reject) => {
           signal.addEventListener('abort', () => reject(signal.reason), {once: true})
@@ -280,7 +270,7 @@ describe('#assets:upload', () => {
         ['--file', './hero.png', '--content-type', 'image/png'],
         {mocks: defaultMocks},
       )
-      await vi.waitFor(() => expect(mockUploadAsset).toHaveBeenCalledOnce())
+      await vi.waitFor(() => expect(mockUploadAssetFromFile).toHaveBeenCalledOnce())
       expect(interruptInput).toBeDefined()
       interruptInput?.(Buffer.from([3]))
       expect(exitSpy).toHaveBeenCalledWith(exitCodes.SIGINT)
@@ -304,8 +294,8 @@ describe('#assets:upload', () => {
     }
   })
 
-  test('rejects a directory before making an API request', async () => {
-    mockStat.mockResolvedValue({isFile: () => false})
+  test('rejects a directory', async () => {
+    mockUploadAssetFromFile.mockRejectedValue(new AssetFileError('not-file'))
 
     const {error} = await testCommand(UploadAssetCommand, ['--file', '.'], {
       mocks: defaultMocks,
@@ -313,11 +303,11 @@ describe('#assets:upload', () => {
 
     expect(error?.message).toContain('--file must point to a file, not a directory')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
-    expect(mockUploadAsset).not.toHaveBeenCalled()
+    expect(mockUploadAssetFromFile).toHaveBeenCalledOnce()
   })
 
   test('reports unreadable paths with a fix', async () => {
-    mockStat.mockRejectedValue(new Error('ENOENT'))
+    mockUploadAssetFromFile.mockRejectedValue(new AssetFileError('unreadable'))
 
     const {error} = await testCommand(UploadAssetCommand, ['--file', './missing.png'], {
       mocks: defaultMocks,
@@ -327,12 +317,10 @@ describe('#assets:upload', () => {
     expect(error?.message).toContain('Check that --file points to a readable file, then retry')
     expect(error?.message).not.toContain('missing.png')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
-    expect(mockUploadAsset).not.toHaveBeenCalled()
+    expect(mockUploadAssetFromFile).toHaveBeenCalledOnce()
   })
 
   test('requires a dataset', async () => {
-    mockStat.mockResolvedValue({isFile: () => true, size: 123})
-
     const {error} = await testCommand(UploadAssetCommand, ['--file', './hero.png'], {
       mocks: {...defaultMocks, cliConfig: {api: {projectId: 'test-project'}}},
     })
@@ -343,8 +331,7 @@ describe('#assets:upload', () => {
   })
 
   test('reports upload failures with authentication and permission guidance', async () => {
-    mockStat.mockResolvedValue({isFile: () => true, size: 123})
-    mockUploadAsset.mockRejectedValue(new Error('Forbidden'))
+    mockUploadAssetFromFile.mockRejectedValue(new Error('Forbidden'))
 
     const {error} = await testCommand(UploadAssetCommand, ['--file', './hero.png'], {
       mocks: defaultMocks,

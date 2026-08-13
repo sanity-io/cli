@@ -1,4 +1,3 @@
-import {stat} from 'node:fs/promises'
 import {basename, resolve} from 'node:path'
 
 import {Flags} from '@oclif/core'
@@ -7,8 +6,10 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {spinner} from '@sanity/cli-core/ux'
 
+import {AssetFileError} from '../../actions/assets/assetFileError.js'
+import {uploadAssetFromFile} from '../../actions/assets/uploadAssetFromFile.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {type AssetType, uploadAsset} from '../../services/assets.js'
+import {type AssetType} from '../../services/assets.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
@@ -68,19 +69,6 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
   public async run(): Promise<void> {
     const {flags} = await this.parse(UploadAssetCommand)
     const filePath = resolve(flags.file)
-
-    const fileStat = await stat(filePath).catch(() => {})
-    if (!fileStat) {
-      this.error(
-        'Asset upload failed: Cannot read the local file. Check that --file points to a readable file, then retry.',
-        {exit: exitCodes.USAGE_ERROR},
-      )
-    }
-    if (!fileStat.isFile()) {
-      this.error('Asset upload failed: --file must point to a file, not a directory.', {
-        exit: exitCodes.USAGE_ERROR,
-      })
-    }
 
     const cliConfig = await this.tryGetCliConfig()
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
@@ -144,13 +132,12 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
       let lastReportedProgress = 0
       let nextNonInteractiveCheckpoint = 25
 
-      const asset = await uploadAsset({
+      const asset = await uploadAssetFromFile({
         assetType: flags.type,
         contentType: flags['content-type'],
         dataset,
         filename: flags.filename ?? basename(filePath),
         filePath,
-        fileSize: fileStat.size,
         onProgress: (percent) => {
           const progress = Math.min(100, Math.floor(percent))
           if (progress <= lastReportedProgress) return
@@ -209,6 +196,17 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
         throw uploadController.signal.reason instanceof Error
           ? uploadController.signal.reason
           : new Error('SIGINT')
+      }
+      if (error instanceof AssetFileError) {
+        if (error.reason === 'not-file') {
+          this.error('Asset upload failed: --file must point to a file, not a directory.', {
+            exit: exitCodes.USAGE_ERROR,
+          })
+        }
+        this.error(
+          'Asset upload failed: Cannot read the local file. Check that --file points to a readable file, then retry.',
+          {exit: exitCodes.USAGE_ERROR},
+        )
       }
       uploadAssetDebug('Asset upload failed', error)
       this.error(
