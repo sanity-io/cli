@@ -1,5 +1,63 @@
 # Change Log
 
+## 8.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.18.0...cli-v8.0.0)
+
+_2026-08-14_
+
+### ⚠ BREAKING CHANGES
+
+- **cli:** unify the --json shape of deploy and undeploy ([#1691](https://github.com/sanity-io/cli/pull/1691)) ([8ed25bb](https://github.com/sanity-io/cli/commit/8ed25bbc0c2e2b3365d5b3dcd88567563ae9ab5a))
+- **tokens:** migrate token management to the Access API ([#1646](https://github.com/sanity-io/cli/pull/1646)) ([11e6818](https://github.com/sanity-io/cli/commit/11e6818f9a5ae180c2e7ea69404693d7c17d0505))
+
+  The `tokens create`, `tokens list` and `tokens delete` commands are now backed by the Access API, and `--json` output returns its token shape verbatim. To migrate:
+
+  - `tokens create --json`: read the secret from `.token` instead of `.key`
+  - `tokens list --json`: roles now live in `.memberships[].roleNames` instead of `.roles[].name`; `createdBy`, `permissions`, `projectUserId` and `lastUsedAt` are no longer returned
+  - `.id` is still the identifier to pass to `tokens delete`, but existing ids change with the backing API
+  - `tokens list` shows role names instead of display titles, and no longer includes organization-managed tokens, which cannot be managed at project scope
+
+### Features
+
+- **assets:** add `sanity assets upload` for uploading a local image or file to a dataset ([#1684](https://github.com/sanity-io/cli/pull/1684)) ([1318c3c](https://github.com/sanity-io/cli/commit/1318c3c2c402cc1e1a3dd32f0df433bea25876bd))
+- **workbench:** key a dev app's id on its slug ([#1667](https://github.com/sanity-io/cli/pull/1667)) ([e11a2d3](https://github.com/sanity-io/cli/commit/e11a2d3d7f72beb5575f0cde1f455cc8e39a01d0))
+- adopt typegen CLI integration ([#1634](https://github.com/sanity-io/cli/pull/1634)) ([45406ea](https://github.com/sanity-io/cli/commit/45406ea76e40cd63f70b658d656ef75a4059a889))
+- **cli:** show synced Shopify metafields in the Shopify templates ([#1624](https://github.com/sanity-io/cli/pull/1624)) ([119cc1d](https://github.com/sanity-io/cli/commit/119cc1df08f95be071f9954f29a4529c8d392605))
+- **cli:** add claim url to studio url hash fragment ([#1645](https://github.com/sanity-io/cli/pull/1645)) ([573b5c1](https://github.com/sanity-io/cli/commit/573b5c1c596c43dde9030a39c119402459a93a1e))
+- send deployment access array for workbench studios ([#1676](https://github.com/sanity-io/cli/pull/1676)) ([3601ecf](https://github.com/sanity-io/cli/commit/3601ecfa7ff232ed42caf67d9e7b98847222b605))
+- add resource bindings script tag ([#1678](https://github.com/sanity-io/cli/pull/1678)) ([f1b284c](https://github.com/sanity-io/cli/commit/f1b284c1a4d8b09afa5d4c224d25754e946e06ec))
+- **tokens:** support token expiry on create and in list output ([#1646](https://github.com/sanity-io/cli/pull/1646)) ([11e6818](https://github.com/sanity-io/cli/commit/11e6818f9a5ae180c2e7ea69404693d7c17d0505))
+
+  `tokens create --expires-at <date>` sets an expiry (ISO 8601 date or timestamp); interactive runs offer the same presets as sanity.io/manage. `tokens list` shows expiry in a new Expires column.
+
+- **tokens:** add tokens rotate command ([#1646](https://github.com/sanity-io/cli/pull/1646)) ([11e6818](https://github.com/sanity-io/cli/commit/11e6818f9a5ae180c2e7ea69404693d7c17d0505))
+
+  `echo "$SANITY_TOKEN" | sanity tokens rotate` replaces a token's secret while preserving its roles and expiry. The token is read from standard input to keep secrets out of shell history (`-t, --token` is also accepted); the previous secret is revoked immediately.
+
+### Bug Fixes
+
+- **deps:** bump groq-js to v2 ([#1597](https://github.com/sanity-io/cli/pull/1597)) ([3f02e03](https://github.com/sanity-io/cli/commit/3f02e03456343960c9e903574990f7dd4c231f2a))
+- **dev:** align dev server typegen defaults with `sanity typegen generate` ([#1426](https://github.com/sanity-io/cli/pull/1426)) ([1e5b783](https://github.com/sanity-io/cli/commit/1e5b7839caff1c005c2cc171e40979dc515921e7))
+- **deploy:** show schema extraction errors during studio deploy ([#1677](https://github.com/sanity-io/cli/pull/1677)) ([9a272d3](https://github.com/sanity-io/cli/commit/9a272d30219f86fa489382689f032c360c51193c))
+- **migrations:** preserve progress counts and transaction log URLs on failure ([#1688](https://github.com/sanity-io/cli/pull/1688)) ([77fa67e](https://github.com/sanity-io/cli/commit/77fa67ed183a4450f50ac2f142ecc78f14df02c8))
+- **cli:** add command-owned telemetry redaction ([#1694](https://github.com/sanity-io/cli/pull/1694)) ([4277bf3](https://github.com/sanity-io/cli/commit/4277bf36454cc37cec805cd13514925f2f876377))
+- **cli:** trim deploy payload and undeploy dry-run output ([#1696](https://github.com/sanity-io/cli/pull/1696)) ([1462d82](https://github.com/sanity-io/cli/commit/1462d8236f67a706397ca774fb3f9abaf4929cd6))
+- **deps:** refresh transitive dependencies and remove brittle security overrides ([#1664](https://github.com/sanity-io/cli/pull/1664)) ([469ffd1](https://github.com/sanity-io/cli/commit/469ffd1293197e54ae000a830d99ff8e7149548a))
+- **dev:** announce the pre-claim Studio sign-in URL (`#token=`) only for locally unclaimed projects ([#1699](https://github.com/sanity-io/cli/pull/1699)) ([6b51fed](https://github.com/sanity-io/cli/commit/6b51fed2b142b9b8572b6940db76e772995a6eac))
+- **cli:** resolve command topic aliases in programmatic CLI invocations ([#1689](https://github.com/sanity-io/cli/pull/1689)) ([6aebbdc](https://github.com/sanity-io/cli/commit/6aebbdc82b5b39f0b5ba6765f0afdf3cdedc118f))
+- **cli:** keep table output within the terminal width ([#1680](https://github.com/sanity-io/cli/pull/1680)) ([7271125](https://github.com/sanity-io/cli/commit/7271125a899828a54d360d96986b7379a6fa4b16))
+
+  CLI tables now wrap long values instead of truncating content and preserve borders when Unicode width estimates differ.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.0.0
+    - @sanity/cli-build bumped to 5.2.0
+    - @sanity/cli-core bumped to 3.0.0
+
 ## 7.18.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.17.0...cli-v7.18.0)
