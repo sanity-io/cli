@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.1.0...cli-build-v5.2.0)
+
+_2026-08-14_
+
+### Features
+
+- add resource bindings script tag ([#1678](https://github.com/sanity-io/cli/pull/1678)) ([f1b284c](https://github.com/sanity-io/cli/commit/f1b284c1a4d8b09afa5d4c224d25754e946e06ec))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.0.0
+    - @sanity/cli-core bumped to 3.0.0
+
 ## [5.1.0](https://github.com/sanity-io/cli/compare/cli-build-v5.0.0...cli-build-v5.1.0)
 
 _2026-07-29_
