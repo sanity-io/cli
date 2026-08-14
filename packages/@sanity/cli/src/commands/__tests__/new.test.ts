@@ -153,6 +153,7 @@ describe('#new', () => {
       `│  SANITY_AUTH_TOKEN="${project.token}" sanity "command"`,
     ])
     expect(output).toContain(studioUrl)
+    expect(output).toContain('cd sanity && npx sanity@latest dev')
     const studioLinkIndex = lines.indexOf(`│  Then open this link: ${studioUrl}`)
     expect(lines.slice(studioLinkIndex, studioLinkIndex + 3)).toEqual([
       `│  Then open this link: ${studioUrl}`,
