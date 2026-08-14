@@ -55,7 +55,7 @@ jobs:
           "$INSTALL_DIR/node_modules/.bin/create-sanity" --help > /dev/null
 
       - name: Smoke test sanity new
-        if: matrix.node-version == 24
+        if: matrix.node-version == 22
         run: |
           SANITY_NEW_RESULT="$RUNNER_TEMP/sanity-new.json"
           trap 'rm -f "$SANITY_NEW_RESULT"' EXIT
