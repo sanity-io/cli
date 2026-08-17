@@ -1,5 +1,22 @@
 # Change Log
 
+## 8.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.0.0...cli-v8.0.1)
+
+_2026-08-17_
+
+### Bug Fixes
+
+- pin `@sanity/eslint-config-studio` to `^6` in the `sanity init` studio and SDK app templates, so scaffolded projects resolve against the `eslint@^9` they also pin instead of failing with `ERESOLVE` ([#1708](https://github.com/sanity-io/cli/pull/1708)) ([f950dbd](https://github.com/sanity-io/cli/commit/f950dbdf89515276e9e655708bd437fc2cb7021e))
+- **cli:** improve assets upload error guidance ([#1704](https://github.com/sanity-io/cli/pull/1704)) ([64c17d0](https://github.com/sanity-io/cli/commit/64c17d01cd70ca772902c3b9f0b8ddd434e83ef0))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.0.1
+
 ## 8.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v7.18.0...cli-v8.0.0)

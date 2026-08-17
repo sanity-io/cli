@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 2.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.0...workbench-cli-v2.0.1)
+
+_2026-08-17_
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.20.7 ([#1706](https://github.com/sanity-io/cli/pull/1706)) ([60e664f](https://github.com/sanity-io/cli/commit/60e664f0ad3bddf2b35d1b6db04b10e44420011a))
+
 ## 2.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.10.0...workbench-cli-v2.0.0)
