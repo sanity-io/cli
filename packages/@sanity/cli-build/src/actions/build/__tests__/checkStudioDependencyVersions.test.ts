@@ -401,10 +401,10 @@ describe('checkStudioDependencyVersions', () => {
       vi.mocked(coerce).mockReset()
     })
 
-    test('should handle @sanity/ui v3 package correctly', async () => {
+    test('should handle @sanity/ui v4 package as supported', async () => {
       setupMocks({
-        dependencies: {'@sanity/ui': '^3.0.0'},
-        localVersions: {'@sanity/ui': '3.0.0'},
+        dependencies: {'@sanity/ui': '^4.0.0'},
+        localVersions: {'@sanity/ui': '4.0.3'},
       })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
@@ -413,10 +413,10 @@ describe('checkStudioDependencyVersions', () => {
       expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
-    test('should warn about @sanity/ui v2 being deprecated', async () => {
+    test('should warn about @sanity/ui v3 being deprecated', async () => {
       setupMocks({
-        dependencies: {'@sanity/ui': '^2.0.0'},
-        localVersions: {'@sanity/ui': '2.8.0'},
+        dependencies: {'@sanity/ui': '^3.0.0'},
+        localVersions: {'@sanity/ui': '3.5.2'},
       })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
@@ -428,10 +428,59 @@ describe('checkStudioDependencyVersions', () => {
         ),
       )
       expect(mockOutput.warn).toHaveBeenCalledWith(
-        expect.stringContaining('@sanity/ui (installed: 2.8.0, want: ^3)'),
+        expect.stringContaining('@sanity/ui (installed: 3.5.2, want: ^4)'),
       )
       expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('Support for these will be removed in a future release!'),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('npm install "@sanity/ui@^4.0.0"'),
+      )
+    })
+
+    test('should treat @sanity/ui v2 as unsupported', async () => {
+      setupMocks({
+        dependencies: {'@sanity/ui': '^2.0.0'},
+        localVersions: {'@sanity/ui': '2.8.0'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The following package versions are no longer supported and needs to be upgraded:',
+        ),
+        {exit: 1},
+      )
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('@sanity/ui (installed: 2.8.0, want: ^4)'),
+        {exit: 1},
+      )
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('To upgrade, run either:'),
+        {exit: 1},
+      )
+    })
+
+    test('should warn about @sanity/ui versions newer than supported as untested', async () => {
+      setupMocks({
+        dependencies: {'@sanity/ui': '^5.0.0'},
+        localVersions: {'@sanity/ui': '5.0.0'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The following package versions have not yet been marked as supported:',
+        ),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('@sanity/ui (installed: 5.0.0, want: ^4)'),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('To downgrade, run either:'),
       )
     })
 

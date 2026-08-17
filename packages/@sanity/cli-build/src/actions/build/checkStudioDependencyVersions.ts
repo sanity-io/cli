@@ -26,7 +26,7 @@ const DEFAULT_PACKAGES: TrackedPackage[] = [
   {deprecatedBelow: null, name: 'react', supported: ['^19.2.2']},
   {deprecatedBelow: null, name: 'react-dom', supported: ['^19.2.2']},
   {deprecatedBelow: null, name: 'styled-components', supported: ['^6']},
-  {deprecatedBelow: '^3', name: '@sanity/ui', supported: ['^2', '^3']},
+  {deprecatedBelow: '^4', name: '@sanity/ui', supported: ['^3', '^4']},
 ]
 
 export async function checkStudioDependencyVersions(
