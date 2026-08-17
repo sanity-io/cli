@@ -3,14 +3,9 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {MINT_REQUEST_TAG, mintUnclaimedProject, PROVISION_API_VERSION} from '../mintProject.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
-const mockGetCliToken = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core/request', () => ({
   createRequester: vi.fn().mockReturnValue(mockRequest),
-}))
-
-vi.mock('@sanity/cli-core/config', () => ({
-  getCliToken: mockGetCliToken,
 }))
 
 const PROVISION_URL = `https://api.sanity.io/${PROVISION_API_VERSION}/provision?tag=${MINT_REQUEST_TAG}`
@@ -43,7 +38,6 @@ function jsonResponse(body: unknown, statusCode = 200) {
 
 beforeEach(() => {
   mockRequest.mockResolvedValue(jsonResponse(provisionResponse))
-  mockGetCliToken.mockResolvedValue(undefined)
 })
 
 afterEach(() => {
@@ -142,72 +136,15 @@ describe('mintUnclaimedProject', () => {
     )
   })
 
-  describe('credentials', () => {
-    test('mints anonymously when there is no stored credential', async () => {
-      await mintUnclaimedProject({displayName: 'My Project'})
+  // Mint is unauthenticated by design — `sanity new` is meant to work without an account, so the
+  // request must never carry a credential.
+  test('mints anonymously, sending no credential', async () => {
+    await mintUnclaimedProject({displayName: 'My Project'})
 
-      expect(mockRequest).toHaveBeenCalledTimes(1)
-      expect(mockRequest).toHaveBeenCalledWith(
-        expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
-      )
-    })
-
-    test('sends the stored credential so the mint can be attributed to a user', async () => {
-      mockGetCliToken.mockResolvedValue('sk-user-token')
-
-      await mintUnclaimedProject({displayName: 'My Project'})
-
-      expect(mockRequest).toHaveBeenCalledTimes(1)
-      expect(mockRequest).toHaveBeenCalledWith(
-        expect.objectContaining({
-          headers: {
-            Authorization: 'Bearer sk-user-token',
-            'Content-Type': 'application/json',
-          },
-        }),
-      )
-    })
-
-    // `sanity new` is the one command that must work without an account, so a stale credential
-    // can never be what stops it.
-    test.each([401, 403])(
-      'retries anonymously when the credential is rejected (%d)',
-      async (statusCode) => {
-        mockGetCliToken.mockResolvedValue('sk-stale-token')
-        mockRequest
-          .mockResolvedValueOnce(jsonResponse({}, statusCode))
-          .mockResolvedValueOnce(jsonResponse(provisionResponse))
-
-        await expect(mintUnclaimedProject({displayName: 'My Project'})).resolves.toMatchObject({
-          resourceId: provisionResponse.resourceId,
-        })
-
-        expect(mockRequest).toHaveBeenCalledTimes(2)
-        expect(mockRequest).toHaveBeenLastCalledWith(
-          expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
-        )
-      },
+    expect(mockRequest).toHaveBeenCalledTimes(1)
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
     )
-
-    test('does not retry an anonymous mint that was rejected', async () => {
-      mockRequest.mockResolvedValue(jsonResponse({}, 401))
-
-      await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
-        'Project creation failed (HTTP 401). Try again later.',
-      )
-      expect(mockRequest).toHaveBeenCalledTimes(1)
-    })
-
-    test('mints anonymously when the stored credential cannot be read', async () => {
-      mockGetCliToken.mockRejectedValue(new Error('config is unreadable'))
-
-      await expect(mintUnclaimedProject({displayName: 'My Project'})).resolves.toMatchObject({
-        resourceId: provisionResponse.resourceId,
-      })
-      expect(mockRequest).toHaveBeenCalledWith(
-        expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
-      )
-    })
   })
 
   test('accepts an already-parsed response body', async () => {

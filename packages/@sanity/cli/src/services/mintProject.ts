@@ -1,4 +1,3 @@
-import {getCliToken} from '@sanity/cli-core/config'
 import {subdebug} from '@sanity/cli-core/debug'
 import {createRequester} from '@sanity/cli-core/request'
 import {isStaging} from '@sanity/cli-core/util'
@@ -29,7 +28,7 @@ export const MINT_REQUEST_TAG = 'sanity.cli'
 const MINT_TAG_ENV_VAR = 'SANITY_CLI_MINT_TAG'
 
 /** Mirrors `@sanity/client`'s `requestTag` rule, which is what the API accepts. */
-const TAG_PATTERN = /^[a-z0-9._-]{1,75}$/iu
+const TAG_PATTERN = /^[a-z0-9._-]{1,75}$/i
 
 function getRequestTag(): string {
   const override = process.env[MINT_TAG_ENV_VAR]
@@ -123,20 +122,6 @@ function parseProvisionResponse(body: unknown): MintedProject {
 }
 
 /**
- * Reads the stored credential without ever letting that failure surface. Minting is the one
- * command designed to work with no account at all, so a broken or unreadable config must degrade
- * to an anonymous mint rather than an error.
- */
-async function getCredential(): Promise<string | undefined> {
-  try {
-    return await getCliToken()
-  } catch (err) {
-    debug('could not read the stored credential: %s', err instanceof Error ? err.message : err)
-    return undefined
-  }
-}
-
-/**
  * Mint an unclaimed Sanity project through the public provision endpoint.
  */
 export async function mintUnclaimedProject(options: {displayName: string}): Promise<MintedProject> {
@@ -150,30 +135,12 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
     `?tag=${encodeURIComponent(getRequestTag())}`
   debug('minting unclaimed project at %s', url)
 
-  const body = JSON.stringify({displayName, resourceType: 'project'})
-  const postProvision = (token?: string) =>
-    request({
-      body,
-      headers: {
-        'Content-Type': 'application/json',
-        // Never set `x-sanity-user-id` here: the gateway strips it and derives the user from the
-        // session, so sending it would be both ignored and misleading.
-        ...(token ? {Authorization: `Bearer ${token}`} : {}),
-      },
-      method: 'POST',
-      url,
-    })
-
-  // Mint is unauthenticated, but sending a credential we already have lets the API attribute the
-  // mint to a real user, which is what keeps logged-in internal traffic out of conversion
-  // reporting. It must never be load-bearing: a stale or revoked token would otherwise break the
-  // one command that is supposed to work without an account, so fall back to an anonymous mint.
-  const token = await getCredential()
-  let response = await postProvision(token)
-  if (token && (response.statusCode === 401 || response.statusCode === 403)) {
-    debug('stored credential rejected (HTTP %d), minting anonymously', response.statusCode)
-    response = await postProvision()
-  }
+  const response = await request({
+    body: JSON.stringify({displayName, resourceType: 'project'}),
+    headers: {'Content-Type': 'application/json'},
+    method: 'POST',
+    url,
+  })
 
   if (response.statusCode === 404) {
     throw new Error(
