@@ -87,8 +87,11 @@ describe('#fetchTelemetryConsent', () => {
       uri: '/intake/telemetry-status',
     }).reply(200, {status: 'granted'})
 
-    const consent = await runWithCliExecutionContext({token: 'context-token'}, () =>
-      fetchTelemetryConsent(),
+    // The execution context's isolated transport bypasses nock unless the
+    // context carries the nock-patched global fetch.
+    const consent = await runWithCliExecutionContext(
+      {fetch: (url, init) => globalThis.fetch(url, init), token: 'context-token'},
+      () => fetchTelemetryConsent(),
     )
 
     expect(consent).toEqual({status: 'granted'})

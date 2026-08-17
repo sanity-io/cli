@@ -81,6 +81,6 @@ export async function checkDocumentAvailability({
     json: true,
     query: {excludeContent: 'true'},
     tag: 'documents-availability',
-    uri: client.getDataUrl('doc', documentIds.join(',')),
+    url: client.getDataUrl('doc', documentIds.join(',')),
   })
 }

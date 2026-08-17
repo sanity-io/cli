@@ -47,6 +47,18 @@ function corsOrigin(origin: string, id = 1) {
   }
 }
 
+/**
+ * Invoke with the test transport. Command modules load from the compiled
+ * dist build (outside vitest's mock graph), and the sanity client's default
+ * undici transport bypasses nock — so each invocation's execution context
+ * carries the nock-patched global fetch instead. The execution context's
+ * production transport hygiene (e.g. lineage stripping) still applies on
+ * top of it.
+ */
+function invoke(options: Parameters<typeof invokeSanityCli>[0]) {
+  return invokeSanityCli({fetch: (url, init) => globalThis.fetch(url, init), ...options})
+}
+
 describe('invokeSanityCli', () => {
   afterEach(() => {
     const pending = pendingMocks()
@@ -76,7 +88,7 @@ describe('invokeSanityCli', () => {
     // root (where package.json and the oclif manifest live), not some other
     // ancestor directory, when a caller doesn't supply `config` (as every
     // other test in this file does).
-    const result = await invokeSanityCli({args: '--help', source: 'mcp', token: 'user-token'})
+    const result = await invoke({args: '--help', source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(0)
     expect(result.output).toContain('USAGE')
@@ -113,7 +125,7 @@ describe('invokeSanityCli', () => {
     const off = vi.spyOn(process, 'off')
 
     try {
-      const result = await invokeSanityCli({
+      const result = await invoke({
         args: `cors list --project-id ${projectId}`,
         sanityEnv: 'production',
         source: 'mcp',
@@ -180,7 +192,7 @@ describe('invokeSanityCli', () => {
     const stdout = vi.spyOn(process.stdout, 'write')
 
     try {
-      const result = await invokeSanityCli({
+      const result = await invoke({
         args: `users list --project-id ${projectId}`,
         config,
         source: 'mcp',
@@ -211,7 +223,7 @@ describe('invokeSanityCli', () => {
     )
     mockApi({apiVersion: USERS_API_VERSION, uri: '/users/'}).reply(200, [])
 
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: `users list --project-id ${projectId}`,
       config,
       source: 'mcp',
@@ -230,7 +242,7 @@ describe('invokeSanityCli', () => {
       .matchHeader('authorization', 'Bearer user-token')
       .reply(200, [corsOrigin('https://example.com')])
 
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: `cors list --project-id ${projectId}`,
       config,
       source: 'mcp',
@@ -245,7 +257,7 @@ describe('invokeSanityCli', () => {
       .matchHeader('authorization', 'Bearer user-token')
       .reply(200, [corsOrigin('https://example.com')])
 
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: ['cors', 'list', '--project-id', projectId],
       config,
       source: 'mcp',
@@ -260,7 +272,7 @@ describe('invokeSanityCli', () => {
       .matchHeader('authorization', 'Bearer user-token')
       .reply(200, [corsOrigin('https://example.com')])
 
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: `sanity cors list --project-id "${projectId}"`,
       config,
       source: 'mcp',
@@ -278,7 +290,7 @@ describe('invokeSanityCli', () => {
       .matchHeader('authorization', 'Bearer user-token')
       .reply(200, [corsOrigin('https://example.com')])
 
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args,
       config,
       source: 'mcp',
@@ -293,7 +305,7 @@ describe('invokeSanityCli', () => {
       .matchHeader('authorization', 'Bearer user-token')
       .reply(200, [corsOrigin('https://example.com')])
 
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: `cors:list --project-id ${projectId}`,
       config,
       source: 'mcp',
@@ -318,14 +330,14 @@ describe('invokeSanityCli', () => {
       .reply(200, [{...corsOrigin('https://user-b.example.com'), projectId: 'project-b'}])
 
     const [resultA, resultB] = await Promise.all([
-      invokeSanityCli({
+      invoke({
         args: 'cors list --project-id project-a',
         config,
         sanityEnv: 'production',
         source: 'mcp',
         token: 'token-a',
       }),
-      invokeSanityCli({
+      invoke({
         args: 'cors list --project-id project-b',
         config,
         sanityEnv: 'staging',
@@ -352,7 +364,7 @@ describe('invokeSanityCli', () => {
       .reply(401, {error: 'Unauthorized', message: 'Session not found', statusCode: 401})
 
     const previousExitCode = process.exitCode
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: `cors list --project-id ${projectId}`,
       config,
       source: 'mcp',
@@ -368,7 +380,7 @@ describe('invokeSanityCli', () => {
   })
 
   test('reports invalid flags as a usage error', async () => {
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: 'cors list --no-such-flag',
       config,
       source: 'mcp',
@@ -383,7 +395,7 @@ describe('invokeSanityCli', () => {
   test.each(['hook list --no-such-flag', 'hook:list --no-such-flag'])(
     'resolves the topic alias in `%s` before applying the MCP policy',
     async (args) => {
-      const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+      const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
       expect(result.exitCode).toBe(2)
       expect(result.commandId).toBe('hooks:list')
@@ -403,7 +415,7 @@ describe('invokeSanityCli', () => {
     const previousCwd = process.cwd()
     process.chdir(fixtureDir)
     try {
-      const result = await invokeSanityCli({
+      const result = await invoke({
         args: 'cors list',
         config,
         source: 'mcp',
@@ -418,7 +430,7 @@ describe('invokeSanityCli', () => {
   })
 
   test('preserves actionable details from command errors', async () => {
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: 'backups list',
       config,
       source: 'mcp',
@@ -443,7 +455,7 @@ describe('invokeSanityCli', () => {
     'schemas list', // denied: requires a local project
     'bogus stuff', // does not exist at all
   ])('`%s` is rejected as unknown or unsupported', async (args) => {
-    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.commandId).toBeUndefined()
@@ -452,13 +464,13 @@ describe('invokeSanityCli', () => {
   })
 
   test('denied commands are indistinguishable from unknown commands', async () => {
-    const denied = await invokeSanityCli({
+    const denied = await invoke({
       args: 'login',
       config,
       source: 'mcp',
       token: 'user-token',
     })
-    const unknown = await invokeSanityCli({
+    const unknown = await invoke({
       args: 'bogus',
       config,
       source: 'mcp',
@@ -470,7 +482,7 @@ describe('invokeSanityCli', () => {
   })
 
   test('rejects empty args', async () => {
-    const result = await invokeSanityCli({args: '', config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args: '', config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.output).toContain('Unknown or unsupported command')
@@ -481,7 +493,7 @@ describe('invokeSanityCli', () => {
       .matchHeader('authorization', 'Bearer user-token')
       .reply(200, [corsOrigin('https://example.com')])
 
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: `cors list --project-id "${projectId}`,
       config,
       source: 'mcp',
@@ -497,7 +509,7 @@ describe('invokeSanityCli', () => {
     ['api users/me --input body.json', '--input', 'api'], // --input reads the host's filesystem or stdin
     ['api users/me --token other-user-token', '--token', 'api'], // --token overrides the MCP user's token
   ])('`%s` is refused by a conditional policy naming the flag', async (args, flag, commandId) => {
-    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.commandId).toBe(commandId)
@@ -509,7 +521,7 @@ describe('invokeSanityCli', () => {
     ['a file', 'api users/me -F body=@payload.json'],
     ['stdin', 'api users/me --field body=@-'],
   ])('`api` field values reading from %s are refused', async (_source, args) => {
-    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.output).toBe('This invocation of `api` is not supported here')
@@ -533,7 +545,7 @@ describe('invokeSanityCli', () => {
       'api users/me --anonymous -H " cOoKiE : sid=other-user-session"',
     ],
   ])('`api` %s headers using the %s are refused', async (_header, _style, args) => {
-    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.output).toBe('This invocation of `api` is not supported here')
@@ -543,7 +555,7 @@ describe('invokeSanityCli', () => {
     ['username and password', 'api https://user:pass@api.sanity.io/v1/users/me --anonymous'],
     ['username only', 'api https://user@api.sanity.io/v1/users/me --anonymous'],
   ])('`api` URLs embedding a %s are refused', async (_credentials, args) => {
-    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.output).toBe('This invocation of `api` is not supported here')
@@ -609,7 +621,7 @@ describe('invokeSanityCli', () => {
     // must not refuse it. The command is strict, so oclif's parser rejects
     // the unexpected positional instead — proving the invocation got past
     // the policy gate to real argument parsing.
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: ['docs', 'read', '/docs/studio/installation', '--', '--web'],
       config,
       source: 'mcp',
@@ -622,7 +634,7 @@ describe('invokeSanityCli', () => {
   test.each(['--help', 'help', 'sanity --help'])(
     '`%s` renders root help scoped to the policy surface',
     async (args) => {
-      const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+      const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
       expect(result.exitCode).toBe(0)
       expect(result.commandId).toBeUndefined()
@@ -642,7 +654,7 @@ describe('invokeSanityCli', () => {
   test.each(['cors --help', 'help cors'])(
     '`%s` renders topic help listing only invokable commands',
     async (args) => {
-      const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+      const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
       expect(result.exitCode).toBe(0)
       expect(result.commandId).toBeUndefined()
@@ -654,7 +666,7 @@ describe('invokeSanityCli', () => {
   )
 
   test.each(['hook --help', 'help hook'])('`%s` resolves topic aliases for help', async (args) => {
-    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(0)
     expect(result.commandId).toBeUndefined()
@@ -664,7 +676,7 @@ describe('invokeSanityCli', () => {
   test.each(['hook list --help', 'help hook list'])(
     '`%s` resolves topic aliases for command help',
     async (args) => {
-      const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+      const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
       expect(result.exitCode).toBe(0)
       expect(result.commandId).toBe('hooks:list')
@@ -673,7 +685,7 @@ describe('invokeSanityCli', () => {
   )
 
   test('`-h` is not a help flag, matching the regular CLI dispatch', async () => {
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: 'cors list -h',
       config,
       source: 'mcp',
@@ -685,7 +697,7 @@ describe('invokeSanityCli', () => {
   })
 
   test('topic help omits denied commands within the topic', async () => {
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: 'datasets --help',
       config,
       source: 'mcp',
@@ -702,7 +714,7 @@ describe('invokeSanityCli', () => {
   test.each(['cors list --help', 'help cors list', 'cors:list --help'])(
     '`%s` renders command help with usage and flags',
     async (args) => {
-      const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+      const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
       expect(result.exitCode).toBe(0)
       expect(result.commandId).toBe('cors:list')
@@ -713,7 +725,7 @@ describe('invokeSanityCli', () => {
   )
 
   test('reports a root command id for command-specific help', async () => {
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: 'api --help',
       config,
       source: 'mcp',
@@ -731,7 +743,7 @@ describe('invokeSanityCli', () => {
   ])('`%s` omits the policy-denied %s flag', async (args, deniedFlag) => {
     // Help must not advertise surface the policy refuses: the flag disappears
     // from FLAGS/USAGE and examples demonstrating it are dropped.
-    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(0)
     expect(result.output).toContain('USAGE')
@@ -739,7 +751,7 @@ describe('invokeSanityCli', () => {
   })
 
   test('`api --help` omits the policy-denied --token flag definition', async () => {
-    const result = await invokeSanityCli({
+    const result = await invoke({
       args: 'api --help',
       config,
       source: 'mcp',
@@ -756,9 +768,9 @@ describe('invokeSanityCli', () => {
     // shared config and later help calls lose commands (or execute them)
     const opts = {config, source: 'mcp', token: 'user-token'} as const
 
-    const first = await invokeSanityCli({args: 'cors --help', ...opts})
-    await invokeSanityCli({args: 'cors list --help', ...opts})
-    const second = await invokeSanityCli({args: 'cors --help', ...opts})
+    const first = await invoke({args: 'cors --help', ...opts})
+    await invoke({args: 'cors list --help', ...opts})
+    const second = await invoke({args: 'cors --help', ...opts})
 
     expect(second.output).toContain('cors list')
     expect(second.output).toBe(first.output)
@@ -770,7 +782,7 @@ describe('invokeSanityCli', () => {
     'datasets export --help', // real command under a visible topic, denied
     'bogus --help', // does not exist at all
   ])('`%s` is rejected identically to an unknown command', async (args) => {
-    const result = await invokeSanityCli({args, config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
     expect(result.exitCode).toBe(2)
     expect(result.commandId).toBeUndefined()

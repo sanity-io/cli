@@ -22,14 +22,14 @@ function getClient(token?: string): Promise<SanityClient> {
   })
 }
 
-async function fetchAllPages<T>(client: SanityClient, uri: string): Promise<T[]> {
+async function fetchAllPages<T>(client: SanityClient, url: string): Promise<T[]> {
   const items: T[] = []
   let cursor: string | null = null
 
   do {
     const response: PaginatedResponse<T> = await client.request<PaginatedResponse<T>>({
       query: cursor === null ? {} : {nextCursor: cursor},
-      uri,
+      url,
     })
     items.push(...response.data)
     cursor = response.nextCursor
@@ -81,7 +81,7 @@ export async function createToken(options: CreateTokenOptions): Promise<RobotWit
     },
     method: 'POST',
     query: sendNotification === false ? {sendNotification: 'false'} : {},
-    uri: `/access/project/${projectId}/robots`,
+    url: `/access/project/${projectId}/robots`,
   })
 }
 
@@ -105,7 +105,7 @@ export async function deleteToken(options: DeleteTokenOptions): Promise<void> {
 
   return client.request({
     method: 'DELETE',
-    uri: `/access/project/${projectId}/robots/${tokenId}`,
+    url: `/access/project/${projectId}/robots/${tokenId}`,
   })
 }
 
@@ -123,7 +123,7 @@ export async function rotateToken(token: string): Promise<RobotWithToken> {
 
   return client.request<RobotWithToken>({
     method: 'POST',
-    uri: '/access/robots/me/rotate',
+    url: '/access/robots/me/rotate',
   })
 }
 

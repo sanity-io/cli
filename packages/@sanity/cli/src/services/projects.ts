@@ -46,7 +46,7 @@ export async function createProject(options: CreateProjectOptions): Promise<Crea
         },
       },
       method: 'POST',
-      uri: '/projects',
+      url: '/projects',
     })
 
     return {
@@ -103,7 +103,7 @@ export async function getProjectRoles(projectId: string) {
     requireUser: true,
   })
 
-  return client.request<Role[]>({uri: `/projects/${projectId}/roles`})
+  return client.request<Role[]>({url: `/projects/${projectId}/roles`})
 }
 
 interface InviteUserOptions {
@@ -122,7 +122,7 @@ export async function inviteUser({email, projectId, role}: InviteUserOptions) {
     body: {email, role},
     maxRedirects: 0,
     method: 'POST',
-    uri: `/invitations/project/${projectId}`,
+    url: `/invitations/project/${projectId}`,
     useGlobalApi: true,
   })
 }
@@ -146,7 +146,7 @@ export async function getProjectInvites(projectId: string) {
     requireUser: true,
   })
 
-  return client.request<Invite[]>({uri: `/invitations/project/${projectId}`})
+  return client.request<Invite[]>({url: `/invitations/project/${projectId}`})
 }
 
 export async function updateProjectInitializedAt(projectId: string) {
@@ -156,13 +156,13 @@ export async function updateProjectInitializedAt(projectId: string) {
     requireUser: true,
   })
 
-  const project = await client.request<SanityProject>({uri: `/projects/${projectId}`})
+  const project = await client.request<SanityProject>({url: `/projects/${projectId}`})
 
   if (!project?.metadata?.cliInitializedAt) {
     await client.request({
       body: {metadata: {cliInitializedAt: new Date().toISOString()}},
       method: 'PATCH',
-      uri: `/projects/${projectId}`,
+      url: `/projects/${projectId}`,
     })
   }
 }
@@ -177,6 +177,6 @@ export async function updateProjectInitalTemplate(projectId: string, templateNam
   await client.request({
     body: {metadata: {initialTemplate: templateName}},
     method: 'PATCH',
-    uri: `/projects/${projectId}`,
+    url: `/projects/${projectId}`,
   })
 }

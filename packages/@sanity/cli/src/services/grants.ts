@@ -10,5 +10,5 @@ export async function getUserGrants(): Promise<UserGrantsResponse> {
     requireUser: true,
   })
 
-  return client.request<UserGrantsResponse>({uri: '/users/me/grants'})
+  return client.request<UserGrantsResponse>({url: '/users/me/grants'})
 }

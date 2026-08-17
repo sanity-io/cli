@@ -24,13 +24,13 @@ export async function logout(token?: string) {
     client = client.withConfig({token})
   }
 
-  return client.request({method: 'POST', uri: '/auth/logout'})
+  return client.request({method: 'POST', url: '/auth/logout'})
 }
 
 export async function getProviders() {
   const client = await getUnauthenticatedClient()
 
-  return client.request<ProvidersResponse>({uri: '/auth/providers'})
+  return client.request<ProvidersResponse>({url: '/auth/providers'})
 }
 
 export async function getVercelProviderUrl() {
@@ -42,12 +42,12 @@ export async function getSSOProviders(orgSlug: string) {
   const client = await getUnauthenticatedClient()
 
   return client.request<SamlLoginProvider[]>({
-    uri: `/auth/organizations/by-slug/${orgSlug}/providers`,
+    url: `/auth/organizations/by-slug/${orgSlug}/providers`,
   })
 }
 
 export async function getTokenDetails(queryString: string) {
   const client = await getUnauthenticatedClient()
 
-  return client.request<TokenDetails>({uri: `/auth/fetch${queryString}`})
+  return client.request<TokenDetails>({url: `/auth/fetch${queryString}`})
 }

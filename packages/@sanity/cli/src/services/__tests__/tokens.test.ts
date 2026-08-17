@@ -72,7 +72,7 @@ describe('createToken', () => {
       },
       method: 'POST',
       query: {},
-      uri: `/access/project/${testProjectId}/robots`,
+      url: `/access/project/${testProjectId}/robots`,
     })
     expect(result).toEqual(robotWithToken)
   })
@@ -136,7 +136,7 @@ describe('deleteToken', () => {
 
     expect(mockRequest).toHaveBeenCalledWith({
       method: 'DELETE',
-      uri: `/access/project/${testProjectId}/robots/robot-1`,
+      url: `/access/project/${testProjectId}/robots/robot-1`,
     })
   })
 
@@ -163,7 +163,7 @@ describe('rotateToken', () => {
     })
     expect(mockRequest).toHaveBeenCalledWith({
       method: 'POST',
-      uri: '/access/robots/me/rotate',
+      url: '/access/robots/me/rotate',
     })
     expect(result).toEqual(rotatedRobot)
   })
@@ -183,7 +183,7 @@ describe('getTokens', () => {
 
     expect(mockRequest).toHaveBeenCalledWith({
       query: {},
-      uri: `/access/project/${testProjectId}/robots`,
+      url: `/access/project/${testProjectId}/robots`,
     })
     expect(tokens).toEqual([testRobot])
   })
@@ -197,11 +197,11 @@ describe('getTokens', () => {
 
     expect(mockRequest).toHaveBeenNthCalledWith(1, {
       query: {},
-      uri: `/access/project/${testProjectId}/robots`,
+      url: `/access/project/${testProjectId}/robots`,
     })
     expect(mockRequest).toHaveBeenNthCalledWith(2, {
       query: {nextCursor: 'cursor-1'},
-      uri: `/access/project/${testProjectId}/robots`,
+      url: `/access/project/${testProjectId}/robots`,
     })
     expect(tokens.map((token) => token.id)).toEqual(['robot-1', 'robot-2'])
   })
@@ -273,11 +273,11 @@ describe('getTokenRoles', () => {
 
     expect(mockRequest).toHaveBeenNthCalledWith(1, {
       query: {},
-      uri: `/access/project/${testProjectId}/roles`,
+      url: `/access/project/${testProjectId}/roles`,
     })
     expect(mockRequest).toHaveBeenNthCalledWith(2, {
       query: {nextCursor: 'cursor-1'},
-      uri: `/access/project/${testProjectId}/roles`,
+      url: `/access/project/${testProjectId}/roles`,
     })
     expect(roles.map((role) => role.name)).toEqual(['viewer', 'editor'])
   })

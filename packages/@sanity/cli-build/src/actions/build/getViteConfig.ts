@@ -12,7 +12,6 @@ import {
 } from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
-import debug from 'debug'
 import {
   type ConfigEnv,
   esmExternalRequirePlugin,
@@ -26,6 +25,7 @@ import {
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
+import {buildDebug} from './buildDebug.js'
 import {VENDOR_DIR} from './constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
@@ -437,10 +437,10 @@ export async function extendViteConfigWithUserConfig(
   let config = defaultConfig
 
   if (typeof userConfig === 'function') {
-    debug('Extending vite config using user-specified function')
+    buildDebug('Extending vite config using user-specified function')
     config = await userConfig(config, env)
   } else if (typeof userConfig === 'object') {
-    debug('Merging vite config using user-specified object')
+    buildDebug('Merging vite config using user-specified object')
     config = mergeConfig(config, userConfig)
   }
 

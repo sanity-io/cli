@@ -24,7 +24,7 @@ export async function getMembers(memberIds: string[]) {
     requireUser: true,
   })
 
-  return client.request<User | User[]>({uri: `/users/${memberIds.join(',')}`})
+  return client.request<User | User[]>({url: `/users/${memberIds.join(',')}`})
 }
 
 /**

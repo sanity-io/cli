@@ -1,42 +1,40 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {getGlobalCliClient, getProjectCliClient} from '../apiClient.js'
 import {runWithCliExecutionContext} from '../executionContext.js'
 
 const mockCreateClient = vi.hoisted(() => vi.fn())
-const mockRequesterClone = vi.hoisted(() => vi.fn())
-const mockRequesterUse = vi.hoisted(() => vi.fn())
 const mockGetCliToken = vi.hoisted(() => vi.fn())
-const mockGenerateHelpUrl = vi.hoisted(() => vi.fn())
-const mockIsHttpError = vi.hoisted(() => vi.fn())
-const mockCreateIsolatedRequester = vi.hoisted(() => vi.fn())
+const mockCreateNodeFetch = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/client', () => ({
+// Keep the real exports (enrichAuthError depends on the real isHttpError).
+vi.mock('@sanity/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/client')>()),
   createClient: mockCreateClient,
-  isHttpError: mockIsHttpError,
-  requester: {
-    clone: mockRequesterClone,
-  },
+}))
+
+vi.mock('get-it/node', () => ({
+  createNodeFetch: mockCreateNodeFetch,
 }))
 
 vi.mock('../config/cli/cliUserConfig.js', () => ({
   getCliToken: mockGetCliToken,
 }))
 
-vi.mock('../request/createIsolatedRequester.js', () => ({
-  createIsolatedRequester: mockCreateIsolatedRequester,
-}))
-
-vi.mock('../util/generateHelpUrl.js', () => ({
-  generateHelpUrl: mockGenerateHelpUrl,
-}))
+function unauthorizedError(): Error {
+  return Object.assign(new Error('Unauthorized - Session not found'), {
+    response: {
+      body: {},
+      headers: {},
+      method: 'GET',
+      statusCode: 401,
+      url: 'https://api.sanity.io/v1/users/me',
+    },
+    statusCode: 401,
+  })
+}
 
 describe('getGlobalCliClient', () => {
-  beforeEach(() => {
-    const mockRequester = {use: mockRequesterUse}
-    mockRequesterClone.mockReturnValueOnce(mockRequester)
-    mockCreateIsolatedRequester.mockReturnValue(mockRequester)
-  })
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
@@ -166,14 +164,68 @@ describe('getGlobalCliClient', () => {
     )
   })
 
-  test('uses an isolated requester inside an execution context', async () => {
+  test('does not replace the client transport outside execution contexts', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+
+    await getGlobalCliClient({apiVersion: '2021-06-07'})
+
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      expect.not.objectContaining({resolveFetch: expect.anything()}),
+    )
+  })
+
+  test('injects an isolated fetch resolver inside an execution context', async () => {
     mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
 
     await runWithCliExecutionContext({}, () => getGlobalCliClient({apiVersion: '2021-06-07'}))
 
-    expect(mockCreateIsolatedRequester).toHaveBeenCalledOnce()
-    expect(mockRequesterClone).not.toHaveBeenCalled()
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      expect.objectContaining({resolveFetch: expect.any(Function)}),
+    )
+  })
+
+  test('isolated fetch strips the lineage header from the embedding process', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+    const baseFetch = vi.fn().mockResolvedValue({ok: true})
+    mockCreateNodeFetch.mockReturnValue(baseFetch)
+
+    await runWithCliExecutionContext({}, () => getGlobalCliClient({apiVersion: '2021-06-07'}))
+
+    const {resolveFetch} = mockCreateClient.mock.calls[0][0]
+    const isolatedFetch = resolveFetch()
+    await isolatedFetch('https://api.sanity.io/v1/users/me', {
+      headers: {'x-other': 'kept', 'x-sanity-lineage': 'host-lineage'},
+    })
+
+    expect(baseFetch).toHaveBeenCalledOnce()
+    const [url, init] = baseFetch.mock.calls[0]
+    expect(url).toBe('https://api.sanity.io/v1/users/me')
+    expect(new Headers(init.headers).has('x-sanity-lineage')).toBe(false)
+    expect(new Headers(init.headers).get('x-other')).toBe('kept')
+  })
+
+  test('isolated fetch uses the context fetch when the host supplies one', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+    const contextFetch = vi.fn().mockResolvedValue({ok: true})
+
+    await runWithCliExecutionContext({fetch: contextFetch}, () =>
+      getGlobalCliClient({apiVersion: '2021-06-07'}),
+    )
+
+    const {resolveFetch} = mockCreateClient.mock.calls[0][0]
+    const isolatedFetch = resolveFetch()
+    await isolatedFetch('https://api.sanity.io/v1/users/me', {
+      headers: {'x-sanity-lineage': 'host-lineage'},
+    })
+
+    expect(mockCreateNodeFetch).not.toHaveBeenCalled()
+    expect(contextFetch).toHaveBeenCalledOnce()
+    const [, init] = contextFetch.mock.calls[0]
+    expect(new Headers(init.headers).has('x-sanity-lineage')).toBe(false)
   })
 
   test('explicit client apiHost overrides invocation environment', async () => {
@@ -193,14 +245,80 @@ describe('getGlobalCliClient', () => {
       }),
     )
   })
+
+  test('401 rejections from client methods carry the login hint', async () => {
+    mockGetCliToken.mockResolvedValue('stored-token')
+    mockCreateClient.mockReturnValue({
+      request: vi.fn().mockRejectedValue(unauthorizedError()),
+      withConfig: vi.fn(),
+    })
+
+    const client = await getGlobalCliClient({apiVersion: '2021-06-07'})
+
+    await expect(client.request({url: '/users/me'})).rejects.toMatchObject({
+      message: expect.stringContaining('sanity login'),
+    })
+  })
+
+  test('401 rejections from sub-clients carry the login hint', async () => {
+    mockGetCliToken.mockResolvedValue('stored-token')
+    mockCreateClient.mockReturnValue({
+      datasets: {list: vi.fn().mockRejectedValue(unauthorizedError())},
+      request: vi.fn(),
+      withConfig: vi.fn(),
+    })
+
+    const client = await getGlobalCliClient({apiVersion: '2021-06-07'})
+
+    await expect(client.datasets.list()).rejects.toMatchObject({
+      message: expect.stringContaining('sanity login'),
+    })
+  })
+
+  test('clients derived via withConfig keep the 401 login hint', async () => {
+    mockGetCliToken.mockResolvedValue('stored-token')
+    const derived = {
+      request: vi.fn().mockRejectedValue(unauthorizedError()),
+      withConfig: vi.fn(),
+    }
+    mockCreateClient.mockReturnValue({
+      request: vi.fn(),
+      withConfig: vi.fn().mockReturnValue(derived),
+    })
+
+    const client = await getGlobalCliClient({apiVersion: '2021-06-07'})
+
+    await expect(client.withConfig({dataset: 'other'}).request({url: '/x'})).rejects.toMatchObject({
+      message: expect.stringContaining('sanity login'),
+    })
+  })
+
+  test('non-401 rejections pass through unchanged', async () => {
+    mockGetCliToken.mockResolvedValue('stored-token')
+    const notFound = Object.assign(new Error('Not Found'), {
+      response: {
+        body: {},
+        headers: {},
+        method: 'GET',
+        statusCode: 404,
+        url: 'https://api.sanity.io/v1/doc/x',
+      },
+      statusCode: 404,
+    })
+    mockCreateClient.mockReturnValue({
+      request: vi.fn().mockRejectedValue(notFound),
+      withConfig: vi.fn(),
+    })
+
+    const client = await getGlobalCliClient({apiVersion: '2021-06-07'})
+
+    await expect(client.request({url: '/doc/x'})).rejects.toMatchObject({
+      message: 'Not Found',
+    })
+  })
 })
 
 describe('getProjectCliClient', () => {
-  beforeEach(() => {
-    const mockRequester = {use: mockRequesterUse}
-    mockRequesterClone.mockReturnValueOnce(mockRequester)
-    mockCreateIsolatedRequester.mockReturnValue(mockRequester)
-  })
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
@@ -319,145 +437,17 @@ describe('getProjectCliClient', () => {
       }),
     )
   })
-})
 
-describe('authErrors middleware', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    vi.unstubAllEnvs()
-  })
-
-  test('enhances 401 errors with helpful login message', async () => {
-    let onErrorHandler: ((err: Error | null) => Error | null) | undefined
-    const mockRequester = {
-      use: mockRequesterUse.mockImplementation((middleware: {onError?: typeof onErrorHandler}) => {
-        onErrorHandler = middleware.onError
-      }),
-    }
-    mockRequesterClone.mockReturnValue(mockRequester)
-    mockCreateClient.mockResolvedValue({})
-    mockGetCliToken.mockResolvedValue('stored-token')
-    mockGenerateHelpUrl.mockReturnValue('https://help.sanity.io/cli-errors')
-
-    await getGlobalCliClient({apiVersion: '2021-06-07'})
-
-    expect(onErrorHandler).toBeDefined()
-
-    const error = new Error('Unauthorized') as Error & {
-      response: {body: Record<string, never>}
-      statusCode: number
-    }
-    error.response = {body: {}}
-    error.statusCode = 401
-
-    mockIsHttpError.mockReturnValue(true)
-
-    const result = onErrorHandler!(error)
-
-    expect(result).toBe(error)
-    expect(result).not.toBeNull()
-    expect(result!.message).toContain('Unauthorized')
-    expect(result!.message).toContain('You may need to login again with')
-    expect(result!.message).toContain('sanity login')
-    expect(result!.message).toContain('https://help.sanity.io/cli-errors')
-    expect(mockGenerateHelpUrl).toHaveBeenCalledWith('cli-errors')
-  })
-
-  test('links to project members for projectUserNotFoundError', async () => {
-    vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
-
-    let onErrorHandler: ((err: Error | null) => Error | null) | undefined
-    const mockRequester = {
-      use: mockRequesterUse.mockImplementation((middleware: {onError?: typeof onErrorHandler}) => {
-        onErrorHandler = middleware.onError
-      }),
-    }
-    mockRequesterClone.mockReturnValue(mockRequester)
+  test('injects an isolated fetch resolver inside an execution context', async () => {
     mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
 
-    await getProjectCliClient({
-      apiVersion: '2021-06-07',
-      projectId: 'test-project',
-    })
-
-    expect(onErrorHandler).toBeDefined()
-
-    const error = new Error('Project user not found') as Error & {
-      response: {
-        body: {error: {type: string}}
-      }
-      statusCode: number
-    }
-    error.response = {
-      body: {
-        error: {type: 'projectUserNotFoundError'},
-      },
-    }
-    error.statusCode = 401
-
-    mockIsHttpError.mockReturnValue(true)
-
-    const result = onErrorHandler!(error)
-
-    expect(result).toBe(error)
-    expect(result?.message).toBe(
-      'Project user not found. Add this account as a project member: https://www.sanity.io/manage/project/test-project/members.',
+    await runWithCliExecutionContext({}, () =>
+      getProjectCliClient({apiVersion: '2021-06-07', projectId: 'test-project'}),
     )
-    expect(result?.message).not.toContain('sanity login')
-  })
 
-  test('returns non-401 HTTP errors unchanged', async () => {
-    let onErrorHandler: ((err: Error | null) => Error | null) | undefined
-    const mockRequester = {
-      use: mockRequesterUse.mockImplementation((middleware: {onError?: typeof onErrorHandler}) => {
-        onErrorHandler = middleware.onError
-      }),
-    }
-    mockRequesterClone.mockReturnValue(mockRequester)
-    mockCreateClient.mockResolvedValue({})
-    mockGetCliToken.mockResolvedValue('stored-token')
-
-    await getGlobalCliClient({apiVersion: '2021-06-07'})
-
-    const error = new Error('Not Found') as Error & {
-      response: {body: Record<string, never>}
-      statusCode: number
-    }
-    error.response = {body: {}}
-    error.statusCode = 404
-
-    mockIsHttpError.mockReturnValue(true)
-
-    const result = onErrorHandler!(error)
-
-    expect(result).toBe(error)
-    expect(result).not.toBeNull()
-    expect(result!.message).toBe('Not Found')
-    expect(result!.message).not.toContain('login')
-  })
-
-  test('returns non-HTTP errors unchanged', async () => {
-    let onErrorHandler: ((err: Error | null) => Error | null) | undefined
-    const mockRequester = {
-      use: mockRequesterUse.mockImplementation((middleware: {onError?: typeof onErrorHandler}) => {
-        onErrorHandler = middleware.onError
-      }),
-    }
-    mockRequesterClone.mockReturnValue(mockRequester)
-    mockCreateClient.mockResolvedValue({})
-    mockGetCliToken.mockResolvedValue('stored-token')
-
-    await getGlobalCliClient({apiVersion: '2021-06-07'})
-
-    const error = new Error('Generic error')
-
-    mockIsHttpError.mockReturnValue(false)
-
-    const result = onErrorHandler!(error)
-
-    expect(result).toBe(error)
-    expect(result).not.toBeNull()
-    expect(result!.message).toBe('Generic error')
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      expect.objectContaining({resolveFetch: expect.any(Function)}),
+    )
   })
 })
