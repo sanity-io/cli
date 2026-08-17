@@ -447,6 +447,20 @@ describe('checkStudioDependencyVersions', () => {
       )
     })
 
+    test('should treat @sanity/ui below v2 as unsupported with the supported range', async () => {
+      setupMocks({
+        dependencies: {'@sanity/ui': '^1.0.0'},
+        localVersions: {'@sanity/ui': '1.0.0'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('@sanity/ui (installed: 1.0.0, want: ^2 || ^3 || ^4)'),
+        {exit: 1},
+      )
+    })
+
     test('should warn about @sanity/ui versions newer than supported as untested', async () => {
       setupMocks({
         dependencies: {'@sanity/ui': '^5.0.0'},
@@ -462,7 +476,7 @@ describe('checkStudioDependencyVersions', () => {
         ),
       )
       expect(mockOutput.warn).toHaveBeenCalledWith(
-        expect.stringContaining('@sanity/ui (installed: 5.0.0, want: ^3)'),
+        expect.stringContaining('@sanity/ui (installed: 5.0.0, want: ^2 || ^3 || ^4)'),
       )
       expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('To downgrade, run either:'),

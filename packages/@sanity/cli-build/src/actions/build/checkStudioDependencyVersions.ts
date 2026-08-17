@@ -121,12 +121,14 @@ You _may_ encounter bugs while using these versions.
 
 function listPackages(pkgs: PackageInfo[]) {
   return pkgs
-    .map(
-      (pkg) =>
-        `${pkg.name} (installed: ${pkg.installed}, want: ${
-          pkg.deprecatedBelow || pkg.supported.join(' || ')
-        })`,
-    )
+    .map((pkg) => {
+      const want =
+        pkg.isDeprecated && !pkg.isUnsupported && !pkg.isUntested
+          ? pkg.deprecatedBelow
+          : pkg.supported.join(' || ')
+
+      return `${pkg.name} (installed: ${pkg.installed}, want: ${want})`
+    })
     .join('\n  ')
 }
 
