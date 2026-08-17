@@ -3,8 +3,8 @@ import {defineConfig} from '@sanity/pkg-utils'
 
 export default defineConfig({
   ...baseConfig,
-  extract: {
-    ...baseConfig.extract,
+  tsdoc: {
+    ...baseConfig.tsdoc,
     // Disable rules for now
     rules: {
       'ae-internal-missing-underscore': 'off',
