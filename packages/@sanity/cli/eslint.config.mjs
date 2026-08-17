@@ -82,12 +82,7 @@ export default [
         {
           message: 'Use a named value from `exitCodes` instead of a raw exit code number.',
           selector:
-            "CallExpression[callee.type='MemberExpression'][callee.property.name='exit']:not([callee.object.name='process'])[arguments.0.type='Literal'][arguments.0.raw=/^[0-9]+$/]",
-        },
-        {
-          message: 'Use `this.exit(exitCodes.*)` instead of terminating the process directly.',
-          selector:
-            "CallExpression[callee.type='MemberExpression'][callee.object.name='process'][callee.property.name='exit']",
+            "CallExpression[callee.type='MemberExpression'][callee.property.name='exit'][arguments.0.type='Literal'][arguments.0.raw=/^[0-9]+$/]",
         },
       ],
     },
