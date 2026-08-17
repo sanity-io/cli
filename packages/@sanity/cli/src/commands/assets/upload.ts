@@ -17,6 +17,16 @@ const uploadAssetDebug = subdebug('assets:upload')
 const DATASET_ASSET_LIMITS_URL =
   'https://www.sanity.io/docs/content-lake/technical-limits#k2c53dc30e24b'
 
+function isProjectUserNotFoundError(body: Record<string, unknown>): boolean {
+  const responseError = body.error
+  return (
+    typeof responseError === 'object' &&
+    responseError !== null &&
+    'type' in responseError &&
+    responseError.type === 'projectUserNotFoundError'
+  )
+}
+
 function getAssetUploadErrorMessage(error: unknown): string {
   if (!isHttpError(error)) {
     return `Asset upload failed: ${getErrorMessage(error)}`
@@ -34,12 +44,13 @@ function getAssetUploadErrorMessage(error: unknown): string {
     typeof body.statusCode === 'number' || typeof body.statusCode === 'string'
       ? body.statusCode
       : error.statusCode
-  const responseMessage = getErrorMessage(error)
+  const projectUserNotFound = isProjectUserNotFoundError(body)
+  const responseMessage = projectUserNotFound ? error.message : getErrorMessage(error)
   const message = /[.!?]$/.test(responseMessage) ? responseMessage : `${responseMessage}.`
   const details = typeof body.details === 'string' ? `\n\nDetails:\n${body.details}` : ''
   const response = `Asset upload failed: HTTP ${statusCode} - ${responseError}\n${message}${details}`
 
-  if (error.statusCode === 401) {
+  if (error.statusCode === 401 && !projectUserNotFound) {
     return `${response}\n\nRun \`sanity login\` to authenticate, then try again.`
   }
   if (error.statusCode === 403) {

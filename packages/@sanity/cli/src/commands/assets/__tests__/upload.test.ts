@@ -217,6 +217,59 @@ Check the asset requirements and current technical limits, then try again: https
     expect(error?.oclif?.exit).toBe(exitCodes.RUNTIME_ERROR)
   })
 
+  test('suggests logging in again for an unauthorized upload', async () => {
+    mockUploadAssetWithProgress.mockRejectedValue(
+      Object.assign(new Error('Unauthorized'), {
+        response: {
+          body: {error: 'Unauthorized', message: 'Unauthorized', statusCode: 401},
+          headers: {},
+          method: 'POST',
+          statusCode: 401,
+          statusMessage: 'Unauthorized',
+          url: 'https://test-project.api.sanity.io/v2024-06-24/assets/images/production',
+        },
+        statusCode: 401,
+      }),
+    )
+
+    const {error} = await testCommand(UploadAssetCommand, ['--file', './hero.png'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('Run `sanity login` to authenticate, then try again')
+  })
+
+  test('preserves project membership guidance without suggesting login', async () => {
+    const membersUrl = 'https://www.sanity.io/manage/project/test-project/members'
+    mockUploadAssetWithProgress.mockRejectedValue(
+      Object.assign(
+        new Error(`Project user not found. Add this account as a project member: ${membersUrl}.`),
+        {
+          response: {
+            body: {
+              error: {type: 'projectUserNotFoundError'},
+              message: 'Project user not found',
+              statusCode: 401,
+            },
+            headers: {},
+            method: 'POST',
+            statusCode: 401,
+            statusMessage: 'Unauthorized',
+            url: 'https://test-project.api.sanity.io/v2024-06-24/assets/images/production',
+          },
+          statusCode: 401,
+        },
+      ),
+    )
+
+    const {error} = await testCommand(UploadAssetCommand, ['--file', './hero.png'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain(`Add this account as a project member: ${membersUrl}`)
+    expect(error?.message).not.toContain('sanity login')
+  })
+
   test('requires --file', async () => {
     const {error} = await testCommand(UploadAssetCommand, [], {mocks: defaultMocks})
 
