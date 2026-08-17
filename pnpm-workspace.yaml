@@ -44,7 +44,6 @@ catalog:
   '@vitest/coverage-istanbul': ^4.1.10
   nock: ^14.0.15
   node-pty: ^1.1.0
-  dotenv: ^17.4.2
   strip-ansi: ^7.1.0
 
   # CLI Framework
@@ -97,7 +96,6 @@ minimumReleaseAgeExclude:
   - 'sanity'
   - 'sanity-plugin-media'
   - 'use-effect-event'
-  - 'dotenv'
   - 'oxfmt'
   - '@oxfmt/*'
   - 'vite'

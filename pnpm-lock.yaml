@@ -66,9 +66,6 @@ catalogs:
     babel-plugin-react-compiler:
       specifier: ^1.0.0
       version: 1.0.0
-    dotenv:
-      specifier: ^17.4.2
-      version: 17.4.2
     empathic:
       specifier: ^2.0.1
       version: 2.0.1
@@ -1130,9 +1127,6 @@ importers:
       create-sanity:
         specifier: workspace:*
         version: link:../../create-sanity
-      dotenv:
-        specifier: 'catalog:'
-        version: 17.4.2
       eslint:
         specifier: 'catalog:'
         version: 10.7.0(jiti@2.7.0)
@@ -6196,10 +6190,6 @@ packages:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
 
-  dotenv@17.4.2:
-    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
-    engines: {node: '>=12'}
-
   dts-resolver@3.0.0:
     resolution: {integrity: sha512-1T1f+z+4tl9XD+m+0HBgWoL/nm0bOIffyWaUuUSBlFg/86IWvfx+wjNaO/ybU0AJzG9/Mi5hBUgGV6zCmWEN7Q==}
     engines: {node: ^22.18.0 || >=24.0.0}
@@ -10677,14 +10667,14 @@ snapshots:
     dependencies:
       '@codemirror/language': 6.12.4
       '@codemirror/state': 6.7.1
-      '@codemirror/view': 6.43.6
+      '@codemirror/view': 6.43.8
       '@lezer/common': 1.5.2
 
   '@codemirror/commands@6.10.4':
     dependencies:
       '@codemirror/language': 6.12.4
       '@codemirror/state': 6.7.1
-      '@codemirror/view': 6.43.6
+      '@codemirror/view': 6.43.8
       '@lezer/common': 1.5.2
 
   '@codemirror/lang-css@6.3.1':
@@ -15170,8 +15160,6 @@ snapshots:
   dot-prop@5.3.0:
     dependencies:
       is-obj: 2.0.0
-
-  dotenv@17.4.2: {}
 
   dts-resolver@3.0.0(oxc-resolver@11.21.3):
     optionalDependencies:

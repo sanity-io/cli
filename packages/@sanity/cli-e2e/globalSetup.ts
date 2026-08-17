@@ -3,7 +3,6 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
 import {setup as setupFixtures, teardown as teardownFixtures} from '@sanity/cli-test/vitest'
-import {config as loadDotenv} from 'dotenv'
 import {type TestProject} from 'vitest/node'
 
 import {findBinaryPath, installFromTarball, packCli, packPackage} from './helpers/packCli.js'
@@ -14,7 +13,11 @@ let tarballPaths: string[] = []
 export async function setup(project: TestProject): Promise<void> {
   // Load .env file into process.env so tests can read SANITY_E2E_* vars.
   // Existing env vars take precedence (CI sets them directly).
-  loadDotenv({quiet: true})
+  try {
+    process.loadEnvFile()
+  } catch {
+    // Ignore if .env is missing
+  }
   // If E2E_BINARY_PATH is already set (e.g., npm registry mode from CI),
   // skip pack and use the provided binary.
   if (process.env.E2E_BINARY_PATH) {
