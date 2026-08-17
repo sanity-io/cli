@@ -20,11 +20,16 @@ const debug = subdebug('worker:getStudioWorkspaces')
  * NOTE: This function should only be called from a worker thread.
  *
  * @param configPath - The path to the studio config
+ * @param options - The function options
+ * @param options.allowMainThread - Whether to allow the logic to run on the main thread
  * @returns The workspaces
  * @internal
  */
-export async function getStudioWorkspaces(configPath: string): Promise<Workspace[]> {
-  if (isMainThread) {
+export async function getStudioWorkspaces(
+  configPath: string,
+  options?: {allowMainThread?: boolean},
+): Promise<Workspace[]> {
+  if (!options?.allowMainThread && isMainThread) {
     throw new Error('getStudioWorkspaces should only be called from a worker thread')
   }
   const isDirectory = (await stat(configPath)).isDirectory()
