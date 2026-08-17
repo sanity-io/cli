@@ -13,6 +13,8 @@ import {promptForProject} from '../../prompts/promptForProject.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
+class ImportInterruptedError extends Error {}
+
 export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand> {
   static override args = {
     source: Args.string({
@@ -167,9 +169,12 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       process.once('SIGINT', () => {
         subscription.unsubscribe()
         spin.fail('Import interrupted.')
-        process.exit(exitCodes.SIGINT)
+        reject(new ImportInterruptedError())
       })
     }).catch((error) => {
+      if (error instanceof ImportInterruptedError) {
+        this.exit(exitCodes.SIGINT)
+      }
       this.error(styleText('red', error.message), {exit: exitCodes.RUNTIME_ERROR})
     })
   }
