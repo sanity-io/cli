@@ -15,7 +15,10 @@ export const studioDependencies = {
 
   devDependencies: {
     // Linting/tooling
-    '@sanity/eslint-config-studio': 'latest',
+    // Pinned to a major range rather than `latest`: this package declares a peer dependency on
+    // `eslint`, so a floating specifier lets a new major (with a new eslint peer range) break
+    // `sanity init` with ERESOLVE. Bump this together with `eslint` below.
+    '@sanity/eslint-config-studio': '^6',
     // When using typescript, we'll want the these types too, so might as well install them
     '@types/react': '^19.2.14',
     eslint: '^9.28',
