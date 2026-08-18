@@ -104,7 +104,11 @@ describe('startDevServerRegistration', () => {
     const handle = await register({output})
 
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('"test-app" is already served'),
+      expect.stringContaining('The app "test-app" is already served'),
+      {exit: false},
+    )
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('give this app its own `slug`'),
       {exit: false},
     )
     // Nothing registered, so the workbench never sees it — and nothing to watch or release.
@@ -211,7 +215,7 @@ describe('startDevServerRegistration', () => {
     }
     await watcherUpdate(appRolePatch)
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('play the same role as the dev server running on port 3005'),
+      expect.stringContaining('serve the app "test-app" like the dev server running on port 3005'),
       {exit: false},
     )
     expect(update).not.toHaveBeenCalled()
@@ -268,9 +272,15 @@ describe('startDevServerRegistration', () => {
       output,
     })
 
+    // Config-phrased, and no slug advice — a config app can't change its slug
+    // (`unstable_defineMediaLibrary` hard-codes it).
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('"test-app" is already served'),
+      expect.stringContaining('A config for "test-app" is already served'),
       {exit: false},
+    )
+    expect(output.error).not.toHaveBeenCalledWith(
+      expect.stringContaining('give this app its own `slug`'),
+      expect.anything(),
     )
     expect(mockRegisterDevServer).not.toHaveBeenCalled()
   })

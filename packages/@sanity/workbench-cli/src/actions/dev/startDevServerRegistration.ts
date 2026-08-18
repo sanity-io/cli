@@ -71,6 +71,17 @@ function findSameRoleConflict(id: string, configOnly: boolean): DevServerManifes
   )
 }
 
+/**
+ * Remedy line for a same-role slug conflict, phrased for the role. Changing the
+ * slug is only real advice for an app — a config app's slug is fixed by the
+ * app it configures (e.g. `unstable_defineMediaLibrary` hard-codes it).
+ */
+function conflictRemedy(configOnly: boolean): string {
+  return configOnly
+    ? 'Stop that server first.'
+    : 'Stop that server, or give this app its own `slug` in sanity.cli.ts.'
+}
+
 /** The address the server actually bound — the live socket, which can differ from the configured port under non-strict ports. */
 function serverAddress(server: ViteDevServer) {
   const resolvedHost = server.config.server.host
@@ -106,10 +117,11 @@ export async function startDevServerRegistration(
   const devServer = id ? findSameRoleConflict(id, configOnly) : undefined
 
   if (id && devServer) {
+    const subject = configOnly ? `A config for "${id}"` : `The app "${id}"`
     output.error(
-      `The app "${id}" is already served by another dev server running on port ${devServer.port}, ` +
+      `${subject} is already served by another dev server running on port ${devServer.port}, ` +
         "so the workbench can't tell them apart and this one stays out of it. " +
-        'Stop that server, or give this app its own `slug` in sanity.cli.ts.',
+        conflictRemedy(configOnly),
       {exit: false},
     )
     return {close: async () => {}}
@@ -162,10 +174,11 @@ export async function startDevServerRegistration(
       if (id && nextConfigOnly !== registeredConfigOnly) {
         const conflict = findSameRoleConflict(id, nextConfigOnly)
         if (conflict) {
+          const subject = nextConfigOnly ? `a config for "${id}"` : `the app "${id}"`
           output.error(
-            `This change makes the app "${id}" play the same role as the dev server running on ` +
-              `port ${conflict.port}, so the workbench couldn't tell them apart — keeping the ` +
-              'previous registration. Stop that server, or give this app its own `slug` in sanity.cli.ts.',
+            `This change makes this dev server serve ${subject} like the dev server running on ` +
+              `port ${conflict.port} already does, so the workbench couldn't tell them apart — ` +
+              `keeping the previous registration. ${conflictRemedy(nextConfigOnly)}`,
             {exit: false},
           )
           return
