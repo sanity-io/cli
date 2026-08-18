@@ -181,7 +181,7 @@ describe('#dataset:copy', () => {
       await CopyDatasetCommand.run(['--list'])
       expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/failed to list dataset copy jobs.*boom/i),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
   })
@@ -192,7 +192,7 @@ describe('#dataset:copy', () => {
 
       expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/supply a valid jobId/i),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
     test('attaches to running job and shows progress', async () => {
@@ -222,7 +222,7 @@ describe('#dataset:copy', () => {
 
       expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/failed to attach to copy.*boom/i),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
 
@@ -476,7 +476,7 @@ describe('#dataset:copy', () => {
 
       expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/dataset copying failed: boom/i),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
 
@@ -487,7 +487,7 @@ describe('#dataset:copy', () => {
 
       expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
         expect.stringMatching(/failed to fetch datasets: boom/i),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
   })

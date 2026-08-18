@@ -1,5 +1,7 @@
 import {CLIError} from '@oclif/core/errors'
 
+import {exitCodes} from '../exitCodes.js'
+
 /**
  * Error thrown when a prompt is attempted in a non-interactive environment
  * (e.g., CI, non-TTY, piped stdin). Callers can catch this specific error
@@ -12,7 +14,7 @@ export class NonInteractiveError extends CLIError {
     super(
       `Cannot run "${promptName}" prompt in a non-interactive environment. ` +
         'Provide the required value via flags or environment variables, or run in an interactive terminal.',
-      {code: 'NON_INTERACTIVE', exit: 1},
+      {code: 'NON_INTERACTIVE', exit: exitCodes.RUNTIME_ERROR},
     )
     this.name = 'NonInteractiveError'
   }

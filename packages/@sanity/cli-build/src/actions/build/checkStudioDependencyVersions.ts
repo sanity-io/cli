@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core/package-manager'
 import {type Output} from '@sanity/cli-core/types'
 import {coerce, gtr, ltr, rcompare, satisfies, type SemVer} from 'semver'
@@ -114,7 +115,7 @@ You _may_ encounter bugs while using these versions.
 
   ${getUpgradeInstructions(unsupported)}
 `,
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
   }
 }

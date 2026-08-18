@@ -347,14 +347,16 @@ async function uploadStudioSchema(
   } catch (error) {
     deployDebug('Error deploying studio schemas and manifests', error)
     if (error instanceof SchemaExtractionError && error.validation?.length) {
-      output.error(formatSchemaValidation(error.validation), {exit: 1})
+      output.error(formatSchemaValidation(error.validation), {exit: exitCodes.RUNTIME_ERROR})
     }
-    output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
+    output.error(`Error deploying studio schemas and manifests: ${error}`, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   }
 
   if (!studioManifest) {
     output.error('Failed to generate studio manifest. Please check your schemas and manifests.', {
-      exit: 1,
+      exit: exitCodes.RUNTIME_ERROR,
     })
   }
 
