@@ -1,4 +1,4 @@
-import {exitCodes, isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, toError} from '@sanity/cli-core/errors'
 
 import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
@@ -43,7 +43,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
     try {
       const mcpResult = await setupMCP({
         explicit: true,
-        mode: isInteractive() ? 'prompt' : 'auto',
+        mode: this.resolveIsInteractive() ? 'prompt' : 'auto',
         output: this.output,
         skillsMode: 'skip',
       })
