@@ -60,6 +60,34 @@ export default [
     },
   },
   {
+    files: ['src/commands/**/*.ts'],
+    ignores: ['src/commands/**/*.test.ts', 'src/commands/**/__tests__/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          message:
+            'Dynamic imports are not allowed. Use `doImport` function from @sanity/cli-core instead.',
+          selector: 'ImportExpression',
+        },
+        {
+          message: 'Use `this.resolveIsInteractive()` instead of `process.stderr.isTTY`.',
+          selector:
+            "MemberExpression[property.name='isTTY'][object.type='MemberExpression'][object.object.name='process'][object.property.name='stderr']",
+        },
+        {
+          message: 'Use a named value from `exitCodes` instead of a raw exit code number.',
+          selector: "Property[key.name='exit'][value.type='Literal'][value.raw=/^[0-9]+$/]",
+        },
+        {
+          message: 'Use a named value from `exitCodes` instead of a raw exit code number.',
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name='exit'][arguments.0.type='Literal'][arguments.0.raw=/^[0-9]+$/]",
+        },
+      ],
+    },
+  },
+  {
     files: ['test/__fixtures__/**/*.ts'],
     rules: {
       'import-x/no-extraneous-dependencies': 'off',

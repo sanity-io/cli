@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig, exitCodes} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -58,7 +58,7 @@ describe('startAppDevServer', () => {
 
     expect(output.error).toHaveBeenCalledWith(
       expect.stringContaining('organization ID'),
-      expect.objectContaining({exit: 1}),
+      expect.objectContaining({exit: exitCodes.RUNTIME_ERROR}),
     )
     expect(result).toEqual({reason: 'missing-organization-id', started: false})
     expect(mockStartDevServer).not.toHaveBeenCalled()
@@ -70,7 +70,7 @@ describe('startAppDevServer', () => {
 
     expect(output.error).toHaveBeenCalledWith(
       expect.stringContaining('organization ID'),
-      expect.objectContaining({exit: 1}),
+      expect.objectContaining({exit: exitCodes.RUNTIME_ERROR}),
     )
     expect(result).toEqual({reason: 'missing-organization-id', started: false})
   })

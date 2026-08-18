@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {Output} from '@sanity/cli-core'
+import {exitCodes, Output} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 /**
@@ -15,16 +15,16 @@ export function checkDependenciesEventListenerFactory(output: Output) {
       output.warn(message)
     },
     onInvalidStyledComponentsVersionRange({message}: {message: string}) {
-      output.error(message, {exit: 1})
+      output.error(message, {exit: exitCodes.RUNTIME_ERROR})
     },
     onNoDeclaredStyledComponentsVersion({message}: {message: string}) {
-      output.error(message, {exit: 1})
+      output.error(message, {exit: exitCodes.RUNTIME_ERROR})
     },
     onNoInstalledSanityVersion({message}: {message: string}) {
-      output.error(message, {exit: 1})
+      output.error(message, {exit: exitCodes.RUNTIME_ERROR})
     },
     onNoInstalledStyledComponentsVersion({message}: {message: string}) {
-      output.error(message, {exit: 1})
+      output.error(message, {exit: exitCodes.RUNTIME_ERROR})
     },
   }
 }
@@ -48,14 +48,14 @@ export function preReleaseEventListenerFactory(output: Output) {
       })
 
       if (choice === 'cancel') {
-        output.error('Declined to continue with build', {exit: 1})
+        output.error('Declined to continue with build', {exit: exitCodes.RUNTIME_ERROR})
         return
       }
 
       output.warn('Auto-updates disabled for this build')
     },
     onPreReleaseInNonInteractiveAutoUpdate({message}: {message: string}) {
-      output.error(message, {exit: 1})
+      output.error(message, {exit: exitCodes.RUNTIME_ERROR})
     },
   }
 }

@@ -4,6 +4,7 @@ import {
   compareDependencyVersions,
   buildStudio as internalBuildStudio,
 } from '@sanity/cli-build/_internal/build'
+import {exitCodes} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner} from '@sanity/cli-core/ux'
 import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
@@ -85,7 +86,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
           buildSpinner.fail()
         }
 
-        output.error(message, {exit: 1})
+        output.error(message, {exit: exitCodes.RUNTIME_ERROR})
       },
       onBuildStart({message}) {
         if (!buildSpinner) {
@@ -135,7 +136,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
         })
 
         if (choice === 'cancel') {
-          output.error('Declined to continue with build', {exit: 1})
+          output.error('Declined to continue with build', {exit: exitCodes.RUNTIME_ERROR})
           return {stopBuild: true}
         }
 

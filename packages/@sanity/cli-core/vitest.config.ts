@@ -25,5 +25,6 @@ export default defineConfig({
     },
     globals: false,
     name: '@sanity/cli-core/unit',
+    setupFiles: ['../../../test/vitest/setup.ts'],
   },
 })

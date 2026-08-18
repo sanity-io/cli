@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {describe, expect, test, vi} from 'vitest'
 
 import {type DeploySpec, runDeploy} from '../deployRunner.js'
@@ -169,7 +169,9 @@ describe('runDeploy real deploy', () => {
     expect(payload.deployed).toBe(false)
     expect(payload.error.message).toContain('boom')
     // The envelope and the stderr message are the same diagnosis
-    expect(output.error).toHaveBeenCalledWith(payload.error.message, {exit: 1})
+    expect(output.error).toHaveBeenCalledWith(payload.error.message, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   })
 
   test('without --json a failed deploy stays on stderr, with no envelope', async () => {
@@ -185,7 +187,9 @@ describe('runDeploy real deploy', () => {
     await runDeploy({...dryRunOptions(output), flags: {}} as DeployAppOptions, spec)
 
     expect(output.log).not.toHaveBeenCalled()
-    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('boom'), {exit: 1})
+    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('boom'), {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   })
 
   test('surfaces the server message on a rejected deploy, not a raw error dump', async () => {
@@ -213,7 +217,7 @@ describe('runDeploy real deploy', () => {
 
     expect(output.error).toHaveBeenCalledWith(
       'Error deploying application: You are not allowed to deploy this application as a singleton',
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
   })
 })

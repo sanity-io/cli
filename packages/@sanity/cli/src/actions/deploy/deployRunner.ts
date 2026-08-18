@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type WorkbenchDeployPayload} from '@sanity/workbench-cli/deploy'
 
@@ -124,7 +124,7 @@ function normalizeFailure(
 ): {exit: number; message: string} {
   // Ctrl+C on an interactive prompt isn't a real failure
   if (error instanceof Error && error.name === 'ExitPromptError') {
-    return {exit: 1, message: 'Deployment cancelled by user'}
+    return {exit: exitCodes.RUNTIME_ERROR, message: 'Deployment cancelled by user'}
   }
   // A failed check already carries its own message and exit code
   if (error instanceof CLIError) {
@@ -132,7 +132,7 @@ function normalizeFailure(
   }
   deployDebug(`Error deploying ${type === 'coreApp' ? 'application' : 'studio'}`, error)
   return {
-    exit: 1,
+    exit: exitCodes.RUNTIME_ERROR,
     message: `Error deploying ${type === 'coreApp' ? 'application' : 'studio'}: ${getErrorMessage(error)}`,
   }
 }

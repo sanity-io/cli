@@ -1,5 +1,5 @@
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {
   createStudio,
   deployWorkbenchApp,
@@ -223,7 +223,7 @@ describe('deployStudio (federated studio)', () => {
     )
     expect(outputError).toHaveBeenCalledWith(
       expect.stringContaining('Workspace base paths must share the same first segment'),
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
   })
 })

@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand} from '@sanity/cli-core'
+import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {
   configDefinition,
@@ -97,13 +97,15 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       } catch (err) {
         if (err instanceof Error && 'code' in err && err.code === 'ENOENT' && configPath) {
           spin.fail()
-          this.error(`Typegen config file not found: ${configPath}`, {exit: 1})
+          this.error(`Typegen config file not found: ${configPath}`, {
+            exit: exitCodes.RUNTIME_ERROR,
+          })
         }
 
         if (err instanceof Error && 'code' in err && err.code !== 'ENOENT') {
           spin.fail()
           this.error(`Error when checking if typegen config file exists: ${legacyConfigPath}`, {
-            exit: 1,
+            exit: exitCodes.RUNTIME_ERROR,
           })
         }
       }
@@ -158,7 +160,9 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       // wrapping them a second time and failing the spinner twice.
       if (err instanceof CLIError) throw err
       spin.fail()
-      this.error(`An error occurred during config loading: ${err}`, {exit: 1})
+      this.error(`An error occurred during config loading: ${err}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 
@@ -194,7 +198,9 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         spin.fail()
       }
       trace.error(error instanceof Error ? error : new Error(String(error)))
-      this.error(`${error instanceof Error ? error.message : 'Unknown error'}`, {exit: 1})
+      this.error(`${error instanceof Error ? error.message : 'Unknown error'}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 
@@ -265,7 +271,9 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         spin.fail()
       }
       trace.error(error instanceof Error ? error : new Error(String(error)))
-      this.error(`${error instanceof Error ? error.message : 'Unknown error'}`, {exit: 1})
+      this.error(`${error instanceof Error ? error.message : 'Unknown error'}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
     }
   }
 }

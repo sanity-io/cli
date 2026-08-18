@@ -23,14 +23,6 @@ vi.mock('../../../actions/auth/ensureAuthenticated.js', async (importOriginal) =
   }
 })
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    isInteractive: mockIsInteractive,
-  }
-})
-
 vi.mock('../../../services/mcp.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../services/mcp.js')>()
   return {
@@ -419,6 +411,9 @@ const mcporterTestCases: Array<{
 
 describe.sequential('#mcp:configure', () => {
   beforeEach(async () => {
+    vi.spyOn(ConfigureMcpCommand.prototype, 'resolveIsInteractive').mockImplementation(
+      mockIsInteractive,
+    )
     mockEnsureAuthenticated.mockResolvedValue({
       email: 'test@example.com',
       id: 'user-123',

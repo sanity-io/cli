@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 
 interface Options {
   cliConfig: CliConfig
@@ -54,7 +54,7 @@ export function checkForDeprecatedAppId({cliConfig, output}: Options): void {
 
 Please remove app.id from your sanity.cli.js or sanity.cli.ts file.`,
       {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       },
     )
   }
