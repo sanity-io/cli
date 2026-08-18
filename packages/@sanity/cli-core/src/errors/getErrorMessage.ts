@@ -1,5 +1,7 @@
 import {isHttpError} from '@sanity/client'
 
+import {enrichAuthError} from './enrichAuthError.js'
+
 /**
  * Coerce an unknown thrown value into an Error instance.
  *
@@ -20,12 +22,14 @@ export function toError(value: unknown): Error {
  */
 export function getErrorMessage(err: unknown): string {
   if (isHttpError(err)) {
+    enrichAuthError(err)
     const body = err.response.body
     if (
       typeof body === 'object' &&
       body !== null &&
       'message' in body &&
-      typeof body.message === 'string'
+      typeof body.message === 'string' &&
+      err.statusCode !== 401
     ) {
       return body.message
     }

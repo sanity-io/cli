@@ -80,15 +80,10 @@ function toUndeployTarget(
   type: UndeployApplicationTarget['type'],
 ): UndeployApplicationTarget {
   return {
-    activeDeployment: application.activeDeployment ?? null,
-    appHost: application.appHost,
     application,
-    createdAt: application.createdAt,
     deletes: 'application',
     id: application.id,
-    organizationId: application.organizationId,
     payload: {appId: application.id, type},
-    projectId: application.projectId,
     title: application.title,
     type,
     url: resolveTargetUrl(application, type),

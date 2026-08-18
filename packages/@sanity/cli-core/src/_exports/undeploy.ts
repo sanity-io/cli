@@ -18,12 +18,6 @@ export interface UndeployConfigTarget extends UndeployTargetDetails {
 }
 
 interface UndeployTargetDetails {
-  activeDeployment: {deployedAt: string; deployedBy: string} | null
-  /** Hostname the application is served from; freed for anyone to claim after undeploy. */
-  appHost: string | null
-  createdAt: string | null
-  organizationId: string | null
-  projectId: string | null
   title: string | null
   type: 'coreApp' | 'studio'
   url: string | null

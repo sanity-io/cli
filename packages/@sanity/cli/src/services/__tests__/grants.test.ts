@@ -46,7 +46,7 @@ describe('getUserGrants', () => {
 
     const result = await getUserGrants()
 
-    expect(mockRequest).toHaveBeenCalledWith({uri: '/users/me/grants'})
+    expect(mockRequest).toHaveBeenCalledWith({url: '/users/me/grants'})
     expect(result).toBe(mockGrants)
   })
 

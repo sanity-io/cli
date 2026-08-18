@@ -14,6 +14,7 @@ Code for sanity cli
   <!-- commands -->
 
 - [`sanity api ENDPOINT`](#sanity-api-endpoint)
+- [`sanity assets upload`](#sanity-assets-upload)
 - [`sanity backups disable [DATASET]`](#sanity-backups-disable-dataset)
 - [`sanity backups download [DATASET]`](#sanity-backups-download-dataset)
 - [`sanity backups enable [DATASET]`](#sanity-backups-enable-dataset)
@@ -227,6 +228,40 @@ EXAMPLES
   Authenticate with a specific token instead of the logged-in session
 
     SANITY_AUTH_TOKEN=<token> sanity api users/me
+```
+
+## `sanity assets upload`
+
+Upload one local image or file to a Sanity dataset and print the asset document as JSON
+
+```
+USAGE
+  $ sanity assets upload --file <path> [-p <id>] [-d <name>] [--content-type <mime-type>] [--filename <filename>]
+    [--type image|file]
+
+FLAGS
+  --content-type=<mime-type>  MIME type of the asset, such as image/png or application/pdf
+  --file=<path>               (required) Path to the local file to upload
+  --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename
+  --type=<option>             [default: image] Asset type to create
+                              <options: image|file>
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>   Dataset to upload the asset to (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to upload the asset to (overrides CLI configuration)
+
+DESCRIPTION
+  Upload one local image or file to a Sanity dataset and print the asset document as JSON
+
+EXAMPLES
+  Upload an image using the configured project
+
+    $ sanity assets upload --file ./hero.png --type image --dataset production
+
+  Upload a file with explicit project, dataset, and MIME type
+
+    $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 \
+      --dataset production
 ```
 
 ## `sanity backups disable [DATASET]`

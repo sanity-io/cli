@@ -12,6 +12,7 @@ import {
   type Migration,
   type MigrationProgress,
   run,
+  UnknownTransactionOutcomeError,
 } from '@sanity/migrate'
 
 import {DEFAULT_API_VERSION, MIGRATIONS_DIRECTORY} from '../../actions/migration/constants.js'
@@ -25,6 +26,29 @@ import {
 import {Table} from '../../util/responsiveTable.js'
 
 const runMigrationDebug = subdebug('migration:run')
+
+/**
+ * Renders the `cause` chain of an error the way oclif's own error printer would.
+ *
+ * Used when printing an error ourselves to bypass oclif's hard word wrapping:
+ * the underlying transport error (a timeout, a dropped connection) is the part
+ * that explains _why_ the outcome is unknown, so it should not be dropped just
+ * because the top-level message is printed separately.
+ */
+function formatCauseChain(error: unknown): string[] {
+  const lines: string[] = []
+  let cause: unknown = error instanceof Error ? error.cause : undefined
+
+  while (cause instanceof Error) {
+    lines.push(`Caused by: ${cause.name}: ${cause.message}`)
+    if ('code' in cause && typeof cause.code === 'string') {
+      lines.push(`Code: ${cause.code}`)
+    }
+    cause = cause.cause
+  }
+
+  return lines
+}
 
 export type RunMigrationFlags = RunMigrationCommand['flags']
 
@@ -267,15 +291,46 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     }
 
     const spin = spinner(`Running migration "${id}"`).start()
+    const onProgress = this.createProgress(spin, flags, id, dry, apiConfig, migration)
+    let lastProgress: MigrationProgress | undefined
+
     try {
       await run(
         {
           api: apiConfig,
           concurrency,
-          onProgress: this.createProgress(spin, flags, id, dry, apiConfig, migration),
+          onProgress: (progress) => {
+            lastProgress = progress
+            onProgress(progress)
+          },
         },
         migration,
       )
+    } catch (err) {
+      // ora's `stop()` clears the spinner region, taking the multi-line progress
+      // block with it. Persist a failure summary first, so the transaction counts
+      // (the only record of what was committed before the failure) survive.
+      this.persistFailureSummary(spin, flags, id, apiConfig, lastProgress)
+
+      if (err instanceof UnknownTransactionOutcomeError) {
+        // oclif hard-wraps error messages, which splits the transaction log URLs
+        // across lines and makes them impossible to copy. Print the recovery
+        // instructions ourselves and rethrow something short for the exit code.
+        this.logToStderr(err.message)
+        for (const line of formatCauseChain(err)) {
+          this.logToStderr(line)
+        }
+
+        const count = err.transactionIds.length
+        this.error(
+          `Migration "${id}" failed: the ${count === 1 ? 'outcome' : 'outcomes'} of ${count} ${
+            count === 1 ? 'transaction' : 'transactions'
+          } ${count === 1 ? 'is' : 'are'} unknown. See the transaction log details above.`,
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
+      }
+
+      throw err
     } finally {
       spin.stop()
     }
@@ -354,6 +409,34 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
         }),
       )
     }
+  }
+
+  /**
+   * Persist the last reported progress with a failure marker.
+   *
+   * Only the `progress.done` path finalizes the spinner on its own, so without
+   * this the entire progress block is wiped when the migration fails partway.
+   */
+  private persistFailureSummary(
+    progressSpinner: ReturnType<typeof spinner>,
+    flags: RunMigrationFlags,
+    id: string,
+    apiConfig: APIConfig,
+    progress: MigrationProgress | undefined,
+  ) {
+    // With `--no-progress` the spinner was already stopped and nothing was ever
+    // rendered; a `done` progress event has already persisted its own summary.
+    if (!flags.progress || !progress || progress.done) return
+
+    progressSpinner.text = `Migration "${id}" failed.
+
+  Project id:  ${styleText('bold', apiConfig.projectId)}
+  Dataset:     ${styleText('bold', apiConfig.dataset)}
+
+  ${progress.documents} documents processed.
+  ${progress.mutations} mutations generated.
+  ${styleText('green', String(progress.completedTransactions.length))} transactions committed.`
+    progressSpinner.stopAndPersist({symbol: styleText('red', '✖')})
   }
 
   private async promptConfirmMigrate(apiConfig: APIConfig) {

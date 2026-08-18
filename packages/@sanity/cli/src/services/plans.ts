@@ -8,7 +8,7 @@ export async function getPlanId(intendedPlanId: string) {
     requireUser: false,
   })
 
-  const response = await client.request<{id: string}[]>({uri: `plans/${intendedPlanId}`})
+  const response = await client.request<{id: string}[]>({url: `plans/${intendedPlanId}`})
   if (Array.isArray(response) && response.length > 0) {
     const planId = response[0]?.id
     if (!planId) {
@@ -26,7 +26,7 @@ export async function getPlanIdFromCoupon(couponCode: string) {
   })
 
   const response = await client.request<{id: string}[]>({
-    uri: `plans/coupon/${encodeURIComponent(couponCode)}`,
+    url: `plans/coupon/${encodeURIComponent(couponCode)}`,
   })
 
   if (!Array.isArray(response) || response.length === 0) {

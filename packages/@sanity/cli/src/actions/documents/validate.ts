@@ -84,9 +84,6 @@ export async function validateDocuments(options: ValidateDocumentsOptions): Prom
     // `clientConfiguration` object and also mock a browser environment in
     // this worker which triggers the browser warning
     ignoreBrowserTokenWarning: true,
-    // Removing from object so config can be serialized
-    // before sent to validation worker
-    requester: undefined,
     // we set this explictly to true because the default client configuration
     // from the CLI comes configured with `useProjectHostname: false` when
     // `requireProject` is set to false

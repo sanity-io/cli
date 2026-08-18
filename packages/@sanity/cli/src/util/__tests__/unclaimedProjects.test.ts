@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type MintedProject} from '../../services/mintProject.js'
 import {
+  hasLocalUnclaimedProject,
   readUnclaimedProjects,
   recordUnclaimedProject,
   removeUnclaimedProject,
@@ -223,5 +224,37 @@ describe('removeUnclaimedProject', () => {
     })
 
     expect(removeUnclaimedProject(record.projectId, record.claimToken)).toBe(false)
+  })
+})
+
+describe('hasLocalUnclaimedProject', () => {
+  test('is true when the project ID is a key in the registry', () => {
+    mockGet.mockReturnValue({abc123: {projectId: 'abc123'}})
+
+    expect(hasLocalUnclaimedProject('abc123')).toBe(true)
+  })
+
+  test('is false when the registry has other projects only', () => {
+    mockGet.mockReturnValue({other: {projectId: 'other'}})
+
+    expect(hasLocalUnclaimedProject('abc123')).toBe(false)
+  })
+
+  test('is false when the registry is missing or unreadable', () => {
+    mockGet.mockReturnValue(undefined)
+    expect(hasLocalUnclaimedProject('abc123')).toBe(false)
+
+    mockGet.mockReturnValue([])
+    expect(hasLocalUnclaimedProject('abc123')).toBe(false)
+
+    mockGet.mockImplementationOnce(() => {
+      throw new Error('no config')
+    })
+    expect(hasLocalUnclaimedProject('abc123')).toBe(false)
+  })
+
+  test('is false for an empty project ID', () => {
+    expect(hasLocalUnclaimedProject('')).toBe(false)
+    expect(mockGet).not.toHaveBeenCalled()
   })
 })

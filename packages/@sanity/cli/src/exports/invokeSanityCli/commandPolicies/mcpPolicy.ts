@@ -65,6 +65,9 @@ export const mcpPolicy: CommandPolicySet = {
     validate: apiValidator,
   }),
 
+  // Reads a file from the machine running the command and must only run locally.
+  'assets:upload': deny,
+
   'backups:disable': allow,
   // Writes a downloaded backup to the local filesystem.
   'backups:download': deny,

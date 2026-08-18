@@ -302,7 +302,7 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
     const printStudioInstructions = () => {
       flow.highlight('Start your Studio:')
       flow.gap()
-      flow.command(`cd ${STUDIO_DIR} && npx sanity dev`)
+      flow.command(`cd ${STUDIO_DIR} && npx sanity@latest dev`)
       flow.gap()
       flow.link(studioUrl, {label: 'Then open this link:'})
       flow.gap()

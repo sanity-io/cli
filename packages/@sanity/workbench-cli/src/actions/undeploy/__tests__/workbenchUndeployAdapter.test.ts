@@ -60,12 +60,12 @@ const configAdapter = () =>
   })
 
 function stubInstallations(configs: unknown[]) {
-  mockRequest.mockImplementation(async ({uri}: {uri: string}) => {
-    if (uri === '/installations') {
+  mockRequest.mockImplementation(async ({url}: {url: string}) => {
+    if (url === '/installations') {
       return {data: [{application: {slug: 'media-library'}, id: 'inst-1'}]}
     }
-    if (uri === '/installations/inst-1/configs') return {data: configs}
-    throw new Error(`unexpected request to ${uri}`)
+    if (url === '/installations/inst-1/configs') return {data: configs}
+    throw new Error(`unexpected request to ${url}`)
   })
 }
 
@@ -103,14 +103,12 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     const resolution = await appAdapter().resolveTarget()
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({uri: '/applications/wb-app-1'}),
+      expect.objectContaining({url: '/applications/wb-app-1'}),
     )
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
-      appHost: 'my-app-x1',
       application: {id: 'wb-app-1', slug: 'my-app-x1', title: 'My App', type: 'coreApp'},
       deletes: 'application',
       id: 'wb-app-1',
-      organizationId: 'org-1',
       services: [],
       title: 'My App',
       type: 'coreApp',
@@ -155,7 +153,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     await instance.undeploy(resolution.target)
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/applications/wb-app-1'}),
+      expect.objectContaining({method: 'DELETE', url: '/applications/wb-app-1'}),
     )
   })
 
@@ -216,10 +214,6 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
       configs: [expect.objectContaining({id: 'cfg-2'}), expect.objectContaining({id: 'cfg-1'})],
       deletes: 'config',
       id: null,
-      organizationId: 'org-1',
-      summary: expect.arrayContaining([
-        expect.stringContaining('Served since 2024-02-01T00:00:00Z'),
-      ]),
       title: 'media-library',
       url: 'https://org-1.sanity.run',
     })
@@ -263,15 +257,6 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     })
   })
 
-  test('history without an active snapshot reports no active deployment', async () => {
-    stubInstallations([{createdAt: '2024-01-01T00:00:00Z', id: 'cfg-1', version: '1.0.0'}])
-
-    const resolution = await configAdapter().resolveTarget()
-    if (resolution.type !== 'found') throw new Error('expected found')
-
-    expect(resolution.target.activeDeployment).toBeNull()
-  })
-
   test('no active installation → nothing to undeploy', async () => {
     mockRequest.mockResolvedValue({data: []})
     const resolution = await configAdapter().resolveTarget()
@@ -312,10 +297,10 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     await instance.undeploy(resolution.target)
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/installations/inst-1/configs/cfg-2'}),
+      expect.objectContaining({method: 'DELETE', url: '/installations/inst-1/configs/cfg-2'}),
     )
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/installations/inst-1/configs/cfg-1'}),
+      expect.objectContaining({method: 'DELETE', url: '/installations/inst-1/configs/cfg-1'}),
     )
   })
 

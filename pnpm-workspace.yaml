@@ -27,7 +27,7 @@ catalog:
   '@sanity/vision': ^6.7.0
   '@sanity/types': ^6.7.0
   '@sanity/schema': ^6.7.0
-  '@sanity/client': ^7.25.0
+  '@sanity/client': ^8.1.0
   '@sanity/codegen': ^8.0.0
   '@sanity/telemetry': ^1.1.0
 
@@ -53,7 +53,8 @@ catalog:
   '@oclif/plugin-not-found': ^3.2.88
 
   # Utilities
-  debug: ^4.4.3
+  get-it: ^9.5.0
+  obug: ^2.1.4
   jsdom: ^29.1.1
   zod: ^4.4.3
   'get-tsconfig': ^4.14.0
@@ -78,7 +79,6 @@ catalog:
 
   # Type Definitions
   '@types/node': ^22.20.0
-  '@types/debug': ^4.1.13
   '@types/jsdom': ^28.0.3
   '@types/tar-fs': ^2.0.4
 
@@ -87,6 +87,9 @@ minimumReleaseAgeExclude:
   - '@portabletext/*'
   - '@sanity/*'
   - '@types/*'
+  - 'eventsource'
+  - 'eventsource-parser'
+  - 'get-it'
   - 'groq-js'
   - 'groq'
   - 'lodash-es'

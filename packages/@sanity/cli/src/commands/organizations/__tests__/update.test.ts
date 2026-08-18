@@ -54,7 +54,7 @@ describe('organizations update', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {name: 'New Name'},
       method: 'patch',
-      uri: '/organizations/org-aaa',
+      url: '/organizations/org-aaa',
     })
   })
 
@@ -72,7 +72,7 @@ describe('organizations update', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {slug: 'new-slug'},
       method: 'patch',
-      uri: '/organizations/org-aaa',
+      url: '/organizations/org-aaa',
     })
   })
 
@@ -94,7 +94,7 @@ describe('organizations update', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {defaultRoleName: 'viewer', name: 'New Name', slug: 'new-slug'},
       method: 'patch',
-      uri: '/organizations/org-aaa',
+      url: '/organizations/org-aaa',
     })
   })
 
@@ -113,7 +113,7 @@ describe('organizations update', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {name: 'New Name', slug: 'new-slug'},
       method: 'patch',
-      uri: '/organizations/org-aaa',
+      url: '/organizations/org-aaa',
     })
   })
 
