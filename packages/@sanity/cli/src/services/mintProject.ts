@@ -130,16 +130,15 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
     throw new Error('Project name must be 1-80 characters.')
   }
 
-  const url =
-    `${getProvisionApiBase()}/${PROVISION_API_VERSION}/provision` +
-    `?tag=${encodeURIComponent(getRequestTag())}`
-  debug('minting unclaimed project at %s', url)
+  const url = new URL(`${PROVISION_API_VERSION}/provision`, getProvisionApiBase())
+  url.searchParams.set('tag', getRequestTag())
+  debug('minting unclaimed project at %s', url.toString)
 
   const response = await request({
     body: JSON.stringify({displayName, resourceType: 'project'}),
     headers: {'Content-Type': 'application/json'},
     method: 'POST',
-    url,
+    url: url.toString(),
   })
 
   if (response.statusCode === 404) {
