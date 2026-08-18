@@ -15,6 +15,7 @@ export default defineConfig({
     // 2. Initialize test fixtures (copies fixtures, installs deps)
     globalSetup: ['./globalSetup.ts'],
     hookTimeout: 120_000,
+    setupFiles: ['../../../test/vitest/setup.ts'],
     // E2E tests spawn real processes and need longer timeouts
     testTimeout: 30_000,
   },

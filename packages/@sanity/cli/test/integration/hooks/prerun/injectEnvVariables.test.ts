@@ -79,6 +79,7 @@ describe('#injectEnvVariables', () => {
   test('should inject SANITY_INTERNAL_ENV from .env', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
+    delete process.env.SANITY_INTERNAL_ENV
 
     await writeFile(join(cwd, '.env'), 'SANITY_INTERNAL_ENV=staging')
 

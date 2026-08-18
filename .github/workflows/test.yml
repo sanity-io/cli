@@ -215,8 +215,6 @@ jobs:
 
       - name: Integration Test on ${{ matrix.os }}
         shell: bash
-        env:
-          SANITY_AUTH_TOKEN: 'test-token'
         run: pnpm test:integration --test-timeout=60000 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
   test-status:

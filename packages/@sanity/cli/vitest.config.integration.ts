@@ -17,7 +17,8 @@ export default defineConfig({
     globalSetup: ['test/workerBuild.ts', '@sanity/cli-test/vitest'],
     include: ['test/integration/**/*.test.ts'],
     name: '@sanity/cli/integration',
-    setupFiles: ['test/setup.ts'],
+    sequence: {setupFiles: 'list'},
+    setupFiles: ['../../../test/vitest/setup.ts', 'test/setup.ts', 'test/setup.integration.ts'],
     snapshotSerializers: ['test/snapshotSerializer.ts'],
   },
 })
