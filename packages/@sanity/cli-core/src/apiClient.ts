@@ -1,25 +1,78 @@
-import {styleText} from 'node:util'
-
 import {
   type ClientConfig,
-  type ClientError,
   createClient,
-  requester as defaultRequester,
-  isHttpError,
+  type RequestHandler,
   type SanityClient,
-  type ServerError,
 } from '@sanity/client'
+import {type FetchFunction} from 'get-it'
+import {createNodeFetch} from 'get-it/node'
 
 import {getCliToken} from './config/cli/cliUserConfig.js'
-import {getCliExecutionContext} from './executionContext.js'
-import {createIsolatedRequester} from './request/createIsolatedRequester.js'
-import {generateHelpUrl} from './util/generateHelpUrl.js'
-import {getSanityUrl} from './util/getSanityUrl.js'
+import {enrichAuthError} from './errors/enrichAuthError.js'
+import {type CliExecutionContext, getCliExecutionContext} from './executionContext.js'
 import {isStaging} from './util/isStaging.js'
 
 const STAGING_API_HOST = 'https://api.sanity.work'
 
 const CLI_REQUEST_TAG_PREFIX = 'sanity.cli'
+
+// One default transport per proxy URL, mirroring the client's own
+// environment resolver.
+const defaultBaseFetchCache = new Map<string, FetchFunction>()
+
+function defaultBaseFetch(proxyUrl?: string): FetchFunction {
+  const key = proxyUrl ?? ''
+  const cached = defaultBaseFetchCache.get(key)
+  if (cached) return cached
+
+  const base = createNodeFetch(proxyUrl ? {connections: 30, proxy: proxyUrl} : undefined)
+  defaultBaseFetchCache.set(key, base)
+  return base
+}
+
+/**
+ * Build the transport resolver for clients created inside a CLI execution
+ * context.
+ *
+ * Uses the context's own fetch when the embedding host supplies one,
+ * otherwise the client's default Node transport (get-it's undici-backed,
+ * proxy-aware fetch). Either way the transport strips the
+ * `x-sanity-lineage` header the client's Node middleware adds from
+ * `X_SANITY_LINEAGE` — that variable belongs to the embedding process, not
+ * to this CLI invocation. Note that unlike the client v7 isolated requester,
+ * the client's `sanity:client` debug logging cannot be detached per-client
+ * in v8, so a host `DEBUG` setting still applies to it.
+ */
+function isolatedFetchResolver(context: CliExecutionContext): (proxyUrl?: string) => FetchFunction {
+  return (proxyUrl) => {
+    const base = context.fetch ?? defaultBaseFetch(proxyUrl)
+    return (url, init) => {
+      const headers = new Headers(init?.headers)
+      headers.delete('x-sanity-lineage')
+      return base(url, {...init, headers})
+    }
+  }
+}
+
+const authErrorHandler: RequestHandler = async (request, next) => {
+  try {
+    return await next(request)
+  } catch (error) {
+    throw enrichAuthError(error)
+  }
+}
+
+/**
+ * Add the CLI's authentication guidance inside any caller-provided request
+ * handler. This lets the caller observe enriched client errors while
+ * preserving its control over the request and response pipeline.
+ */
+function withAuthErrorHints(requestHandler?: RequestHandler): RequestHandler {
+  if (!requestHandler) return authErrorHandler
+
+  return (request, next) =>
+    requestHandler(request, (nextRequest) => authErrorHandler(nextRequest, next))
+}
 
 /**
  * @public
@@ -54,14 +107,13 @@ export interface GlobalCliClientOptions extends ClientConfig {
  * @returns Promise that resolves to a configured Sanity API client.
  */
 export async function getGlobalCliClient({
+  requestHandler,
   requireUser,
   token: providedToken,
   unauthenticated,
   ...config
 }: GlobalCliClientOptions): Promise<SanityClient> {
   const context = getCliExecutionContext()
-  const requester = context ? createIsolatedRequester() : defaultRequester.clone()
-  requester.use(authErrors())
 
   const apiHost = isStaging() ? STAGING_API_HOST : undefined
 
@@ -77,12 +129,13 @@ export async function getGlobalCliClient({
     ...(apiHost ? {apiHost} : {}),
     // Suppress browser token warning since we mock browser environment in workers
     ignoreBrowserTokenWarning: true,
-    requester,
+    ...(context ? {resolveFetch: isolatedFetchResolver(context)} : {}),
     requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
     token,
     useCdn: false,
     useProjectHostname: false,
     ...config,
+    requestHandler: withAuthErrorHints(requestHandler),
   })
 }
 
@@ -122,13 +175,12 @@ export interface ProjectCliClientOptions extends ClientConfig {
  * @returns Promise that resolves to a configured Sanity API client.
  */
 export async function getProjectCliClient({
+  requestHandler,
   requireUser,
   token: providedToken,
   ...config
 }: ProjectCliClientOptions): Promise<SanityClient> {
   const context = getCliExecutionContext()
-  const requester = context ? createIsolatedRequester() : defaultRequester.clone()
-  requester.use(authErrors(config.projectId))
 
   const apiHost = isStaging() ? STAGING_API_HOST : undefined
 
@@ -144,58 +196,12 @@ export async function getProjectCliClient({
     ...(apiHost ? {apiHost} : {}),
     // Suppress browser token warning since we mock browser environment in workers
     ignoreBrowserTokenWarning: true,
-    requester,
+    ...(context ? {resolveFetch: isolatedFetchResolver(context)} : {}),
     requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
     token,
     useCdn: false,
     useProjectHostname: true,
     ...config,
+    requestHandler: withAuthErrorHints(requestHandler),
   })
-}
-
-/**
- * `get-it` middleware that checks for 401 authentication errors and extends the error with more
- * helpful guidance on what to do next.
- *
- * @returns get-it middleware with `onError` handler
- * @internal
- */
-function authErrors(projectId?: string) {
-  return {
-    onError: (err: Error | null) => {
-      if (!err || !isReqResError(err)) {
-        return err
-      }
-
-      const statusCode = isHttpError(err) && err.statusCode
-      if (statusCode === 401) {
-        if (projectId && isProjectUserNotFoundError(err.response.body)) {
-          err.message = `${err.message}. Add this account as a project member: ${getSanityUrl(`/manage/project/${encodeURIComponent(projectId)}/members`)}.`
-          return err
-        }
-
-        err.message = `${err.message}. You may need to login again with ${styleText('cyan', 'sanity login')}.\nFor more information, see ${generateHelpUrl('cli-errors')}.`
-      }
-
-      return err
-    },
-  }
-}
-
-function isProjectUserNotFoundError(
-  body: unknown,
-): body is {error: {type: 'projectUserNotFoundError'}} {
-  if (typeof body !== 'object' || body === null || !('error' in body)) return false
-
-  const {error} = body
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'type' in error &&
-    error.type === 'projectUserNotFoundError'
-  )
-}
-
-function isReqResError(err: Error): err is ClientError | ServerError {
-  return Object.prototype.hasOwnProperty.call(err, 'response')
 }

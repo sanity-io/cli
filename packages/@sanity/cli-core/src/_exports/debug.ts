@@ -1,4 +1,4 @@
-import debugIt from 'debug'
+import {createDebug} from 'obug'
 
 import {getCliExecutionContext} from '../executionContext.js'
 
@@ -7,9 +7,9 @@ import {getCliExecutionContext} from '../executionContext.js'
  *
  * @internal
  */
-export const debug = debugIt('sanity:cli')
+export const debug = createDebug('sanity:cli')
 
-const defaultLog: (...args: unknown[]) => void = debugIt.log
+const defaultLog: (...args: unknown[]) => void = debug.log.bind(debug)
 debug.log = (...args: unknown[]) => {
   // DEBUG belongs to the embedding process, not to an individual invocation.
   // Suppress it inside the execution context so it cannot bypass output sinks or expose request details to unrelated host logs.

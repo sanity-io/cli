@@ -49,6 +49,9 @@ export interface ApiResponse {
 
   statusCode: number
 
+  /**
+   * The final response URL, including merged query parameters and redirects.
+   */
   url: string
 
   statusMessage?: string
@@ -95,29 +98,44 @@ export async function performApiRequest(options: PerformApiRequestOptions): Prom
   }
 
   const request = createRequester({
-    middleware: {httpErrors: false, promise: {onlyBody: false}},
+    httpErrors: false,
+    // Raw API passthrough: request duration is caller-controlled (eg long
+    // exports), so no default deadline is imposed.
+    timeout: false,
   })
 
   const mergedQuery = {...resolved.query, ...query}
 
+  // Built as URLSearchParams so repeated field values (eg `-f tag=a -f tag=b`)
+  // become repeated query parameters.
+  const searchParams = new URLSearchParams({tag: API_REQUEST_TAG})
+  for (const [key, value] of Object.entries(mergedQuery)) {
+    if (Array.isArray(value)) {
+      for (const item of value) searchParams.append(key, item)
+    } else {
+      searchParams.set(key, value)
+    }
+  }
+
   const response = await request({
     ...(requestBody === undefined ? {} : {body: requestBody}),
+    as: 'text',
     headers: requestHeaders,
     method,
-    query: {tag: API_REQUEST_TAG, ...mergedQuery},
+    query: searchParams,
     url,
   })
 
-  const rawBody = typeof response.body === 'string' ? response.body : String(response.body ?? '')
-  const parsed = parseBody(rawBody, response.headers['content-type'])
+  const rawBody = response.body
+  const parsed = parseBody(rawBody, response.headers.get('content-type') ?? undefined)
 
   return {
     body: parsed.body,
-    headers: response.headers,
+    headers: Object.fromEntries(response.headers.entries()),
     jsonBody: parsed.jsonBody,
     rawBody,
-    statusCode: response.statusCode,
-    statusMessage: response.statusMessage,
+    statusCode: response.status,
+    statusMessage: response.statusText,
     url: response.url,
   }
 }

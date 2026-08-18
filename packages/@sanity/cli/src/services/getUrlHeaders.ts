@@ -1,6 +1,6 @@
 import {createRequester} from '@sanity/cli-core/request'
 
-const request = createRequester({middleware: {promise: {onlyBody: false}}})
+const request = createRequester()
 
 /**
  * Gets the headers of a URL
@@ -12,10 +12,10 @@ const request = createRequester({middleware: {promise: {onlyBody: false}}})
 export async function getUrlHeaders(url: string, headers = {}): Promise<Record<string, string>> {
   const response = await request({
     headers,
-    maxRedirects: 0,
     method: 'HEAD',
+    redirect: 'manual',
     url,
   })
 
-  return response.headers
+  return Object.fromEntries(response.headers.entries())
 }

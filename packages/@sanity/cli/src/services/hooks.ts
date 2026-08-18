@@ -9,7 +9,7 @@ export async function getHooksForProject(projectId: string): Promise<Hook[]> {
     requireUser: true,
   })
 
-  return client.request<Hook[]>({uri: `/hooks/projects/${projectId}`})
+  return client.request<Hook[]>({url: `/hooks/projects/${projectId}`})
 }
 
 export async function getHookMessagesForProject({
@@ -25,7 +25,7 @@ export async function getHookMessagesForProject({
   })
 
   return client.request<HookMessage[]>({
-    uri: `/hooks/projects/${projectId}/${hookId}/messages`,
+    url: `/hooks/projects/${projectId}/${hookId}/messages`,
   })
 }
 
@@ -42,7 +42,7 @@ export async function getHookAttemptsForProject({
   })
 
   return client.request<DeliveryAttempt[]>({
-    uri: `/hooks/projects/${projectId}/${hookId}/attempts`,
+    url: `/hooks/projects/${projectId}/${hookId}/attempts`,
   })
 }
 
@@ -59,7 +59,7 @@ export async function getHookAttempt({
   })
 
   return client.request<DeliveryAttempt>({
-    uri: `/hooks/projects/${projectId}/attempts/${attemptId}`,
+    url: `/hooks/projects/${projectId}/attempts/${attemptId}`,
   })
 }
 
@@ -69,7 +69,7 @@ export async function listHooksForProject(projectId: string): Promise<Hook[]> {
     requireUser: true,
   })
 
-  return client.request<Hook[]>({uri: `/hooks/projects/${projectId}`})
+  return client.request<Hook[]>({url: `/hooks/projects/${projectId}`})
 }
 
 export async function deleteHookForProject(projectId: string, hookId: string): Promise<void> {
@@ -78,5 +78,5 @@ export async function deleteHookForProject(projectId: string, hookId: string): P
     requireUser: true,
   })
 
-  return client.request({method: 'DELETE', uri: `/hooks/projects/${projectId}/${hookId}`})
+  return client.request({method: 'DELETE', url: `/hooks/projects/${projectId}/${hookId}`})
 }

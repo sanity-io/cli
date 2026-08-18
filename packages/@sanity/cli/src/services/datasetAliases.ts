@@ -23,7 +23,7 @@ const getAliasClient = async (projectId: string) => {
 
 export async function listAliases(projectId: string): Promise<DatasetAliasDefinition[]> {
   const client = await getAliasClient(projectId)
-  return client.request<DatasetAliasDefinition[]>({uri: '/aliases'})
+  return client.request<DatasetAliasDefinition[]>({url: '/aliases'})
 }
 
 export async function createAlias(
@@ -35,7 +35,7 @@ export async function createAlias(
   return client.request({
     body: datasetName ? {datasetName} : undefined,
     method: 'PUT',
-    uri: `/aliases/${aliasName}`,
+    url: `/aliases/${aliasName}`,
   })
 }
 
@@ -55,7 +55,7 @@ export async function updateAlias(
   return client.request<DatasetModificationResponse>({
     body: {datasetName},
     method: 'PATCH',
-    uri: `/aliases/${aliasName}`,
+    url: `/aliases/${aliasName}`,
   })
 }
 
@@ -73,7 +73,7 @@ export async function unlinkAlias(
   return client.request<DatasetModificationResponse>({
     body: {},
     method: 'PATCH',
-    uri: `/aliases/${aliasName}/unlink`,
+    url: `/aliases/${aliasName}/unlink`,
   })
 }
 
@@ -84,6 +84,6 @@ export async function removeAlias(
   const client = await getAliasClient(projectId)
   return client.request<{deleted: boolean}>({
     method: 'DELETE',
-    uri: `/aliases/${aliasName}`,
+    url: `/aliases/${aliasName}`,
   })
 }

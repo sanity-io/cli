@@ -24,7 +24,7 @@ export async function sendEvents(batch: TelemetryEvent[]) {
     body: {batch, projectId},
     json: true,
     method: 'POST',
-    uri: '/intake/batch',
+    url: '/intake/batch',
   })
 }
 
@@ -36,7 +36,7 @@ async function getTelemetryConsent(): Promise<{
     requireUser: false,
   })
 
-  return client.request({tag: 'telemetry-consent', uri: '/intake/telemetry-status'})
+  return client.request({tag: 'telemetry-consent', url: '/intake/telemetry-status'})
 }
 
 /**

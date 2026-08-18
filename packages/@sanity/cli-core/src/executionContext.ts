@@ -1,5 +1,7 @@
 import {AsyncLocalStorage} from 'node:async_hooks'
 
+import {type FetchFunction} from 'get-it'
+
 /**
  * Sanity deployment environment used by a programmatic CLI invocation.
  *
@@ -33,6 +35,14 @@ export type SanityEnvironment = 'production' | 'staging'
  * @public
  */
 export interface CliExecutionContext {
+  /**
+   * Fetch implementation for API requests made during this invocation.
+   * Overrides the CLI's default transport (get-it's undici-backed Node
+   * fetch). The execution context's transport hygiene — such as stripping
+   * the embedding process's lineage header — is applied on top of it.
+   */
+  fetch?: FetchFunction
+
   /**
    * Sanity deployment environment to use for this invocation.
    * Overrides `SANITY_INTERNAL_ENV`.

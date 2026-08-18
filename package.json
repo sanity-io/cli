@@ -73,9 +73,6 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "resolutions": {
-    "@sanity/client": "^7.25.0"
-  },
   "engines": {
     "node": ">=22.12"
   },
