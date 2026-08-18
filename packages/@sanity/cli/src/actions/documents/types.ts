@@ -7,11 +7,22 @@ import {type ValidateDocumentsCommand} from '../../commands/documents/validate.j
 
 export type Level = ValidationMarker['level']
 
+/**
+ * Client config properties that `@sanity/client` fills with functions, or that
+ * can hold them. Functions cannot cross a worker boundary: the runtime clones
+ * `workerData` structurally, and anything non-cloneable in there fails the
+ * whole spawn with a `DataCloneError`. The worker rebuilds these from its own
+ * defaults, so they must never be part of the payload.
+ */
+type NonCloneableClientConfigKey = 'requester' | 'requestHandler' | 'resolveFetch' | 'stega'
+
+type WorkerClientConfig = Omit<Partial<ClientConfig>, NonCloneableClientConfigKey>
+
 /** @internal */
 export interface ValidateDocumentsWorkerData {
   workDir: string
 
-  clientConfig?: Partial<ClientConfig>
+  clientConfig?: WorkerClientConfig
   dataset?: string
   level?: ValidationMarker['level']
   maxCustomValidationConcurrency?: number

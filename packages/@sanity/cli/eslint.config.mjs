@@ -71,6 +71,16 @@ export default [
           selector: 'ImportExpression',
         },
         {
+          message:
+            'Use `safeStructuredClone` from `@sanity/cli-core/util` instead of the global `structuredClone()`. The global throws `DataCloneError` on functions, class instances and other non-cloneable values; `safeStructuredClone` drops them instead.',
+          selector: "CallExpression[callee.type='Identifier'][callee.name='structuredClone']",
+        },
+        {
+          message:
+            'Use `safeStructuredClone` from `@sanity/cli-core/util` instead of the global `structuredClone()`. The global throws `DataCloneError` on functions, class instances and other non-cloneable values; `safeStructuredClone` drops them instead.',
+          selector: "MemberExpression[object.name='globalThis'][property.name='structuredClone']",
+        },
+        {
           message: 'Use `this.resolveIsInteractive()` instead of `process.stderr.isTTY`.',
           selector:
             "MemberExpression[property.name='isTTY'][object.type='MemberExpression'][object.object.name='process'][object.property.name='stderr']",

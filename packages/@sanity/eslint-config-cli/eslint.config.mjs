@@ -177,6 +177,16 @@ export default defineConfig(
             'Dynamic imports are not allowed. Use `doImport` function from @sanity/cli-core instead.',
           selector: 'ImportExpression',
         },
+        {
+          message:
+            'Use `safeStructuredClone` from `@sanity/cli-core/util` instead of the global `structuredClone()`. The global throws `DataCloneError` on functions, class instances and other non-cloneable values; `safeStructuredClone` drops them instead.',
+          selector: "CallExpression[callee.type='Identifier'][callee.name='structuredClone']",
+        },
+        {
+          message:
+            'Use `safeStructuredClone` from `@sanity/cli-core/util` instead of the global `structuredClone()`. The global throws `DataCloneError` on functions, class instances and other non-cloneable values; `safeStructuredClone` drops them instead.',
+          selector: "MemberExpression[object.name='globalThis'][property.name='structuredClone']",
+        },
       ],
       'no-unused-expressions': 'off',
       'no-unused-vars': 'off',

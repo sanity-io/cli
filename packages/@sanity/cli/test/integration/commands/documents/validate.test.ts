@@ -20,13 +20,17 @@ vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'
 vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
 
 function setupMocksFromConfig(cliConfig: CliConfig) {
-  apiMocks.getGlobalCliClient.mockResolvedValue({
-    config: () => ({
+  // `createMockCliClient` mirrors what `@sanity/client` actually returns from
+  // `config()`, function-valued `requestHandler` / `requester` / `resolveFetch`
+  // included. Those functions are what makes a client config non-cloneable, so
+  // a mock without them hides worker-payload bugs from this test.
+  apiMocks.getGlobalCliClient.mockResolvedValue(
+    apiMocks.createMockCliClient({
       dataset: cliConfig.api?.dataset,
       projectId: cliConfig.api?.projectId,
       token: 'test-token',
     }),
-  })
+  )
 }
 
 describe('#documents:validate', {timeout: 60 * 1000}, () => {
