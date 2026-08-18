@@ -140,6 +140,14 @@ export default defineConfig(
       'no-console': 'error',
       'no-dupe-class-members': 'off',
       'no-redeclare': 'off',
+      'no-restricted-globals': [
+        'error',
+        {
+          message:
+            'Use `safeStructuredClone` from @sanity/cli-core/util instead of bare `structuredClone`.',
+          name: 'structuredClone',
+        },
+      ],
       'no-restricted-imports': [
         'error',
         {
@@ -260,6 +268,7 @@ export default defineConfig(
   {
     files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts'],
     rules: {
+      'no-restricted-globals': 'off',
       'no-restricted-syntax': 'off',
       'unicorn/prefer-string-raw': 'off',
     },

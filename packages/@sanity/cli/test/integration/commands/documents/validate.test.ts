@@ -3,7 +3,7 @@ import {resolve} from 'node:path'
 import {getCliConfig} from '@sanity/cli-core/config'
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type CliConfig} from '@sanity/cli-core/types'
-import {testCommand, testFixture} from '@sanity/cli-test'
+import {createTestClient, testCommand, testFixture} from '@sanity/cli-test'
 import * as apiMocks from '@sanity/cli-test/mocks/cli-core/apiClient'
 import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
 import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -20,13 +20,14 @@ vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'
 vi.mock('@sanity/cli-core/apiClient', () => import('@sanity/cli-test/mocks/cli-core/apiClient'))
 
 function setupMocksFromConfig(cliConfig: CliConfig) {
-  apiMocks.getGlobalCliClient.mockResolvedValue({
-    config: () => ({
-      dataset: cliConfig.api?.dataset,
-      projectId: cliConfig.api?.projectId,
-      token: 'test-token',
-    }),
+  const {client} = createTestClient({
+    apiVersion: 'v2025-02-19',
+    dataset: cliConfig.api?.dataset,
+    projectId: cliConfig.api?.projectId,
+    token: 'test-token',
   })
+
+  apiMocks.getGlobalCliClient.mockResolvedValue(client)
 }
 
 describe('#documents:validate', {timeout: 60 * 1000}, () => {
