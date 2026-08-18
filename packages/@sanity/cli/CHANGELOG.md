@@ -1,5 +1,15 @@
 # Change Log
 
+## 8.0.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.0.2...cli-v8.0.3)
+
+_2026-08-18_
+
+### Bug Fixes
+
+- **cli:** stop documents validate failing on a worker cloning error ([#1720](https://github.com/sanity-io/cli/pull/1720)) ([18ee05e](https://github.com/sanity-io/cli/commit/18ee05e7d7ca320c7797414df8f5d6e3b14a5152))
+
 ## 8.0.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.0.1...cli-v8.0.2)
