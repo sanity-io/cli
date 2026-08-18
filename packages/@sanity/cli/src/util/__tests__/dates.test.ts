@@ -64,6 +64,24 @@ describe('formatDuration', () => {
     expect(formatDuration(91 * SECOND)).toBe('2 minutes')
   })
 
+  test.each([
+    [59.6 * MINUTE, '1 hour'],
+    [23.6 * HOUR, '1 day'],
+    [6.6 * DAY, '1 week'],
+    [29.9 * DAY, '1 month'],
+    [350 * DAY, '1 year'],
+  ])('promotes %ims rather than rounding up to the next unit ("%s")', (ms, expected) => {
+    expect(formatDuration(ms)).toBe(expected)
+  })
+
+  test('stays just below each promotion boundary', () => {
+    expect(formatDuration(59.4 * MINUTE)).toBe('59 minutes')
+    expect(formatDuration(23.4 * HOUR)).toBe('23 hours')
+    expect(formatDuration(6.4 * DAY)).toBe('6 days')
+    expect(formatDuration(24 * DAY)).toBe('3 weeks')
+    expect(formatDuration(340 * DAY)).toBe('11 months')
+  })
+
   test('ignores the direction of the duration', () => {
     expect(formatDuration(-5 * MINUTE)).toBe('5 minutes')
   })
@@ -95,6 +113,16 @@ describe('formatTimeAgo', () => {
 
   test('describes future dates', () => {
     expect(formatTimeAgo(new Date(now + 3 * HOUR), now)).toBe('in 3 hours')
+  })
+
+  test.each([
+    [-59.7 * SECOND, '1 minute ago'],
+    [-59.6 * MINUTE, '1 hour ago'],
+    [-23.6 * HOUR, '1 day ago'],
+    [59.7 * SECOND, 'in 1 minute'],
+    [23.6 * HOUR, 'in 1 day'],
+  ])('promotes an offset of %ims rather than rounding up ("%s")', (offset, expected) => {
+    expect(formatTimeAgo(new Date(now + offset), now)).toBe(expected)
   })
 
   test('defaults the reference point to the current time', () => {

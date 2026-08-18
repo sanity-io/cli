@@ -29,9 +29,30 @@ function pad(value: number, length = 2): string {
   return String(value).padStart(length, '0')
 }
 
-/** Returns the coarsest unit the elapsed time fills, or `undefined` below a second. */
-function selectUnit(elapsed: number): {ms: number; unit: Intl.RelativeTimeFormatUnit} | undefined {
-  return UNITS.find(({ms}) => elapsed >= ms)
+/**
+ * Returns the coarsest unit the elapsed time fills and the rounded number of those
+ * units, or `undefined` below a second.
+ *
+ * Rounding can land the value on the boundary of the next unit up, so we promote
+ * rather than report `60 minutes` where `1 hour` is meant. Units aren't all whole
+ * multiples of each other, so the boundary is the rounded count we'd display, which
+ * is why 25+ days reads as `1 month` rather than `4 weeks`.
+ */
+function selectUnit(
+  elapsed: number,
+): {unit: Intl.RelativeTimeFormatUnit; value: number} | undefined {
+  let index = UNITS.findIndex(({ms}) => elapsed >= ms)
+  if (index === -1) return undefined
+
+  while (
+    index > 0 &&
+    Math.round(elapsed / UNITS[index].ms) >= Math.round(UNITS[index - 1].ms / UNITS[index].ms)
+  ) {
+    index -= 1
+  }
+
+  const {ms, unit} = UNITS[index]
+  return {unit, value: Math.round(elapsed / ms)}
 }
 
 /**
@@ -60,12 +81,10 @@ export function formatDateTime(timestamp: string): string {
 export function formatDuration(ms: number): string {
   if (!Number.isFinite(ms)) return ''
 
-  const elapsed = Math.abs(ms)
-  const selected = selectUnit(elapsed)
+  const selected = selectUnit(Math.abs(ms))
   if (!selected || selected.unit === 'second') return 'less than a minute'
 
-  const value = Math.round(elapsed / selected.ms)
-  return `${value} ${pluralize(selected.unit, value)}`
+  return `${selected.value} ${pluralize(selected.unit, selected.value)}`
 }
 
 /**
@@ -82,7 +101,7 @@ export function formatTimeAgo(date: Date, now: number = Date.now()): string {
   const selected = selectUnit(Math.abs(delta))
   if (!selected) return 'just now'
 
-  return relativeTime.format(Math.round(delta / selected.ms), selected.unit)
+  return relativeTime.format(delta < 0 ? -selected.value : selected.value, selected.unit)
 }
 
 /**
