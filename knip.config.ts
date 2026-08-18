@@ -104,6 +104,10 @@ const baseConfig = {
       project,
     },
     'packages/create-sanity': {},
+    'packages/groq': {
+      entry: ['groq.{js,cjs}', 'test/**/*.{ts,cts}'],
+      project: ['**/*.{js,cjs,ts,cts}'],
+    },
   },
 } satisfies KnipConfig
 

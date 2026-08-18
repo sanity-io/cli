@@ -58,7 +58,6 @@
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
-    "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",
