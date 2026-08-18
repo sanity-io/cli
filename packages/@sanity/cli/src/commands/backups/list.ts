@@ -2,15 +2,12 @@ import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
-import {isAfter} from 'date-fns/isAfter'
-import {isValid} from 'date-fns/isValid'
-import {lightFormat} from 'date-fns/lightFormat'
-import {parse} from 'date-fns/parse'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
+import {formatDateTime, parseDateOnly} from '../../util/dates.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
@@ -114,7 +111,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
         const parsedBefore = this.processDateFlag(flags.before, 'before')
         const parsedAfter = this.processDateFlag(flags.after, 'after')
 
-        if (parsedAfter && parsedBefore && isAfter(parsedAfter, parsedBefore)) {
+        if (parsedAfter && parsedBefore && parsedAfter.getTime() > parsedBefore.getTime()) {
           this.error('--after date must be before --before', {exit: exitCodes.RUNTIME_ERROR})
         }
       } catch (err) {
@@ -169,7 +166,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
         const {createdAt, id} = backup
         table.addRow({
           backupId: id,
-          createdAt: lightFormat(Date.parse(createdAt), 'yyyy-MM-dd HH:mm:ss'),
+          createdAt: formatDateTime(createdAt),
           resource: 'Dataset',
         })
       }
@@ -188,8 +185,8 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
 
   private processDateFlag(date: string | undefined, flagName: string): Date | undefined {
     if (!date) return undefined
-    const parsedDate = parse(date, 'yyyy-MM-dd', new Date())
-    if (isValid(parsedDate)) {
+    const parsedDate = parseDateOnly(date)
+    if (parsedDate) {
       return parsedDate
     }
 
