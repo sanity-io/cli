@@ -677,9 +677,6 @@ importers:
       p-map:
         specifier: ^7.0.3
         version: 7.0.4
-      package-directory:
-        specifier: ^8.2.0
-        version: 8.2.0
       peek-stream:
         specifier: ^1.1.3
         version: 1.1.3
@@ -7935,10 +7932,6 @@ packages:
   p-try@2.2.0:
     resolution: {integrity: sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==}
     engines: {node: '>=6'}
-
-  package-directory@8.2.0:
-    resolution: {integrity: sha512-qJSu5Mo6tHmRxCy2KCYYKYgcfBdUpy9dwReaZD/xwf608AUk/MoRtIOWzgDtUeGeC7n/55yC3MI1Q+MbSoektw==}
-    engines: {node: '>=18'}
 
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
@@ -16978,10 +16971,6 @@ snapshots:
   p-timeout@7.0.1: {}
 
   p-try@2.2.0: {}
-
-  package-directory@8.2.0:
-    dependencies:
-      find-up-simple: 1.0.1
 
   package-json-from-dist@1.0.1: {}
 
