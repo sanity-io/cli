@@ -54,7 +54,7 @@
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
     "publint": "publint",
-    "test": "node --test",
+    "test": "node --test test/*.test.cjs test/*.test.mjs",
     "test:unit": "vitest run"
   },
   "devDependencies": {
