@@ -44,7 +44,13 @@ describe('defineQuery', () => {
 })
 
 test('exports package metadata', () => {
-  const packageJson = requireFromPackage('groq/package.json') as {version?: unknown}
+  const packageJson = requireFromPackage('groq/package.json') as {
+    name?: unknown
+    version?: unknown
+  }
 
-  expect(packageJson.version).toEqual(expect.any(String))
+  expect(packageJson).toMatchObject({
+    name: 'groq',
+    version: expect.any(String),
+  })
 })

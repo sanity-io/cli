@@ -8,7 +8,7 @@ export default [
   {ignores: ['**/fixtures/prebuilt-*/dist/**', '.changeset/**']},
   ...eslintConfig,
   {
-    files: ['packages/groq/*.cjs'],
-    languageOptions: {globals: {module: 'readonly'}},
+    files: ['packages/groq/**/*.cjs'],
+    languageOptions: {sourceType: 'commonjs'},
   },
 ]

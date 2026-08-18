@@ -1,5 +1,7 @@
 # Change Log
 
+## 6.10.0
+
 Releases through `6.10.0` were published from the
 [`sanity-io/sanity`](https://github.com/sanity-io/sanity/tree/main/packages/groq) repository.
 See its
