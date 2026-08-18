@@ -9,6 +9,15 @@ export default [
   ...eslintConfig,
   {
     files: ['packages/groq/**/*.cjs'],
-    languageOptions: {sourceType: 'commonjs'},
+    languageOptions: {
+      globals: {
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        exports: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+      },
+      sourceType: 'commonjs',
+    },
   },
 ]
