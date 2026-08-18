@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.2.0...cli-build-v5.2.1)
+
+_2026-08-18_
+
+### Bug Fixes
+
+- Migrate `@sanity/cli-core/request` to get-it v9 and upgrade `@sanity/client` to v8 ([#1534](https://github.com/sanity-io/cli/pull/1534)) ([9230315](https://github.com/sanity-io/cli/commit/92303158f7737bc21e40d4dc208e5158445cb0cd))
+- **cli-build:** mark @sanity/ui v4 as supported ([#1710](https://github.com/sanity-io/cli/pull/1710)) ([619278b](https://github.com/sanity-io/cli/commit/619278b70c94318c328c7917d85de3d87a836409))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.1.0
+
 ## 5.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.1.0...cli-build-v5.2.0)

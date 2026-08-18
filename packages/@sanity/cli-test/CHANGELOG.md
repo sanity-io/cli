@@ -1,5 +1,21 @@
 # Changelog
 
+## 11.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v10.0.0...cli-test-v11.0.0)
+
+_2026-08-18_
+
+### Bug Fixes
+
+- Migrate `@sanity/cli-core/request` to get-it v9 and upgrade `@sanity/client` to v8 ([#1534](https://github.com/sanity-io/cli/pull/1534)) ([9230315](https://github.com/sanity-io/cli/commit/92303158f7737bc21e40d4dc208e5158445cb0cd))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.1.0
+
 ## 10.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v9.0.2...cli-test-v10.0.0)
