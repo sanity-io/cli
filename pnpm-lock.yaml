@@ -606,6 +606,12 @@ importers:
       '@sanity/worker-channels':
         specifier: ^2.0.0
         version: 2.0.0
+      '@sanity/workflow-cli':
+        specifier: 0.28.0
+        version: 0.28.0(@noble/hashes@2.2.0)(@sanity/workflow-engine@0.28.0(@types/react@19.2.17)(typescript@6.0.3))(@types/node@22.20.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(react@19.2.7)(terser@5.48.0)(yaml@2.9.0)
+      '@sanity/workflow-engine':
+        specifier: 0.28.0
+        version: 0.28.0(@types/react@19.2.17)(typescript@6.0.3)
       '@vercel/frameworks':
         specifier: 3.29.0
         version: 3.29.0
@@ -4565,6 +4571,10 @@ packages:
   '@sanity/generate-help-url@4.0.0':
     resolution: {integrity: sha512-Ooa4xkLT3TLaX+mw/13fq3IeGdnAkx4rbpVASvRVixzBBvvcL6jPqj50fjlCd+EhgB5GRXBCNNAy/hWXwjZEUA==}
 
+  '@sanity/groq-condition-describe@0.4.0':
+    resolution: {integrity: sha512-eAhqd1ax4U7DGrgYqByHpp+KQP68yYLaWrArmPGnmWTFdCSO9FZj3uf0IezhVw9b8p3YNPxP+JzscaKvTQJpSg==}
+    engines: {node: '>=20'}
+
   '@sanity/icons@3.8.0':
     resolution: {integrity: sha512-LXa8eoE6U2e46L/9Pk6VU1aOWNxEqEG1osTb2YWItPIAa8MyXkICRwdNRWwW3kr5gmf+Sh2ZmfKol/Q+oGKSqw==}
     engines: {node: '>=14.0.0'}
@@ -4706,6 +4716,11 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  '@sanity/types@5.31.1':
+    resolution: {integrity: sha512-Tl5+C6KTfGO1+QdbHFFaJd9Wyncbz2yznGg1P06JvBfzpexSdBVz476QyDtWBQaCtSkTk8eXzrwPVvW5emA8/g==}
+    peerDependencies:
+      '@types/react': ^19.2
+
   '@sanity/types@6.7.0':
     resolution: {integrity: sha512-RW57l/Pufw6mUBXNRMVCGAd6VuKEkhzYDwQWYd560Iw2viP+BiAVc8F4TqQh/wVVxXyT0t5dBVi0FWQIpfJg7w==}
     peerDependencies:
@@ -4756,6 +4771,17 @@ packages:
   '@sanity/worker-channels@2.0.0':
     resolution: {integrity: sha512-mC+8yPQuw2rHXdHigFPU9thNa6vTaPmh7jFR6RvloE8s+6dmnk9bHdPXRbrrUqafxzK3L9aH2E170ubXyxcAIA==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
+
+  '@sanity/workflow-cli@0.28.0':
+    resolution: {integrity: sha512-hfJblV2xUb3bxRcOVYV/6fc5xeOHddbv/1IKytPpA7G8We6oOchie+T4mo2nI4F09Mge8QCnHfSBoinxtxaAlA==}
+    engines: {node: '>=20.12'}
+    hasBin: true
+    peerDependencies:
+      '@sanity/workflow-engine': 0.28.0
+
+  '@sanity/workflow-engine@0.28.0':
+    resolution: {integrity: sha512-c8sjJ47BzGJ78JGihs+/4ZEVn56rZgvyYEAIA/qsbIL0qo537E10UO3HZfS2nDwxkGQO4Kbsb1IGI7gM6SSoHQ==}
+    engines: {node: '>=20'}
 
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
@@ -6356,6 +6382,10 @@ packages:
 
   diff@8.0.4:
     resolution: {integrity: sha512-DPi0FmjiSU5EvQV0++GFDOJ9ASQUVFh5kD+OzOnYdi7n3Wpm9hWWGfB/O2blfHcMVTL5WkQXSnRiK9makhrcnw==}
+    engines: {node: '>=0.3.1'}
+
+  diff@9.0.0:
+    resolution: {integrity: sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw==}
     engines: {node: '>=0.3.1'}
 
   dir-glob@3.0.1:
@@ -9357,6 +9387,14 @@ packages:
   uuidv7@0.4.4:
     resolution: {integrity: sha512-jjRGChg03uGp9f6wQYSO8qXkweJwRbA5WRuEQE8xLIiehIzIIi23qZSzsyvZPCPoFqkeLtZuz7Plt1LGukAInA==}
     hasBin: true
+
+  valibot@1.4.2:
+    resolution: {integrity: sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
@@ -13278,6 +13316,12 @@ snapshots:
 
   '@sanity/generate-help-url@4.0.0': {}
 
+  '@sanity/groq-condition-describe@0.4.0':
+    dependencies:
+      groq-js: 1.30.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@sanity/icons@3.8.0(react@19.2.7)':
     dependencies:
       react: 19.2.7
@@ -13682,6 +13726,12 @@ snapshots:
       '@actions/github': 9.1.1
       yaml: 2.9.0
 
+  '@sanity/types@5.31.1(@types/react@19.2.17)':
+    dependencies:
+      '@sanity/client': 7.25.0
+      '@sanity/media-library-types': 1.6.0
+      '@types/react': 19.2.17
+
   '@sanity/types@6.7.0(@types/react@19.2.17)':
     dependencies:
       '@sanity/client': 7.25.0
@@ -13815,6 +13865,49 @@ snapshots:
       - react
 
   '@sanity/worker-channels@2.0.0': {}
+
+  '@sanity/workflow-cli@0.28.0(@noble/hashes@2.2.0)(@sanity/workflow-engine@0.28.0(@types/react@19.2.17)(typescript@6.0.3))(@types/node@22.20.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(react@19.2.7)(terser@5.48.0)(yaml@2.9.0)':
+    dependencies:
+      '@oclif/core': 4.13.2
+      '@oclif/plugin-help': 6.2.56
+      '@sanity/cli-core': 2.8.0(@noble/hashes@2.2.0)(@types/node@22.20.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(terser@5.48.0)(yaml@2.9.0)
+      '@sanity/client': 7.25.0
+      '@sanity/telemetry': 1.1.0(react@19.2.7)
+      '@sanity/workflow-engine': 0.28.0(@types/react@19.2.17)(typescript@6.0.3)
+      boxen: 8.0.1
+      date-fns: 4.4.0
+      diff: 9.0.0
+      jiti: 2.7.0
+      log-symbols: 7.0.1
+      ora: 9.4.1
+    transitivePeerDependencies:
+      - '@noble/hashes'
+      - '@types/node'
+      - '@vitejs/devtools'
+      - babel-plugin-react-compiler
+      - canvas
+      - esbuild
+      - less
+      - react
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - yaml
+
+  '@sanity/workflow-engine@0.28.0(@types/react@19.2.17)(typescript@6.0.3)':
+    dependencies:
+      '@sanity/groq-condition-describe': 0.4.0
+      '@sanity/id-utils': 1.0.0
+      '@sanity/types': 5.31.1(@types/react@19.2.17)
+      groq-js: 1.30.3
+      valibot: 1.4.2(typescript@6.0.3)
+    transitivePeerDependencies:
+      - '@types/react'
+      - supports-color
+      - typescript
 
   '@sec-ant/readable-stream@0.4.1': {}
 
@@ -15390,6 +15483,8 @@ snapshots:
   detect-node-es@1.1.0: {}
 
   diff@8.0.4: {}
+
+  diff@9.0.0: {}
 
   dir-glob@3.0.1:
     dependencies:
@@ -18607,6 +18702,10 @@ snapshots:
   uuid@14.0.1: {}
 
   uuidv7@0.4.4: {}
+
+  valibot@1.4.2(typescript@6.0.3):
+    optionalDependencies:
+      typescript: 6.0.3
 
   validate-npm-package-license@3.0.4:
     dependencies:
