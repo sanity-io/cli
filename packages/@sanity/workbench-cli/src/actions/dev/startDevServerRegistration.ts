@@ -6,7 +6,12 @@ import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs} from './deriveConfigs.js'
 import {trackExposesSet} from './exposesSetId.js'
-import {type DevServerManifest, getRegisteredServers, registerDevServer} from './registry.js'
+import {
+  type DevServerManifest,
+  getRegisteredServers,
+  isConfigOnlyServer,
+  registerDevServer,
+} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
@@ -82,7 +87,17 @@ export async function startDevServerRegistration(
 
   const id = isWorkbenchApp(cliConfig.app) ? cliConfig.app.slug : undefined
 
-  const devServer = id ? getRegisteredServers().find((server) => server.id === id) : undefined
+  // Only a *same-role* duplicate is a conflict. A config-only server (configs,
+  // no interfaces — e.g. a media-library config app) is never routed as an app,
+  // so it may share a slug with the app server it configures: the workbench
+  // renders the app and publishes both servers' configs, and can always tell
+  // them apart. Two servers playing the same role for one slug cannot coexist.
+  const configOnly = isConfigOnlyServer({configs, interfaces})
+  const devServer = id
+    ? getRegisteredServers().find(
+        (server) => server.id === id && isConfigOnlyServer(server) === configOnly,
+      )
+    : undefined
 
   if (id && devServer) {
     output.error(

@@ -123,6 +123,83 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
 
+  // A config-only server (configs, no interfaces — e.g. a media-library config
+  // app) is never routed as an app, so it may share a slug with the app server
+  // it configures. Only same-role duplicates are indistinguishable.
+  const mediaLibraryConfig = {
+    appType: 'media-library',
+    fields: [{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'}],
+  }
+
+  test('a config-only server registers alongside an app server with the same slug', async () => {
+    // The app server: interfaces present, no configs.
+    mockGetRegisteredServers.mockReturnValue([
+      {id: 'test-app', interfaces: [{type: 'app'}], pid: 4242, port: 3334},
+    ])
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          applicationType: 'media-library',
+          config: mediaLibraryConfig,
+          isSingleton: true,
+        }),
+      }),
+      isApp: true,
+      output,
+    })
+
+    expect(output.error).not.toHaveBeenCalled()
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        configs: [expect.objectContaining({appType: 'media-library'})],
+        id: 'test-app',
+      }),
+    )
+  })
+
+  test('an app server registers alongside a config-only server with the same slug', async () => {
+    mockGetRegisteredServers.mockReturnValue([
+      {configs: [mediaLibraryConfig], id: 'test-app', pid: 4242, port: 3334},
+    ])
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({app: workbenchApp({entry: './src/App.tsx'})}),
+      isApp: true,
+      output,
+    })
+
+    expect(output.error).not.toHaveBeenCalled()
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
+  })
+
+  test('two config-only servers with the same slug still collide', async () => {
+    mockGetRegisteredServers.mockReturnValue([
+      {configs: [mediaLibraryConfig], id: 'test-app', pid: 4242, port: 3334},
+    ])
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          applicationType: 'media-library',
+          config: mediaLibraryConfig,
+          isSingleton: true,
+        }),
+      }),
+      isApp: true,
+      output,
+    })
+
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('"test-app" is already served'),
+      {exit: false},
+    )
+    expect(mockRegisterDevServer).not.toHaveBeenCalled()
+  })
+
   test('forwards api.projectId to registerDevServer', async () => {
     await register({cliConfig: {api: {projectId: 'x1g7jygt'}, app: workbenchApp()} as any})
 
