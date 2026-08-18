@@ -1,5 +1,6 @@
 import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
 import {createStudioWorker} from '@sanity/cli-core/tasks'
+import {safeStructuredClone} from '@sanity/cli-core/util'
 import {type ClientConfig} from '@sanity/client'
 import {type ValidationMarker} from '@sanity/types'
 import {WorkerChannelReceiver} from '@sanity/worker-channels'
@@ -94,8 +95,10 @@ export async function validateDocuments(options: ValidateDocumentsOptions): Prom
     name: 'validateDocuments',
     studioRootPath: workDir,
     workerData: {
-      // removes props in the config that make this object fail to serialize
-      clientConfig: structuredClone(clientConfig),
+      // drops function-valued client config properties (e.g. request handlers
+      // and fetch implementations) since functions cannot cross the worker
+      // boundary; the worker rebuilds those from its own defaults
+      clientConfig: safeStructuredClone(clientConfig),
       dataset,
       level,
       maxCustomValidationConcurrency,
