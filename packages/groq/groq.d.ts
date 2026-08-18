@@ -23,5 +23,5 @@ export declare function defineQuery<const Q extends string>(query: Q): Q
  * @returns The same string as the input
  * @public
  */
-declare function groq(strings: TemplateStringsArray, ...keys: unknown[]): string
+declare function groq(strings: TemplateStringsArray, ...keys: any[]): string
 export default groq

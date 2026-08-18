@@ -10,7 +10,7 @@
  * @returns The same string as the input
  * @public
  */
-declare function groq(strings: TemplateStringsArray, ...keys: unknown[]): string
+declare function groq(strings: TemplateStringsArray, ...keys: any[]): string
 
 declare namespace groq {
   /**

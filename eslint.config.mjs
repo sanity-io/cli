@@ -19,5 +19,15 @@ export default [
       },
       sourceType: 'commonjs',
     },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    files: ['packages/groq/groq.d.{ts,cts}'],
+    rules: {
+      // Preserve the declaration signature already published by groq.
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   },
 ]

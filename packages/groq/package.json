@@ -54,7 +54,8 @@
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
     "publint": "publint",
-    "test": "vitest run"
+    "test": "node --test",
+    "test:unit": "vitest run"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
