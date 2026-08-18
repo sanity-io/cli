@@ -37,7 +37,7 @@ describe('getUserApplication', () => {
     const app = await getUserApplication({appId: '123', isSdkApp: false, projectId: 'test-project'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
-      uri: '/projects/test-project/user-applications/123',
+      url: '/projects/test-project/user-applications/123',
     })
     expect(app).toBe(result)
   })
@@ -50,7 +50,7 @@ describe('getUserApplication', () => {
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {appType: 'coreApp'},
-      uri: '/user-applications/123',
+      url: '/user-applications/123',
     })
     expect(app).toBe(result)
   })
@@ -67,7 +67,7 @@ describe('getUserApplication', () => {
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/projects/test-project/user-applications',
+      url: '/projects/test-project/user-applications',
     })
     expect(app).toBe(result)
   })
@@ -104,7 +104,7 @@ describe('deleteUserApplication', () => {
     expect(mockClient.request).toHaveBeenCalledWith({
       method: 'DELETE',
       query: {appType: 'coreApp'},
-      uri: '/user-applications/123',
+      url: '/user-applications/123',
     })
   })
 })
@@ -132,7 +132,7 @@ describe('createUserApplication', () => {
       },
       method: 'POST',
       query: {appType: 'studio'},
-      uri: '/projects/test-project/user-applications',
+      url: '/projects/test-project/user-applications',
     })
     expect(app).toBe(result)
   })
@@ -159,7 +159,7 @@ describe('createUserApplication', () => {
       },
       method: 'POST',
       query: {appType: 'coreApp', organizationId: 'org-123'},
-      uri: '/user-applications',
+      url: '/user-applications',
     })
     expect(app).toBe(result)
   })
@@ -213,7 +213,7 @@ describe('createDeployment', () => {
       expect.objectContaining({
         method: 'POST',
         query: {appType: 'studio'},
-        uri: '/projects/proj-123/user-applications/app-123/deployments',
+        url: '/projects/proj-123/user-applications/app-123/deployments',
       }),
     )
   })
@@ -286,7 +286,7 @@ describe('updateUserApplication', () => {
       body: {title: 'New Title'},
       method: 'PATCH',
       query: {appType: 'coreApp'},
-      uri: '/user-applications/123',
+      url: '/user-applications/123',
     })
     expect(result).toBe(updated)
   })

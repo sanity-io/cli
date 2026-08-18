@@ -25,7 +25,7 @@ export async function createCorsOrigin({
     },
     maxRedirects: 0,
     method: 'POST',
-    uri: `/projects/${projectId}/cors`,
+    url: `/projects/${projectId}/cors`,
   })
 }
 
@@ -42,7 +42,7 @@ export async function deleteCorsOrigin({originId, projectId}: DeleteCorsOriginOp
 
   return client.request({
     method: 'DELETE',
-    uri: `/projects/${projectId}/cors/${originId}`,
+    url: `/projects/${projectId}/cors/${originId}`,
   })
 }
 
@@ -62,5 +62,5 @@ export async function listCorsOrigins(projectId: string) {
     requireUser: true,
   })
 
-  return client.request<CorsOrigin[]>({uri: `/projects/${projectId}/cors`})
+  return client.request<CorsOrigin[]>({url: `/projects/${projectId}/cors`})
 }

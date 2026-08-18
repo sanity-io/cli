@@ -17,9 +17,10 @@ import {telemetryDisclosure} from '../../actions/telemetry/telemetryDisclosure.j
 import {CliCommandTelemetry, type CLITraceData} from '../../telemetry/cli.telemetry.js'
 import {detectRuntime} from '../../util/detectRuntime.js'
 import {parseArguments} from '../../util/parseArguments.js'
+import {type CommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 import {createTelemetryStore} from '../../util/telemetry/createTelemetryStore.js'
 
-export const setupTelemetry: Hook.Prerun = async function ({config}) {
+export const setupTelemetry: Hook.Prerun = async function ({Command, config}) {
   // Show telemetry disclosure
   telemetryDisclosure({logToStderr: (message) => process.stderr.write(`${message}\n`)})
 
@@ -47,7 +48,10 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
     runtimeVersion: process.version,
   })
 
-  const args = parseArguments()
+  const commandTelemetry = (
+    Command as (typeof Command & {telemetry?: CommandTelemetry}) | undefined
+  )?.telemetry
+  const args = parseArguments(process.argv, commandTelemetry)
 
   const traceOptions: CLITraceData = {
     commandArguments: args.argsWithoutOptions,

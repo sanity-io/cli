@@ -14,6 +14,7 @@ import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
+import {enrichAuthError} from './errors/enrichAuthError.js'
 import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
 import {getCliExecutionContext} from './executionContext.js'
@@ -110,6 +111,11 @@ export abstract class SanityCommand<T extends typeof Command>
       this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
       return this.exit(exitCodes.SIGINT)
     }
+
+    // 401s carry login/membership guidance in their message. Applied here
+    // rather than in transport middleware since client v8 dropped custom
+    // requesters.
+    enrichAuthError(err)
 
     // In other cases, we _do_ want to report the error
     reportCliTraceError(err)

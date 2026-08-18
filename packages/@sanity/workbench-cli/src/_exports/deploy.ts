@@ -4,6 +4,7 @@ export {
   resolveInstallationId,
   summarizeConfig,
 } from '../actions/deploy/deployConfig.js'
+export {toWorkbenchPayload, type WorkbenchDeployPayload} from '../actions/deploy/deployPayload.js'
 export {
   createCoreApp,
   type CreatedApplication,
@@ -11,7 +12,7 @@ export {
   deployWorkbenchApp,
 } from '../actions/deploy/deployWorkbenchApp.js'
 export {getWorkbench} from '../actions/deploy/getWorkbench.js'
-export {type DeployedExpose, summarizeInterfaces} from '../actions/deploy/summarizeInterfaces.js'
+export {type DeployedInterface, summarizeInterfaces} from '../actions/deploy/summarizeInterfaces.js'
 export {
   type Application,
   type BrettAccess,

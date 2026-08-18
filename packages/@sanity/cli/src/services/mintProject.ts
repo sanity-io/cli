@@ -12,7 +12,7 @@ const debug = subdebug('new:provision')
 /** Provision API version for minting unclaimed projects. */
 export const PROVISION_API_VERSION = 'v2026-06-23'
 
-const request = createRequester({middleware: {httpErrors: false, promise: {onlyBody: false}}})
+const request = createRequester({httpErrors: false})
 
 export interface MintedProject {
   apiHost: string
@@ -110,17 +110,17 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
     url,
   })
 
-  if (response.statusCode === 404) {
+  if (response.status === 404) {
     throw new Error(
       'Creating projects without an account is currently unavailable. Try again later, or run `sanity login` and `sanity init`.',
     )
   }
-  if (response.statusCode === 429) {
+  if (response.status === 429) {
     throw new Error('Project creation rate limit reached for this machine. Try again later.')
   }
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw new Error(`Project creation failed (HTTP ${response.statusCode}). Try again later.`)
+  if (response.status < 200 || response.status >= 300) {
+    throw new Error(`Project creation failed (HTTP ${response.status}). Try again later.`)
   }
 
-  return parseProvisionResponse(response.body)
+  return parseProvisionResponse(response.text())
 }

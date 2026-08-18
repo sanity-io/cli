@@ -87,6 +87,12 @@ function outputLines(): string[] {
     .map((line) => stripVTControlCharacters(String(line)))
 }
 
+function stderrText(): string {
+  return stripVTControlCharacters(
+    vi.mocked(process.stderr.write).mock.calls.flat().map(String).join('\n'),
+  )
+}
+
 beforeEach(() => {
   vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
   mockMintUnclaimedProject.mockResolvedValue(project)
@@ -147,6 +153,7 @@ describe('#new', () => {
       `│  SANITY_AUTH_TOKEN="${project.token}" sanity "command"`,
     ])
     expect(output).toContain(studioUrl)
+    expect(output).toContain('cd sanity && npx sanity@latest dev')
     const studioLinkIndex = lines.indexOf(`│  Then open this link: ${studioUrl}`)
     expect(lines.slice(studioLinkIndex, studioLinkIndex + 3)).toEqual([
       `│  Then open this link: ${studioUrl}`,
@@ -306,6 +313,35 @@ describe('#new', () => {
     expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
   })
 
+  test.each([
+    ['a transport failure', new Error('network unavailable')],
+    [
+      'rate limiting',
+      new Error('Project creation rate limit reached for this machine. Try again later.'),
+    ],
+  ])('reports %s before recording or scaffolding', async (_, error) => {
+    mockMintUnclaimedProject.mockRejectedValue(error)
+
+    await expect(NewCommand.run(['My New Project'])).rejects.toThrow(error.message)
+
+    expect(stderrText()).toContain('Creating your project failed.')
+    expect(mockRecordUnclaimedProject).not.toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    expect(outputText()).not.toContain(project.claimUrl)
+    expect(outputText()).not.toContain(project.token)
+  })
+
+  test('keeps the credential handoff when the local recovery record cannot be saved', async () => {
+    mockRecordUnclaimedProject.mockReturnValue(false)
+
+    await expect(NewCommand.run(['My New Project', '--no-scaffold'])).resolves.toEqual(result)
+
+    expect(outputText()).toContain('The local recovery record was not saved.')
+    expect(outputText()).toContain('Keep the claim URL and access token from this output.')
+    expect(outputText()).toContain(project.claimUrl)
+    expect(outputText()).toContain(project.token)
+  })
+
   test('keeps project details without suggesting unsupported manual recovery', async () => {
     mockScaffoldProject.mockRejectedValue(new Error('template failed'))
 
@@ -383,6 +419,16 @@ describe('#new', () => {
   })
 
   test('--json records recovery but does not scaffold or print flow output', async () => {
+    await expect(NewCommand.run(['My New Project', '--json'])).resolves.toEqual(result)
+
+    expect(mockRecordUnclaimedProject).toHaveBeenCalledWith(project)
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalled()
+  })
+
+  test('--json returns credentials when the best-effort recovery write fails', async () => {
+    mockRecordUnclaimedProject.mockReturnValue(false)
+
     await expect(NewCommand.run(['My New Project', '--json'])).resolves.toEqual(result)
 
     expect(mockRecordUnclaimedProject).toHaveBeenCalledWith(project)

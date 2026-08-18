@@ -60,12 +60,12 @@ const configAdapter = () =>
   })
 
 function stubInstallations(configs: unknown[]) {
-  mockRequest.mockImplementation(async ({uri}: {uri: string}) => {
-    if (uri === '/installations') {
+  mockRequest.mockImplementation(async ({url}: {url: string}) => {
+    if (url === '/installations') {
       return {data: [{application: {slug: 'media-library'}, id: 'inst-1'}]}
     }
-    if (uri === '/installations/inst-1/configs') return {data: configs}
-    throw new Error(`unexpected request to ${uri}`)
+    if (url === '/installations/inst-1/configs') return {data: configs}
+    throw new Error(`unexpected request to ${url}`)
   })
 }
 
@@ -103,16 +103,17 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     const resolution = await appAdapter().resolveTarget()
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({uri: '/applications/wb-app-1'}),
+      expect.objectContaining({url: '/applications/wb-app-1'}),
     )
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
+      application: {id: 'wb-app-1', slug: 'my-app-x1', title: 'My App', type: 'coreApp'},
       deletes: 'application',
       id: 'wb-app-1',
-      interfaces: [{name: 'insights', title: 'Insights', type: 'panel'}],
-      organizationId: 'org-1',
+      services: [],
       title: 'My App',
       type: 'coreApp',
       url: 'https://org-1.sanity.run/application/wb-app-1',
+      views: [{name: 'insights', title: 'Insights', type: 'panel'}],
     })
   })
 
@@ -152,7 +153,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     await instance.undeploy(resolution.target)
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/applications/wb-app-1'}),
+      expect.objectContaining({method: 'DELETE', url: '/applications/wb-app-1'}),
     )
   })
 
@@ -210,22 +211,15 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     const resolution = await configAdapter().resolveTarget()
 
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
-      // The active snapshot is the config being served
-      activeDeployment: {
-        deployedAt: '2024-02-01T00:00:00Z',
-        deployedBy: 'gustav@sanity.io',
-      },
       configs: [expect.objectContaining({id: 'cfg-2'}), expect.objectContaining({id: 'cfg-1'})],
-      createdAt: '2024-01-01T00:00:00Z',
       deletes: 'config',
       id: null,
-      organizationId: 'org-1',
       title: 'media-library',
       url: 'https://org-1.sanity.run',
     })
   })
 
-  test('workbench internals and versions stay off the target', async () => {
+  test('local workbench internals stay off the target', async () => {
     stubInstallations([
       {
         createdAt: '2024-01-01T00:00:00Z',
@@ -244,8 +238,7 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     expect(resolution.target).not.toHaveProperty('fields')
     expect(resolution.target).not.toHaveProperty('installationId')
     expect(resolution.target).not.toHaveProperty('isSingleton')
-    expect(resolution.target.activeDeployment).not.toHaveProperty('version')
-    expect(resolution.target.configs[0]).not.toHaveProperty('version')
+    expect(resolution.target.configs[0]).toMatchObject({id: 'cfg-1', version: '1.0.0'})
   })
 
   test('a media library without local fields still undeploys its config', async () => {
@@ -262,15 +255,6 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
       configs: [expect.objectContaining({id: 'cfg-1'})],
       deletes: 'config',
     })
-  })
-
-  test('history without an active snapshot reports no active deployment', async () => {
-    stubInstallations([{createdAt: '2024-01-01T00:00:00Z', id: 'cfg-1', version: '1.0.0'}])
-
-    const resolution = await configAdapter().resolveTarget()
-    if (resolution.type !== 'found') throw new Error('expected found')
-
-    expect(resolution.target.activeDeployment).toBeNull()
   })
 
   test('no active installation → nothing to undeploy', async () => {
@@ -313,10 +297,10 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     await instance.undeploy(resolution.target)
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/installations/inst-1/configs/cfg-2'}),
+      expect.objectContaining({method: 'DELETE', url: '/installations/inst-1/configs/cfg-2'}),
     )
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/installations/inst-1/configs/cfg-1'}),
+      expect.objectContaining({method: 'DELETE', url: '/installations/inst-1/configs/cfg-1'}),
     )
   })
 

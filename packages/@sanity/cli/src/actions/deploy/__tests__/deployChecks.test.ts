@@ -73,13 +73,14 @@ describe('checkStudioTarget', () => {
     expect(reporter.results[0]?.message).toContain(
       'Deploys to existing studio https://my-studio.sanity.studio',
     )
-    // The URL the human report shows is the same one the JSON reporter reads
     expect(reporter.results[0]?.target).toEqual({
       action: 'update',
-      applicationId: 'app-1',
+      id: 'app-1',
       title: null,
+      type: 'studio',
       url: 'https://my-studio.sanity.studio',
     })
+    expect(reporter.results[0]?.application).toEqual(application())
   })
 
   test('would-create → pass check', async () => {
@@ -104,8 +105,9 @@ describe('checkStudioTarget', () => {
     // The JSON target echoes the requested title, matching the human message
     expect(reporter.results[0]?.target).toEqual({
       action: 'create',
-      applicationId: null,
+      id: null,
       title: 'My Studio',
+      type: 'studio',
       url: 'https://new-studio.sanity.studio',
     })
   })
@@ -219,7 +221,7 @@ describe('checkAppTarget', () => {
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "My App"')
     expect(reporter.results[0]?.message).toContain('/@org-1/application/core-1')
     expect(reporter.results[0]?.target?.action).toBe('update')
-    expect(reporter.results[0]?.target?.applicationId).toBe('core-1')
+    expect(reporter.results[0]?.target?.id).toBe('core-1')
     expect(reporter.results[0]?.target?.url).toContain('/@org-1/application/core-1')
   })
 
@@ -246,8 +248,9 @@ describe('checkAppTarget', () => {
     // The JSON target carries the pending title; id and URL come on creation
     expect(reporter.results[0]?.target).toEqual({
       action: 'create',
-      applicationId: null,
+      id: null,
       title: 'My App',
+      type: 'coreApp',
       url: null,
     })
   })
@@ -349,9 +352,10 @@ describe('checkAppTarget (workbench backend)', () => {
     )
     expect(reporter.results[0]?.target).toEqual({
       action: 'create',
-      applicationId: null,
+      id: null,
       slug: 'drop-desk',
       title: 'New App',
+      type: 'coreApp',
       url: null,
     })
   })
@@ -363,6 +367,7 @@ describe('slug-taken', () => {
     id: 'existing-1',
     organizationId: 'org-1',
     title: 'Agent',
+    type: 'coreApp' as const,
     url: 'https://org-1.sanity.run/application/existing-1',
   }
 
@@ -376,8 +381,9 @@ describe('slug-taken', () => {
     // The resolved app id is machine-readable in the target too, for --json.
     expect(check.target).toEqual({
       action: 'update',
-      applicationId: 'existing-1',
+      id: 'existing-1',
       title: 'Agent',
+      type: 'coreApp',
       url: 'https://org-1.sanity.run/application/existing-1',
     })
     // A studio collides in the same namespace, so it gets the same diagnosis.
@@ -401,7 +407,8 @@ describe('a workbench would-create', () => {
     })
     const app = describeAppTarget(resolution, {title: 'My Thing'})
 
-    expect(studio.target).toEqual(app.target)
+    // Same pending target, only the type each command creates differs.
+    expect(studio.target).toEqual({...app.target, type: 'studio'})
     expect(studio.target?.slug).toBe('my-slug')
     expect(studio.message).toBe(
       'Would create a new studio "My Thing" with slug "my-slug" (name availability is checked on deploy)',
@@ -421,7 +428,7 @@ describe('checkStudioTarget (workbench backend)', () => {
     mockGetApplication.mockResolvedValue(workbenchApp({slug: 'my-studio', type: 'studio'}))
     const reporter = createCollectingReporter<DeployCheck>()
 
-    const target = await checkStudioTarget(reporter, {
+    const check = await checkStudioTarget(reporter, {
       appId: 'app-1',
       isWorkbenchApp: true,
       slug: 'my-studio',
@@ -431,8 +438,8 @@ describe('checkStudioTarget (workbench backend)', () => {
     expect(reporter.results[0]?.message).toContain(
       'Deploys to existing studio https://org-1.sanity.run/studio/app-1',
     )
-    expect(target?.action).toBe('update')
-    expect(target?.url).toBe('https://org-1.sanity.run/studio/app-1')
+    expect(check?.target?.action).toBe('update')
+    expect(check?.target?.url).toBe('https://org-1.sanity.run/studio/app-1')
   })
 
   test('no appId → pass check naming the slug the studio would be created at', async () => {
@@ -452,9 +459,10 @@ describe('checkStudioTarget (workbench backend)', () => {
     expect(reporter.results[0]?.message).not.toContain('hostname')
     expect(reporter.results[0]?.target).toEqual({
       action: 'create',
-      applicationId: null,
+      id: null,
       slug: 'my-studio',
       title: 'New Studio',
+      type: 'studio',
       url: null,
     })
     expect(mockGetApplication).not.toHaveBeenCalled()

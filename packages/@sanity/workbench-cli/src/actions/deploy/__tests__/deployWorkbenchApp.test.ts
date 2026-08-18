@@ -62,12 +62,12 @@ describe('createCoreApp', () => {
 
     expect(
       await createCoreApp({organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk'}),
-    ).toMatchObject({applicationId: 'app_new'})
+    ).toMatchObject({application: {id: 'app_new'}})
     // A record-only create is a plain JSON POST (no multipart, no tarball).
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk', type: 'coreApp'},
       method: 'POST',
-      uri: '/applications',
+      url: '/applications',
     })
   })
 
@@ -104,13 +104,13 @@ describe('createCoreApp', () => {
 
     expect(mockClient.request).toHaveBeenLastCalledWith({
       method: 'DELETE',
-      uri: '/applications/app_new',
+      url: '/applications/app_new',
     })
   })
 })
 
 describe('createStudio', () => {
-  test('creates a studio at the given slug and returns the id', async () => {
+  test('creates a studio at the given slug and returns the record', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
 
     expect(
@@ -120,7 +120,7 @@ describe('createStudio', () => {
         slug: 'my-studio',
         title: 'My Studio',
       }),
-    ).toMatchObject({applicationId: 'studio_new'})
+    ).toMatchObject({application: {id: 'studio_new'}})
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {
         config: {studio: {projectId: 'proj-1'}},
@@ -130,7 +130,7 @@ describe('createStudio', () => {
         type: 'studio',
       },
       method: 'POST',
-      uri: '/applications',
+      url: '/applications',
     })
   })
 
@@ -178,7 +178,7 @@ describe('deployWorkbenchApp', () => {
 
     expect(mockClient.request.mock.calls[0][0]).toMatchObject({
       method: 'POST',
-      uri: '/applications/app_1/deployments',
+      url: '/applications/app_1/deployments',
     })
     const fields = appendedFields()
     expect(fields).toContainEqual(['version', '1.0.0'])
@@ -300,7 +300,7 @@ describe('deployWorkbenchApp', () => {
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {icon, title: 'Drop Desk'},
       method: 'PATCH',
-      uri: '/applications/app_1',
+      url: '/applications/app_1',
     })
   })
 
@@ -320,7 +320,7 @@ describe('deployWorkbenchApp', () => {
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {title: 'Drop Desk'},
       method: 'PATCH',
-      uri: '/applications/app_1',
+      url: '/applications/app_1',
     })
   })
 
@@ -341,7 +341,7 @@ describe('deployWorkbenchApp', () => {
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {title: 'Drop Desk', visibility: 'unlisted'},
       method: 'PATCH',
-      uri: '/applications/app_1',
+      url: '/applications/app_1',
     })
   })
 

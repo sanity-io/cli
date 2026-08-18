@@ -25,8 +25,10 @@ import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {exitCodes} from '@sanity/cli-core'
 import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
 import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {type FetchFunction} from 'get-it'
 import {parseArgsStringToArgv} from 'string-argv'
 
+import {resolveTopicAliasInArgv} from '../../topicAliases.js'
 import {commandPolicies} from './commandPolicies/index.js'
 import {
   type CommandPolicySet,
@@ -122,6 +124,14 @@ export interface InvokeSanityCliOptions {
   config?: Config
 
   /**
+   * Optional fetch implementation for API requests made by this invocation.
+   * Scoped to this call via the CLI execution context; defaults to the CLI's
+   * own transport. The execution context's transport hygiene (such as
+   * stripping the embedding process's lineage header) is applied on top.
+   */
+  fetch?: FetchFunction
+
+  /**
    * Sanity deployment environment for this invocation. Scoped to this call
    * via the CLI execution context and defaults to production. The embedding
    * process's `SANITY_INTERNAL_ENV` is never consulted.
@@ -177,12 +187,12 @@ export async function invokeSanityCli(
   const resolvedConfig = options.config ?? (await (cachedConfig ??= loadCliCommandConfig()))
   const output: string[] = []
   const sink = (line: string) => output.push(line)
-  const {sanityEnv, token} = options
+  const {fetch, sanityEnv, token} = options
 
   // Establish the isolation boundary before rendering help, loading command
   // modules, parsing, or executing. Any code reached by an external
   // invocation can therefore fail closed on context.
-  return runWithCliExecutionContext({sanityEnv, stderr: sink, stdout: sink, token}, () =>
+  return runWithCliExecutionContext({fetch, sanityEnv, stderr: sink, stdout: sink, token}, () =>
     invokeSanityCliInContext(options, resolvedConfig, output),
   )
 }
@@ -201,6 +211,7 @@ async function invokeSanityCliInContext(
       ? parseArgsStringToArgv(args).map((t) => stripFlagQuotes(t))
       : [...args]
   if (argv[0] === 'sanity') argv = argv.slice(1)
+  argv = resolveTopicAliasInArgv(argv)
 
   // Help requests are routed through oclif's help system, scoped to the
   // source's policy: root help for a bare request, topic/command help when a

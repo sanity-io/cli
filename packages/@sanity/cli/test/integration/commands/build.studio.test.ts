@@ -81,6 +81,12 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     expect(files).toContain('index.html')
     expect(files).toContain('static')
 
+    // verify index.html contains `sanity-resource-bindings` script tag
+    const indexHtml = await readFile(join(outputFolder, 'index.html'), 'utf8')
+    expect(indexHtml).toContain(
+      '<script type="application/json" id="sanity-resource-bindings">[]</script>',
+    )
+
     // Federation artifacts should NOT be present when federation is not enabled
     expect(files).not.toContain('federation')
     expect(files).not.toContain('mf-manifest.json')

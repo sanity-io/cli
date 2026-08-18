@@ -3,6 +3,7 @@ import {mkdir} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
+import {Flags} from '@oclif/core'
 import {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
@@ -21,9 +22,15 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {setupTelemetry} from '../../../../src/hooks/prerun/setupTelemetry.js'
 import {TELEMETRY_API_VERSION} from '../../../../src/services/telemetry.js'
+import {defineCommandTelemetry} from '../../../../src/util/telemetry/commandTelemetry.js'
 import {flushTelemetryFiles} from '../../../../src/util/telemetry/flushTelemetryFiles.js'
 import {readNDJSON} from '../../../../src/util/telemetry/readNDJSON.js'
 import {getCommandAndConfig} from '../../../helpers/getCommandAndConfig.js'
+
+const mockTelemetryDebug = vi.hoisted(() => {
+  const debug = vi.fn()
+  return Object.assign(debug, {enabled: false, extend: () => debug})
+})
 
 // Mock external dependencies
 vi.mock('node:os', () => ({tmpdir: vi.fn()}))
@@ -41,6 +48,9 @@ vi.mock('@sanity/cli-core', async () => ({
   getUserConfig: vi.fn(),
   isCi: vi.fn(() => false),
 }))
+vi.mock('../../../../src/actions/telemetry/telemetryDebug.js', () => ({
+  telemetryDebug: mockTelemetryDebug,
+}))
 
 const mockTmpdir = vi.mocked(tmpdir)
 const mockSpawn = vi.mocked(spawn)
@@ -49,7 +59,13 @@ const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockGetUserConfig = vi.mocked(getUserConfig)
 const mockIsCi = vi.mocked(isCi)
 
-const {config} = await getCommandAndConfig('help')
+const {Command, config} = await getCommandAndConfig('help')
+const {Command: validateCommand} = await getCommandAndConfig('documents:validate')
+const validateCommandTelemetry = defineCommandTelemetry({file: Flags.string()}, {redact: ['file']})
+const redactedValidateCommand = new Proxy(validateCommand, {
+  get: (target, property, receiver) =>
+    property === 'telemetry' ? validateCommandTelemetry : Reflect.get(target, property, receiver),
+})
 
 // Create mock functions for getUserConfig get/set methods
 const mockGet = vi.fn()
@@ -221,6 +237,75 @@ describe('setupTelemetry integration test', () => {
     const timestamp = mockSet.mock.calls[0][1]
     expect(timestamp).toBeGreaterThanOrEqual(beforeTime)
     expect(timestamp).toBeLessThanOrEqual(afterTime)
+  })
+
+  test('records help from the process arguments', async () => {
+    const originalArgv = process.argv
+    process.argv = ['node', 'sanity', 'help', 'documents', 'validate']
+
+    try {
+      await testHook<'prerun'>(setupTelemetry, {Command, config})
+    } finally {
+      process.argv = originalArgv
+    }
+
+    expect(mockTelemetryDebug).toHaveBeenCalledWith(
+      'Starting command trace',
+      expect.objectContaining({
+        coreOptions: expect.objectContaining({help: true}),
+        groupOrCommand: 'help',
+      }),
+    )
+  })
+
+  test('preserves flag values when the command does not opt into redaction', async () => {
+    const originalArgv = process.argv
+    process.argv = [
+      'node',
+      'sanity',
+      'documents',
+      'validate',
+      '--file=/Users/jane/private.ndjson',
+      '--format=json',
+    ]
+
+    try {
+      await testHook<'prerun'>(setupTelemetry, {Command: validateCommand, config})
+    } finally {
+      process.argv = originalArgv
+    }
+
+    expect(mockTelemetryDebug).toHaveBeenCalledWith(
+      'Starting command trace',
+      expect.objectContaining({
+        extraArguments: ['--file=/Users/jane/private.ndjson', '--format=json'],
+      }),
+    )
+  })
+
+  test('applies command-owned flag redaction without changing other values', async () => {
+    const originalArgv = process.argv
+    process.argv = [
+      'node',
+      'sanity',
+      'documents',
+      'validate',
+      '--file=/Users/jane/private.ndjson',
+      '--format=json',
+    ]
+
+    try {
+      await testHook<'prerun'>(setupTelemetry, {Command: redactedValidateCommand, config})
+    } finally {
+      process.argv = originalArgv
+    }
+
+    expect(mockTelemetryDebug).toHaveBeenCalledWith(
+      'Starting command trace',
+      expect.objectContaining({
+        extraArguments: ['--file', '--format=json'],
+      }),
+    )
   })
 
   test('should handle complete telemetry lifecycle from initialization to flush', async () => {

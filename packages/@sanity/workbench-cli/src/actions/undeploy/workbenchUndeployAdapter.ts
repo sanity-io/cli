@@ -11,24 +11,19 @@ import {
   getApplicationUrl,
   getWorkbenchUrl,
 } from '../../services/applications.js'
-import {deleteConfig, listConfigs} from '../../services/installations.js'
+import {type ConfigSnapshot, deleteConfig, listConfigs} from '../../services/installations.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
-import {type DeployedExpose, summarizeInterfaces} from '../deploy/summarizeInterfaces.js'
+import {type DeployedInterface, summarizeInterfaces} from '../deploy/summarizeInterfaces.js'
 
 /** The workbench extension of the shared target; serializes into `--json` as-is. */
 export type WorkbenchUndeployTarget =
   | (UndeployApplicationTarget & {
-      /** Interfaces (views and services) registered by the application. */
-      interfaces: DeployedExpose[]
+      services: DeployedInterface[]
+      views: DeployedInterface[]
     })
   | (UndeployConfigTarget & {
-      /** The deployed config snapshots an undeploy deletes. */
-      configs: {
-        createdAt: string | null
-        deployedBy: string | null
-        id: string
-      }[]
+      configs: ConfigSnapshot[]
     })
 
 /**
@@ -95,17 +90,14 @@ async function resolveApplicationTarget({
     return {message: 'Application with the given ID does not exist', type: 'none'}
   }
 
-  const {exposes, lines} = summarizeInterfaces(workbench)
+  const {lines, services, views} = summarizeInterfaces(workbench)
   return {
     target: {
-      activeDeployment: null,
-      appHost: application.slug,
-      createdAt: null,
+      application,
       deletes: 'application',
       id: application.id,
-      interfaces: exposes,
-      organizationId: application.organizationId,
-      projectId: null,
+      payload: {appId: application.id, services, type, views},
+      services,
       summary: [
         ...lines,
         ...(workbench.isSingleton === undefined ? [] : [`Singleton: ${workbench.isSingleton}`]),
@@ -113,6 +105,7 @@ async function resolveApplicationTarget({
       title: application.title,
       type,
       url: getApplicationUrl({...application, type}),
+      views,
     },
     type: 'found',
   }
@@ -158,27 +151,19 @@ async function resolveConfigTarget({
     }
   }
 
-  // At most one snapshot is active (served); the rest are deactivated history.
-  const active = configs.find((snapshot) => snapshot.isActive)
   return {
     installationId,
     resolution: {
       target: {
-        activeDeployment: active
-          ? {deployedAt: active.createdAt ?? '', deployedBy: active.deployedBy ?? ''}
-          : null,
-        appHost: null,
-        configs: configs.map((snapshot) => ({
-          createdAt: snapshot.createdAt ?? null,
-          deployedBy: snapshot.deployedBy ?? null,
-          id: snapshot.id,
-        })),
-        createdAt: configs.at(-1)?.createdAt ?? null,
+        configs,
         deletes: 'config',
         id: null,
-        organizationId,
-        projectId: null,
-        summary: config ? [summarizeConfig(config)] : undefined,
+        payload: {
+          appId: null,
+          ...(config ? {config: summarizeConfig(config)} : {}),
+          type: 'coreApp',
+        },
+        summary: config ? [summarizeConfig(config)] : [],
         title: workbench.slug,
         type: 'coreApp',
         url: getWorkbenchUrl(organizationId),

@@ -1,5 +1,30 @@
 # Changelog
 
+## 3.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.0.0...cli-core-v3.1.0)
+
+_2026-08-18_
+
+### Features
+
+- Migrate `@sanity/cli-core/request` to get-it v9 and upgrade `@sanity/client` to v8 ([#1534](https://github.com/sanity-io/cli/pull/1534)) ([9230315](https://github.com/sanity-io/cli/commit/92303158f7737bc21e40d4dc208e5158445cb0cd))
+
+## 3.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v2.8.1...cli-core-v3.0.0)
+
+_2026-08-14_
+
+### ⚠ BREAKING CHANGES
+
+- **cli:** unify the --json shape of deploy and undeploy ([#1691](https://github.com/sanity-io/cli/pull/1691)) ([8ed25bb](https://github.com/sanity-io/cli/commit/8ed25bbc0c2e2b3365d5b3dcd88567563ae9ab5a))
+
+### Bug Fixes
+
+- **cli:** trim deploy payload and undeploy dry-run output ([#1696](https://github.com/sanity-io/cli/pull/1696)) ([1462d82](https://github.com/sanity-io/cli/commit/1462d8236f67a706397ca774fb3f9abaf4929cd6))
+- adopt typegen CLI integration ([#1634](https://github.com/sanity-io/cli/pull/1634)) ([45406ea](https://github.com/sanity-io/cli/commit/45406ea76e40cd63f70b658d656ef75a4059a889))
+
 ## 2.8.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v2.8.0...cli-core-v2.8.1)

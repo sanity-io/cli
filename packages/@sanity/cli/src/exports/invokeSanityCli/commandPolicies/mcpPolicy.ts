@@ -65,6 +65,9 @@ export const mcpPolicy: CommandPolicySet = {
     validate: apiValidator,
   }),
 
+  // Reads a file from the machine running the command and must only run locally.
+  'assets:upload': deny,
+
   'backups:disable': allow,
   // Writes a downloaded backup to the local filesystem.
   'backups:download': deny,
@@ -230,6 +233,9 @@ export const mcpPolicy: CommandPolicySet = {
   'tokens:list': deny,
   // Replaces authentication credentials and exposes the new secret.
   'tokens:rotate': deny,
+
+  // Reads the local schema and source files and writes generated types to the project.
+  'typegen:generate': deny,
 
   // Loads local CLI and workbench configuration to identify the deployed Studio or application.
   undeploy: deny,

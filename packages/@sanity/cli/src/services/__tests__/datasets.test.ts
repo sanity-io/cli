@@ -171,7 +171,7 @@ describe('#listDatasetAliases', () => {
       projectId: 'test-project',
       requireUser: true,
     })
-    expect(mockClient.request).toHaveBeenCalledWith({uri: '/aliases'})
+    expect(mockClient.request).toHaveBeenCalledWith({url: '/aliases'})
     expect(result).toBe(mockAliases)
   })
 })

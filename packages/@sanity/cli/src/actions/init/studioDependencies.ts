@@ -15,7 +15,7 @@ export const studioDependencies = {
 
   devDependencies: {
     // Linting/tooling
-    '@sanity/eslint-config-studio': 'latest',
+    '@sanity/eslint-config-studio': '^6',
     // When using typescript, we'll want the these types too, so might as well install them
     '@types/react': '^19.2.14',
     eslint: '^9.28',

@@ -3,11 +3,12 @@ import {join, relative, sep} from 'node:path'
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
-import {type DeployedExpose, summarizeInterfaces} from '@sanity/workbench-cli/deploy'
+import {type DeployedInterface, summarizeInterfaces} from '@sanity/workbench-cli/deploy'
 
 import {checkStatusIcon, nestLines, renderIssues} from '../../util/checks.js'
 import {pluralize} from '../../util/pluralize.js'
 import {type DeployCheck, type DeployCheckReporter, type DeployTarget} from './deployChecks.js'
+import {type DeployPayload} from './deployRunner.js'
 
 export interface DeploymentFile {
   /** Path relative to the project root, POSIX-style. */
@@ -18,19 +19,12 @@ export interface DeploymentFile {
 /** What a `--dry-run` deploy would do: the real deploy sequence with every mutation gated off. */
 export interface DeploymentPlan {
   checks: DeployCheck[]
-  /** Media-library config summary; `null` unless a config deploys. */
-  config: string | null
-  /** Workbench views and services registered with the deploy. */
-  exposes: DeployedExpose[]
   files: DeploymentFile[]
+  /** `null` when the run bailed before collecting it. */
+  payload: DeployPayload | null
   /** The resolved deploy target; `null` when the checks can't determine one. */
   target: DeployTarget | null
   type: 'coreApp' | 'studio'
-  /** Installed framework version the deploy would use; `null` when not found. */
-  version: string | null
-
-  /** The app's explicit `isSingleton` flag; `undefined` when the app doesn't set it. */
-  isSingleton?: boolean
 }
 
 /**
@@ -82,16 +76,15 @@ function totalBytes(files: DeploymentFile[]): number {
  * human report renders (its pass/skip lines are informational and omitted here).
  */
 export function deploymentPlanToJson(plan: DeploymentPlan): {
-  applicationType: DeploymentPlan['type']
-  applicationVersion: string | null
-  config?: string
+  action: DeployTarget['action'] | null
+  application: null
+  canDeploy: boolean
   errors: Record<string, string | null>
-  exposes?: DeployedExpose[]
   files: DeploymentFile[]
-  isDeployable: boolean
-  isSingleton?: boolean
-  target: DeployTarget | null
+  payload: DeployPayload | null
+  reason: string | null
   totalBytes: number
+  url: string | null
   warnings: string[]
 } {
   const errors: Record<string, string | null> = {}
@@ -101,37 +94,28 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
     else if (check.status === 'warn') warnings.push(check.message)
   }
 
-  // `exposes`, `config` and `isSingleton` are workbench-only; plain
-  // apps (and apps that don't set the flag) omit them.
   return {
-    applicationType: plan.type,
-    applicationVersion: plan.version,
+    action: plan.target?.action ?? null,
+    // Only a successful deploy reports the backend's record.
+    application: null,
+    canDeploy: isDeployable(plan),
     errors,
-    ...(plan.exposes.length > 0 ? {exposes: plan.exposes} : {}),
     files: plan.files,
-    ...(plan.config ? {config: plan.config} : {}),
-    isDeployable: isDeployable(plan),
-    ...(plan.isSingleton === undefined ? {} : {isSingleton: plan.isSingleton}),
-    target: plan.target,
+    payload: plan.payload,
+    reason: plan.checks.find((check) => check.status === 'fail')?.message ?? null,
     totalBytes: totalBytes(plan.files),
+    url: plan.target?.url ?? null,
     warnings,
   }
 }
 
-/**
- * Reports an app's exposes as pass checks and returns them structured for the
- * `--json` payload. The structured list rides on the first check so a dry run's
- * collector can read it back.
- */
-export function reportExposes(
+export function reportInterfaces(
   reporter: DeployCheckReporter,
   app: Parameters<typeof summarizeInterfaces>[0],
-): DeployedExpose[] {
-  const {exposes, lines} = summarizeInterfaces(app)
-  for (const [index, message] of lines.entries()) {
-    reporter.report({exposes: index === 0 ? exposes : undefined, message, status: 'pass'})
-  }
-  return exposes
+): {services: DeployedInterface[]; views: DeployedInterface[]} {
+  const {lines, services, views} = summarizeInterfaces(app)
+  for (const message of lines) reporter.report({message, status: 'pass'})
+  return {services, views}
 }
 
 export function renderDeploymentPlan(plan: DeploymentPlan, output: Output): void {

@@ -11,10 +11,11 @@ import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 /** The application fields a deploy-target verdict carries for reporting. */
 export interface DeployTargetApp {
-  appHost: string
   id: string
   title: string | null
+  type: 'coreApp' | 'studio'
 
+  appHost?: string
   url?: string
 }
 
@@ -185,13 +186,7 @@ export async function resolveWorkbenchApp({
     if (existing) {
       return {
         appHost: slug,
-        existing: {
-          appHost: slug,
-          id: existing.id,
-          organizationId: existing.organizationId,
-          title: existing.title,
-          url: getApplicationUrl(existing),
-        },
+        existing: {...existing, url: getApplicationUrl(existing)},
         type: 'slug-taken',
       }
     }
@@ -222,13 +217,7 @@ async function resolveAppById(
   const application = await getApplication(appId)
   return application
     ? {
-        application: {
-          appHost: application.slug ?? '',
-          id: application.id,
-          organizationId: application.organizationId,
-          title: application.title,
-          url: getApplicationUrl(application),
-        },
+        application: {...application, url: getApplicationUrl(application)},
         type: 'found',
       }
     : {message: APP_ID_NOT_FOUND_IN_ORGANIZATION, reason: 'app-not-found', type: 'invalid'}

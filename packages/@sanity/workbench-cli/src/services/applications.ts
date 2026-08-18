@@ -79,7 +79,7 @@ async function getClient() {
 export async function getApplication(applicationId: string): Promise<Application | null> {
   const client = await getClient()
   try {
-    return await client.request({uri: `/applications/${applicationId}`})
+    return await client.request({url: `/applications/${applicationId}`})
   } catch (err) {
     if ((err as {statusCode?: number})?.statusCode === 404) return null
     throw err
@@ -91,7 +91,7 @@ export async function listApplications(organizationId: string): Promise<Applicat
   const client = await getClient()
   const {data}: {data: Application[]} = await client.request({
     query: {limit: 'none', organizationId},
-    uri: '/applications',
+    url: '/applications',
   })
   return data
 }
@@ -123,7 +123,7 @@ export async function createApplication(options: {
       ...(projectId ? {config: {studio: {projectId}}} : {}),
     },
     method: 'POST',
-    uri: `/applications`,
+    url: `/applications`,
   })
 }
 
@@ -140,7 +140,7 @@ export async function updateApplication(
   update: ApplicationUpdate,
 ): Promise<void> {
   const client = await getClient()
-  await client.request({body: update, method: 'PATCH', uri: `/applications/${applicationId}`})
+  await client.request({body: update, method: 'PATCH', url: `/applications/${applicationId}`})
 }
 
 /** Deploy a new active version to an existing application. */
@@ -164,7 +164,7 @@ export async function createDeployment(options: {
 export async function deleteApplication(applicationId: string): Promise<void> {
   const client = await getClient()
   try {
-    await client.request({method: 'DELETE', uri: `/applications/${applicationId}`})
+    await client.request({method: 'DELETE', url: `/applications/${applicationId}`})
   } catch (err) {
     if ((err as {statusCode?: number})?.statusCode !== 404) throw err
   }
@@ -200,12 +200,12 @@ function appendJson(formData: FormData, name: string, value: unknown): void {
   formData.append(name, JSON.stringify(value), {contentType: 'application/json'})
 }
 
-async function request<T>(uri: string, formData: FormData): Promise<T> {
+async function request<T>(url: string, formData: FormData): Promise<T> {
   const client = await getClient()
   return client.request({
     body: formData.pipe(new PassThrough()),
     headers: formData.getHeaders(),
     method: 'POST',
-    uri,
+    url,
   })
 }

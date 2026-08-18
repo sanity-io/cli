@@ -61,12 +61,14 @@ describe('runDeploy dry run', () => {
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('This studio can be deployed.'))
   })
 
-  test('the JSON plan reports the version the run resolved, not a separate lookup', async () => {
+  test('the JSON plan reports the payload the run collected', async () => {
     const output = mockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [],
-      run: async (_options, reporter) =>
-        reporter.report({message: 'Using sanity 9.9.9', status: 'pass', version: '9.9.9'}),
+      run: async () => ({
+        application: null,
+        payload: {appId: null, isAutoUpdating: false, type: 'studio' as const, version: '9.9.9'},
+      }),
       type: 'studio',
     }
 
@@ -76,7 +78,7 @@ describe('runDeploy dry run', () => {
     )
 
     const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
-    expect(payload.applicationVersion).toBe('9.9.9')
+    expect(payload.payload.version).toBe('9.9.9')
   })
 
   test('a blocked --json dry run prints the plan only, never a deploy envelope', async () => {
@@ -109,14 +111,16 @@ describe('runDeploy real deploy', () => {
   test('emits the deploy result as JSON, marked deployed', async () => {
     const output = mockOutput()
     const result = {
-      applicationType: 'studio' as const,
-      applicationVersion: '3.99.0',
-      target: {
-        action: 'update' as const,
-        applicationId: 'app-1',
+      action: 'update' as const,
+      application: {id: 'app-1', slug: 'my-studio'},
+      payload: {
+        appId: 'app-1',
+        isAutoUpdating: false,
         title: 'My Studio',
-        url: 'https://my-studio.sanity.studio',
+        type: 'studio' as const,
+        version: '3.99.0',
       },
+      url: 'https://my-studio.sanity.studio',
     }
     const spec: DeploySpec = {
       listFiles: async () => [],
@@ -127,7 +131,26 @@ describe('runDeploy real deploy', () => {
     await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
 
     const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
-    expect(payload).toEqual({deployed: true, ...result})
+    expect(payload).toEqual({deployed: true, reason: null, ...result})
+  })
+
+  test('a plain deploy emits no workbench-only keys', async () => {
+    const output = mockOutput()
+    const spec: DeploySpec = {
+      listFiles: async () => [],
+      run: async () => ({
+        application: null,
+        payload: {appId: null, isAutoUpdating: false, type: 'studio' as const, version: '3.99.0'},
+      }),
+      type: 'studio',
+    }
+
+    await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
+
+    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
+    for (const key of ['views', 'services', 'config', 'isSingleton', 'installationId']) {
+      expect(payload.payload).not.toHaveProperty(key)
+    }
   })
 
   test('a failed deploy emits a {deployed: false} envelope and still errors on stderr', async () => {

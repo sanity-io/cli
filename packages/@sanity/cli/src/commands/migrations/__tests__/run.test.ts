@@ -1,7 +1,7 @@
 import {readdir} from 'node:fs/promises'
 
 import {testCommand} from '@sanity/cli-test'
-import {type Migration} from '@sanity/migrate'
+import {type Migration, UnknownTransactionOutcomeError} from '@sanity/migrate'
 import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {RunMigrationCommand} from '../run.js'
@@ -708,5 +708,165 @@ describe('#migration:run', () => {
     // The spinner must be stopped even when run() rejects, so it does not keep
     // animating after the command has failed.
     expect(mockSpinner.stop).toHaveBeenCalled()
+  })
+
+  test('persists the progress summary when the migration run throws partway', async () => {
+    mockConfirm.mockResolvedValueOnce(true)
+    mockRun.mockImplementation(async (config) => {
+      config.onProgress?.({
+        completedTransactions: [
+          {id: 'tx-1', mutations: []},
+          {id: 'tx-2', mutations: []},
+        ],
+        currentTransactions: [],
+        documents: 42,
+        done: false,
+        mutations: 21,
+        pending: 3,
+      })
+      throw new Error('migration failed')
+    })
+
+    const {error} = await testCommand(RunMigrationCommand, ['my-migration', '--no-dry-run'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {dataset: 'production', projectId: 'test-project'}},
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    // `stop()` clears the spinner region, so the counters are only visible if the
+    // failure path persists them first.
+    expect(mockSpinner.stopAndPersist).toHaveBeenCalledTimes(1)
+    expect(mockSpinner.text).toContain('Migration "my-migration" failed.')
+    expect(mockSpinner.text).toContain('42 documents processed')
+    expect(mockSpinner.text).toContain('21 mutations generated')
+    expect(mockSpinner.text).toContain('2 transactions committed')
+  })
+
+  test('does not persist a progress summary on failure when --no-progress is passed', async () => {
+    mockConfirm.mockResolvedValueOnce(true)
+    mockRun.mockImplementation(async (config) => {
+      config.onProgress?.({
+        completedTransactions: [],
+        currentTransactions: [],
+        documents: 1,
+        done: false,
+        mutations: 1,
+        pending: 0,
+      })
+      throw new Error('migration failed')
+    })
+
+    const {error} = await testCommand(
+      RunMigrationCommand,
+      ['my-migration', '--no-dry-run', '--no-progress'],
+      {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {dataset: 'production', projectId: 'test-project'}},
+        },
+      },
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(mockSpinner.stopAndPersist).not.toHaveBeenCalled()
+  })
+
+  test('prints unknown transaction outcome recovery details without oclif wrapping them', async () => {
+    mockConfirm.mockResolvedValueOnce(true)
+
+    const transactionId = '1ca5a8d8-15d7-4db4-84fa-02a25aaea5ef'
+    const cause = Object.assign(new Error('Headers Timeout Error'), {
+      code: 'UND_ERR_HEADERS_TIMEOUT',
+      name: 'HeadersTimeoutError',
+    })
+    const unknownOutcome = new UnknownTransactionOutcomeError([transactionId], {
+      api: {
+        apiHost: 'https://api.sanity.io',
+        apiVersion: 'v2024-01-29',
+        dataset: 'production',
+        projectId: 'test-project',
+        token: 'mock-token',
+      },
+      cause: new Error('fetch failed', {cause}),
+    })
+
+    mockRun.mockRejectedValueOnce(unknownOutcome)
+
+    const {error, stderr} = await testCommand(
+      RunMigrationCommand,
+      ['my-migration', '--no-dry-run'],
+      {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {dataset: 'production', projectId: 'test-project'}},
+        },
+      },
+    )
+
+    // The transaction log URL is the most actionable line in the message, so it
+    // has to reach stderr in one piece rather than through oclif's hard wrap.
+    const transactionLogUrl = `https://test-project.api.sanity.io/v2024-01-29/data/history/production/transactions?excludeContent=true&fromTransaction=${transactionId}&limit=1`
+    expect(stderr).toContain(transactionLogUrl)
+    expect(stderr).toContain(transactionId)
+    expect(stderr).toContain('https://www.sanity.io/docs/history-api')
+
+    // The transport failure that caused the unknown outcome is still reported.
+    expect(stderr).toContain('Caused by: Error: fetch failed')
+    expect(stderr).toContain('Caused by: HeadersTimeoutError: Headers Timeout Error')
+    expect(stderr).toContain('Code: UND_ERR_HEADERS_TIMEOUT')
+
+    // The rethrown error only carries the exit code, and stays short enough that
+    // oclif's wrapping cannot mangle anything that matters.
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toBe(
+      'Migration "my-migration" failed: the outcome of 1 transaction is unknown. See the transaction log details above.',
+    )
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('lists every unknown transaction and pluralizes the summary', async () => {
+    mockConfirm.mockResolvedValueOnce(true)
+
+    const transactionIds = [
+      '1ca5a8d8-15d7-4db4-84fa-02a25aaea5ef',
+      '2db6b9e9-26e8-5ec5-95fb-13b36bbfb6f0',
+    ]
+    mockRun.mockRejectedValueOnce(
+      new UnknownTransactionOutcomeError(transactionIds, {
+        api: {
+          apiVersion: 'v2024-01-29',
+          dataset: 'production',
+          projectId: 'test-project',
+          token: 'mock-token',
+        },
+        // A non-Error cause must not break the cause chain formatting.
+        cause: 'connection reset',
+      }),
+    )
+
+    const {error, stderr} = await testCommand(
+      RunMigrationCommand,
+      ['my-migration', '--no-dry-run'],
+      {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {dataset: 'production', projectId: 'test-project'}},
+        },
+      },
+    )
+
+    for (const transactionId of transactionIds) {
+      expect(stderr).toContain(
+        `https://test-project.api.sanity.io/v2024-01-29/data/history/production/transactions?excludeContent=true&fromTransaction=${transactionId}&limit=1`,
+      )
+    }
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toBe(
+      'Migration "my-migration" failed: the outcomes of 2 transactions are unknown. See the transaction log details above.',
+    )
+    expect(error?.oclif?.exit).toBe(1)
   })
 })

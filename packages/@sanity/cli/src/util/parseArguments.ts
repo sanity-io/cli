@@ -1,5 +1,7 @@
 import minimist from 'minimist'
 
+import {type CommandTelemetry, redactTelemetryArguments} from './telemetry/commandTelemetry.js'
+
 interface ParsedArguments<F = Record<string, string>> {
   /**
    * Command arguments, eg any arguments after `sanity <command>` (no flags)
@@ -36,15 +38,24 @@ interface ParsedArguments<F = Record<string, string>> {
   groupOrCommand: string
 }
 
+function collectOptionArguments(argv: string[], commandTelemetry?: CommandTelemetry): string[] {
+  return redactTelemetryArguments(argv, commandTelemetry).filter((argument) =>
+    argument.startsWith('-'),
+  )
+}
+
 /**
  * Parse the arguments from the command line
  *
  * @param argv - The arguments from the command line
+ * @param commandTelemetry - Resolved telemetry behavior for the command
  * @returns The parsed arguments
  */
-export function parseArguments(argv = process.argv): ParsedArguments {
+export function parseArguments(
+  argv = process.argv,
+  commandTelemetry?: CommandTelemetry,
+): ParsedArguments {
   const args = argv.slice(2)
-
   const {
     '--': extraArguments,
     _,
@@ -60,7 +71,7 @@ export function parseArguments(argv = process.argv): ParsedArguments {
 
   const finalExtraArguments = [
     ...(extraArguments || []),
-    ...argv.filter((arg) => arg.startsWith('-')),
+    ...collectOptionArguments(argv, commandTelemetry),
   ]
 
   // oclif allows to run `sanity help` or `sanity help <command>`

@@ -13,7 +13,7 @@ import {
   deploymentPlanToJson,
   listDeploymentFiles,
   renderDeploymentPlan,
-  reportExposes,
+  reportInterfaces,
 } from '../deploymentPlan.js'
 
 vi.mock(import('node:fs/promises'), async (importOriginal) => ({
@@ -57,14 +57,14 @@ describe('listDeploymentFiles', () => {
   })
 })
 
+const payload = {appId: null, isAutoUpdating: false, type: 'studio' as const, version: '3.99.0'}
+
 const studioPlan = (checks: DeployCheck[], files: DeploymentFile[] = []): DeploymentPlan => ({
   checks,
-  config: null,
-  exposes: [],
   files,
+  payload: {...payload},
   target: null,
   type: 'studio',
-  version: '3.99.0',
 })
 
 describe('deploymentPlanToJson', () => {
@@ -80,96 +80,90 @@ describe('deploymentPlanToJson', () => {
       ),
     )
 
-    // No `exposes`/`config` keys — a plain (non-workbench) plan omits them.
     expect(json).toEqual({
-      applicationType: 'studio',
-      applicationVersion: '3.99.0',
+      action: null,
+      application: null,
+      canDeploy: false,
       errors: {'No studio hostname configured': 'Set `studioHost`'},
       files: [{path: 'dist/index.html', size: 1_048_576}],
-      isDeployable: false,
-      target: null,
+      payload,
+      reason: 'No studio hostname configured',
       totalBytes: 1_048_576,
+      url: null,
       warnings: ['The autoUpdates config has moved'],
     })
   })
 
-  test('passes the resolved target through to the JSON', () => {
-    const target = {
-      action: 'update' as const,
-      applicationId: 'app-1',
-      title: 'My Studio',
-      url: 'https://my-studio.sanity.studio',
-    }
+  test('reports the resolved action and url, never the backend record', () => {
     const json = deploymentPlanToJson({
       checks: [],
-      config: null,
-      exposes: [],
       files: [],
-      target,
+      payload: {...payload},
+      target: {
+        action: 'update',
+        id: 'app-1',
+        title: 'My Studio',
+        type: 'studio',
+        url: 'https://my-studio.sanity.studio',
+      },
       type: 'studio',
-      version: null,
     })
-    expect(json.target).toEqual(target)
+    expect(json.action).toBe('update')
+    expect(json.url).toBe('https://my-studio.sanity.studio')
+    expect(json.application).toBeNull()
+    expect(json.reason).toBeNull()
   })
 
   test('an error without a solution maps to null', () => {
     const json = deploymentPlanToJson(studioPlan([{message: 'boom', status: 'fail'}]))
     expect(json.errors).toEqual({boom: null})
-    expect(json.isDeployable).toBe(false)
+    expect(json.canDeploy).toBe(false)
   })
 
-  test('isDeployable is true when no check failed', () => {
-    expect(deploymentPlanToJson(studioPlan([{message: 'ok', status: 'pass'}])).isDeployable).toBe(
-      true,
-    )
+  test('canDeploy is true when no check failed', () => {
+    expect(deploymentPlanToJson(studioPlan([{message: 'ok', status: 'pass'}])).canDeploy).toBe(true)
   })
 
-  test('surfaces the registered exposes and config summary', () => {
+  test('passes the collected payload straight through', () => {
     const plan = studioPlan([{message: 'ok', status: 'pass'}])
-    plan.exposes = [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}]
-    plan.config = 'Media Library fields:\n  Title (title)'
+    plan.payload = {
+      ...payload,
+      config: 'Media Library fields:\n  Title (title)',
+      isSingleton: false,
+      services: [],
+      views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
+    }
 
-    const json = deploymentPlanToJson(plan)
-
-    expect(json.exposes).toEqual([{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}])
-    expect(json.config).toBe('Media Library fields:\n  Title (title)')
+    expect(deploymentPlanToJson(plan).payload).toEqual(plan.payload)
   })
 
-  test('surfaces isSingleton only when the app sets it explicitly', () => {
-    const unset = deploymentPlanToJson(studioPlan([]))
-    expect(unset).not.toHaveProperty('isSingleton')
-
-    const explicitFalse = studioPlan([])
-    explicitFalse.isSingleton = false
-    expect(deploymentPlanToJson(explicitFalse).isSingleton).toBe(false)
-
-    const explicitTrue = studioPlan([])
-    explicitTrue.isSingleton = true
-    expect(deploymentPlanToJson(explicitTrue).isSingleton).toBe(true)
+  test('omits every workbench-only key for a plain app', () => {
+    const json = deploymentPlanToJson(studioPlan([]))
+    for (const key of ['views', 'services', 'config', 'isSingleton']) {
+      expect(json.payload).not.toHaveProperty(key)
+    }
   })
 })
 
-describe('reportExposes', () => {
+describe('reportInterfaces', () => {
   test('reports views and services and returns them structured', () => {
     const reporter = createCollectingReporter<DeployCheck>()
 
-    const exposes = reportExposes(reporter, {
+    const interfaces = reportInterfaces(reporter, {
       services: [{name: 'sync', src: './sync.ts', title: 'sync', type: 'worker'}],
       views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
     })
 
-    expect(exposes).toEqual([
-      {name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'},
-      {name: 'sync', src: './sync.ts', title: 'sync', type: 'worker'},
-    ])
+    expect(interfaces).toEqual({
+      services: [{name: 'sync', src: './sync.ts', title: 'sync', type: 'worker'}],
+      views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
+    })
     expect(reporter.results.every((check) => check.status === 'pass')).toBe(true)
-    // The structured list rides on the first check so a dry run's collector reads it back.
-    expect(reporter.results[0].exposes).toEqual(exposes)
   })
 
   test('reports nothing and returns empty without views or services', () => {
     const reporter = createCollectingReporter<DeployCheck>()
-    expect(reportExposes(reporter, {})).toEqual([])
+    expect(reportInterfaces(reporter, {})).toEqual({services: [], views: []})
     expect(reporter.results).toEqual([])
   })
 })
@@ -260,15 +254,7 @@ describe('renderDeploymentPlan', () => {
 
   test('labels a core app deploy as an application', () => {
     renderDeploymentPlan(
-      {
-        checks: [],
-        config: null,
-        exposes: [],
-        files: [],
-        target: null,
-        type: 'coreApp',
-        version: '1.0.0',
-      },
+      {checks: [], files: [], payload: null, target: null, type: 'coreApp'},
       output,
     )
 

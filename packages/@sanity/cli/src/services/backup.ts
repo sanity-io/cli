@@ -50,7 +50,7 @@ export async function listBackups(options: {
 
   return client.request({
     query,
-    uri: `/projects/${options.projectId}/datasets/${options.datasetName}/backups`,
+    url: `/projects/${options.projectId}/datasets/${options.datasetName}/backups`,
   })
 }
 
@@ -72,7 +72,7 @@ export async function getBackupDetails(options: {
 
   return client.request({
     query,
-    uri: `/projects/${options.projectId}/datasets/${options.datasetName}/backups/${options.backupId}`,
+    url: `/projects/${options.projectId}/datasets/${options.datasetName}/backups/${options.backupId}`,
   })
 }
 
@@ -93,6 +93,6 @@ export async function setBackup({dataset, projectId, status}: SetBackupOptions) 
       enabled: status,
     },
     method: 'PUT',
-    uri: `/projects/${projectId}/datasets/${dataset}/settings/backups`,
+    url: `/projects/${projectId}/datasets/${dataset}/settings/backups`,
   })
 }

@@ -8,7 +8,7 @@ export const sdkAppDependencies = {
   },
 
   devDependencies: {
-    '@sanity/eslint-config-studio': 'latest',
+    '@sanity/eslint-config-studio': '^6',
     '@types/react': '^19.2.14',
     eslint: '^9.28',
     prettier: '^3.5',

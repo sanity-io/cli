@@ -27,7 +27,7 @@ const DEFAULT_PACKAGES: TrackedPackage[] = [
   {deprecatedBelow: null, name: 'react', supported: ['^19.2.2']},
   {deprecatedBelow: null, name: 'react-dom', supported: ['^19.2.2']},
   {deprecatedBelow: null, name: 'styled-components', supported: ['^6']},
-  {deprecatedBelow: '^3', name: '@sanity/ui', supported: ['^2', '^3']},
+  {deprecatedBelow: '^3', name: '@sanity/ui', supported: ['^2', '^3', '^4']},
 ]
 
 export async function checkStudioDependencyVersions(
@@ -122,12 +122,14 @@ You _may_ encounter bugs while using these versions.
 
 function listPackages(pkgs: PackageInfo[]) {
   return pkgs
-    .map(
-      (pkg) =>
-        `${pkg.name} (installed: ${pkg.installed}, want: ${
-          pkg.deprecatedBelow || pkg.supported.join(' || ')
-        })`,
-    )
+    .map((pkg) => {
+      const want =
+        pkg.isDeprecated && !pkg.isUnsupported && !pkg.isUntested
+          ? pkg.deprecatedBelow
+          : pkg.supported.join(' || ')
+
+      return `${pkg.name} (installed: ${pkg.installed}, want: ${want})`
+    })
     .join('\n  ')
 }
 
