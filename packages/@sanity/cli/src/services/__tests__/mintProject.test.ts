@@ -1,12 +1,14 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {mintUnclaimedProject, PROVISION_API_VERSION} from '../mintProject.js'
+import {MINT_REQUEST_TAG, mintUnclaimedProject, PROVISION_API_VERSION} from '../mintProject.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core/request', () => ({
   createRequester: vi.fn().mockReturnValue(mockRequest),
 }))
+
+const PROVISION_URL = `https://api.sanity.io/${PROVISION_API_VERSION}/provision?tag=${MINT_REQUEST_TAG}`
 
 const provisionResponse = {
   apiHost: 'https://abc123.api.sanity.io',
@@ -62,7 +64,7 @@ describe('mintUnclaimedProject', () => {
       body: JSON.stringify({displayName: 'My Project', resourceType: 'project'}),
       headers: {'Content-Type': 'application/json'},
       method: 'POST',
-      url: `https://api.sanity.io/${PROVISION_API_VERSION}/provision`,
+      url: PROVISION_URL,
     })
   })
 
@@ -90,7 +92,7 @@ describe('mintUnclaimedProject', () => {
 
     expect(mockRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://api.sanity.example/${PROVISION_API_VERSION}/provision`,
+        url: `https://api.sanity.example/${PROVISION_API_VERSION}/provision?tag=${MINT_REQUEST_TAG}`,
       }),
     )
   })
@@ -102,8 +104,46 @@ describe('mintUnclaimedProject', () => {
 
     expect(mockRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://api.sanity.work/${PROVISION_API_VERSION}/provision`,
+        url: `https://api.sanity.work/${PROVISION_API_VERSION}/provision?tag=${MINT_REQUEST_TAG}`,
       }),
+    )
+  })
+
+  describe('request tag', () => {
+    test('lets the smoke-test harness override the tag', async () => {
+      vi.stubEnv('SANITY_CLI_MINT_TAG', 'sanity.cli.smoketest')
+
+      await mintUnclaimedProject({displayName: 'My Project'})
+
+      expect(mockRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: `https://api.sanity.io/${PROVISION_API_VERSION}/provision?tag=sanity.cli.smoketest`,
+        }),
+      )
+    })
+
+    // A dropped tag would silently make the mint unattributable, which is worse than ignoring a
+    // bad override, so malformed values fall back rather than being sent or omitted.
+    test.each(['not a tag', 'has/slash', 'x'.repeat(76), ''])(
+      'falls back to the default tag when the override is %j',
+      async (override) => {
+        vi.stubEnv('SANITY_CLI_MINT_TAG', override)
+
+        await mintUnclaimedProject({displayName: 'My Project'})
+
+        expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({url: PROVISION_URL}))
+      },
+    )
+  })
+
+  // Mint is unauthenticated by design — `sanity new` is meant to work without an account, so the
+  // request must never carry a credential.
+  test('mints anonymously, sending no credential', async () => {
+    await mintUnclaimedProject({displayName: 'My Project'})
+
+    expect(mockRequest).toHaveBeenCalledTimes(1)
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
     )
   })
 
