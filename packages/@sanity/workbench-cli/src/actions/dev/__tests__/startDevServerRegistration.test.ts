@@ -175,6 +175,81 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
 
+  // A config edit can flip a server's role mid-session (a config-only app
+  // gaining an `entry` becomes app-role). The watcher update must re-run the
+  // same-role collision check, or the flip would quietly put two app-role
+  // servers on one slug — the ambiguity the registration gate exists to prevent.
+  test('a role flip that would collide keeps the previous registration and retries next save', async () => {
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+    const output = createMockOutput()
+
+    // Registers config-only; an app server already holds the slug (allowed).
+    mockGetRegisteredServers.mockReturnValue([
+      {id: 'test-app', interfaces: [{type: 'app'}], pid: 4242, port: 3005},
+    ])
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          applicationType: 'media-library',
+          config: mediaLibraryConfig,
+          isSingleton: true,
+        }),
+      }),
+      isApp: true,
+      output,
+    })
+    expect(mockRegisterDevServer).toHaveBeenCalled()
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    // The save flips it to app-role while the app server is still up — skip.
+    const appRolePatch = {
+      configs: [],
+      interfaces: [{id: 'test-app-app-test-app', type: 'app'}],
+      manifest: undefined,
+      manifestUpdatedAt: 'a',
+    }
+    await watcherUpdate(appRolePatch)
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('play the same role as the dev server running on port 3005'),
+      {exit: false},
+    )
+    expect(update).not.toHaveBeenCalled()
+
+    // The conflicting server goes away — the next save commits the flip.
+    mockGetRegisteredServers.mockReturnValue([])
+    await watcherUpdate({...appRolePatch, manifestUpdatedAt: 'b'})
+    expect(update).toHaveBeenCalledTimes(1)
+  })
+
+  test('a role flip without a conflicting server commits normally', async () => {
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          applicationType: 'media-library',
+          config: mediaLibraryConfig,
+          isSingleton: true,
+        }),
+      }),
+      isApp: true,
+      output,
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    await watcherUpdate({
+      configs: [],
+      interfaces: [{id: 'test-app-app-test-app', type: 'app'}],
+      manifest: undefined,
+      manifestUpdatedAt: 'a',
+    })
+    expect(output.error).not.toHaveBeenCalled()
+    expect(update).toHaveBeenCalledTimes(1)
+  })
+
   test('two config-only servers with the same slug still collide', async () => {
     mockGetRegisteredServers.mockReturnValue([
       {configs: [mediaLibraryConfig], id: 'test-app', pid: 4242, port: 3334},

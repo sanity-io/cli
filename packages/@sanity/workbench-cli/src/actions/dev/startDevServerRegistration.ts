@@ -56,6 +56,21 @@ function reportConfigErrors(app: CliConfig['app'], output: Output): void {
   output.warn(formatWorkbenchAppErrors(errors))
 }
 
+/**
+ * A live server — other than this process — already playing the given role for
+ * the slug. Only a *same-role* duplicate is a conflict: a config-only server
+ * (configs, no interfaces — e.g. a media-library config app) is never routed
+ * as an app, so it may share a slug with the app server it configures. The
+ * workbench renders the app and publishes both servers' configs, and can
+ * always tell them apart.
+ */
+function findSameRoleConflict(id: string, configOnly: boolean): DevServerManifest | undefined {
+  return getRegisteredServers().find(
+    (server) =>
+      server.pid !== process.pid && server.id === id && isConfigOnlyServer(server) === configOnly,
+  )
+}
+
 /** The address the server actually bound — the live socket, which can differ from the configured port under non-strict ports. */
 function serverAddress(server: ViteDevServer) {
   const resolvedHost = server.config.server.host
@@ -87,17 +102,8 @@ export async function startDevServerRegistration(
 
   const id = isWorkbenchApp(cliConfig.app) ? cliConfig.app.slug : undefined
 
-  // Only a *same-role* duplicate is a conflict. A config-only server (configs,
-  // no interfaces — e.g. a media-library config app) is never routed as an app,
-  // so it may share a slug with the app server it configures: the workbench
-  // renders the app and publishes both servers' configs, and can always tell
-  // them apart. Two servers playing the same role for one slug cannot coexist.
   const configOnly = isConfigOnlyServer({configs, interfaces})
-  const devServer = id
-    ? getRegisteredServers().find(
-        (server) => server.id === id && isConfigOnlyServer(server) === configOnly,
-      )
-    : undefined
+  const devServer = id ? findSameRoleConflict(id, configOnly) : undefined
 
   if (id && devServer) {
     output.error(
@@ -108,6 +114,11 @@ export async function startDevServerRegistration(
     )
     return {close: async () => {}}
   }
+
+  // The role the registry currently advertises for this server; a config edit
+  // can flip it (see the re-check in `update`). Committed only after a
+  // successful registry patch, so a failed pass re-checks on the next save.
+  let registeredConfigOnly = configOnly
 
   const registration = registerDevServer({
     configs,
@@ -139,6 +150,28 @@ export async function startDevServerRegistration(
     extraWatchFilenames: isApp ? undefined : ['sanity.cli.js', 'sanity.cli.ts'],
     output,
     update: async (patch) => {
+      // A save can flip the server's role — e.g. a config-only app gaining an
+      // `entry` becomes app-role — so re-run the same-role collision check the
+      // registration gate applied, or the flip would quietly reintroduce the
+      // ambiguity (two app-role servers on one slug). The patch is skipped, not
+      // fatal: the registry keeps the previous shape and the next save retries.
+      const nextConfigOnly = isConfigOnlyServer({
+        configs: patch.configs,
+        interfaces: patch.interfaces,
+      })
+      if (id && nextConfigOnly !== registeredConfigOnly) {
+        const conflict = findSameRoleConflict(id, nextConfigOnly)
+        if (conflict) {
+          output.error(
+            `This change makes the app "${id}" play the same role as the dev server running on ` +
+              `port ${conflict.port}, so the workbench couldn't tell them apart — keeping the ` +
+              'previous registration. Stop that server, or give this app its own `slug` in sanity.cli.ts.',
+            {exit: false},
+          )
+          return
+        }
+      }
+
       if (
         !exposesSet.changed({
           configs: patch.configs,
@@ -146,6 +179,7 @@ export async function startDevServerRegistration(
         })
       ) {
         registration.update(patch)
+        registeredConfigOnly = nextConfigOnly
         return
       }
       // Rebuild the remote *before* patching the registry — the patch reloads the
@@ -158,6 +192,7 @@ export async function startDevServerRegistration(
       })
       // The recreated server can bind a different port (non-strict ports).
       registration.update(rebuiltServer ? {...patch, ...serverAddress(rebuiltServer)} : patch)
+      registeredConfigOnly = nextConfigOnly
     },
     workDir,
   })
