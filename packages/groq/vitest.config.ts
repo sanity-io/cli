@@ -9,7 +9,7 @@ export default defineConfig({
     },
     environment: 'node',
     globals: false,
-    include: ['test/groq.test.ts'],
+    include: ['test/**/*.test.ts'],
     name: 'groq/unit',
   },
 })
