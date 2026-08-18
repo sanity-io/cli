@@ -1,6 +1,7 @@
 import {getUserConfig} from '@sanity/cli-core'
 import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {mockApi} from '@sanity/cli-test'
+import {createMockFetch} from 'get-it/mock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -9,6 +10,8 @@ import {
   TELEMETRY_API_VERSION,
   TELEMETRY_CONSENT_CONFIG_KEY,
 } from '../telemetry.js'
+
+import 'get-it/vitest'
 
 /** In-memory config store compatible with the ConfigStore interface used by createExpiringConfig */
 function createInMemoryConfigStore() {
@@ -22,6 +25,7 @@ function createInMemoryConfigStore() {
 }
 
 const testConfigStore = createInMemoryConfigStore()
+const mockFetch = createMockFetch()
 
 const mockGetCliToken = vi.hoisted(() => vi.fn<() => Promise<string | undefined>>())
 const mockGetUserConfig = vi.hoisted(() => vi.fn())
@@ -66,6 +70,7 @@ describe('#fetchTelemetryConsent', () => {
   })
 
   afterEach(() => {
+    mockFetch.clear()
     vi.clearAllMocks()
   })
 
@@ -81,21 +86,20 @@ describe('#fetchTelemetryConsent', () => {
   })
 
   test('bypasses the host config cache under an execution context', async () => {
-    mockApi({
-      apiVersion: TELEMETRY_API_VERSION,
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'granted'})
+    mockFetch
+      .on('GET', `https://api.sanity.io/${TELEMETRY_API_VERSION}/intake/telemetry-status`, {
+        query: {tag: 'sanity.cli.telemetry-consent'},
+      })
+      .respond({body: {status: 'granted'}, status: 200})
 
-    // The execution context's isolated transport bypasses nock unless the
-    // context carries the nock-patched global fetch.
     const consent = await runWithCliExecutionContext(
-      {fetch: (url, init) => globalThis.fetch(url, init), token: 'context-token'},
+      {fetch: mockFetch.fetch, token: 'context-token'},
       () => fetchTelemetryConsent(),
     )
 
     expect(consent).toEqual({status: 'granted'})
     expect(mockGetUserConfig).not.toHaveBeenCalled()
+    expect(mockFetch).toHaveConsumedAllMocks()
   })
 
   test('should cache consent under a token-scoped key', async () => {
