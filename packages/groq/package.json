@@ -1,0 +1,70 @@
+{
+  "name": "groq",
+  "version": "6.10.0",
+  "description": "Tagged template literal and type helper for Sanity GROQ queries",
+  "keywords": [
+    "cms",
+    "content",
+    "groq",
+    "headless",
+    "literal",
+    "realtime",
+    "sanity",
+    "string",
+    "tagged",
+    "template"
+  ],
+  "homepage": "https://www.sanity.io/",
+  "bugs": {
+    "url": "https://github.com/sanity-io/cli/issues"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/cli.git",
+    "directory": "packages/groq"
+  },
+  "files": [
+    "groq.cjs",
+    "groq.d.cts",
+    "groq.d.ts",
+    "groq.js"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./groq.cjs",
+  "module": "./groq.js",
+  "types": "./groq.d.ts",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./groq.d.cts",
+        "default": "./groq.cjs"
+      },
+      "types": "./groq.d.ts",
+      "default": "./groq.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "eslint .",
+    "publint": "publint",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "eslint": "catalog:",
+    "publint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

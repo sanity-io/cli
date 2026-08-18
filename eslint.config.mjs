@@ -7,4 +7,8 @@ export default [
   includeIgnoreFile(resolve(import.meta.dirname, '.gitignore')),
   {ignores: ['**/fixtures/prebuilt-*/dist/**', '.changeset/**']},
   ...eslintConfig,
+  {
+    files: ['packages/groq/*.cjs'],
+    languageOptions: {globals: {module: 'readonly'}},
+  },
 ]

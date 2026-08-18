@@ -26,6 +26,7 @@ For detailed setup, see [Development Workflow](#development-workflow).
   - Provides helper methods for API clients, logging, and error handling
   - Can be extended by external CLI modules
 - **`@sanity/cli-test`**: Integration testing utilities for use with non-unit-tests
+- **`groq`**: No-op query helpers used by editor integrations and Sanity TypeGen
 
 ### Separation of Concerns
 
@@ -642,7 +643,8 @@ npm install \
   https://pkg.pr.new/@sanity/cli-build@<commit-sha> \
   https://pkg.pr.new/@sanity/cli-core@<commit-sha> \
   https://pkg.pr.new/@sanity/cli-test@<commit-sha> \
-  https://pkg.pr.new/@sanity/eslint-config-cli@<commit-sha>
+  https://pkg.pr.new/@sanity/eslint-config-cli@<commit-sha> \
+  https://pkg.pr.new/groq@<commit-sha>
 ```
 
 Or use pnpm:
