@@ -168,6 +168,49 @@ describe('#dataset:copy', () => {
       )
     })
 
+    test('renders relative start times and elapsed times for each job', async () => {
+      const createdAt = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
+      const updatedAt = new Date(Date.parse(createdAt) + 5 * 60 * 1000).toISOString()
+
+      mockListDatasetCopyJobs.mockResolvedValue([
+        {
+          createdAt,
+          id: 'job-1',
+          sourceDataset: 'production',
+          state: 'completed',
+          targetDataset: 'backup',
+          updatedAt,
+          withHistory: true,
+        },
+      ])
+
+      await CopyDatasetCommand.run(['--list'])
+
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringMatching(/3 hours ago.*5 minutes/),
+      )
+    })
+
+    test('leaves the time columns empty for jobs without timestamps', async () => {
+      mockListDatasetCopyJobs.mockResolvedValue([
+        {
+          createdAt: '',
+          id: 'job-1',
+          sourceDataset: 'production',
+          state: 'pending',
+          targetDataset: 'backup',
+          updatedAt: '',
+          withHistory: true,
+        },
+      ])
+
+      await CopyDatasetCommand.run(['--list'])
+
+      const rendered = vi.mocked(mocks.SanityCmdOutput.log).mock.calls.at(-1)?.[0]
+      expect(rendered).toMatch(/job-1/)
+      expect(rendered).not.toMatch(/ago|Invalid Date|NaN/)
+    })
+
     test('shows message when no copy jobs exist', async () => {
       mockListDatasetCopyJobs.mockResolvedValue([])
       await CopyDatasetCommand.run(['--list'])

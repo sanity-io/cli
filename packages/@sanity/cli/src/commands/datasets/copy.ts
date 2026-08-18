@@ -7,9 +7,6 @@ import {subdebug} from '@sanity/cli-core/debug'
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {spinner} from '@sanity/cli-core/ux'
-import {formatDistance} from 'date-fns/formatDistance'
-import {formatDistanceToNow} from 'date-fns/formatDistanceToNow'
-import {parseISO} from 'date-fns/parseISO'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
@@ -23,6 +20,7 @@ import {
   listDatasetCopyJobs,
   listDatasets,
 } from '../../services/datasets.js'
+import {formatDuration, formatTimeAgo} from '../../util/dates.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -186,12 +184,12 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
       let timeStarted = ''
       if (createdAt !== '') {
-        timeStarted = formatDistanceToNow(parseISO(createdAt))
+        timeStarted = formatTimeAgo(new Date(createdAt))
       }
 
       let timeTaken = ''
-      if (updatedAt !== '') {
-        timeTaken = formatDistance(parseISO(updatedAt), parseISO(createdAt))
+      if (createdAt !== '' && updatedAt !== '') {
+        timeTaken = formatDuration(new Date(updatedAt).getTime() - new Date(createdAt).getTime())
       }
 
       let color: '' | 'green' | 'red' | 'yellow'
@@ -219,7 +217,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
           sourceDataset,
           state,
           targetDataset,
-          timeStarted: `${timeStarted} ago`,
+          timeStarted,
           timeTaken,
           withHistory,
         },
