@@ -115,7 +115,9 @@ describe('validateDocuments', () => {
 
     await validateDocuments({workDir: '/studio'})
 
-    const {clientConfig} = getWorkerData()
+    // `stega` is deliberately absent from `ValidateDocumentsWorkerData['clientConfig']`
+    // because it can hold functions, so read it off the raw payload instead.
+    const clientConfig = getWorkerData().clientConfig as Record<string, unknown> | undefined
 
     expect(clientConfig?.stega).toEqual({enabled: true})
     expect(() => structuredClone(getWorkerData())).not.toThrow()
