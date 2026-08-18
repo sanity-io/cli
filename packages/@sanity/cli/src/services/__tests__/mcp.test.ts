@@ -41,7 +41,7 @@ describe('validateMCPToken', () => {
 
     expect(result).toBe(true)
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({timeout: 2500, uri: '/users/me'}),
+      expect.objectContaining({timeout: 2500, url: '/users/me'}),
     )
   })
 

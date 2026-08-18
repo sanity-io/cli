@@ -28,11 +28,11 @@ const provisionResponse = {
   token: 'sk-robot-token',
 }
 
-function jsonResponse(body: unknown, statusCode = 200) {
+function jsonResponse(body: unknown, status = 200) {
   return {
-    body: JSON.stringify(body),
     headers: {},
-    statusCode,
+    status,
+    text: () => JSON.stringify(body),
   }
 }
 
@@ -147,18 +147,6 @@ describe('mintUnclaimedProject', () => {
     )
   })
 
-  test('accepts an already-parsed response body', async () => {
-    mockRequest.mockResolvedValue({
-      body: provisionResponse,
-      headers: {},
-      statusCode: 200,
-    })
-
-    await expect(mintUnclaimedProject({displayName: 'My Project'})).resolves.toMatchObject({
-      resourceId: provisionResponse.resourceId,
-    })
-  })
-
   // The terms notice has to reach the user even when the API predates it, so it falls back to
   // the bundled copy rather than joining the required-field check.
   test.each([
@@ -194,9 +182,9 @@ describe('mintUnclaimedProject', () => {
 
   test('reports other service failures without including the response body', async () => {
     mockRequest.mockResolvedValue({
-      body: 'sensitive upstream details',
       headers: {},
-      statusCode: 500,
+      status: 500,
+      text: () => 'sensitive upstream details',
     })
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
@@ -221,9 +209,9 @@ describe('mintUnclaimedProject', () => {
 
   test('rejects a non-JSON successful response', async () => {
     mockRequest.mockResolvedValue({
-      body: 'not json',
       headers: {},
-      statusCode: 200,
+      status: 200,
+      text: () => 'not json',
     })
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(

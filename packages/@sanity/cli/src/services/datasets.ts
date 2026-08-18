@@ -29,7 +29,7 @@ export interface DatasetAliasDefinition {
 
 export async function listDatasetAliases(projectId: string): Promise<DatasetAliasDefinition[]> {
   const client = await getDatasetClient(projectId)
-  return client.request<DatasetAliasDefinition[]>({uri: '/aliases'})
+  return client.request<DatasetAliasDefinition[]>({url: '/aliases'})
 }
 
 interface DeleteDatasetOptions {
@@ -108,7 +108,7 @@ export async function copyDataset({
       targetDataset,
     },
     method: 'PUT',
-    uri: `/datasets/${sourceDataset}/copy`,
+    url: `/datasets/${sourceDataset}/copy`,
   })
 }
 
@@ -147,7 +147,7 @@ export async function listDatasetCopyJobs({
   return client.request<DatasetCopyJob[]>({
     method: 'GET',
     query,
-    uri: `/projects/${projectId}/datasets/copy`,
+    url: `/projects/${projectId}/datasets/copy`,
   })
 }
 

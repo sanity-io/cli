@@ -63,7 +63,7 @@ export async function listOrganizations(
 
   return client.request<ProjectOrganization[]>({
     query,
-    uri: '/organizations',
+    url: '/organizations',
   })
 }
 
@@ -82,7 +82,7 @@ export async function createOrganization(
   return client.request<OrganizationCreateResponse>({
     body: {name, ...(defaultRoleName ? {defaultRoleName} : {})},
     method: 'post',
-    uri: '/organizations',
+    url: '/organizations',
   })
 }
 
@@ -98,7 +98,7 @@ export async function getOrganizationGrants(
   })
 
   return client.request<OrganizationGrantsResponse>({
-    uri: `/organizations/${organizationId}/grants`,
+    url: `/organizations/${organizationId}/grants`,
   })
 }
 
@@ -113,7 +113,7 @@ export async function getOrganization(organizationId: string): Promise<Organizat
 
   return client.request<Organization>({
     query: {includeFeatures: 'false', includeMembers: 'false'},
-    uri: `/organizations/${organizationId}`,
+    url: `/organizations/${organizationId}`,
   })
 }
 
@@ -132,7 +132,7 @@ export async function updateOrganization(
   return client.request<Organization>({
     body: params,
     method: 'patch',
-    uri: `/organizations/${organizationId}`,
+    url: `/organizations/${organizationId}`,
   })
 }
 
@@ -149,6 +149,6 @@ export async function deleteOrganization(
 
   return client.request<OrganizationDeleteResponse>({
     method: 'delete',
-    uri: `/organizations/${organizationId}`,
+    url: `/organizations/${organizationId}`,
   })
 }

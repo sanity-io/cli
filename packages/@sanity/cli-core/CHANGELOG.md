@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.0.0...cli-core-v3.1.0)
+
+_2026-08-18_
+
+### Features
+
+- Migrate `@sanity/cli-core/request` to get-it v9 and upgrade `@sanity/client` to v8 ([#1534](https://github.com/sanity-io/cli/pull/1534)) ([9230315](https://github.com/sanity-io/cli/commit/92303158f7737bc21e40d4dc208e5158445cb0cd))
+
 ## 3.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v2.8.1...cli-core-v3.0.0)
