@@ -1,4 +1,9 @@
-import {type ClientConfig, createClient, type SanityClient} from '@sanity/client'
+import {
+  type ClientConfig,
+  createClient,
+  type RequestHandler,
+  type SanityClient,
+} from '@sanity/client'
 import {type FetchFunction} from 'get-it'
 import {createNodeFetch} from 'get-it/node'
 
@@ -49,65 +54,24 @@ function isolatedFetchResolver(context: CliExecutionContext): (proxyUrl?: string
   }
 }
 
-function isThenable(value: unknown): value is Promise<unknown> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'then' in value &&
-    typeof value.then === 'function'
-  )
-}
-
-function isClientLike(value: unknown): value is SanityClient {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'request' in value &&
-    typeof value.request === 'function' &&
-    'withConfig' in value &&
-    typeof value.withConfig === 'function'
-  )
+const authErrorHandler: RequestHandler = async (request, next) => {
+  try {
+    return await next(request)
+  } catch (error) {
+    throw enrichAuthError(error)
+  }
 }
 
 /**
- * Wraps every method on the client (and its sub-clients like `datasets` /
- * `projects` / `users`) so rejected API promises pass through
- * {@link enrichAuthError} before any caller observes them. This preserves
- * the client v7 behavior where a requester `onError` middleware mutated 401
- * errors in-flight: code that catches an API failure and wraps
- * `err.message` into a new error keeps the login/membership hint. Clients
- * derived via `withConfig()`/`clone()` are re-wrapped. Observables and
- * detached builders (`patch()`/`transaction()` committed later) are not
- * covered here; those errors get their hints from the `SanityCommand.catch`
- * / `getErrorMessage` funnel instead.
+ * Add the CLI's authentication guidance inside any caller-provided request
+ * handler. This lets the caller observe enriched client errors while
+ * preserving its control over the request and response pipeline.
  */
-const enrichingClientHandler: ProxyHandler<object> = {
-  get(target, property) {
-    // The raw target as receiver keeps the client's private fields reachable.
-    const value = Reflect.get(target, property, target)
-    if (typeof value === 'function') {
-      return (...args: unknown[]) => {
-        const result = Reflect.apply(value, target, args)
-        if (isThenable(result)) {
-          return result.then(undefined, (err: unknown) => {
-            throw enrichAuthError(err)
-          })
-        }
-        if (isClientLike(result)) return withAuthErrorHints(result)
-        return result
-      }
-    }
-    // Sub-clients (`client.datasets`, `client.observable`, ...) are the only
-    // object-valued properties on the client's public surface.
-    if (typeof value === 'object' && value !== null) {
-      return new Proxy(value, enrichingClientHandler)
-    }
-    return value
-  },
-}
+function withAuthErrorHints(requestHandler?: RequestHandler): RequestHandler {
+  if (!requestHandler) return authErrorHandler
 
-function withAuthErrorHints(client: SanityClient): SanityClient {
-  return new Proxy(client, enrichingClientHandler) as SanityClient
+  return (request, next) =>
+    requestHandler(request, (nextRequest) => authErrorHandler(nextRequest, next))
 }
 
 /**
@@ -143,6 +107,7 @@ export interface GlobalCliClientOptions extends ClientConfig {
  * @returns Promise that resolves to a configured Sanity API client.
  */
 export async function getGlobalCliClient({
+  requestHandler,
   requireUser,
   token: providedToken,
   unauthenticated,
@@ -160,19 +125,18 @@ export async function getGlobalCliClient({
     throw new Error('You must login first - run "sanity login"')
   }
 
-  return withAuthErrorHints(
-    createClient({
-      ...(apiHost ? {apiHost} : {}),
-      // Suppress browser token warning since we mock browser environment in workers
-      ignoreBrowserTokenWarning: true,
-      ...(context ? {resolveFetch: isolatedFetchResolver(context)} : {}),
-      requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
-      token,
-      useCdn: false,
-      useProjectHostname: false,
-      ...config,
-    }),
-  )
+  return createClient({
+    ...(apiHost ? {apiHost} : {}),
+    // Suppress browser token warning since we mock browser environment in workers
+    ignoreBrowserTokenWarning: true,
+    ...(context ? {resolveFetch: isolatedFetchResolver(context)} : {}),
+    requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
+    token,
+    useCdn: false,
+    useProjectHostname: false,
+    ...config,
+    requestHandler: withAuthErrorHints(requestHandler),
+  })
 }
 
 /**
@@ -211,6 +175,7 @@ export interface ProjectCliClientOptions extends ClientConfig {
  * @returns Promise that resolves to a configured Sanity API client.
  */
 export async function getProjectCliClient({
+  requestHandler,
   requireUser,
   token: providedToken,
   ...config
@@ -227,17 +192,16 @@ export async function getProjectCliClient({
     throw new Error('You must login first - run "sanity login"')
   }
 
-  return withAuthErrorHints(
-    createClient({
-      ...(apiHost ? {apiHost} : {}),
-      // Suppress browser token warning since we mock browser environment in workers
-      ignoreBrowserTokenWarning: true,
-      ...(context ? {resolveFetch: isolatedFetchResolver(context)} : {}),
-      requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
-      token,
-      useCdn: false,
-      useProjectHostname: true,
-      ...config,
-    }),
-  )
+  return createClient({
+    ...(apiHost ? {apiHost} : {}),
+    // Suppress browser token warning since we mock browser environment in workers
+    ignoreBrowserTokenWarning: true,
+    ...(context ? {resolveFetch: isolatedFetchResolver(context)} : {}),
+    requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
+    token,
+    useCdn: false,
+    useProjectHostname: true,
+    ...config,
+    requestHandler: withAuthErrorHints(requestHandler),
+  })
 }

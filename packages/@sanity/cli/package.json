@@ -179,7 +179,7 @@
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
-    "get-it": "^9.4.1",
+    "get-it": "catalog:",
     "jsdom": "catalog:",
     "nock": "catalog:",
     "oclif": "^4.23.27",

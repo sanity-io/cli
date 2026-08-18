@@ -3,10 +3,10 @@ import {pipeline} from 'node:stream/promises'
 
 import {
   createRequester,
+  isTimeoutError,
   nodeReadableFromWeb,
   retry,
   type StreamResponse,
-  TimeoutError,
 } from '@sanity/cli-core/request'
 
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
@@ -46,7 +46,7 @@ export async function downloadStream(
       url,
     })
   } catch (error) {
-    if (error instanceof TimeoutError) {
+    if (isTimeoutError(error)) {
       throw new Error('Backup download timed out before receiving a response. Try again.', {
         cause: error,
       })

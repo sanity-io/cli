@@ -124,7 +124,7 @@
     "@sanity/client": "catalog:",
     "boxen": "^8.0.1",
     "empathic": "catalog:",
-    "get-it": "^9.4.1",
+    "get-it": "catalog:",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
     "jiti": "^2.7.0",

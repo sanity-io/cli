@@ -27,7 +27,7 @@ catalog:
   '@sanity/vision': ^6.7.0
   '@sanity/types': ^6.7.0
   '@sanity/schema': ^6.7.0
-  '@sanity/client': ^8.0.0
+  '@sanity/client': ^8.1.0
   '@sanity/codegen': ^8.0.0
   '@sanity/telemetry': ^1.1.0
 
@@ -53,6 +53,7 @@ catalog:
   '@oclif/plugin-not-found': ^3.2.88
 
   # Utilities
+  get-it: ^9.5.0
   obug: ^2.1.4
   jsdom: ^29.1.1
   zod: ^4.4.3

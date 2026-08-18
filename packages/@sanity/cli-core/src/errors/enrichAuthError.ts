@@ -10,10 +10,9 @@ const enrichedErrors = new WeakSet<object>()
 /**
  * Append login/membership guidance to 401 API errors.
  *
- * Replaces the `onError` requester middleware used with client v7: client v8
- * no longer accepts a custom requester, so the hint is applied where the CLI
- * observes errors instead. Mutates the error message (matching the old
- * middleware behavior) and is idempotent.
+ * Replaces the `onError` requester middleware used with client v7. The client
+ * request handler applies the hint after errors have been normalized. Mutates
+ * the error message (matching the old middleware behavior) and is idempotent.
  *
  * @param err - The error to enrich
  * @returns The same error, with an enriched message when it is a 401

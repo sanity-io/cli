@@ -1,3 +1,4 @@
+import {type RequestHandler} from '@sanity/client'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {getGlobalCliClient, getProjectCliClient} from '../apiClient.js'
@@ -32,6 +33,21 @@ function unauthorizedError(): Error {
     },
     statusCode: 401,
   })
+}
+
+function hasRequestHandler(value: unknown): value is {requestHandler: RequestHandler} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'requestHandler' in value &&
+    typeof value.requestHandler === 'function'
+  )
+}
+
+function createdRequestHandler(): RequestHandler {
+  const config: unknown = mockCreateClient.mock.calls[0]?.[0]
+  if (!hasRequestHandler(config)) throw new Error('createClient was not given a request handler')
+  return config.requestHandler
 }
 
 describe('getGlobalCliClient', () => {
@@ -246,54 +262,61 @@ describe('getGlobalCliClient', () => {
     )
   })
 
-  test('401 rejections from client methods carry the login hint', async () => {
+  test('returns the client instance without wrapping it', async () => {
     mockGetCliToken.mockResolvedValue('stored-token')
-    mockCreateClient.mockReturnValue({
-      request: vi.fn().mockRejectedValue(unauthorizedError()),
-      withConfig: vi.fn(),
-    })
+    const client = {}
+    mockCreateClient.mockReturnValue(client)
 
-    const client = await getGlobalCliClient({apiVersion: '2021-06-07'})
+    const result = await getGlobalCliClient({apiVersion: '2021-06-07'})
 
-    await expect(client.request({url: '/users/me'})).rejects.toMatchObject({
+    expect(result).toBe(client)
+  })
+
+  test('request handler enriches normalized 401 errors', async () => {
+    mockGetCliToken.mockResolvedValue('stored-token')
+    mockCreateClient.mockReturnValue({})
+
+    await getGlobalCliClient({apiVersion: '2021-06-07'})
+
+    const request = {url: 'https://api.sanity.io/v1/users/me'}
+    await expect(
+      createdRequestHandler()(request, async () => {
+        throw unauthorizedError()
+      }),
+    ).rejects.toMatchObject({
       message: expect.stringContaining('sanity login'),
     })
   })
 
-  test('401 rejections from sub-clients carry the login hint', async () => {
+  test('caller-provided request handler observes enriched errors', async () => {
     mockGetCliToken.mockResolvedValue('stored-token')
-    mockCreateClient.mockReturnValue({
-      datasets: {list: vi.fn().mockRejectedValue(unauthorizedError())},
-      request: vi.fn(),
-      withConfig: vi.fn(),
-    })
-
-    const client = await getGlobalCliClient({apiVersion: '2021-06-07'})
-
-    await expect(client.datasets.list()).rejects.toMatchObject({
-      message: expect.stringContaining('sanity login'),
-    })
-  })
-
-  test('clients derived via withConfig keep the 401 login hint', async () => {
-    mockGetCliToken.mockResolvedValue('stored-token')
-    const derived = {
-      request: vi.fn().mockRejectedValue(unauthorizedError()),
-      withConfig: vi.fn(),
+    mockCreateClient.mockReturnValue({})
+    let observedError: unknown
+    const requestHandler: RequestHandler = async (request, next) => {
+      try {
+        return await next(request)
+      } catch (error) {
+        observedError = error
+        throw error
+      }
     }
-    mockCreateClient.mockReturnValue({
-      request: vi.fn(),
-      withConfig: vi.fn().mockReturnValue(derived),
+
+    await getGlobalCliClient({apiVersion: '2021-06-07', requestHandler})
+
+    const request = {url: 'https://api.sanity.io/v1/users/me'}
+    await expect(
+      createdRequestHandler()(request, async () => {
+        throw unauthorizedError()
+      }),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('sanity login'),
     })
-
-    const client = await getGlobalCliClient({apiVersion: '2021-06-07'})
-
-    await expect(client.withConfig({dataset: 'other'}).request({url: '/x'})).rejects.toMatchObject({
+    expect(observedError).toMatchObject({
       message: expect.stringContaining('sanity login'),
     })
   })
 
-  test('non-401 rejections pass through unchanged', async () => {
+  test('request handler passes non-401 errors through unchanged', async () => {
     mockGetCliToken.mockResolvedValue('stored-token')
     const notFound = Object.assign(new Error('Not Found'), {
       response: {
@@ -305,16 +328,16 @@ describe('getGlobalCliClient', () => {
       },
       statusCode: 404,
     })
-    mockCreateClient.mockReturnValue({
-      request: vi.fn().mockRejectedValue(notFound),
-      withConfig: vi.fn(),
-    })
+    mockCreateClient.mockReturnValue({})
 
-    const client = await getGlobalCliClient({apiVersion: '2021-06-07'})
+    await getGlobalCliClient({apiVersion: '2021-06-07'})
 
-    await expect(client.request({url: '/doc/x'})).rejects.toMatchObject({
-      message: 'Not Found',
-    })
+    const request = {url: 'https://api.sanity.io/v1/doc/x'}
+    await expect(
+      createdRequestHandler()(request, async () => {
+        throw notFound
+      }),
+    ).rejects.toBe(notFound)
   })
 })
 

@@ -50,8 +50,7 @@ export interface ApiResponse {
   statusCode: number
 
   /**
-   * The requested URL, including merged query parameters. Redirect-followed
-   * URLs are not exposed by get-it v9 buffered responses.
+   * The final response URL, including merged query parameters and redirects.
    */
   url: string
 
@@ -137,7 +136,7 @@ export async function performApiRequest(options: PerformApiRequestOptions): Prom
     rawBody,
     statusCode: response.status,
     statusMessage: response.statusText,
-    url: `${url}${url.includes('?') ? '&' : '?'}${searchParams}`,
+    url: response.url,
   }
 }
 
