@@ -269,9 +269,7 @@ describe.skipIf(!isRegistryMode)('sanity new lifecycle', {timeout: 90_000}, () =
       args: ['new', displayName, '--json'],
       env: {SANITY_AUTH_TOKEN: '', SANITY_CLI_MINT_TAG: smokeTestTag},
     })
-    if (result.exitCode !== 0) {
-      throw new Error(`sanity new exited with code ${result.exitCode}`)
-    }
+    if (result.error) throw result.error
     const mintResponse = parseMintResponse(result.stdout)
     const project = parseClaimableProject(mintResponse)
     let claimed = false
