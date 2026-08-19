@@ -83,6 +83,7 @@ jobs:
           name: e2e-log-node${{ matrix.node-version }}
           path: ${{ runner.temp }}/e2e-log.txt
           retention-days: 7
+          overwrite: true
 
   notify-failure:
     if: failure()

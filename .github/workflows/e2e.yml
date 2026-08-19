@@ -86,6 +86,7 @@ jobs:
           name: e2e-log-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}
           path: ${{ runner.temp }}/e2e-log.txt
           retention-days: 1
+          overwrite: true
 
   e2e-status:
     if: always()
