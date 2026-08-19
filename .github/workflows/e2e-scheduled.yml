@@ -69,11 +69,21 @@ jobs:
           SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
           SANITY_E2E_ORGANIZATION_ID: ${{ secrets.SANITY_E2E_ORGANIZATION_ID }}
         run: |
+          set -o pipefail
           if [ "$E2E_TEST_SUITE" = "all" ]; then
-            pnpm --filter @sanity/cli-e2e test
+            pnpm --filter @sanity/cli-e2e test 2>&1 | tee "$RUNNER_TEMP/e2e-log.txt"
           else
-            pnpm --filter @sanity/cli-e2e test "$E2E_TEST_SUITE"
+            pnpm --filter @sanity/cli-e2e test "$E2E_TEST_SUITE" 2>&1 | tee "$RUNNER_TEMP/e2e-log.txt"
           fi
+
+      - name: Upload test log to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-log-node${{ matrix.node-version }}
+          path: ${{ runner.temp }}/e2e-log.txt
+          retention-days: 7
+          overwrite: true
 
   notify-failure:
     if: failure()
