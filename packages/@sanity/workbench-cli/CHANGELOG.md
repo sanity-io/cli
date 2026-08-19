@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 2.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.1...workbench-cli-v2.0.2)
+
+_2026-08-19_
+
+### Bug Fixes
+
+- **workbench-cli:** let a config-only dev server share a slug with its app server ([#1725](https://github.com/sanity-io/cli/pull/1725)) ([9925e21](https://github.com/sanity-io/cli/commit/9925e214ff98ca9f49c8194cb8990514de081aef))
+
 ## 2.0.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.0...workbench-cli-v2.0.1)

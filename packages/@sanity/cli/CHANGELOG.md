@@ -1,5 +1,26 @@
 # Change Log
 
+## 8.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.0.3...cli-v8.1.0)
+
+_2026-08-19_
+
+### Features
+
+- update bootstrapped `eslint` and `@sanity/eslint-config-studio` dependencies ([#1709](https://github.com/sanity-io/cli/pull/1709)) ([2dfa122](https://github.com/sanity-io/cli/commit/2dfa12269ad5a5b8c381d48a6db312fc32c05ef5))
+- **new:** stop writing the robot token into the website env ([#1718](https://github.com/sanity-io/cli/pull/1718)) ([4f95f69](https://github.com/sanity-io/cli/commit/4f95f694a99f4bd82ee925af9fd05616ebc33311))
+
+### Bug Fixes
+
+- **cli:** tag asset upload requests ([#1728](https://github.com/sanity-io/cli/pull/1728)) ([dc1cf7c](https://github.com/sanity-io/cli/commit/dc1cf7c6c4901c467428231d9b15cbccc96198bb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.0.2
+
 ## 8.0.3
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.0.2...cli-v8.0.3)
