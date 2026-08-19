@@ -151,6 +151,19 @@ const devServerManifestSchema = z.object({
 export type DevServerManifest = z.infer<typeof devServerManifestSchema>
 
 /**
+ * A config-only server carries configs but no interfaces — e.g. a
+ * media-library config app under development. The workbench never routes it
+ * as an app; only its configs are published. It therefore plays a different
+ * role than an app server, and the two may share a slug (a config app
+ * developed alongside the locally served singleton it configures).
+ */
+export function isConfigOnlyServer(
+  server: Pick<DevServerManifest, 'configs' | 'interfaces'>,
+): boolean {
+  return Boolean(server.configs?.length) && !server.interfaces?.length
+}
+
+/**
  * Path to the dev server registry directory. Lives under the shared Sanity
  * config directory to stay consistent with other CLI paths.
  */
