@@ -11,8 +11,8 @@ import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
 import {
   clearCliTokenCache,
   type CliTokenInfo,
-  getCachedToken,
-  setCachedToken,
+  getCachedTokenInfo,
+  setCachedTokenInfo,
 } from './cliTokenCache.js'
 import {type ConfigStore} from './types/cliConfig.js'
 
@@ -53,9 +53,9 @@ export async function getCliTokenInfo(): Promise<CliTokenInfo | undefined> {
       : {source: 'CLI execution context', token: context.token}
   }
 
-  const cached = getCachedToken()
-  if (cached !== undefined) {
-    return cached
+  const cachedTokenInfo = getCachedTokenInfo()
+  if (cachedTokenInfo !== undefined) {
+    return cachedTokenInfo
   }
 
   const token = process.env.SANITY_AUTH_TOKEN
@@ -64,14 +64,14 @@ export async function getCliTokenInfo(): Promise<CliTokenInfo | undefined> {
       source: 'SANITY_AUTH_TOKEN environment variable',
       token: token.trim(),
     }
-    setCachedToken(tokenInfo)
+    setCachedTokenInfo(tokenInfo)
     return tokenInfo
   }
 
   const configToken = _internals.getCliUserConfig('authToken')
   const tokenInfo =
     configToken === undefined ? undefined : {source: getCliUserConfigPath(), token: configToken}
-  setCachedToken(tokenInfo)
+  setCachedTokenInfo(tokenInfo)
   return tokenInfo
 }
 const cliUserConfigSchema = {

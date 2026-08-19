@@ -10,14 +10,14 @@ export interface CliTokenInfo {
   token: string
 }
 
-let cachedToken: CliTokenInfo | undefined
+let cachedTokenInfo: CliTokenInfo | undefined
 
-export function getCachedToken(): CliTokenInfo | undefined {
-  return cachedToken
+export function getCachedTokenInfo(): CliTokenInfo | undefined {
+  return cachedTokenInfo
 }
 
-export function setCachedToken(token: CliTokenInfo | undefined): void {
-  cachedToken = token
+export function setCachedTokenInfo(tokenInfo: CliTokenInfo | undefined): void {
+  cachedTokenInfo = tokenInfo
 }
 
 /**
@@ -29,5 +29,5 @@ export function setCachedToken(token: CliTokenInfo | undefined): void {
  * @internal
  */
 export function clearCliTokenCache(): void {
-  cachedToken = undefined
+  cachedTokenInfo = undefined
 }
