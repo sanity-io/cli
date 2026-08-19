@@ -160,9 +160,7 @@ describe('#new', () => {
       '│',
       '│  The token signs you in: there is no account yet.',
     ])
-    expect(output).toContain(
-      'Your content is private until you claim, to read it, you need the token.',
-    )
+    expect(output).not.toContain('Your content is private until you claim')
     expect(output).toContain(
       "Treat your token as a password and don't expose it publicly in your app.",
     )

@@ -77,11 +77,18 @@ export interface ScaffoldResult {
   frontendPath?: string
 }
 
-function createScaffoldEnv(dataset: string, projectId: string, token: string) {
+function createStudioEnv(dataset: string, projectId: string, token: string) {
   return {
     SANITY_AUTH_TOKEN: token,
     SANITY_DATASET: dataset,
     SANITY_PROJECT_ID: projectId,
+  }
+}
+
+function createFrontendEnv(dataset: string, projectId: string) {
+  return {
+    NEXT_PUBLIC_SANITY_DATASET: dataset,
+    NEXT_PUBLIC_SANITY_PROJECT_ID: projectId,
   }
 }
 
@@ -169,11 +176,11 @@ export async function scaffoldProject({
   }
 
   cancelSignal?.throwIfAborted()
-  const scaffoldEnv = createScaffoldEnv(dataset, projectId, token)
   writeScaffoldEnv(
     path.join(studioPath, '.env.local'),
-    scaffoldEnv,
+    createStudioEnv(dataset, projectId, token),
     `Studio scaffold completed, but writing ./${STUDIO_ENV_FILE} failed`,
+    'it holds a live project token',
   )
 
   if (detected) {
@@ -207,8 +214,9 @@ export async function scaffoldProject({
   const frontendPath = path.join(workDir, FRONTEND_DIR)
   writeScaffoldEnv(
     path.join(frontendPath, '.env.local'),
-    scaffoldEnv,
+    createFrontendEnv(dataset, projectId),
     `Website scaffold completed, but writing ./${FRONTEND_ENV_FILE} failed`,
+    'it holds the project ID and dataset',
   )
 
   let frontendDependenciesInstalled = resolvedPackageManager !== 'manual'
@@ -243,9 +251,10 @@ function writeScaffoldEnv(
   envPath: string,
   values: Record<string, string>,
   errorContext: string,
+  gitignoreReason: string,
 ): void {
   const lines = [
-    '# Added by `sanity new`. Keep this file out of git: it holds a live project token.',
+    `# Added by \`sanity new\`. Keep this file out of git: ${gitignoreReason}.`,
     ...Object.entries(values).map(([key, value]) => `${key}="${value}"`),
   ]
   try {

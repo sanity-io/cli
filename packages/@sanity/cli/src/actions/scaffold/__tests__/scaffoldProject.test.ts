@@ -52,11 +52,17 @@ const options = {
   token: 'sk-token',
   workDir: '/tmp/project',
 }
-const envContents = [
+const studioEnvContents = [
   '# Added by `sanity new`. Keep this file out of git: it holds a live project token.',
   'SANITY_AUTH_TOKEN="sk-token"',
   'SANITY_DATASET="production"',
   'SANITY_PROJECT_ID="abc123"',
+  '',
+].join('\n')
+const frontendEnvContents = [
+  '# Added by `sanity new`. Keep this file out of git: it holds the project ID and dataset.',
+  'NEXT_PUBLIC_SANITY_DATASET="production"',
+  'NEXT_PUBLIC_SANITY_PROJECT_ID="abc123"',
   '',
 ].join('\n')
 
@@ -116,12 +122,12 @@ describe('scaffoldProject', () => {
     expect(mockInstallFrontendDeps).toHaveBeenCalled()
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       path.join(options.workDir, 'sanity', '.env.local'),
-      envContents,
+      studioEnvContents,
       'utf8',
     )
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       path.join(options.workDir, 'web', '.env.local'),
-      envContents,
+      frontendEnvContents,
       'utf8',
     )
   })

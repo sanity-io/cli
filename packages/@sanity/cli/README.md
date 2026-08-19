@@ -3035,8 +3035,9 @@ DESCRIPTION
   the deadline and the project and its content are deleted.
 
   Two things to keep private: the claim link, because anyone who opens it
-  becomes the owner, and the access token saved in ./sanity/.env.local and
-  ./web/.env.local, because it can read and change everything in the project.
+  becomes the owner, and the access token saved in ./sanity/.env.local,
+  because it can read and change everything in the project.
+  ./web/.env.local has only the project ID and dataset.
   Keep both env files out of git, and never put the token in code that runs in
   the browser.
 
