@@ -37,7 +37,7 @@ export async function uploadAsset({
     apiVersion: ASSETS_API_VERSION,
     dataset,
     projectId,
-    requestTagPrefix: 'sanity.assets.upload',
+    requestTagPrefix: 'sanity.cli.assets.upload',
     requireUser: true,
   })
   signal?.throwIfAborted()
