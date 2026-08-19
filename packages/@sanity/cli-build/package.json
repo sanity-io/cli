@@ -99,6 +99,7 @@
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "magic-string": "^0.30.21",
+    "oxc-transform-react": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
     "styled-components": "^6.4.3",
@@ -106,10 +107,14 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "babel-plugin-react-compiler": "*"
+    "babel-plugin-react-compiler": "*",
+    "oxc-transform-react": "*"
   },
   "peerDependenciesMeta": {
     "babel-plugin-react-compiler": {
+      "optional": true
+    },
+    "oxc-transform-react": {
       "optional": true
     }
   },

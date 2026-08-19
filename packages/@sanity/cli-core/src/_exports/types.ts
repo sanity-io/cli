@@ -1,6 +1,7 @@
 export {
   type CliConfig,
   type ConfigStore,
+  type ReactCompilerConfig,
   type TypeGenConfig,
 } from '../config/cli/types/cliConfig.js'
 export {type UserViteConfig} from '../config/cli/types/userViteConfig.js'

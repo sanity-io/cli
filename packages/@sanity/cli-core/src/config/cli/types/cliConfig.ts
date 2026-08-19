@@ -1,6 +1,26 @@
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
+import {type PluginOptions as BabelReactCompilerOptions} from 'babel-plugin-react-compiler'
+import {type ReactCompilerOptions as OxcReactCompilerOptions} from 'oxc-transform-react'
 
 import {type UserViteConfig} from './userViteConfig'
+
+/**
+ * Configuration for React Compiler.
+ *
+ * The `transform` field selects which React Compiler transform to run; the
+ * remaining options are passed to the selected transform:
+ *
+ * - `'babel'` (default) - the Babel plugin
+ *   ({@link https://www.npmjs.com/package/babel-plugin-react-compiler | babel-plugin-react-compiler}
+ *   must be installed in your project)
+ * - `'oxc'` (experimental) - the native Rust port
+ *   ({@link https://www.npmjs.com/package/oxc-transform-react | oxc-transform-react}
+ *   must be installed in your project)
+ *
+ * @public
+ */
+export type ReactCompilerConfig =
+  | (BabelReactCompilerOptions & {transform?: 'babel'})
+  | (OxcReactCompilerOptions & {transform: 'oxc'})
 
 export interface TypeGenConfig {
   formatGeneratedCode: boolean
@@ -93,7 +113,12 @@ export interface CliConfig {
     basePath?: string
   }
 
-  /** Configuration options for React Compiler */
+  /**
+   * Configuration options for React Compiler. Pass `true` to enable it with
+   * the default (babel) transform, or an object to configure it — see
+   * {@link ReactCompilerConfig} for choosing between the babel and the
+   * experimental oxc transform.
+   */
   reactCompiler?: boolean | ReactCompilerConfig
 
   /** Wraps the Studio in \<React.StrictMode\> root to aid in flagging potential problems related to concurrent features (startTransition, useTransition, useDeferredValue, Suspense). Can also be enabled by setting SANITY_STUDIO_REACT_STRICT_MODE="true"|"false". It only applies to sanity dev in development mode and is ignored in sanity build and in production. Defaults to true. */

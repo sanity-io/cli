@@ -33,15 +33,16 @@ catalog:
 
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
+  oxc-transform-react: ^0.145.0
   typescript: ^6.0.3
   vite: ^8.2.1
   vite-node: ^6.0.0
-  '@vitejs/plugin-react': ^6.0.5
+  '@vitejs/plugin-react': ^6.1.0
   tsx: ^4.23.12
 
   # Testing
-  vitest: ^4.1.10
-  '@vitest/coverage-istanbul': ^4.1.10
+  vitest: ^4.1.11
+  '@vitest/coverage-istanbul': ^4.1.11
   nock: ^14.0.15
   node-pty: ^1.1.0
   strip-ansi: ^7.1.0
@@ -73,7 +74,7 @@ catalog:
   '@swc/core': ^1.15.43
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^12.1.2
+  '@sanity/pkg-utils': ^12.2.0
   oxfmt: ^0.59.0
 
   # Type Definitions
@@ -106,6 +107,11 @@ minimumReleaseAgeExclude:
   # lockstep with `rolldown`.
   - 'rolldown'
   - '@rolldown/*'
+  # Oxc's Rust port of React Compiler; same trust domain as oxfmt/rolldown
+  # above. `@oxc-transform-react/*` covers the per-platform native binding
+  # packages released in lockstep with `oxc-transform-react`.
+  - 'oxc-transform-react'
+  - '@oxc-transform-react/*'
   - 'vitest'
   - 'postcss'
   - '@module-federation/vite@1.16.14'
