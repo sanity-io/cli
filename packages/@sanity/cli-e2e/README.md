@@ -15,7 +15,7 @@ Default to unit tests. Reach for an e2e test when the test only has value if the
 E2E tests need credentials for a real Sanity project. Copy `.env.example` to `.env` and fill in the values:
 
 ```bash
-SANITY_E2E_TOKEN=<robot token with read+write on the project>
+SANITY_E2E_TOKEN=<user session token with project access and permission to attach projects to the organization>
 SANITY_E2E_PROJECT_ID=<project id used for all e2e tests>
 SANITY_E2E_ORGANIZATION_ID=<org id that owns the project>
 ```
@@ -163,9 +163,9 @@ describe('sanity --help', () => {
 Two workflows run e2e tests:
 
 - **`.github/workflows/e2e.yml`** — runs on PRs that touch `packages/@sanity/cli*`, `packages/create-sanity`, `fixtures/`, or `pnpm-lock.yaml`, and on every push to `main`. Matrix: Node 22/24/26 × 2 vitest shards. Uses the working-tree CLI (packed by `globalSetup`).
-- **`.github/workflows/e2e-scheduled.yml`** — runs hourly (and on manual dispatch) against `sanity@latest` from npm. Catches regressions in the published artifact and posts to Slack on failure.
+- **`.github/workflows/e2e-scheduled.yml`** — runs hourly (and on manual dispatch) against `sanity@latest` from npm. It also runs registry-only coverage such as the `sanity new` mint, claim, and cleanup lifecycle. Catches regressions in the published artifact and posts to Slack on failure.
 
-To trigger the scheduled workflow manually against a specific version, use **Run workflow** on the Actions tab and supply a `cli_version` (e.g. `5.20.0`).
+To trigger the scheduled workflow manually, use **Run workflow** on the Actions tab. Select the branch, supply a `cli_version` (e.g. `5.20.0`), and optionally target one Vitest suite with the `suite` input (e.g. `new.test.ts`). The default `all` runs the full suite.
 
 To re-run a failed PR run, click **Re-run failed jobs** on the workflow run. Logs include each test's stdout/stderr; failures from the PTY session also dump the captured output, which is usually enough to diagnose.
 
