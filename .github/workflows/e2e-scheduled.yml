@@ -54,6 +54,18 @@ jobs:
           "$INSTALL_DIR/node_modules/.bin/sanity" --version
           "$INSTALL_DIR/node_modules/.bin/create-sanity" --help > /dev/null
 
+      - name: Smoke test sanity new
+        run: |
+          SANITY_NEW_RESULT="$RUNNER_TEMP/sanity-new.json"
+          trap 'rm -f "$SANITY_NEW_RESULT"' EXIT
+          "$E2E_BINARY_PATH" new "Scheduled E2E ${GITHUB_RUN_ID}" --json > "$SANITY_NEW_RESULT"
+          jq -e '
+            (.projectId | type == "string" and length > 0) and
+            (.dataset | type == "string" and length > 0) and
+            (.claimUrl | type == "string" and startswith("https://")) and
+            (.expiresAt | type == "string" and length > 0)
+          ' "$SANITY_NEW_RESULT" > /dev/null
+
       - name: Build test infrastructure
         run: pnpm --filter @sanity/cli-test build
 
