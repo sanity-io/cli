@@ -8,9 +8,9 @@ export const sdkAppDependencies = {
   },
 
   devDependencies: {
-    '@sanity/eslint-config-studio': '^6',
+    '@sanity/eslint-config-studio': '^7',
     '@types/react': '^19.2.14',
-    eslint: '^9.28',
+    eslint: '^10.8.1',
     prettier: '^3.5',
     sanity: 'latest',
     typescript: '^5.8', // Peer dependency of eslint-config-studio (implicitly)
