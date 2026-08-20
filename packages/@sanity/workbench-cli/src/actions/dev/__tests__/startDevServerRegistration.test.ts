@@ -104,7 +104,11 @@ describe('startDevServerRegistration', () => {
     const handle = await register({output})
 
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('"test-app" is already served'),
+      expect.stringContaining('The app "test-app" is already served'),
+      {exit: false},
+    )
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('give this app its own `slug`'),
       {exit: false},
     )
     // Nothing registered, so the workbench never sees it — and nothing to watch or release.
@@ -121,6 +125,164 @@ describe('startDevServerRegistration', () => {
 
     expect(output.error).not.toHaveBeenCalled()
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
+  })
+
+  // A config-only server (configs, no interfaces — e.g. a media-library config
+  // app) is never routed as an app, so it may share a slug with the app server
+  // it configures. Only same-role duplicates are indistinguishable.
+  const mediaLibraryConfig = {
+    appType: 'media-library',
+    fields: [{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'}],
+  }
+
+  test('a config-only server registers alongside an app server with the same slug', async () => {
+    // The app server: interfaces present, no configs.
+    mockGetRegisteredServers.mockReturnValue([
+      {id: 'test-app', interfaces: [{type: 'app'}], pid: 4242, port: 3334},
+    ])
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          applicationType: 'media-library',
+          config: mediaLibraryConfig,
+          isSingleton: true,
+        }),
+      }),
+      isApp: true,
+      output,
+    })
+
+    expect(output.error).not.toHaveBeenCalled()
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        configs: [expect.objectContaining({appType: 'media-library'})],
+        id: 'test-app',
+      }),
+    )
+  })
+
+  test('an app server registers alongside a config-only server with the same slug', async () => {
+    mockGetRegisteredServers.mockReturnValue([
+      {configs: [mediaLibraryConfig], id: 'test-app', pid: 4242, port: 3334},
+    ])
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({app: workbenchApp({entry: './src/App.tsx'})}),
+      isApp: true,
+      output,
+    })
+
+    expect(output.error).not.toHaveBeenCalled()
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
+  })
+
+  // A config edit can flip a server's role mid-session (a config-only app
+  // gaining an `entry` becomes app-role). The watcher update must re-run the
+  // same-role collision check, or the flip would quietly put two app-role
+  // servers on one slug — the ambiguity the registration gate exists to prevent.
+  test('a role flip that would collide keeps the previous registration and retries next save', async () => {
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+    const output = createMockOutput()
+
+    // Registers config-only; an app server already holds the slug (allowed).
+    mockGetRegisteredServers.mockReturnValue([
+      {id: 'test-app', interfaces: [{type: 'app'}], pid: 4242, port: 3005},
+    ])
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          applicationType: 'media-library',
+          config: mediaLibraryConfig,
+          isSingleton: true,
+        }),
+      }),
+      isApp: true,
+      output,
+    })
+    expect(mockRegisterDevServer).toHaveBeenCalled()
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    // The save flips it to app-role while the app server is still up — skip.
+    const appRolePatch = {
+      configs: [],
+      interfaces: [{id: 'test-app-app-test-app', type: 'app'}],
+      manifest: undefined,
+      manifestUpdatedAt: 'a',
+    }
+    await watcherUpdate(appRolePatch)
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('serve the app "test-app" like the dev server running on port 3005'),
+      {exit: false},
+    )
+    expect(update).not.toHaveBeenCalled()
+
+    // The conflicting server goes away — the next save commits the flip.
+    mockGetRegisteredServers.mockReturnValue([])
+    await watcherUpdate({...appRolePatch, manifestUpdatedAt: 'b'})
+    expect(update).toHaveBeenCalledTimes(1)
+  })
+
+  test('a role flip without a conflicting server commits normally', async () => {
+    const update = vi.fn()
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update})
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          applicationType: 'media-library',
+          config: mediaLibraryConfig,
+          isSingleton: true,
+        }),
+      }),
+      isApp: true,
+      output,
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    await watcherUpdate({
+      configs: [],
+      interfaces: [{id: 'test-app-app-test-app', type: 'app'}],
+      manifest: undefined,
+      manifestUpdatedAt: 'a',
+    })
+    expect(output.error).not.toHaveBeenCalled()
+    expect(update).toHaveBeenCalledTimes(1)
+  })
+
+  test('two config-only servers with the same slug still collide', async () => {
+    mockGetRegisteredServers.mockReturnValue([
+      {configs: [mediaLibraryConfig], id: 'test-app', pid: 4242, port: 3334},
+    ])
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({
+          applicationType: 'media-library',
+          config: mediaLibraryConfig,
+          isSingleton: true,
+        }),
+      }),
+      isApp: true,
+      output,
+    })
+
+    // Config-phrased, and no slug advice — a config app can't change its slug
+    // (`unstable_defineMediaLibrary` hard-codes it).
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('A config for "test-app" is already served'),
+      {exit: false},
+    )
+    expect(output.error).not.toHaveBeenCalledWith(
+      expect.stringContaining('give this app its own `slug`'),
+      expect.anything(),
+    )
+    expect(mockRegisterDevServer).not.toHaveBeenCalled()
   })
 
   test('forwards api.projectId to registerDevServer', async () => {

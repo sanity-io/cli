@@ -153,15 +153,14 @@ describe('#new', () => {
       `│  SANITY_AUTH_TOKEN="${project.token}" sanity "command"`,
     ])
     expect(output).toContain(studioUrl)
+    expect(output).toContain('cd sanity && npx sanity@latest dev')
     const studioLinkIndex = lines.indexOf(`│  Then open this link: ${studioUrl}`)
     expect(lines.slice(studioLinkIndex, studioLinkIndex + 3)).toEqual([
       `│  Then open this link: ${studioUrl}`,
       '│',
       '│  The token signs you in: there is no account yet.',
     ])
-    expect(output).toContain(
-      'Your content is private until you claim, to read it, you need the token.',
-    )
+    expect(output).not.toContain('Your content is private until you claim')
     expect(output).toContain(
       "Treat your token as a password and don't expose it publicly in your app.",
     )

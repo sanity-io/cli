@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-build",
-  "version": "5.1.0",
+  "version": "5.3.0",
   "description": "Internal Sanity package for building studios and apps",
   "keywords": [
     "cli",
@@ -69,7 +69,6 @@
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "cjs-module-lexer": "^2.2.0",
-    "debug": "catalog:",
     "empathic": "catalog:",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
@@ -90,7 +89,6 @@
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
-    "@types/debug": "catalog:",
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
     "@types/picomatch": "^4.0.3",
@@ -101,6 +99,7 @@
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "magic-string": "^0.30.21",
+    "oxc-transform-react": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
     "styled-components": "^6.4.3",
@@ -108,10 +107,14 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "babel-plugin-react-compiler": "*"
+    "babel-plugin-react-compiler": "*",
+    "oxc-transform-react": "*"
   },
   "peerDependenciesMeta": {
     "babel-plugin-react-compiler": {
+      "optional": true
+    },
+    "oxc-transform-react": {
       "optional": true
     }
   },

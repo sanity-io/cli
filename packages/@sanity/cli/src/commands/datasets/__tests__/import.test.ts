@@ -51,6 +51,8 @@ vi.mock('@sanity/import', () => ({
 
 vi.mock('@sanity/cli-core/request', () => ({
   createRequester: vi.fn().mockReturnValue(mockRequest),
+  // Tests pass a Node Readable as `body`; passthrough matches that fixture shape.
+  nodeReadableFromWeb: (stream: unknown) => stream,
 }))
 
 vi.mock('node:fs', async (importOriginal) => {
@@ -265,7 +267,7 @@ describe('#dataset:import', () => {
 
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringContaining(`Failed to create dataset ${newDatasetName}`),
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
 
@@ -276,7 +278,7 @@ describe('#dataset:import', () => {
       await ImportDatasetCommand.run(BASE_FLAGS)
 
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(expect.stringContaining(err), {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     })
 
@@ -293,7 +295,7 @@ describe('#dataset:import', () => {
       await ImportDatasetCommand.run(BASE_FLAGS)
 
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(expect.stringContaining(err), {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
       // Verify clearInterval was called to clean up the spinInterval
       expect(clearIntervalSpy).toHaveBeenCalled()
@@ -311,7 +313,7 @@ describe('#dataset:import', () => {
       expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
         expect.stringContaining(err.message),
         {
-          exit: 1,
+          exit: exitCodes.RUNTIME_ERROR,
         },
       )
     })

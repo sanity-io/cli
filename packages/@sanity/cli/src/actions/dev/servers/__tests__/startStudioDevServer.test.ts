@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig, exitCodes} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -26,6 +26,7 @@ const mockGetPackageManagerChoice = vi.hoisted(() => vi.fn())
 const mockUpgradePackages = vi.hoisted(() => vi.fn())
 const mockIsInteractive = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
+const mockHasLocalUnclaimedProject = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../../server/devServer.js', () => ({
   startDevServer: mockStartDevServer,
@@ -55,6 +56,9 @@ vi.mock('../../../../util/packageManager/packageManagerChoice.js', () => ({
 }))
 vi.mock('../../../../util/packageManager/upgradePackages.js', () => ({
   upgradePackages: mockUpgradePackages,
+}))
+vi.mock('../../../../util/unclaimedProjects.js', () => ({
+  hasLocalUnclaimedProject: mockHasLocalUnclaimedProject,
 }))
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -91,6 +95,7 @@ describe('startStudioDevServer', () => {
     mockGetAppId.mockReturnValue('app-id')
     mockIsInteractive.mockReturnValue(false)
     mockGetDashboardAppURL.mockResolvedValue('https://sanity.io/@org-x?dev=http://localhost:3333')
+    mockHasLocalUnclaimedProject.mockReturnValue(false)
   })
 
   afterEach(() => {
@@ -110,6 +115,56 @@ describe('startStudioDevServer', () => {
     if (!result.started) throw new Error('expected the server to start')
     expect(result.close).toBeDefined()
     expect(result.server).toBeDefined()
+  })
+
+  describe('unclaimed sign-in URL', () => {
+    const unclaimedOptions = createDevOptions({
+      cliConfig: {api: {projectId: 'abc123'}} as CliConfig,
+    })
+
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    test('announces a token hash URL only when the project is locally unclaimed', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'sk-robot-token')
+      mockHasLocalUnclaimedProject.mockReturnValue(true)
+      const started = createMockDevServer()
+      mockStartDevServer.mockResolvedValueOnce(started)
+
+      await startStudioDevServer(unclaimedOptions)
+
+      expect(mockHasLocalUnclaimedProject).toHaveBeenCalledWith('abc123')
+      expect(started.server.config.logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('http://localhost:3333/#token=sk-robot-token'),
+      )
+    })
+
+    test('keeps the plain origin when SANITY_AUTH_TOKEN is set on a claimed project', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', 'sk-user-token')
+      mockHasLocalUnclaimedProject.mockReturnValue(false)
+      const started = createMockDevServer()
+      mockStartDevServer.mockResolvedValueOnce(started)
+
+      await startStudioDevServer(unclaimedOptions)
+
+      const announced = vi.mocked(started.server.config.logger.info).mock.calls[0]?.[0]
+      expect(announced).toContain('http://localhost:3333/')
+      expect(announced).not.toContain('#token=')
+    })
+
+    test('does not consult the unclaimed registry when SANITY_AUTH_TOKEN is unset', async () => {
+      vi.stubEnv('SANITY_AUTH_TOKEN', '')
+      const started = createMockDevServer()
+      mockStartDevServer.mockResolvedValueOnce(started)
+
+      await startStudioDevServer(unclaimedOptions)
+
+      expect(mockHasLocalUnclaimedProject).not.toHaveBeenCalled()
+      const announced = vi.mocked(started.server.config.logger.info).mock.calls[0]?.[0]
+      expect(announced).toContain('http://localhost:3333/')
+      expect(announced).not.toContain('#token=')
+    })
   })
 
   test('logs schema-extraction info line when enabled in cliConfig', async () => {
@@ -179,7 +234,7 @@ describe('startStudioDevServer', () => {
       )
 
       expect(output.error).toHaveBeenCalledWith('Project Id is required to load in dashboard', {
-        exit: 1,
+        exit: exitCodes.RUNTIME_ERROR,
       })
     })
 

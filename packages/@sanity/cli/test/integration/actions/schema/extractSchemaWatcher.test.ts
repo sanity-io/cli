@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -87,7 +87,7 @@ describe('extractSchemaWatcher', () => {
       watchPatterns: ['**/*.ts'],
     })
 
-    expect(output.error).toHaveBeenCalledWith('Fatal error', {exit: 1})
+    expect(output.error).toHaveBeenCalledWith('Fatal error', {exit: exitCodes.RUNTIME_ERROR})
   })
 
   test('close function closes the watcher', async () => {

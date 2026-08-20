@@ -16,7 +16,7 @@ export async function getSchemas(dataset: string, projectId: string, id?: string
 
   return client.request<StoredWorkspaceSchema[]>({
     method: 'GET',
-    uri: `/projects/${projectId}/datasets/${dataset}/schemas${id ? `/${id}` : ''}`,
+    url: `/projects/${projectId}/datasets/${dataset}/schemas${id ? `/${id}` : ''}`,
   })
 }
 
@@ -33,7 +33,7 @@ export async function deleteSchema(dataset: string, projectId: string, id: strin
 
   return client.request({
     method: 'DELETE',
-    uri: `/projects/${projectId}/datasets/${dataset}/schemas/${id}`,
+    url: `/projects/${projectId}/datasets/${dataset}/schemas/${id}`,
   })
 }
 

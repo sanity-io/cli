@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {type AppVisibility} from '@sanity/cli-core'
+import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {input, spinner} from '@sanity/cli-core/ux'
 import {customAlphabet} from 'nanoid'
 
@@ -79,7 +79,7 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
 
         deployDebug('Error creating user application', e)
         // otherwise, it's a fatal error
-        throw new CLIError('Error creating user application', {exit: 1})
+        throw new CLIError('Error creating user application', {exit: exitCodes.RUNTIME_ERROR})
       }
     },
   })

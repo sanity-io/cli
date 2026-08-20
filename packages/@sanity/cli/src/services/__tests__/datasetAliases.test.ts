@@ -46,7 +46,7 @@ describe('#listAliases', () => {
       projectId: 'test-project',
       requireUser: true,
     })
-    expect(mockClient.request).toHaveBeenCalledWith({uri: '/aliases'})
+    expect(mockClient.request).toHaveBeenCalledWith({url: '/aliases'})
     expect(result).toBe(mockAliases)
   })
 })
@@ -66,7 +66,7 @@ describe('#createAlias', () => {
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {datasetName: 'production'},
       method: 'PUT',
-      uri: '/aliases/prod',
+      url: '/aliases/prod',
     })
     expect(result).toBe(mockResponse)
   })
@@ -85,7 +85,7 @@ describe('#createAlias', () => {
     expect(mockClient.request).toHaveBeenCalledWith({
       body: undefined,
       method: 'PUT',
-      uri: '/aliases/prod',
+      url: '/aliases/prod',
     })
     expect(result).toBe(mockResponse)
   })
@@ -105,7 +105,7 @@ describe('#removeAlias', () => {
     })
     expect(mockClient.request).toHaveBeenCalledWith({
       method: 'DELETE',
-      uri: '/aliases/test-alias',
+      url: '/aliases/test-alias',
     })
     expect(result).toBe(mockResponse)
   })
@@ -126,7 +126,7 @@ describe('#updateAlias', () => {
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {datasetName: 'production'},
       method: 'PATCH',
-      uri: '/aliases/prod',
+      url: '/aliases/prod',
     })
     expect(result).toBe(mockResponse)
   })

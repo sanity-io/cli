@@ -1,5 +1,65 @@
 # Changelog
 
+## 5.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.2.1...cli-build-v5.3.0)
+
+_2026-08-20_
+
+### Features
+
+- React Compiler can now run on oxc, a native Rust port of the compiler. Opt in from `sanity.cli.ts`: ([#1724](https://github.com/sanity-io/cli/pull/1724)) ([95ee806](https://github.com/sanity-io/cli/commit/95ee806b99c84e4cfdef70d9fb052db7da41bdf8))
+
+  ```ts
+  export default defineCliConfig({
+    reactCompiler: { transform: "oxc" },
+  });
+  ```
+
+  - One native pass handles React Compiler, TypeScript/JSX, and Fast Refresh — no babel in the pipeline
+  - Install `oxc-transform-react` in your project first, the same way the default transform needs `babel-plugin-react-compiler`
+  - Experimental. Babel stays the default, and existing `reactCompiler` configs keep working unchanged
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.2.0
+
+## 5.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.2.0...cli-build-v5.2.1)
+
+_2026-08-18_
+
+### Bug Fixes
+
+- Migrate `@sanity/cli-core/request` to get-it v9 and upgrade `@sanity/client` to v8 ([#1534](https://github.com/sanity-io/cli/pull/1534)) ([9230315](https://github.com/sanity-io/cli/commit/92303158f7737bc21e40d4dc208e5158445cb0cd))
+- **cli-build:** mark @sanity/ui v4 as supported ([#1710](https://github.com/sanity-io/cli/pull/1710)) ([619278b](https://github.com/sanity-io/cli/commit/619278b70c94318c328c7917d85de3d87a836409))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.1.0
+
+## 5.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.1.0...cli-build-v5.2.0)
+
+_2026-08-14_
+
+### Features
+
+- add resource bindings script tag ([#1678](https://github.com/sanity-io/cli/pull/1678)) ([f1b284c](https://github.com/sanity-io/cli/commit/f1b284c1a4d8b09afa5d4c224d25754e946e06ec))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.0.0
+    - @sanity/cli-core bumped to 3.0.0
+
 ## [5.1.0](https://github.com/sanity-io/cli/compare/cli-build-v5.0.0...cli-build-v5.1.0)
 
 _2026-07-29_

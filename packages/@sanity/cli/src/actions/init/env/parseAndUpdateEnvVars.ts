@@ -1,5 +1,6 @@
+import {parseEnv} from 'node:util'
+
 import {Output} from '@sanity/cli-core'
-import dotenv from 'dotenv'
 
 interface ParseAndUpdateEnvVarsOptions {
   envVars: Record<string, string>
@@ -14,7 +15,7 @@ export function parseAndUpdateEnvVars({
   log,
   output,
 }: ParseAndUpdateEnvVarsOptions): string {
-  const existingKeys = dotenv.parse(fileContents) // this will contain all vars
+  const existingKeys = parseEnv(fileContents) // this will contain all vars
   const updatedKeys: Record<string, string> = {} // this will only contain our vars
 
   // find and update keys

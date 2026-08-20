@@ -16,5 +16,6 @@ export default defineConfig({
     globals: false,
     include: ['test/integration/**/*.test.ts'],
     name: '@sanity/workbench-cli/integration',
+    setupFiles: ['../../../test/vitest/setup.ts'],
   },
 })

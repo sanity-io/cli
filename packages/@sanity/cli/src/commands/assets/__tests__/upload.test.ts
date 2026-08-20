@@ -179,20 +179,95 @@ describe('#assets:upload', () => {
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
-  test('reports upload failures with authentication and permission guidance', async () => {
-    mockUploadAssetWithProgress.mockRejectedValue(new Error('Forbidden'))
+  test('formats the API response body with asset upload guidance', async () => {
+    mockUploadAssetWithProgress.mockRejectedValue(
+      Object.assign(new Error('HTTP 422'), {
+        response: {
+          body: {
+            details:
+              'source: bad seek to 1807\nheif: Support for this compression format has not been built in (11.6003)',
+            error: 'Unprocessable Entity',
+            message: 'Invalid image, could not process',
+            statusCode: 422,
+          },
+          headers: {},
+          method: 'POST',
+          statusCode: 422,
+          statusMessage: 'Unprocessable Entity',
+          url: 'https://test-project.api.sanity.io/v2024-06-24/assets/images/production',
+        },
+        statusCode: 422,
+      }),
+    )
 
     const {error} = await testCommand(UploadAssetCommand, ['--file', './hero.png'], {
       mocks: defaultMocks,
     })
 
-    expect(error?.message).toContain('Asset upload failed')
     expect(error?.message).toContain(
-      'Check authentication, write access, and that the local file is still readable, then retry',
+      `Asset upload failed: HTTP 422 - Unprocessable Entity
+Invalid image, could not process.
+
+Details:
+source: bad seek to 1807
+heif: Support for this compression format has not been built in (11.6003)
+
+Check the asset requirements and current technical limits, then try again: https://www.sanity.io/docs/content-lake/technical-limits#k2c53dc30e24b`,
     )
-    expect(error?.message).not.toContain('Forbidden')
-    expect(error?.message).not.toContain('hero.png')
     expect(error?.oclif?.exit).toBe(exitCodes.RUNTIME_ERROR)
+  })
+
+  test('suggests logging in again for an unauthorized upload', async () => {
+    mockUploadAssetWithProgress.mockRejectedValue(
+      Object.assign(new Error('Unauthorized'), {
+        response: {
+          body: {error: 'Unauthorized', message: 'Unauthorized', statusCode: 401},
+          headers: {},
+          method: 'POST',
+          statusCode: 401,
+          statusMessage: 'Unauthorized',
+          url: 'https://test-project.api.sanity.io/v2024-06-24/assets/images/production',
+        },
+        statusCode: 401,
+      }),
+    )
+
+    const {error} = await testCommand(UploadAssetCommand, ['--file', './hero.png'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('Run `sanity login` to authenticate, then try again')
+  })
+
+  test('preserves project membership guidance without suggesting login', async () => {
+    const membersUrl = 'https://www.sanity.io/manage/project/test-project/members'
+    mockUploadAssetWithProgress.mockRejectedValue(
+      Object.assign(
+        new Error(`Project user not found. Add this account as a project member: ${membersUrl}.`),
+        {
+          response: {
+            body: {
+              error: {type: 'projectUserNotFoundError'},
+              message: 'Project user not found',
+              statusCode: 401,
+            },
+            headers: {},
+            method: 'POST',
+            statusCode: 401,
+            statusMessage: 'Unauthorized',
+            url: 'https://test-project.api.sanity.io/v2024-06-24/assets/images/production',
+          },
+          statusCode: 401,
+        },
+      ),
+    )
+
+    const {error} = await testCommand(UploadAssetCommand, ['--file', './hero.png'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain(`Add this account as a project member: ${membersUrl}`)
+    expect(error?.message).not.toContain('sanity login')
   })
 
   test('requires --file', async () => {

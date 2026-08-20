@@ -1,12 +1,14 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {mintUnclaimedProject, PROVISION_API_VERSION} from '../mintProject.js'
+import {MINT_REQUEST_TAG, mintUnclaimedProject, PROVISION_API_VERSION} from '../mintProject.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core/request', () => ({
   createRequester: vi.fn().mockReturnValue(mockRequest),
 }))
+
+const PROVISION_URL = `https://api.sanity.io/${PROVISION_API_VERSION}/provision?tag=${MINT_REQUEST_TAG}`
 
 const provisionResponse = {
   apiHost: 'https://abc123.api.sanity.io',
@@ -26,11 +28,11 @@ const provisionResponse = {
   token: 'sk-robot-token',
 }
 
-function jsonResponse(body: unknown, statusCode = 200) {
+function jsonResponse(body: unknown, status = 200) {
   return {
-    body: JSON.stringify(body),
     headers: {},
-    statusCode,
+    status,
+    text: () => JSON.stringify(body),
   }
 }
 
@@ -62,7 +64,7 @@ describe('mintUnclaimedProject', () => {
       body: JSON.stringify({displayName: 'My Project', resourceType: 'project'}),
       headers: {'Content-Type': 'application/json'},
       method: 'POST',
-      url: `https://api.sanity.io/${PROVISION_API_VERSION}/provision`,
+      url: PROVISION_URL,
     })
   })
 
@@ -90,7 +92,7 @@ describe('mintUnclaimedProject', () => {
 
     expect(mockRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://api.sanity.example/${PROVISION_API_VERSION}/provision`,
+        url: `https://api.sanity.example/${PROVISION_API_VERSION}/provision?tag=${MINT_REQUEST_TAG}`,
       }),
     )
   })
@@ -102,21 +104,47 @@ describe('mintUnclaimedProject', () => {
 
     expect(mockRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://api.sanity.work/${PROVISION_API_VERSION}/provision`,
+        url: `https://api.sanity.work/${PROVISION_API_VERSION}/provision?tag=${MINT_REQUEST_TAG}`,
       }),
     )
   })
 
-  test('accepts an already-parsed response body', async () => {
-    mockRequest.mockResolvedValue({
-      body: provisionResponse,
-      headers: {},
-      statusCode: 200,
+  describe('request tag', () => {
+    test('lets the smoke-test harness override the tag', async () => {
+      vi.stubEnv('SANITY_CLI_MINT_TAG', 'sanity.cli.smoketest')
+
+      await mintUnclaimedProject({displayName: 'My Project'})
+
+      expect(mockRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: `https://api.sanity.io/${PROVISION_API_VERSION}/provision?tag=sanity.cli.smoketest`,
+        }),
+      )
     })
 
-    await expect(mintUnclaimedProject({displayName: 'My Project'})).resolves.toMatchObject({
-      resourceId: provisionResponse.resourceId,
-    })
+    // A dropped tag would silently make the mint unattributable, which is worse than ignoring a
+    // bad override, so malformed values fall back rather than being sent or omitted.
+    test.each(['not a tag', 'has/slash', 'x'.repeat(76), ''])(
+      'falls back to the default tag when the override is %j',
+      async (override) => {
+        vi.stubEnv('SANITY_CLI_MINT_TAG', override)
+
+        await mintUnclaimedProject({displayName: 'My Project'})
+
+        expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({url: PROVISION_URL}))
+      },
+    )
+  })
+
+  // Mint is unauthenticated by design — `sanity new` is meant to work without an account, so the
+  // request must never carry a credential.
+  test('mints anonymously, sending no credential', async () => {
+    await mintUnclaimedProject({displayName: 'My Project'})
+
+    expect(mockRequest).toHaveBeenCalledTimes(1)
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
+    )
   })
 
   // The terms notice has to reach the user even when the API predates it, so it falls back to
@@ -154,9 +182,9 @@ describe('mintUnclaimedProject', () => {
 
   test('reports other service failures without including the response body', async () => {
     mockRequest.mockResolvedValue({
-      body: 'sensitive upstream details',
       headers: {},
-      statusCode: 500,
+      status: 500,
+      text: () => 'sensitive upstream details',
     })
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
@@ -181,9 +209,9 @@ describe('mintUnclaimedProject', () => {
 
   test('rejects a non-JSON successful response', async () => {
     mockRequest.mockResolvedValue({
-      body: 'not json',
       headers: {},
-      statusCode: 200,
+      status: 200,
+      text: () => 'not json',
     })
 
     await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(

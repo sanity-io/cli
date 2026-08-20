@@ -34,7 +34,7 @@ export default class SanityHelp extends Help {
     return prefixBinName(help)
   }
 
-  protected formatRoot(): string {
+  formatRoot(): string {
     return prefixBinName(super.formatRoot())
   }
 

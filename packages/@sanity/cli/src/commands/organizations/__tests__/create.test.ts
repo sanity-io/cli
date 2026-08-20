@@ -58,7 +58,7 @@ describe('organizations create', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {name: 'My Org'},
       method: 'post',
-      uri: '/organizations',
+      url: '/organizations',
     })
   })
 
@@ -77,7 +77,7 @@ describe('organizations create', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {defaultRoleName: 'viewer', name: 'My Org'},
       method: 'post',
-      uri: '/organizations',
+      url: '/organizations',
     })
   })
 
@@ -90,7 +90,7 @@ describe('organizations create', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {name: 'My Org'},
       method: 'post',
-      uri: '/organizations',
+      url: '/organizations',
     })
   })
 

@@ -50,7 +50,7 @@ export async function deleteAspect(options: DeleteAspectOptions): Promise<Delete
       ],
     },
     method: 'POST',
-    uri: `/media-libraries/${mediaLibraryId}/mutate`,
+    url: `/media-libraries/${mediaLibraryId}/mutate`,
   })
 }
 
@@ -79,7 +79,7 @@ export async function getMediaLibraries(projectId: string): Promise<MediaLibrary
     query: {
       projectId,
     },
-    uri: `/media-libraries`,
+    url: `/media-libraries`,
   })
 
   return response.data.filter((library) => library.status === 'active')
@@ -113,6 +113,6 @@ export async function deployAspects(options: DeployAspectsOptions): Promise<Depl
       })),
     },
     method: 'POST',
-    uri: `/media-libraries/${mediaLibraryId}/mutate`,
+    url: `/media-libraries/${mediaLibraryId}/mutate`,
   })
 }

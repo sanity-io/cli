@@ -66,7 +66,13 @@ export async function uploadSchemaToLexicon(
           dataset: workspace.dataset,
           projectId: workspace.projectId,
         })
-        const descriptorId = await uploadSchema(workspace.schema, workspaceClient)
+        // The local `sanity` package types its client against its own
+        // @sanity/client major; the runtime surface uploadSchema uses is
+        // compatible across v7/v8.
+        const descriptorId = await uploadSchema(
+          workspace.schema,
+          workspaceClient as unknown as Parameters<typeof uploadSchema>[1],
+        )
 
         if (!descriptorId) {
           throw new Error(

@@ -60,12 +60,12 @@ const configAdapter = () =>
   })
 
 function stubInstallations(configs: unknown[]) {
-  mockRequest.mockImplementation(async ({uri}: {uri: string}) => {
-    if (uri === '/installations') {
+  mockRequest.mockImplementation(async ({url}: {url: string}) => {
+    if (url === '/installations') {
       return {data: [{application: {slug: 'media-library'}, id: 'inst-1'}]}
     }
-    if (uri === '/installations/inst-1/configs') return {data: configs}
-    throw new Error(`unexpected request to ${uri}`)
+    if (url === '/installations/inst-1/configs') return {data: configs}
+    throw new Error(`unexpected request to ${url}`)
   })
 }
 
@@ -103,7 +103,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     const resolution = await appAdapter().resolveTarget()
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({uri: '/applications/wb-app-1'}),
+      expect.objectContaining({url: '/applications/wb-app-1'}),
     )
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
       application: {id: 'wb-app-1', slug: 'my-app-x1', title: 'My App', type: 'coreApp'},
@@ -153,7 +153,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     await instance.undeploy(resolution.target)
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/applications/wb-app-1'}),
+      expect.objectContaining({method: 'DELETE', url: '/applications/wb-app-1'}),
     )
   })
 
@@ -297,10 +297,10 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     await instance.undeploy(resolution.target)
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/installations/inst-1/configs/cfg-2'}),
+      expect.objectContaining({method: 'DELETE', url: '/installations/inst-1/configs/cfg-2'}),
     )
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({method: 'DELETE', uri: '/installations/inst-1/configs/cfg-1'}),
+      expect.objectContaining({method: 'DELETE', url: '/installations/inst-1/configs/cfg-1'}),
     )
   })
 

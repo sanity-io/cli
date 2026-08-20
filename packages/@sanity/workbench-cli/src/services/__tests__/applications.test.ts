@@ -63,7 +63,7 @@ describe('getApplication', () => {
 
     expect(await getApplication('app_1')).toMatchObject({id: 'app_1'})
     expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
-    expect(mockClient.request).toHaveBeenCalledWith({uri: '/applications/app_1'})
+    expect(mockClient.request).toHaveBeenCalledWith({url: '/applications/app_1'})
   })
 
   test('returns null when the application does not exist (404)', async () => {
@@ -89,7 +89,7 @@ describe('listApplications', () => {
     expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {limit: 'none', organizationId: 'org-1'},
-      uri: '/applications',
+      url: '/applications',
     })
   })
 })
@@ -110,7 +110,7 @@ describe('createApplication', () => {
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk', type: 'coreApp'},
       method: 'POST',
-      uri: '/applications',
+      url: '/applications',
     })
   })
 
@@ -178,7 +178,7 @@ describe('updateApplication', () => {
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {icon},
       method: 'PATCH',
-      uri: '/applications/app_1',
+      url: '/applications/app_1',
     })
   })
 })
@@ -196,7 +196,7 @@ describe('createDeployment', () => {
     })
 
     const post = mockClient.request.mock.calls[0][0]
-    expect(post).toMatchObject({method: 'POST', uri: '/applications/app_1/deployments'})
+    expect(post).toMatchObject({method: 'POST', url: '/applications/app_1/deployments'})
 
     const fields = appendedFields()
     expect(fields).toContainEqual(['version', '1.2.4'])

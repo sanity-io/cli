@@ -116,6 +116,17 @@ function parseRecord(projectId: string, value: unknown): UnclaimedProjectRecord 
   return parsed
 }
 
+export function hasLocalUnclaimedProject(projectId: string): boolean {
+  if (!projectId) return false
+  try {
+    const stored = getUserConfig().get(UNCLAIMED_PROJECTS_CONFIG_KEY)
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return false
+    return Object.hasOwn(stored, projectId)
+  } catch {
+    return false
+  }
+}
+
 /**
  * Read and validate the passive local recovery registry without changing it.
  */

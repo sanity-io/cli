@@ -10,6 +10,7 @@ import {
   acquireWorkbenchLock,
   type DevServerManifest,
   getRegisteredServers,
+  isConfigOnlyServer,
   readWorkbenchLock,
   watchRegistry,
 } from './registry.js'
@@ -19,12 +20,9 @@ const devDebug = subdebug('dev')
 
 const noop = async () => {}
 
-// Every server is a local app except a config-only one — an config
+// Every server is a local app except a config-only one — a config
 // with no interfaces (the media library). A server with both lands in both channels.
-const isLocalApp = (server: DevServerManifest): boolean => {
-  const configOnly = Boolean(server.configs?.length) && !server.interfaces?.length
-  return !configOnly
-}
+const isLocalApp = (server: DevServerManifest): boolean => !isConfigOnlyServer(server)
 
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
   applications: servers

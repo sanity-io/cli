@@ -54,7 +54,7 @@ describe('uploadAsset', () => {
       apiVersion: ASSETS_API_VERSION,
       dataset: 'production',
       projectId: 'test-project',
-      requestTagPrefix: 'sanity.assets.upload',
+      requestTagPrefix: 'sanity.cli.assets.upload',
       requireUser: true,
     })
     expect(upload).toHaveBeenCalledWith('image', expect.any(Readable), {

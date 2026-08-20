@@ -57,7 +57,7 @@ describe('#deleteAspect', () => {
         ],
       },
       method: 'POST',
-      uri: '/media-libraries/test-library-id/mutate',
+      url: '/media-libraries/test-library-id/mutate',
     })
     expect(result).toBe(mockResponse)
   })
@@ -76,7 +76,7 @@ describe('#getMediaLibraries', () => {
     expect(mockClient.request).toHaveBeenCalledWith({
       method: 'GET',
       query: {projectId: 'test-project'},
-      uri: '/media-libraries',
+      url: '/media-libraries',
     })
     expect(result).toStrictEqual(mockResponse.data)
   })

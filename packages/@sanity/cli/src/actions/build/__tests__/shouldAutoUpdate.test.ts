@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, it} from 'vitest'
 
 import {createMockOutput, workbenchApp} from '../../dev/__tests__/testHelpers.js'
@@ -131,7 +131,7 @@ describe('shouldAutoUpdate', () => {
 
       expect(mockOutput.error).toHaveBeenCalledWith(
         'Found both `autoUpdates` (deprecated) and `deployment.autoUpdates` in sanity.cli.js/.ts. Please remove the deprecated top level `autoUpdates` config.',
-        {exit: 1},
+        {exit: exitCodes.RUNTIME_ERROR},
       )
     })
   })

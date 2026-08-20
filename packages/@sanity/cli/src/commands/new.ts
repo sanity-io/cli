@@ -135,9 +135,9 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
       'Claiming is free and takes about a minute. Miss the deadline and the project and its ' +
       'content are deleted.',
     'Two things to keep private: the claim link, because anyone who opens it becomes the owner, ' +
-      `and the access token saved in ./${STUDIO_ENV_FILE} and ./${FRONTEND_ENV_FILE}, because it ` +
-      'can read and change everything in the project. Keep both env files out of git, and never ' +
-      'put the token in code that runs in the browser.',
+      `and the access token saved in ./${STUDIO_ENV_FILE}, because it can read and change ` +
+      `everything in the project. ./${FRONTEND_ENV_FILE} has only the project ID and dataset. ` +
+      'Keep both env files out of git, and never put the token in code that runs in the browser.',
     'Run this command with --instructions for the full agent setup guide.',
   )
 
@@ -302,7 +302,7 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
     const printStudioInstructions = () => {
       flow.highlight('Start your Studio:')
       flow.gap()
-      flow.command(`cd ${STUDIO_DIR} && npx sanity dev`)
+      flow.command(`cd ${STUDIO_DIR} && npx sanity@latest dev`)
       flow.gap()
       flow.link(studioUrl, {label: 'Then open this link:'})
       flow.gap()
@@ -411,7 +411,6 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
         flow.gap()
       }
 
-      flow.line('Your content is private until you claim, to read it, you need the token.')
       flow.line("Treat your token as a password and don't expose it publicly in your app.")
       flow.gap()
       flow.line(

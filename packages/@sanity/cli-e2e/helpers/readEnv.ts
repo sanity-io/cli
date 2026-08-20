@@ -1,6 +1,6 @@
 export function readEnv<KnownEnvVar extends string>(name: KnownEnvVar): string {
   const val = findEnv(name)
-  if (val === undefined) {
+  if (!val?.trim()) {
     throw new Error(`Missing required environment variable "${name}"`)
   }
   return val

@@ -12,5 +12,5 @@ export async function getProjectFeatures(projectId: string): Promise<string[]> {
     requireUser: true,
   })
 
-  return client.request<string[]>({uri: '/features'})
+  return client.request<string[]>({url: '/features'})
 }

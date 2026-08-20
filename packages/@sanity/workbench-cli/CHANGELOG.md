@@ -1,5 +1,51 @@
 # @sanity/workbench-cli
 
+## 2.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.1...workbench-cli-v2.0.2)
+
+_2026-08-19_
+
+### Bug Fixes
+
+- **workbench-cli:** let a config-only dev server share a slug with its app server ([#1725](https://github.com/sanity-io/cli/pull/1725)) ([9925e21](https://github.com/sanity-io/cli/commit/9925e214ff98ca9f49c8194cb8990514de081aef))
+
+## 2.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.0...workbench-cli-v2.0.1)
+
+_2026-08-17_
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.20.7 ([#1706](https://github.com/sanity-io/cli/pull/1706)) ([60e664f](https://github.com/sanity-io/cli/commit/60e664f0ad3bddf2b35d1b6db04b10e44420011a))
+
+## 2.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.10.0...workbench-cli-v2.0.0)
+
+_2026-08-14_
+
+### ⚠ BREAKING CHANGES
+
+- **cli:** unify the --json shape of deploy and undeploy ([#1691](https://github.com/sanity-io/cli/pull/1691)) ([8ed25bb](https://github.com/sanity-io/cli/commit/8ed25bbc0c2e2b3365d5b3dcd88567563ae9ab5a))
+
+### Features
+
+- **workbench:** key a dev app's id on its slug ([#1667](https://github.com/sanity-io/cli/pull/1667)) ([e11a2d3](https://github.com/sanity-io/cli/commit/e11a2d3d7f72beb5575f0cde1f455cc8e39a01d0))
+- send deployment access array for workbench studios ([#1676](https://github.com/sanity-io/cli/pull/1676)) ([3601ecf](https://github.com/sanity-io/cli/commit/3601ecfa7ff232ed42caf67d9e7b98847222b605))
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.20.5 ([#1683](https://github.com/sanity-io/cli/pull/1683)) ([a5779c1](https://github.com/sanity-io/cli/commit/a5779c1e83fffe5acde2877d8e54c0dad6f3abb1))
+- **cli:** trim deploy payload and undeploy dry-run output ([#1696](https://github.com/sanity-io/cli/pull/1696)) ([1462d82](https://github.com/sanity-io/cli/commit/1462d8236f67a706397ca774fb3f9abaf4929cd6))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.0.0
+
 ## 1.10.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.9.0...workbench-cli-v1.10.0)

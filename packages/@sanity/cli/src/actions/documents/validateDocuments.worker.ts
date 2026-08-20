@@ -262,7 +262,10 @@ async function main() {
           validateDocument({
             document,
             environment: 'cli',
-            getClient,
+            // The local `sanity` package types its client against its own
+            // @sanity/client major; the runtime surface validation uses is
+            // compatible across v7/v8.
+            getClient: getClient as unknown as Parameters<typeof validateDocument>[0]['getClient'],
             getDocumentExists,
             maxCustomValidationConcurrency,
             maxFetchConcurrency,

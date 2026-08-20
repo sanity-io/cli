@@ -4,7 +4,7 @@
  * and exits. Dry runs consume the same verdicts read-only (see deployChecks).
  */
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
@@ -41,7 +41,7 @@ export async function findUserApplication(
   } catch (error) {
     spin.clear()
     deployDebug('Error finding user application for app', error)
-    output.error(describeAppTargetError(error, organizationId), {exit: 1})
+    output.error(describeAppTargetError(error, organizationId), {exit: exitCodes.RUNTIME_ERROR})
     return null
   }
 
@@ -65,7 +65,7 @@ export async function findUserApplication(
   // 'blocked' diagnoses as a skip (its root cause fails an earlier check), so it
   // needs an explicit exit here to not fall through to application creation
   if (resolution.type === 'blocked') {
-    output.error(resolution.message, {exit: 1})
+    output.error(resolution.message, {exit: exitCodes.RUNTIME_ERROR})
     return null
   }
   createFailFastReporter(output).report(describeAppTarget(resolution))
@@ -113,7 +113,9 @@ export async function findUserApplicationForStudio(
   } catch (error) {
     spin.fail()
     deployDebug('Error finding user application', error)
-    output.error(`Failed to resolve deploy target: ${getErrorMessage(error)}`, {exit: 1})
+    output.error(`Failed to resolve deploy target: ${getErrorMessage(error)}`, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
     return {application: null, created: false}
   }
 
@@ -151,7 +153,7 @@ export async function findUserApplicationForStudio(
   // 'blocked' diagnoses as a skip (its root cause fails an earlier check), so it
   // needs an explicit exit here
   if (resolution.type === 'blocked') {
-    output.error(resolution.message, {exit: 1})
+    output.error(resolution.message, {exit: exitCodes.RUNTIME_ERROR})
     return {application: null, created: false}
   }
   createFailFastReporter(output).report(describeStudioTarget(resolution, {isExternal}))
@@ -200,14 +202,14 @@ async function createFromConfiguredHost({
     spin.fail()
     // if the name is taken, it should return a 409 so we relay to the user
     if ([402, 409].includes(e?.statusCode)) {
-      output.error(e?.response?.body?.message || 'Bad request', {exit: 1})
+      output.error(e?.response?.body?.message || 'Bad request', {exit: exitCodes.RUNTIME_ERROR})
       return null
     }
     // otherwise, it's a fatal error
     deployDebug('Error creating user application from config', e)
     output.error(
       `Error creating user application from config: ${e instanceof Error ? e.message : e}`,
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
     return null
   }

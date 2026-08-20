@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "2.8.1",
+  "version": "3.2.0",
   "description": "Sanity CLI core package",
   "keywords": [
     "cli",
@@ -123,15 +123,15 @@
     "@oclif/core": "catalog:",
     "@sanity/client": "catalog:",
     "boxen": "^8.0.1",
-    "debug": "catalog:",
     "empathic": "catalog:",
-    "get-it": "^8.8.0",
+    "get-it": "catalog:",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
     "jiti": "^2.7.0",
     "jsdom": "catalog:",
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
+    "obug": "catalog:",
     "ora": "catalog:",
     "rxjs": "catalog:",
     "tsx": "catalog:",
@@ -149,21 +149,25 @@
     "@sanity/telemetry": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
-    "@types/debug": "catalog:",
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
+    "oxc-transform-react": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "babel-plugin-react-compiler": "*"
+    "babel-plugin-react-compiler": "*",
+    "oxc-transform-react": "*"
   },
   "peerDependenciesMeta": {
     "babel-plugin-react-compiler": {
+      "optional": true
+    },
+    "oxc-transform-react": {
       "optional": true
     }
   },

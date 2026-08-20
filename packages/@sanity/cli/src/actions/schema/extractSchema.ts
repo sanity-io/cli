@@ -6,7 +6,7 @@ import {
   SchemaExtractedTrace,
   SchemaExtractionError,
 } from '@sanity/cli-build/_internal/extract'
-import {getCliTelemetry, type Output} from '@sanity/cli-core'
+import {exitCodes, getCliTelemetry, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {schemasExtractDebug} from './utils/debug.js'
@@ -63,6 +63,8 @@ export async function extractSchema(options: ExtractSchemaActionOptions): Promis
       exit(1)
     }
 
-    output.error(err instanceof Error ? err.message : 'Failed to extract schema', {exit: 1})
+    output.error(err instanceof Error ? err.message : 'Failed to extract schema', {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   }
 }

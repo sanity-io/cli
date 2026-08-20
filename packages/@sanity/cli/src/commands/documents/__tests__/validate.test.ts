@@ -50,7 +50,7 @@ describe('ValidateDocumentsCommand', () => {
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('must be run from within a Sanity project'),
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
   })
 
@@ -155,7 +155,9 @@ describe('ValidateDocumentsCommand', () => {
 
     await ValidateDocumentsCommand.run(['--file', ndjsonFilePath, '--dataset', dataset])
 
-    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith('boom', {exit: 1})
+    expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith('boom', {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   })
 
   describe('bad flags', () => {

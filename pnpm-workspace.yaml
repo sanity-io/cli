@@ -27,24 +27,24 @@ catalog:
   '@sanity/vision': ^6.7.0
   '@sanity/types': ^6.7.0
   '@sanity/schema': ^6.7.0
-  '@sanity/client': ^7.25.0
+  '@sanity/client': ^8.1.0
   '@sanity/codegen': ^8.0.0
   '@sanity/telemetry': ^1.1.0
 
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
+  oxc-transform-react: ^0.145.0
   typescript: ^6.0.3
-  vite: ^8.2.0
+  vite: ^8.2.1
   vite-node: ^6.0.0
-  '@vitejs/plugin-react': ^6.0.5
-  tsx: ^4.23.1
+  '@vitejs/plugin-react': ^6.1.0
+  tsx: ^4.23.12
 
   # Testing
-  vitest: ^4.1.10
-  '@vitest/coverage-istanbul': ^4.1.10
+  vitest: ^4.1.11
+  '@vitest/coverage-istanbul': ^4.1.11
   nock: ^14.0.15
   node-pty: ^1.1.0
-  dotenv: ^17.4.2
   strip-ansi: ^7.1.0
 
   # CLI Framework
@@ -53,7 +53,8 @@ catalog:
   '@oclif/plugin-not-found': ^3.2.88
 
   # Utilities
-  debug: ^4.4.3
+  get-it: ^9.5.0
+  obug: ^2.1.4
   jsdom: ^29.1.1
   zod: ^4.4.3
   'get-tsconfig': ^4.14.0
@@ -73,12 +74,11 @@ catalog:
   '@swc/core': ^1.15.43
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^11.0.17
+  '@sanity/pkg-utils': ^12.2.0
   oxfmt: ^0.59.0
 
   # Type Definitions
   '@types/node': ^22.20.0
-  '@types/debug': ^4.1.13
   '@types/jsdom': ^28.0.3
   '@types/tar-fs': ^2.0.4
 
@@ -87,6 +87,9 @@ minimumReleaseAgeExclude:
   - '@portabletext/*'
   - '@sanity/*'
   - '@types/*'
+  - 'eventsource'
+  - 'eventsource-parser'
+  - 'get-it'
   - 'groq-js'
   - 'groq'
   - 'lodash-es'
@@ -94,7 +97,6 @@ minimumReleaseAgeExclude:
   - 'sanity'
   - 'sanity-plugin-media'
   - 'use-effect-event'
-  - 'dotenv'
   - 'oxfmt'
   - '@oxfmt/*'
   - 'vite'
@@ -105,6 +107,11 @@ minimumReleaseAgeExclude:
   # lockstep with `rolldown`.
   - 'rolldown'
   - '@rolldown/*'
+  # Oxc's Rust port of React Compiler; same trust domain as oxfmt/rolldown
+  # above. `@oxc-transform-react/*` covers the per-platform native binding
+  # packages released in lockstep with `oxc-transform-react`.
+  - 'oxc-transform-react'
+  - '@oxc-transform-react/*'
   - 'vitest'
   - 'postcss'
   - '@module-federation/vite@1.16.14'
