@@ -138,7 +138,6 @@ export interface StartWorkbenchOptions {
   workDir: string
 }
 
-/** Starts the workbench dev server; a port conflict falls back to the app/studio server. */
 export async function startWorkbenchDevServer(
   options: StartWorkbenchOptions,
 ): Promise<WorkbenchDevServerResult> {
@@ -268,6 +267,7 @@ async function createWorkbenchViteServer(
     logLevel: 'warn',
     mode: 'development',
     optimizeDeps: {
+      // Keep this entry out of pre-bundling so Vite injects its HMR context.
       exclude: [renderDashboardEntry],
     },
     // viteReact looks inert here — it transforms none of the host's own modules —
@@ -279,6 +279,7 @@ async function createWorkbenchViteServer(
     // remoteHmr) fails. Dropping it as dead code broke every panel; see #1262.
     plugins: [viteReact(), ...(remoteUrl ? [remoteManifestPreloadHeaderPlugin(remoteUrl)] : [])],
     resolve: {
+      // The generated Vite root cannot reliably resolve this transitive package under pnpm.
       alias: {[renderDashboardEntry]: renderDashboardPath},
       dedupe: ['react', 'react-dom'],
     },
