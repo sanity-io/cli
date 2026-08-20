@@ -582,8 +582,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       '@sanity/import':
-        specifier: ^6.0.3
-        version: 6.0.3(@sanity/client@8.1.0(vitest@4.1.11))(@types/react@19.2.17)
+        specifier: ^6.0.4
+        version: 6.0.4(@sanity/client@8.1.0(vitest@4.1.11))(@types/react@19.2.17)
       '@sanity/migrate':
         specifier: ^8.0.2
         version: 8.0.2(@types/react@19.2.17)(xstate@5.32.5)
@@ -4474,11 +4474,11 @@ packages:
     resolution: {integrity: sha512-qVXsF1teWR6FO3ZFAz46HDcRU+E6EQkpyncPnkGOzeJ1PgnaOiWMVbiSrZtX10s3txzzu/tAjKwbxbGHfDWgGw==}
     engines: {node: '>=20.19.0'}
 
-  '@sanity/import@6.0.3':
-    resolution: {integrity: sha512-jbnR3z93+hrddl0xPDuQotJYnVNtQPl969LZXo6opMZuy/uG64jwodp76pnJmq8Y9aHqR2fLk/ne7R4iBv8PhA==}
+  '@sanity/import@6.0.4':
+    resolution: {integrity: sha512-65XfN5cSUos2l4PtzjUqbxV4z50odqqqoS01WWJJa5qfqzsAjn4sXn/8Dr6JW3Qt/V5Wg5jc5OPtHJY97zgmEw==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
-      '@sanity/client': ^5.0.0 || ^6.0.0 || ^7.0.0
+      '@sanity/client': ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
 
   '@sanity/incompatible-plugin@1.0.5':
     resolution: {integrity: sha512-9JGAacbElUPy9Chghd+sllIiM3jAcraZdD65bWYWUVKkghOsf1L/+jFLz1rcAuvrA9o2s7Y+T75BNcXuLwRcvw==}
@@ -13145,7 +13145,7 @@ snapshots:
     dependencies:
       '@sanity/signed-urls': 2.0.4
 
-  '@sanity/import@6.0.3(@sanity/client@8.1.0(vitest@4.1.11))(@types/react@19.2.17)':
+  '@sanity/import@6.0.4(@sanity/client@8.1.0(vitest@4.1.11))(@types/react@19.2.17)':
     dependencies:
       '@sanity/asset-utils': 2.3.0
       '@sanity/client': 8.1.0(vitest@4.1.11)
