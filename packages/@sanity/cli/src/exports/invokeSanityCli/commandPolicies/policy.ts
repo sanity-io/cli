@@ -31,6 +31,9 @@ type ConditionalInvocationPolicy = CommandPolicy & {
 export interface CommandPolicy {
   kind: 'allow' | 'conditional' | 'deny'
   validate: InvocationPolicy
+
+  /** Restrict this entry to a command contributed by this bundled plugin. */
+  pluginName?: string
 }
 
 /** Every valid invocation of the command is safe. */
@@ -38,6 +41,15 @@ export const allow: CommandPolicy = {kind: 'allow', validate: () => true}
 
 /** No invocation of the command is safe. Behaves like an unknown command. */
 export const deny: CommandPolicy = {kind: 'deny', validate: () => false}
+
+/**
+ * Restrict a policy entry to a command contributed by a specific bundled
+ * plugin. This lets Sanity-owned plugins opt into programmatic invocation
+ * without making commands from arbitrary installed plugins invokable.
+ */
+export function fromPlugin(pluginName: string, policy: CommandPolicy): CommandPolicy {
+  return {...policy, pluginName}
+}
 
 /**
  * Conditional policies to deny flags. The flags are also hidden

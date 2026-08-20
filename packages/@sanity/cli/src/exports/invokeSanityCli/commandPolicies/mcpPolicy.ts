@@ -4,6 +4,7 @@ import {
   conditionalDenyFlags,
   conditionalPolicy,
   deny,
+  fromPlugin,
 } from './policy.js'
 
 function apiValidator({
@@ -145,6 +146,24 @@ export const mcpPolicy: CommandPolicySet = {
   'hooks:delete': allow,
   'hooks:list': allow,
   'hooks:logs': allow,
+
+  // Contributed by the bundled @sanity/runtime-cli plugin. Programmatic
+  // invocations must identify remote context explicitly and are limited to
+  // bounded reads: no filesystem discovery, deletion, or open-ended streams.
+  'functions:logs': fromPlugin(
+    '@sanity/runtime-cli',
+    conditionalPolicy({
+      deniedFlags: ['delete', 'force', 'path', 'watch'],
+      validate: ({args, flags}) => {
+        const hasName = typeof args.name === 'string' && args.name.length > 0
+        const hasStack = typeof flags.stack === 'string' && flags.stack.length > 0
+        const hasProject = typeof flags['project-id'] === 'string' && flags['project-id'].length > 0
+        const hasOrganization =
+          typeof flags['organization-id'] === 'string' && flags['organization-id'].length > 0
+        return hasName && hasStack && hasProject !== hasOrganization
+      },
+    }),
+  ),
 
   // Creates or modifies a local project and may install dependencies.
   init: deny,

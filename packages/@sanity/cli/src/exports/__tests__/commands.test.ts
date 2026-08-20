@@ -1,7 +1,7 @@
 import {fileURLToPath} from 'node:url'
 
 import {Config} from '@oclif/core'
-import {CLI_TELEMETRY_SYMBOL} from '@sanity/cli-core'
+import {CLI_TELEMETRY_SYMBOL, exitCodes} from '@sanity/cli-core'
 import {mockApi} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -66,21 +66,82 @@ describe('invokeSanityCli', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('the mcp policy covers exactly this package’s visible commands', () => {
+  test('the mcp policy covers this package and explicitly-owned plugin commands', () => {
     // Exhaustiveness keeps the policy honest: a new CLI command fails here
     // until it is deliberately categorized (allow/conditional/deny), and a
     // policy entry for a removed command fails too. Command ids come from the
     // loaded oclif config — the same source invokeSanityCli resolves against —
-    // scoped to this package's own visible commands: hidden entries are alias
-    // redirects, and commands contributed by other plugins (blueprints, help)
-    // are uncategorized by design, so they fail closed.
+    // scoped to this package's own visible commands. Sanity-owned plugin
+    // commands can opt in explicitly; every other plugin command fails closed.
     const commandIds = config.commands
       .filter((command) => command.pluginName === config.pjson.name && !command.hidden)
       .map((command) => command.id)
       .toSorted()
-    const policyIds = Object.keys(commandPolicies.mcp).toSorted()
+    const localPolicyIds = Object.entries(commandPolicies.mcp)
+      .filter(([, policy]) => policy.pluginName === undefined)
+      .map(([id]) => id)
+      .toSorted()
 
-    expect(policyIds).toEqual(commandIds)
+    expect(localPolicyIds).toEqual(commandIds)
+
+    for (const [id, policy] of Object.entries(commandPolicies.mcp)) {
+      if (!policy.pluginName) continue
+      expect(config.findCommand(id)?.pluginName).toBe(policy.pluginName)
+    }
+  })
+
+  test('the functions logs policy permits only explicit bounded remote reads', () => {
+    const policy = commandPolicies.mcp['functions:logs']
+    const validFlags = {'project-id': projectId, stack: 'production'}
+
+    expect(policy.pluginName).toBe('@sanity/runtime-cli')
+    expect(policy.validate({args: {name: 'onPublish'}, flags: validFlags})).toBe(true)
+    expect(policy.validate({args: {}, flags: validFlags})).toBe(false)
+    expect(policy.validate({args: {name: 'onPublish'}, flags: {'project-id': projectId}})).toBe(
+      false,
+    )
+    expect(
+      policy.validate({
+        args: {name: 'onPublish'},
+        flags: {...validFlags, 'organization-id': 'org-id'},
+      }),
+    ).toBe(false)
+    expect(policy.validate({args: {name: 'onPublish'}, flags: {...validFlags, watch: true}})).toBe(
+      false,
+    )
+    expect(policy.validate({args: {name: 'onPublish'}, flags: {...validFlags, delete: true}})).toBe(
+      false,
+    )
+  })
+
+  test('refuses a plugin policy when a different plugin owns the command', async () => {
+    const command = config.findCommand('functions:logs')
+    if (!command) throw new Error('Expected functions:logs command')
+    const originalPluginName = command.pluginName
+    command.pluginName = 'third-party-plugin'
+
+    try {
+      const invocation = await invoke({
+        args: `functions logs onPublish --project-id ${projectId} --stack production`,
+        config,
+        source: 'mcp',
+        token: 'user-token',
+      })
+      const help = await invoke({
+        args: 'functions logs --help',
+        config,
+        source: 'mcp',
+        token: 'user-token',
+      })
+
+      expect(invocation.exitCode).toBe(exitCodes.USAGE_ERROR)
+      expect(invocation.output).toContain('Unknown or unsupported command')
+      expect(invocation.output.split('Available commands: ')[1]).not.toContain('functions logs')
+      expect(help.exitCode).toBe(exitCodes.USAGE_ERROR)
+      expect(help.output).toContain('Unknown or unsupported command')
+    } finally {
+      command.pluginName = originalPluginName
+    }
   })
 
   test('resolves its own oclif config by default, without a config override', async () => {
@@ -508,6 +569,16 @@ describe('invokeSanityCli', () => {
     ['graphql undeploy --api ios --force', '--api', 'graphql:undeploy'], // --api loads local GraphQL definitions
     ['api users/me --input body.json', '--input', 'api'], // --input reads the host's filesystem or stdin
     ['api users/me --token other-user-token', '--token', 'api'], // --token overrides the MCP user's token
+    [
+      `functions logs onPublish --project-id ${projectId} --stack production --watch`,
+      '--watch',
+      'functions:logs',
+    ],
+    [
+      `functions logs onPublish --project-id ${projectId} --stack production --delete --force`,
+      '--delete',
+      'functions:logs',
+    ],
   ])('`%s` is refused by a conditional policy naming the flag', async (args, flag, commandId) => {
     const result = await invoke({args, config, source: 'mcp', token: 'user-token'})
 
@@ -614,6 +685,76 @@ describe('invokeSanityCli', () => {
     expect(
       policy.validate({args, flags: {header: ['Authorization: Bearer other-user-token']}}),
     ).toBe(false)
+  })
+
+  test('invokes a Sanity-owned plugin command with isolated auth and transport', async () => {
+    const stackId = 'ST-1234567890'
+    const functionId = 'FN-on-publish'
+    const functionName = 'onPublish'
+    const logEntry = {
+      level: 'INFO',
+      message: 'Function completed',
+      requestId: 'request-1',
+      time: '2026-08-20T17:00:00.000Z',
+    }
+
+    mockApi({
+      apiVersion: 'v2025-04-23',
+      includeQueryTag: false,
+      uri: '/users/me',
+    })
+      .matchHeader('authorization', 'Bearer invocation-token')
+      .reply(200, {id: 'user-1'})
+
+    mockApi({
+      apiVersion: 'v2026-06-15',
+      includeQueryTag: false,
+      uri: `/blueprints/stacks/${stackId}`,
+    })
+      .matchHeader('authorization', 'Bearer invocation-token')
+      .matchHeader('x-sanity-scope-type', 'project')
+      .matchHeader('x-sanity-scope-id', projectId)
+      .reply(200, {
+        defaultProjectId: projectId,
+        displayName: 'Production',
+        id: stackId,
+        name: 'production',
+        resources: [
+          {
+            externalId: functionId,
+            id: 'resource-1',
+            name: functionName,
+            parameters: {project: projectId},
+            type: 'sanity.function.document',
+          },
+        ],
+        scopeId: projectId,
+        scopeType: 'project',
+      })
+
+    mockApi({
+      apiVersion: 'v2025-07-30',
+      includeQueryTag: false,
+      query: {limit: '1'},
+      uri: `/functions/${functionId}/logs`,
+    })
+      .matchHeader('authorization', 'Bearer invocation-token')
+      .matchHeader('x-sanity-scope-type', 'project')
+      .matchHeader('x-sanity-scope-id', projectId)
+      .reply(200, {logs: [logEntry]})
+
+    const result = await invoke({
+      args: `functions logs ${functionName} --project-id ${projectId} --stack ${stackId} --limit 1 --json`,
+      config,
+      source: 'mcp',
+      token: 'invocation-token',
+    })
+
+    expect(result).toEqual({
+      commandId: 'functions:logs',
+      exitCode: 0,
+      output: JSON.stringify({logs: [logEntry]}, null, 2),
+    })
   })
 
   test('conditional policies see parsed flags, not raw tokens', async () => {
@@ -740,6 +881,8 @@ describe('invokeSanityCli', () => {
   test.each([
     ['docs read --help', '--web'],
     ['graphql undeploy --help', '--api'],
+    ['functions logs --help', '--watch'],
+    ['functions logs --help', '--delete'],
   ])('`%s` omits the policy-denied %s flag', async (args, deniedFlag) => {
     // Help must not advertise surface the policy refuses: the flag disappears
     // from FLAGS/USAGE and examples demonstrating it are dropped.

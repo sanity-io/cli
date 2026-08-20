@@ -79,9 +79,19 @@ function loadCliCommandConfig(): Promise<Config> {
 
 let cachedConfig: Promise<Config> | undefined
 
-function unknownCommandResult(argv: string[], policySet: CommandPolicySet): InvokeSanityCliResult {
+function unknownCommandResult(
+  argv: string[],
+  policySet: CommandPolicySet,
+  config: Config,
+): InvokeSanityCliResult {
   const available = Object.entries(policySet)
-    .filter(([, policy]) => policy.kind !== 'deny')
+    .filter(([id, policy]) => {
+      if (policy.kind === 'deny') return false
+      const command = config.findCommand(id)
+      return (
+        command && (policy.pluginName === undefined || policy.pluginName === command.pluginName)
+      )
+    })
     .map(([id]) => id.replaceAll(':', ' '))
     .toSorted()
   return {
@@ -230,6 +240,7 @@ async function invokeSanityCliInContext(
       return unknownCommandResult(
         helpArgv.filter((token) => !helpFlags.includes(token)),
         policySet,
+        resolvedConfig,
       )
     } catch (err) {
       return {
@@ -245,9 +256,13 @@ async function invokeSanityCliInContext(
   // from commands that don't exist.
   const [commandId = '', ...commandArgv] = normalizeArgv(resolvedConfig, argv)
   const policy = policySet[commandId] ?? deny
-  const commandDefinition =
+  const resolvedCommandDefinition =
     policy.kind === 'deny' ? undefined : resolvedConfig.findCommand(commandId)
-  if (!commandDefinition) return unknownCommandResult(argv, policySet)
+  const commandDefinition =
+    policy.pluginName && resolvedCommandDefinition?.pluginName !== policy.pluginName
+      ? undefined
+      : resolvedCommandDefinition
+  if (!commandDefinition) return unknownCommandResult(argv, policySet, resolvedConfig)
 
   const CommandClass = await commandDefinition.load()
 
@@ -257,9 +272,10 @@ async function invokeSanityCliInContext(
   try {
     const parsed = await Parser.parse(commandArgv, {
       args: CommandClass.args,
-      baseFlags: CommandClass.baseFlags,
       enableJsonFlag: CommandClass.enableJsonFlag,
-      flags: CommandClass.flags,
+      // Parser.parse() does not aggregate inherited base flags the way Command.parse() does
+      // Plugin commands commonly define shared flags on a base class, so combine them explicitly for the policy gate
+      flags: {...CommandClass.baseFlags, ...CommandClass.flags},
       strict: CommandClass.strict,
     })
     invocation = {

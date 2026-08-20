@@ -8,12 +8,21 @@ import {
   isConditionalInvocationPolicy,
 } from './commandPolicies/policy.js'
 
-/** Command ids a policy exposes: entries that are not denied. */
-function visibleCommandIds(policySet: CommandPolicySet): Set<string> {
+function isPolicyCommand(command: Command.Loadable, policySet: CommandPolicySet): boolean {
+  const policy = policySet[command.id]
+  return (
+    policy !== undefined &&
+    policy.kind !== 'deny' &&
+    (policy.pluginName === undefined || policy.pluginName === command.pluginName)
+  )
+}
+
+/** Command ids exposed by the policy and contributed by the expected owner. */
+function visibleCommandIds(config: Config, policySet: CommandPolicySet): Set<string> {
   return new Set(
-    Object.entries(policySet)
-      .filter(([, policy]) => policy.kind !== 'deny')
-      .map(([id]) => id),
+    config.commands
+      .filter((command) => isPolicyCommand(command, policySet))
+      .map((command) => command.id),
   )
 }
 
@@ -61,8 +70,16 @@ function withoutDeniedFlags(command: Command.Loadable, policy?: CommandPolicy): 
     )
   }
 
+  const description = command.description
+    ?.split('\n')
+    .filter((line) => !spellings.some((spelling) => line.includes(spelling)))
+    .join('\n')
+    .replaceAll(/\n{3,}/g, '\n\n')
+    .trim()
+
   return {
     ...command,
+    description,
     examples: command.examples?.filter((example) => !usesDeniedFlag(example)),
     flags,
   }
@@ -89,7 +106,7 @@ class InvokableHelp extends Help {
   constructor(config: Config, policySet: CommandPolicySet) {
     super(config, {stripAnsi: true})
     this.policySet = policySet
-    this.commandIds = visibleCommandIds(policySet)
+    this.commandIds = visibleCommandIds(config, policySet)
     this.topicNames = visibleTopicNames(this.commandIds)
   }
 
@@ -100,7 +117,7 @@ class InvokableHelp extends Help {
 
   protected override get sortedCommands(): Command.Loadable[] {
     return super.sortedCommands
-      .filter((command) => this.commandIds.has(command.id))
+      .filter((command) => isPolicyCommand(command, this.policySet))
       .map((command) => ({...command}))
   }
 
@@ -116,7 +133,7 @@ class InvokableHelp extends Help {
   }
 
   public override async showCommandHelp(command: Command.Loadable): Promise<void> {
-    if (!this.commandIds.has(command.id)) throw new NotInvokableError(command.id)
+    if (!isPolicyCommand(command, this.policySet)) throw new NotInvokableError(command.id)
     this.commandId = command.id
     return super.showCommandHelp(withoutDeniedFlags(command, this.policySet[command.id]))
   }
