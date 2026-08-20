@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import {
   getCliToken,
+  getCliTokenInfo,
   getStudioConfig,
   getUserConfig,
   tryFindStudioConfigPath,
@@ -42,13 +43,15 @@ export async function gatherUserInfo(projectId: string | undefined): Promise<Err
 }
 
 export async function gatherAuthInfo(includeSecrets: boolean): Promise<AuthInfo> {
-  const token = await getCliToken()
+  const tokenInfo = await getCliTokenInfo()
+  const token = tokenInfo?.token
   const hasToken = Boolean(token)
   const config = getUserConfig()
   const authType = config.get('authType')
 
   return {
     authToken: token ? (includeSecrets ? token : '<redacted>') : undefined,
+    authTokenSource: token ? tokenInfo.source : undefined,
     hasToken,
     userType: typeof authType === 'string' ? authType : 'normal',
   }
