@@ -1,5 +1,15 @@
 # Change Log
 
+## 8.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.2.0...cli-v8.2.1)
+
+_2026-08-20_
+
+### Bug Fixes
+
+- **deps:** upgrade `@sanity/import` to v6.0.4 ([#1736](https://github.com/sanity-io/cli/pull/1736)) ([7dc74fe](https://github.com/sanity-io/cli/commit/7dc74fe7d1ab85aa58273111f47ffa0ab5dc34bf))
+
 ## 8.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.1.0...cli-v8.2.0)
