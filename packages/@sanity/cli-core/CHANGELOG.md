@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.1.0...cli-core-v3.2.0)
+
+_2026-08-20_
+
+### Features
+
+- React Compiler can now run on oxc, a native Rust port of the compiler. Opt in from `sanity.cli.ts`: ([#1724](https://github.com/sanity-io/cli/pull/1724)) ([95ee806](https://github.com/sanity-io/cli/commit/95ee806b99c84e4cfdef70d9fb052db7da41bdf8))
+
+  ```ts
+  export default defineCliConfig({
+    reactCompiler: { transform: "oxc" },
+  });
+  ```
+
+  - One native pass handles React Compiler, TypeScript/JSX, and Fast Refresh — no babel in the pipeline
+  - Install `oxc-transform-react` in your project first, the same way the default transform needs `babel-plugin-react-compiler`
+  - Experimental. Babel stays the default, and existing `reactCompiler` configs keep working unchanged
+
 ## 3.1.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.0.0...cli-core-v3.1.0)
