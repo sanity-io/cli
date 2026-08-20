@@ -180,6 +180,7 @@
     "jsdom": "catalog:",
     "nock": "catalog:",
     "oclif": "^4.23.27",
+    "oxc-transform-react": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",
@@ -187,10 +188,14 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "babel-plugin-react-compiler": "*"
+    "babel-plugin-react-compiler": "*",
+    "oxc-transform-react": "*"
   },
   "peerDependenciesMeta": {
     "babel-plugin-react-compiler": {
+      "optional": true
+    },
+    "oxc-transform-react": {
       "optional": true
     }
   },

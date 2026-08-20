@@ -281,7 +281,7 @@ describe('#getViteConfig', () => {
 
   test('should handle react compiler configuration', async () => {
     const {default: babel} = await import('@rolldown/plugin-babel')
-    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+    const {default: viteReact, reactCompilerPreset} = await import('@vitejs/plugin-react')
 
     const reactCompilerConfig = {
       target: '19' as const,
@@ -303,11 +303,13 @@ describe('#getViteConfig', () => {
     expect(babel).toHaveBeenCalledWith({
       presets: [expect.objectContaining({name: 'react-compiler-preset'})],
     })
+    // The babel transform leaves the react plugin's own compiler disabled
+    expect(viteReact).toHaveBeenCalledWith()
   })
 
   test('should handle react compiler boolean configuration', async () => {
     const {default: babel} = await import('@rolldown/plugin-babel')
-    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+    const {default: viteReact, reactCompilerPreset} = await import('@vitejs/plugin-react')
 
     const options = {
       cwd: mockTestCwd,
@@ -323,6 +325,73 @@ describe('#getViteConfig', () => {
     expect(babel).toHaveBeenCalledWith({
       presets: [expect.objectContaining({name: 'react-compiler-preset'})],
     })
+    expect(viteReact).toHaveBeenCalledWith()
+  })
+
+  test('should strip the transform discriminator for the babel react compiler', async () => {
+    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: {target: '19', transform: 'babel'},
+    })
+
+    expect(reactCompilerPreset).toHaveBeenCalledWith({target: '19'})
+  })
+
+  test('should handle oxc react compiler configuration', async () => {
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {default: viteReact, reactCompilerPreset} = await import('@vitejs/plugin-react')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: {target: '19', transform: 'oxc'},
+    })
+
+    // The compiler runs inside the react plugin; the transform
+    // discriminator is stripped and the babel pipeline is skipped entirely
+    expect(viteReact).toHaveBeenCalledWith({compiler: {target: '19'}})
+    expect(babel).not.toHaveBeenCalled()
+    expect(reactCompilerPreset).not.toHaveBeenCalled()
+  })
+
+  test('should handle oxc react compiler configuration without options', async () => {
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {default: viteReact} = await import('@vitejs/plugin-react')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: {transform: 'oxc'},
+    })
+
+    expect(viteReact).toHaveBeenCalledWith({compiler: {}})
+    expect(babel).not.toHaveBeenCalled()
+  })
+
+  test('should not enable any react compiler by default', async () => {
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {default: viteReact, reactCompilerPreset} = await import('@vitejs/plugin-react')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    })
+
+    expect(viteReact).toHaveBeenCalledWith()
+    expect(babel).not.toHaveBeenCalled()
+    expect(reactCompilerPreset).not.toHaveBeenCalled()
   })
 
   test('should set staging flag when SANITY_INTERNAL_ENV is staging', async () => {

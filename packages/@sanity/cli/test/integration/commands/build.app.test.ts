@@ -107,6 +107,16 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
         `export default defineCliConfig({\n` +
         `  app: {entry: './src/App.tsx', organizationId: 'org-id'},\n` +
         `  deployment: {appId: 'app-id', autoUpdates: true},\n` +
+        `  reactCompiler: {compilationMode: 'all', target: '19', transform: 'oxc'},\n` +
+        `})\n`,
+      name: 'oxc react compiler config',
+    },
+    {
+      config:
+        `import {defineCliConfig} from 'sanity/cli'\n` +
+        `export default defineCliConfig({\n` +
+        `  app: {entry: './src/App.tsx', organizationId: 'org-id'},\n` +
+        `  deployment: {appId: 'app-id', autoUpdates: true},\n` +
         `  vite: (config) => ({...config, define: {...config.define, 'import.meta.env.CUSTOM_VAR': JSON.stringify('custom-value')}}),\n` +
         `})\n`,
       name: 'custom vite config',

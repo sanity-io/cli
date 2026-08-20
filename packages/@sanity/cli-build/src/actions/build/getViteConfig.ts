@@ -3,7 +3,7 @@ import path from 'node:path'
 import babel from '@rolldown/plugin-babel'
 import {findProjectRoot} from '@sanity/cli-core/config'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
-import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
+import {type CliConfig, type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {isStaging} from '@sanity/cli-core/util'
 import {
   type WorkbenchExposes,
@@ -11,7 +11,6 @@ import {
   workbenchVitePlugins,
 } from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {
   type ConfigEnv,
   esmExternalRequirePlugin,
@@ -57,7 +56,7 @@ interface ViteOptions {
    */
   mode: 'development' | 'production'
 
-  reactCompiler: boolean | ReactCompilerConfig | undefined
+  reactCompiler: CliConfig['reactCompiler']
 
   /**
    * Additional plugins when configured, eg. typegen
@@ -156,10 +155,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const envVars = options.getEnvironmentVariables()
 
   const sharedPlugins: PluginOption = [
-    viteReact(),
-    ...(reactCompiler
-      ? [babel({presets: [reactCompilerPreset(reactCompiler === true ? {} : reactCompiler)]})]
-      : []),
+    ...getReactPlugins(reactCompiler),
     ...(schemaExtraction?.enabled
       ? [
           sanitySchemaExtractionPlugin({
@@ -350,6 +346,33 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   return viteConfig
+}
+
+/**
+ * The React plugin(s) for the given `reactCompiler` configuration.
+ *
+ * With the (default) babel transform the compiler runs as a babel preset
+ * next to a plain `viteReact()`. With the experimental oxc transform,
+ * `viteReact`'s `compiler` option lets `oxc-transform-react` own the React
+ * Compiler, TypeScript/JSX and Fast Refresh transforms in one pass. The
+ * `transform` discriminator is stripped so neither compiler receives an
+ * option it does not know.
+ */
+function getReactPlugins(reactCompiler: CliConfig['reactCompiler']): PluginOption[] {
+  const config: ReactCompilerConfig | undefined =
+    reactCompiler === true ? {} : reactCompiler || undefined
+
+  if (!config) {
+    return [viteReact()]
+  }
+
+  if (config.transform === 'oxc') {
+    const {transform, ...compilerOptions} = config
+    return [viteReact({compiler: compilerOptions})]
+  }
+
+  const {transform, ...compilerOptions} = config
+  return [viteReact(), babel({presets: [reactCompilerPreset(compilerOptions)]})]
 }
 
 function onRolldownWarn(warning: Rolldown.RolldownLog, warn: Rolldown.LoggingFunction) {

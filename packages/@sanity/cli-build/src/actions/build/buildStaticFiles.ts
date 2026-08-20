@@ -2,7 +2,6 @@ import path from 'node:path'
 
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build, createBuilder} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
@@ -40,7 +39,7 @@ interface StaticBuildOptions {
   isWorkbenchApp?: boolean
   minify?: boolean
   profile?: boolean
-  reactCompiler?: boolean | ReactCompilerConfig
+  reactCompiler?: CliConfig['reactCompiler']
   schemaExtraction?: CliConfig['schemaExtraction']
   sourceMap?: boolean
   vite?: UserViteConfig

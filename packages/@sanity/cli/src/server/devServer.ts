@@ -11,7 +11,6 @@ import {
 } from '@sanity/cli-build/_internal/env'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
 import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
 
@@ -25,7 +24,7 @@ export interface DevServerOptions {
   cwd: string
   httpPort: number
 
-  reactCompiler: boolean | ReactCompilerConfig | undefined
+  reactCompiler: CliConfig['reactCompiler']
   reactStrictMode: boolean | undefined
 
   staticPath: string

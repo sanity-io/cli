@@ -1,7 +1,11 @@
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {z} from 'zod/mini'
 
-import {APP_VISIBILITIES, type CliConfig, type TypeGenConfig} from './types/cliConfig.js'
+import {
+  APP_VISIBILITIES,
+  type CliConfig,
+  type ReactCompilerConfig,
+  type TypeGenConfig,
+} from './types/cliConfig.js'
 import {type UserViteConfig} from './types/userViteConfig'
 
 /**
@@ -62,7 +66,7 @@ export const cliConfigSchema = z.object({
     }),
   ),
 
-  reactCompiler: z.optional(z.custom<ReactCompilerConfig>()),
+  reactCompiler: z.optional(z.custom<boolean | ReactCompilerConfig>()),
 
   reactStrictMode: z.optional(z.boolean()),
 
