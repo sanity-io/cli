@@ -149,14 +149,9 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
       url: url.toString(),
     })
 
-  // Minting needs no account, but attributing it to a person does. When the user is already
-  // logged in, send the credentials so reporting can tell their mints from an unknown caller.
   const token = await getCliToken()
   let response = await mint(token)
 
-  // The endpoint verifies a bearer token before the mint handler ever runs, so an expired login
-  // would fail a command that does not require logging in at all in this case drop the credentials
-  // and mint the project anonymously instead.
   if (token && (response.status === 401 || response.status === 403)) {
     debug('stored credentials rejected (HTTP %d), minting anonymously', response.status)
     response = await mint()
