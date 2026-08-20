@@ -279,7 +279,7 @@ async function createWorkbenchViteServer(
     // remoteHmr) fails. Dropping it as dead code broke every panel; see #1262.
     plugins: [viteReact(), ...(remoteUrl ? [remoteManifestPreloadHeaderPlugin(remoteUrl)] : [])],
     resolve: {
-      // The generated Vite root cannot reliably resolve this transitive package under pnpm.
+      // The generated Vite root cannot reliably resolve this package.
       alias: {[renderDashboardEntry]: renderDashboardPath},
       dedupe: ['react', 'react-dom'],
     },
