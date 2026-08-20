@@ -84,8 +84,7 @@
       "node-pty"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*",
-      "@vitejs/plugin-react": "file:./vendor/vitejs-plugin-react-6.1.0-pr1428-8edd0ba.tgz"
+      "@sanity/cli": "workspace:*"
     }
   }
 }

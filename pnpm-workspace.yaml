@@ -37,12 +37,7 @@ catalog:
   typescript: ^6.0.3
   vite: ^8.2.1
   vite-node: ^6.0.0
-  # Stays at the latest *published* version until plugin-react 6.1.0 ships:
-  # `pnpm pack`/`pnpm publish` replace `catalog:` with this range, so an
-  # unpublished version here breaks any pack+install flow (e.g. the e2e
-  # suite's tarball install). Inside the workspace the root `pnpm.overrides`
-  # entry forces the vendored 6.1.0 tarball regardless of this range.
-  '@vitejs/plugin-react': ^6.0.5
+  '@vitejs/plugin-react': ^6.1.0
   tsx: ^4.23.12
 
   # Testing
