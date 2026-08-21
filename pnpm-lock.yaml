@@ -659,9 +659,6 @@ importers:
       react:
         specifier: ^19.2.7
         version: 19.2.7
-      react-dom:
-        specifier: ^19.2.7
-        version: 19.2.7(react@19.2.7)
       react-is:
         specifier: ^19.2.7
         version: 19.2.8
@@ -876,9 +873,6 @@ importers:
       react:
         specifier: ^19.2.7
         version: 19.2.7
-      react-dom:
-        specifier: ^19.2.7
-        version: 19.2.7(react@19.2.7)
       semver:
         specifier: ^7.8.1
         version: 7.8.5
