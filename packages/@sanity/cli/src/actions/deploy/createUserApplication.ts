@@ -1,8 +1,7 @@
 import {CLIError} from '@oclif/core/errors'
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {input, spinner} from '@sanity/cli-core/ux'
-import {customAlphabet} from 'nanoid'
-
+import {randomInt} from 'node:crypto'
 import {
   createUserApplication as createUserApplicationRequest,
   type UserApplication,
@@ -13,12 +12,14 @@ import {deployDebug} from './deployDebug.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
+const ALPHANUMERIC = `${LETTERS}0123456789`
+
+const randomString = (alphabet: string, length: number) =>
+  Array.from({length}, () => alphabet[randomInt(alphabet.length)]).join('')
 
 // appHosts have some restrictions (no uppercase, must start with a letter)
-export function generateAppSlug(): string {
-  const firstChar = customAlphabet(LETTERS, 1)()
-  const rest = customAlphabet(`${LETTERS}0123456789`, 11)()
-  return `${firstChar}${rest}`
+export function generateAppSlug() {
+  return randomString(LETTERS, 1) + randomString(ALPHANUMERIC, 11)
 }
 
 // TODO: replace with `Promise.withResolvers()` once it lands in node 22
