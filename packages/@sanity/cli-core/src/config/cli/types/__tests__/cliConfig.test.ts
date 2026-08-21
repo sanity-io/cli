@@ -35,7 +35,14 @@ import {type ReactCompilerConfig} from '../cliConfig.js'
  */
 
 const TYPES_DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const PROBE_PATH = path.join(TYPES_DIR, '__reactCompilerConfigProbe__.ts')
+// TypeScript normalizes file paths to forward slashes internally, also on
+// Windows, so the probe path must use the normalized form (and host callbacks
+// compare through `isProbePath`) for the virtual file to be found there.
+const PROBE_PATH = path.join(TYPES_DIR, '__reactCompilerConfigProbe__.ts').replaceAll('\\', '/')
+
+function isProbePath(fileName: string): boolean {
+  return fileName.replaceAll('\\', '/') === PROBE_PATH
+}
 
 const COMPILER_OPTIONS: CompilerOptions = {
   lib: ['lib.es2023.d.ts'],
@@ -68,11 +75,11 @@ function compileProbe(blockedModules: string[], probeSource: string): ProbeDiagn
   const host = createCompilerHost(COMPILER_OPTIONS)
   const {fileExists, getSourceFile, readFile} = host
 
-  host.fileExists = (fileName) => fileName === PROBE_PATH || fileExists.call(host, fileName)
+  host.fileExists = (fileName) => isProbePath(fileName) || fileExists.call(host, fileName)
   host.readFile = (fileName) =>
-    fileName === PROBE_PATH ? probeSource : readFile.call(host, fileName)
+    isProbePath(fileName) ? probeSource : readFile.call(host, fileName)
   host.getSourceFile = (fileName, languageVersionOrOptions, ...rest) =>
-    fileName === PROBE_PATH
+    isProbePath(fileName)
       ? createSourceFile(fileName, probeSource, languageVersionOrOptions, true)
       : getSourceFile.call(host, fileName, languageVersionOrOptions, ...rest)
   host.resolveModuleNameLiterals = (moduleLiterals, containingFile) =>
@@ -89,7 +96,7 @@ function compileProbe(blockedModules: string[], probeSource: string): ProbeDiagn
   })
 
   return getPreEmitDiagnostics(program)
-    .filter((diagnostic) => diagnostic.file?.fileName === PROBE_PATH)
+    .filter((diagnostic) => diagnostic.file !== undefined && isProbePath(diagnostic.file.fileName))
     .map((diagnostic) => ({
       code: diagnostic.code,
       line:
