@@ -120,55 +120,16 @@ export const DefineAppInputSchema = z
       path: ['config'],
     }),
   )
-  .check(
-    // A navigable app view (`entry`) and dock panels are the mutually-exclusive
-    // navigable kinds. An `asset_source` view is a separate kind — a picker
-    // brokered to other apps — so it may sit alongside either.
-    z.refine(
-      (input) =>
-        !(
-          input.entry !== undefined &&
-          (input.views?.some((view) => view.type === 'panel') ?? false)
-        ),
-      'An app cannot expose both an app view (`entry`) and panel views. Declare one or the other.',
-    ),
-  )
-  .check(
-    z.refine(
-      (input) => (input.views?.filter((view) => view.type === 'panel').length ?? 0) <= 1,
-      'An app can expose at most one panel view.',
-    ),
-  )
-
-/** The `asset_source` variant of an app's `views`. @public */
-export type AssetSourceView = Extract<
-  NonNullable<z.output<typeof DefineAppInputSchema>['views']>[number],
-  {type: 'asset_source'}
->
-
-/** The `tile` variant of an app's `views`. @public */
-export type TileView = Extract<
-  NonNullable<z.output<typeof DefineAppInputSchema>['views']>[number],
-  {type: 'tile'}
->
 
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
- * `applicationType`, `isSingleton`, and `config` — validated by the schema but
- * not part of the public surface (Sanity-owned apps set them via
- * `@ts-expect-error`). A union: an app declares an app `entry` (navigable) or
- * panel `views`, never both — but `asset_source` and `tile` views are separate
- * kinds and may accompany either.
+ * `applicationType`, `isSingleton`, and `config`.
  * @public
  */
 export type DefineAppInput = Omit<
   z.output<typeof DefineAppInputSchema>,
-  'applicationType' | 'config' | 'entry' | 'isSingleton' | 'views'
-> &
-  (
-    | {entry?: never; views?: NonNullable<z.output<typeof DefineAppInputSchema>['views']>}
-    | {entry?: string; views?: (AssetSourceView | TileView)[]}
-  )
+  'applicationType' | 'config' | 'isSingleton'
+>
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy
