@@ -42,7 +42,7 @@ const knownTopicsWithoutAliases: Set<string> = new Set([
 
 // Topics provided by oclif plugins (not in our manifest, but resolved at runtime).
 // The checker skips manifest validation for these - the hook handles them.
-const pluginTopics: Set<string> = new Set(['blueprints', 'functions'])
+const pluginTopics: Set<string> = new Set(['blueprints', 'functions', 'workflows'])
 
 // ---------------------------------------------------------------------------
 // Manifest types (subset of oclif manifest structure)

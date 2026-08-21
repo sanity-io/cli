@@ -13,7 +13,7 @@ export default {
       './dist/hooks/prerun/warnings.js',
     ],
   },
-  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli'],
+  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/workflow-cli'],
   topics: {
     backups: {description: 'Manage dataset backups'},
     cors: {description: 'Manage CORS origins for your project'},
