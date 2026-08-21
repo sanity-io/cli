@@ -4,6 +4,10 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
+import {
+  removedManifestFlags,
+  warnOnRemovedManifestFlags,
+} from '../../actions/schema/utils/removedManifestFlags.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -34,20 +38,10 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       description: 'Delete schemas from a specific dataset',
       semantics: 'specify',
     }),
-    'extract-manifest': Flags.boolean({
-      allowNo: true,
-      default: true,
-      description: 'Generate manifest file (disable with --no-extract-manifest)',
-      hidden: true,
-    }),
+    ...removedManifestFlags,
     ids: Flags.string({
       description: 'Comma-separated list of schema ids to delete',
       required: true,
-    }),
-    'manifest-dir': Flags.directory({
-      default: './dist/static',
-      description: 'Directory containing manifest file',
-      hidden: true,
     }),
     verbose: Flags.boolean({
       default: false,
@@ -67,6 +61,8 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     const {dataset, yes} = flags
 
     deleteSchemaDebug('Running schema delete with flags: %O', flags)
+
+    warnOnRemovedManifestFlags(flags, this.output)
 
     const ids = parseIds(flags.ids)
 
