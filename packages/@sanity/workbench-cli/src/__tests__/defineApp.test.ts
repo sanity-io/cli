@@ -264,17 +264,14 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(dupes.error?.issues[0]?.message).toMatch(/unique/)
   })
 
-  test('rejects declaring both an entry and panel views', () => {
+  test('accepts declaring both an entry and panel views', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         entry: './src/App.tsx',
         views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
       }),
     )
-    expect(result.success).toBe(false)
-    expect(result.error?.issues.some((issue) => /cannot expose both/.test(issue.message))).toBe(
-      true,
-    )
+    expect(result.success).toBe(true)
   })
 
   test('rejects more than one panel view', () => {
@@ -436,7 +433,7 @@ describe('type surface', () => {
   })
 })
 
-describe('interface union (entry vs views)', () => {
+describe('interface surface', () => {
   type Base = {organizationId: string; slug: string; title: string}
   type PanelView = {name: string; src: string; title: string; type: 'panel'}
 
@@ -448,8 +445,8 @@ describe('interface union (entry vs views)', () => {
     expectTypeOf<Base & {views: PanelView[]}>().toExtend<DefineAppInput>()
   })
 
-  test('rejects declaring an app entry and panel views together', () => {
-    expectTypeOf<Base & {entry: string; views: PanelView[]}>().not.toExtend<DefineAppInput>()
+  test('allows declaring an app entry and panel views together', () => {
+    expectTypeOf<Base & {entry: string; views: PanelView[]}>().toExtend<DefineAppInput>()
   })
 })
 
