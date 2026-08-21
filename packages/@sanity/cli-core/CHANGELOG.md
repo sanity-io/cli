@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.2.0...cli-core-v3.3.0)
+
+_2026-08-21_
+
+### Features
+
+- include source of auth token in `sanity debug` ([#1690](https://github.com/sanity-io/cli/pull/1690)) ([e64da59](https://github.com/sanity-io/cli/commit/e64da593359c6b8de6d62a07a0a7a07f77a11d3a))
+
 ## 3.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.1.0...cli-core-v3.2.0)
