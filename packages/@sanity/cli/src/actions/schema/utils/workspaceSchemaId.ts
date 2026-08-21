@@ -2,7 +2,8 @@ import {
   type DefaultWorkspaceSchemaId,
   SANITY_WORKSPACE_SCHEMA_ID_PREFIX,
   type WorkspaceSchemaId,
-} from '../../manifest/types.js'
+} from '@sanity/cli-build/_internal/manifest'
+
 import {validForNamesChars, validForNamesPattern} from './schemaStoreValidation.js'
 
 export function getWorkspaceSchemaId(args: {tag?: string; workspaceName: string}) {

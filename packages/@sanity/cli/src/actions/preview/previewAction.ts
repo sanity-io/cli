@@ -1,4 +1,5 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
+import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
@@ -7,7 +8,6 @@ import {type PreviewServer, startPreviewServer} from '../../server/previewServer
 import {checkForDeprecatedAppId} from '../../util/appId.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
-import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {extractStudioManifest} from '../manifest/extractStudioManifest.js'
 import {getPreviewServerConfig} from './getPreviewServerConfig.js'
 import {type PreviewFlags} from './types.js'

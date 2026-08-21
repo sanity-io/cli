@@ -13,7 +13,8 @@ import {type StudioManifest, type Workspace} from 'sanity'
 
 import {SCHEMA_API_VERSION} from '../../services/schemas.js'
 
-const iconResolverPath = new URL('../manifest/iconResolver.js', import.meta.url).href
+const sanityCliBuildManifestUrl = import.meta.resolve('@sanity/cli-build/_internal/manifest')
+const iconResolverPath = new URL(sanityCliBuildManifestUrl).href
 
 interface UploadSchemaToLexiconOptions {
   projectId: string
