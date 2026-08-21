@@ -1,2 +1,5 @@
 # By default, assign the SDK team.
 * @sanity-io/ai-growth
+
+# GROQ query markers and TypeGen declarations
+/packages/groq/ @sanity-io/ai-growth
