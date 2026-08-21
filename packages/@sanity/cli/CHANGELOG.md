@@ -1,5 +1,27 @@
 # Change Log
 
+## 8.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.2.1...cli-v8.3.0)
+
+_2026-08-21_
+
+### Features
+
+- include source of auth token in `sanity debug` ([#1690](https://github.com/sanity-io/cli/pull/1690)) ([e64da59](https://github.com/sanity-io/cli/commit/e64da593359c6b8de6d62a07a0a7a07f77a11d3a))
+
+### Bug Fixes
+
+- **cli:** remove react-dom dependency by loading from the local Studio project ([#1716](https://github.com/sanity-io/cli/pull/1716)) ([63dda1a](https://github.com/sanity-io/cli/commit/63dda1a687981d4870a5b9e12fa8f12b2bf9c48f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.3.0
+    - @sanity/cli-build bumped to 5.3.1
+    - @sanity/workbench-cli bumped to 2.0.3
+
 ## 8.2.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.2.0...cli-v8.2.1)

@@ -1,5 +1,21 @@
 # @sanity/workbench-cli
 
+## 2.0.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.2...workbench-cli-v2.0.3)
+
+_2026-08-21_
+
+### Bug Fixes
+
+- **workbench:** decouple cli from sanity/workbench ([#1734](https://github.com/sanity-io/cli/pull/1734)) ([ea4dc56](https://github.com/sanity-io/cli/commit/ea4dc5660f10eb4b1758c3924ea2241d4007e35f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.3.0
+
 ## 2.0.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.1...workbench-cli-v2.0.2)

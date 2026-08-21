@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.3.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.3.0...cli-build-v5.3.1)
+
+_2026-08-21_
+
+### Bug Fixes
+
+- **cli:** remove react-dom dependency by loading from the local Studio project ([#1716](https://github.com/sanity-io/cli/pull/1716)) ([63dda1a](https://github.com/sanity-io/cli/commit/63dda1a687981d4870a5b9e12fa8f12b2bf9c48f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.3.0
+    - @sanity/workbench-cli bumped to 2.0.3
+
 ## 5.3.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.2.1...cli-build-v5.3.0)
