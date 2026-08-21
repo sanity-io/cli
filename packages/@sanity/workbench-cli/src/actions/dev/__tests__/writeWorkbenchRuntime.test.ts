@@ -46,7 +46,7 @@ describe('writeWorkbenchRuntime', () => {
     await writeWorkbenchRuntime({cwd: CWD, reactStrictMode: false})
 
     const js = written('workbench.js')
-    expect(js).toContain('import {renderWorkbench} from "sanity/workbench"')
+    expect(js).toContain('import {renderDashboard} from "@sanity/workbench-cli/_internal_render"')
     expect(js).toContain('document.getElementById("workbench")')
     expect(js).toContain('{organizationId: undefined}')
     expect(js).toContain('{reactStrictMode: false}')

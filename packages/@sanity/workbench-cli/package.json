@@ -43,6 +43,10 @@
       "source": "./src/_exports/preview.ts",
       "default": "./dist/_exports/preview.js"
     },
+    "./_internal_render": {
+      "source": "./src/_exports/_internal_render.ts",
+      "default": "./dist/_exports/_internal_render.js"
+    },
     "./undeploy": {
       "source": "./src/_exports/undeploy.ts",
       "default": "./dist/_exports/undeploy.js"
@@ -65,11 +69,13 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
+    "@module-federation/runtime": "2.8.2",
     "@module-federation/vite": "1.20.7",
     "@sanity/cli-core": "workspace:^",
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",
+    "rxjs": "catalog:",
     "tar-fs": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
