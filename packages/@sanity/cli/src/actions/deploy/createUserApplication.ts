@@ -1,7 +1,9 @@
+import {randomInt} from 'node:crypto'
+
 import {CLIError} from '@oclif/core/errors'
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {input, spinner} from '@sanity/cli-core/ux'
-import {randomInt} from 'node:crypto'
+
 import {
   createUserApplication as createUserApplicationRequest,
   type UserApplication,
