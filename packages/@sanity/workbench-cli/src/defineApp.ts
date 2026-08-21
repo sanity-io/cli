@@ -120,12 +120,6 @@ export const DefineAppInputSchema = z
       path: ['config'],
     }),
   )
-  .check(
-    z.refine(
-      (input) => (input.views?.filter((view) => view.type === 'panel').length ?? 0) <= 1,
-      'An app can expose at most one panel view.',
-    ),
-  )
 
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal

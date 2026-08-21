@@ -27,14 +27,14 @@ describe('validateWorkbenchApp', () => {
     expect(validateWorkbenchApp(app({entry: './src/App.tsx', views: [panel]}))).toEqual([])
   })
 
-  test('reports more than one panel view', () => {
+  test('accepts multiple panel views', () => {
     expect(
       validateWorkbenchApp(
         app({
           views: [panel, {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'}],
         }),
       ),
-    ).toContainEqual(expect.stringContaining('at most one panel view'))
+    ).toEqual([])
   })
 
   test('locates a malformed declaration', () => {
@@ -47,11 +47,11 @@ describe('validateWorkbenchApp', () => {
     const errors = validateWorkbenchApp(
       app({
         slug: 'bad!',
-        views: [panel, {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'}],
+        views: [panel, {...panel, src: './src/Inbox.tsx'}],
       }),
     )
     expect(errors).toContainEqual(expect.stringMatching(/slug: App `slug` must be lowercase/))
-    expect(errors).toContainEqual(expect.stringContaining('at most one panel view'))
+    expect(errors).toContainEqual(expect.stringContaining('View `name` must be unique'))
   })
 })
 

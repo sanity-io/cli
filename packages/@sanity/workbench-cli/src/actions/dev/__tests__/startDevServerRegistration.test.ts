@@ -293,7 +293,7 @@ describe('startDevServerRegistration', () => {
     )
   })
 
-  test('logs an invalid config and keeps the dev server running', async () => {
+  test('registers multiple panel views', async () => {
     const output = createMockOutput()
     const handle = await register({
       cliConfig: workbenchCliConfig({
@@ -307,12 +307,16 @@ describe('startDevServerRegistration', () => {
       output,
     })
 
-    // Registration still completed rather than throwing.
     expect(handle.close).toBeInstanceOf(Function)
-    expect(mockRegisterDevServer).toHaveBeenCalled()
-    // All errors are reported in a single message, not one warning at a time.
-    expect(output.warn).toHaveBeenCalledTimes(1)
-    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('at most one panel view'))
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interfaces: expect.arrayContaining([
+          expect.objectContaining({name: 'feed', type: 'panel'}),
+          expect.objectContaining({name: 'inbox', type: 'panel'}),
+        ]),
+      }),
+    )
+    expect(output.warn).not.toHaveBeenCalled()
     expect(output.error).not.toHaveBeenCalled()
   })
 
