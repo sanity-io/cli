@@ -891,6 +891,9 @@ importers:
       empathic:
         specifier: 'catalog:'
         version: 2.0.1
+      isomorphic-dompurify:
+        specifier: ^2.36.0
+        version: 2.36.0(@noble/hashes@2.2.0)
       lodash-es:
         specifier: 'catalog:'
         version: 4.18.1
@@ -909,6 +912,9 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      react-is:
+        specifier: ^19.2.7
+        version: 19.2.8
       semver:
         specifier: ^7.8.1
         version: 7.8.5
@@ -937,6 +943,9 @@ importers:
       '@sanity/pkg-utils':
         specifier: 'catalog:'
         version: 12.2.0(@babel/runtime@7.29.7)(@types/node@22.20.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(oxc-resolver@11.21.3)(oxc-transform-react@0.145.0)(typescript@6.0.3)(vite@8.2.1(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.12)(yaml@2.9.0))
+      '@sanity/ui':
+        specifier: ^3.5.0
+        version: 3.5.0(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(styled-components@6.4.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@swc/cli':
         specifier: 'catalog:'
         version: 0.8.1(@swc/core@1.15.43)(chokidar@5.0.0)
@@ -958,6 +967,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
+      '@types/react-is':
+        specifier: ^19.2.0
+        version: 19.2.0
       '@types/semver':
         specifier: ^7.7.1
         version: 7.7.1

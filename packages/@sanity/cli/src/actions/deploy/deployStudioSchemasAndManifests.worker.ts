@@ -1,12 +1,10 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {extractValidationFromSchemaError} from '@sanity/cli-build/_internal/extract'
+import {type CreateWorkspaceManifest, extractWorkspaceManifest, writeManifestFile} from '@sanity/cli-build/_internal/manifest'
 import {getStudioWorkspaces, subdebug} from '@sanity/cli-core'
 import {type StudioManifest, type Workspace} from 'sanity'
 
-import {extractWorkspaceManifest} from '../manifest/extractWorkspaceManifest.js'
-import {type CreateWorkspaceManifest} from '../manifest/types.js'
-import {writeManifestFile} from '../manifest/writeManifestFile.js'
 import {
   updateWorkspacesSchemas,
   type WorkspaceSchemaInput,

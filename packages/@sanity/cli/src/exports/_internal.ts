@@ -1,4 +1,4 @@
-export {extractManifestSchemaTypes} from '../actions/manifest/extractWorkspaceManifest.js'
+export {extractManifestSchemaTypes} from '@sanity/cli-build/_internal/manifest'
 export {type CommandTelemetry, defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 export {
   getStudioEnvironmentVariables,
