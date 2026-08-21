@@ -38,17 +38,26 @@ specifications - list them with "sanity openapi list" and inspect one with
 configuration, and the API host (api.sanity.io or <projectId>.api.sanity.io)
 is chosen based on the specs' routing information.
 
-The default request method is GET, or POST when fields or --input are
+The default request method is GET, or POST when fields or a raw body are
 provided. For GET/HEAD requests, fields are sent as query parameters;
 otherwise they are combined into a JSON request body sent with
-"Content-Type: application/json". Raw --input bodies are sent without a
-default Content-Type - provide one with -H when the API requires it. The
-response body is written to stdout.
+"Content-Type: application/json". The response body is written to stdout.
 
-Requests are authenticated with the token from "sanity login". To use a
-specific token instead - for example in CI or when the CLI is not logged in
-- pass --token or set the SANITY_AUTH_TOKEN environment variable. Pass
---anonymous to send no token at all.`
+Field keys nest with brackets, like gh api: "a[b]=1" sets a nested key,
+"a[]=1" appends to an array, a bare "a[]" declares an empty array, and
+repeating a key ("a[][k]=1 a[][j]=2") builds arrays of objects. Dot paths
+such as "a.b=1" are not supported.
+
+Use --input to send a raw request body instead of fields. Raw --input
+bodies are sent without a default Content-Type - provide one with -H when
+the API requires it.
+
+Requests are authenticated with the token from "sanity login". Pass
+--anonymous to send no token at all.
+
+To authenticate with a specific token instead - for example in CI or when
+the CLI is not logged in - pass --token or set the SANITY_AUTH_TOKEN
+environment variable.`
 
   static override examples = [
     {
@@ -67,6 +76,10 @@ specific token instead - for example in CI or when the CLI is not logged in
       command:
         '<%= config.bin %> <%= command.id %> projects/{projectId} -X PATCH -F displayName="My project"',
       description: 'Send a JSON body built from typed fields',
+    },
+    {
+      command: `<%= config.bin %> <%= command.id %> 'hooks/projects/{projectId}' -X POST -F name=my-hook -F url=https://example.com/hook -F 'rule[on][]=create' -F 'rule[filter]=_type == "post"'`,
+      description: 'Send a nested JSON body, using brackets to build objects and arrays',
     },
     {
       command: `echo '{"mutations": []}' | <%= config.bin %> <%= command.id %> 'data/mutate/{dataset}' --input - -H 'Content-Type: application/json'`,
@@ -103,7 +116,7 @@ specific token instead - for example in CI or when the CLI is not logged in
     field: Flags.string({
       char: 'F',
       description:
-        'Add a typed parameter (key=value): true/false/null and numbers are converted, @file reads the value from a file, @- from stdin',
+        'Add a typed parameter (key=value): true/false/null and numbers are converted, @file reads the value from a file, @- from stdin. Keys nest with brackets: a[b]=1 sets a nested key, a[]=1 appends to an array, a[] declares an empty array',
       helpValue: '<key=value>',
       multiple: true,
     }),
@@ -130,7 +143,8 @@ specific token instead - for example in CI or when the CLI is not logged in
     }),
     method: Flags.string({
       char: 'X',
-      description: 'HTTP method to use (default GET, or POST when fields or --input are provided)',
+      description:
+        'HTTP method to use (default GET, or POST when fields or a raw body are provided)',
       helpValue: '<method>',
     }),
     pretty: Flags.boolean({
@@ -143,7 +157,8 @@ specific token instead - for example in CI or when the CLI is not logged in
     }),
     'raw-field': Flags.string({
       char: 'f',
-      description: 'Add a string parameter (key=value)',
+      description:
+        'Add a string parameter (key=value), with the same bracket nesting as --field: a[b]=1 sets a nested key, a[]=1 appends to an array, a[] declares an empty array',
       helpValue: '<key=value>',
       multiple: true,
     }),

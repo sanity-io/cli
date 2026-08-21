@@ -100,7 +100,9 @@ function splitField(input: string, flagName: string): {key: string; value?: stri
     return {key: input}
   }
   if (separatorIndex < 1) {
-    throw new ApiUsageError(`Invalid ${flagName} "${input}": expected key=value format`)
+    throw new ApiUsageError(
+      `Invalid ${flagName} "${input}": expected key=value format (use brackets for nesting, eg 'rule[on][]=create')`,
+    )
   }
   return {key: input.slice(0, separatorIndex), value: input.slice(separatorIndex + 1)}
 }
