@@ -40,6 +40,10 @@
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
     },
+    "./_internal/manifest": {
+      "source": "./src/_exports/_internal/manifest.ts",
+      "default": "./dist/_exports/_internal/manifest.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -70,6 +74,7 @@
     "chokidar": "^5.0.0",
     "cjs-module-lexer": "^2.2.0",
     "empathic": "catalog:",
+    "isomorphic-dompurify": "^2.36.0",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
     "oneline": "^2.0.0",
@@ -86,6 +91,7 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:^",
     "@sanity/pkg-utils": "catalog:",
+    "@sanity/ui": "^3.5.0",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/lodash-es": "catalog:",
@@ -93,6 +99,7 @@
     "@types/picomatch": "^4.0.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/react-is": "^19.2.0",
     "@types/semver": "^7.7.1",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
@@ -100,20 +107,23 @@
     "magic-string": "^0.30.21",
     "oxc-transform-react": "catalog:",
     "publint": "catalog:",
-    "sanity": "catalog:",
     "styled-components": "^6.4.3",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
     "babel-plugin-react-compiler": "*",
-    "oxc-transform-react": "*"
+    "oxc-transform-react": "*",
+    "sanity": "catalog:"
   },
   "peerDependenciesMeta": {
     "babel-plugin-react-compiler": {
       "optional": true
     },
     "oxc-transform-react": {
+      "optional": true
+    },
+    "sanity": {
       "optional": true
     }
   },

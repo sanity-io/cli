@@ -1,3 +1,4 @@
+import {type CoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -5,7 +6,6 @@ import {
   updateUserApplication,
   type UserApplicationResolved,
 } from '../../../services/userApplications.js'
-import {type CoreAppManifest} from '../../manifest/types.js'
 import {logAppDeployed, syncApplicationMetadata} from '../deployApp.js'
 
 vi.mock('../../../services/userApplications.js', () => ({
