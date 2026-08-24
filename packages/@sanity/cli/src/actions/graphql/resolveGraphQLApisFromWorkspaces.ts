@@ -282,9 +282,6 @@ function strip(input: unknown): unknown {
   return isBasicType(input) ? input : undefined
 }
 
-// `strip` drops anything that isn't JSON-safe, so this deliberately rejects class
-// instances (Dates, Rules, Maps) rather than walking their enumerable keys — matching
-// the `isPlainObject` check this replaced. `isRecord` would accept them.
 function isPlainishObject(input: unknown): input is Record<string, unknown> {
   if (typeof input !== 'object' || input === null) {
     return false
