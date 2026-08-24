@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {type DefineAppInput, unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
+import {unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
 import {resolveWorkbenchApp} from '../resolveWorkbenchApp.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig
@@ -74,7 +74,7 @@ describe('resolveWorkbenchApp', () => {
     })
   })
 
-  test('throws when an app declares both an entry and panel views', () => {
+  test('resolves an app entry and panel views together', () => {
     const config = asConfig(
       unstable_defineApp({
         entry: './src/App.tsx',
@@ -82,10 +82,13 @@ describe('resolveWorkbenchApp', () => {
         slug: 'my-app',
         title: 'My App',
         views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
-      } as unknown as DefineAppInput),
+      }),
     )
 
-    expect(() => resolveWorkbenchApp(config)).toThrow('cannot expose both an app view')
+    expect(resolveWorkbenchApp(config)).toMatchObject({
+      entry: './src/App.tsx',
+      views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+    })
   })
 
   test('resolves a media library singleton and its config', () => {
