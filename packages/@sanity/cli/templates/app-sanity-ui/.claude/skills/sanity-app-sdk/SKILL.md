@@ -51,28 +51,30 @@ This app wraps everything in Sanity UI's `ThemeProvider` (see `src/SanityUI.tsx`
 
 ### Spacing scale
 
-Sanity UI uses a numeric scale (0–9+) for all spacing-related props. The default theme increments each step by 4px, so `1` = 4px, `2` = 8px, `3` = 12px, `4` = 16px, `5` = 20px, and so on. Apply it through:
+Sanity UI uses a numeric scale (0–9) for all spacing-related props. The scale follows a Fibonacci progression — not a linear 4px step — so the gaps widen as values increase. Apply it through:
 
 - `padding`, `paddingX` / `paddingY`, and directional equivalents (`paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight`) on `Box`, `Card`, `Flex`, `Stack`
 - `margin`, `marginX` / `marginY`, and directional equivalents on the same components
 - `space` on `Stack` (v3) or `gap` on `Stack`, `Flex`, `Inline` (v4) for the gap between children
 
-Common values and their typical uses:
+Scale values and their typical uses:
 
-| Value | Approx. size | Common use |
-|-------|-------------|------------|
-| `1`   | 4px         | Icon gap, tight inline spacing |
-| `2`   | 8px         | Between closely related items |
-| `3`   | 12px        | Form field gap, list item gap |
-| `4`   | 16px        | Card internal padding, standard gap |
-| `5`   | 20px        | Section padding, prominent gap |
-| `6`   | 24px        | Page-level padding |
+| Value | Size | Common use |
+|-------|------|------------|
+| `0`   | 0px  | Reset / flush |
+| `1`   | 4px  | Icon gap, tight inline spacing |
+| `2`   | 8px  | Between closely related items |
+| `3`   | 12px | Form field gap, list item gap |
+| `4`   | 20px | Card internal padding, standard gap |
+| `5`   | 32px | Section padding, prominent gap |
+| `6`   | 52px | Page-level padding |
+| `7`   | 84px | Large layout gap |
 
 All spacing props also accept an array for responsive values — `[mobile, tablet, desktop]`:
 
 ```tsx
 <Card padding={[3, 4, 5]}>
-  {/* 12px on mobile, 16px on tablet, 20px on desktop */}
+  {/* 12px on mobile, 20px on tablet, 32px on desktop */}
 </Card>
 ```
 
