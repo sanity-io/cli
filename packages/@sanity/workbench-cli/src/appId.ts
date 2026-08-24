@@ -21,9 +21,11 @@ export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
   const shape = JSON.stringify({
     config: app.config ?? null,
     entry: app.entry ?? null,
+    // Identity, not address: the id keys on `name` (which defaults to `slug`). The
+    // address (`slug`) is deliberately absent, so renaming it never shifts the id.
+    name: app.name,
     organizationId: app.organizationId,
     services: canonical(app.services),
-    slug: app.slug,
     views: canonical(app.views),
   })
   // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser

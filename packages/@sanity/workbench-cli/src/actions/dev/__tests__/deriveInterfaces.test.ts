@@ -125,6 +125,21 @@ describe('deriveInterfaces', () => {
     ])
   })
 
+  test('keys the id prefix and app-view name on name, not the slug address', () => {
+    const app = workbenchApp({entry: './src/App.tsx', name: 'reviews', slug: 'reviews-host'})
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'reviews-app-reviews',
+        metadata: null,
+        moduleId: 'App',
+        name: 'reviews',
+        src: './src/App.tsx',
+        title: 'Test App',
+        type: 'app',
+      },
+    ])
+  })
+
   test('stamps the moduleId a deploy would, so a local interface resolves like a deployed one', () => {
     const panelApp = workbenchApp({
       services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],

@@ -30,11 +30,26 @@ describe('resolveWorkbenchApp', () => {
       config: undefined,
       entry: undefined,
       isSingleton: undefined,
+      // Identity defaults to the slug when no explicit name is declared.
+      name: 'my-app',
       organizationId: 'org-123',
       services: [],
       slug: 'my-app',
       views: [],
     })
+  })
+
+  test('keeps an explicit name distinct from the slug', () => {
+    const config = asConfig(
+      unstable_defineApp({
+        name: 'reviews',
+        organizationId: 'org-123',
+        slug: 'reviews-app',
+        title: 'Reviews',
+      }),
+    )
+
+    expect(resolveWorkbenchApp(config)).toMatchObject({name: 'reviews', slug: 'reviews-app'})
   })
 
   test('passes through a declared app entry, services, slug, and visibility', () => {

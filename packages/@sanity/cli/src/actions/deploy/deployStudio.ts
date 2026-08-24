@@ -151,6 +151,7 @@ async function runStudioDeployment(
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
     const created = await createStudio({
+      name: workbench.name,
       organizationId,
       projectId,
       slug: workbench.slug,

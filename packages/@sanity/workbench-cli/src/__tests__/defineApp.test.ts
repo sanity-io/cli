@@ -88,6 +88,23 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     },
   )
 
+  test('accepts an optional name distinct from the slug', () => {
+    expect(DefineAppInputSchema.parse(validInput({name: 'reviews'})).name).toBe('reviews')
+  })
+
+  test('leaves name undefined when omitted (resolved to slug downstream)', () => {
+    expect(DefineAppInputSchema.parse(validInput()).name).toBeUndefined()
+  })
+
+  test.each(['Reviews', 'sanity/media-library', 'has space', '-leading', 'trailing-'])(
+    'rejects the name %j — it shares the slug grammar',
+    (name) => {
+      const result = DefineAppInputSchema.safeParse(validInput({name}))
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0]?.message).toMatch(/name.*must be lowercase/)
+    },
+  )
+
   test('requires a title', () => {
     const input = validInput()
     delete input.title
