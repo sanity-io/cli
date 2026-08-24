@@ -6,7 +6,6 @@ import {type AppVisibility, debug, getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {type StudioManifest} from 'sanity'
 
-
 export const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
 
 interface ActiveDeployment {
