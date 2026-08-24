@@ -2,12 +2,12 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import sortBy from 'lodash-es/sortBy.js'
 
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {sortRowsByColumn} from '../../util/sortRowsByColumn.js'
 
 const sortFields = ['id', 'name', 'role', 'date']
 
@@ -88,7 +88,7 @@ export class List extends SanityCommand<typeof List> {
       return
     }
 
-    const ordered = sortBy(
+    const ordered = sortRowsByColumn(
       members.map(({date, id, name, roles}) => [
         id,
         name,
@@ -98,7 +98,7 @@ export class List extends SanityCommand<typeof List> {
           .trim() || '-',
         date,
       ]),
-      [sortFields.indexOf(sort)],
+      sortFields.indexOf(sort),
     )
 
     const rows = (order === 'asc' ? ordered : ordered.toReversed()).map(

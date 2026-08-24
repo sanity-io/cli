@@ -1,7 +1,5 @@
 import {styleText} from 'node:util'
 
-import padEnd from 'lodash-es/padEnd.js'
-
 import {type ModuleVersionResult} from './types.js'
 
 /**
@@ -33,7 +31,8 @@ export function getFormatters(versions: ModuleVersionResult[]): {
   }
 
   const formatName = (name: string): string =>
-    padEnd(name, nameLength + 1)
+    name
+      .padEnd(nameLength + 1)
       .replace(
         /^@sanity\/(.*?)(\s|$)/,
         `${styleText('yellow', '@sanity/')}${styleText('cyan', '$1')}$2`,

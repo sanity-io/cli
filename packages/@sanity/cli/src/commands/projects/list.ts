@@ -1,10 +1,10 @@
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
-import sortBy from 'lodash-es/sortBy.js'
 
 import {getManageUrl} from '../../actions/projects/getManageUrl.js'
 import {listProjects} from '../../services/projects.js'
 import {Table} from '../../util/responsiveTable.js'
+import {sortRowsByColumn} from '../../util/sortRowsByColumn.js'
 
 const sortFields = ['id', 'members', 'name', 'url', 'created']
 
@@ -43,12 +43,12 @@ export class List extends SanityCommand<typeof List> {
 
     try {
       const projects = await listProjects()
-      const ordered = sortBy(
+      const ordered = sortRowsByColumn(
         projects.map(({createdAt, displayName, id, members = []}) => {
           const manage = getManageUrl(id)
           return [id, members.length, displayName, manage, createdAt].map(String)
         }),
-        [sortFields.indexOf(sort)],
+        sortFields.indexOf(sort),
       )
 
       const rows = order === 'asc' ? ordered : ordered.toReversed()
