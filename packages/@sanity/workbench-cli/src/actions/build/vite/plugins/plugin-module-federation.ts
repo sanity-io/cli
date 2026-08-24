@@ -1,7 +1,7 @@
 import {federation as moduleFederation, type ModuleFederationOptions} from '@module-federation/vite'
-import {type Plugin, type PluginOption, type Rolldown} from 'vite'
+import {type Plugin, type PluginOption} from 'vite'
 
-import {FEDERATION_DIR_NAME, FEDERATION_OUTPUT_FILE_NAME} from '../constants.js'
+import {FEDERATION_DIR_NAME} from '../constants.js'
 
 /**
  * @internal
@@ -15,21 +15,6 @@ export interface FederationOptions extends Pick<ModuleFederationOptions, 'expose
   name: string
 }
 
-function patchRemoteEntryFileName(output: Rolldown.OutputOptions): void {
-  const resolveFileName = (
-    fileName: Rolldown.OutputOptions['entryFileNames'],
-    chunk: Rolldown.PreRenderedChunk,
-  ) => {
-    if (chunk.name === 'remoteEntry') return FEDERATION_OUTPUT_FILE_NAME
-    if (typeof fileName === 'function') return fileName(chunk)
-    return fileName ?? 'static/[name]-[hash].js'
-  }
-  const entryFileNames = output.entryFileNames
-  const chunkFileNames = output.chunkFileNames
-  output.entryFileNames = (chunk) => resolveFileName(entryFileNames, chunk)
-  output.chunkFileNames = (chunk) => resolveFileName(chunkFileNames, chunk)
-}
-
 export function sanityModuleFederation({exposes, name}: FederationOptions): PluginOption {
   const mfPlugins = moduleFederation({
     dev: {
@@ -41,7 +26,6 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     // Ctrl-C by sending on a still-CONNECTING websocket.
     dts: false,
     exposes,
-    filename: FEDERATION_OUTPUT_FILE_NAME,
     manifest: true,
     name,
     // Resolves the remote entry path relative to the manifest rather than the
@@ -72,22 +56,5 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     } satisfies Plugin
   }
 
-  const remoteEntryOutputPlugin: Plugin = {
-    apply: 'build',
-    applyToEnvironment: (environment) => environment.name === FEDERATION_DIR_NAME,
-    async buildApp(builder) {
-      const outputs = builder.environments[FEDERATION_DIR_NAME]?.config.build.rolldownOptions.output
-      if (outputs) {
-        for (const output of Array.isArray(outputs) ? outputs : [outputs]) {
-          patchRemoteEntryFileName(output)
-        }
-      }
-    },
-    name: 'sanity/module-federation-output',
-  }
-
-  return [
-    ...mfPlugins.map((plugin: PluginOption) => scopeToEnvironment(plugin)),
-    remoteEntryOutputPlugin,
-  ]
+  return mfPlugins.map((plugin: PluginOption) => scopeToEnvironment(plugin))
 }
