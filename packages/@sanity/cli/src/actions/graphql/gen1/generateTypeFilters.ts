@@ -1,5 +1,3 @@
-import flatten from 'lodash-es/flatten.js'
-
 import {isNonUnion} from '../helpers.js'
 import {
   type ConvertedField,
@@ -33,7 +31,7 @@ export function generateTypeFilters(types: (ConvertedType | ConvertedUnion)[]): 
 
   return queryable.map((type) => {
     const name = `${type.name}Filter`
-    const fields = flatten(type.fields.map((field) => createFieldFilters(field))).filter(Boolean)
+    const fields = type.fields.flatMap((field) => createFieldFilters(field)).filter(Boolean)
     return {fields: [...fields, ...getDocumentFilters()], kind: 'InputObject', name}
   })
 }
