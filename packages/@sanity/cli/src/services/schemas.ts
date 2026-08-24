@@ -1,6 +1,5 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
-
 import {type StoredWorkspaceSchema} from '@sanity/cli-build/_internal/manifest'
+import {getGlobalCliClient} from '@sanity/cli-core'
 
 export const SCHEMA_API_VERSION = 'v2025-03-01'
 

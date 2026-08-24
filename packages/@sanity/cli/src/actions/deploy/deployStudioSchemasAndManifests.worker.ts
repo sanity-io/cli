@@ -1,6 +1,9 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {extractValidationFromSchemaError} from '@sanity/cli-build/_internal/extract'
+import {
+  extractValidationFromSchemaError,
+  uploadSchemaToLexicon,
+} from '@sanity/cli-build/_internal/extract'
 import {
   type CreateWorkspaceManifest,
   extractWorkspaceManifest,
@@ -13,7 +16,6 @@ import {
   updateWorkspacesSchemas,
   type WorkspaceSchemaInput,
 } from '../schema/updateWorkspaceSchema.js'
-import {uploadSchemaToLexicon} from '../schema/uploadSchemaToLexicon.js'
 import {deployStudioSchemasAndManifestsWorkerData} from './types.js'
 
 const debug = subdebug('deployStudioSchemasAndManifests.worker')

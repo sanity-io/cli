@@ -11,10 +11,10 @@ import {
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest, type Workspace} from 'sanity'
 
-import {SCHEMA_API_VERSION} from '../../services/schemas.js'
+/** This version corresponds to the one used in the cli schema service but was copied here to avoid the dependency issue. */
+const SCHEMA_API_VERSION = 'v2025-03-01'
 
-const sanityCliBuildManifestUrl = import.meta.resolve('@sanity/cli-build/_internal/manifest')
-const iconResolverPath = new URL(sanityCliBuildManifestUrl).href
+const iconResolverPath = new URL('../manifest/iconResolver.js', import.meta.url).href
 
 interface UploadSchemaToLexiconOptions {
   projectId: string
