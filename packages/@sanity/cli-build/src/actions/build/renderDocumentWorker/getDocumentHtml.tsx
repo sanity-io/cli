@@ -1,6 +1,6 @@
 import {type MessagePort} from 'node:worker_threads'
 
-import {renderToStaticMarkup} from 'react-dom/server'
+import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
 
 import {buildDebug} from '../buildDebug.js'
 import {addTimestampedImportMapScriptToHtml} from './addTimestampImportMapScriptToHtml.js'
@@ -45,6 +45,10 @@ export async function getDocumentHtml(
   autoUpdatesCssUrls?: string[],
 ): Promise<string> {
   const Document = await getDocumentComponent(parent, studioRootPath, isApp)
+  const {renderToStaticMarkup} = await resolveLocalPackage<typeof import('react-dom/server')>(
+    'react-dom/server',
+    studioRootPath,
+  )
 
   const defaultProps = {
     entryPath: './.sanity/runtime/app.js',

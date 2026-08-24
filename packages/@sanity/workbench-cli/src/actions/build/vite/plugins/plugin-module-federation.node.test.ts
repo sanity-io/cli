@@ -32,13 +32,13 @@ describe('sanityModuleFederation', () => {
   // expose shims with the user's compiler options — tsc rejects them without
   // allowJs (TS6504), and declaration emit of the user's noEmit app code fails
   // on its own (TS2742/TS4082). Type generation must stay explicitly off.
-  it('disables dts type generation so the user tsconfig never compiles the generated exposes', () => {
+  it('disables dts entirely so the user tsconfig never compiles the generated exposes', () => {
     mockFederation.mockReturnValue([])
 
     runPlugin()
 
     expect(mockFederation).toHaveBeenCalledTimes(1)
-    expect(mockFederation.mock.calls[0][0].dts).toEqual({generateTypes: false})
+    expect(mockFederation.mock.calls[0][0].dts).toBe(false)
   })
 
   it('scopes plugins to the dev server and the federation build environment', () => {
@@ -53,23 +53,19 @@ describe('sanityModuleFederation', () => {
     expect(appliesTo(plugin, 'client', 'build')).toBe(false)
   })
 
-  it('keeps the promise-delivered dts plugins intact and scopes them once resolved', async () => {
-    // mirrors loadPluginDts: a promise resolving to an array of plugins
+  it('keeps promise-delivered plugins intact and scopes them once resolved', async () => {
     mockFederation.mockReturnValue([
-      Promise.resolve([
-        {name: 'mf-dts-serve'} satisfies Plugin,
-        {name: 'mf-dts-build'} satisfies Plugin,
-      ]),
+      Promise.resolve([{name: 'mf-lazy-a'} satisfies Plugin, {name: 'mf-lazy-b'} satisfies Plugin]),
     ])
 
     const [plugin] = runPlugin()
 
     expect(plugin).toBeInstanceOf(Promise)
     const resolved = (await plugin) as unknown as Plugin[]
-    expect(resolved.map((p) => p.name)).toEqual(['mf-dts-serve', 'mf-dts-build'])
-    for (const dtsPlugin of resolved) {
-      expect(appliesTo(dtsPlugin, FEDERATION_DIR_NAME, 'build')).toBe(true)
-      expect(appliesTo(dtsPlugin, 'client', 'build')).toBe(false)
+    expect(resolved.map((p) => p.name)).toEqual(['mf-lazy-a', 'mf-lazy-b'])
+    for (const lazyPlugin of resolved) {
+      expect(appliesTo(lazyPlugin, FEDERATION_DIR_NAME, 'build')).toBe(true)
+      expect(appliesTo(lazyPlugin, 'client', 'build')).toBe(false)
     }
   })
 })

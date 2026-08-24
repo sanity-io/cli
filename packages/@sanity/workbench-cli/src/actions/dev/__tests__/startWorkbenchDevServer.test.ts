@@ -6,10 +6,8 @@ import {
   createMockOutput,
   createMockViteServer,
   workbenchApp,
-  workbenchCliConfig,
 } from './devTestHelpers.js'
 
-const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
 const mockWriteWorkbenchRuntime = vi.hoisted(() => vi.fn())
 const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
@@ -17,13 +15,6 @@ const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
 const mockReadWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockWatchRegistry = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    resolveLocalPackage: mockResolveLocalPackage,
-  }
-})
 vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
@@ -59,7 +50,6 @@ describe('startWorkbenchDevServer', () => {
 
       expect(result.workbenchAvailable).toBe(false)
       expect(result.close).toBeTypeOf('function')
-      expect(mockResolveLocalPackage).not.toHaveBeenCalled()
       expect(mockCreateServer).not.toHaveBeenCalled()
     })
 
@@ -68,41 +58,11 @@ describe('startWorkbenchDevServer', () => {
 
       expect(result.workbenchAvailable).toBe(false)
       expect(result.close).toBeTypeOf('function')
-      expect(mockResolveLocalPackage).not.toHaveBeenCalled()
     })
 
     test('returns httpHost and workbenchPort even when federation is disabled', async () => {
       const result = await startWorkbenchDevServer(
         createDevOptions({httpHost: '0.0.0.0', httpPort: 4000}),
-      )
-
-      expect(result.httpHost).toBe('0.0.0.0')
-      expect(result.workbenchPort).toBe(4000)
-    })
-  })
-
-  describe('workbench availability check', () => {
-    test('returns workbenchAvailable: false when @sanity/workbench is not resolvable', async () => {
-      mockResolveLocalPackage.mockRejectedValue(new Error('Cannot find package'))
-
-      const result = await startWorkbenchDevServer(
-        createDevOptions({cliConfig: workbenchCliConfig()}),
-      )
-
-      expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeTypeOf('function')
-      expect(mockCreateServer).not.toHaveBeenCalled()
-    })
-
-    test('returns httpHost and workbenchPort even when workbench is unavailable', async () => {
-      mockResolveLocalPackage.mockRejectedValue(new Error('Cannot find package'))
-
-      const result = await startWorkbenchDevServer(
-        createDevOptions({
-          cliConfig: workbenchCliConfig(),
-          httpHost: '0.0.0.0',
-          httpPort: 4000,
-        }),
       )
 
       expect(result.httpHost).toBe('0.0.0.0')
@@ -116,7 +76,6 @@ describe('startWorkbenchDevServer', () => {
     } as const
 
     test('returns workbenchAvailable: true and close when server starts', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -127,7 +86,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('returns httpHost and workbenchPort from provided options', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer({port: 4000}))
 
       const result = await startWorkbenchDevServer(
@@ -139,7 +97,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('returns actual port when Vite picks an alternative port', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       // Simulate Vite finding port 3333 occupied and binding to 3334 instead
       const mockServer = createMockViteServer({port: 3334})
       mockServer.httpServer.address.mockReturnValue({
@@ -155,7 +112,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('passes workDir to writeWorkbenchRuntime', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -165,8 +121,17 @@ describe('startWorkbenchDevServer', () => {
       )
     })
 
+    test('loads the private dashboard renderer without pre-bundling it', async () => {
+      mockCreateServer.mockResolvedValue(createMockViteServer())
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const config = mockCreateServer.mock.calls[0][0]
+      expect(config.optimizeDeps.exclude).toEqual(['@sanity/workbench-cli/_internal_render'])
+      expect(config.resolve.alias).toHaveProperty('@sanity/workbench-cli/_internal_render')
+    })
+
     test('development mode forwards the SANITY_INTERNAL_WORKBENCH_REMOTE_URL override', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
       vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'http://localhost:5173/mf-manifest.json')
 
@@ -180,7 +145,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('preview mode drops the dev override so the deployed workbench UI is used', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
       vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'http://localhost:5173/mf-manifest.json')
 
@@ -194,7 +158,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('passes organizationId from cliConfig.app.organizationId', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(
@@ -209,7 +172,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('throws a readable error when neither app.organizationId nor api.projectId is configured', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await expect(
@@ -249,7 +211,6 @@ describe('startWorkbenchDevServer', () => {
     }
 
     test('does not register plugin when remoteUrl is not set', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -265,7 +226,6 @@ describe('startWorkbenchDevServer', () => {
         'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
         'https://workbench.example/mf-manifest.json',
       )
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -287,7 +247,6 @@ describe('startWorkbenchDevServer', () => {
         'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
         'https://workbench.example/mf-manifest.json',
       )
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -304,7 +263,6 @@ describe('startWorkbenchDevServer', () => {
         'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
         'https://workbench.example/mf-manifest.json',
       )
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -321,7 +279,6 @@ describe('startWorkbenchDevServer', () => {
         'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
         'https://workbench.example/mf-manifest.json',
       )
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -337,7 +294,6 @@ describe('startWorkbenchDevServer', () => {
 
     test('throws when remote URL is set but invalid', async () => {
       vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'javascript:alert(1)')
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await expect(
@@ -347,7 +303,6 @@ describe('startWorkbenchDevServer', () => {
 
     test('releases the lock when server creation throws', async () => {
       vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'javascript:alert(1)')
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
       const release = vi.fn()
       mockAcquireWorkbenchLock.mockReturnValue({release, updatePort: vi.fn()})
@@ -359,7 +314,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('releases the lock when writing runtime files throws', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
       mockWriteWorkbenchRuntime.mockRejectedValue(new Error('EACCES: permission denied'))
       const release = vi.fn()
@@ -376,7 +330,6 @@ describe('startWorkbenchDevServer', () => {
         'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
         'http://workbench.example/mf-manifest.json',
       )
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -396,7 +349,6 @@ describe('startWorkbenchDevServer', () => {
     // The env-var-vs-config resolution now lives in the CLI caller and is
     // injected; the server just forwards the resolved value to the runtime.
     test('forwards the injected reactStrictMode to the runtime template', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(
@@ -418,7 +370,6 @@ describe('startWorkbenchDevServer', () => {
     } as const
 
     test('warns and returns without close when listen() throws', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
       mockCreateServer.mockResolvedValue(mockServer)
@@ -434,7 +385,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('closes the server before returning when listen() throws', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
       mockCreateServer.mockResolvedValue(mockServer)
@@ -451,7 +401,6 @@ describe('startWorkbenchDevServer', () => {
     } as const
 
     test('skips starting server when lock is held by another process', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockAcquireWorkbenchLock.mockReturnValue(undefined)
       mockReadWorkbenchLock.mockReturnValue({host: '0.0.0.0', pid: 12_345, port: 4000})
 
@@ -465,7 +414,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('falls back to configured host/port when lock is held but lock file unreadable', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockAcquireWorkbenchLock.mockReturnValue(undefined)
       mockReadWorkbenchLock.mockReturnValue(undefined)
 
@@ -486,7 +434,6 @@ describe('startWorkbenchDevServer', () => {
     test('updates lock with actual port after successful startup', async () => {
       const mockUpdatePort = vi.fn()
       mockAcquireWorkbenchLock.mockReturnValue({release: vi.fn(), updatePort: mockUpdatePort})
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer({port: 3334}))
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -495,7 +442,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('starts watching registry after successful startup', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -504,7 +450,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('watcher callback broadcasts applications via server.ws.send with inlined manifests', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -555,7 +500,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('includes undefined manifest when a registered server has not yet extracted one', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -581,7 +525,6 @@ describe('startWorkbenchDevServer', () => {
     test('forwards projectId from registry entries through the broadcast payload', async () => {
       // Workbench needs the projectId on the very first event to resolve a
       // local studio's primary project before the manifest arrives.
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -614,7 +557,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('routes a config-only server (no interfaces) to configs, not applications', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -663,7 +605,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('a config server that also has interfaces lands in both channels', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -695,7 +636,6 @@ describe('startWorkbenchDevServer', () => {
       // Adding/removing a view or service rebuilds the app remote with new
       // exposes; module federation has the old remote-entry cached, so the page
       // must reload to re-fetch it. A soft reconcile would render an empty panel.
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -719,7 +659,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('does not reload on a new app or a manifest-only change', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -741,7 +680,6 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('responds to client request with current applications', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
       const inlined = {icon: '<svg>inline</svg>', title: 'Title', version: '1'}
@@ -786,7 +724,6 @@ describe('startWorkbenchDevServer', () => {
       const mockWatcherClose = vi.fn()
       mockAcquireWorkbenchLock.mockReturnValue({release: mockReleaseLock, updatePort: vi.fn()})
       mockWatchRegistry.mockReturnValue({close: mockWatcherClose})
-      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockViteServer())
 
       const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -799,7 +736,6 @@ describe('startWorkbenchDevServer', () => {
     test('releases lock when server startup fails', async () => {
       const mockReleaseLock = vi.fn()
       mockAcquireWorkbenchLock.mockReturnValue({release: mockReleaseLock, updatePort: vi.fn()})
-      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockViteServer()
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
       mockCreateServer.mockResolvedValue(mockServer)

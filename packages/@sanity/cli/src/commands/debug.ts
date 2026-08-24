@@ -95,8 +95,9 @@ export class Debug extends SanityCommand<typeof Debug> {
     if (!auth.hasToken) return
 
     this.log(sectionHeader('Authentication'))
-    const padTo = 10 // "Auth token" is the longest key
+    const padTo = 12 // "Token source" is the longest key
     this.log(formatKeyValue('Auth token', auth.authToken, {padTo}))
+    this.log(formatKeyValue('Token source', auth.authTokenSource, {padTo}))
     this.log(formatKeyValue('User type', auth.userType, {padTo}))
 
     if (!includeSecrets) {
