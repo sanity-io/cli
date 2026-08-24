@@ -3,19 +3,21 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 import {type MessagePort} from 'node:worker_threads'
 
+import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
 import {getTempPath} from '@sanity/cli-test'
 import {type ReactElement, type ReactNode} from 'react'
-import {renderToStaticMarkup} from 'react-dom/server'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {renderDocumentWorker, type RenderDocumentWorkerOptions} from '../renderDocumentWorker.js'
 import {type DocumentProps} from '../types.js'
 
-vi.mock('react-dom/server', () => ({
-  renderToStaticMarkup: vi.fn(),
+vi.mock('@sanity/cli-core/package-manager', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core/package-manager')>()),
+  resolveLocalPackage: vi.fn(),
 }))
 
-const mockRenderToStaticMarkup = vi.mocked(renderToStaticMarkup)
+const mockResolveLocalPackage = vi.mocked(resolveLocalPackage)
+const mockRenderToStaticMarkup = vi.fn()
 
 const validDocumentComponent = `
 const React = require('react');
@@ -56,6 +58,7 @@ describe('#renderDocumentWorker', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    mockResolveLocalPackage.mockResolvedValue({renderToStaticMarkup: mockRenderToStaticMarkup})
 
     originalDateNow = Date.now
     Date.now = vi.fn(() => 1_640_995_200_000)
@@ -129,6 +132,7 @@ describe('#renderDocumentWorker', () => {
     test('renders document with minimal options', async () => {
       await renderDocumentWorker(mockParent, {studioRootPath: testStudioPath})
 
+      expect(mockResolveLocalPackage).toHaveBeenCalledWith('react-dom/server', testStudioPath)
       expect(mockRenderToStaticMarkup).toHaveBeenCalled()
       expect(mockParent.postMessage).toHaveBeenCalledWith({
         html: expect.stringContaining('<!DOCTYPE html>'),
@@ -278,6 +282,16 @@ describe('#renderDocumentWorker', () => {
   })
 
   describe('error handling', () => {
+    test('propagates local react-dom resolution errors', async () => {
+      mockResolveLocalPackage.mockRejectedValue(new Error('Failed to resolve react-dom/server'))
+
+      await expect(
+        renderDocumentWorker(mockParent, {studioRootPath: testStudioPath}),
+      ).rejects.toThrow('Failed to resolve react-dom/server')
+
+      expect(mockRenderToStaticMarkup).not.toHaveBeenCalled()
+    })
+
     test('propagates renderToStaticMarkup errors', async () => {
       mockRenderToStaticMarkup.mockImplementation(() => {
         throw new Error('React rendering failed')

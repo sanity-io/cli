@@ -10,7 +10,9 @@ export {
 } from '../apiClient.js'
 export {
   clearCliTokenCache,
+  type CliTokenInfo,
   getCliToken,
+  getCliTokenInfo,
   getCliUserConfig,
   getUserConfig,
   setCliUserConfig,

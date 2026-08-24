@@ -1,5 +1,6 @@
 import {
   getCliToken,
+  getCliTokenInfo,
   getStudioConfig,
   getUserConfig,
   ProjectRootNotFoundError,
@@ -7,8 +8,9 @@ import {
 } from '@sanity/cli-core'
 import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {gatherAuthInfo} from '../../actions/debug/gatherDebugInfo.js'
 import {PROJECTS_API_VERSION} from '../../services/projects.js'
 import {USERS_API_VERSION} from '../../services/user.js'
 import {Debug} from '../debug.js'
@@ -27,6 +29,7 @@ vi.mock('@sanity/cli-core', async () => {
   return {
     ...actual,
     getCliToken: vi.fn(),
+    getCliTokenInfo: vi.fn(),
     getStudioConfig: vi.fn(),
     getUserConfig: vi.fn().mockReturnValue({
       delete: vi.fn(),
@@ -73,8 +76,17 @@ const defaultMocks = {
   token: 'mock-auth-token',
 }
 
+beforeEach(() => {
+  vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
+  vi.mocked(getCliTokenInfo).mockImplementation(async () => {
+    const token = await getCliToken()
+    return token ? {source: 'SANITY_AUTH_TOKEN environment variable', token} : undefined
+  })
+})
+
 afterEach(() => {
   vi.clearAllMocks()
+  vi.unstubAllEnvs()
   const pending = pendingMocks()
   cleanAll()
   expect(pending, 'pending mocks').toEqual([])
@@ -191,8 +203,31 @@ describe('#debug', () => {
       if (error) throw error
       expect(stdout).toContain('Authentication:')
       expect(stdout).toContain('<redacted>')
+      expect(stdout).toContain('Token source: SANITY_AUTH_TOKEN environment variable')
       expect(stdout).toContain('(run with --secrets to reveal token)')
       expect(stdout).not.toContain('mock-auth-token')
+    })
+
+    test('shows the config file containing the auth token', async () => {
+      vi.mocked(getCliTokenInfo).mockResolvedValue({
+        source: '/test/default-config.json',
+        token: 'mock-auth-token',
+      })
+
+      const auth = await gatherAuthInfo(false)
+
+      expect(auth.authTokenSource).toBe('/test/default-config.json')
+    })
+
+    test('shows a custom CLI config path as the auth token source', async () => {
+      vi.mocked(getCliTokenInfo).mockResolvedValue({
+        source: '/test/custom-config.json',
+        token: 'mock-auth-token',
+      })
+
+      const auth = await gatherAuthInfo(false)
+
+      expect(auth.authTokenSource).toBe('/test/custom-config.json')
     })
 
     test('shows actual auth token with --secrets flag', async () => {

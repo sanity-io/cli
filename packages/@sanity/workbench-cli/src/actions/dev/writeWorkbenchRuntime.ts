@@ -9,9 +9,9 @@ const devDebug = subdebug('dev')
 const workbenchJsTemplate = `\
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file are automatically discarded
-import {renderWorkbench} from "sanity/workbench"
+import {renderDashboard} from "@sanity/workbench-cli/_internal_render"
 
-renderWorkbench(
+renderDashboard(
   document.getElementById("workbench"),
   {organizationId: %SANITY_WORKBENCH_ORGANIZATION_ID%},
   {reactStrictMode: %SANITY_WORKBENCH_REACT_STRICT_MODE%}
