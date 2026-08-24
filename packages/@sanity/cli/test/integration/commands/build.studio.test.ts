@@ -127,7 +127,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       expect(manifest).toHaveProperty('name')
       expect(manifest).toHaveProperty('metaData.remoteEntry.name')
       const remoteEntry = manifest.metaData.remoteEntry.name
-      expect(remoteEntry).toMatch(/^static\/remoteEntry-[A-Za-z0-9_-]+\.js$/)
+      expect(remoteEntry).toMatch(/^remote-entry-[A-Za-z0-9_-]+\.js$/)
       expect((await readFile(join(cwd, 'dist', remoteEntry))).length).toBeGreaterThan(0)
 
       // Hashed chunks are emitted to the `static` dir (assetsDir), not the Vite

@@ -1,7 +1,7 @@
-import {type Environment, type Plugin} from 'vite'
+import {type Environment, type Plugin, type Rolldown} from 'vite'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {FEDERATION_DIR_NAME} from '../constants.js'
+import {FEDERATION_DIR_NAME, FEDERATION_OUTPUT_FILE_NAME} from '../constants.js'
 import {sanityModuleFederation} from './plugin-module-federation.js'
 
 const mockFederation = vi.hoisted(() => vi.fn())
@@ -66,6 +66,39 @@ describe('sanityModuleFederation', () => {
     for (const lazyPlugin of resolved) {
       expect(appliesTo(lazyPlugin, FEDERATION_DIR_NAME, 'build')).toBe(true)
       expect(appliesTo(lazyPlugin, 'client', 'build')).toBe(false)
+    }
+  })
+
+  it('keeps the hashed remote entry at the build root', async () => {
+    mockFederation.mockReturnValue([])
+
+    const [plugin] = runPlugin()
+    if (plugin instanceof Promise) throw new Error('expected a sync plugin')
+
+    expect(appliesTo(plugin, FEDERATION_DIR_NAME, 'build')).toBe(true)
+    expect(appliesTo(plugin, 'client', 'build')).toBe(false)
+
+    const buildApp = plugin.buildApp
+    expect(typeof buildApp).toBe('function')
+    if (typeof buildApp !== 'function') throw new Error('unreachable')
+    const output: Rolldown.OutputOptions = {
+      chunkFileNames: 'static/[name]-[hash].js',
+      entryFileNames: 'static/[name]-[hash].js',
+    }
+    await buildApp.call(
+      {} as never,
+      {
+        environments: {
+          [FEDERATION_DIR_NAME]: {config: {build: {rolldownOptions: {output}}}},
+        },
+      } as never,
+    )
+
+    for (const fileNames of [output.entryFileNames, output.chunkFileNames]) {
+      expect(typeof fileNames).toBe('function')
+      if (typeof fileNames !== 'function') throw new Error('unreachable')
+      expect(fileNames({name: 'remoteEntry'} as never)).toBe(FEDERATION_OUTPUT_FILE_NAME)
+      expect(fileNames({name: 'App'} as never)).toBe('static/[name]-[hash].js')
     }
   })
 })
