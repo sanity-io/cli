@@ -22,6 +22,11 @@ export interface WorkbenchExposes {
 
 /** @public */
 export interface ResolvedWorkbenchApp {
+  /**
+   * Stable identity, distinct from the `slug` address. Defaults to `slug`, and is
+   * what every identity key (build id, interface ids) is built from.
+   */
+  readonly name: string
   /** Organization that owns the app — part of its build-id identity. */
   readonly organizationId: string
   /** Background worker services the app declares. */
@@ -65,6 +70,8 @@ export function resolveWorkbenchApp(
     entry: app.entry,
     icon: app.icon,
     isSingleton: app.isSingleton,
+    // Identity defaults to the address, so existing apps behave identically.
+    name: app.name ?? app.slug,
     organizationId: app.organizationId,
     services: app.services ?? [],
     slug: app.slug,

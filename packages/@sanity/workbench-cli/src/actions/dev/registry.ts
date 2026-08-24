@@ -133,9 +133,13 @@ const devServerManifestSchema = z.object({
    * workbench `watchRegistry` watcher and forces a rebroadcast to clients.
    */
   manifestUpdatedAt: z.optional(z.string()),
+  // Stable identity + qualified reference, composed by the CLI (the authority for
+  // local apps, which never reach brett) and read straight by the workbench.
+  name: z.optional(z.string()),
   pid: z.number(),
   port: z.number(),
   projectId: z.optional(z.string()),
+  reference: z.optional(z.string()),
   startedAt: z.string(),
   type: z.enum(['coreApp', 'studio']),
   version: z.literal(REGISTRY_VERSION),

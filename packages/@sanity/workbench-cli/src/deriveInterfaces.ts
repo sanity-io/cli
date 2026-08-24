@@ -50,11 +50,15 @@ export function deriveInterfaces(
   }
   const entry = isApp ? app.entry : GENERATED_ENTRY
 
+  // Identity, not address: interface ids and the app-view name key on `name`
+  // (which defaults to `slug`, so existing apps derive byte-identical ids).
+  const appName = app.name ?? app.slug
+
   const shared = <T extends InterfaceKind>(
     type: T,
     declaration: {name: string; src: string; title: string},
   ) => ({
-    id: `${app.slug}-${type}-${declaration.name}`,
+    id: `${appName}-${type}-${declaration.name}`,
     moduleId: interfaceModuleId(type, declaration.name),
     name: declaration.name,
     src: declaration.src,
@@ -85,7 +89,7 @@ export function deriveInterfaces(
       ? []
       : [
           {
-            ...shared('app', {name: app.slug, src: entry, title: appTitle ?? app.title}),
+            ...shared('app', {name: appName, src: entry, title: appTitle ?? app.title}),
             metadata: null,
           },
         ]),

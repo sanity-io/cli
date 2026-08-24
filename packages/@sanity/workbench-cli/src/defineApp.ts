@@ -61,6 +61,21 @@ export const DefineAppInputSchema = z
      * @internal
      */
     isSingleton: z.optional(z.boolean()),
+    /**
+     * Stable identity, distinct from the `slug` address. Defaults to `slug` when
+     * omitted. Identity keys — the build id and derived interface ids — are built
+     * from this, so renaming the slug no longer changes identity.
+     */
+    name: z.optional(
+      z
+        .string()
+        .check(
+          z.regex(
+            APP_SLUG_PATTERN,
+            'App `name` must be lowercase alphanumerics and hyphens, starting with a letter and ending with an alphanumeric',
+          ),
+        ),
+    ),
     /** Organization that owns the app — the workbench runs and deploys against it. */
     organizationId: z.string(
       "App `organizationId` is required — pass the owning organization's ID to `unstable_defineApp`",

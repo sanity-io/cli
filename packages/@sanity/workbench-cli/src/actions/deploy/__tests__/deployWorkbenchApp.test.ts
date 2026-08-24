@@ -71,6 +71,19 @@ describe('createCoreApp', () => {
     })
   })
 
+  test('forwards name (the identity) in the create body', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_new'})
+
+    await createCoreApp({
+      name: 'drop-desk',
+      organizationId: 'org-1',
+      slug: 'drop-desk-host',
+      title: 'Drop Desk',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({name: 'drop-desk'})
+  })
+
   test('forwards isSingleton when creating a singleton core app', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_new'})
 

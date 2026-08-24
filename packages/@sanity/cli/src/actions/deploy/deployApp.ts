@@ -164,6 +164,7 @@ async function runAppDeployment(
   if (!dryRun && deployApplication && workbench && organizationId && !applicationId) {
     const created = await createCoreApp({
       isSingleton: workbench.isSingleton,
+      name: workbench.name,
       organizationId,
       slug: workbench.slug,
       title: appTitle,
