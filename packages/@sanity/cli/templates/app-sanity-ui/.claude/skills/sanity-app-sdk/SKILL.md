@@ -49,6 +49,105 @@ Do not hold document field values in `useState` and save on submit. That pattern
 
 This app wraps everything in Sanity UI's `ThemeProvider` (see `src/SanityUI.tsx`, built with `buildTheme()`). Build UI with Sanity UI primitives like `Card`, `Stack`, `Flex`, `Text`, and `Button`. See https://www.sanity.io/docs/app-sdk/sanity-ui-sdk and https://www.sanity.io/ui.
 
+### Spacing scale
+
+Sanity UI uses a numeric scale (0–9+) for all spacing-related props. The default theme increments each step by 4px, so `1` = 4px, `2` = 8px, `3` = 12px, `4` = 16px, `5` = 20px, and so on. Apply it through:
+
+- `padding`, `paddingX` / `paddingY`, and directional equivalents (`paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight`) on `Box`, `Card`, `Flex`, `Stack`
+- `margin`, `marginX` / `marginY`, and directional equivalents on the same components
+- `space` on `Stack` (v3) or `gap` on `Stack`, `Flex`, `Inline` (v4) for the gap between children
+
+Common values and their typical uses:
+
+| Value | Approx. size | Common use |
+|-------|-------------|------------|
+| `1`   | 4px         | Icon gap, tight inline spacing |
+| `2`   | 8px         | Between closely related items |
+| `3`   | 12px        | Form field gap, list item gap |
+| `4`   | 16px        | Card internal padding, standard gap |
+| `5`   | 20px        | Section padding, prominent gap |
+| `6`   | 24px        | Page-level padding |
+
+All spacing props also accept an array for responsive values — `[mobile, tablet, desktop]`:
+
+```tsx
+<Card padding={[3, 4, 5]}>
+  {/* 12px on mobile, 16px on tablet, 20px on desktop */}
+</Card>
+```
+
+### Vertical rhythm
+
+Maintain vertical rhythm by spacing siblings through a parent `Stack` rather than individual `margin` props on each child. Choose a single scale value for a section and use it uniformly:
+
+```tsx
+// Good: rhythm lives in one place, easy to change globally
+<Stack space={4}>
+  <Heading size={2}>Title</Heading>
+  <Text>Body paragraph.</Text>
+  <Button>Action</Button>
+</Stack>
+
+// Avoid: scattered margins are hard to keep consistent
+<Heading size={2} marginBottom={4}>Title</Heading>
+<Text marginBottom={4}>Body paragraph.</Text>
+```
+
+Use nested `Stack`s to express hierarchy — a tighter inner `space` groups related items, a looser outer `space` separates sections:
+
+```tsx
+<Stack space={5}>
+  <Stack space={2}>
+    <Label size={1} muted>Category</Label>
+    <Heading size={3}>Article title</Heading>
+  </Stack>
+  <Text>Introductory paragraph...</Text>
+</Stack>
+```
+
+### Typography and the `trim` prop
+
+`Text`, `Heading`, and `Label` all accept:
+
+- `size`: numeric type scale (0–4 for `Text`, 0–5 for `Heading`)
+- `weight`: `"regular"`, `"medium"`, `"semibold"`, `"bold"`
+- `muted`: renders in muted colour for secondary or supporting content
+- `align`: `"left"`, `"center"`, `"right"`
+
+#### The `trim` prop
+
+`Text`, `Heading`, and `Label` also accept a `trim` prop (number, `0` or `1`). Without trimming, every text element has invisible vertical space above the cap-height and below the baseline introduced by the line-height. This "phantom padding" makes precise vertical alignment hard and inflates the perceived spacing in tightly packed layouts.
+
+`trim={1}` removes that extra space, making the component's bounding box flush with the visible type:
+
+```tsx
+// Without trim: bounding box includes line-height padding above and below
+<Text size={1}>Status</Text>
+
+// With trim: bounding box sits at cap-height (top) and baseline (bottom)
+<Text size={1} trim={1}>Status</Text>
+```
+
+**Use `trim={1}` when:**
+
+- Aligning text next to an icon — trimmed text centres on the icon glyph without manual offset nudging
+- Spacing should be measured from the visible glyph edge, not from the line-height box
+- Building tight card layouts where `padding` on the parent should visually reach the first character
+
+```tsx
+// Trimmed text aligns correctly with an icon in a Flex
+<Flex align="center" gap={2}>
+  <CheckmarkCircleIcon />
+  <Text size={1} weight="medium" trim={1}>Saved</Text>
+</Flex>
+```
+
+**Avoid `trim` when:**
+
+- Rendering flowing prose — the natural leading improves readability across multiple lines
+- The text wraps to more than one line — trimming only affects the first and last lines, which can look uneven
+- Inside a `Stack` where the outer spacing already accounts for line-height
+
 ## Documentation
 
 Fetch these for current detail rather than relying on the notes above:

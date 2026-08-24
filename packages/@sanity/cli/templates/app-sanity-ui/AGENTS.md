@@ -32,6 +32,8 @@ Essentials:
 - Do not hold document field values in `useState` and save on submit. Write through `useEditDocument` on change so content stays in sync with the Content Lake.
 - Prefer handles plus projections over raw GROQ. Reach for `useQuery` only when a complex query genuinely needs it.
 - Build UI with Sanity UI primitives like `Card`, `Stack`, `Flex`, `Text`, and `Button` for a look consistent with Sanity tooling.
+- Use Sanity UI's 4px spacing scale (numbers 0–9) for all `padding`, `margin`, and `space` props. Space siblings through a parent `Stack` rather than per-child margins to maintain vertical rhythm.
+- Apply `trim={1}` on `Text`, `Heading`, and `Label` when aligning text flush with icons or container edges. Without it, line-height adds invisible vertical padding that makes precise alignment harder.
 
 ## Documentation
 
