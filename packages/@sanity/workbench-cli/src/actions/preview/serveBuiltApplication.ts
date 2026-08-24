@@ -15,7 +15,7 @@ export interface BuiltApplicationServer {
 
 /**
  * Serve a built workbench app's `dist` as static files over a Vite `preview`
- * server, so its `mf-manifest.json` + `remote-entry.js` are reachable exactly as
+ * server, so its manifest and hashed remote entry are reachable exactly as
  * a live `sanity dev` remote would be — the workbench then federates it in.
  *
  * A missing federation build surfaces as `BUILD_NOT_FOUND` (from

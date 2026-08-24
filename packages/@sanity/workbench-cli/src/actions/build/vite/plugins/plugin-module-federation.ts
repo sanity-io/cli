@@ -26,7 +26,7 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     // Ctrl-C by sending on a still-CONNECTING websocket.
     dts: false,
     exposes,
-    filename: `${FEDERATION_FILE_NAME}.js`,
+    filename: `${FEDERATION_FILE_NAME}-[hash].js`,
     manifest: true,
     name,
     // Resolves the remote entry path relative to the manifest rather than the
