@@ -1,6 +1,7 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
+import {applicationReference} from '../../applicationReference.js'
 import {isWorkbenchApp} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
@@ -111,7 +112,20 @@ export async function startDevServerRegistration(
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
   const configs = await deriveConfigs(cliConfig.app)
 
-  const id = isWorkbenchApp(cliConfig.app) ? cliConfig.app.slug : undefined
+  const workbenchApp = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
+  const id = workbenchApp?.slug
+  // Identity is resolved and the reference composed here, so the workbench reads
+  // both off the registry entry instead of recomposing them. Name defaults to the
+  // slug, mirroring brett.
+  const name = workbenchApp?.name ?? workbenchApp?.slug
+  const reference =
+    workbenchApp && name
+      ? applicationReference({
+          isSingleton: workbenchApp.isSingleton ?? false,
+          name,
+          organizationId: workbenchApp.organizationId,
+        })
+      : undefined
 
   const configOnly = isConfigOnlyServer({configs, interfaces})
   const devServer = id ? findSameRoleConflict(id, configOnly) : undefined
@@ -137,8 +151,10 @@ export async function startDevServerRegistration(
     host: appHost,
     id,
     interfaces,
+    name,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
+    reference,
     type: isApp ? 'coreApp' : 'studio',
     workDir,
   })
