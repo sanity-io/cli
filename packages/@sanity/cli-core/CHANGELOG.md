@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.2.0...cli-core-v3.3.0)
+
+_2026-08-24_
+
+### Features
+
+- include source of auth token in `sanity debug` ([#1690](https://github.com/sanity-io/cli/pull/1690)) ([e64da59](https://github.com/sanity-io/cli/commit/e64da593359c6b8de6d62a07a0a7a07f77a11d3a))
+
+### Bug Fixes
+
+- **cli-core:** keep reactCompiler typed when a compiler package is not installed ([#1735](https://github.com/sanity-io/cli/pull/1735)) ([828009e](https://github.com/sanity-io/cli/commit/828009e18b4dac6540290c3259a820c5e22cb4ca))
+
 ## 3.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.1.0...cli-core-v3.2.0)
