@@ -1,5 +1,6 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
 import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
 
@@ -92,6 +93,27 @@ describe('startDevServerRegistration', () => {
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({name: 'test-app', reference: 'org-123/test-app'}),
+    )
+  })
+
+  test('keys a config on its target app type, in its own id namespace', async () => {
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: unstable_defineMediaLibrary({
+          fields: [{name: 'notes', src: './src/notes.ts', title: 'Notes'}],
+          organizationId: 'org-1',
+        }),
+      }),
+      isApp: true,
+    })
+
+    // A config never borrows the app slug — it registers under `config:${appType}`,
+    // so it and the app it configures don't collide on one id.
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        configs: [expect.objectContaining({appType: 'media-library'})],
+        id: 'config:media-library',
+      }),
     )
   })
 
