@@ -1,6 +1,6 @@
 import {type CoreAppManifest} from '@sanity/cli-build/_internal/manifest'
-import {resolveTitleUpdate} from '@sanity/cli-test/mocks/cli-build/manifest'
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {resolveTitleUpdate} from '@sanity/cli-test/mocks/cli-build/manifest'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
