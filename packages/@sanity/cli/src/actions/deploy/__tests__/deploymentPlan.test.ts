@@ -129,7 +129,6 @@ describe('deploymentPlanToJson', () => {
     plan.payload = {
       ...payload,
       config: 'Media Library fields:\n  Title (title)',
-      isSingleton: false,
       services: [],
       views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
     }
@@ -139,7 +138,7 @@ describe('deploymentPlanToJson', () => {
 
   test('omits every workbench-only key for a plain app', () => {
     const json = deploymentPlanToJson(studioPlan([]))
-    for (const key of ['views', 'services', 'config', 'isSingleton']) {
+    for (const key of ['views', 'services', 'config']) {
       expect(json.payload).not.toHaveProperty(key)
     }
   })

@@ -206,7 +206,15 @@ const MediaLibraryConfigSchema = z.object({
 })
 
 /**
- * An app's optional config, keyed by `appType`; deploys as a versioned snapshot, not an interface.
+ * A workbench config's built value, keyed by `appType`; deploys as a versioned
+ * snapshot, not an interface.
  * @internal
  */
 export const ConfigSchema = z.discriminatedUnion('appType', [MediaLibraryConfigSchema])
+
+/**
+ * The `{appType, fields}` config value the build expands into a federation
+ * remote and the deploy summarizes.
+ * @internal
+ */
+export type WorkbenchConfigValue = z.output<typeof ConfigSchema>

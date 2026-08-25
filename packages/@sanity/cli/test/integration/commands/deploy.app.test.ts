@@ -360,7 +360,7 @@ describe('#deploy app', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('declares no entry, views, services or config')
+    expect(error?.message).toContain('declares no entry, views or services')
     expect(error?.oclif?.exit).toBe(2)
     // fails before any directory check or API call
     expect(mockCheckBuiltOutput).not.toHaveBeenCalled()

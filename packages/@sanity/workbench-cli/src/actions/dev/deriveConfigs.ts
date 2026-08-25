@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 
 import {MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../contract.js'
-import {isWorkbenchApp, readConfig} from '../../defineApp.js'
+import {isWorkbenchConfig} from '../../defineApp.js'
 import {type DevServerManifest} from './registry.js'
 
 /** One forwarded interface record on the dev-server registry entry. */
@@ -37,18 +37,20 @@ export function deriveConfigEntries(config: DevServerConfig): {name: string; src
  * the one Brett returns on a deployed `activeConfig`.
  */
 export async function deriveConfigs(app: CliConfig['app']): Promise<DevServerConfig[]> {
-  if (!isWorkbenchApp(app)) return []
-  const config = readConfig(app)
-  if (!config) return []
+  // Keyed on the config brand (its target `appType`), not on having fields — an
+  // empty config is still a config; dev just has nothing local to load for it.
+  if (!isWorkbenchConfig(app)) return []
   const entry = {
-    appType: config.appType,
-    fields: config.fields.map((field) => ({
+    appType: app.appType,
+    fields: app.fields.map((field) => ({
       name: field.name,
       public: field.public,
       src: field.src,
       title: field.title,
     })),
-    moduleName: app.slug,
+    // A config keys on its target `appType`, not a fabricated slug. Stage 2
+    // namespaces the dev-registry id it feeds (`config:${appType}`).
+    moduleName: app.appType,
     version: String(MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION),
   }
   return [{...entry, id: await contentHash(JSON.stringify(entry))}]

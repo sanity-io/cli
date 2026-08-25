@@ -1,7 +1,7 @@
 import {z} from 'zod/mini'
 
 import {APP_SLUG_PATTERN} from './appSlug.js'
-import {ConfigSchema, InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
+import {InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
 
 /**
  * Dashboard visibility values. Mirrors `APP_VISIBILITIES` in `@sanity/cli-core`
@@ -14,7 +14,7 @@ const APP_VISIBILITIES = ['default', 'unlisted', 'disabled'] as const
  * Internal application discriminator. Sanity-owned singleton apps only;
  * validated by the schema but excluded from the public `DefineAppInput` type.
  */
-const ApplicationType = z.enum(['coreApp', 'studio', 'canvas', 'dashboard', 'media-library'])
+const ApplicationType = z.enum(['coreApp', 'studio', 'canvas', 'dashboard'])
 
 /** Dock groups an app can place itself into. */
 const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user'])
@@ -40,13 +40,6 @@ export const DefineAppInputSchema = z
      */
     applicationType: z.optional(ApplicationType),
     /**
-     * Deployed as a versioned snapshot on the app's org installation, not the
-     * application service. Singletons only. Internal, so excluded from the public
-     * `DefineAppInput` and set via `@ts-expect-error` like `applicationType`.
-     * @internal
-     */
-    config: z.optional(ConfigSchema),
-    /**
      * App entrypoint module. Defaults to `./src/App.tsx` when omitted. The build
      * derives the app's navigable `app` view from it. SDK apps only — setting it
      * on a studio is rejected (studio app views are not yet implemented).
@@ -56,11 +49,6 @@ export const DefineAppInputSchema = z
     group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
-    /**
-     * Sanity-owned app deployed once, installed per org; excluded from the public `DefineAppInput`.
-     * @internal
-     */
-    isSingleton: z.optional(z.boolean()),
     /**
      * Stable identity, distinct from the `slug` address. Defaults to `slug` when
      * omitted. Identity keys — the build id and derived interface ids — are built
@@ -126,25 +114,13 @@ export const DefineAppInputSchema = z
       path: ['entry'],
     }),
   )
-  .check(
-    // An config belongs to a Sanity-owned singleton (the Media
-    // Library). A non-singleton declaring one is rejected — see
-    // {@link readConfig} for the runtime guard.
-    z.refine((input) => !(input.config && !input.isSingleton), {
-      error: '`config` is only supported for singleton apps',
-      path: ['config'],
-    }),
-  )
 
 /**
  * User-facing input for `unstable_defineApp`. Excludes the internal
- * `applicationType`, `isSingleton`, and `config`.
+ * `applicationType`.
  * @public
  */
-export type DefineAppInput = Omit<
-  z.output<typeof DefineAppInputSchema>,
-  'applicationType' | 'config' | 'isSingleton'
->
+export type DefineAppInput = Omit<z.output<typeof DefineAppInputSchema>, 'applicationType'>
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy
@@ -176,20 +152,6 @@ export type WorkbenchApp = DefineAppResult & z.output<typeof DefineAppInputSchem
  */
 export function isWorkbenchApp(app: unknown): app is WorkbenchApp {
   return typeof app === 'object' && app !== null && WORKBENCH_APP in app
-}
-
-/**
- * The app's config, or `undefined` when it declares none. Throws
- * when a non-singleton declares one — configs belong to Sanity-owned singletons,
- * so build/dev/deploy all read it through here to reject the combination
- * consistently.
- * @internal
- */
-export function readConfig(app: WorkbenchApp): WorkbenchApp['config'] | undefined {
-  if (app.config && !app.isSingleton) {
-    throw new Error('`config` is only supported for singleton apps')
-  }
-  return app.config
 }
 
 /**
@@ -234,17 +196,48 @@ export interface DefineMediaLibraryInput {
 }
 
 /**
- * Declare the Sanity Media Library as a workbench app — a singleton whose `fields` become its config.
+ * Nominal brand the CLI discriminates a config on. A config is *not* an app: it
+ * carries no `slug`/`title`/application identity, only a target `appType`, its
+ * owning `organizationId`, and its `fields`. Registered via `Symbol.for` so the
+ * marker survives module-realm boundaries — `@sanity/cli-core` re-derives the
+ * same global symbol rather than importing it.
+ */
+const WORKBENCH_CONFIG: unique symbol = Symbol.for('sanity.workbench.defineConfig')
+
+/**
+ * A branded workbench config as the CLI reads it: bound to its target app by
+ * `appType`, not carrying its own app identity. The deploy/undeploy/build paths
+ * discriminate it via {@link isWorkbenchConfig}.
  * @public
  */
-export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): DefineAppResult {
-  return unstable_defineApp({
-    // @ts-expect-error -- `applicationType`/`isSingleton`/`config` are internal, excluded from `DefineAppInput`; Sanity-owned apps set them
-    applicationType: 'media-library',
-    config: input.fields?.length ? {appType: 'media-library', fields: input.fields} : undefined,
-    isSingleton: true,
-    organizationId: input.organizationId,
-    slug: 'media-library',
-    title: 'Media Library',
-  })
+export interface WorkbenchConfig {
+  appType: 'media-library'
+  fields: MediaLibraryField[]
+  organizationId: string
+  readonly [WORKBENCH_CONFIG]: true
+}
+
+/**
+ * Whether `app` is a branded `unstable_defineMediaLibrary(...)` config — a
+ * config-carrier rather than an app. Configs live in `cliConfig.app` alongside
+ * apps but resolve through `resolveWorkbenchConfig`, not `resolveWorkbenchApp`.
+ * @public
+ */
+export function isWorkbenchConfig(app: unknown): app is WorkbenchConfig {
+  return typeof app === 'object' && app !== null && WORKBENCH_CONFIG in app
+}
+
+/**
+ * Declare the Sanity Media Library config. The Media Library is a Sanity-owned
+ * singleton, so this is not an app — it carries no slug or title, only the
+ * target `appType`, its owning organization, and the `fields` it contributes to
+ * the installation's config.
+ * @public
+ */
+export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): WorkbenchConfig {
+  return Object.defineProperty(
+    {appType: 'media-library', fields: input.fields ?? [], organizationId: input.organizationId},
+    WORKBENCH_CONFIG,
+    {configurable: false, enumerable: false, value: true, writable: false},
+  ) as WorkbenchConfig
 }

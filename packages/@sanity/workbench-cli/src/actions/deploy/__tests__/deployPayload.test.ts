@@ -32,13 +32,12 @@ describe('toWorkbenchPayload', () => {
 
   test('carries the optional workbench fields only when set', () => {
     expect(
-      toWorkbenchPayload(app({isSingleton: false, visibility: 'unlisted'}), {
+      toWorkbenchPayload(app({visibility: 'unlisted'}), {
         ...none,
         config: 'Media library fields:\n  Title (title)',
       }),
     ).toMatchObject({
       config: 'Media library fields:\n  Title (title)',
-      isSingleton: false,
       visibility: 'unlisted',
     })
   })

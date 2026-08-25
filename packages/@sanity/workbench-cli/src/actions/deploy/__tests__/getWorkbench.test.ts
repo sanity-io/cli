@@ -3,7 +3,6 @@ import {describe, expect, test} from 'vitest'
 
 import {
   type DefineAppInput,
-  type DefineMediaLibraryInput,
   unstable_defineApp,
   unstable_defineMediaLibrary,
 } from '../../../defineApp.js'
@@ -24,20 +23,16 @@ function workbench(overrides: Partial<DefineAppInput> = {}) {
   return resolved
 }
 
-// A media library resolves through the same brand, but declares installation
-// configs (via `fields`) instead of interfaces.
-function mediaLibrary(overrides: Partial<DefineMediaLibraryInput> = {}) {
-  const app = unstable_defineMediaLibrary({organizationId: 'org-id', ...overrides})
-  const resolved = getWorkbench({app} as CliConfig)
-  if (!resolved) throw new Error('expected a workbench app')
-  return resolved
-}
-
 describe('getWorkbench', () => {
   test('returns null for a plain, non-branded config', () => {
     expect(getWorkbench({app: {title: 'plain'}} as CliConfig)).toBeNull()
     expect(getWorkbench({} as CliConfig)).toBeNull()
     expect(getWorkbench(undefined)).toBeNull()
+  })
+
+  test('returns null for a media library config — a config is not an app', () => {
+    const app = unstable_defineMediaLibrary({organizationId: 'org-id'})
+    expect(getWorkbench({app} as CliConfig)).toBeNull()
   })
 
   test('exposes the declared interfaces off the branded app', () => {
@@ -53,31 +48,16 @@ describe('getWorkbench', () => {
     const resolved = workbench({entry: './src/App.tsx'})
     expect(resolved.entry).toBe('./src/App.tsx')
   })
-
-  test('exposes the config off a branded media library', () => {
-    const resolved = mediaLibrary({
-      fields: [
-        {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-      ],
-    })
-    expect(resolved.applicationType).toBe('media-library')
-    expect(resolved.config).toMatchObject({fields: [{name: 'description'}]})
-    // a media library declares no interfaces
-    expect(resolved.views).toHaveLength(0)
-    expect(resolved.services).toHaveLength(0)
-  })
 })
 
 describe('assertDeployable', () => {
   test('throws when the app declares no interfaces', () => {
-    expect(() => workbench().assertDeployable()).toThrow(
-      'declares no entry, views, services or config',
-    )
+    expect(() => workbench().assertDeployable()).toThrow('declares no entry, views or services')
   })
 
   test('throws when views and services are empty arrays', () => {
     expect(() => workbench({services: [], views: []}).assertDeployable()).toThrow(
-      'declares no entry, views, services or config',
+      'declares no entry, views or services',
     )
   })
 
@@ -100,40 +80,17 @@ describe('assertDeployable', () => {
       }).assertDeployable(),
     ).not.toThrow()
   })
-
-  test('passes when a media library declares a field', () => {
-    expect(() =>
-      mediaLibrary({
-        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-      }).assertDeployable(),
-    ).not.toThrow()
-  })
-
-  test('throws when a media library declares no fields', () => {
-    expect(() => mediaLibrary().assertDeployable()).toThrow(
-      'declares no entry, views, services or config',
-    )
-  })
 })
 
-describe('deploySingletonConfig / hasInterfaces', () => {
-  test('a media library with fields deploys its config and hosts no interfaces', () => {
-    const resolved = mediaLibrary({
-      fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-    })
-    expect(resolved.deploySingletonConfig).toBe(true)
-    expect(resolved.hasInterfaces).toBe(false)
-  })
-
-  test('a media library without fields carries no config to deploy', () => {
-    expect(mediaLibrary().deploySingletonConfig).toBe(false)
-  })
-
-  test('a non-singleton app never deploys a config, and reports its interfaces', () => {
+describe('hasInterfaces', () => {
+  test('an app that declares interfaces reports them', () => {
     const resolved = workbench({
       views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
     })
-    expect(resolved.deploySingletonConfig).toBe(false)
     expect(resolved.hasInterfaces).toBe(true)
+  })
+
+  test('an app with no entry, views, or services hosts nothing', () => {
+    expect(workbench().hasInterfaces).toBe(false)
   })
 })
