@@ -1,7 +1,6 @@
 import {styleText} from 'node:util'
 
 import {SanityCommand} from '@sanity/cli-core'
-import padStart from 'lodash-es/padStart.js'
 
 import {findSanityModulesVersions} from '../actions/versions/findSanityModulesVersions.js'
 import {getDisplayName, getFormatters} from '../actions/versions/getFormatters.js'
@@ -20,7 +19,7 @@ export class Versions extends SanityCommand<typeof Versions> {
 
     const {formatName, versionLength} = getFormatters(versions)
     for (const mod of versions) {
-      const version = padStart(mod.installed || '<missing>', versionLength)
+      const version = (mod.installed || '<missing>').padStart(versionLength)
       const latest =
         mod.installed === mod.latest
           ? styleText('green', '(up to date)')

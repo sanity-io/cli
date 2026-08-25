@@ -39,6 +39,7 @@ describe('sanityModuleFederation', () => {
 
     expect(mockFederation).toHaveBeenCalledTimes(1)
     expect(mockFederation.mock.calls[0][0].dts).toBe(false)
+    expect(mockFederation.mock.calls[0][0]).not.toHaveProperty('filename')
   })
 
   it('scopes plugins to the dev server and the federation build environment', () => {

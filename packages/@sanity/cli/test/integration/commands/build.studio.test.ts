@@ -105,7 +105,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
       // `@module-federation/vite` short-circuits to an empty plugin array when
       // it detects vitest/jest in the env, which leaves the federation env without
-      // its plugins and skips emitting `remote-entry.js` / `mf-manifest.json`.
+      // its plugins and skips emitting the remote entry / `mf-manifest.json`.
       // Opt out of that guard for this in-process build.
       vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
 
@@ -121,20 +121,19 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       expect(distFiles).not.toContain('index.html')
       expect(distFiles).not.toContain('vendor')
 
-      // Remote entry stays unhashed so the manifest can reference a stable name
-      expect(distFiles).toContain('remote-entry.js')
-
       expect(distFiles).toContain('mf-manifest.json')
       const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))
       expect(manifest).toHaveProperty('id')
       expect(manifest).toHaveProperty('name')
+      expect(manifest).toHaveProperty('metaData.remoteEntry.name')
+      const remoteEntry = manifest.metaData.remoteEntry.name
+      expect(remoteEntry).toMatch(/remoteEntry-[A-Za-z0-9_-]+\.js$/)
+      expect((await readFile(join(cwd, 'dist', remoteEntry))).length).toBeGreaterThan(0)
 
       // Hashed chunks are emitted to the `static` dir (assetsDir), not the Vite
       // default `assets` — this keeps federation output aligned with the studio
       // static layout the deploy/serve tooling expects.
       expect(distFiles).toContain('static')
-      const assetFiles = await readdir(join(cwd, 'dist', 'static'))
-      expect(assetFiles.some((f) => /^remote-entry-.+\.js$/.test(f))).toBe(true)
 
       // The build output must satisfy the deploy gate: `sanity deploy` runs
       // `checkBuiltOutput` (not the static-SPA check) and ships only if it finds

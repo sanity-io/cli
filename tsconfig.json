@@ -6,7 +6,7 @@
     "incremental": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "lib": ["ES2023"],
+    "lib": ["ES2024"],
     "module": "NodeNext",
     "moduleResolution": "nodenext",
     "noEmit": true,

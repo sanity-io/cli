@@ -89,6 +89,27 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
 
+  test('forwards the composed name and reference for the workbench to read', async () => {
+    await register()
+
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({name: 'test-app', reference: 'org-123/test-app'}),
+    )
+  })
+
+  test('renders a singleton reference under the sanity alias', async () => {
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: workbenchApp({applicationType: 'media-library', isSingleton: true}),
+      }),
+      isApp: true,
+    })
+
+    expect(mockRegisterDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({name: 'test-app', reference: 'sanity/test-app'}),
+    )
+  })
+
   test('keeps the id when the server binds a port it did not ask for', async () => {
     await register({server: mockServer({boundPort: 3339, port: 3334}) as any})
 

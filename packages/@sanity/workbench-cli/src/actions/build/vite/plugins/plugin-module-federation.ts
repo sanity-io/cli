@@ -1,7 +1,7 @@
 import {federation as moduleFederation, type ModuleFederationOptions} from '@module-federation/vite'
 import {type Plugin, type PluginOption} from 'vite'
 
-import {FEDERATION_DIR_NAME, FEDERATION_FILE_NAME} from '../constants.js'
+import {FEDERATION_DIR_NAME} from '../constants.js'
 
 /**
  * @internal
@@ -26,7 +26,6 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     // Ctrl-C by sending on a still-CONNECTING websocket.
     dts: false,
     exposes,
-    filename: `${FEDERATION_FILE_NAME}.js`,
     manifest: true,
     name,
     // Resolves the remote entry path relative to the manifest rather than the
