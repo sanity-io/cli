@@ -2,10 +2,9 @@ import {readFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
+import {MANIFEST_FILENAME, type StudioManifest} from '@sanity/cli-build/_internal/manifest'
 
 import {extractManifest} from './extractManifest.js'
-import {type StudioManifest} from './types.js'
-import {MANIFEST_FILENAME} from './writeManifestFile.js'
 
 /**
  * Dev-time manifest output directory, relative to the studio working

@@ -2,10 +2,10 @@ import {existsSync} from 'node:fs'
 import {mkdtemp, readdir, readFile, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
+import {type CreateManifest} from '@sanity/cli-build/_internal/manifest'
 import {getTempPath, testCommand, testFixture} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 
-import {type CreateManifest} from '../../../../src/actions/manifest/types.js'
 import {ExtractManifestCommand} from '../../../../src/commands/manifest/extract.js'
 
 describe('#manifest:extract', {timeout: 60 * 1000}, () => {

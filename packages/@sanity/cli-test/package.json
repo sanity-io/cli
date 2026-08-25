@@ -33,6 +33,10 @@
       "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./mocks/cli-build/manifest": {
+      "source": "./src/mocks/cli-build/manifest.ts",
+      "default": "./dist/mocks/cli-build/manifest.js"
+    },
     "./mocks/cli-core/apiClient": {
       "source": "./src/mocks/cli-core/apiClient.ts",
       "default": "./dist/mocks/cli-core/apiClient.js"

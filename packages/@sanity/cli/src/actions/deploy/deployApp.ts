@@ -2,6 +2,12 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
+import {
+  type CoreAppManifest,
+  extractCoreAppManifest,
+  readIconFromPath,
+  resolveTitleUpdate,
+} from '@sanity/cli-build/_internal/manifest'
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
@@ -27,12 +33,6 @@ import {
 import {getAppId} from '../../util/appId.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {buildApp} from '../build/buildApp.js'
-import {
-  extractCoreAppManifest,
-  readIconFromPath,
-  resolveTitleUpdate,
-} from '../manifest/extractCoreAppManifest.js'
-import {type CoreAppManifest} from '../manifest/types.js'
 import {createUserApplication} from './createUserApplication.js'
 import {
   checkAppId,
