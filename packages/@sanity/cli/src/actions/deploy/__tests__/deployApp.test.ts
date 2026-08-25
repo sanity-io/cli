@@ -1,4 +1,5 @@
 import {type CoreAppManifest} from '@sanity/cli-build/_internal/manifest'
+import {resolveTitleUpdate} from '@sanity/cli-test/mocks/cli-build/manifest'
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -7,6 +8,11 @@ import {
   type UserApplicationResolved,
 } from '../../../services/userApplications.js'
 import {logAppDeployed, syncApplicationMetadata} from '../deployApp.js'
+
+vi.mock(
+  import('@sanity/cli-build/_internal/manifest'),
+  () => import('@sanity/cli-test/mocks/cli-build/manifest'),
+)
 
 vi.mock('../../../services/userApplications.js', () => ({
   createDeployment: vi.fn(),
@@ -112,6 +118,7 @@ describe('syncApplicationMetadata', () => {
   })
 
   test('PATCHes only title when the manifest title changed', async () => {
+    resolveTitleUpdate.mockReturnValueOnce({from: 'Original', to: 'Renamed'})
     vi.mocked(updateUserApplication).mockResolvedValue({...baseApp, title: 'Renamed'})
 
     await syncApplicationMetadata({
@@ -129,6 +136,7 @@ describe('syncApplicationMetadata', () => {
   })
 
   test('PATCHes both title and dashboardStatus in one call when both changed', async () => {
+    resolveTitleUpdate.mockReturnValueOnce({from: 'Original', to: 'Renamed'})
     vi.mocked(updateUserApplication).mockResolvedValue({
       ...baseApp,
       dashboardStatus: 'unlisted',
