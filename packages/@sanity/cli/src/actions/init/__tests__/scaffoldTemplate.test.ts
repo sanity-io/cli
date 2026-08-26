@@ -47,8 +47,6 @@ describe('selectTemplate', () => {
   })
 
   test('does not prompt for TypeScript when shopify is selected interactively', async () => {
-    mockPromptForTypeScript.mockResolvedValueOnce(false)
-
     const result = await selectTemplate({
       options: initOptions({template: 'shopify', typescript: undefined, unattended: false}),
       remoteTemplateInfo: undefined,
