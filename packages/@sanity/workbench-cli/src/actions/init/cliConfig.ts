@@ -1,5 +1,5 @@
-// `sanity.cli.ts` templates for workbench (`defineApplication`) projects,
-// consumed by the CLI's `init` scaffolding. The branded `defineApplication`
+// `sanity.cli.ts` templates for workbench (`unstable_defineApp`) projects,
+// consumed by the CLI's `init` scaffolding. The branded `unstable_defineApp`
 // result is the sole workbench (module-federation) opt-in, so its config shape
 // is workbench's to own; the CLI keeps the non-workbench templates and the
 // `%placeholder%` substitution. `%slug%`/`%title%`/etc. are filled in by the
@@ -7,10 +7,10 @@
 
 /** App scaffold — `entry` auto-declares the navigable app view. */
 export const workbenchAppConfigTemplate = `
-import {defineCliConfig, defineApplication} from 'sanity/cli'
+import {defineCliConfig, unstable_defineApp} from 'sanity/cli'
 
 export default defineCliConfig({
-  app: defineApplication({
+  app: unstable_defineApp({
     title: '%title%',
     slug: '%slug%',
     organizationId: '%organizationId%',
@@ -24,14 +24,14 @@ export default defineCliConfig({
  * aren't implemented yet).
  */
 export const workbenchStudioConfigTemplate = `
-import {defineCliConfig, defineApplication} from 'sanity/cli'
+import {defineCliConfig, unstable_defineApp} from 'sanity/cli'
 
 export default defineCliConfig({
   api: {
     projectId: '%projectId%',
     dataset: '%dataset%'
   },
-  app: defineApplication({
+  app: unstable_defineApp({
     title: '%title%',
     slug: '%slug%',
     organizationId: '%organizationId%',

@@ -6,7 +6,7 @@ import {runCli} from '../../helpers/runCli.js'
 // Workbench isn't on the published `latest` CLI yet, so skip against the registry.
 const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
-// The federated-studio fixture opts into workbench via `defineApplication` and
+// The federated-studio fixture opts into workbench via `unstable_defineApp` and
 // pins the `sanity` workbench dist-tag, so `sanity/workbench` resolves and
 // `sanity dev` starts the real workbench host dev server. This is the only place
 // that orchestration runs unmocked, end-to-end, through the actual binary — the
