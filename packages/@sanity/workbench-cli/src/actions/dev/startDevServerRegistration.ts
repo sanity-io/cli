@@ -2,8 +2,9 @@ import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-cor
 import {type ViteDevServer} from 'vite'
 
 import {applicationReference} from '../../applicationReference.js'
-import {isWorkbenchApp} from '../../defineApp.js'
+import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
+import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs} from './deriveConfigs.js'
 import {trackExposesSet} from './exposesSetId.js'
@@ -47,11 +48,13 @@ interface DevServerRegistrationHandle {
 }
 
 /**
- * Log any config validation errors without aborting. Unlike build and deploy,
- * dev stays up on an invalid config so the author sees the errors and fixes them
- * live on the next save.
+ * Log any app validation errors without aborting. Unlike build and deploy, dev
+ * stays up on an invalid app so the author sees the errors and fixes them live on
+ * the next save. A config is not an app — it isn't validated by the app schema
+ * (which would spuriously demand a slug/title), so skip it here.
  */
 function reportConfigErrors(app: CliConfig['app'], output: Output): void {
+  if (isWorkbenchConfig(app)) return
   const errors = validateWorkbenchApp(app)
   if (errors.length === 0) return
   output.warn(formatWorkbenchAppErrors(errors))
@@ -110,10 +113,14 @@ export async function startDevServerRegistration(
   // Forwarded alongside (not inside) the manifest so the workbench renders local
   // panels/workers and reads the configs without a deploy.
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
-  const configs = await deriveConfigs(cliConfig.app)
+  const configs = await deriveConfigs(cliConfig)
 
   const workbenchApp = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
-  const id = workbenchApp?.slug
+  const config = resolveWorkbenchConfig(cliConfig)
+  // A config keys on its target app type in its own namespace (`config:${appType}`),
+  // never the app's slug — so a config server and the app it configures don't
+  // collide on one id. An app still keys on its slug.
+  const id = config ? `config:${config.appType}` : workbenchApp?.slug
   // Identity is resolved and the reference composed here, so the workbench reads
   // both off the registry entry instead of recomposing them. Name defaults to the
   // slug, mirroring brett.
@@ -167,11 +174,11 @@ export async function startDevServerRegistration(
     // Re-derive every pass (don't omit): the registry patch is a shallow merge,
     // so omitting would wipe the registered set.
     extract: async (params) => {
-      const app = (await getCliConfigUncached(params.workDir)).app
-      reportConfigErrors(app, output)
+      const nextConfig = await getCliConfigUncached(params.workDir)
+      reportConfigErrors(nextConfig.app, output)
       return {
-        configs: await deriveConfigs(app),
-        interfaces: deriveInterfaces(app, {isApp}),
+        configs: await deriveConfigs(nextConfig),
+        interfaces: deriveInterfaces(nextConfig.app, {isApp}),
         manifest: await extractManifest(params),
       }
     },
