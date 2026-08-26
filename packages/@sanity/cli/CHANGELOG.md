@@ -1,5 +1,22 @@
 # Change Log
 
+## 8.4.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.4.0...cli-v8.4.1)
+
+_2026-08-26_
+
+### Bug Fixes
+
+- mark shopify init template as typescript only ([#1745](https://github.com/sanity-io/cli/pull/1745)) ([0e8d5b3](https://github.com/sanity-io/cli/commit/0e8d5b3ff69d6bd6295f21e5108153674b226b13))
+- **workbench:** enforce app-wide interface name uniqueness ([#1760](https://github.com/sanity-io/cli/pull/1760)) ([027db7f](https://github.com/sanity-io/cli/commit/027db7f9792757243e94e76c7924012dd5a002ed))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.1
+
 ## 8.4.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.3.0...cli-v8.4.0)

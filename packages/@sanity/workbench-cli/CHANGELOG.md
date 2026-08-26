@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 2.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.0...workbench-cli-v2.2.1)
+
+_2026-08-26_
+
+### Bug Fixes
+
+- **workbench:** enforce app-wide interface name uniqueness ([#1760](https://github.com/sanity-io/cli/pull/1760)) ([027db7f](https://github.com/sanity-io/cli/commit/027db7f9792757243e94e76c7924012dd5a002ed))
+
 ## 2.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.1.0...workbench-cli-v2.2.0)
