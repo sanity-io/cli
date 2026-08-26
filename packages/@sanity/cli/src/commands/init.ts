@@ -203,7 +203,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     'unstable--workbench': Flags.boolean({
       allowNo: true,
       default: undefined,
-      description: 'Opt into workbench: scaffolds the CLI config with defineApplication',
+      description: 'Opt into workbench: scaffolds the CLI config with unstable_defineApp',
       // Internal-only while workbench is unstable — keep it out of help/docs
       hidden: true,
     }),
