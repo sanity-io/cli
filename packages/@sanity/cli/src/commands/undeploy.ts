@@ -1,7 +1,7 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 import {type UndeployAdapter} from '@sanity/cli-core/undeploy'
-import {getWorkbench} from '@sanity/workbench-cli/deploy'
+import {getWorkbench, resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 import {createWorkbenchUndeployAdapter} from '@sanity/workbench-cli/undeploy'
 
 import {
@@ -54,19 +54,22 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
     const cliConfig = await this.getCliConfig()
     const isApp = determineIsApp(cliConfig)
 
-    // Workbench apps deploy through Brett, so they undeploy through it too;
-    // plain projects keep the user-applications backend.
+    // Workbench apps and configs deploy through Brett, so they undeploy through
+    // it too; plain projects keep the user-applications backend.
     const workbench = getWorkbench(cliConfig)
-    const adapter: UndeployAdapter = workbench
-      ? createWorkbenchUndeployAdapter({
-          appId: getAppId(cliConfig),
-          organizationId: cliConfig.app?.organizationId,
-          type: isApp ? 'coreApp' : 'studio',
-          workbench,
-        })
-      : isApp
-        ? createAppUndeployAdapter(cliConfig)
-        : createStudioUndeployAdapter(cliConfig)
+    const config = resolveWorkbenchConfig(cliConfig)
+    const adapter: UndeployAdapter =
+      workbench || config
+        ? createWorkbenchUndeployAdapter({
+            appId: getAppId(cliConfig),
+            config: config ?? undefined,
+            organizationId: cliConfig.app?.organizationId,
+            type: isApp ? 'coreApp' : 'studio',
+            workbench: workbench ?? undefined,
+          })
+        : isApp
+          ? createAppUndeployAdapter(cliConfig)
+          : createStudioUndeployAdapter(cliConfig)
 
     await runUndeploy({flags, isUnattended: this.isUnattended(), output: this.output}, adapter)
   }

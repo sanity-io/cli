@@ -1,11 +1,10 @@
 import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
+import {type CoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type AppVisibility, debug, getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {type StudioManifest} from 'sanity'
-
-import {type CoreAppManifest} from '../actions/manifest/types.js'
 
 export const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
 

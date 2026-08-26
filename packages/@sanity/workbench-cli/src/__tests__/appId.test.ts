@@ -6,6 +6,7 @@ import {type ResolvedWorkbenchApp} from '../resolveWorkbenchApp.js'
 describe('buildAppId', () => {
   const app: ResolvedWorkbenchApp = {
     entry: './src/App.tsx',
+    name: 'drop-desk',
     organizationId: 'org-1',
     services: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     slug: 'drop-desk',
@@ -36,7 +37,7 @@ describe('buildAppId', () => {
 
   test('changes when the declared shape changes', async () => {
     const base = await buildAppId(app)
-    expect(base).not.toBe(await buildAppId({...app, slug: 'other'}))
+    expect(base).not.toBe(await buildAppId({...app, name: 'other'}))
     expect(base).not.toBe(await buildAppId({...app, organizationId: 'org-2'}))
     expect(base).not.toBe(await buildAppId({...app, entry: './src/Other.tsx'}))
     expect(base).not.toBe(
@@ -45,5 +46,11 @@ describe('buildAppId', () => {
         views: [{name: 'feed', src: './moved.tsx', title: 'feed', type: 'panel'}],
       }),
     )
+  })
+
+  test('keys identity on name, not the slug address', async () => {
+    // Renaming the address leaves identity untouched; only a distinct name shifts it.
+    expect(await buildAppId({...app, slug: 'renamed-host'})).toBe(await buildAppId(app))
+    expect(await buildAppId({...app, name: 'renamed'})).not.toBe(await buildAppId(app))
   })
 })

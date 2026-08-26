@@ -12,11 +12,14 @@ describe('resolveWorkbenchApp', () => {
     ['an undefined config', undefined],
     ['a config without an app', {} as CliConfig],
     ['a plain (unbranded) app', asConfig({name: 'plain', organizationId: 'org', title: 'Plain'})],
+    // A media library is a config, not an app — it resolves through
+    // `resolveWorkbenchConfig`, so `resolveWorkbenchApp` returns null like a project.
+    ['a media library config', asConfig(unstable_defineMediaLibrary({organizationId: 'org'}))],
   ])('returns null for %s', (_label, config) => {
     expect(resolveWorkbenchApp(config as CliConfig | null | undefined)).toBeNull()
   })
 
-  test('resolves a branded app with defaulted views/services and no singleton flag', () => {
+  test('resolves a branded app with defaulted views/services', () => {
     const config = asConfig(
       unstable_defineApp({
         organizationId: 'org-123',
@@ -27,14 +30,27 @@ describe('resolveWorkbenchApp', () => {
 
     expect(resolveWorkbenchApp(config)).toEqual({
       applicationType: undefined,
-      config: undefined,
       entry: undefined,
-      isSingleton: undefined,
+      // Identity defaults to the slug when no explicit name is declared.
+      name: 'my-app',
       organizationId: 'org-123',
       services: [],
       slug: 'my-app',
       views: [],
     })
+  })
+
+  test('keeps an explicit name distinct from the slug', () => {
+    const config = asConfig(
+      unstable_defineApp({
+        name: 'reviews',
+        organizationId: 'org-123',
+        slug: 'reviews-app',
+        title: 'Reviews',
+      }),
+    )
+
+    expect(resolveWorkbenchApp(config)).toMatchObject({name: 'reviews', slug: 'reviews-app'})
   })
 
   test('passes through a declared app entry, services, slug, and visibility', () => {
@@ -89,40 +105,5 @@ describe('resolveWorkbenchApp', () => {
       entry: './src/App.tsx',
       views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
     })
-  })
-
-  test('resolves a media library singleton and its config', () => {
-    const config = asConfig(
-      unstable_defineMediaLibrary({
-        fields: [{name: 'rights', src: './src/rights.ts', title: 'Rights'}],
-        organizationId: 'org-123',
-      }),
-    )
-
-    const resolved = resolveWorkbenchApp(config)
-    expect(resolved).toMatchObject({
-      isSingleton: true,
-      slug: 'media-library',
-    })
-    expect(resolved!.config).toEqual({
-      appType: 'media-library',
-      fields: [{name: 'rights', src: './src/rights.ts', title: 'Rights'}],
-    })
-  })
-
-  test('throws when a non-singleton declares an config', () => {
-    const config = asConfig(
-      unstable_defineApp({
-        // @ts-expect-error -- config is internal; forcing the invalid combination
-        config: {appType: 'media-library', fields: []},
-        organizationId: 'org-123',
-        slug: 'my-app',
-        title: 'My App',
-      }),
-    )
-
-    expect(() => resolveWorkbenchApp(config)).toThrow(
-      '`config` is only supported for singleton apps',
-    )
   })
 })

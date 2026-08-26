@@ -13,6 +13,7 @@ export {
 } from '../actions/deploy/deployWorkbenchApp.js'
 export {getWorkbench} from '../actions/deploy/getWorkbench.js'
 export {type DeployedInterface, summarizeInterfaces} from '../actions/deploy/summarizeInterfaces.js'
+export {type ResolvedMediaLibraryConfig, resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'
 export {
   type Application,
   type BrettAccess,

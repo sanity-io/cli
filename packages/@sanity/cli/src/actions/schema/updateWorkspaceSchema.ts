@@ -1,15 +1,15 @@
 import {styleText} from 'node:util'
 
 import {ux} from '@oclif/core/ux'
-import {spinner} from '@sanity/cli-core/ux'
-import partition from 'lodash-es/partition.js'
-
-import {updateSchemas} from '../../services/schemas.js'
 import {
   CURRENT_WORKSPACE_SCHEMA_VERSION,
   type ManifestSchemaType,
   type StoredWorkspaceSchema,
-} from '../manifest/types.js'
+} from '@sanity/cli-build/_internal/manifest'
+import {spinner} from '@sanity/cli-core/ux'
+import partition from 'lodash-es/partition.js'
+
+import {updateSchemas} from '../../services/schemas.js'
 import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
 

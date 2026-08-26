@@ -1,5 +1,26 @@
 # @sanity/workbench-cli
 
+## 2.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.2...workbench-cli-v2.1.0)
+
+_2026-08-24_
+
+### Features
+
+- **workbench:** allow window entries with multiple panel views ([#1741](https://github.com/sanity-io/cli/pull/1741)) ([3f8c612](https://github.com/sanity-io/cli/commit/3f8c6120887335f1bdd76a2c76f91bfd31b9272d))
+
+### Bug Fixes
+
+- **workbench:** decouple cli from sanity/workbench ([#1734](https://github.com/sanity-io/cli/pull/1734)) ([ea4dc56](https://github.com/sanity-io/cli/commit/ea4dc5660f10eb4b1758c3924ea2241d4007e35f))
+- **workbench:** disable federation dts plugins ([#1740](https://github.com/sanity-io/cli/pull/1740)) ([666d2fb](https://github.com/sanity-io/cli/commit/666d2fbb2725f77684724bb944f31c7b06e8d634))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.3.0
+
 ## 2.0.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.1...workbench-cli-v2.0.2)

@@ -32,7 +32,7 @@ export interface CreatedApplication {
  * @internal
  */
 export async function createCoreApp(options: {
-  isSingleton?: boolean
+  name?: string
   organizationId: string
   slug: string
   title: string
@@ -54,6 +54,7 @@ export async function createCoreApp(options: {
  * @internal
  */
 export async function createStudio(options: {
+  name?: string
   organizationId: string
   projectId: string | undefined
   slug: string

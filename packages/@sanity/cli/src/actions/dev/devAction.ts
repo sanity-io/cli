@@ -1,11 +1,11 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
+import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig} from '@sanity/cli-core'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {checkForDeprecatedAppId} from '../../util/appId.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
-import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {extractStudioManifest} from '../manifest/extractStudioManifest.js'
 import {startAppDevServer} from './servers/startAppDevServer.js'
 import {startStudioDevServer} from './servers/startStudioDevServer.js'

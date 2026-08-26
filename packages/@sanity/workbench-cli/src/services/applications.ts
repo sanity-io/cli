@@ -102,6 +102,7 @@ export async function listApplications(organizationId: string): Promise<Applicat
  */
 export async function createApplication(options: {
   isSingleton?: boolean
+  name?: string
   organizationId: string
   projectId?: string
   slug: string
@@ -109,7 +110,7 @@ export async function createApplication(options: {
   type: ApplicationType
   visibility?: AppVisibility
 }): Promise<Application> {
-  const {isSingleton, organizationId, projectId, slug, title, type, visibility} = options
+  const {isSingleton, name, organizationId, projectId, slug, title, type, visibility} = options
   const client = await getClient()
   return client.request({
     body: {
@@ -117,6 +118,10 @@ export async function createApplication(options: {
       slug,
       title,
       type,
+      // Identity, distinct from the slug address. Omitted → Brett defaults it to slug.
+      ...(name ? {name} : {}),
+      // Brett requires `isSingleton` on `POST /applications`, so the request
+      // builder keeps forwarding it even though the CLI itself never sets it.
       ...(isSingleton === undefined ? {} : {isSingleton}),
       ...(visibility ? {visibility} : {}),
       // Studio config is set once, at create — it's immutable on redeploy.

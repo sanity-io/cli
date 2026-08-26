@@ -99,7 +99,7 @@ export async function startWorkbenchPreview(
 
     if (!workbench) throw new Error('`sanity start` was invoked in a non-workbench application')
     const inlinedId = await readInlinedAppId(outDir)
-    const configs = await deriveConfigs(cliConfig.app)
+    const configs = await deriveConfigs(cliConfig)
     const id = inlinedId ?? (await buildAppId(workbench))
     const registration = registerDevServer({
       configs,

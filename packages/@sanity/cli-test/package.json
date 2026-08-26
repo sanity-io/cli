@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-test",
-  "version": "12.0.0",
+  "version": "13.0.0",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
     "cli",
@@ -32,6 +32,10 @@
     ".": {
       "source": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./mocks/cli-build/manifest": {
+      "source": "./src/mocks/cli-build/manifest.ts",
+      "default": "./dist/mocks/cli-build/manifest.js"
     },
     "./mocks/cli-core/apiClient": {
       "source": "./src/mocks/cli-core/apiClient.ts",

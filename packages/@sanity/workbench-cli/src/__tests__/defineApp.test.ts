@@ -7,7 +7,6 @@ import {
   type DefineAppResult,
   type DockGroup,
   isWorkbenchApp,
-  readConfig,
   unstable_defineApp,
   type WorkbenchApp,
 } from '../defineApp.js'
@@ -85,6 +84,23 @@ describe('DefineAppInputSchema (build-time validation)', () => {
       const result = DefineAppInputSchema.safeParse(validInput({slug}))
       expect(result.success).toBe(false)
       expect(result.error?.issues[0]?.message).toMatch(/must be lowercase/)
+    },
+  )
+
+  test('accepts an optional name distinct from the slug', () => {
+    expect(DefineAppInputSchema.parse(validInput({name: 'reviews'})).name).toBe('reviews')
+  })
+
+  test('leaves name undefined when omitted (resolved to slug downstream)', () => {
+    expect(DefineAppInputSchema.parse(validInput()).name).toBeUndefined()
+  })
+
+  test.each(['Reviews', 'sanity/media-library', 'has space', '-leading', 'trailing-'])(
+    'rejects the name %j — it shares the slug grammar',
+    (name) => {
+      const result = DefineAppInputSchema.safeParse(validInput({name}))
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0]?.message).toMatch(/name.*must be lowercase/)
     },
   )
 
@@ -202,62 +218,6 @@ describe('DefineAppInputSchema (build-time validation)', () => {
           {name: 'unread', src: './src/a.ts', title: 'unread', type: 'worker'},
           {name: 'unread', src: './src/b.ts', title: 'unread', type: 'worker'},
         ],
-      }),
-    )
-    expect(dupes.success).toBe(false)
-    expect(dupes.error?.issues[0]?.message).toMatch(/unique/)
-  })
-
-  test('accepts an config and isSingleton', () => {
-    const parsed = DefineAppInputSchema.parse(
-      validInput({
-        config: {
-          appType: 'media-library',
-          fields: [
-            {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-          ],
-        },
-        isSingleton: true,
-      }),
-    )
-    expect(parsed.isSingleton).toBe(true)
-    expect(parsed.config).toEqual({
-      appType: 'media-library',
-      fields: [
-        {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-      ],
-    })
-  })
-
-  test('rejects an config on a non-singleton app', () => {
-    const result = DefineAppInputSchema.safeParse(
-      validInput({
-        config: {
-          appType: 'media-library',
-          fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-        },
-      }),
-    )
-    expect(result.success).toBe(false)
-    expect(result.error?.issues.some((issue) => /singleton/.test(issue.message))).toBe(true)
-  })
-
-  test('rejects an config without fields', () => {
-    expect(
-      DefineAppInputSchema.safeParse(validInput({config: {appType: 'media-library'}})).success,
-    ).toBe(false)
-  })
-
-  test('rejects duplicate field names within an config', () => {
-    const dupes = DefineAppInputSchema.safeParse(
-      validInput({
-        config: {
-          appType: 'media-library',
-          fields: [
-            {name: 'description', src: './src/a.ts', title: 'A'},
-            {name: 'description', src: './src/b.ts', title: 'B'},
-          ],
-        },
       }),
     )
     expect(dupes.success).toBe(false)
@@ -423,10 +383,8 @@ describe('type surface', () => {
     expectTypeOf<DefineAppResult['priority']>().toEqualTypeOf<number | undefined>()
   })
 
-  test('does not expose the internal applicationType, isSingleton, or config', () => {
+  test('does not expose the internal applicationType', () => {
     expectTypeOf<DefineAppResult>().not.toHaveProperty('applicationType')
-    expectTypeOf<DefineAppResult>().not.toHaveProperty('isSingleton')
-    expectTypeOf<DefineAppResult>().not.toHaveProperty('config')
   })
 })
 
@@ -444,26 +402,5 @@ describe('interface surface', () => {
 
   test('allows declaring an app entry and panel views together', () => {
     expectTypeOf<Base & {entry: string; views: PanelView[]}>().toExtend<DefineAppInput>()
-  })
-})
-
-describe('readConfig', () => {
-  const config = {
-    appType: 'media-library',
-    fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-  }
-
-  test('returns the config for a singleton', () => {
-    const app = {config: config, isSingleton: true} as unknown as WorkbenchApp
-    expect(readConfig(app)).toBe(config)
-  })
-
-  test('returns undefined when the app declares none', () => {
-    expect(readConfig({isSingleton: true} as unknown as WorkbenchApp)).toBeUndefined()
-  })
-
-  test('throws when a non-singleton declares a config', () => {
-    const app = {config: config} as unknown as WorkbenchApp
-    expect(() => readConfig(app)).toThrow(/only supported for singleton apps/)
   })
 })

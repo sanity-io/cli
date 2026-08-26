@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
+import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
@@ -21,7 +22,6 @@ import {createDeployment, type UserApplication} from '../../services/userApplica
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {buildStudio} from '../build/buildStudio.js'
-import {readIconFromPath} from '../manifest/extractCoreAppManifest.js'
 import {createStudioUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
@@ -151,6 +151,7 @@ async function runStudioDeployment(
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
     const created = await createStudio({
+      name: workbench.name,
       organizationId,
       projectId,
       slug: workbench.slug,

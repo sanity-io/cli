@@ -1,5 +1,10 @@
 export type {InterfaceType, ServiceType, TileSize} from '../contract.js'
-export {isWorkbenchApp, unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
+export {
+  isWorkbenchApp,
+  isWorkbenchConfig,
+  unstable_defineApp,
+  unstable_defineMediaLibrary,
+} from '../defineApp.js'
 export type {
   DefineAppInput,
   DefineAppResult,
@@ -7,6 +12,7 @@ export type {
   DockGroup,
   MediaLibraryField,
   WorkbenchApp,
+  WorkbenchConfig,
 } from '../defineApp.js'
 export {unstable_defineService} from '../defineService.js'
 export type {

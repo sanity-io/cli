@@ -2,6 +2,12 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
+import {
+  type CoreAppManifest,
+  extractCoreAppManifest,
+  readIconFromPath,
+  resolveTitleUpdate,
+} from '@sanity/cli-build/_internal/manifest'
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
@@ -13,6 +19,7 @@ import {
   getApplicationUrl,
   getWorkbench,
   resolveInstallationId,
+  resolveWorkbenchConfig,
   summarizeConfig,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
@@ -27,12 +34,6 @@ import {
 import {getAppId} from '../../util/appId.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {buildApp} from '../build/buildApp.js'
-import {
-  extractCoreAppManifest,
-  readIconFromPath,
-  resolveTitleUpdate,
-} from '../manifest/extractCoreAppManifest.js'
-import {type CoreAppManifest} from '../manifest/types.js'
 import {createUserApplication} from './createUserApplication.js'
 import {
   checkAppId,
@@ -69,12 +70,13 @@ async function runAppDeployment(
   const organizationId = cliConfig.app?.organizationId
   const appId = getAppId(cliConfig)
   const workbench = getWorkbench(cliConfig)
+  // A config (the Media Library) is not an app — it resolves through its own
+  // brand and persists to the org's installation instead of hosting an application.
+  const config = resolveWorkbenchConfig(cliConfig)
   const dryRun = !!flags['dry-run']
 
-  // A singleton (the Media Library) persists its config instead of hosting an
-  // application; anything that exposes a view or service still ships one.
-  const deploySingletonConfig = workbench?.deploySingletonConfig ?? false
-  const deployApplication = !workbench || workbench.hasInterfaces
+  const deployConfigOnly = !!config
+  const deployApplication = !config && (!workbench || workbench.hasInterfaces)
 
   const appTitle = workbench
     ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
@@ -95,6 +97,17 @@ async function runAppDeployment(
     }
   }
 
+  // A config with no fields would overwrite the org's live config with an empty
+  // snapshot, so block it here — same "nothing to deploy" gate an app gets.
+  if (config && config.fields.length === 0) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'Nothing to deploy: the media library config declares no fields.',
+      solution: 'Add at least one field to the media library config',
+      status: 'fail',
+    })
+  }
+
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
   // An application ships the SDK runtime; a media-library config stamps its
@@ -102,7 +115,7 @@ async function runAppDeployment(
   let version: string | null = null
   if (deployApplication) {
     version = await checkPackageVersion(reporter, {moduleName: APP_PACKAGE, workDir})
-  } else if (deploySingletonConfig) {
+  } else if (deployConfigOnly) {
     version = await checkPackageVersion(reporter, {moduleName: 'sanity', workDir})
   }
 
@@ -163,7 +176,7 @@ async function runAppDeployment(
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && deployApplication && workbench && organizationId && !applicationId) {
     const created = await createCoreApp({
-      isSingleton: workbench.isSingleton,
+      name: workbench.name,
       organizationId,
       slug: workbench.slug,
       title: appTitle,
@@ -196,13 +209,17 @@ async function runAppDeployment(
       successMessage: 'App built',
     })
 
-    await verifyOutputDir({isWorkbenchApp: workbench !== null, reporter, sourceDir})
+    await verifyOutputDir({
+      isWorkbenchApp: workbench !== null || config !== null,
+      reporter,
+      sourceDir,
+    })
 
-    // Workbench apps ship their icon straight to Brett (below) and don't read the
+    // Workbench apps and configs ship a federation remote and don't read the
     // core-app manifest; only plain core-apps do. Manifests aren't strictly
     // essential, so a failure warns and continues.
     let manifest: CoreAppManifest | undefined
-    if (!workbench) {
+    if (!workbench && !config) {
       try {
         manifest = await extractCoreAppManifest({workDir})
       } catch (err) {
@@ -217,14 +234,14 @@ async function runAppDeployment(
     // Resolve the installation in both modes so the report — dry-run and real —
     // shows whether the config is deployable; a missing one fails the deploy here.
     let installationId: string | undefined
-    let config: string | undefined
-    const configAppType = workbench?.config?.appType
-    if (deploySingletonConfig && organizationId && workbench?.config && configAppType) {
+    let configSummary: string | undefined
+    const configAppType = config?.appType
+    if (deployConfigOnly && organizationId && config && configAppType) {
       installationId = await resolveInstallationId({appType: configAppType, organizationId})
-      config = summarizeConfig(workbench.config)
+      configSummary = summarizeConfig(config)
       reporter.report(
         installationId
-          ? {message: config, status: 'pass'}
+          ? {message: configSummary, status: 'pass'}
           : {
               exitCode: exitCodes.USAGE_ERROR,
               message: `No active "${configAppType}" installation for organization "${organizationId}"`,
@@ -236,11 +253,6 @@ async function runAppDeployment(
     }
 
     const interfaces = deployApplication && workbench ? reportInterfaces(reporter, workbench) : null
-
-    // Surface the app's explicit singleton flag when set, both modes.
-    if (deployApplication && workbench?.isSingleton !== undefined) {
-      reporter.report({message: `Singleton: ${workbench.isSingleton}`, status: 'pass'})
-    }
 
     // Applied after the app is live (see below) so a failed deploy never leaves
     // the org's installation config without its application.
@@ -263,7 +275,8 @@ async function runAppDeployment(
       ...(organizationId ? {organizationId} : {}),
       type: 'coreApp',
       version,
-      ...toWorkbenchPayload(workbench, {config, interfaces, title: appTitle}),
+      ...toWorkbenchPayload(workbench, {config: configSummary, interfaces, title: appTitle}),
+      ...(configSummary ? {config: configSummary} : {}),
     }
 
     // Dry run stops here — everything below mutates.

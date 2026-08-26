@@ -1,6 +1,7 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
+import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {unstable_defineApp} from '@sanity/workbench-cli'
@@ -9,7 +10,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../../src/actions/build/buildApp.js'
 import {checkDir} from '../../../src/actions/deploy/checkDir.js'
-import {extractCoreAppManifest} from '../../../src/actions/manifest/extractCoreAppManifest.js'
 import {DeployCommand} from '../../../src/commands/deploy.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../../src/services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../../src/util/dirIsEmptyOrNonExistent.js'
@@ -19,6 +19,11 @@ const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
 const mockCreateCoreApp = vi.hoisted(() => vi.fn())
 const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
 const mockListApplications = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@sanity/cli-build/_internal/manifest'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  extractCoreAppManifest: vi.fn(),
+}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -43,14 +48,6 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   deployWorkbenchApp: mockDeployWorkbenchApp,
   listApplications: mockListApplications,
 }))
-
-vi.mock(
-  import('../../../src/actions/manifest/extractCoreAppManifest.js'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    extractCoreAppManifest: vi.fn(),
-  }),
-)
 
 vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -360,7 +357,7 @@ describe('#deploy app', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('declares no entry, views, services or config')
+    expect(error?.message).toContain('declares no entry, views or services')
     expect(error?.oclif?.exit).toBe(2)
     // fails before any directory check or API call
     expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
