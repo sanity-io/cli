@@ -1,7 +1,13 @@
 import {type ApplicationType, type AppVisibility} from '@sanity/cli-core'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
-import {definePanelView, defineTileView, defineWindowView, type DockGroup} from '../contract.js'
+import {
+  defineAssetSourceView,
+  definePanelView,
+  defineTileView,
+  defineWindowView,
+  type DockGroup,
+} from '../contract.js'
 import {
   type DefineAppInput,
   DefineAppInputSchema,
@@ -75,6 +81,14 @@ describe('unstable_defineApp', () => {
 
 describe('view declaration helpers', () => {
   test('add the view type', () => {
+    expect(
+      defineAssetSourceView({name: 'library', src: './src/Library.tsx', title: 'Library'}),
+    ).toEqual({
+      name: 'library',
+      src: './src/Library.tsx',
+      title: 'Library',
+      type: 'asset_source',
+    })
     expect(defineWindowView({name: 'app', src: './src/App.tsx', title: 'App'})).toEqual({
       name: 'app',
       src: './src/App.tsx',
@@ -99,6 +113,13 @@ describe('view declaration helpers', () => {
   })
 
   test('provide strict input types without accepting a type', () => {
+    defineAssetSourceView({
+      name: 'library',
+      src: './src/Library.tsx',
+      title: 'Library',
+      // @ts-expect-error `type` is added by the helper.
+      type: 'asset_source',
+    })
     defineWindowView({
       name: 'app',
       src: './src/App.tsx',

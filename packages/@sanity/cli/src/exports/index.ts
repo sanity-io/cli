@@ -7,7 +7,10 @@ export {loadEnv} from '../util/loadEnv.js'
 export type {CliConfig, UserViteConfig} from '@sanity/cli-core'
 
 export {
+  type AssetSourceView,
   type DefineAppInput,
+  defineAssetSourceView,
+  type DefineAssetSourceViewInput,
   type DefineMediaLibraryInput,
   definePanelView,
   type DefinePanelViewInput,

@@ -1,4 +1,6 @@
 export type {
+  AssetSourceView,
+  DefineAssetSourceViewInput,
   DefinePanelViewInput,
   DefineTileViewInput,
   DefineWindowViewInput,
@@ -11,7 +13,12 @@ export type {
   ViewDeclaration,
   WindowView,
 } from '../contract.js'
-export {definePanelView, defineTileView, defineWindowView} from '../contract.js'
+export {
+  defineAssetSourceView,
+  definePanelView,
+  defineTileView,
+  defineWindowView,
+} from '../contract.js'
 export {
   isWorkbenchApp,
   isWorkbenchConfig,

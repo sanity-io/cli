@@ -182,6 +182,17 @@ const AssetSourceViewSchema = z.object({
   ...interfaceDeclarationFields('View'),
 })
 
+/** @public */
+export type AssetSourceView = z.output<typeof AssetSourceViewSchema>
+
+/** @public */
+export type DefineAssetSourceViewInput = Omit<AssetSourceView, 'type'>
+
+/** @public */
+export function defineAssetSourceView(view: DefineAssetSourceViewInput): AssetSourceView {
+  return {...view, type: 'asset_source'}
+}
+
 const TileViewSchema = z.object({
   type: z.literal('tile'),
   ...interfaceDeclarationFields('View'),
