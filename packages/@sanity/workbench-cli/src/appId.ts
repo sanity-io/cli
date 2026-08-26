@@ -24,7 +24,6 @@ export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
     // address (`slug`) is deliberately absent, so renaming it never shifts the id.
     name: app.name,
     organizationId: app.organizationId,
-    // App identity follows the deployed services key, independent of config naming.
     services: canonical(app.webWorkers),
     views: canonical(app.views),
   })
