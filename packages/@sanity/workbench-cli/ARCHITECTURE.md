@@ -1,7 +1,7 @@
 # @sanity/workbench-cli
 
 Workbench is the opt-in path for shipping federated app views and background
-services from a Sanity studio or SDK app. This package holds the Workbench
+web workers from a Sanity studio or SDK app. This package holds the Workbench
 implementation that used to live inside `@sanity/cli-build` and `@sanity/cli`,
 behind a deliberately small interface so it can be pulled back out if Workbench
 doesn't graduate from `unstable_`.
@@ -11,8 +11,8 @@ doesn't graduate from `unstable_`.
 
 ## What lives here
 
-- The authoring API — `defineApplication`, `unstable_defineView`,
-  `unstable_defineService` and their types.
+- The authoring API — `defineApplication`, the typed view and web worker helpers,
+  `unstable_defineView`, `unstable_defineService` and their types.
 - The Vite module-federation stack — the `federation` plugin and the
   Sanity-specific plugins it composes (environment, extension artifacts,
   federation runtime), plus the remote render helper and artifact types.

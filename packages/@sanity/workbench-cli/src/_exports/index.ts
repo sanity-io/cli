@@ -3,6 +3,7 @@ export type {
   DefineAssetSourceViewInput,
   DefinePanelViewInput,
   DefineTileViewInput,
+  DefineWebWorkerInput,
   DefineWindowViewInput,
   DockGroup,
   InterfaceType,
@@ -11,12 +12,14 @@ export type {
   TileSize,
   TileView,
   ViewDeclaration,
+  WebWorker,
   WindowView,
 } from '../contract.js'
 export {
   defineAssetSourceView,
   definePanelView,
   defineTileView,
+  defineWebWorker,
   defineWindowView,
 } from '../contract.js'
 export {

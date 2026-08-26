@@ -27,8 +27,8 @@ interface ManifestPatch<T> {
   /** Same re-derive-don't-omit contract as `interfaces`. */
   configs?: DevServerConfig[] | undefined
   /**
-   * Workbench interfaces (views/services/app view) re-derived from the config
-   * on each change, so editing `views`/`services`/`entry` in `sanity.cli.ts`
+   * Workbench interfaces (views/web workers/app view) re-derived from the config
+   * on each change, so editing `views`/`webWorkers`/`entry` in `sanity.cli.ts`
    * re-syncs live like `title`/`icon`. `undefined` only for
    * non-branded configs — the registry patch is a shallow merge, so extractors
    * must re-derive rather than omit, or the registered set gets wiped.

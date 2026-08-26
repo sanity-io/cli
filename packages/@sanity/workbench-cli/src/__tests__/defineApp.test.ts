@@ -5,6 +5,7 @@ import {
   defineAssetSourceView,
   definePanelView,
   defineTileView,
+  defineWebWorker,
   defineWindowView,
   type DockGroup,
 } from '../contract.js'
@@ -159,6 +160,29 @@ describe('view declaration helpers', () => {
         title: 'Feed',
       }),
     ).toMatchObject({dock: {group: 'dock.user', order: 20}, type: 'panel'})
+  })
+})
+
+describe('web worker declaration helper', () => {
+  test('adds the worker type', () => {
+    expect(defineWebWorker({name: 'unread', src: './src/unread.ts', title: 'Unread'})).toEqual({
+      name: 'unread',
+      src: './src/unread.ts',
+      title: 'Unread',
+      type: 'worker',
+    })
+  })
+
+  test('provides strict input types without accepting a type', () => {
+    defineWebWorker({
+      name: 'unread',
+      src: './src/unread.ts',
+      title: 'Unread',
+      // @ts-expect-error `type` is added by the helper.
+      type: 'worker',
+    })
+    // @ts-expect-error `title` is required for web workers.
+    defineWebWorker({name: 'unread', src: './src/unread.ts'})
   })
 })
 
@@ -320,17 +344,17 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(result.error?.issues[0]?.message).toMatch(/unique/)
   })
 
-  test('accepts a worker service declaration, rejecting duplicate service names', () => {
+  test('accepts a web worker declaration, rejecting duplicate names', () => {
     expect(
       DefineAppInputSchema.safeParse(
         validInput({
-          services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+          webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
         }),
       ).success,
     ).toBe(true)
     const dupes = DefineAppInputSchema.safeParse(
       validInput({
-        services: [
+        webWorkers: [
           {name: 'unread', src: './src/a.ts', title: 'unread', type: 'worker'},
           {name: 'unread', src: './src/b.ts', title: 'unread', type: 'worker'},
         ],

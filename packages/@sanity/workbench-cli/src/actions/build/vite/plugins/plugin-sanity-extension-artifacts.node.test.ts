@@ -130,13 +130,13 @@ describe('sanityExtensionArtifacts', () => {
     expect(fs.existsSync(path.join(root, '.sanity/federation/views'))).toBe(false)
   })
 
-  it('emits a worker bundle and loader for each service', () => {
+  it('emits a worker bundle and loader for each web worker', () => {
     const root = makeRoot()
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
           views: [],
+          webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
         }),
       }),
       root,

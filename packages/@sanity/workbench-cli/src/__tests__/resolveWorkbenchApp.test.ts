@@ -19,7 +19,7 @@ describe('resolveWorkbenchApp', () => {
     expect(resolveWorkbenchApp(config as CliConfig | null | undefined)).toBeNull()
   })
 
-  test('resolves a branded app with defaulted views/services', () => {
+  test('resolves a branded app with defaulted views and web workers', () => {
     const config = asConfig(
       defineApplication({
         organizationId: 'org-123',
@@ -34,9 +34,9 @@ describe('resolveWorkbenchApp', () => {
       // Identity defaults to the slug when no explicit name is declared.
       name: 'my-app',
       organizationId: 'org-123',
-      services: [],
       slug: 'my-app',
       views: [],
+      webWorkers: [],
     })
   })
 
@@ -53,40 +53,40 @@ describe('resolveWorkbenchApp', () => {
     expect(resolveWorkbenchApp(config)).toMatchObject({name: 'reviews', slug: 'reviews-app'})
   })
 
-  test('passes through a declared app entry, services, slug, and visibility', () => {
+  test('passes through a declared app entry, web workers, slug, and visibility', () => {
     const config = asConfig(
       defineApplication({
         entry: './src/App.tsx',
         organizationId: 'org-123',
-        services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
         slug: 'my-app-host',
         title: 'My App',
         visibility: 'unlisted',
+        webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       }),
     )
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
       entry: './src/App.tsx',
-      services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       slug: 'my-app-host',
       visibility: 'unlisted',
+      webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
     })
   })
 
-  test('passes through declared panel views and services', () => {
+  test('passes through declared panel views and web workers', () => {
     const config = asConfig(
       defineApplication({
         organizationId: 'org-123',
-        services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
         slug: 'my-app-host',
         title: 'My App',
         views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+        webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       }),
     )
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
-      services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+      webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
     })
   })
 

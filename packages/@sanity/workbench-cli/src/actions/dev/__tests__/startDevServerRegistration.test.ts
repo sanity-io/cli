@@ -232,7 +232,7 @@ describe('startDevServerRegistration', () => {
     expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
       expect.objectContaining({
         // The studio project root resolves to sanity.config.*, but views/
-        // services live in sanity.cli.* — the watcher must react to both.
+        // Web workers live in sanity.cli.* — the watcher must react to both.
         extraWatchFilenames: ['sanity.cli.js', 'sanity.cli.ts'],
         workDir: '/tmp/sanity-project',
       }),

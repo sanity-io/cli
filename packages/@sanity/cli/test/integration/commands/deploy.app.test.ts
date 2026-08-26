@@ -357,7 +357,7 @@ describe('#deploy app', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('declares no entry, views or services')
+    expect(error?.message).toContain('declares no entry, views or web workers')
     expect(error?.oclif?.exit).toBe(2)
     // fails before any directory check or API call
     expect(mockCheckBuiltOutput).not.toHaveBeenCalled()

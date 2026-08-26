@@ -8,9 +8,9 @@ describe('buildAppId', () => {
     entry: './src/App.tsx',
     name: 'drop-desk',
     organizationId: 'org-1',
-    services: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     slug: 'drop-desk',
     views: [{name: 'feed', src: './src/feed.tsx', title: 'feed', type: 'panel'}],
+    webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
   }
 
   test('deterministic for the same declared shape', async () => {
