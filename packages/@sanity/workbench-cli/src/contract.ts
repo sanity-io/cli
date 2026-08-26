@@ -25,7 +25,7 @@ export interface ViewComponentBaseProps<TView> {
   view: TView
 }
 
-/** Component slots per view type; windows load outside the component artifact path. @internal */
+/** Component slots per view surface; windows load outside the component artifact path. @internal */
 export const VIEW_COMPONENTS = {
   app: [],
   asset_source: ['asset_source'],
@@ -34,7 +34,7 @@ export const VIEW_COMPONENTS = {
 } as const satisfies Record<string, readonly string[]>
 
 /** @public */
-export type InterfaceType = keyof typeof VIEW_COMPONENTS
+export type ViewSurface = keyof typeof VIEW_COMPONENTS
 
 /**
  * A tile's footprint family — the shape it occupies on the dashboard. Modelled
@@ -102,8 +102,8 @@ const INTERFACE_CONTRACT_VERSIONS = {
 export type InterfaceKind = keyof typeof INTERFACE_CONTRACT_VERSIONS
 
 /** @internal */
-export function interfaceContractVersion(type: InterfaceKind): string | undefined {
-  const version = INTERFACE_CONTRACT_VERSIONS[type]
+export function interfaceContractVersion(kind: InterfaceKind): string | undefined {
+  const version = INTERFACE_CONTRACT_VERSIONS[kind]
   return version === undefined ? undefined : String(version)
 }
 
@@ -112,8 +112,8 @@ export function interfaceContractVersion(type: InterfaceKind): string | undefine
  * id a deploy would, so the workbench loads a local interface like a deployed one.
  * @internal
  */
-export function interfaceModuleId(type: string, name: string): string {
-  switch (type) {
+export function interfaceModuleId(kind: string, name: string): string {
+  switch (kind) {
     case 'app': {
       return 'App'
     }
@@ -126,7 +126,7 @@ export function interfaceModuleId(type: string, name: string): string {
       return `services/${name}`
     }
     default: {
-      throw new Error(`Cannot derive a moduleId for unknown interface type: ${type}`)
+      throw new Error(`Cannot derive a moduleId for unknown interface kind: ${kind}`)
     }
   }
 }
@@ -150,7 +150,7 @@ function interfaceDeclarationFields(kind: 'View' | 'Web worker') {
 }
 
 const PanelViewSchema = z.object({
-  type: z.literal('panel'),
+  surface: z.literal('panel'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(DockSchema),
 })
@@ -159,15 +159,15 @@ const PanelViewSchema = z.object({
 export type PanelView = z.output<typeof PanelViewSchema>
 
 /** @public */
-export type DefinePanelViewInput = Omit<PanelView, 'type'>
+export type DefinePanelViewInput = Omit<PanelView, 'surface'>
 
 /** @public */
 export function definePanelView(view: DefinePanelViewInput): PanelView {
-  return {...view, type: 'panel'}
+  return {...view, surface: 'panel'}
 }
 
 const WindowViewSchema = z.object({
-  type: z.literal('app'),
+  surface: z.literal('app'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(DockSchema),
 })
@@ -176,15 +176,15 @@ const WindowViewSchema = z.object({
 export type WindowView = z.output<typeof WindowViewSchema>
 
 /** @public */
-export type DefineWindowViewInput = Omit<WindowView, 'type'>
+export type DefineWindowViewInput = Omit<WindowView, 'surface'>
 
 /** @public */
 export function defineWindowView(view: DefineWindowViewInput): WindowView {
-  return {...view, type: 'app'}
+  return {...view, surface: 'app'}
 }
 
 const AssetSourceViewSchema = z.object({
-  type: z.literal('asset_source'),
+  surface: z.literal('asset_source'),
   ...interfaceDeclarationFields('View'),
 })
 
@@ -192,15 +192,15 @@ const AssetSourceViewSchema = z.object({
 export type AssetSourceView = z.output<typeof AssetSourceViewSchema>
 
 /** @public */
-export type DefineAssetSourceViewInput = Omit<AssetSourceView, 'type'>
+export type DefineAssetSourceViewInput = Omit<AssetSourceView, 'surface'>
 
 /** @public */
 export function defineAssetSourceView(view: DefineAssetSourceViewInput): AssetSourceView {
-  return {...view, type: 'asset_source'}
+  return {...view, surface: 'asset_source'}
 }
 
 const TileViewSchema = z.object({
-  type: z.literal('tile'),
+  surface: z.literal('tile'),
   ...interfaceDeclarationFields('View'),
   /** Sort position within its layout track, ascending. Optional. */
   order: z.optional(z.number()),
@@ -212,15 +212,15 @@ const TileViewSchema = z.object({
 export type TileView = z.output<typeof TileViewSchema>
 
 /** @public */
-export type DefineTileViewInput = Omit<TileView, 'type'>
+export type DefineTileViewInput = Omit<TileView, 'surface'>
 
 /** @public */
 export function defineTileView(view: DefineTileViewInput): TileView {
-  return {...view, type: 'tile'}
+  return {...view, surface: 'tile'}
 }
 
 /** @internal */
-export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [
+export const InterfaceDeclarationSchema = z.discriminatedUnion('surface', [
   WindowViewSchema,
   PanelViewSchema,
   AssetSourceViewSchema,

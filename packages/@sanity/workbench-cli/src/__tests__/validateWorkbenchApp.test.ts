@@ -10,7 +10,7 @@ const app = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-const panel = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
+const panel = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
 
 describe('validateWorkbenchApp', () => {
   test('returns no errors for a valid app', () => {
@@ -31,7 +31,7 @@ describe('validateWorkbenchApp', () => {
     expect(
       validateWorkbenchApp(
         app({
-          views: [panel, {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'}],
+          views: [panel, {name: 'inbox', src: './src/Inbox.tsx', surface: 'panel', title: 'inbox'}],
         }),
       ),
     ).toEqual([])

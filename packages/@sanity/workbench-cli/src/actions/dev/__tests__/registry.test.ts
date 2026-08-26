@@ -88,7 +88,7 @@ const liveManifest = (port: number): DevServerManifest => ({
   port,
   startedAt: OS_START.toISOString(),
   type: 'studio',
-  version: 1,
+  version: 2,
   workDir: '/tmp/watch',
 })
 
@@ -129,7 +129,7 @@ describe('registerDevServer', () => {
       pid: process.pid,
       port: 3334,
       type: 'studio',
-      version: 1,
+      version: 2,
       workDir: '/tmp/project',
     })
 
@@ -158,8 +158,8 @@ describe('registerDevServer', () => {
       moduleId: 'views/agent',
       name: 'agent',
       src: './src/tile.tsx',
+      surface: 'tile' as const,
       title: 'Agent',
-      type: 'tile' as const,
       version: '1',
     }
 
@@ -298,7 +298,7 @@ describe('acquireWorkbenchLock', () => {
       pid: process.pid,
       port: 4000,
       startedAt: OS_START.toISOString(),
-      version: 1,
+      version: 2,
     })
   })
 

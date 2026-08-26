@@ -15,13 +15,17 @@ import {
 import {type ConfigSnapshot, deleteConfig, listConfigs} from '../../services/installations.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
-import {type DeployedInterface, summarizeInterfaces} from '../deploy/summarizeInterfaces.js'
+import {
+  type DeployedView,
+  type DeployedWebWorker,
+  summarizeInterfaces,
+} from '../deploy/summarizeInterfaces.js'
 
 /** The workbench extension of the shared target; serializes into `--json` as-is. */
 export type WorkbenchUndeployTarget =
   | (UndeployApplicationTarget & {
-      services: DeployedInterface[]
-      views: DeployedInterface[]
+      services: DeployedWebWorker[]
+      views: DeployedView[]
     })
   | (UndeployConfigTarget & {
       configs: ConfigSnapshot[]

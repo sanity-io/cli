@@ -130,7 +130,7 @@ describe('deploymentPlanToJson', () => {
       ...payload,
       config: 'Media Library fields:\n  Title (title)',
       services: [],
-      views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
+      views: [{name: 'edit', src: './edit.ts', surface: 'panel', title: 'Edit'}],
     }
 
     expect(deploymentPlanToJson(plan).payload).toEqual(plan.payload)
@@ -149,13 +149,13 @@ describe('reportInterfaces', () => {
     const reporter = createCollectingReporter<DeployCheck>()
 
     const interfaces = reportInterfaces(reporter, {
-      views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
+      views: [{name: 'edit', src: './edit.ts', surface: 'panel', title: 'Edit'}],
       webWorkers: [{name: 'sync', src: './sync.ts', title: 'sync', type: 'worker'}],
     })
 
     expect(interfaces).toEqual({
       services: [{name: 'sync', src: './sync.ts', title: 'sync', type: 'worker'}],
-      views: [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}],
+      views: [{name: 'edit', src: './edit.ts', surface: 'panel', title: 'Edit'}],
     })
     expect(reporter.results.every((check) => check.status === 'pass')).toBe(true)
   })

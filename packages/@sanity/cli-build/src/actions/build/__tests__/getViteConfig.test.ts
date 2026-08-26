@@ -633,7 +633,7 @@ describe('#getViteConfig', () => {
     const config = await getViteConfig({
       cwd: mockTestCwd,
       entries: mockEntries,
-      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', title: 'Panel', type: 'panel'}]},
+      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', surface: 'panel', title: 'Panel'}]},
       getEnvironmentVariables,
       isApp: true,
       isWorkbenchApp: true,
@@ -646,7 +646,7 @@ describe('#getViteConfig', () => {
     expect(mockWorkbenchOptimizeDeps).toHaveBeenCalledWith({
       appSources: [join(mockTestCwd, 'src/App'), join(mockTestCwd, 'sanity.config.ts')],
       cwd: mockTestCwd,
-      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', title: 'Panel', type: 'panel'}]},
+      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', surface: 'panel', title: 'Panel'}]},
     })
     expect(config.optimizeDeps).toEqual({
       entries: ['src/App.tsx'],

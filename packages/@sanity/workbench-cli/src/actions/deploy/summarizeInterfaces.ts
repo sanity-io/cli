@@ -1,12 +1,23 @@
+import {type ServiceType, type ViewSurface} from '../../contract.js'
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 
-/** A view or service as the deploy report and `--json` output surface it. */
-export interface DeployedInterface {
+interface DeployedInterfaceBase {
   name: string
   src: string
   title: string
-  type: string
 }
+
+/** A view as the deploy report and `--json` output surface it. */
+export interface DeployedView extends DeployedInterfaceBase {
+  surface: ViewSurface
+}
+
+/** A web worker as the deploy report and `--json` output surface it. */
+export interface DeployedWebWorker extends DeployedInterfaceBase {
+  type: ServiceType
+}
+
+export type DeployedInterface = DeployedView | DeployedWebWorker
 
 const label = (item: {name: string; title: string}) =>
   item.title === item.name ? item.name : `${item.title} (${item.name})`
@@ -28,17 +39,25 @@ export function summarizeGroup(
  */
 export function summarizeInterfaces({views, webWorkers}: WorkbenchExposes): {
   lines: string[]
-  services: DeployedInterface[]
-  views: DeployedInterface[]
+  services: DeployedWebWorker[]
+  views: DeployedView[]
 } {
-  const toInterface = (decl: DeployedInterface): DeployedInterface => ({
-    name: decl.name,
-    src: decl.src,
-    title: decl.title,
-    type: decl.type,
-  })
-  const deployedViews = (views ?? []).map((view) => toInterface(view))
-  const deployedServices = (webWorkers ?? []).map((webWorker) => toInterface(webWorker))
+  const deployedViews = (views ?? []).map(
+    (view): DeployedView => ({
+      name: view.name,
+      src: view.src,
+      surface: view.surface,
+      title: view.title,
+    }),
+  )
+  const deployedServices = (webWorkers ?? []).map(
+    (webWorker): DeployedWebWorker => ({
+      name: webWorker.name,
+      src: webWorker.src,
+      title: webWorker.title,
+      type: webWorker.type,
+    }),
+  )
 
   const lines: string[] = []
   if (deployedViews.length > 0) lines.push(summarizeGroup('Views', deployedViews))

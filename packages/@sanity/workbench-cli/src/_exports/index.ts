@@ -6,12 +6,12 @@ export type {
   DefineWebWorkerInput,
   DefineWindowViewInput,
   DockGroup,
-  InterfaceType,
   PanelView,
   ServiceType,
   TileSize,
   TileView,
   ViewDeclaration,
+  ViewSurface,
   WebWorker,
   WindowView,
 } from '../contract.js'
@@ -54,6 +54,6 @@ export type {
   TileComponent,
   TileViewComponents,
   TileViewProps,
-  ViewComponentsByType,
+  ViewComponentsBySurface,
   WindowViewProps,
 } from '../defineView.js'

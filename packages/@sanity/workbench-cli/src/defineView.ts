@@ -1,19 +1,19 @@
 import {type AssetSourceComponentProps} from '@sanity/types'
 
 import {
-  type InterfaceType,
   type TileSize,
   VIEW_CONTRACT_VERSION,
   type ViewComponent,
   type ViewComponentBaseProps,
+  type ViewSurface,
 } from './contract.js'
 
 /** @public */
 export type WindowViewProps = ViewComponentBaseProps<{
   name: string
   src: string
+  surface: 'app'
   title: string
-  type: 'app'
 }>
 
 /**
@@ -26,8 +26,8 @@ export type WindowViewProps = ViewComponentBaseProps<{
 export type PanelViewProps = ViewComponentBaseProps<{
   name: string
   src: string
+  surface: 'panel'
   title: string
-  type: 'panel'
 }>
 
 /**
@@ -65,8 +65,8 @@ export interface AssetSourceViewComponents {
 export type AssetSourceComponent = keyof AssetSourceViewComponents
 
 /**
- * Props a tile component receives: its own interface record (name/src/title/
- * type) plus its footprint `size`, so it can render per family. Mirrors the
+ * Props a tile component receives: its own interface record plus its footprint
+ * `size`, so it can render per family. Mirrors the
  * `tile` record the dashboard host renders from; drift is guarded by the stamped
  * contract version. Placement `order` is host-only metadata, not surfaced here.
  * @public
@@ -75,8 +75,8 @@ export type TileViewProps = ViewComponentBaseProps<{
   name: string
   size: TileSize
   src: string
+  surface: 'tile'
   title: string
-  type: 'tile'
 }>
 
 /**
@@ -95,10 +95,10 @@ export interface TileViewComponents {
 export type TileComponent = keyof TileViewComponents
 
 /**
- * The components each interface type exposes, keyed by type.
+ * The components each view surface exposes.
  * @public
  */
-export interface ViewComponentsByType {
+export interface ViewComponentsBySurface {
   app: ViewComponent<WindowViewProps>
   asset_source: AssetSourceViewComponents
   panel: PanelViewComponents
@@ -106,13 +106,13 @@ export interface ViewComponentsByType {
 }
 
 /**
- * The result of `unstable_defineView`: the author's component(s), the view type,
+ * The result of `unstable_defineView`: the author's component(s), the view surface,
  * and the internal contract version the build artifact targets.
  * @public
  */
-export interface DefinedView<TType extends InterfaceType = InterfaceType> {
-  readonly components: ViewComponentsByType[TType]
-  readonly type: TType
+export interface DefinedView<TSurface extends ViewSurface = ViewSurface> {
+  readonly components: ViewComponentsBySurface[TSurface]
+  readonly surface: TSurface
   /** @internal */
   readonly version: typeof VIEW_CONTRACT_VERSION
 }
@@ -122,14 +122,14 @@ export interface DefinedView<TType extends InterfaceType = InterfaceType> {
  * and the props each component receives — `"panel"` yields a `{title, panel}`
  * record whose components are typed with the panel props.
  *
- * Returns the component(s) tagged with their type and the contract version, for
+ * Returns the component(s) tagged with their surface and contract version, for
  * the CLI build to generate render artifacts from. Used as the default export of
  * a view's `src` file.
  * @public
  */
-export function unstable_defineView<TType extends InterfaceType>(
-  type: TType,
-  components: ViewComponentsByType[TType],
-): DefinedView<TType> {
-  return {components, type, version: VIEW_CONTRACT_VERSION}
+export function unstable_defineView<TSurface extends ViewSurface>(
+  surface: TSurface,
+  components: ViewComponentsBySurface[TSurface],
+): DefinedView<TSurface> {
+  return {components, surface, version: VIEW_CONTRACT_VERSION}
 }
