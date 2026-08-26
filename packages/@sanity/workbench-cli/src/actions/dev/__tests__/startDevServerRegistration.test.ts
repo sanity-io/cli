@@ -125,27 +125,28 @@ describe('startDevServerRegistration', () => {
     )
   })
 
-  test('logs an error and keeps the dev server up when another app already serves the slug', async () => {
+  test('logs an error and keeps the dev server up when another server already holds the id', async () => {
     mockGetRegisteredServers.mockReturnValue([{id: 'test-app', pid: 4242, port: 3334}])
     const output = createMockOutput()
 
     const handle = await register({output})
 
+    // A plain duplicate-id conflict, phrased generically — a config and its app
+    // no longer share an id, so there is no role to disambiguate.
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('The app "test-app" is already served'),
+      expect.stringContaining('"test-app" is already served'),
       {exit: false},
     )
-    expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('give this app its own `slug`'),
-      {exit: false},
-    )
+    expect(output.error).toHaveBeenCalledWith(expect.stringContaining('Stop that server first.'), {
+      exit: false,
+    })
     // Nothing registered, so the workbench never sees it — and nothing to watch or release.
     expect(mockRegisterDevServer).not.toHaveBeenCalled()
     expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
     await expect(handle.close()).resolves.toBeUndefined()
   })
 
-  test('registers when a live dev server holds a different slug', async () => {
+  test('registers when a live dev server holds a different id', async () => {
     mockGetRegisteredServers.mockReturnValue([{id: 'other-app', pid: 4242, port: 3334}])
     const output = createMockOutput()
 
@@ -154,35 +155,6 @@ describe('startDevServerRegistration', () => {
     expect(output.error).not.toHaveBeenCalled()
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
-
-  // A config-only server (configs, no interfaces — e.g. a media-library config
-  // app) is never routed as an app, so it may share a slug with the app server
-  // it configures. Only same-role duplicates are indistinguishable.
-  const mediaLibraryConfig = {
-    appType: 'media-library',
-    fields: [{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'}],
-  }
-
-  test('an app server registers alongside a config-only server with the same slug', async () => {
-    mockGetRegisteredServers.mockReturnValue([
-      {configs: [mediaLibraryConfig], id: 'test-app', pid: 4242, port: 3334},
-    ])
-    const output = createMockOutput()
-
-    await register({
-      cliConfig: workbenchCliConfig({app: workbenchApp({entry: './src/App.tsx'})}),
-      isApp: true,
-      output,
-    })
-
-    expect(output.error).not.toHaveBeenCalled()
-    expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
-  })
-
-  // NOTE (SDK-2367 Stage 1): the config↔app sever means a config carries a
-  // distinct brand and, until Stage 2 keys the dev registry on `config:${appType}`,
-  // a config-only dev server registers without an id. The same-role/role-flip
-  // collision-gate tests (PK's #1725) move with that work in Stage 2/3.
 
   test('forwards api.projectId to registerDevServer', async () => {
     await register({cliConfig: {api: {projectId: 'x1g7jygt'}, app: workbenchApp()} as any})
