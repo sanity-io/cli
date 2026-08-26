@@ -2,8 +2,9 @@ import {describe, expect, test} from 'vitest'
 
 import {toWorkbenchPayload} from '../deployPayload.js'
 import {type DeployableWorkbenchApp} from '../getWorkbench.js'
+import {type DeployedView} from '../summarizeInterfaces.js'
 
-const views = [{name: 'edit', src: './edit.ts', title: 'Edit', type: 'panel'}]
+const views: DeployedView[] = [{name: 'edit', src: './edit.ts', surface: 'panel', title: 'Edit'}]
 const app = (overrides: Record<string, unknown> = {}) =>
   ({slug: 'my-app', ...overrides}) as unknown as DeployableWorkbenchApp
 const none = {interfaces: null, title: 'My app'}

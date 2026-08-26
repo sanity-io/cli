@@ -37,7 +37,7 @@ describe('getWorkbench', () => {
 
   test('exposes the declared interfaces off the branded app', () => {
     const resolved = workbench({
-      views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
+      views: [{name: 'panel', src: './src/panel.tsx', surface: 'panel', title: 'panel'}],
       webWorkers: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
     })
     expect(resolved.views).toHaveLength(1)
@@ -53,13 +53,16 @@ describe('getWorkbench', () => {
 describe('buildViewDeploymentPayload', () => {
   test('includes every declared window view', () => {
     const views = [
-      {name: 'main', src: './src/Main.tsx', title: 'Main', type: 'app' as const},
-      {name: 'settings', src: './src/Settings.tsx', title: 'Settings', type: 'app' as const},
+      {name: 'main', src: './src/Main.tsx', surface: 'app' as const, title: 'Main'},
+      {name: 'settings', src: './src/Settings.tsx', surface: 'app' as const, title: 'Settings'},
     ]
 
     expect(workbench({views}).buildViewDeploymentPayload('app-id')).toEqual({
       applicationId: 'app-id',
-      views,
+      views: [
+        {name: 'main', src: './src/Main.tsx', title: 'Main', type: 'app'},
+        {name: 'settings', src: './src/Settings.tsx', title: 'Settings', type: 'app'},
+      ],
     })
   })
 })
@@ -82,7 +85,7 @@ describe('assertDeployable', () => {
   test('passes when the app declares a view', () => {
     expect(() =>
       workbench({
-        views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
+        views: [{name: 'panel', src: './src/panel.tsx', surface: 'panel', title: 'panel'}],
       }).assertDeployable(),
     ).not.toThrow()
   })
@@ -99,7 +102,7 @@ describe('assertDeployable', () => {
 describe('hasInterfaces', () => {
   test('an app that declares interfaces reports them', () => {
     const resolved = workbench({
-      views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
+      views: [{name: 'panel', src: './src/panel.tsx', surface: 'panel', title: 'panel'}],
     })
     expect(resolved.hasInterfaces).toBe(true)
   })

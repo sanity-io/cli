@@ -86,7 +86,7 @@ describe('workbenchVitePlugins', () => {
   })
 
   test('passes the declared views and web workers through to federation', async () => {
-    const views = [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel' as const}]
+    const views = [{name: 'feed', src: './src/panel.tsx', surface: 'panel' as const, title: 'feed'}]
     const webWorkers = [
       {name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker' as const},
     ]

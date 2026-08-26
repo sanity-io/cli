@@ -17,10 +17,10 @@ const assetSource = (props: AssetSourceComponentProps) => props.assetSource.name
 const tile = ({view}: TileViewProps) => view.size
 
 describe('unstable_defineView', () => {
-  test('returns the view type, contract version, and the author components', () => {
+  test('returns the view surface, contract version, and the author components', () => {
     const view = unstable_defineView('panel', {panel, title})
 
-    expect(view.type).toBe('panel')
+    expect(view.surface).toBe('panel')
     expect(view.version).toBe(VIEW_CONTRACT_VERSION)
     // Components pass through by reference — the helper is pure identity.
     expect(view.components.title).toBe(title)
@@ -28,8 +28,8 @@ describe('unstable_defineView', () => {
   })
 })
 
-describe('type surface', () => {
-  test('narrows the component record from the view type argument', () => {
+describe('surface typing', () => {
+  test('narrows the component record from the view surface argument', () => {
     const view = unstable_defineView('panel', {panel: () => null, title: () => null})
 
     expectTypeOf(view).toEqualTypeOf<DefinedView<'panel'>>()
@@ -48,16 +48,16 @@ describe('type surface', () => {
         expectTypeOf(props.view).toEqualTypeOf<{
           name: string
           src: string
+          surface: 'panel'
           title: string
-          type: 'panel'
         }>()
         return null
       },
     })
   })
 
-  test('rejects an unknown view type', () => {
-    // @ts-expect-error — "sidebar" is not a known view type.
+  test('rejects an unknown view surface', () => {
+    // @ts-expect-error — "sidebar" is not a known view surface.
     unstable_defineView('sidebar', {panel: () => null, title: () => null})
   })
 
@@ -67,8 +67,8 @@ describe('type surface', () => {
       expectTypeOf(props.view).toEqualTypeOf<{
         name: string
         src: string
+        surface: 'app'
         title: string
-        type: 'app'
       }>()
       return null
     })
@@ -82,15 +82,15 @@ describe('type surface', () => {
 })
 
 describe('asset_source view', () => {
-  test('returns the view type, contract version, and the author component', () => {
+  test('returns the view surface, contract version, and the author component', () => {
     const view = unstable_defineView('asset_source', {asset_source: assetSource})
 
-    expect(view.type).toBe('asset_source')
+    expect(view.surface).toBe('asset_source')
     expect(view.version).toBe(VIEW_CONTRACT_VERSION)
     expect(view.components.asset_source).toBe(assetSource)
   })
 
-  test('narrows the component record and props from the view type argument', () => {
+  test('narrows the component record and props from the view surface argument', () => {
     const view = unstable_defineView('asset_source', {
       asset_source: (props) => {
         expectTypeOf(props).toEqualTypeOf<AssetSourceComponentProps>()
@@ -109,15 +109,15 @@ describe('asset_source view', () => {
 })
 
 describe('tile view', () => {
-  test('returns the view type, contract version, and the author component', () => {
+  test('returns the view surface, contract version, and the author component', () => {
     const view = unstable_defineView('tile', {tile})
 
-    expect(view.type).toBe('tile')
+    expect(view.surface).toBe('tile')
     expect(view.version).toBe(VIEW_CONTRACT_VERSION)
     expect(view.components.tile).toBe(tile)
   })
 
-  test('narrows the component record and props (incl. footprint size) from the view type argument', () => {
+  test('narrows the component record and props from the view surface argument', () => {
     const view = unstable_defineView('tile', {
       tile: (props) => {
         expectTypeOf(props).toEqualTypeOf<TileViewProps>()
@@ -125,8 +125,8 @@ describe('tile view', () => {
           name: string
           size: TileSize
           src: string
+          surface: 'tile'
           title: string
-          type: 'tile'
         }>()
         return null
       },

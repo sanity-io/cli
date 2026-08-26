@@ -79,13 +79,13 @@ describe('resolveWorkbenchApp', () => {
         organizationId: 'org-123',
         slug: 'my-app-host',
         title: 'My App',
-        views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+        views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
         webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       }),
     )
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
-      views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
       webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
     })
   })
@@ -97,13 +97,13 @@ describe('resolveWorkbenchApp', () => {
         organizationId: 'org-123',
         slug: 'my-app',
         title: 'My App',
-        views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+        views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
       }),
     )
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
       entry: './src/App.tsx',
-      views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
     })
   })
 })

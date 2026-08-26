@@ -44,7 +44,7 @@ import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 const devDebug = subdebug('dev')
 
 /** Bump when the manifest/lock shape changes in a breaking way. */
-const REGISTRY_VERSION = 1
+const REGISTRY_VERSION = 2
 
 /**
  * The current process's start time as reported by the OS, for the `startedAt`
@@ -68,26 +68,28 @@ const interfaceBaseFields = {
 }
 
 /**
- * A forwarded interface, discriminated on `type`. Kept outside the manifest so
+ * A forwarded interface. Kept outside the manifest so
  * the workbench renders local panels and runs workers without a deploy.
  */
-const devServerInterfaceSchema = z.discriminatedUnion('type', [
-  z.object({
-    ...interfaceBaseFields,
-    metadata: z.nullable(ViewPlacementMetadataSchema),
-    type: z.literal('app'),
-  }),
-  z.object({
-    ...interfaceBaseFields,
-    metadata: z.nullable(ViewPlacementMetadataSchema),
-    type: z.literal('panel'),
-  }),
-  z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('asset_source')}),
-  z.object({
-    ...interfaceBaseFields,
-    metadata: TileInterfaceMetadataSchema,
-    type: z.literal('tile'),
-  }),
+const devServerInterfaceSchema = z.union([
+  z.discriminatedUnion('surface', [
+    z.object({
+      ...interfaceBaseFields,
+      metadata: z.nullable(ViewPlacementMetadataSchema),
+      surface: z.literal('app'),
+    }),
+    z.object({
+      ...interfaceBaseFields,
+      metadata: z.nullable(ViewPlacementMetadataSchema),
+      surface: z.literal('panel'),
+    }),
+    z.object({...interfaceBaseFields, metadata: z.null(), surface: z.literal('asset_source')}),
+    z.object({
+      ...interfaceBaseFields,
+      metadata: TileInterfaceMetadataSchema,
+      surface: z.literal('tile'),
+    }),
+  ]),
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('worker')}),
 ])
 

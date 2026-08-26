@@ -10,8 +10,8 @@ const panel = (name: string, src = `./src/${name}.tsx`): DevServerInterface => (
   moduleId: `views/${name}`,
   name,
   src,
+  surface: 'panel',
   title: name,
-  type: 'panel',
 })
 const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => ({
   id: `test-app-worker-${name}`,
@@ -43,7 +43,7 @@ const server = (
   port,
   startedAt: '2026-01-01T00:00:00.000Z',
   type: 'coreApp',
-  version: 1,
+  version: 2,
   workDir: '/tmp/app',
 })
 

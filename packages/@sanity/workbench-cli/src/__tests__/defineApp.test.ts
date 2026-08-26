@@ -81,26 +81,26 @@ describe('defineApplication', () => {
 })
 
 describe('view declaration helpers', () => {
-  test('add the view type', () => {
+  test('add the view surface', () => {
     expect(
       defineAssetSourceView({name: 'library', src: './src/Library.tsx', title: 'Library'}),
     ).toEqual({
       name: 'library',
       src: './src/Library.tsx',
+      surface: 'asset_source',
       title: 'Library',
-      type: 'asset_source',
     })
     expect(defineWindowView({name: 'app', src: './src/App.tsx', title: 'App'})).toEqual({
       name: 'app',
       src: './src/App.tsx',
+      surface: 'app',
       title: 'App',
-      type: 'app',
     })
     expect(definePanelView({name: 'feed', src: './src/Feed.tsx', title: 'Feed'})).toEqual({
       name: 'feed',
       src: './src/Feed.tsx',
+      surface: 'panel',
       title: 'Feed',
-      type: 'panel',
     })
     expect(
       defineTileView({name: 'agent', size: 'small', src: './src/Agent.tsx', title: 'Agent'}),
@@ -108,25 +108,25 @@ describe('view declaration helpers', () => {
       name: 'agent',
       size: 'small',
       src: './src/Agent.tsx',
+      surface: 'tile',
       title: 'Agent',
-      type: 'tile',
     })
   })
 
-  test('provide strict input types without accepting a type', () => {
+  test('provide strict input types without accepting a surface', () => {
     defineAssetSourceView({
       name: 'library',
       src: './src/Library.tsx',
+      // @ts-expect-error `surface` is added by the helper.
+      surface: 'asset_source',
       title: 'Library',
-      // @ts-expect-error `type` is added by the helper.
-      type: 'asset_source',
     })
     defineWindowView({
       name: 'app',
       src: './src/App.tsx',
+      // @ts-expect-error `surface` is added by the helper.
+      surface: 'app',
       title: 'App',
-      // @ts-expect-error `type` is added by the helper.
-      type: 'app',
     })
     definePanelView({
       name: 'feed',
@@ -151,7 +151,7 @@ describe('view declaration helpers', () => {
         src: './src/App.tsx',
         title: 'App',
       }),
-    ).toMatchObject({dock: {group: 'dock.applications', order: 10}, type: 'app'})
+    ).toMatchObject({dock: {group: 'dock.applications', order: 10}, surface: 'app'})
     expect(
       definePanelView({
         dock: {group: 'dock.user', order: 20},
@@ -159,7 +159,7 @@ describe('view declaration helpers', () => {
         src: './src/Feed.tsx',
         title: 'Feed',
       }),
-    ).toMatchObject({dock: {group: 'dock.user', order: 20}, type: 'panel'})
+    ).toMatchObject({dock: {group: 'dock.user', order: 20}, surface: 'panel'})
   })
 })
 
@@ -264,13 +264,15 @@ describe('DefineAppInputSchema (build-time validation)', () => {
 
   test('accepts a panel view declaration', () => {
     const parsed = DefineAppInputSchema.parse(
-      validInput({views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}]}),
+      validInput({
+        views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'}],
+      }),
     )
     expect(parsed.views?.[0]).toEqual({
       name: 'feed',
       src: './src/panel.tsx',
+      surface: 'panel',
       title: 'feed',
-      type: 'panel',
     })
   })
 
@@ -283,8 +285,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(parsed.views?.[0]).toEqual({
       name: 'app',
       src: './src/App.tsx',
+      surface: 'app',
       title: 'App',
-      type: 'app',
     })
   })
 
@@ -303,7 +305,7 @@ describe('DefineAppInputSchema (build-time validation)', () => {
 
   test('requires a view title, which Brett stores on the interface', () => {
     const result = DefineAppInputSchema.safeParse(
-      validInput({views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}]}),
+      validInput({views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel'}]}),
     )
     expect(result.success).toBe(false)
     expect(result.error?.issues[0]?.message).toBe('View `title` is required')
@@ -312,21 +314,23 @@ describe('DefineAppInputSchema (build-time validation)', () => {
   test('accepts an asset_source view declaration', () => {
     const parsed = DefineAppInputSchema.parse(
       validInput({
-        views: [{name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'}],
+        views: [
+          {name: 'library', src: './src/picker.tsx', surface: 'asset_source', title: 'Library'},
+        ],
       }),
     )
     expect(parsed.views?.[0]).toEqual({
       name: 'library',
       src: './src/picker.tsx',
+      surface: 'asset_source',
       title: 'Library',
-      type: 'asset_source',
     })
   })
 
-  test('rejects an unknown view type', () => {
+  test('rejects an unknown view surface', () => {
     expect(
       DefineAppInputSchema.safeParse(
-        validInput({views: [{name: 'feed', src: './src/panel.tsx', type: 'sidebar'}]}),
+        validInput({views: [{name: 'feed', src: './src/panel.tsx', surface: 'sidebar'}]}),
       ).success,
     ).toBe(false)
   })
@@ -335,8 +339,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/a.tsx', title: 'feed', type: 'panel'},
-          {name: 'feed', src: './src/b.tsx', title: 'feed', type: 'panel'},
+          {name: 'feed', src: './src/a.tsx', surface: 'panel', title: 'feed'},
+          {name: 'feed', src: './src/b.tsx', surface: 'panel', title: 'feed'},
         ],
       }),
     )
@@ -368,7 +372,7 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         entry: './src/App.tsx',
-        views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
+        views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'}],
       }),
     )
     expect(result.success).toBe(true)
@@ -378,8 +382,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/a.tsx', title: 'feed', type: 'panel'},
-          {name: 'inbox', src: './src/b.tsx', title: 'inbox', type: 'panel'},
+          {name: 'feed', src: './src/a.tsx', surface: 'panel', title: 'feed'},
+          {name: 'inbox', src: './src/b.tsx', surface: 'panel', title: 'inbox'},
         ],
       }),
     )
@@ -390,7 +394,9 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         entry: './src/App.tsx',
-        views: [{name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'}],
+        views: [
+          {name: 'library', src: './src/picker.tsx', surface: 'asset_source', title: 'Library'},
+        ],
       }),
     )
     expect(result.success).toBe(true)
@@ -400,8 +406,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'},
-          {name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'},
+          {name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'},
+          {name: 'library', src: './src/picker.tsx', surface: 'asset_source', title: 'Library'},
         ],
       }),
     )
@@ -417,8 +423,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
             order: 100,
             size: 'large',
             src: './src/tile.tsx',
+            surface: 'tile',
             title: 'Agent',
-            type: 'tile',
           },
         ],
       }),
@@ -428,15 +434,15 @@ describe('DefineAppInputSchema (build-time validation)', () => {
       order: 100,
       size: 'large',
       src: './src/tile.tsx',
+      surface: 'tile',
       title: 'Agent',
-      type: 'tile',
     })
   })
 
   test('requires a size on a tile view', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
-        views: [{name: 'agent-widget', src: './src/tile.tsx', title: 'Agent', type: 'tile'}],
+        views: [{name: 'agent-widget', src: './src/tile.tsx', surface: 'tile', title: 'Agent'}],
       }),
     )
     expect(result.success).toBe(false)
@@ -446,7 +452,13 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'agent-widget', size: 'huge', src: './src/tile.tsx', title: 'Agent', type: 'tile'},
+          {
+            name: 'agent-widget',
+            size: 'huge',
+            src: './src/tile.tsx',
+            surface: 'tile',
+            title: 'Agent',
+          },
         ],
       }),
     )
@@ -462,8 +474,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
             name: 'agent-widget',
             size: 'banner',
             src: './src/tile.tsx',
+            surface: 'tile',
             title: 'Agent',
-            type: 'tile',
           },
         ],
       }),
@@ -475,13 +487,13 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'},
+          {name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'},
           {
             name: 'agent-widget',
             size: 'small',
             src: './src/tile.tsx',
+            surface: 'tile',
             title: 'Agent',
-            type: 'tile',
           },
         ],
       }),
@@ -531,7 +543,7 @@ describe('type surface', () => {
 
 describe('interface surface', () => {
   type Base = {organizationId: string; slug: string; title: string}
-  type PanelView = {name: string; src: string; title: string; type: 'panel'}
+  type PanelView = {name: string; src: string; surface: 'panel'; title: string}
 
   test('allows an app entry without panel views', () => {
     expectTypeOf<Base & {entry: string}>().toExtend<DefineAppInput>()

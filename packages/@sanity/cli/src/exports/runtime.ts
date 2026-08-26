@@ -14,7 +14,6 @@ export type {
   AssetSourceViewComponents,
   DefinedService,
   DefinedView,
-  InterfaceType,
   PanelComponent,
   PanelViewComponents,
   PanelViewProps,
@@ -26,6 +25,7 @@ export type {
   TileSize,
   TileViewComponents,
   TileViewProps,
-  ViewComponentsByType,
+  ViewComponentsBySurface,
+  ViewSurface,
 } from '@sanity/workbench-cli'
 export {unstable_defineService, unstable_defineView} from '@sanity/workbench-cli'

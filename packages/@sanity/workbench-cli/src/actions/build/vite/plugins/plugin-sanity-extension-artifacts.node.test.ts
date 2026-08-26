@@ -41,7 +41,7 @@ describe('sanityExtensionArtifacts', () => {
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
+          views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'}],
         }),
       }),
       root,
@@ -57,7 +57,7 @@ describe('sanityExtensionArtifacts', () => {
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
+          views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'}],
         }),
       }),
       root,
@@ -82,7 +82,7 @@ describe('sanityExtensionArtifacts', () => {
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
           views: [
-            {name: 'library', src: './src/picker.tsx', title: 'library', type: 'asset_source'},
+            {name: 'library', src: './src/picker.tsx', surface: 'asset_source', title: 'library'},
           ],
         }),
       }),
@@ -106,7 +106,7 @@ describe('sanityExtensionArtifacts', () => {
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
           views: [
-            {name: 'agent', size: 'large', src: './src/tile.tsx', title: 'agent', type: 'tile'},
+            {name: 'agent', size: 'large', src: './src/tile.tsx', surface: 'tile', title: 'agent'},
           ],
         }),
       }),

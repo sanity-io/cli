@@ -170,8 +170,8 @@ describe('startDevServerRegistration', () => {
       cliConfig: workbenchCliConfig({
         app: workbenchApp({
           views: [
-            {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'},
-            {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'},
+            {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'},
+            {name: 'inbox', src: './src/Inbox.tsx', surface: 'panel', title: 'inbox'},
           ],
         }),
       }),
@@ -182,8 +182,8 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
         interfaces: expect.arrayContaining([
-          expect.objectContaining({name: 'feed', type: 'panel'}),
-          expect.objectContaining({name: 'inbox', type: 'panel'}),
+          expect.objectContaining({name: 'feed', surface: 'panel'}),
+          expect.objectContaining({name: 'inbox', surface: 'panel'}),
         ]),
       }),
     )
@@ -256,7 +256,7 @@ describe('startDevServerRegistration', () => {
     // alongside the manifest (which stays pure).
     mockGetCliConfigUncached.mockResolvedValue({
       app: workbenchApp({
-        views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+        views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
       }),
     })
 
@@ -273,8 +273,8 @@ describe('startDevServerRegistration', () => {
           moduleId: 'views/feed',
           name: 'feed',
           src: './src/FeedPanel.tsx',
+          surface: 'panel',
           title: 'feed',
-          type: 'panel',
           version: '1',
         },
       ],
@@ -322,8 +322,8 @@ describe('startDevServerRegistration', () => {
             moduleId: 'App',
             name: 'test-app',
             src: './src/App.tsx',
+            surface: 'app',
             title: 'Test App',
-            type: 'app',
           },
         ]),
       }),
@@ -334,7 +334,7 @@ describe('startDevServerRegistration', () => {
     await register({cliConfig: {app: workbenchApp()} as any, isApp: true})
 
     const {interfaces} = mockRegisterDevServer.mock.calls[0][0]
-    expect((interfaces ?? []).some((i: {type: string}) => i.type === 'app')).toBe(false)
+    expect((interfaces ?? []).some((i: {surface?: string}) => i.surface === 'app')).toBe(false)
   })
 
   test('rejects a studio that declares `entry` — app views for studios are not implemented yet', async () => {
@@ -345,7 +345,7 @@ describe('startDevServerRegistration', () => {
 
   // Adding/removing a view or service must rebuild the federation remote so the
   // new interface gets an expose + artifact. The watcher drives it.
-  const feed = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
+  const feed = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
 
   test('rebuilds the remote when the interface set changes, then keeps quiet on a repeat', async () => {
     const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)
@@ -373,7 +373,7 @@ describe('startDevServerRegistration', () => {
     await register({
       cliConfig: {
         app: workbenchApp({
-          views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+          views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
         }),
       } as any,
       isApp: true,

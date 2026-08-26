@@ -1,4 +1,4 @@
-import {type InterfaceType, VIEW_COMPONENTS} from '../../../contract.js'
+import {VIEW_COMPONENTS, type ViewSurface} from '../../../contract.js'
 import {type GeneratedArtifact} from '../artifact.js'
 import {renderRemote} from '../render-remote.js'
 
@@ -8,7 +8,7 @@ const VIEWS_DIR_NAME = 'views'
 /**
  * An interface to generate render artifacts for. The `src` file default-exports
  * an `unstable_defineView(...)` result; the build emits one render-contract
- * artifact per component the interface type exposes.
+ * artifact per component the view surface exposes.
  * @internal
  */
 export interface InterfaceArtifact {
@@ -16,8 +16,8 @@ export interface InterfaceArtifact {
   name: string
   /** Path to the interface `src` file, relative to the app root (or absolute). */
   src: string
-  /** Interface type — selects which components the build expands. */
-  type: InterfaceType
+  /** Selects which components the build expands. */
+  surface: ViewSurface
 }
 
 /**
@@ -32,7 +32,7 @@ export interface InterfaceArtifact {
 export function viewArtifacts(views: readonly InterfaceArtifact[]): GeneratedArtifact[] {
   const artifacts: GeneratedArtifact[] = []
   for (const view of views) {
-    for (const component of VIEW_COMPONENTS[view.type]) {
+    for (const component of VIEW_COMPONENTS[view.surface]) {
       artifacts.push({
         expose: `./${VIEWS_DIR_NAME}/${view.name}/${component}`,
         path: `${VIEWS_DIR_NAME}/${view.name}/${component}.js`,

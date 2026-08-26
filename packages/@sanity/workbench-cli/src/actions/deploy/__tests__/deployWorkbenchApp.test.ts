@@ -225,8 +225,8 @@ describe('deployWorkbenchApp', () => {
           order: 100,
           size: 'large',
           src: './src/tile.tsx',
+          surface: 'tile',
           title: 'Agent',
-          type: 'tile',
         },
       ],
     })
