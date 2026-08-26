@@ -24,9 +24,9 @@ const mockClient = {request: vi.fn()}
 const app = defineApplication({
   entry: './src/App.tsx',
   organizationId: 'org-1',
-  services: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
   slug: 'drop-desk',
   title: 'Drop Desk',
+  webWorkers: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
 })
 const workspaces: BrettWorkspace[] = [
   {

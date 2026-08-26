@@ -54,7 +54,7 @@ describe('exposesSetId', () => {
     expect(exposesSetId({interfaces: undefined})).toBe(exposesSetId({interfaces: []}))
   })
 
-  test('is order-independent — reordering views/services is not a change', () => {
+  test('is order-independent — reordering views/web workers is not a change', () => {
     expect(exposesSetId({interfaces: [panel('a'), worker('b')]})).toBe(
       exposesSetId({interfaces: [worker('b'), panel('a')]}),
     )

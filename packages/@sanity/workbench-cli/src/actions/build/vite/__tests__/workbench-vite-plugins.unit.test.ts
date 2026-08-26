@@ -85,17 +85,19 @@ describe('workbenchVitePlugins', () => {
     )
   })
 
-  test('passes the declared views and services through to federation', async () => {
+  test('passes the declared views and web workers through to federation', async () => {
     const views = [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel' as const}]
-    const services = [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker' as const}]
+    const webWorkers = [
+      {name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker' as const},
+    ]
     await workbenchVitePlugins({
       cwd,
       entries: {relativeConfigLocation: null, relativeEntry: '../../src/App'},
-      exposes: {services, views},
+      exposes: {views, webWorkers},
       isApp: true,
     })
     expect(mockFederation).toHaveBeenCalledWith(
-      expect.objectContaining({exposes: {services, views}}),
+      expect.objectContaining({exposes: {views, webWorkers}}),
     )
   })
 

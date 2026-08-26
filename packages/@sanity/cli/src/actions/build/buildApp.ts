@@ -19,13 +19,13 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   const {cliConfig, flags, outDir, output, workDir} = options
 
   const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined
-  // `views`/`services` live on the branded `defineApplication` result, not the
+  // `views`/`webWorkers` live on the branded `defineApplication` result, not the
   // legacy `app` config object — resolve the workbench capability to read them. A
   // config is not an app: it resolves separately and only expands its `fields`.
   const workbench = resolveWorkbenchApp(cliConfig)
   const workbenchConfig = resolveWorkbenchConfig(cliConfig)
   const exposes = workbench
-    ? {services: workbench.services, views: workbench.views}
+    ? {views: workbench.views, webWorkers: workbench.webWorkers}
     : workbenchConfig
       ? {config: {appType: workbenchConfig.appType, fields: workbenchConfig.fields}}
       : undefined

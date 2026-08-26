@@ -17,6 +17,8 @@ export {
   type DefinePanelViewInput,
   defineTileView,
   type DefineTileViewInput,
+  defineWebWorker,
+  type DefineWebWorkerInput,
   defineWindowView,
   type DefineWindowViewInput,
   type MediaLibraryField,
@@ -26,5 +28,6 @@ export {
   defineApplication as unstable_defineApp,
   unstable_defineMediaLibrary,
   type ViewDeclaration,
+  type WebWorker,
   type WindowView,
 } from '@sanity/workbench-cli'

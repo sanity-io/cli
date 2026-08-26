@@ -93,9 +93,9 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('maps services to worker interfaces', () => {
+  test('maps web workers to worker interfaces', () => {
     const app = workbenchApp({
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -194,8 +194,8 @@ describe('deriveInterfaces', () => {
 
   test('stamps the moduleId a deploy would, so a local interface resolves like a deployed one', () => {
     const panelApp = workbenchApp({
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
       views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(panelApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
       'views/feed',
@@ -204,7 +204,7 @@ describe('deriveInterfaces', () => {
 
     const entryApp = workbenchApp({
       entry: './src/App.tsx',
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(entryApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
       'services/unread',
@@ -215,7 +215,7 @@ describe('deriveInterfaces', () => {
   test('carries null metadata on every interface (not yet populated)', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})?.every((iface) => iface.metadata === null)).toBe(
       true,
@@ -230,11 +230,11 @@ describe('deriveInterfaces', () => {
     expect(result?.some((iface) => iface.type === 'app')).toBe(false)
   })
 
-  test('orders a panel view ahead of services', () => {
+  test('orders a panel view ahead of web workers', () => {
     const app = workbenchApp({
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
       slug: 'my-app',
       views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -260,11 +260,11 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('places the app view after services', () => {
+  test('places the app view after web workers', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
       slug: 'my-app',
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -289,11 +289,11 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('derives a unique id per interface, disambiguating a view and service that share a name', () => {
+  test('derives a unique id when a view and web worker share a name', () => {
     const app = workbenchApp({
-      services: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
       slug: 'my-app',
       views: [{name: 'sync', src: './src/SyncPanel.tsx', title: 'sync', type: 'panel'}],
+      webWorkers: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
     })
     const ids = deriveInterfaces(app, {isApp: true})?.map((iface) => iface.id) ?? []
     expect(ids).toEqual(['my-app-panel-sync', 'my-app-worker-sync'])

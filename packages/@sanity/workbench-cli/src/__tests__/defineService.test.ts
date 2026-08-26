@@ -33,7 +33,7 @@ describe('ServiceDeclarationSchema', () => {
       type: 'worker',
     })
     expect(result.success).toBe(false)
-    expect(result.error?.issues[0]?.message).toBe('Service `title` is required')
+    expect(result.error?.issues[0]?.message).toBe('Web worker `title` is required')
   })
 
   test('rejects a name with illegal characters', () => {

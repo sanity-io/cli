@@ -132,7 +132,7 @@ export function interfaceModuleId(type: string, name: string): string {
 }
 
 // Shared `name` + `src`; `kind` only tailors the validation message.
-function extensionDeclarationFields(kind: 'Field' | 'Service' | 'View') {
+function extensionDeclarationFields(kind: 'Field' | 'View' | 'Web worker') {
   const pattern = /^[a-zA-Z0-9_-]+$/
   return {
     name: z.string().check(z.regex(pattern, `${kind} \`name\` must match ${pattern}`)),
@@ -140,9 +140,9 @@ function extensionDeclarationFields(kind: 'Field' | 'Service' | 'View') {
   }
 }
 
-// Every interface (view, service) shares `name` + `src` + a display `title`,
+// Every interface shares `name` + `src` + a display `title`,
 // which Brett requires on the record each becomes.
-function interfaceDeclarationFields(kind: 'Service' | 'View') {
+function interfaceDeclarationFields(kind: 'View' | 'Web worker') {
   return {
     ...extensionDeclarationFields(kind),
     title: z.string(`${kind} \`title\` is required`),
@@ -230,13 +230,24 @@ export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [
 /** @public */
 export type ViewDeclaration = z.output<typeof InterfaceDeclarationSchema>
 
-const WorkerServiceSchema = z.object({
+const WebWorkerSchema = z.object({
   type: z.literal('worker'),
-  ...interfaceDeclarationFields('Service'),
+  ...interfaceDeclarationFields('Web worker'),
 })
 
+/** @public */
+export type WebWorker = z.output<typeof WebWorkerSchema>
+
+/** @public */
+export type DefineWebWorkerInput = Omit<WebWorker, 'type'>
+
+/** @public */
+export function defineWebWorker(webWorker: DefineWebWorkerInput): WebWorker {
+  return {...webWorker, type: 'worker'}
+}
+
 /** @internal */
-export const ServiceDeclarationSchema = z.discriminatedUnion('type', [WorkerServiceSchema])
+export const ServiceDeclarationSchema = z.discriminatedUnion('type', [WebWorkerSchema])
 
 const MediaLibraryFieldSchema = z.object({
   ...extensionDeclarationFields('Field'),

@@ -24,7 +24,8 @@ export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
     // address (`slug`) is deliberately absent, so renaming it never shifts the id.
     name: app.name,
     organizationId: app.organizationId,
-    services: canonical(app.services),
+    // App identity follows the deployed services key, independent of config naming.
+    services: canonical(app.webWorkers),
     views: canonical(app.views),
   })
   // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser

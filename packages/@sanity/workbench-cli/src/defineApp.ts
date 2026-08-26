@@ -57,17 +57,6 @@ export const DefineAppInputSchema = z
     organizationId: z.string(
       "App `organizationId` is required — pass the owning organization's ID to `defineApplication`",
     ),
-    /** Background services the app runs (e.g. a `worker` emitting dock badges). */
-    services: z.optional(
-      z
-        .array(ServiceDeclarationSchema, 'must be an array of services')
-        .check(
-          z.refine(
-            (services) => new Set(services.map((service) => service.name)).size === services.length,
-            'Service `name` must be unique within an app',
-          ),
-        ),
-    ),
     slug: z
       .string('App `slug` is required — the hostname the application is created at on deploy')
       .check(
@@ -91,6 +80,18 @@ export const DefineAppInputSchema = z
     ),
     /** Dashboard visibility of the app. Defaults to `default` when omitted. */
     visibility: z.optional(z.enum(APP_VISIBILITIES)),
+    /** Background web workers the app runs. */
+    webWorkers: z.optional(
+      z
+        .array(ServiceDeclarationSchema, 'must be an array of web workers')
+        .check(
+          z.refine(
+            (webWorkers) =>
+              new Set(webWorkers.map((webWorker) => webWorker.name)).size === webWorkers.length,
+            'Web worker `name` must be unique within an app',
+          ),
+        ),
+    ),
   })
   .check(
     // Studio app views are not implemented yet. A studio that declares `entry`

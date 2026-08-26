@@ -29,17 +29,17 @@ export function getWorkbench(
   const app = resolveWorkbenchApp(cliConfig)
   if (!app) return null
 
-  const {entry, services, views} = app
+  const {entry, views, webWorkers} = app
 
   return {
     ...app,
 
-    hasInterfaces: !!entry || views.length > 0 || services.length > 0,
+    hasInterfaces: !!entry || views.length > 0 || webWorkers.length > 0,
 
     assertDeployable() {
-      if (!entry && views.length === 0 && services.length === 0) {
+      if (!entry && views.length === 0 && webWorkers.length === 0) {
         throw new Error(
-          'Nothing to deploy: the app declares no entry, views or services. ' +
+          'Nothing to deploy: the app declares no entry, views or web workers. ' +
             'Add at least one to the app config.',
         )
       }

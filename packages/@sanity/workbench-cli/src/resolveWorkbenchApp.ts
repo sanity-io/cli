@@ -19,8 +19,8 @@ import {formatWorkbenchAppErrors, validateWorkbenchApp} from './validateWorkbenc
  */
 export interface WorkbenchExposes {
   config?: WorkbenchConfigValue
-  services?: DefineAppInput['services']
   views?: DefineAppInput['views']
+  webWorkers?: DefineAppInput['webWorkers']
 }
 
 /** @public */
@@ -32,13 +32,13 @@ export interface ResolvedWorkbenchApp {
   readonly name: string
   /** Organization that owns the app — part of its build-id identity. */
   readonly organizationId: string
-  /** Background worker services the app declares. */
-  readonly services: NonNullable<DefineAppInput['services']>
-
   readonly slug: string
 
   /** Views the app declares. */
   readonly views: NonNullable<DefineAppInput['views']>
+
+  /** Background web workers the app declares. */
+  readonly webWorkers: NonNullable<DefineAppInput['webWorkers']>
 
   /** Resolved app kind — `studio` or one of the SDK app types. */
   readonly applicationType?: string
@@ -73,9 +73,9 @@ export function resolveWorkbenchApp(
     // Identity defaults to the address, so existing apps behave identically.
     name: app.name ?? app.slug,
     organizationId: app.organizationId,
-    services: app.services ?? [],
     slug: app.slug,
     views: app.views ?? [],
     visibility: app.visibility,
+    webWorkers: app.webWorkers ?? [],
   }
 }

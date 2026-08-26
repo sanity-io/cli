@@ -26,7 +26,7 @@ export function summarizeGroup(
  * One report line per non-empty group, alongside the records `--json` reports.
  * @internal
  */
-export function summarizeInterfaces({services, views}: WorkbenchExposes): {
+export function summarizeInterfaces({views, webWorkers}: WorkbenchExposes): {
   lines: string[]
   services: DeployedInterface[]
   views: DeployedInterface[]
@@ -38,10 +38,10 @@ export function summarizeInterfaces({services, views}: WorkbenchExposes): {
     type: decl.type,
   })
   const deployedViews = (views ?? []).map((view) => toInterface(view))
-  const deployedServices = (services ?? []).map((service) => toInterface(service))
+  const deployedServices = (webWorkers ?? []).map((webWorker) => toInterface(webWorker))
 
   const lines: string[] = []
   if (deployedViews.length > 0) lines.push(summarizeGroup('Views', deployedViews))
-  if (deployedServices.length > 0) lines.push(summarizeGroup('Services', deployedServices))
+  if (deployedServices.length > 0) lines.push(summarizeGroup('Web workers', deployedServices))
   return {lines, services: deployedServices, views: deployedViews}
 }
