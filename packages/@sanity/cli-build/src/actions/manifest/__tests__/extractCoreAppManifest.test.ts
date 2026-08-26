@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises'
 
 import {getCliConfigUncached} from '@sanity/cli-core'
-import {unstable_defineApp} from '@sanity/workbench-cli'
+import {defineApplication} from '@sanity/workbench-cli'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {extractCoreAppManifest, resolveTitleUpdate} from '../extractCoreAppManifest.js'
@@ -54,7 +54,7 @@ describe('extractCoreAppManifest', () => {
 
   test('merges group and order into the manifest', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: unstable_defineApp({
+      app: defineApplication({
         dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
         slug: 'my-slug',
@@ -74,7 +74,7 @@ describe('extractCoreAppManifest', () => {
 
   test('keeps order 0', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: unstable_defineApp({
+      app: defineApplication({
         dock: {order: 0},
         organizationId: 'org-1',
         slug: 'my-slug',
@@ -89,7 +89,7 @@ describe('extractCoreAppManifest', () => {
 
   test('forwards slug from a workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: unstable_defineApp({
+      app: defineApplication({
         organizationId: 'org-1',
         slug: 'my-slug',
         title: 'My App',

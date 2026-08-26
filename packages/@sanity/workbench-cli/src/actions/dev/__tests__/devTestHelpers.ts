@@ -4,7 +4,7 @@ import {type CliConfig, type Output} from '@sanity/cli-core'
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import {vi} from 'vitest'
 
-import {unstable_defineApp} from '../../../defineApp.js'
+import {defineApplication} from '../../../defineApp.js'
 import {type StartWorkbenchOptions} from '../startWorkbenchDevServer.js'
 
 /**
@@ -27,9 +27,9 @@ export class FakeFsWatcher extends EventEmitter {
   }
 }
 
-/** A CliConfig `app` from a branded `unstable_defineApp(...)` — the workbench opt-in. */
+/** A CliConfig `app` from a branded `defineApplication(...)` — the workbench opt-in. */
 export function workbenchApp(overrides: Record<string, unknown> = {}): CliConfig['app'] {
-  return unstable_defineApp({
+  return defineApplication({
     organizationId: 'org-123',
     slug: 'test-app',
     title: 'Test App',

@@ -7,7 +7,7 @@ import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
 import {workbenchApp} from './devTestHelpers.js'
 
 describe('deriveInterfaces', () => {
-  test('derives nothing for a non-branded app (no unstable_defineApp)', () => {
+  test('derives nothing for a non-branded app (no defineApplication)', () => {
     expect(deriveInterfaces({title: 'Plain'} as CliConfig['app'], {isApp: true})).toEqual([])
     expect(deriveInterfaces(undefined, {isApp: true})).toEqual([])
   })

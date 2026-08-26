@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
+import {defineApplication, unstable_defineMediaLibrary} from '../defineApp.js'
 import {resolveWorkbenchApp} from '../resolveWorkbenchApp.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig
@@ -21,7 +21,7 @@ describe('resolveWorkbenchApp', () => {
 
   test('resolves a branded app with defaulted views/services', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         organizationId: 'org-123',
         slug: 'my-app',
         title: 'My App',
@@ -42,7 +42,7 @@ describe('resolveWorkbenchApp', () => {
 
   test('keeps an explicit name distinct from the slug', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         name: 'reviews',
         organizationId: 'org-123',
         slug: 'reviews-app',
@@ -55,7 +55,7 @@ describe('resolveWorkbenchApp', () => {
 
   test('passes through a declared app entry, services, slug, and visibility', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         entry: './src/App.tsx',
         organizationId: 'org-123',
         services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
@@ -75,7 +75,7 @@ describe('resolveWorkbenchApp', () => {
 
   test('passes through declared panel views and services', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         organizationId: 'org-123',
         services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
         slug: 'my-app-host',
@@ -92,7 +92,7 @@ describe('resolveWorkbenchApp', () => {
 
   test('resolves an app entry and panel views together', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         entry: './src/App.tsx',
         organizationId: 'org-123',
         slug: 'my-app',

@@ -15,7 +15,7 @@ const noop = async () => {}
 
 /**
  * Entry point for `sanity dev`. A plain studio/app starts a single dev server, as
- * before workbench existed. A workbench app (via `unstable_defineApp`) delegates to
+ * before workbench existed. A workbench app (via `defineApplication`) delegates to
  * `@sanity/workbench-cli`, injecting the CLI-domain pieces (app server, manifest
  * extraction, app id) and loading the package lazily so plain projects never do.
  */

@@ -178,7 +178,7 @@ describe('startWorkbenchDevServer', () => {
         startWorkbenchDevServer(
           createDevOptions({cliConfig: {app: workbenchApp({organizationId: undefined})}}),
         ),
-      ).rejects.toThrow(/Pass "organizationId" to unstable_defineApp/)
+      ).rejects.toThrow(/Pass "organizationId" to defineApplication/)
     })
   })
 
