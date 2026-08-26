@@ -22,6 +22,8 @@ export {
   type MediaLibraryField,
   type PanelView,
   type TileView,
+  // `sanity/cli` imports this compatibility name from `@sanity/cli`.
+  defineApplication as unstable_defineApp,
   unstable_defineMediaLibrary,
   type ViewDeclaration,
   type WindowView,
