@@ -8,6 +8,14 @@ import {
   type ViewComponentBaseProps,
 } from './contract.js'
 
+/** @public */
+export type WindowViewProps = ViewComponentBaseProps<{
+  name: string
+  src: string
+  title: string
+  type: 'app'
+}>
+
 /**
  * Props a panel component receives: its interface record, minus the
  * service-assigned `id`/`deployment_id` a local dev server can't provide. Mirrors
@@ -60,7 +68,7 @@ export type AssetSourceComponent = keyof AssetSourceViewComponents
  * Props a tile component receives: its own interface record (name/src/title/
  * type) plus its footprint `size`, so it can render per family. Mirrors the
  * `tile` record the dashboard host renders from; drift is guarded by the stamped
- * contract version. Placement `priority` is host-only metadata, not surfaced here.
+ * contract version. Placement `order` is host-only metadata, not surfaced here.
  * @public
  */
 export type TileViewProps = ViewComponentBaseProps<{
@@ -91,6 +99,7 @@ export type TileComponent = keyof TileViewComponents
  * @public
  */
 export interface ViewComponentsByType {
+  app: ViewComponent<WindowViewProps>
   asset_source: AssetSourceViewComponents
   panel: PanelViewComponents
   tile: TileViewComponents

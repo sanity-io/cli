@@ -35,9 +35,8 @@ describe('the `app` config slot', () => {
 
     defineCliConfig({
       app: unstable_defineApp({
-        group: 'dock.system',
+        dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
-        priority: 20,
         slug: 'my-app',
         title: 'My App',
       }),
@@ -48,17 +47,9 @@ describe('the `app` config slot', () => {
   test('rejects workbench fields written by hand', () => {
     defineCliConfig({
       app: {
-        // @ts-expect-error `group` comes from `unstable_defineApp`
-        group: 'dock.system',
+        // @ts-expect-error `dock` comes from `unstable_defineApp`
+        dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
-      },
-    })
-
-    defineCliConfig({
-      app: {
-        organizationId: 'org-1',
-        // @ts-expect-error `priority` comes from `unstable_defineApp`
-        priority: 20,
       },
     })
   })

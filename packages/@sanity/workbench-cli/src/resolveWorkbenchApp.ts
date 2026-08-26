@@ -37,7 +37,7 @@ export interface ResolvedWorkbenchApp {
 
   readonly slug: string
 
-  /** Dock panel views the app declares. */
+  /** Views the app declares. */
   readonly views: NonNullable<DefineAppInput['views']>
 
   /** Resolved app kind — `studio` or one of the SDK app types. */

@@ -114,10 +114,9 @@ export async function extractCoreAppManifest(
 
     const manifest: CoreAppManifest = coreAppManifestSchema.parse({
       version: '1',
+      ...(workbench?.dock ? {dock: workbench.dock} : {}),
       ...(icon ? {icon} : {}),
       ...(app.title ? {title: app.title} : {}),
-      ...(workbench?.group ? {group: workbench.group} : {}),
-      ...(workbench?.priority === undefined ? {} : {priority: workbench.priority}),
       ...(workbench?.slug ? {slug: workbench.slug} : {}),
     })
 

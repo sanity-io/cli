@@ -1,7 +1,7 @@
 import {z} from 'zod/mini'
 
 import {APP_SLUG_PATTERN} from './appSlug.js'
-import {InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
+import {DockSchema, InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
 
 /**
  * Dashboard visibility values. Mirrors `APP_VISIBILITIES` in `@sanity/cli-core`
@@ -16,17 +16,6 @@ const APP_VISIBILITIES = ['default', 'unlisted', 'disabled'] as const
  */
 const ApplicationType = z.enum(['coreApp', 'studio', 'canvas', 'dashboard'])
 
-/** Dock groups an app can place itself into. */
-const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user'])
-
-/**
- * Dock group identifier. The API does not block a user app from declaring a
- * reserved group (e.g. `dock.system`); priority conventions keep Sanity-owned
- * apps ahead.
- * @public
- */
-export type DockGroup = z.output<typeof DockGroupSchema>
-
 /**
  * Runtime-validation schema for `unstable_defineApp`.
  * @internal
@@ -39,14 +28,14 @@ export const DefineAppInputSchema = z
      * @internal
      */
     applicationType: z.optional(ApplicationType),
+    /** Default placement inherited by panel and window views. */
+    dock: z.optional(DockSchema),
     /**
      * App entrypoint module. Defaults to `./src/App.tsx` when omitted. The build
      * derives the app's navigable `app` view from it. SDK apps only — setting it
      * on a studio is rejected (studio app views are not yet implemented).
      */
     entry: z.optional(z.string("must be a path to the app's entry file")),
-    /** Dock group to render in. Defaults to `dock.applications` when omitted. */
-    group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
     /**
@@ -68,8 +57,6 @@ export const DefineAppInputSchema = z
     organizationId: z.string(
       "App `organizationId` is required — pass the owning organization's ID to `unstable_defineApp`",
     ),
-    /** Sort position within the group, ascending. Defaults to `100` when omitted. */
-    priority: z.optional(z.number()),
     /** Background services the app runs (e.g. a `worker` emitting dock badges). */
     services: z.optional(
       z
@@ -91,10 +78,10 @@ export const DefineAppInputSchema = z
       ),
     /** User-facing app title. Wins over studio.config.ts title on merge. */
     title: z.string(),
-    /** Views the app exposes (e.g. dock panels). */
+    /** Views the app exposes (e.g. a window, dock panels, and tiles). */
     views: z.optional(
       z
-        .array(InterfaceDeclarationSchema, 'must be an array of panels')
+        .array(InterfaceDeclarationSchema, 'must be an array of views')
         .check(
           z.refine(
             (views) => new Set(views.map((view) => view.name)).size === views.length,

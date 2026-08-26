@@ -2,11 +2,12 @@ import {type CliConfig} from '@sanity/cli-core'
 
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './actions/build/vite/constants.js'
 import {
-  type AppInterfaceMetadata,
+  type Dock,
   interfaceContractVersion,
   type InterfaceKind,
   interfaceModuleId,
   type TileInterfaceMetadata,
+  type ViewPlacementMetadata,
 } from './contract.js'
 import {isWorkbenchApp} from './defineApp.js'
 
@@ -26,11 +27,11 @@ interface DerivedInterfaceBase {
 
 /** @internal */
 export type DerivedInterface =
-  | (DerivedInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
   | (DerivedInterfaceBase & {metadata: null; type: 'asset_source'})
-  | (DerivedInterfaceBase & {metadata: null; type: 'panel'})
   | (DerivedInterfaceBase & {metadata: null; type: 'worker'})
   | (DerivedInterfaceBase & {metadata: TileInterfaceMetadata; type: 'tile'})
+  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; type: 'app'})
+  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; type: 'panel'})
 
 /**
  * `appTitle` titles the app view where a deploy resolved one through `--title`;
@@ -67,18 +68,29 @@ export function deriveInterfaces(
     version: interfaceContractVersion(type),
   })
 
+  const placementMetadata = (dock?: Dock): ViewPlacementMetadata | null => {
+    const group = dock?.group ?? app.dock?.group
+    const order = dock?.order ?? app.dock?.order
+    if (group === undefined && order === undefined) return null
+    return {
+      dock: {
+        ...(group === undefined ? {} : {group}),
+        ...(order === undefined ? {} : {order}),
+      },
+    }
+  }
+
   return [
     ...(app.views ?? []).map((view): DerivedInterface => {
-      // Tile is the only view type with interface metadata: its footprint `size`
-      // (required) and an optional sort `priority`. Both authored top-level.
       if (view.type === 'tile') {
         return {
           ...shared(view.type, view),
           metadata:
-            view.priority === undefined
-              ? {size: view.size}
-              : {priority: view.priority, size: view.size},
+            view.order === undefined ? {size: view.size} : {order: view.order, size: view.size},
         }
+      }
+      if (view.type === 'app' || view.type === 'panel') {
+        return {...shared(view.type, view), metadata: placementMetadata(view.dock)}
       }
       return {...shared(view.type, view), metadata: null}
     }),
@@ -90,7 +102,7 @@ export function deriveInterfaces(
       : [
           {
             ...shared('app', {name: appName, src: entry, title: appTitle ?? app.title}),
-            metadata: null,
+            metadata: placementMetadata(),
           },
         ]),
   ]

@@ -7,8 +7,10 @@ import {
   type PanelViewProps,
   type TileViewProps,
   unstable_defineView,
+  type WindowViewProps,
 } from '../defineView.js'
 
+const app = ({view}: WindowViewProps) => view.name
 const title = ({view}: PanelViewProps) => view.name
 const panel = ({view}: PanelViewProps) => view.name
 const assetSource = (props: AssetSourceComponentProps) => props.assetSource.name
@@ -57,6 +59,25 @@ describe('type surface', () => {
   test('rejects an unknown view type', () => {
     // @ts-expect-error — "sidebar" is not a known view type.
     unstable_defineView('sidebar', {panel: () => null, title: () => null})
+  })
+
+  test('passes a window component the local app record as props', () => {
+    const view = unstable_defineView('app', (props) => {
+      expectTypeOf(props).toEqualTypeOf<WindowViewProps>()
+      expectTypeOf(props.view).toEqualTypeOf<{
+        name: string
+        src: string
+        title: string
+        type: 'app'
+      }>()
+      return null
+    })
+
+    expectTypeOf(view).toEqualTypeOf<DefinedView<'app'>>()
+  })
+
+  test('returns a window component by reference', () => {
+    expect(unstable_defineView('app', app).components).toBe(app)
   })
 })
 
