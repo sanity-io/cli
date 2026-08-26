@@ -368,6 +368,30 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(dupes.error?.issues[0]?.message).toMatch(/unique/)
   })
 
+  test('rejects a name shared by a view and web worker', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        views: [{name: 'sync', src: './src/Sync.tsx', surface: 'panel', title: 'Sync'}],
+        webWorkers: [{name: 'sync', src: './src/sync.ts', title: 'Sync', type: 'worker'}],
+      }),
+    )
+
+    expect(result.error?.issues[0]?.message).toBe(
+      '`name` must be unique across views and web workers. Rename one of the duplicates.',
+    )
+  })
+
+  test('rejects a declared view with the entry-generated view name', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        entry: './src/App.tsx',
+        views: [{name: 'drop-desk', src: './src/Settings.tsx', surface: 'app', title: 'Settings'}],
+      }),
+    )
+
+    expect(result.success).toBe(false)
+  })
+
   test('accepts declaring both an entry and panel views', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({

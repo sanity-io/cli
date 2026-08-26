@@ -68,32 +68,21 @@ export const DefineAppInputSchema = z
     /** User-facing app title. Wins over studio.config.ts title on merge. */
     title: z.string(),
     /** Views the app exposes (e.g. a window, dock panels, and tiles). */
-    views: z.optional(
-      z
-        .array(InterfaceDeclarationSchema, 'must be an array of views')
-        .check(
-          z.refine(
-            (views) => new Set(views.map((view) => view.name)).size === views.length,
-            'View `name` must be unique within an app',
-          ),
-        ),
-    ),
+    views: z.optional(z.array(InterfaceDeclarationSchema, 'must be an array of views')),
     /** Dashboard visibility of the app. Defaults to `default` when omitted. */
     visibility: z.optional(z.enum(APP_VISIBILITIES)),
     /** Background web workers the app runs. */
-    webWorkers: z.optional(
-      z
-        .array(ServiceDeclarationSchema, 'must be an array of web workers')
-        .check(
-          z.refine(
-            (webWorkers) =>
-              new Set(webWorkers.map((webWorker) => webWorker.name)).size === webWorkers.length,
-            'Web worker `name` must be unique within an app',
-          ),
-        ),
-    ),
+    webWorkers: z.optional(z.array(ServiceDeclarationSchema, 'must be an array of web workers')),
   })
   .check(
+    z.refine((input) => {
+      const names = [
+        ...(input.entry === undefined ? [] : [input.name ?? input.slug]),
+        ...(input.views ?? []).map((view) => view.name),
+        ...(input.webWorkers ?? []).map((webWorker) => webWorker.name),
+      ]
+      return new Set(names).size === names.length
+    }, '`name` must be unique across views and web workers. Rename one of the duplicates.'),
     // Studio app views are not implemented yet. A studio that declares `entry`
     // (the SDK app-view entrypoint) is rejected here rather than silently
     // generating one; studios keep navigating via their existing render path.
