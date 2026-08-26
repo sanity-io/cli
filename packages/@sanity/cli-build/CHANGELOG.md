@@ -1,5 +1,27 @@
 # Changelog
 
+## 6.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.3.1...cli-build-v6.0.0)
+
+_2026-08-26_
+
+### ⚠ BREAKING CHANGES
+
+- Move manifest logic into cli-build package to support blueprints deployment ([#1744](https://github.com/sanity-io/cli/pull/1744)) ([0f174c6](https://github.com/sanity-io/cli/commit/0f174c61e7cf84eda9c2de0b01a0e15224a2d5e2))
+
+### Features
+
+- **workbench:** enable type-safe window, panel, and tile declarations ([#1755](https://github.com/sanity-io/cli/pull/1755)) ([36b61b3](https://github.com/sanity-io/cli/commit/36b61b39d1d09010fa68098d2064d3dab51cdbd3))
+- **workbench:** stabilize unstable_defineApp ([#1756](https://github.com/sanity-io/cli/pull/1756)) ([69a180e](https://github.com/sanity-io/cli/commit/69a180ec221e5762e56b7afef59ea952e4d3fee3))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.0
+    - @sanity/cli-core bumped to 3.4.0
+
 ## 5.3.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.3.0...cli-build-v5.3.1)
