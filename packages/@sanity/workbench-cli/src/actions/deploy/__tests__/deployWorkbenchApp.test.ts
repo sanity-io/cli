@@ -84,14 +84,6 @@ describe('createCoreApp', () => {
     expect(mockClient.request.mock.calls[0][0].body).toMatchObject({name: 'drop-desk'})
   })
 
-  test('forwards isSingleton when creating a singleton core app', async () => {
-    mockClient.request.mockResolvedValueOnce({id: 'app_new'})
-
-    await createCoreApp({isSingleton: true, organizationId: 'org-1', slug: 'ml', title: 'Media'})
-
-    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({isSingleton: true})
-  })
-
   test('forwards visibility as a create-time field', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_new'})
 

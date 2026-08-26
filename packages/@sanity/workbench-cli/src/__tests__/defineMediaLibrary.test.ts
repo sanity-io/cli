@@ -3,61 +3,53 @@ import {describe, expect, expectTypeOf, test} from 'vitest'
 import {
   type DefineMediaLibraryInput,
   isWorkbenchApp,
+  isWorkbenchConfig,
   unstable_defineMediaLibrary,
-  type WorkbenchApp,
 } from '../defineApp.js'
 
-// Same global-registry brand `unstable_defineApp` stamps — a media library is a
-// workbench app, so the CLI discriminates it the same way.
-const WORKBENCH_APP = Symbol.for('sanity.workbench.defineApp')
-
-// The public result type hides the fields a media library stamps
-// (config, applicationType); narrow past it via the runtime guard.
-function mediaLibrary(input: DefineMediaLibraryInput): WorkbenchApp {
-  const app = unstable_defineMediaLibrary(input)
-  if (!isWorkbenchApp(app)) throw new Error('expected a workbench app')
-  return app
-}
+// A media library is a config, not an app — it carries the distinct config brand.
+const WORKBENCH_CONFIG = Symbol.for('sanity.workbench.defineConfig')
 
 describe('unstable_defineMediaLibrary', () => {
-  test('brands the result with the shared workbench brand', () => {
+  test('brands the result with the config brand, not the app brand', () => {
     const app = unstable_defineMediaLibrary({organizationId: 'org-1'})
-    expect(Object.getOwnPropertyDescriptor(app, WORKBENCH_APP)?.value).toBe(true)
-    expect(isWorkbenchApp(app)).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(app, WORKBENCH_CONFIG)?.value).toBe(true)
+    expect(isWorkbenchConfig(app)).toBe(true)
+    // A config is not an app — the two brands are severed.
+    expect(isWorkbenchApp(app)).toBe(false)
   })
 
-  test('declares a media-library singleton with a stable slug', () => {
-    const app = mediaLibrary({organizationId: 'org-1'})
-    expect(app.applicationType).toBe('media-library')
-    expect(app.isSingleton).toBe(true)
-    expect(app.slug).toBe('media-library')
+  test('declares a media-library config bound to its target by appType', () => {
+    const app = unstable_defineMediaLibrary({organizationId: 'org-1'})
+    expect(app.appType).toBe('media-library')
+    expect(app.organizationId).toBe('org-1')
+    // No app identity — a config carries no slug or title.
+    expect(app).not.toHaveProperty('slug')
+    expect(app).not.toHaveProperty('title')
   })
 
-  test('collects all fields into one config', () => {
-    const app = mediaLibrary({
+  test('collects all declared fields', () => {
+    const app = unstable_defineMediaLibrary({
       fields: [
         {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
         {name: 'language', src: './src/language.ts', title: 'Language'},
       ],
       organizationId: 'org-1',
     })
-    expect(app.config).toEqual({
-      appType: 'media-library',
-      fields: [
-        {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-        {name: 'language', src: './src/language.ts', title: 'Language'},
-      ],
-    })
+    expect(app.fields).toEqual([
+      {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+      {name: 'language', src: './src/language.ts', title: 'Language'},
+    ])
   })
 
-  test('declares no config when no fields are given', () => {
-    const app = mediaLibrary({organizationId: 'org-1'})
-    expect(app.config).toBeUndefined()
+  test('defaults to no fields', () => {
+    const app = unstable_defineMediaLibrary({organizationId: 'org-1'})
+    expect(app.fields).toEqual([])
   })
 
   test('leaves the brand non-enumerable so it does not leak into config spreads', () => {
     const app = unstable_defineMediaLibrary({organizationId: 'org-1'})
-    expect(Object.getOwnPropertySymbols({...app})).not.toContain(WORKBENCH_APP)
+    expect(Object.getOwnPropertySymbols({...app})).not.toContain(WORKBENCH_CONFIG)
   })
 })
 

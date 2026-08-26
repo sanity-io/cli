@@ -8,7 +8,6 @@ export interface WorkbenchDeployPayload {
 
   /** Media-library config summary. */
   config?: string
-  isSingleton?: boolean
   services?: DeployedInterface[]
   views?: DeployedInterface[]
   visibility?: string
@@ -34,7 +33,6 @@ export function toWorkbenchPayload(
   const {services, views} = interfaces ?? {services: [], views: []}
   return {
     ...(config ? {config} : {}),
-    ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
     ...(services.length > 0 || views.length > 0 ? {services, views} : {}),
     slug: workbench.slug,
     title,

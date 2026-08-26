@@ -120,8 +120,10 @@ export async function startDevServerRegistration(
   const name = workbenchApp?.name ?? workbenchApp?.slug
   const reference =
     workbenchApp && name
-      ? applicationReference({
-          isSingleton: workbenchApp.isSingleton ?? false,
+      ? // No workbench app is a singleton now that the only one (the Media Library)
+        // is a config, not an app — so its reference is always `<org>/<name>`.
+        applicationReference({
+          isSingleton: false,
           name,
           organizationId: workbenchApp.organizationId,
         })

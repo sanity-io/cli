@@ -120,6 +120,8 @@ export async function createApplication(options: {
       type,
       // Identity, distinct from the slug address. Omitted → Brett defaults it to slug.
       ...(name ? {name} : {}),
+      // Brett requires `isSingleton` on `POST /applications`, so the request
+      // builder keeps forwarding it even though the CLI itself never sets it.
       ...(isSingleton === undefined ? {} : {isSingleton}),
       ...(visibility ? {visibility} : {}),
       // Studio config is set once, at create — it's immutable on redeploy.

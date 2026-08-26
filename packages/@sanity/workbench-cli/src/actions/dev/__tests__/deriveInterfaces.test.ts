@@ -1,6 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
+import {unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {deriveInterfaces} from '../../../deriveInterfaces.js'
 import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
 import {workbenchApp} from './devTestHelpers.js'
@@ -326,7 +327,7 @@ describe('deriveConfigs', () => {
     await expect(deriveConfigs(undefined)).resolves.toEqual([])
   })
 
-  test('[] for an app with no config', async () => {
+  test('[] for an app (not a config), even one with interfaces', async () => {
     await expect(
       deriveConfigs(
         workbenchApp({views: [{name: 'feed', src: './f.tsx', title: 'feed', type: 'panel'}]}),
@@ -334,18 +335,30 @@ describe('deriveConfigs', () => {
     ).resolves.toEqual([])
   })
 
-  test('forwards the serializable config on the wire, keeping `src` as each field entry', async () => {
-    const app = workbenchApp({
-      config: {
+  test('derives a config with no fields — keyed on its appType, not its fields', async () => {
+    const config = unstable_defineMediaLibrary({
+      organizationId: 'org-1',
+    }) as unknown as CliConfig['app']
+    await expect(deriveConfigs(config)).resolves.toEqual([
+      {
         appType: 'media-library',
-        fields: [
-          {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-          {name: 'language', src: './src/language.ts', title: 'Language'},
-        ],
+        fields: [],
+        id: expect.any(String),
+        moduleName: 'media-library',
+        version: '1',
       },
-      isSingleton: true,
-    })
-    await expect(deriveConfigs(app)).resolves.toEqual([
+    ])
+  })
+
+  test('forwards the serializable config on the wire, keying moduleName on the target appType', async () => {
+    const config = unstable_defineMediaLibrary({
+      fields: [
+        {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+        {name: 'language', src: './src/language.ts', title: 'Language'},
+      ],
+      organizationId: 'org-1',
+    }) as unknown as CliConfig['app']
+    await expect(deriveConfigs(config)).resolves.toEqual([
       {
         appType: 'media-library',
         fields: [
@@ -353,46 +366,31 @@ describe('deriveConfigs', () => {
           {name: 'language', public: undefined, src: './src/language.ts', title: 'Language'},
         ],
         id: expect.any(String),
-        moduleName: 'test-app',
+        moduleName: 'media-library',
         version: '1',
       },
     ])
   })
 
   test('id is stable for the same config and changes when the config changes', async () => {
-    const config = {
-      appType: 'media-library' as const,
+    const config = unstable_defineMediaLibrary({
       fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-    }
-    const app = workbenchApp({config, isSingleton: true})
-    const edited = workbenchApp({
-      config: {...config, fields: [{...config.fields[0]!, title: 'Edited'}]},
-      isSingleton: true,
-    })
-    expect((await deriveConfigs(app))[0]?.id).toBe((await deriveConfigs(app))[0]?.id)
-    expect((await deriveConfigs(edited))[0]?.id).not.toBe((await deriveConfigs(app))[0]?.id)
+      organizationId: 'org-1',
+    }) as unknown as CliConfig['app']
+    const edited = unstable_defineMediaLibrary({
+      fields: [{name: 'description', src: './src/description.ts', title: 'Edited'}],
+      organizationId: 'org-1',
+    }) as unknown as CliConfig['app']
+    expect((await deriveConfigs(config))[0]?.id).toBe((await deriveConfigs(config))[0]?.id)
+    expect((await deriveConfigs(edited))[0]?.id).not.toBe((await deriveConfigs(config))[0]?.id)
   })
 
   test("forwards the config's appType discriminator (assigns the singleton, no app id)", async () => {
-    const app = workbenchApp({
-      applicationType: 'media-library',
-      config: {
-        appType: 'media-library',
-        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-      },
-      isSingleton: true,
-    })
-    expect((await deriveConfigs(app))[0]?.appType).toBe('media-library')
-  })
-
-  test('rejects an config on a non-singleton app', async () => {
-    const app = workbenchApp({
-      config: {
-        appType: 'media-library',
-        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-      },
-    })
-    await expect(deriveConfigs(app)).rejects.toThrow(/only supported for singleton apps/)
+    const config = unstable_defineMediaLibrary({
+      fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+      organizationId: 'org-1',
+    }) as unknown as CliConfig['app']
+    expect((await deriveConfigs(config))[0]?.appType).toBe('media-library')
   })
 })
 

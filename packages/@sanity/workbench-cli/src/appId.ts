@@ -19,7 +19,6 @@ export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
   ): Array<[string, string, string]> =>
     (interfaces ?? []).map((i): [string, string, string] => [i.type, i.name, i.src]).toSorted()
   const shape = JSON.stringify({
-    config: app.config ?? null,
     entry: app.entry ?? null,
     // Identity, not address: the id keys on `name` (which defaults to `slug`). The
     // address (`slug`) is deliberately absent, so renaming it never shifts the id.

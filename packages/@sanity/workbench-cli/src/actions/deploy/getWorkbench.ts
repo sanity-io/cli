@@ -10,8 +10,8 @@ import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDepl
 
 export interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
   /**
-   * Throws when the app exposes nothing (no entry, view, service, or config) —
-   * the remote would have nothing to load. Gated before any prompt or API call.
+   * Throws when the app exposes nothing (no entry, view, or service) — the
+   * remote would have nothing to load. Gated before any prompt or API call.
    */
   assertDeployable(): void
   /**
@@ -19,12 +19,6 @@ export interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
    * Throws when a view declaration is malformed.
    */
   buildViewDeploymentPayload(applicationId: string): ViewDeploymentPayload
-  /**
-   * A singleton (the Media Library) that carries an config — deploy
-   * persists the config to the org's installation. Independent of the interfaces,
-   * which register regardless; non-singletons never carry a config.
-   */
-  deploySingletonConfig: boolean
   /** Declares something to host as an application — an entry, view, or service. */
   hasInterfaces: boolean
 }
@@ -35,18 +29,17 @@ export function getWorkbench(
   const app = resolveWorkbenchApp(cliConfig)
   if (!app) return null
 
-  const {config, entry, isSingleton, services, views} = app
+  const {entry, services, views} = app
 
   return {
     ...app,
 
-    deploySingletonConfig: !!isSingleton && !!config,
     hasInterfaces: !!entry || views.length > 0 || services.length > 0,
 
     assertDeployable() {
-      if (!entry && views.length === 0 && services.length === 0 && !config) {
+      if (!entry && views.length === 0 && services.length === 0) {
         throw new Error(
-          'Nothing to deploy: the app declares no entry, views, services or config. ' +
+          'Nothing to deploy: the app declares no entry, views or services. ' +
             'Add at least one to the app config.',
         )
       }
