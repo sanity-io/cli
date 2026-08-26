@@ -51,7 +51,9 @@ describe('validateWorkbenchApp', () => {
       }),
     )
     expect(errors).toContainEqual(expect.stringMatching(/slug: App `slug` must be lowercase/))
-    expect(errors).toContainEqual(expect.stringContaining('View `name` must be unique'))
+    expect(errors).toContainEqual(
+      expect.stringContaining('`name` must be unique across views and web workers'),
+    )
   })
 })
 
