@@ -8,6 +8,14 @@ import {
   type ViewComponentBaseProps,
 } from './contract.js'
 
+/** @public */
+export type WindowViewProps = ViewComponentBaseProps<{
+  name: string
+  src: string
+  title: string
+  type: 'app'
+}>
+
 /**
  * Props a panel component receives: its interface record, minus the
  * service-assigned `id`/`deployment_id` a local dev server can't provide. Mirrors
@@ -91,7 +99,7 @@ export type TileComponent = keyof TileViewComponents
  * @public
  */
 export interface ViewComponentsByType {
-  app: never
+  app: ViewComponent<WindowViewProps>
   asset_source: AssetSourceViewComponents
   panel: PanelViewComponents
   tile: TileViewComponents

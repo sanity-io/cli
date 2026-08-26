@@ -45,4 +45,5 @@ export type {
   TileViewComponents,
   TileViewProps,
   ViewComponentsByType,
+  WindowViewProps,
 } from '../defineView.js'
