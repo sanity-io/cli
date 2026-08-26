@@ -16,7 +16,7 @@ import {z} from 'zod/mini'
 export const coreAppManifestSchema = z.object({
   dock: z.optional(
     z.object({
-      group: z.optional(z.enum(['system', 'applications', 'user'])),
+      group: z.optional(z.enum(['dock.system', 'dock.applications', 'dock.user'])),
       order: z.optional(z.number()),
     }),
   ),

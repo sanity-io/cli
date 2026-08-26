@@ -258,20 +258,20 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     const placedApp = unstable_defineApp({
-      dock: {group: 'applications', order: 100},
+      dock: {group: 'dock.applications', order: 100},
       entry: './src/App.tsx',
       organizationId: 'org-1',
       slug: 'drop-desk',
       title: 'Drop Desk',
       views: [
         definePanelView({
+          dock: {order: 20},
           name: 'feed',
-          order: 20,
           src: './src/Feed.tsx',
           title: 'Feed',
         }),
         defineWindowView({
-          group: 'user',
+          dock: {group: 'dock.user'},
           name: 'settings',
           src: './src/Settings.tsx',
           title: 'Settings',
@@ -292,7 +292,7 @@ describe('deployWorkbenchApp', () => {
     const fields = appendedFields()
     expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
       {
-        metadata: {group: 'applications', order: 20},
+        metadata: {group: 'dock.applications', order: 20},
         moduleId: 'views/feed',
         name: 'feed',
         title: 'Feed',
@@ -300,7 +300,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {group: 'user', order: 100},
+        metadata: {group: 'dock.user', order: 100},
         moduleId: 'App',
         name: 'settings',
         title: 'Settings',
@@ -308,7 +308,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {group: 'applications', order: 100},
+        metadata: {group: 'dock.applications', order: 100},
         moduleId: 'App',
         name: 'drop-desk',
         title: 'Drop Desk',

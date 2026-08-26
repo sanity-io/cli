@@ -35,7 +35,7 @@ describe('the `app` config slot', () => {
 
     defineCliConfig({
       app: unstable_defineApp({
-        dock: {group: 'system', order: 20},
+        dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
         slug: 'my-app',
         title: 'My App',
@@ -48,7 +48,7 @@ describe('the `app` config slot', () => {
     defineCliConfig({
       app: {
         // @ts-expect-error `dock` comes from `unstable_defineApp`
-        dock: {group: 'system', order: 20},
+        dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
       },
     })

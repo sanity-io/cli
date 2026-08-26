@@ -124,22 +124,20 @@ describe('view declaration helpers', () => {
   test('preserve panel and window placement metadata', () => {
     expect(
       defineWindowView({
-        group: 'applications',
+        dock: {group: 'dock.applications', order: 10},
         name: 'app',
-        order: 10,
         src: './src/App.tsx',
         title: 'App',
       }),
-    ).toMatchObject({group: 'applications', order: 10, type: 'app'})
+    ).toMatchObject({dock: {group: 'dock.applications', order: 10}, type: 'app'})
     expect(
       definePanelView({
-        group: 'user',
+        dock: {group: 'dock.user', order: 20},
         name: 'feed',
-        order: 20,
         src: './src/Feed.tsx',
         title: 'Feed',
       }),
-    ).toMatchObject({group: 'user', order: 20, type: 'panel'})
+    ).toMatchObject({dock: {group: 'dock.user', order: 20}, type: 'panel'})
   })
 })
 
@@ -206,8 +204,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
   })
 
   test('accepts dock defaults, rejecting an unknown group', () => {
-    const parsed = DefineAppInputSchema.parse(validInput({dock: {group: 'system', order: 20}}))
-    expect(parsed.dock).toEqual({group: 'system', order: 20})
+    const parsed = DefineAppInputSchema.parse(validInput({dock: {group: 'dock.system', order: 20}}))
+    expect(parsed.dock).toEqual({group: 'dock.system', order: 20})
     expect(DefineAppInputSchema.safeParse(validInput({dock: {}})).success).toBe(true)
     expect(DefineAppInputSchema.safeParse(validInput({dock: {group: 'nope'}})).success).toBe(false)
   })

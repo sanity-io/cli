@@ -67,9 +67,9 @@ export function deriveInterfaces(
     version: interfaceContractVersion(type),
   })
 
-  const placementMetadata = (declaration: ViewPlacementMetadata): ViewPlacementMetadata | null => {
-    const group = declaration.group ?? app.dock?.group
-    const order = declaration.order ?? app.dock?.order
+  const placementMetadata = (dock?: ViewPlacementMetadata): ViewPlacementMetadata | null => {
+    const group = dock?.group ?? app.dock?.group
+    const order = dock?.order ?? app.dock?.order
     if (group === undefined && order === undefined) return null
     return {
       ...(group === undefined ? {} : {group}),
@@ -87,7 +87,7 @@ export function deriveInterfaces(
         }
       }
       if (view.type === 'app' || view.type === 'panel') {
-        return {...shared(view.type, view), metadata: placementMetadata(view)}
+        return {...shared(view.type, view), metadata: placementMetadata(view.dock)}
       }
       return {...shared(view.type, view), metadata: null}
     }),
@@ -99,7 +99,7 @@ export function deriveInterfaces(
       : [
           {
             ...shared('app', {name: appName, src: entry, title: appTitle ?? app.title}),
-            metadata: placementMetadata({}),
+            metadata: placementMetadata(),
           },
         ]),
   ]
