@@ -1,5 +1,21 @@
 # Changelog
 
+## 14.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v13.0.0...cli-test-v14.0.0)
+
+_2026-08-26_
+
+### Features
+
+- Move manifest logic into cli-build package to support blueprints deployment ([#1744](https://github.com/sanity-io/cli/pull/1744)) ([0f174c6](https://github.com/sanity-io/cli/commit/0f174c61e7cf84eda9c2de0b01a0e15224a2d5e2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.4.0
+
 ## 13.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v12.0.0...cli-test-v13.0.0)

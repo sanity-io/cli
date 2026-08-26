@@ -1,5 +1,17 @@
 # Changelog
 
+## 6.0.37
+
+[Compare changes](https://github.com/sanity-io/cli/compare/create-sanity-v6.0.36...create-sanity-v6.0.37)
+
+_2026-08-26_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.4.0
+
 ## 6.0.36
 
 [Compare changes](https://github.com/sanity-io/cli/compare/create-sanity-v6.0.35...create-sanity-v6.0.36)
