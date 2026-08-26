@@ -99,7 +99,7 @@ export async function getCliConfigUncached(rootPath: string): Promise<CliConfig>
     throw new Error('CLI config cannot be loaded', {cause: err})
   }
 
-  // Branch as early as possible: a branded `unstable_defineApp(...)` app or a
+  // Branch as early as possible: a branded `defineApplication(...)` app or a
   // branded `unstable_defineMediaLibrary(...)` config opts into workbench
   // behavior, so its `app` skips the legacy `app` schema entirely.
   if (isWorkbenchApp(cliConfig?.app) || isWorkbenchConfig(cliConfig?.app)) {

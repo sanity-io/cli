@@ -39,7 +39,7 @@ export function getDevServerConfig({
 
   const isApp = cliConfig ? determineIsApp(cliConfig) : false
   const reactStrictMode = resolveReactStrictMode(cliConfig)
-  // `views`/`services` are declared via `unstable_defineApp`, so read them off
+  // `views`/`services` are declared via `defineApplication`, so read them off
   // the branded app result rather than the legacy `app` config type. A config is
   // not an app — it resolves separately and expands only its `fields`.
   const app = cliConfig?.app

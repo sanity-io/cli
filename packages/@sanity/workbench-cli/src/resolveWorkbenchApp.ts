@@ -1,5 +1,5 @@
 // Package-internal shared resolver: turn a CLI config's branded
-// `unstable_defineApp` app into its declared interfaces, or `null` for a plain
+// `defineApplication` app into its declared interfaces, or `null` for a plain
 // project — and for a config (a branded `unstable_defineMediaLibrary`), which
 // is not an app. The build and deploy accessors (actions/build, actions/deploy)
 // each build their command-specific view on top of this one brand-check +

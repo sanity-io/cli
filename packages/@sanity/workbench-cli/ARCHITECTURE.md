@@ -6,12 +6,12 @@ implementation that used to live inside `@sanity/cli-build` and `@sanity/cli`,
 behind a deliberately small interface so it can be pulled back out if Workbench
 doesn't graduate from `unstable_`.
 
-> Experimental. Everything here is gated behind `unstable_defineApp`. Projects
+> Experimental. Everything here is gated behind `defineApplication`. Projects
 > that never call it keep the CLI's normal dev/build/deploy behaviour.
 
 ## What lives here
 
-- The authoring API — `unstable_defineApp`, `unstable_defineView`,
+- The authoring API — `defineApplication`, `unstable_defineView`,
   `unstable_defineService` and their types.
 - The Vite module-federation stack — the `federation` plugin and the
   Sanity-specific plugins it composes (environment, extension artifacts,
@@ -23,7 +23,7 @@ Core touches Workbench in exactly three places. Removing Workbench means
 deleting this package and reverting these three seams — nothing else.
 
 1. **The opt-in signal — a global brand symbol.**
-   `unstable_defineApp` stamps `Symbol.for('sanity.workbench.defineApp')` on its
+   `defineApplication` stamps `Symbol.for('sanity.workbench.defineApp')` on its
    result. `@sanity/cli-core` discriminates on that symbol in `isWorkbenchApp`
    without importing this package (it re-derives the same global symbol), which
    keeps cli-core — the hot path for every command — free of a Workbench
@@ -31,7 +31,7 @@ deleting this package and reverting these three seams — nothing else.
 
 2. **The authoring API entry — `@sanity/workbench-cli` (`.`).**
    Browser-safe, zod-only. `@sanity/cli` re-exports it on `sanity/cli`
-   (`unstable_defineApp`) and the `sanity` runtime entry (`unstable_defineView` /
+   (`defineApplication`) and the `sanity` runtime entry (`unstable_defineView` /
    `unstable_defineService`). App authors only ever import the `sanity` path.
 
 3. **The build entry — `@sanity/workbench-cli/vite`.**

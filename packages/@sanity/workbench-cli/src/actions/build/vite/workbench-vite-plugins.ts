@@ -42,7 +42,7 @@ function requireStudioConfigPath(relativeConfigLocation: string | null): string 
   if (relativeConfigLocation === null) {
     throw new Error(
       'Workbench studios need a sanity.config.js or sanity.config.ts file. ' +
-        "Add one, or remove `applicationType: 'studio'` from `unstable_defineApp` " +
+        "Add one, or remove `applicationType: 'studio'` from `defineApplication` " +
         'to let the CLI infer the application type.',
     )
   }

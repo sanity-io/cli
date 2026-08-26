@@ -11,9 +11,9 @@ import {
 import {
   type DefineAppInput,
   DefineAppInputSchema,
+  defineApplication,
   type DefineAppResult,
   isWorkbenchApp,
-  unstable_defineApp,
   type WorkbenchApp,
 } from '../defineApp.js'
 
@@ -32,25 +32,25 @@ const validInput = (overrides: Record<string, unknown> = {}): Record<string, unk
   ...overrides,
 })
 
-describe('unstable_defineApp', () => {
+describe('defineApplication', () => {
   test('is identity at runtime — returns the same object reference', () => {
     const input = {organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'}
-    expect(unstable_defineApp(input)).toBe(input)
+    expect(defineApplication(input)).toBe(input)
   })
 
   test('brands the result so the CLI can discriminate it', () => {
-    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
+    const app = defineApplication({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
     expect(Object.getOwnPropertyDescriptor(app, WORKBENCH_APP)?.value).toBe(true)
   })
 
   test('leaves the brand non-enumerable so it does not leak into config spreads', () => {
-    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
+    const app = defineApplication({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
     expect(Object.keys(app)).toEqual(['organizationId', 'slug', 'title'])
     expect(Object.getOwnPropertySymbols({...app})).not.toContain(WORKBENCH_APP)
   })
 
   test('preserves declared fields', () => {
-    const app = unstable_defineApp({
+    const app = defineApplication({
       icon: './icon.svg',
       organizationId: 'org-1',
       slug: 'athlete-desk',
@@ -62,7 +62,7 @@ describe('unstable_defineApp', () => {
   })
 
   test('is recognised by `isWorkbenchApp` (Symbol.for brand contract)', () => {
-    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
+    const app = defineApplication({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
     expect(isWorkbenchApp(app)).toBe(true)
   })
 

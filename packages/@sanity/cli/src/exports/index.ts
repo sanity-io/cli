@@ -8,9 +8,10 @@ export type {CliConfig, UserViteConfig} from '@sanity/cli-core'
 
 export {
   type AssetSourceView,
-  type DefineAppInput,
   defineAssetSourceView,
   type DefineAssetSourceViewInput,
+  type DefineAppInput,
+  defineApplication,
   type DefineMediaLibraryInput,
   definePanelView,
   type DefinePanelViewInput,
@@ -21,7 +22,6 @@ export {
   type MediaLibraryField,
   type PanelView,
   type TileView,
-  unstable_defineApp,
   unstable_defineMediaLibrary,
   type ViewDeclaration,
   type WindowView,

@@ -125,7 +125,7 @@ export async function resolveEntries(options: {
       : null
   }
 
-  // Only a *branded* app (`unstable_defineApp`) that declares no `entry` has no
+  // Only a *branded* app (`defineApplication`) that declares no `entry` has no
   // navigable app view (sanity-io/workbench spec 002-workbench-extension-api,
   // US5): `null` entry tells the runtime/federation to skip the `./App` render
   // path. Non-branded (legacy SDK) apps keep the historical `./src/App` default,

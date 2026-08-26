@@ -152,7 +152,7 @@ export async function startWorkbenchDevServer(
     workDir,
   } = options
 
-  // Workbench is opted into solely by calling `unstable_defineApp`.
+  // Workbench is opted into solely by calling `defineApplication`.
   if (!isWorkbenchApp(cliConfig?.app)) {
     devDebug('Not a workbench app, skipping workbench dev server')
     return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
@@ -330,7 +330,7 @@ async function createWorkbenchViteServer(
   }
 }
 
-// Workbench is opted into via `unstable_defineApp`, which carries the
+// Workbench is opted into via `defineApplication`, which carries the
 // organization ID. Deliberately no fallback (e.g. resolving it from the
 // configured project): the lookup would need an authenticated user and an
 // API round-trip on every startup for something the opt-in already declares.
@@ -340,7 +340,7 @@ const resolveOrganizationId = (cliConfig: CliConfig): string => {
   }
 
   throw new Error(
-    'Workbench requires an organization ID. Pass "organizationId" to unstable_defineApp() in sanity.cli.ts.',
+    'Workbench requires an organization ID. Pass "organizationId" to defineApplication() in sanity.cli.ts.',
   )
 }
 

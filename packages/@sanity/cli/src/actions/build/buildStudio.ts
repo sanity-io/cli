@@ -28,7 +28,7 @@ import {type BuildOptions} from './types.js'
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  // `views`/`services` live on the branded `unstable_defineApp` result — resolve
+  // `views`/`services` live on the branded `defineApplication` result — resolve
   // the workbench capability so it's gated on the brand, like the app build.
   const workbench = resolveWorkbenchApp(cliConfig)
   const exposes = workbench ? {services: workbench.services, views: workbench.views} : undefined

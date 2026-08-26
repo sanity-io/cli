@@ -5,7 +5,7 @@ import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {definePanelView, defineWindowView} from '../../../contract.js'
-import {unstable_defineApp} from '../../../defineApp.js'
+import {defineApplication} from '../../../defineApp.js'
 import {type BrettAccess, type BrettWorkspace} from '../../../services/applications.js'
 import {createCoreApp, createStudio, deployWorkbenchApp} from '../deployWorkbenchApp.js'
 
@@ -21,7 +21,7 @@ vi.mock('@sanity/cli-core/ux', () => ({
 vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
-const app = unstable_defineApp({
+const app = defineApplication({
   entry: './src/App.tsx',
   organizationId: 'org-1',
   services: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
@@ -214,7 +214,7 @@ describe('deployWorkbenchApp', () => {
   test('sends a tile interface carrying its size + order as metadata', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
-    const tileApp = unstable_defineApp({
+    const tileApp = defineApplication({
       entry: './src/App.tsx',
       organizationId: 'org-1',
       slug: 'drop-desk',
@@ -257,7 +257,7 @@ describe('deployWorkbenchApp', () => {
   test('sends entry, panel, and window views with inherited placement metadata', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
-    const placedApp = unstable_defineApp({
+    const placedApp = defineApplication({
       dock: {group: 'dock.applications', order: 100},
       entry: './src/App.tsx',
       organizationId: 'org-1',

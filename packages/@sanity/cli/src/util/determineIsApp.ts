@@ -4,7 +4,7 @@ import {isWorkbenchApp} from '@sanity/workbench-cli'
 /**
  * Determine if the current project is an app (as opposed to a studio).
  *
- * For workbench apps (`unstable_defineApp`), this is driven by the resolved
+ * For workbench apps (`defineApplication`), this is driven by the resolved
  * `applicationType` — a studio is not an app, everything else is. The
  * `applicationType` is settled at config-load time (explicit, or inferred from
  * the presence of a `sanity.config.*`). Legacy configs fall back to the

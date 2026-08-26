@@ -20,9 +20,9 @@ export {
   defineWindowView,
 } from '../contract.js'
 export {
+  defineApplication,
   isWorkbenchApp,
   isWorkbenchConfig,
-  unstable_defineApp,
   unstable_defineMediaLibrary,
 } from '../defineApp.js'
 export type {

@@ -17,7 +17,7 @@ const APP_VISIBILITIES = ['default', 'unlisted', 'disabled'] as const
 const ApplicationType = z.enum(['coreApp', 'studio', 'canvas', 'dashboard'])
 
 /**
- * Runtime-validation schema for `unstable_defineApp`.
+ * Runtime-validation schema for `defineApplication`.
  * @internal
  */
 export const DefineAppInputSchema = z
@@ -55,7 +55,7 @@ export const DefineAppInputSchema = z
     ),
     /** Organization that owns the app — the workbench runs and deploys against it. */
     organizationId: z.string(
-      "App `organizationId` is required — pass the owning organization's ID to `unstable_defineApp`",
+      "App `organizationId` is required — pass the owning organization's ID to `defineApplication`",
     ),
     /** Background services the app runs (e.g. a `worker` emitting dock badges). */
     services: z.optional(
@@ -103,7 +103,7 @@ export const DefineAppInputSchema = z
   )
 
 /**
- * User-facing input for `unstable_defineApp`. Excludes the internal
+ * User-facing input for `defineApplication`. Excludes the internal
  * `applicationType`.
  * @public
  */
@@ -118,7 +118,7 @@ export type DefineAppInput = Omit<z.output<typeof DefineAppInputSchema>, 'applic
 const WORKBENCH_APP: unique symbol = Symbol.for('sanity.workbench.defineApp')
 
 /**
- * The branded result of `unstable_defineApp`. Carries the same fields as the
+ * The branded result of `defineApplication`. Carries the same fields as the
  * input plus the internal brand — users only ever see `DefineAppInput`.
  * @public
  */
@@ -133,7 +133,7 @@ export type DefineAppResult = DefineAppInput & {readonly [WORKBENCH_APP]: true}
 export type WorkbenchApp = DefineAppResult & z.output<typeof DefineAppInputSchema>
 
 /**
- * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
+ * Whether `app` is a branded `defineApplication(...)` result — the sole
  * workbench opt-in.
  * @public
  */
@@ -148,7 +148,7 @@ export function isWorkbenchApp(app: unknown): app is WorkbenchApp {
  * this helper stays a thin, pure identity wrapper.
  * @public
  */
-export function unstable_defineApp(input: DefineAppInput): DefineAppResult {
+export function defineApplication(input: DefineAppInput): DefineAppResult {
   return Object.defineProperty(input, WORKBENCH_APP, {
     configurable: false,
     enumerable: false,

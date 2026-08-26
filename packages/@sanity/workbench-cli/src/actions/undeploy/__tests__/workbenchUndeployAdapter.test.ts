@@ -2,8 +2,8 @@ import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
+  defineApplication,
   type MediaLibraryField,
-  unstable_defineApp,
   unstable_defineMediaLibrary,
 } from '../../../defineApp.js'
 import {
@@ -23,7 +23,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 
 function workbenchApp(): DeployableWorkbenchApp {
   const app = getWorkbench({
-    app: unstable_defineApp({
+    app: defineApplication({
       organizationId: 'org-1',
       slug: 'my-app',
       title: 'My App',
