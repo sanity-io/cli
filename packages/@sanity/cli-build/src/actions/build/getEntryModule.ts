@@ -1,6 +1,9 @@
+import {RESOURCE_BINDINGS_ENTRY_IMPORT} from '@sanity/workbench-cli/build'
+
 const entryModule = `
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file is automatically discarded
+${RESOURCE_BINDINGS_ENTRY_IMPORT}
 import {renderStudio} from "sanity"
 import studioConfig from %STUDIO_CONFIG_LOCATION%
 
@@ -14,6 +17,7 @@ renderStudio(
 const noConfigEntryModule = `
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file is automatically discarded
+${RESOURCE_BINDINGS_ENTRY_IMPORT}
 import {renderStudio} from "sanity"
 
 const studioConfig = {missingConfigFile: true}
@@ -28,6 +32,7 @@ renderStudio(
 const appEntryModule = `
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file is automatically discarded
+${RESOURCE_BINDINGS_ENTRY_IMPORT}
 import {createRoot} from 'react-dom/client'
 import {createElement} from 'react'
 import App from %ENTRY%
@@ -43,6 +48,7 @@ root.render(element)
 const noAppViewEntryModule = `
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file is automatically discarded
+${RESOURCE_BINDINGS_ENTRY_IMPORT}
 const root = document.getElementById('root')
 if (root) {
   root.textContent = 'This application has no app view.'

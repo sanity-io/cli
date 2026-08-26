@@ -4,6 +4,11 @@ import path from 'node:path'
 import {type EnvironmentModuleNode, type Plugin} from 'vite'
 
 import {renderRemote} from '../../render-remote.js'
+import {
+  RESOURCE_BINDINGS_ENTRY_IMPORT,
+  RESOURCE_BINDINGS_FILENAME,
+  RESOURCE_BINDINGS_MODULE_SOURCE,
+} from '../../resource-bindings.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from '../constants.js'
 
 const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
@@ -13,13 +18,17 @@ const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 const STUDIO_ENTRY = renderRemote({
   app: `(props) => createElement(Studio, { config, ...props })`,
   hmr: true,
-  preamble: `import { Studio } from 'sanity'
+  preamble: `${RESOURCE_BINDINGS_ENTRY_IMPORT}
+import { Studio } from 'sanity'
 import config from %STUDIO_CONFIG%`,
 })
 
 // An SDK app's default export is the component; it Fast-Refreshes through its
 // own dev server, so the wrapper needs no HMR boundary.
-const APP_ENTRY = renderRemote({preamble: `import App from %APP_ENTRY%`})
+const APP_ENTRY = renderRemote({
+  preamble: `${RESOURCE_BINDINGS_ENTRY_IMPORT}
+import App from %APP_ENTRY%`,
+})
 
 // A branded app that declares no `entry` (e.g. a dock-only panel/worker app)
 // has no navigable full-page view, so there's no `App` to import. The runtime
@@ -30,6 +39,7 @@ const HEADLESS_APP_ENTRY = `\
 // Modifications to this file are automatically discarded
 // This application declares no app view (no \`entry\`): it isn't navigable as a
 // full-page app, only its panels/web workers are exposed.
+${RESOURCE_BINDINGS_ENTRY_IMPORT}
 export function render() {
   throw new Error('This application has no app view: it declares no \`entry\`.')
 }
@@ -58,6 +68,11 @@ export function sanityFederationRuntime(options: FederationRuntimeOptions): Plug
 
       fs.mkdirSync(dir, {recursive: true})
       fs.writeFileSync(entryFileAbsPath, content)
+
+      // The remote entry statically imports this module first (see the preambles
+      // above), so resource bindings are evaluated before app code. Brett bakes
+      // the resolved values in at deploy.
+      fs.writeFileSync(path.join(dir, RESOURCE_BINDINGS_FILENAME), RESOURCE_BINDINGS_MODULE_SOURCE)
     },
     hotUpdate({file, modules, timestamp}) {
       if (options.isApp) return

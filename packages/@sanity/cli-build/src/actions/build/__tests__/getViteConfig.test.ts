@@ -31,6 +31,12 @@ vi.mock('@sanity/cli-core/telemetry', () => ({
 }))
 
 vi.mock('@sanity/workbench-cli/build', () => ({
+  resourceBindingsChunkFileName: (name: string) =>
+    name === 'sanity-resource-bindings' ? 'sanity-resource-bindings.js' : undefined,
+  resourceBindingsCodeSplittingGroup: {
+    name: 'sanity-resource-bindings',
+    test: /sanity-resource-bindings/,
+  },
   workbenchOptimizeDeps: mockWorkbenchOptimizeDeps,
   workbenchVitePlugins: mockWorkbenchVitePlugins,
 }))

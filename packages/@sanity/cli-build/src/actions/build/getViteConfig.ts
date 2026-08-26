@@ -6,6 +6,8 @@ import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {isStaging} from '@sanity/cli-core/util'
 import {
+  resourceBindingsChunkFileName,
+  resourceBindingsCodeSplittingGroup,
   type WorkbenchExposes,
   workbenchOptimizeDeps,
   workbenchVitePlugins,
@@ -319,19 +321,32 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
           ...autoUpdates?.vendor.entries,
         },
         onwarn: onRolldownWarn,
+        output: {
+          // Keep the resource-bindings module in its own unhashed chunk at the
+          // bundle root so Brett can rewrite it at deploy. The chunk sizing lives
+          // on the group itself (see `resourceBindingsCodeSplittingGroup`), so it
+          // only affects the bindings module and not automatic chunking.
+          chunkFileNames: (chunk) =>
+            resourceBindingsChunkFileName(chunk.name) ?? 'static/[name]-[hash].js',
+          codeSplitting: {
+            groups: [resourceBindingsCodeSplittingGroup],
+          },
+          ...(autoUpdates
+            ? {
+                entryFileNames: (chunk) =>
+                  vendorChunkNames!.has(chunk.name)
+                    ? `${VENDOR_DIR}/[name]-[hash].mjs`
+                    : 'static/[name]-[hash].js',
+                exports: 'named',
+              }
+            : {}),
+        },
         ...(autoUpdates
           ? {
               // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
               // the vendor named-exports plugin can edit chunks without a JS
               // dependency.
               experimental: {nativeMagicString: true},
-              output: {
-                entryFileNames: (chunk) =>
-                  vendorChunkNames!.has(chunk.name)
-                    ? `${VENDOR_DIR}/[name]-[hash].mjs`
-                    : 'static/[name]-[hash].js',
-                exports: 'named',
-              },
               // App-style builds default to `preserveEntrySignatures: false`, which
               // treeshakes the exports off entry chunks. Vendor chunks are loaded by
               // the browser via the import map, so their exports must survive (e.g.
