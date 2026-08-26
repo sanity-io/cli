@@ -151,10 +151,10 @@ describe('registerDevServer', () => {
     expect(getRegisteredServers()[0]).toMatchObject({id: 'app-abc', projectId: 'x1g7jygt'})
   })
 
-  test('forwards a tile interface with its size + priority metadata through a round-trip', () => {
+  test('forwards a tile interface with its size + order metadata through a round-trip', () => {
     const tile = {
       id: 'test-app-tile-agent',
-      metadata: {priority: 100, size: 'large' as const},
+      metadata: {order: 100, size: 'large' as const},
       moduleId: 'views/agent',
       name: 'agent',
       src: './src/tile.tsx',

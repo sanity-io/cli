@@ -5,7 +5,7 @@ import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
-import {type AppInterfaceMetadata, type TileInterfaceMetadata} from '../contract.js'
+import {type TileInterfaceMetadata, type ViewPlacementMetadata} from '../contract.js'
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
 export type ApplicationType = 'coreApp' | 'studio'
@@ -31,11 +31,11 @@ interface BrettInterfaceBase {
  * @internal
  */
 export type BrettInterface =
-  | (BrettInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
   | (BrettInterfaceBase & {metadata: null; type: 'asset_source'})
-  | (BrettInterfaceBase & {metadata: null; type: 'panel'})
   | (BrettInterfaceBase & {metadata: null; type: 'worker'})
   | (BrettInterfaceBase & {metadata: TileInterfaceMetadata; type: 'tile'})
+  | (BrettInterfaceBase & {metadata: ViewPlacementMetadata | null; type: 'app'})
+  | (BrettInterfaceBase & {metadata: ViewPlacementMetadata | null; type: 'panel'})
 
 /**
  * A resource a deployment may interact with, as Brett stores it. Per-deployment

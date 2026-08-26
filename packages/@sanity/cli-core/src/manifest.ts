@@ -14,9 +14,13 @@ import {z} from 'zod/mini'
  * CLI produces the payload in full.
  */
 export const coreAppManifestSchema = z.object({
-  group: z.optional(z.string()),
+  dock: z.optional(
+    z.object({
+      group: z.optional(z.enum(['system', 'applications', 'user'])),
+      order: z.optional(z.number()),
+    }),
+  ),
   icon: z.optional(z.string()),
-  priority: z.optional(z.number()),
   slug: z.optional(z.string()),
   title: z.optional(z.string()),
   version: z.string(),

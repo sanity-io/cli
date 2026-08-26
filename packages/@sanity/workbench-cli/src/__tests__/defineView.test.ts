@@ -58,6 +58,11 @@ describe('type surface', () => {
     // @ts-expect-error — "sidebar" is not a known view type.
     unstable_defineView('sidebar', {panel: () => null, title: () => null})
   })
+
+  test('rejects window views, which do not declare component slots', () => {
+    // @ts-expect-error — windows use defineWindowView instead.
+    unstable_defineView('app', {})
+  })
 })
 
 describe('asset_source view', () => {

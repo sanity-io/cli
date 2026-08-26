@@ -50,6 +50,20 @@ describe('getWorkbench', () => {
   })
 })
 
+describe('buildViewDeploymentPayload', () => {
+  test('includes every declared window view', () => {
+    const views = [
+      {name: 'main', src: './src/Main.tsx', title: 'Main', type: 'app' as const},
+      {name: 'settings', src: './src/Settings.tsx', title: 'Settings', type: 'app' as const},
+    ]
+
+    expect(workbench({views}).buildViewDeploymentPayload('app-id')).toEqual({
+      applicationId: 'app-id',
+      views,
+    })
+  })
+})
+
 describe('assertDeployable', () => {
   test('throws when the app declares no interfaces', () => {
     expect(() => workbench().assertDeployable()).toThrow('declares no entry, views or services')

@@ -9,7 +9,17 @@ export type {CliConfig, UserViteConfig} from '@sanity/cli-core'
 export {
   type DefineAppInput,
   type DefineMediaLibraryInput,
+  definePanelView,
+  type DefinePanelViewInput,
+  defineTileView,
+  type DefineTileViewInput,
+  defineWindowView,
+  type DefineWindowViewInput,
   type MediaLibraryField,
+  type PanelView,
+  type TileView,
   unstable_defineApp,
   unstable_defineMediaLibrary,
+  type ViewDeclaration,
+  type WindowView,
 } from '@sanity/workbench-cli'

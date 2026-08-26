@@ -1,4 +1,17 @@
-export type {InterfaceType, ServiceType, TileSize} from '../contract.js'
+export type {
+  DefinePanelViewInput,
+  DefineTileViewInput,
+  DefineWindowViewInput,
+  DockGroup,
+  InterfaceType,
+  PanelView,
+  ServiceType,
+  TileSize,
+  TileView,
+  ViewDeclaration,
+  WindowView,
+} from '../contract.js'
+export {definePanelView, defineTileView, defineWindowView} from '../contract.js'
 export {
   isWorkbenchApp,
   isWorkbenchConfig,
@@ -9,7 +22,6 @@ export type {
   DefineAppInput,
   DefineAppResult,
   DefineMediaLibraryInput,
-  DockGroup,
   MediaLibraryField,
   WorkbenchApp,
   WorkbenchConfig,

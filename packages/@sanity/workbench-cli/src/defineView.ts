@@ -60,7 +60,7 @@ export type AssetSourceComponent = keyof AssetSourceViewComponents
  * Props a tile component receives: its own interface record (name/src/title/
  * type) plus its footprint `size`, so it can render per family. Mirrors the
  * `tile` record the dashboard host renders from; drift is guarded by the stamped
- * contract version. Placement `priority` is host-only metadata, not surfaced here.
+ * contract version. Placement `order` is host-only metadata, not surfaced here.
  * @public
  */
 export type TileViewProps = ViewComponentBaseProps<{
@@ -91,6 +91,7 @@ export type TileComponent = keyof TileViewComponents
  * @public
  */
 export interface ViewComponentsByType {
+  app: never
   asset_source: AssetSourceViewComponents
   panel: PanelViewComponents
   tile: TileViewComponents

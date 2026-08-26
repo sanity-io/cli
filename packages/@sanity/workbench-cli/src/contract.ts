@@ -25,12 +25,9 @@ export interface ViewComponentBaseProps<TView> {
   view: TView
 }
 
-/**
- * Component slots each interface type exposes, in render order. Source of truth
- * for {@link InterfaceType} and the build; add a type by registering it here.
- * @internal
- */
+/** Component slots per view type; windows load outside the component artifact path. @internal */
 export const VIEW_COMPONENTS = {
+  app: [],
   asset_source: ['asset_source'],
   panel: ['title', 'panel'],
   tile: ['tile'],
@@ -54,28 +51,28 @@ export type TileSize = z.infer<typeof TileSizeSchema>
 /** @public */
 export type ServiceType = 'worker'
 
-/**
- * The `app` interface's dock-placement metadata. Interface metadata is
- * discriminated on `type`; `app` is the only type with a shape so far.
- * @internal
- */
-export const AppInterfaceMetadataSchema = z.object({
-  group: z.optional(z.string()),
-  priority: z.optional(z.number()),
+const DockGroupSchema = z.enum(['system', 'applications', 'user'])
+
+/** @public */
+export type DockGroup = z.output<typeof DockGroupSchema>
+
+/** @internal */
+export const ViewPlacementMetadataSchema = z.object({
+  group: z.optional(DockGroupSchema),
+  order: z.optional(z.number()),
 })
 
 /** @internal */
-export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
+export type ViewPlacementMetadata = z.infer<typeof ViewPlacementMetadataSchema>
 
 /**
- * A tile's interface metadata: its footprint `size` and an optional `priority`
+ * A tile's interface metadata: its footprint `size` and an optional `order`
  * the dashboard sorts on, ascending. Both are authored as top-level view fields
  * (see {@link InterfaceDeclarationSchema}) but stored on the record as metadata.
- * Mirrors `app`'s dock metadata; tile is the first view type to carry any.
  * @internal
  */
 export const TileInterfaceMetadataSchema = z.object({
-  priority: z.optional(z.number()),
+  order: z.optional(z.number()),
   size: TileSizeSchema,
 })
 
@@ -149,7 +146,36 @@ function interfaceDeclarationFields(kind: 'Service' | 'View') {
 const PanelViewSchema = z.object({
   type: z.literal('panel'),
   ...interfaceDeclarationFields('View'),
+  ...ViewPlacementMetadataSchema.shape,
 })
+
+/** @public */
+export type PanelView = z.output<typeof PanelViewSchema>
+
+/** @public */
+export type DefinePanelViewInput = Omit<PanelView, 'type'>
+
+/** @public */
+export function definePanelView(view: DefinePanelViewInput): PanelView {
+  return {...view, type: 'panel'}
+}
+
+const WindowViewSchema = z.object({
+  type: z.literal('app'),
+  ...interfaceDeclarationFields('View'),
+  ...ViewPlacementMetadataSchema.shape,
+})
+
+/** @public */
+export type WindowView = z.output<typeof WindowViewSchema>
+
+/** @public */
+export type DefineWindowViewInput = Omit<WindowView, 'type'>
+
+/** @public */
+export function defineWindowView(view: DefineWindowViewInput): WindowView {
+  return {...view, type: 'app'}
+}
 
 const AssetSourceViewSchema = z.object({
   type: z.literal('asset_source'),
@@ -160,17 +186,32 @@ const TileViewSchema = z.object({
   type: z.literal('tile'),
   ...interfaceDeclarationFields('View'),
   /** Sort position within its layout track, ascending. Optional. */
-  priority: z.optional(z.number()),
+  order: z.optional(z.number()),
   /** Footprint family the dashboard lays the tile out by. */
   size: TileSizeSchema,
 })
 
+/** @public */
+export type TileView = z.output<typeof TileViewSchema>
+
+/** @public */
+export type DefineTileViewInput = Omit<TileView, 'type'>
+
+/** @public */
+export function defineTileView(view: DefineTileViewInput): TileView {
+  return {...view, type: 'tile'}
+}
+
 /** @internal */
 export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [
+  WindowViewSchema,
   PanelViewSchema,
   AssetSourceViewSchema,
   TileViewSchema,
 ])
+
+/** @public */
+export type ViewDeclaration = z.output<typeof InterfaceDeclarationSchema>
 
 const WorkerServiceSchema = z.object({
   type: z.literal('worker'),
