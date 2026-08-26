@@ -1,11 +1,7 @@
 import {z} from 'zod/mini'
 
 import {APP_SLUG_PATTERN} from './appSlug.js'
-import {
-  InterfaceDeclarationSchema,
-  ServiceDeclarationSchema,
-  ViewPlacementMetadataSchema,
-} from './contract.js'
+import {DockSchema, InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
 
 /**
  * Dashboard visibility values. Mirrors `APP_VISIBILITIES` in `@sanity/cli-core`
@@ -33,7 +29,7 @@ export const DefineAppInputSchema = z
      */
     applicationType: z.optional(ApplicationType),
     /** Default placement inherited by panel and window views. */
-    dock: z.optional(ViewPlacementMetadataSchema),
+    dock: z.optional(DockSchema),
     /**
      * App entrypoint module. Defaults to `./src/App.tsx` when omitted. The build
      * derives the app's navigable `app` view from it. SDK apps only — setting it

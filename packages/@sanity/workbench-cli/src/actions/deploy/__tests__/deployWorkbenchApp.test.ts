@@ -292,7 +292,7 @@ describe('deployWorkbenchApp', () => {
     const fields = appendedFields()
     expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
       {
-        metadata: {group: 'dock.applications', order: 20},
+        metadata: {dock: {group: 'dock.applications', order: 20}},
         moduleId: 'views/feed',
         name: 'feed',
         title: 'Feed',
@@ -300,7 +300,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {group: 'dock.user', order: 100},
+        metadata: {dock: {group: 'dock.user', order: 100}},
         moduleId: 'App',
         name: 'settings',
         title: 'Settings',
@@ -308,7 +308,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {group: 'dock.applications', order: 100},
+        metadata: {dock: {group: 'dock.applications', order: 100}},
         moduleId: 'App',
         name: 'drop-desk',
         title: 'Drop Desk',

@@ -170,22 +170,22 @@ describe('deriveInterfaces', () => {
         .map(({metadata, name, type}) => ({metadata, name, type})),
     ).toEqual([
       {
-        metadata: {group: 'dock.applications', order: 100},
+        metadata: {dock: {group: 'dock.applications', order: 100}},
         name: 'feed',
         type: 'panel',
       },
       {
-        metadata: {group: 'dock.user', order: 100},
+        metadata: {dock: {group: 'dock.user', order: 100}},
         name: 'settings',
         type: 'app',
       },
       {
-        metadata: {group: 'dock.applications', order: 20},
+        metadata: {dock: {group: 'dock.applications', order: 20}},
         name: 'inbox',
         type: 'panel',
       },
       {
-        metadata: {group: 'dock.applications', order: 100},
+        metadata: {dock: {group: 'dock.applications', order: 100}},
         name: 'test-app',
         type: 'app',
       },

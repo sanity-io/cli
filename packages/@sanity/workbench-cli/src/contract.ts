@@ -57,10 +57,16 @@ const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user']
 export type DockGroup = z.output<typeof DockGroupSchema>
 
 /** @internal */
-export const ViewPlacementMetadataSchema = z.object({
+export const DockSchema = z.object({
   group: z.optional(DockGroupSchema),
   order: z.optional(z.number()),
 })
+
+/** @internal */
+export type Dock = z.infer<typeof DockSchema>
+
+/** @internal */
+export const ViewPlacementMetadataSchema = z.object({dock: DockSchema})
 
 /** @internal */
 export type ViewPlacementMetadata = z.infer<typeof ViewPlacementMetadataSchema>
@@ -146,7 +152,7 @@ function interfaceDeclarationFields(kind: 'Service' | 'View') {
 const PanelViewSchema = z.object({
   type: z.literal('panel'),
   ...interfaceDeclarationFields('View'),
-  dock: z.optional(ViewPlacementMetadataSchema),
+  dock: z.optional(DockSchema),
 })
 
 /** @public */
@@ -163,7 +169,7 @@ export function definePanelView(view: DefinePanelViewInput): PanelView {
 const WindowViewSchema = z.object({
   type: z.literal('app'),
   ...interfaceDeclarationFields('View'),
-  dock: z.optional(ViewPlacementMetadataSchema),
+  dock: z.optional(DockSchema),
 })
 
 /** @public */

@@ -2,6 +2,7 @@ import {type CliConfig} from '@sanity/cli-core'
 
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './actions/build/vite/constants.js'
 import {
+  type Dock,
   interfaceContractVersion,
   type InterfaceKind,
   interfaceModuleId,
@@ -67,13 +68,15 @@ export function deriveInterfaces(
     version: interfaceContractVersion(type),
   })
 
-  const placementMetadata = (dock?: ViewPlacementMetadata): ViewPlacementMetadata | null => {
+  const placementMetadata = (dock?: Dock): ViewPlacementMetadata | null => {
     const group = dock?.group ?? app.dock?.group
     const order = dock?.order ?? app.dock?.order
     if (group === undefined && order === undefined) return null
     return {
-      ...(group === undefined ? {} : {group}),
-      ...(order === undefined ? {} : {order}),
+      dock: {
+        ...(group === undefined ? {} : {group}),
+        ...(order === undefined ? {} : {order}),
+      },
     }
   }
 
