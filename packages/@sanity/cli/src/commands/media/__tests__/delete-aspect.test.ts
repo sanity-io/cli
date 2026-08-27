@@ -122,8 +122,8 @@ describe('#media:delete-aspect', () => {
     expect(mockSelect).not.toHaveBeenCalled()
   })
 
-  test('should require the media library ID with --yes', async () => {
-    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {
+  test.each(['--yes', '-y'])('should require the media library ID with %s', async (yesFlag) => {
+    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', yesFlag], {
       mocks: defaultMocks,
     })
 
