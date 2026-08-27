@@ -1,7 +1,7 @@
 import {z} from 'zod/mini'
 
 import {APP_SLUG_PATTERN} from './appSlug.js'
-import {InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
+import {DockSchema, InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
 
 /**
  * Dashboard visibility values. Mirrors `APP_VISIBILITIES` in `@sanity/cli-core`
@@ -16,19 +16,8 @@ const APP_VISIBILITIES = ['default', 'unlisted', 'disabled'] as const
  */
 const ApplicationType = z.enum(['coreApp', 'studio', 'canvas', 'dashboard'])
 
-/** Dock groups an app can place itself into. */
-const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user'])
-
 /**
- * Dock group identifier. The API does not block a user app from declaring a
- * reserved group (e.g. `dock.system`); priority conventions keep Sanity-owned
- * apps ahead.
- * @public
- */
-export type DockGroup = z.output<typeof DockGroupSchema>
-
-/**
- * Runtime-validation schema for `unstable_defineApp`.
+ * Runtime-validation schema for `defineApplication`.
  * @internal
  */
 export const DefineAppInputSchema = z
@@ -39,14 +28,14 @@ export const DefineAppInputSchema = z
      * @internal
      */
     applicationType: z.optional(ApplicationType),
+    /** Default placement inherited by panel and window views. */
+    dock: z.optional(DockSchema),
     /**
      * App entrypoint module. Defaults to `./src/App.tsx` when omitted. The build
      * derives the app's navigable `app` view from it. SDK apps only — setting it
      * on a studio is rejected (studio app views are not yet implemented).
      */
     entry: z.optional(z.string("must be a path to the app's entry file")),
-    /** Dock group to render in. Defaults to `dock.applications` when omitted. */
-    group: z.optional(DockGroupSchema),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
     /**
@@ -66,20 +55,7 @@ export const DefineAppInputSchema = z
     ),
     /** Organization that owns the app — the workbench runs and deploys against it. */
     organizationId: z.string(
-      "App `organizationId` is required — pass the owning organization's ID to `unstable_defineApp`",
-    ),
-    /** Sort position within the group, ascending. Defaults to `100` when omitted. */
-    priority: z.optional(z.number()),
-    /** Background services the app runs (e.g. a `worker` emitting dock badges). */
-    services: z.optional(
-      z
-        .array(ServiceDeclarationSchema, 'must be an array of services')
-        .check(
-          z.refine(
-            (services) => new Set(services.map((service) => service.name)).size === services.length,
-            'Service `name` must be unique within an app',
-          ),
-        ),
+      "App `organizationId` is required — pass the owning organization's ID to `defineApplication`",
     ),
     slug: z
       .string('App `slug` is required — the hostname the application is created at on deploy')
@@ -91,21 +67,22 @@ export const DefineAppInputSchema = z
       ),
     /** User-facing app title. Wins over studio.config.ts title on merge. */
     title: z.string(),
-    /** Views the app exposes (e.g. dock panels). */
-    views: z.optional(
-      z
-        .array(InterfaceDeclarationSchema, 'must be an array of panels')
-        .check(
-          z.refine(
-            (views) => new Set(views.map((view) => view.name)).size === views.length,
-            'View `name` must be unique within an app',
-          ),
-        ),
-    ),
+    /** Views the app exposes (e.g. a window, dock panels, and tiles). */
+    views: z.optional(z.array(InterfaceDeclarationSchema, 'must be an array of views')),
     /** Dashboard visibility of the app. Defaults to `default` when omitted. */
     visibility: z.optional(z.enum(APP_VISIBILITIES)),
+    /** Background web workers the app runs. */
+    webWorkers: z.optional(z.array(ServiceDeclarationSchema, 'must be an array of web workers')),
   })
   .check(
+    z.refine((input) => {
+      const names = [
+        ...(input.entry === undefined ? [] : [input.name ?? input.slug]),
+        ...(input.views ?? []).map((view) => view.name),
+        ...(input.webWorkers ?? []).map((webWorker) => webWorker.name),
+      ]
+      return new Set(names).size === names.length
+    }, '`name` must be unique across views and web workers. Rename one of the duplicates.'),
     // Studio app views are not implemented yet. A studio that declares `entry`
     // (the SDK app-view entrypoint) is rejected here rather than silently
     // generating one; studios keep navigating via their existing render path.
@@ -116,7 +93,7 @@ export const DefineAppInputSchema = z
   )
 
 /**
- * User-facing input for `unstable_defineApp`. Excludes the internal
+ * User-facing input for `defineApplication`. Excludes the internal
  * `applicationType`.
  * @public
  */
@@ -131,7 +108,7 @@ export type DefineAppInput = Omit<z.output<typeof DefineAppInputSchema>, 'applic
 const WORKBENCH_APP: unique symbol = Symbol.for('sanity.workbench.defineApp')
 
 /**
- * The branded result of `unstable_defineApp`. Carries the same fields as the
+ * The branded result of `defineApplication`. Carries the same fields as the
  * input plus the internal brand — users only ever see `DefineAppInput`.
  * @public
  */
@@ -146,7 +123,7 @@ export type DefineAppResult = DefineAppInput & {readonly [WORKBENCH_APP]: true}
 export type WorkbenchApp = DefineAppResult & z.output<typeof DefineAppInputSchema>
 
 /**
- * Whether `app` is a branded `unstable_defineApp(...)` result — the sole
+ * Whether `app` is a branded `defineApplication(...)` result — the sole
  * workbench opt-in.
  * @public
  */
@@ -161,7 +138,7 @@ export function isWorkbenchApp(app: unknown): app is WorkbenchApp {
  * this helper stays a thin, pure identity wrapper.
  * @public
  */
-export function unstable_defineApp(input: DefineAppInput): DefineAppResult {
+export function defineApplication(input: DefineAppInput): DefineAppResult {
   return Object.defineProperty(input, WORKBENCH_APP, {
     configurable: false,
     enumerable: false,

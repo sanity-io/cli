@@ -40,7 +40,7 @@ const STUDIO_CONFIG_FILES = [
 ]
 
 // Mirrors the `ApplicationType` enum in `@sanity/workbench-cli`'s `defineApp`
-// schema — `unstable_defineApp` doesn't validate, so the loader is the first
+// schema — `defineApplication` doesn't validate, so the loader is the first
 // place `applicationType` can be checked. Kept in sync by a test there.
 const APPLICATION_TYPES = ['coreApp', 'studio', 'canvas', 'dashboard'] as const
 const applicationTypeSchema = z.enum(APPLICATION_TYPES)
@@ -56,7 +56,7 @@ function detectApplicationType(projectDir: string): ApplicationType {
 }
 
 /**
- * Parse a config whose `app` is a branded `unstable_defineApp(...)` result. The
+ * Parse a config whose `app` is a branded `defineApplication(...)` result. The
  * branded `app` bypasses the legacy `app` schema (which would strip its identity
  * fields and the brand); every other field is still validated.
  *
@@ -89,7 +89,7 @@ export function parseWorkbenchCliConfig(cliConfig: unknown, projectDir: string):
   const explicit = app.applicationType
   if (explicit !== undefined && !applicationTypeSchema.safeParse(explicit).success) {
     throw new Error(
-      `Invalid \`applicationType\` "${explicit}" in \`unstable_defineApp\` — expected one of: ${APPLICATION_TYPES.join(', ')}`,
+      `Invalid \`applicationType\` "${explicit}" in \`defineApplication\` — expected one of: ${APPLICATION_TYPES.join(', ')}`,
     )
   }
   resolvedApp.applicationType = explicit ?? detectApplicationType(projectDir)

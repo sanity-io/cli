@@ -3,16 +3,16 @@ import {describe, expect, test} from 'vitest'
 
 import {
   type DefineAppInput,
-  unstable_defineApp,
+  defineApplication,
   unstable_defineMediaLibrary,
 } from '../../../defineApp.js'
 import {getWorkbench} from '../getWorkbench.js'
 
 // Resolve a capability from a real branded app — the only way to a non-null
-// result, so every test exercises the actual `unstable_defineApp` brand rather
+// result, so every test exercises the actual `defineApplication` brand rather
 // than a hand-rolled stand-in.
 function workbench(overrides: Partial<DefineAppInput> = {}) {
-  const app = unstable_defineApp({
+  const app = defineApplication({
     organizationId: 'org-id',
     slug: 'test-app',
     title: 'Test App',
@@ -37,11 +37,11 @@ describe('getWorkbench', () => {
 
   test('exposes the declared interfaces off the branded app', () => {
     const resolved = workbench({
-      services: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
-      views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
+      views: [{name: 'panel', src: './src/panel.tsx', surface: 'panel', title: 'panel'}],
+      webWorkers: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
     })
     expect(resolved.views).toHaveLength(1)
-    expect(resolved.services).toHaveLength(1)
+    expect(resolved.webWorkers).toHaveLength(1)
   })
 
   test('exposes an entry app off the branded app', () => {
@@ -50,14 +50,31 @@ describe('getWorkbench', () => {
   })
 })
 
+describe('buildViewDeploymentPayload', () => {
+  test('includes every declared window view', () => {
+    const views = [
+      {name: 'main', src: './src/Main.tsx', surface: 'app' as const, title: 'Main'},
+      {name: 'settings', src: './src/Settings.tsx', surface: 'app' as const, title: 'Settings'},
+    ]
+
+    expect(workbench({views}).buildViewDeploymentPayload('app-id')).toEqual({
+      applicationId: 'app-id',
+      views: [
+        {name: 'main', src: './src/Main.tsx', title: 'Main', type: 'app'},
+        {name: 'settings', src: './src/Settings.tsx', title: 'Settings', type: 'app'},
+      ],
+    })
+  })
+})
+
 describe('assertDeployable', () => {
   test('throws when the app declares no interfaces', () => {
-    expect(() => workbench().assertDeployable()).toThrow('declares no entry, views or services')
+    expect(() => workbench().assertDeployable()).toThrow('declares no entry, views or web workers')
   })
 
-  test('throws when views and services are empty arrays', () => {
-    expect(() => workbench({services: [], views: []}).assertDeployable()).toThrow(
-      'declares no entry, views or services',
+  test('throws when views and web workers are empty arrays', () => {
+    expect(() => workbench({views: [], webWorkers: []}).assertDeployable()).toThrow(
+      'declares no entry, views or web workers',
     )
   })
 
@@ -68,15 +85,15 @@ describe('assertDeployable', () => {
   test('passes when the app declares a view', () => {
     expect(() =>
       workbench({
-        views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
+        views: [{name: 'panel', src: './src/panel.tsx', surface: 'panel', title: 'panel'}],
       }).assertDeployable(),
     ).not.toThrow()
   })
 
-  test('passes when the app declares a service', () => {
+  test('passes when the app declares a web worker', () => {
     expect(() =>
       workbench({
-        services: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
+        webWorkers: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
       }).assertDeployable(),
     ).not.toThrow()
   })
@@ -85,12 +102,12 @@ describe('assertDeployable', () => {
 describe('hasInterfaces', () => {
   test('an app that declares interfaces reports them', () => {
     const resolved = workbench({
-      views: [{name: 'panel', src: './src/panel.tsx', title: 'panel', type: 'panel'}],
+      views: [{name: 'panel', src: './src/panel.tsx', surface: 'panel', title: 'panel'}],
     })
     expect(resolved.hasInterfaces).toBe(true)
   })
 
-  test('an app with no entry, views, or services hosts nothing', () => {
+  test('an app with no entry, views, or web workers hosts nothing', () => {
     expect(workbench().hasInterfaces).toBe(false)
   })
 })

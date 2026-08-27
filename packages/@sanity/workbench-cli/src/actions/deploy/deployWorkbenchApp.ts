@@ -5,7 +5,7 @@ import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
-import {deriveInterfaces} from '../../deriveInterfaces.js'
+import {type DerivedInterface, deriveInterfaces} from '../../deriveInterfaces.js'
 import {
   type Application,
   type BrettAccess,
@@ -24,6 +24,30 @@ import {
 export interface CreatedApplication {
   application: Application
   rollback: () => Promise<void>
+}
+
+function toBrettInterface(iface: DerivedInterface, version: string): BrettInterface {
+  const {id: _id, src: _src, ...declaration} = iface
+  if ('type' in declaration) return {...declaration, version}
+
+  switch (declaration.surface) {
+    case 'app': {
+      const {surface, ...view} = declaration
+      return {...view, type: surface, version}
+    }
+    case 'asset_source': {
+      const {surface, ...view} = declaration
+      return {...view, type: surface, version}
+    }
+    case 'panel': {
+      const {surface, ...view} = declaration
+      return {...view, type: surface, version}
+    }
+    case 'tile': {
+      const {surface, ...view} = declaration
+      return {...view, type: surface, version}
+    }
+  }
 }
 
 /**
@@ -121,8 +145,8 @@ export async function deployWorkbenchApp(options: {
       access,
       applicationId,
       // Brett assigns the id and resolves modules by `moduleId`, so neither travels.
-      interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map(
-        ({id: _id, src: _src, ...iface}): BrettInterface => ({...iface, version}),
+      interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map((iface) =>
+        toBrettInterface(iface, version),
       ),
       isAutoUpdating,
       tarball,

@@ -48,7 +48,7 @@ describe('getCliConfigSync', () => {
     vi.mocked(existsSync).mockImplementation((path) => realFs.existsSync(path))
 
     // A self-contained config: brand the app via the global `Symbol.for` the
-    // same way `unstable_defineApp` does, so it needs no external import.
+    // same way `defineApplication` does, so it needs no external import.
     const dir = mkdtempSync(join(tmpdir(), 'cli-sync-cfg-'))
     writeFileSync(
       join(dir, 'sanity.cli.ts'),

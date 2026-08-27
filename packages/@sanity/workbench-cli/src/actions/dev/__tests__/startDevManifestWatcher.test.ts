@@ -268,14 +268,14 @@ describe('startDevManifestWatcher', () => {
         moduleId: 'views/feed',
         name: 'feed',
         src: './src/FeedPanel.tsx',
+        surface: 'panel',
         title: 'feed',
-        type: 'panel',
       },
     ]
     mockFindProjectRoot.mockResolvedValue({
       directory: APP_WORK_DIR,
       path: APP_CONFIG_PATH,
-      type: 'app',
+      surface: 'app',
     })
     mockExtract.mockResolvedValue({interfaces: appInterfaces, manifest: appManifest})
     const update = vi.fn()

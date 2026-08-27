@@ -16,15 +16,17 @@ describe('workbenchOptimizeDeps', () => {
     expect(include).toEqual(['react', 'react-dom/client'])
   })
 
-  test('scans the app entry and every exposed view/service/config source', () => {
+  test('scans the app entry and every exposed view/web worker/config source', () => {
     const exposes: WorkbenchExposes = {
       config: {
         appType: 'media-library',
         fields: [{name: 'credit', src: './src/fields/credit.ts', title: 'Credit'}],
       },
-      services: [{name: 'reminders', src: './src/service.ts', title: 'reminders', type: 'worker'}],
       views: [
-        {name: 'favorites', src: './src/FavoritesPanel.tsx', title: 'Favorites', type: 'panel'},
+        {name: 'favorites', src: './src/FavoritesPanel.tsx', surface: 'panel', title: 'Favorites'},
+      ],
+      webWorkers: [
+        {name: 'reminders', src: './src/service.ts', title: 'reminders', type: 'worker'},
       ],
     }
 
@@ -64,7 +66,7 @@ describe('workbenchOptimizeDeps', () => {
     const {entries} = workbenchOptimizeDeps({
       appSources: [path.join(cwd, 'src', 'App.tsx')],
       cwd,
-      exposes: {views: [{name: 'app', src: './src/App.tsx', title: 'App', type: 'panel'}]},
+      exposes: {views: [{name: 'app', src: './src/App.tsx', surface: 'panel', title: 'App'}]},
     })
 
     expect(entries).toEqual(['src/App.tsx'])
@@ -76,7 +78,12 @@ describe('workbenchOptimizeDeps', () => {
       cwd,
       exposes: {
         views: [
-          {name: 'favorites', src: './src/FavoritesPanel.tsx', title: 'Favorites', type: 'panel'},
+          {
+            name: 'favorites',
+            src: './src/FavoritesPanel.tsx',
+            surface: 'panel',
+            title: 'Favorites',
+          },
         ],
       },
     })
@@ -117,7 +124,9 @@ describe('workbenchOptimizeDeps', () => {
         appSources: [],
         cwd: projectDir,
         exposes: {
-          services: [{name: 'reminders', src: './src/service', title: 'reminders', type: 'worker'}],
+          webWorkers: [
+            {name: 'reminders', src: './src/service', title: 'reminders', type: 'worker'},
+          ],
         },
       })
 

@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
+import {defineApplication, unstable_defineMediaLibrary} from '../defineApp.js'
 import {resolveWorkbenchApp} from '../resolveWorkbenchApp.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig
@@ -19,9 +19,9 @@ describe('resolveWorkbenchApp', () => {
     expect(resolveWorkbenchApp(config as CliConfig | null | undefined)).toBeNull()
   })
 
-  test('resolves a branded app with defaulted views/services', () => {
+  test('resolves a branded app with defaulted views and web workers', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         organizationId: 'org-123',
         slug: 'my-app',
         title: 'My App',
@@ -34,15 +34,15 @@ describe('resolveWorkbenchApp', () => {
       // Identity defaults to the slug when no explicit name is declared.
       name: 'my-app',
       organizationId: 'org-123',
-      services: [],
       slug: 'my-app',
       views: [],
+      webWorkers: [],
     })
   })
 
   test('keeps an explicit name distinct from the slug', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         name: 'reviews',
         organizationId: 'org-123',
         slug: 'reviews-app',
@@ -53,57 +53,57 @@ describe('resolveWorkbenchApp', () => {
     expect(resolveWorkbenchApp(config)).toMatchObject({name: 'reviews', slug: 'reviews-app'})
   })
 
-  test('passes through a declared app entry, services, slug, and visibility', () => {
+  test('passes through a declared app entry, web workers, slug, and visibility', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         entry: './src/App.tsx',
         organizationId: 'org-123',
-        services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
         slug: 'my-app-host',
         title: 'My App',
         visibility: 'unlisted',
+        webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       }),
     )
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
       entry: './src/App.tsx',
-      services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       slug: 'my-app-host',
       visibility: 'unlisted',
+      webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
     })
   })
 
-  test('passes through declared panel views and services', () => {
+  test('passes through declared panel views and web workers', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         organizationId: 'org-123',
-        services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
         slug: 'my-app-host',
         title: 'My App',
-        views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+        views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
+        webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
       }),
     )
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
-      services: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
-      views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
+      webWorkers: [{name: 'worker', src: './src/worker.ts', title: 'worker', type: 'worker'}],
     })
   })
 
   test('resolves an app entry and panel views together', () => {
     const config = asConfig(
-      unstable_defineApp({
+      defineApplication({
         entry: './src/App.tsx',
         organizationId: 'org-123',
         slug: 'my-app',
         title: 'My App',
-        views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+        views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
       }),
     )
 
     expect(resolveWorkbenchApp(config)).toMatchObject({
       entry: './src/App.tsx',
-      views: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
     })
   })
 })

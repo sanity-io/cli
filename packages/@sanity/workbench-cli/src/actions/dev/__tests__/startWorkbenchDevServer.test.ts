@@ -178,7 +178,7 @@ describe('startWorkbenchDevServer', () => {
         startWorkbenchDevServer(
           createDevOptions({cliConfig: {app: workbenchApp({organizationId: undefined})}}),
         ),
-      ).rejects.toThrow(/Pass "organizationId" to unstable_defineApp/)
+      ).rejects.toThrow(/Pass "organizationId" to defineApplication/)
     })
   })
 
@@ -616,7 +616,7 @@ describe('startWorkbenchDevServer', () => {
           configs: [{appType: 'media-library', fields: [], moduleName: 'media-library'}],
           host: 'localhost',
           id: 'app-1',
-          interfaces: [{name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}],
+          interfaces: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
           pid: 3,
           port: 3337,
           type: 'coreApp',
@@ -643,8 +643,8 @@ describe('startWorkbenchDevServer', () => {
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
 
       const base = {host: 'localhost', id: 'app-1', pid: 3, port: 3335, type: 'coreApp'}
-      const feed = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
-      const alerts = {name: 'alerts', src: './src/Alerts.tsx', title: 'alerts', type: 'panel'}
+      const feed = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
+      const alerts = {name: 'alerts', src: './src/Alerts.tsx', surface: 'panel', title: 'alerts'}
 
       // First sighting of the app — reconcile softly, don't reload.
       watchCallback([{...base, interfaces: [feed]}])
@@ -665,7 +665,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
 
-      const feed = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
+      const feed = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
       const base = {host: 'localhost', id: 'app-1', interfaces: [feed], pid: 3, port: 3335}
 
       watchCallback([{...base, manifest: {title: 'V1', version: '1'}, type: 'coreApp'}])

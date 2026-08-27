@@ -1,7 +1,7 @@
 import {type CliConfig, exitCodes, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import {unstable_defineApp} from '@sanity/workbench-cli'
+import {defineApplication} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -845,14 +845,14 @@ describe('#deploy studio (external)', () => {
     })
   })
 
-  describe('unstable_defineApp', () => {
-    test('should reject --external for an unstable_defineApp studio', async () => {
+  describe('defineApplication', () => {
+    test('should reject --external for a defineApplication studio', async () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       // Brand the config as a studio so the deploy command routes it through
       // deployStudio (the only path that accepts --external).
-      const app = unstable_defineApp({
+      const app = defineApplication({
         organizationId: 'org-1',
         slug: 'test-studio',
         title: 'Test Studio',

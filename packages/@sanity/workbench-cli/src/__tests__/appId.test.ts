@@ -8,9 +8,9 @@ describe('buildAppId', () => {
     entry: './src/App.tsx',
     name: 'drop-desk',
     organizationId: 'org-1',
-    services: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     slug: 'drop-desk',
-    views: [{name: 'feed', src: './src/feed.tsx', title: 'feed', type: 'panel'}],
+    views: [{name: 'feed', src: './src/feed.tsx', surface: 'panel', title: 'feed'}],
+    webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
   }
 
   test('deterministic for the same declared shape', async () => {
@@ -21,15 +21,15 @@ describe('buildAppId', () => {
     const reordered: ResolvedWorkbenchApp = {
       ...app,
       views: [
-        {name: 'b', src: './b.tsx', title: 'b', type: 'panel'},
-        {name: 'a', src: './a.tsx', title: 'a', type: 'panel'},
+        {name: 'b', src: './b.tsx', surface: 'panel', title: 'b'},
+        {name: 'a', src: './a.tsx', surface: 'panel', title: 'a'},
       ],
     }
     const forward: ResolvedWorkbenchApp = {
       ...app,
       views: [
-        {name: 'a', src: './a.tsx', title: 'a', type: 'panel'},
-        {name: 'b', src: './b.tsx', title: 'b', type: 'panel'},
+        {name: 'a', src: './a.tsx', surface: 'panel', title: 'a'},
+        {name: 'b', src: './b.tsx', surface: 'panel', title: 'b'},
       ],
     }
     expect(await buildAppId(reordered)).toBe(await buildAppId(forward))
@@ -43,7 +43,7 @@ describe('buildAppId', () => {
     expect(base).not.toBe(
       await buildAppId({
         ...app,
-        views: [{name: 'feed', src: './moved.tsx', title: 'feed', type: 'panel'}],
+        views: [{name: 'feed', src: './moved.tsx', surface: 'panel', title: 'feed'}],
       }),
     )
   })

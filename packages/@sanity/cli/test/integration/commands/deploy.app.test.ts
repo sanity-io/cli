@@ -4,7 +4,7 @@ import {join} from 'node:path'
 import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import {unstable_defineApp} from '@sanity/workbench-cli'
+import {defineApplication} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -336,11 +336,11 @@ describe('#deploy app', () => {
     expect(error?.message).toContain('Deploy blocked')
   })
 
-  test('should reject an unstable_defineApp app that declares no interfaces', async () => {
+  test('should reject a defineApplication app that declares no interfaces', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       organizationId,
       slug: 'workbench-app',
       title: 'Workbench App',
@@ -357,7 +357,7 @@ describe('#deploy app', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('declares no entry, views or services')
+    expect(error?.message).toContain('declares no entry, views or web workers')
     expect(error?.oclif?.exit).toBe(2)
     // fails before any directory check or API call
     expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
@@ -378,7 +378,7 @@ describe('#deploy app', () => {
       },
     })
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -424,7 +424,7 @@ describe('#deploy app', () => {
     })
     mockBuildApp.mockRejectedValueOnce(new Error('build blew up'))
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -445,7 +445,7 @@ describe('#deploy app', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -467,7 +467,7 @@ describe('#deploy app', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -507,7 +507,7 @@ describe('#deploy app', () => {
       type: 'coreApp',
     })
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -541,7 +541,7 @@ describe('#deploy app', () => {
       },
     })
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       icon: './icon.svg',
       organizationId,
@@ -565,7 +565,7 @@ describe('#deploy app', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       icon: './missing-icon.svg',
       organizationId,

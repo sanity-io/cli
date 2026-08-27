@@ -10,7 +10,7 @@ const app = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-const panel = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
+const panel = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
 
 describe('validateWorkbenchApp', () => {
   test('returns no errors for a valid app', () => {
@@ -31,7 +31,7 @@ describe('validateWorkbenchApp', () => {
     expect(
       validateWorkbenchApp(
         app({
-          views: [panel, {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'}],
+          views: [panel, {name: 'inbox', src: './src/Inbox.tsx', surface: 'panel', title: 'inbox'}],
         }),
       ),
     ).toEqual([])
@@ -51,7 +51,9 @@ describe('validateWorkbenchApp', () => {
       }),
     )
     expect(errors).toContainEqual(expect.stringMatching(/slug: App `slug` must be lowercase/))
-    expect(errors).toContainEqual(expect.stringContaining('View `name` must be unique'))
+    expect(errors).toContainEqual(
+      expect.stringContaining('`name` must be unique across views and web workers'),
+    )
   })
 })
 

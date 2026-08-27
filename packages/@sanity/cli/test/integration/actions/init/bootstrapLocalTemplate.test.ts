@@ -214,7 +214,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
-    expect(cliConfig).not.toContain('unstable_defineApp')
+    expect(cliConfig).not.toContain('defineApplication')
     expect(cliConfig).toContain(`projectId: 'abc123'`)
   })
 })

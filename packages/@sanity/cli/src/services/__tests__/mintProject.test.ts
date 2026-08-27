@@ -3,9 +3,14 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {MINT_REQUEST_TAG, mintUnclaimedProject, PROVISION_API_VERSION} from '../mintProject.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
+const mockGetCliToken = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core/request', () => ({
   createRequester: vi.fn().mockReturnValue(mockRequest),
+}))
+
+vi.mock('@sanity/cli-core/config', () => ({
+  getCliToken: mockGetCliToken,
 }))
 
 const PROVISION_URL = `https://api.sanity.io/${PROVISION_API_VERSION}/provision?tag=${MINT_REQUEST_TAG}`
@@ -38,6 +43,8 @@ function jsonResponse(body: unknown, status = 200) {
 
 beforeEach(() => {
   mockRequest.mockResolvedValue(jsonResponse(provisionResponse))
+  // Logged out is the case `sanity new` is built for, so it is the default every test starts from.
+  mockGetCliToken.mockResolvedValue(undefined)
 })
 
 afterEach(() => {
@@ -136,15 +143,79 @@ describe('mintUnclaimedProject', () => {
     )
   })
 
-  // Mint is unauthenticated by design — `sanity new` is meant to work without an account, so the
-  // request must never carry a credential.
-  test('mints anonymously, sending no credential', async () => {
-    await mintUnclaimedProject({displayName: 'My Project'})
+  // `sanity new` has to work logged out, so credentials are opportunistic: they buy the mint an
+  // owner in the funnel and must never become a precondition for minting.
+  describe('attribution', () => {
+    test('mints anonymously when there is no stored credential', async () => {
+      await mintUnclaimedProject({displayName: 'My Project'})
 
-    expect(mockRequest).toHaveBeenCalledTimes(1)
-    expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
+      expect(mockRequest).toHaveBeenCalledTimes(1)
+      expect(mockRequest).toHaveBeenCalledWith(
+        expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
+      )
+    })
+
+    test('sends the stored credential so the mint is attributed to the user', async () => {
+      mockGetCliToken.mockResolvedValue('sk-user-token')
+
+      await mintUnclaimedProject({displayName: 'My Project'})
+
+      expect(mockRequest).toHaveBeenCalledTimes(1)
+      expect(mockRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: {
+            Authorization: 'Bearer sk-user-token',
+            'Content-Type': 'application/json',
+          },
+        }),
+      )
+    })
+
+    // The endpoint verifies a bearer token before the mint handler runs, so a stale login would
+    // otherwise fail a command that needs no account at all.
+    test.each([401, 403])(
+      'drops a credential rejected with %i and mints anonymously',
+      async (status) => {
+        mockGetCliToken.mockResolvedValue('sk-expired-token')
+        mockRequest
+          .mockResolvedValueOnce(jsonResponse({}, status))
+          .mockResolvedValueOnce(jsonResponse(provisionResponse))
+
+        await expect(mintUnclaimedProject({displayName: 'My Project'})).resolves.toMatchObject({
+          resourceId: provisionResponse.resourceId,
+        })
+
+        expect(mockRequest).toHaveBeenCalledTimes(2)
+        expect(mockRequest).toHaveBeenLastCalledWith(
+          expect.objectContaining({headers: {'Content-Type': 'application/json'}}),
+        )
+      },
     )
+
+    // There is nothing to drop on an already-anonymous mint, so a 401 there is a real failure and
+    // retrying it would just double the load for the same answer.
+    test('does not retry when an anonymous mint is rejected', async () => {
+      mockRequest.mockResolvedValue(jsonResponse({}, 401))
+
+      await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
+        'Project creation failed (HTTP 401). Try again later.',
+      )
+      expect(mockRequest).toHaveBeenCalledTimes(1)
+    })
+
+    // The retry is the real attempt, so its outcome is what the user hears about — reporting the
+    // discarded auth failure instead would send them to `sanity login` for an unrelated problem.
+    test('reports the anonymous retry failure when both attempts fail', async () => {
+      mockGetCliToken.mockResolvedValue('sk-expired-token')
+      mockRequest
+        .mockResolvedValueOnce(jsonResponse({}, 401))
+        .mockResolvedValueOnce(jsonResponse({}, 429))
+
+      await expect(mintUnclaimedProject({displayName: 'My Project'})).rejects.toThrow(
+        'Project creation rate limit reached for this machine. Try again later.',
+      )
+      expect(mockRequest).toHaveBeenCalledTimes(2)
+    })
   })
 
   // The terms notice has to reach the user even when the API predates it, so it falls back to

@@ -4,7 +4,8 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {unstable_defineApp} from '../../../defineApp.js'
+import {definePanelView, defineWindowView} from '../../../contract.js'
+import {defineApplication} from '../../../defineApp.js'
 import {type BrettAccess, type BrettWorkspace} from '../../../services/applications.js'
 import {createCoreApp, createStudio, deployWorkbenchApp} from '../deployWorkbenchApp.js'
 
@@ -20,12 +21,12 @@ vi.mock('@sanity/cli-core/ux', () => ({
 vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
-const app = unstable_defineApp({
+const app = defineApplication({
   entry: './src/App.tsx',
   organizationId: 'org-1',
-  services: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
   slug: 'drop-desk',
   title: 'Drop Desk',
+  webWorkers: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
 })
 const workspaces: BrettWorkspace[] = [
   {
@@ -210,10 +211,10 @@ describe('deployWorkbenchApp', () => {
     expect(fields.map(([name]) => name)).toContain('tarball')
   })
 
-  test('sends a tile interface carrying its size + priority as metadata', async () => {
+  test('sends a tile interface carrying its size + order as metadata', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
-    const tileApp = unstable_defineApp({
+    const tileApp = defineApplication({
       entry: './src/App.tsx',
       organizationId: 'org-1',
       slug: 'drop-desk',
@@ -221,11 +222,11 @@ describe('deployWorkbenchApp', () => {
       views: [
         {
           name: 'agent',
-          priority: 100,
+          order: 100,
           size: 'large',
           src: './src/tile.tsx',
+          surface: 'tile',
           title: 'Agent',
-          type: 'tile',
         },
       ],
     })
@@ -242,15 +243,79 @@ describe('deployWorkbenchApp', () => {
 
     const fields = appendedFields()
     const interfaces = JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))
-    // Brett owns `id`/`src`, so they're stripped; `size`/`priority` ride as metadata.
+    // Brett owns `id`/`src`, so they're stripped; `size`/`order` ride as metadata.
     expect(interfaces).toContainEqual({
-      metadata: {priority: 100, size: 'large'},
+      metadata: {order: 100, size: 'large'},
       moduleId: 'views/agent',
       name: 'agent',
       title: 'Agent',
       type: 'tile',
       version: '1.0.0',
     })
+  })
+
+  test('sends entry, panel, and window views with inherited placement metadata', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    const placedApp = defineApplication({
+      dock: {group: 'dock.applications', order: 100},
+      entry: './src/App.tsx',
+      organizationId: 'org-1',
+      slug: 'drop-desk',
+      title: 'Drop Desk',
+      views: [
+        definePanelView({
+          dock: {order: 20},
+          name: 'feed',
+          src: './src/Feed.tsx',
+          title: 'Feed',
+        }),
+        defineWindowView({
+          dock: {group: 'dock.user'},
+          name: 'settings',
+          src: './src/Settings.tsx',
+          title: 'Settings',
+        }),
+      ],
+    })
+
+    await deployWorkbenchApp({
+      app: placedApp,
+      applicationId: 'app_1',
+      isApp: true,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
+
+    const fields = appendedFields()
+    expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
+      {
+        metadata: {dock: {group: 'dock.applications', order: 20}},
+        moduleId: 'views/feed',
+        name: 'feed',
+        title: 'Feed',
+        type: 'panel',
+        version: '1.0.0',
+      },
+      {
+        metadata: {dock: {group: 'dock.user', order: 100}},
+        moduleId: 'App',
+        name: 'settings',
+        title: 'Settings',
+        type: 'app',
+        version: '1.0.0',
+      },
+      {
+        metadata: {dock: {group: 'dock.applications', order: 100}},
+        moduleId: 'App',
+        name: 'drop-desk',
+        title: 'Drop Desk',
+        type: 'app',
+        version: '1.0.0',
+      },
+    ])
   })
 
   test('sends workspaces for a studio deployment', async () => {

@@ -2,11 +2,12 @@ import {type CliConfig} from '@sanity/cli-core'
 
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './actions/build/vite/constants.js'
 import {
-  type AppInterfaceMetadata,
+  type Dock,
   interfaceContractVersion,
   type InterfaceKind,
   interfaceModuleId,
   type TileInterfaceMetadata,
+  type ViewPlacementMetadata,
 } from './contract.js'
 import {isWorkbenchApp} from './defineApp.js'
 
@@ -26,11 +27,11 @@ interface DerivedInterfaceBase {
 
 /** @internal */
 export type DerivedInterface =
-  | (DerivedInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
-  | (DerivedInterfaceBase & {metadata: null; type: 'asset_source'})
-  | (DerivedInterfaceBase & {metadata: null; type: 'panel'})
+  | (DerivedInterfaceBase & {metadata: null; surface: 'asset_source'})
   | (DerivedInterfaceBase & {metadata: null; type: 'worker'})
-  | (DerivedInterfaceBase & {metadata: TileInterfaceMetadata; type: 'tile'})
+  | (DerivedInterfaceBase & {metadata: TileInterfaceMetadata; surface: 'tile'})
+  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'app'})
+  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'panel'})
 
 /**
  * `appTitle` titles the app view where a deploy resolved one through `--title`;
@@ -54,43 +55,63 @@ export function deriveInterfaces(
   // (which defaults to `slug`, so existing apps derive byte-identical ids).
   const appName = app.name ?? app.slug
 
-  const shared = <T extends InterfaceKind>(
-    type: T,
+  const shared = (
+    kind: InterfaceKind,
     declaration: {name: string; src: string; title: string},
   ) => ({
-    id: `${appName}-${type}-${declaration.name}`,
-    moduleId: interfaceModuleId(type, declaration.name),
+    id: `${appName}-${kind}-${declaration.name}`,
+    moduleId: interfaceModuleId(kind, declaration.name),
     name: declaration.name,
     src: declaration.src,
     title: declaration.title,
-    type,
-    version: interfaceContractVersion(type),
+    version: interfaceContractVersion(kind),
   })
+
+  const placementMetadata = (dock?: Dock): ViewPlacementMetadata | null => {
+    const group = dock?.group ?? app.dock?.group
+    const order = dock?.order ?? app.dock?.order
+    if (group === undefined && order === undefined) return null
+    return {
+      dock: {
+        ...(group === undefined ? {} : {group}),
+        ...(order === undefined ? {} : {order}),
+      },
+    }
+  }
 
   return [
     ...(app.views ?? []).map((view): DerivedInterface => {
-      // Tile is the only view type with interface metadata: its footprint `size`
-      // (required) and an optional sort `priority`. Both authored top-level.
-      if (view.type === 'tile') {
+      if (view.surface === 'tile') {
         return {
-          ...shared(view.type, view),
+          ...shared(view.surface, view),
           metadata:
-            view.priority === undefined
-              ? {size: view.size}
-              : {priority: view.priority, size: view.size},
+            view.order === undefined ? {size: view.size} : {order: view.order, size: view.size},
+          surface: view.surface,
         }
       }
-      return {...shared(view.type, view), metadata: null}
+      if (view.surface === 'app' || view.surface === 'panel') {
+        return {
+          ...shared(view.surface, view),
+          metadata: placementMetadata(view.dock),
+          surface: view.surface,
+        }
+      }
+      return {...shared(view.surface, view), metadata: null, surface: view.surface}
     }),
-    ...(app.services ?? []).map(
-      (service): DerivedInterface => ({...shared('worker', service), metadata: null}),
+    ...(app.webWorkers ?? []).map(
+      (webWorker): DerivedInterface => ({
+        ...shared('worker', webWorker),
+        metadata: null,
+        type: 'worker',
+      }),
     ),
     ...(entry === undefined
       ? []
       : [
           {
             ...shared('app', {name: appName, src: entry, title: appTitle ?? app.title}),
-            metadata: null,
+            metadata: placementMetadata(),
+            surface: 'app' as const,
           },
         ]),
   ]

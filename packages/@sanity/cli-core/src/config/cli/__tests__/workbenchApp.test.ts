@@ -10,7 +10,7 @@ const CONFIG_BRAND = Symbol.for('sanity.workbench.defineConfig')
 // A dir with no `sanity.config.*`, so detection resolves to a core app.
 const APP_DIR = tmpdir()
 
-/** Mimics what `unstable_defineApp` returns: the input plus the brand. */
+/** Mimics what `defineApplication` returns: the input plus the brand. */
 function brandedApp(input: Record<string, unknown>) {
   return Object.defineProperty({...input}, BRAND, {enumerable: false, value: true})
 }

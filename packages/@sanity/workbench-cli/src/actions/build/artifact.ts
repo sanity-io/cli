@@ -15,7 +15,7 @@ interface ArtifactContext {
 
 /**
  * One file the federation build generates into the runtime dir for a declared
- * interface. Each interface type — views, services — expands its declarations
+ * interface. Each interface type — views, web workers — expands its declarations
  * into a flat list of these; the build then writes them and maps the ones the
  * host loads directly into the module-federation manifest.
  *
@@ -64,7 +64,7 @@ export function artifactExposes(
 export function workbenchArtifacts(exposes: WorkbenchExposes): GeneratedArtifact[] {
   return [
     ...viewArtifacts(exposes.views ?? []),
-    ...serviceArtifacts(exposes.services ?? []),
+    ...serviceArtifacts(exposes.webWorkers ?? []),
     ...configArtifacts(exposes.config),
   ]
 }

@@ -1,5 +1,39 @@
 # @sanity/workbench-cli
 
+## 2.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.0...workbench-cli-v2.2.1)
+
+_2026-08-26_
+
+### Bug Fixes
+
+- **workbench:** enforce app-wide interface name uniqueness ([#1760](https://github.com/sanity-io/cli/pull/1760)) ([027db7f](https://github.com/sanity-io/cli/commit/027db7f9792757243e94e76c7924012dd5a002ed))
+
+## 2.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.1.0...workbench-cli-v2.2.0)
+
+_2026-08-26_
+
+### Features
+
+- make name the application identity, slug the address ([#1748](https://github.com/sanity-io/cli/pull/1748)) ([cec18fc](https://github.com/sanity-io/cli/commit/cec18fc56c7874b890797c5679ba9fd2ac561303))
+- **workbench:** enable type-safe window, panel, and tile declarations ([#1755](https://github.com/sanity-io/cli/pull/1755)) ([36b61b3](https://github.com/sanity-io/cli/commit/36b61b39d1d09010fa68098d2064d3dab51cdbd3))
+- **workbench:** stabilize unstable_defineApp ([#1756](https://github.com/sanity-io/cli/pull/1756)) ([69a180e](https://github.com/sanity-io/cli/commit/69a180ec221e5762e56b7afef59ea952e4d3fee3))
+- **workbench:** align application workers with the web worker api ([#1757](https://github.com/sanity-io/cli/pull/1757)) ([ee095b5](https://github.com/sanity-io/cli/commit/ee095b5fe9f2268d4d542e5eb170c5d111eb6832))
+- **workbench:** rename view type discriminator to surface ([#1759](https://github.com/sanity-io/cli/pull/1759)) ([d9bd013](https://github.com/sanity-io/cli/commit/d9bd01305e08d5c5dc5a006a50d899453283b1c7))
+
+### Bug Fixes
+
+- append content-hash to remote-entry ([#1747](https://github.com/sanity-io/cli/pull/1747)) ([aae7de5](https://github.com/sanity-io/cli/commit/aae7de5d1a0ac2a021f1a6eb0e7f89e62b623817))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.4.0
+
 ## 2.1.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.2...workbench-cli-v2.1.0)

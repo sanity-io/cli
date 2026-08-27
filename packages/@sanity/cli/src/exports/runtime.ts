@@ -6,7 +6,7 @@
 // frontend bundle. The `sanity` runtime package re-exports from here, so the
 // same constraint protects it.
 //
-// `unstable_defineApp` is config-time (Node) and stays on the main `@sanity/cli`
+// `defineApplication` is config-time (Node) and stays on the main `@sanity/cli`
 // entry; only the runtime helpers live here.
 export type {AssetSource, AssetSourceComponentProps} from '@sanity/types'
 export type {
@@ -14,7 +14,6 @@ export type {
   AssetSourceViewComponents,
   DefinedService,
   DefinedView,
-  InterfaceType,
   PanelComponent,
   PanelViewComponents,
   PanelViewProps,
@@ -26,6 +25,7 @@ export type {
   TileSize,
   TileViewComponents,
   TileViewProps,
-  ViewComponentsByType,
+  ViewComponentsBySurface,
+  ViewSurface,
 } from '@sanity/workbench-cli'
 export {unstable_defineService, unstable_defineView} from '@sanity/workbench-cli'

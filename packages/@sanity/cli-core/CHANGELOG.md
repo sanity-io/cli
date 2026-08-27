@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.3.0...cli-core-v3.4.0)
+
+_2026-08-26_
+
+### Features
+
+- **workbench:** enable type-safe window, panel, and tile declarations ([#1755](https://github.com/sanity-io/cli/pull/1755)) ([36b61b3](https://github.com/sanity-io/cli/commit/36b61b39d1d09010fa68098d2064d3dab51cdbd3))
+- **workbench:** stabilize unstable_defineApp ([#1756](https://github.com/sanity-io/cli/pull/1756)) ([69a180e](https://github.com/sanity-io/cli/commit/69a180ec221e5762e56b7afef59ea952e4d3fee3))
+
+### Bug Fixes
+
+- reduce dependency on lodash-es ([#1750](https://github.com/sanity-io/cli/pull/1750)) ([4a2dcce](https://github.com/sanity-io/cli/commit/4a2dcce5bbdbe42011cb6abf8b84a3c9cf030ea9))
+
 ## 3.3.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.2.0...cli-core-v3.3.0)

@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
+import {defineApplication, unstable_defineMediaLibrary} from '../defineApp.js'
 import {resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig
@@ -13,7 +13,7 @@ describe('resolveWorkbenchConfig', () => {
     ['a config without an app', {} as CliConfig],
     ['a plain (unbranded) app', asConfig({name: 'plain'})],
     // An app is not a config — it resolves through `resolveWorkbenchApp`.
-    ['a branded app', asConfig(unstable_defineApp({organizationId: 'o', slug: 's', title: 'T'}))],
+    ['a branded app', asConfig(defineApplication({organizationId: 'o', slug: 's', title: 'T'}))],
   ])('returns null for %s', (_label, config) => {
     expect(resolveWorkbenchConfig(config as CliConfig | null | undefined)).toBeNull()
   })

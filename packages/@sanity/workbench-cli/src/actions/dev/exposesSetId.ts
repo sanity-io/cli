@@ -12,14 +12,16 @@ interface ExposeSet {
 
 /**
  * Order-independent id of an app's exposed-module set. Keys each interface by
- * its type, name, and source file, and each config by its module
+ * its surface or service type, name, and source file, and each config by its module
  * identity plus one key per entry (a named source file), so the id changes on
  * any rebuild-worthy edit — add, remove, rename, repoint, or gaining/losing the
  * config module — while reordering and HMR content edits keep it stable.
  */
 export function exposesSetId({configs, interfaces}: ExposeSet): string {
   const keys = [
-    ...(interfaces ?? []).map((iface) => [iface.type, iface.name, iface.src].join('::')),
+    ...(interfaces ?? []).map((iface) =>
+      ['surface' in iface ? iface.surface : iface.type, iface.name, iface.src].join('::'),
+    ),
     ...(configs ?? []).flatMap((config) => [
       ['config', config.appType].join('::'),
       ...deriveConfigEntries(config).map((entry) =>
