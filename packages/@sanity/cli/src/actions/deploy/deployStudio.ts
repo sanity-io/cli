@@ -18,6 +18,7 @@ import {
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
 
+import {prettyPrintError} from '../../exports/invokeSanityCli/prettyPrintError.js'
 import {createDeployment, type UserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
@@ -350,9 +351,14 @@ async function uploadStudioSchema(
     if (error instanceof SchemaExtractionError && error.validation?.length) {
       output.error(formatSchemaValidation(error.validation), {exit: exitCodes.RUNTIME_ERROR})
     }
-    output.error(`Error deploying studio schemas and manifests: ${error}`, {
-      exit: exitCodes.RUNTIME_ERROR,
-    })
+    // prettyPrintError renders the full cause chain (`Caused by: ...` lines),
+    // which `${error}` would silently drop
+    output.error(
+      `Error deploying studio schemas and manifests: ${prettyPrintError(error) || String(error)}`,
+      {
+        exit: exitCodes.RUNTIME_ERROR,
+      },
+    )
   }
 
   if (!studioManifest) {
