@@ -19,9 +19,12 @@ type ExtractManifestWorkerMessage = ExtractManifestWorkerResult | ExtractSchemaW
 interface ExtractManifestOptions extends Pick<WriteManifestFileOptions, 'outPath' | 'workDir'> {
   /** Absolute path to the studio's `sanity.config.(ts|js)` entry file. */
   path: string
+
+  applicationId?: string
 }
 
 export async function extractManifest({
+  applicationId,
   outPath,
   path,
   workDir,
@@ -36,6 +39,7 @@ export async function extractManifest({
     const result = await studioWorkerTask<ExtractManifestWorkerMessage>(
       new URL('extractManifest.worker.js', import.meta.url),
       {
+        applicationId,
         name: 'extractManifest',
         studioRootPath: workDir,
         workerData: {configPath: path, workDir} satisfies ExtractManifestWorkerData,

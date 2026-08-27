@@ -19,6 +19,7 @@ export interface StartWorkbenchDevOptions {
   cliConfig: CliConfig
   /** Extract the project manifest to inline into the registry (studio-vs-app handled by the CLI). */
   extractManifest: (params: {
+    applicationId?: string
     configPath: string
     workDir: string
   }) => Promise<DevServerManifest['manifest']>
