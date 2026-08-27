@@ -4,6 +4,7 @@ import {Command, Interfaces} from '@oclif/core'
 import {type CommandError, type Input, type ParserOutput} from '@oclif/core/interfaces'
 
 import {subdebug} from './_exports/debug.js'
+import {resolveUnattendedFlagRequirements} from './_exports/flags.js'
 import {
   getGlobalCliClient,
   getProjectCliClient,
@@ -19,7 +20,6 @@ import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
 import {getCliExecutionContext} from './executionContext.js'
 import {exitCodes} from './exitCodes.js'
-import {resolveUnattendedFlagRequirements} from './flags.js'
 import {getCliTelemetry, reportCliTraceError} from './telemetry/getCliTelemetry.js'
 import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'

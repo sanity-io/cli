@@ -1,7 +1,7 @@
 import {Flags} from '@oclif/core'
 import {describe, expect, test} from 'vitest'
 
-import {requiredWhenUnattended, resolveUnattendedFlagRequirements} from '../flags.js'
+import {requiredWhenUnattended, resolveUnattendedFlagRequirements} from '../_exports/flags.js'
 
 describe('Flags', () => {
   test('supports unattended requirements for every flag type', () => {

@@ -1,8 +1,8 @@
 import {Command, Flags} from '@oclif/core'
 import {afterEach, beforeEach, describe, expect, Mock, test, vi} from 'vitest'
 
+import {requiredWhenUnattended} from '../_exports/flags.js'
 import {runWithCliExecutionContext} from '../executionContext.js'
-import {requiredWhenUnattended} from '../flags.js'
 import {SanityCommand} from '../SanityCommand.js'
 
 function createMockedRunCommand<T extends typeof Command>(mocks: {
