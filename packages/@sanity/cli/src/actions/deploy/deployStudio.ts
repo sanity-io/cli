@@ -5,6 +5,7 @@ import {createGzip, type Gzip} from 'node:zlib'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
 import {exitCodes} from '@sanity/cli-core'
+import {prettyPrintError} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   type BrettAccess,
@@ -18,7 +19,6 @@ import {
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
 
-import {prettyPrintError} from '../../exports/invokeSanityCli/prettyPrintError.js'
 import {createDeployment, type UserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
