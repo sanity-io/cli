@@ -57,6 +57,10 @@
       "source": "./src/executionContext.ts",
       "default": "./dist/executionContext.js"
     },
+    "./flags": {
+      "source": "./src/_exports/flags.ts",
+      "default": "./dist/_exports/flags.js"
+    },
     "./package-manager": {
       "source": "./src/_exports/package-manager.ts",
       "default": "./dist/_exports/package-manager.js"
