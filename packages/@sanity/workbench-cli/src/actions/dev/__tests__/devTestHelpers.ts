@@ -4,7 +4,7 @@ import {type CliConfig, type Output} from '@sanity/cli-core'
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import {vi} from 'vitest'
 
-import {defineApplication} from '../../../defineApp.js'
+import {defineApplication, unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {type StartWorkbenchOptions} from '../startWorkbenchDevServer.js'
 
 /**
@@ -39,6 +39,17 @@ export function workbenchApp(overrides: Record<string, unknown> = {}): CliConfig
 
 export function workbenchCliConfig(overrides: Partial<CliConfig> = {}): CliConfig {
   return {app: workbenchApp(), ...overrides} as CliConfig
+}
+
+/**
+ * A CliConfig whose `app` is a branded `unstable_defineMediaLibrary(...)` config —
+ * config-only (no interfaces), so the workbench must still start to render it.
+ */
+export function mediaLibraryCliConfig(overrides: Partial<CliConfig> = {}): CliConfig {
+  return {
+    app: unstable_defineMediaLibrary({organizationId: 'org-123'}),
+    ...overrides,
+  } as unknown as CliConfig
 }
 
 export function createMockOutput(): Output {

@@ -6,7 +6,7 @@ import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from 'vite'
 import {z} from 'zod/mini'
 
-import {isWorkbenchApp} from '../../defineApp.js'
+import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {createExposesTracker} from './exposesSetId.js'
 import {
   acquireWorkbenchLock,
@@ -16,6 +16,7 @@ import {
   readWorkbenchLock,
   watchRegistry,
 } from './registry.js'
+import {toWireInterface} from './toWireInterface.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
 const devDebug = subdebug('dev')
@@ -36,7 +37,8 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
     .map(({host, id, interfaces, manifest, port, projectId, type}) => ({
       host,
       id,
-      interfaces,
+      // Views cross to the remote keyed on `type`, never the internal `surface`.
+      interfaces: interfaces?.map((iface) => toWireInterface(iface)),
       manifest,
       port,
       projectId,
@@ -152,9 +154,11 @@ export async function startWorkbenchDevServer(
     workDir,
   } = options
 
-  // Workbench is opted into solely by calling `defineApplication`.
-  if (!isWorkbenchApp(cliConfig?.app)) {
-    devDebug('Not a workbench app, skipping workbench dev server')
+  // Workbench is opted into by a `defineApplication` app or a config-only
+  // `unstable_defineMediaLibrary` config — the latter still needs the shell to
+  // render it.
+  if (!isWorkbenchApp(cliConfig?.app) && !isWorkbenchConfig(cliConfig?.app)) {
+    devDebug('Not a workbench app or config, skipping workbench dev server')
     return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
   }
 
