@@ -5,6 +5,7 @@ import {
   createDevOptions,
   createMockOutput,
   createMockViteServer,
+  mediaLibraryCliConfig,
   workbenchApp,
 } from './devTestHelpers.js'
 
@@ -67,6 +68,23 @@ describe('startWorkbenchDevServer', () => {
 
       expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
+    })
+  })
+
+  describe('config-only startup (media library)', () => {
+    // A media library is a branded config, not an app. It's config-only (no
+    // interfaces) and needs the workbench shell to render it, so the workbench
+    // must still start — the gate must not bail as it does for a non-workbench
+    // project.
+    test('starts the workbench for a config-only project', async () => {
+      mockCreateServer.mockResolvedValue(createMockViteServer())
+
+      const result = await startWorkbenchDevServer(
+        createDevOptions({cliConfig: mediaLibraryCliConfig()}),
+      )
+
+      expect(result.workbenchAvailable).toBe(true)
+      expect(mockCreateServer).toHaveBeenCalled()
     })
   })
 
@@ -602,6 +620,130 @@ describe('startWorkbenchDevServer', () => {
           },
         ],
       })
+    })
+
+    test('forwards every interface kind to the remote in the exact wire shape (views keyed on type)', async () => {
+      const mockServer = createMockViteServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        {
+          host: 'localhost',
+          id: 'app-1',
+          interfaces: [
+            {
+              id: 'a-app',
+              metadata: {dock: {group: 'dock.system', order: 1}},
+              moduleId: 'App',
+              name: 'main',
+              src: './src/App.tsx',
+              surface: 'app',
+              title: 'Main',
+              version: '1',
+            },
+            {
+              id: 'a-panel',
+              metadata: null,
+              moduleId: 'views/feed',
+              name: 'feed',
+              src: './src/Feed.tsx',
+              surface: 'panel',
+              title: 'Feed',
+              version: '1',
+            },
+            {
+              id: 'a-asset',
+              metadata: null,
+              moduleId: 'views/lib',
+              name: 'lib',
+              src: './src/Lib.tsx',
+              surface: 'asset_source',
+              title: 'Lib',
+              version: '1',
+            },
+            {
+              id: 'a-tile',
+              metadata: {order: 2, size: 'small'},
+              moduleId: 'views/agent',
+              name: 'agent',
+              src: './src/Tile.tsx',
+              surface: 'tile',
+              title: 'Agent',
+              version: '1',
+            },
+            {
+              id: 'a-worker',
+              metadata: null,
+              moduleId: 'workers/sync',
+              name: 'sync',
+              src: './src/sync.ts',
+              title: 'Sync',
+              type: 'worker',
+              version: '1',
+            },
+          ],
+          pid: 3,
+          port: 3337,
+          type: 'coreApp',
+        },
+      ])
+
+      const payload = mockServer.ws.send.mock.calls.at(-1)?.[1]
+      expect(payload.applications[0].interfaces).toEqual([
+        {
+          id: 'a-app',
+          metadata: {dock: {group: 'dock.system', order: 1}},
+          moduleId: 'App',
+          name: 'main',
+          src: './src/App.tsx',
+          title: 'Main',
+          type: 'app',
+          version: '1',
+        },
+        {
+          id: 'a-panel',
+          metadata: null,
+          moduleId: 'views/feed',
+          name: 'feed',
+          src: './src/Feed.tsx',
+          title: 'Feed',
+          type: 'panel',
+          version: '1',
+        },
+        {
+          id: 'a-asset',
+          metadata: null,
+          moduleId: 'views/lib',
+          name: 'lib',
+          src: './src/Lib.tsx',
+          title: 'Lib',
+          type: 'asset_source',
+          version: '1',
+        },
+        {
+          id: 'a-tile',
+          metadata: {order: 2, size: 'small'},
+          moduleId: 'views/agent',
+          name: 'agent',
+          src: './src/Tile.tsx',
+          title: 'Agent',
+          type: 'tile',
+          version: '1',
+        },
+        {
+          id: 'a-worker',
+          metadata: null,
+          moduleId: 'workers/sync',
+          name: 'sync',
+          src: './src/sync.ts',
+          title: 'Sync',
+          type: 'worker',
+          version: '1',
+        },
+      ])
     })
 
     test('a config server that also has interfaces lands in both channels', async () => {
