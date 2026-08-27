@@ -33,6 +33,10 @@
       "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./mocks/cli-build/extract": {
+      "source": "./src/mocks/cli-build/extract.ts",
+      "default": "./dist/mocks/cli-build/extract.js"
+    },
     "./mocks/cli-build/manifest": {
       "source": "./src/mocks/cli-build/manifest.ts",
       "default": "./dist/mocks/cli-build/manifest.js"
