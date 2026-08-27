@@ -2579,7 +2579,7 @@ FLAGS
       --[no-]git=<message>         Specify a commit message for initial commit, or disable git init
       --[no-]import-dataset        Import template sample dataset
       --[no-]mcp                   Enable AI editor integration (MCP) setup
-      --organization=<id>          Organization ID to use for the project
+      --organization=<id>          Organization ID to use for the project (required for unattended project creation)
       --output-path=<path>         Path to write studio project to
       --[no-]overwrite-files       Overwrite existing files
       --package-manager=<manager>  Specify which package manager to use [allowed: npm, yarn, pnpm]
