@@ -97,19 +97,11 @@ describe('#dataset:alias:delete', () => {
   })
 
   test('requires --force instead of prompting in unattended mode', async () => {
-    mockApi({
-      apiVersion: DATASET_ALIASES_API_VERSION,
-      projectId: testProjectId,
-      uri: '/aliases',
-    }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
-
     const {error} = await testCommand(DeleteAliasCommand, ['test-alias'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toBe(
-      'Dataset alias deletion requires confirmation. Re-run with `--force`.',
-    )
+    expect(error?.message).toContain('Missing required flag force')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
   })

@@ -2,6 +2,7 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, getProjectCliClient, SanityCommand} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {boxen, spinner} from '@sanity/cli-core/ux'
 import {SanityClient} from '@sanity/client'
 import {type OperatorFunction, pipe, scan, tap} from 'rxjs'
@@ -43,9 +44,11 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       description: 'Project ID to import media to',
       semantics: 'override',
     }),
-    'media-library-id': Flags.string({
-      description: 'The id of the target media library',
-    }),
+    'media-library-id': requiredWhenUnattended(
+      Flags.string({
+        description: 'The id of the target media library',
+      }),
+    ),
     'replace-aspects': Flags.boolean({
       description:
         'Replace existing aspect data. All versions will be replaced (e.g. published and draft aspect data)',
@@ -81,11 +84,6 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
 
     let mediaLibraryId = flags['media-library-id']
     if (!mediaLibraryId) {
-      if (this.isUnattended()) {
-        this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
-          exit: exitCodes.USAGE_ERROR,
-        })
-      }
       try {
         mediaLibraryId = await promptForMediaLibrary({mediaLibraries})
       } catch (error) {

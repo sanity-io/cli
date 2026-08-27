@@ -103,25 +103,17 @@ describe('#dataset:alias:unlink', () => {
   })
 
   test('requires --force instead of prompting in unattended mode', async () => {
-    mockApi({
-      apiVersion: DATASET_ALIASES_API_VERSION,
-      projectId: testProjectId,
-      uri: '/aliases',
-    }).reply(200, [{datasetName: 'production', name: 'staging'}])
-
     const {error} = await testCommand(UnlinkAliasCommand, ['staging'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toBe(
-      'Unlinking a dataset alias requires confirmation. Re-run with `--force`.',
-    )
+    expect(error?.message).toContain('Missing required flag force')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
   })
 
   test('requires an alias name in unattended mode', async () => {
-    const {error} = await testCommand(UnlinkAliasCommand, [], {
+    const {error} = await testCommand(UnlinkAliasCommand, ['--force'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
 

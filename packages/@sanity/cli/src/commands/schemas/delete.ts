@@ -1,6 +1,7 @@
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
@@ -53,11 +54,12 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       default: false,
       description: 'Enable verbose logging',
     }),
-    yes: Flags.boolean({
-      char: 'y',
-      default: false,
-      description: 'Delete schemas without prompting for confirmation',
-    }),
+    yes: requiredWhenUnattended(
+      Flags.boolean({
+        char: 'y',
+        description: 'Delete schemas without prompting for confirmation',
+      }),
+    ),
   }
 
   static override hiddenAliases: string[] = ['schema:delete']
@@ -69,12 +71,6 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     deleteSchemaDebug('Running schema delete with flags: %O', flags)
 
     const ids = parseIds(flags.ids)
-
-    if (!yes && this.isUnattended()) {
-      this.error('Schema deletion requires confirmation. Pass `--yes` to delete the schemas.', {
-        exit: exitCodes.USAGE_ERROR,
-      })
-    }
 
     if (!yes) {
       const confirmed = await confirm({

@@ -1,5 +1,6 @@
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
@@ -50,10 +51,11 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       required: false,
     }),
     ...getDatasetFlag({description: 'Dataset to undeploy GraphQL API from', semantics: 'override'}),
-    force: Flags.boolean({
-      description: 'Skip confirmation prompt',
-      required: false,
-    }),
+    force: requiredWhenUnattended(
+      Flags.boolean({
+        description: 'Skip confirmation prompt',
+      }),
+    ),
     project: Flags.string({
       deprecated: {to: 'project-id'},
       description: 'Project ID to delete GraphQL API for',
@@ -128,12 +130,6 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
     // Confirm deletion unless --force is used
     if (!force) {
-      if (this.isUnattended()) {
-        this.error('GraphQL API undeploy requires confirmation. Pass `--force` to continue.', {
-          exit: exitCodes.USAGE_ERROR,
-        })
-      }
-
       const confirmMessage =
         tag === 'default'
           ? `Delete the GraphQL API for dataset "${dataset}" in project ${projectId}?`
