@@ -25,9 +25,15 @@ export async function generateCommands(): Promise<CommandInfo[]> {
     root: resolve(import.meta.dirname, '../../../@sanity/cli'),
   })
 
+  const hiddenTopics = new Set(config.topics.filter((t) => t.hidden).map((t) => t.name))
+  const isUnderHiddenTopic = (id: string): boolean => {
+    const segments = id.split(':')
+    return segments.some((_, index) => hiddenTopics.has(segments.slice(0, index + 1).join(':')))
+  }
+
   const commands = uniqBy(
     config.commands
-      .filter((c) => !c.hidden && c.pluginType === 'core')
+      .filter((c) => !c.hidden && c.pluginType === 'core' && !isUnderHiddenTopic(c.id))
       .toSorted((a, b) => a.id.localeCompare(b.id)),
     (c) => c.id,
   )
