@@ -41,6 +41,7 @@ function createUnattendedRequiredCommand(isInteractive: boolean) {
   return class TestCommand extends SanityCommand<typeof TestCommand> {
     static override enableJsonFlag = true
     static override flags = {
+      force: Flags.boolean({char: 'f'}),
       name: requiredWhenUnattended(Flags.string()),
       yes: Flags.boolean({char: 'y'}),
     }
@@ -65,11 +66,14 @@ describe('SanityCommand', () => {
       await expect(createUnattendedRequiredCommand(true).run([])).resolves.toBeUndefined()
     })
 
-    test.each(['--yes', '-y'])('requires the flag when invoked with %s', async (argument) => {
-      await expect(createUnattendedRequiredCommand(true).run([argument])).rejects.toThrow(
-        'Missing required flag name',
-      )
-    })
+    test.each(['--yes', '-y', '-yf'])(
+      'requires the flag when invoked with %s',
+      async (argument) => {
+        await expect(createUnattendedRequiredCommand(true).run([argument])).rejects.toThrow(
+          'Missing required flag name',
+        )
+      },
+    )
 
     test('requires the flag when invoked with --json', async () => {
       const output: string[] = []

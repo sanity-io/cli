@@ -24,6 +24,7 @@ export function isUnattendedInvocation({
   return isUnattended({
     isInteractive,
     json: optionArguments.includes('--json'),
-    yes: optionArguments.some((argument) => argument === '--yes' || argument === '-y'),
+    // oclif splits alphabetic short flag bundles from left to right, so a leading -y is unambiguous.
+    yes: optionArguments.some((argument) => argument === '--yes' || /^-y[a-zA-Z]*$/.test(argument)),
   })
 }
