@@ -1,7 +1,7 @@
 import {format, styleText} from 'node:util'
 
 import {Command, Interfaces} from '@oclif/core'
-import {type CommandError} from '@oclif/core/interfaces'
+import {type CommandError, type Input, type ParserOutput} from '@oclif/core/interfaces'
 
 import {subdebug} from './_exports/debug.js'
 import {
@@ -19,16 +19,20 @@ import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
 import {getCliExecutionContext} from './executionContext.js'
 import {exitCodes} from './exitCodes.js'
+import {resolveUnattendedFlagRequirements} from './flags.js'
 import {getCliTelemetry, reportCliTraceError} from './telemetry/getCliTelemetry.js'
 import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'
 import {isInteractive} from './util/isInteractive.js'
+import {isUnattendedInvocation, isUnattended as resolveIsUnattended} from './util/isUnattended.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCommand)['baseFlags'] & T['flags']
 >
 
 type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
+
+type ParserValues = Record<string, unknown>
 
 const debug = subdebug('sanityCommand')
 
@@ -267,7 +271,11 @@ export abstract class SanityCommand<T extends typeof Command>
    * output (a caller parsing JSON can't answer a prompt).
    */
   public isUnattended(): boolean {
-    return this.flags.yes || this.flags.json || !this.resolveIsInteractive()
+    return resolveIsUnattended({
+      isInteractive: this.resolveIsInteractive(),
+      json: this.flags.json,
+      yes: this.flags.yes,
+    })
   }
 
   /**
@@ -308,6 +316,28 @@ export abstract class SanityCommand<T extends typeof Command>
       return
     }
     if (!this.jsonEnabled()) context.stderr(format(message, ...args))
+  }
+
+  protected override parse<F extends ParserValues, B extends ParserValues, A extends ParserValues>(
+    options?: Input<F, B, A>,
+    argv: string[] = this.argv,
+  ): Promise<ParserOutput<F, B, A>> {
+    // If no flags defined, exit to default parser early
+    if (!options?.flags) return super.parse(options, argv)
+
+    // Resolve the actual required flags based on the current unattended mode value
+    const resolvedFlags = resolveUnattendedFlagRequirements(
+      options.flags,
+      isUnattendedInvocation({argv, isInteractive: this.resolveIsInteractive()}),
+    )
+    // If flags weren't modified, use original options object
+    // Otherwise create a new options object with the resolved flag values
+    const resolvedOptions =
+      resolvedFlags === options.flags
+        ? options
+        : {...options, flags: resolvedFlags as Interfaces.FlagInput<F>}
+
+    return super.parse(resolvedOptions, argv)
   }
 
   /**

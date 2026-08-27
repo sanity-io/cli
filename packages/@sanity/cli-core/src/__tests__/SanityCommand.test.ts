@@ -2,6 +2,7 @@ import {Command, Flags} from '@oclif/core'
 import {afterEach, beforeEach, describe, expect, Mock, test, vi} from 'vitest'
 
 import {runWithCliExecutionContext} from '../executionContext.js'
+import {requiredWhenUnattended} from '../flags.js'
 import {SanityCommand} from '../SanityCommand.js'
 
 function createMockedRunCommand<T extends typeof Command>(mocks: {
@@ -35,10 +36,64 @@ function createMockedRunCommand<T extends typeof Command>(mocks: {
     }
   }
 }
+
+function createUnattendedRequiredCommand(isInteractive: boolean) {
+  return class TestCommand extends SanityCommand<typeof TestCommand> {
+    static override enableJsonFlag = true
+    static override flags = {
+      name: requiredWhenUnattended(Flags.string()),
+      yes: Flags.boolean({char: 'y'}),
+    }
+
+    public override resolveIsInteractive(): boolean {
+      return isInteractive
+    }
+
+    public async run(): Promise<void> {
+      await this.parse(TestCommand)
+    }
+  }
+}
+
 describe('SanityCommand', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
+
+  describe('unattended flag requirements', () => {
+    test('allows the flag to be omitted in interactive mode', async () => {
+      await expect(createUnattendedRequiredCommand(true).run([])).resolves.toBeUndefined()
+    })
+
+    test.each(['--yes', '-y'])('requires the flag when invoked with %s', async (argument) => {
+      await expect(createUnattendedRequiredCommand(true).run([argument])).rejects.toThrow(
+        'Missing required flag name',
+      )
+    })
+
+    test('requires the flag when invoked with --json', async () => {
+      const output: string[] = []
+
+      await runWithCliExecutionContext({stdout: (line) => output.push(line)}, () =>
+        createUnattendedRequiredCommand(true).run(['--json']),
+      )
+
+      expect(output.join('\n')).toContain('Missing required flag name')
+    })
+
+    test('requires the flag in a non-interactive environment', async () => {
+      await expect(createUnattendedRequiredCommand(false).run([])).rejects.toThrow(
+        'Missing required flag name',
+      )
+    })
+
+    test('does not treat flags after -- as unattended options', async () => {
+      await expect(createUnattendedRequiredCommand(true).run(['--', '--yes'])).rejects.toThrow(
+        'Unexpected argument: --yes',
+      )
+    })
+  })
+
   describe('getProjectId', () => {
     let id: string
     beforeEach(() => {
