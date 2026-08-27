@@ -1,5 +1,5 @@
 ---
-'@sanity/cli': patch
+'@sanity/cli': minor
 ---
 
-fix(cli): enforce unattended flag requirements during argument parsing
+feat(cli): mark flags that are required in unattended mode as being required in `--help`
