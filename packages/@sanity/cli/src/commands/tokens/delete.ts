@@ -45,7 +45,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       semantics: 'override',
     }),
     yes: Flags.boolean({
-      aliases: ['y'],
+      char: 'y',
       description: 'Skip confirmation prompt (unattended mode)',
       required: false,
     }),
