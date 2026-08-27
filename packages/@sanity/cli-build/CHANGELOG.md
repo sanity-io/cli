@@ -1,5 +1,25 @@
 # Changelog
 
+## 6.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.0...cli-build-v6.0.1)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- **workbench:** run `sanity dev` for media library configs and render local views ([#1769](https://github.com/sanity-io/cli/pull/1769)) ([9189bd5](https://github.com/sanity-io/cli/commit/9189bd5092dc8591b9c92df4f1822ea68a0eaa47))
+
+  - Route an `unstable_defineMediaLibrary` config through the workbench dev server so the shell starts and renders it
+  - Skip core app manifest extraction silently for config-only projects, dropping the misleading "Manifest creation skipped" warning
+  - Convert local dev view interfaces from `surface` to the remote's `type` wire shape, matching deployed apps
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.2
+
 ## 6.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.3.1...cli-build-v6.0.0)
