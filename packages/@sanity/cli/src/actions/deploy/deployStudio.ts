@@ -208,7 +208,10 @@ async function runStudioDeployment(
     // resolved version means the deploy target was never resolved.
     if (!version) return
 
-    const studioManifest = await uploadStudioSchema(options, {isExternal})
+    const studioManifest = await uploadStudioSchema(options, {
+      applicationId: workbench ? applicationId : undefined,
+      isExternal,
+    })
     // The studio was created (or resolved from `deployment.appId`) before the
     // build, so this only ships the deployment; plain studios use user-applications.
     if (workbench && !isExternal && organizationId && applicationId) {
@@ -328,7 +331,7 @@ async function resolveStudioApplication(
 /** Extracts the studio schema and manifest and uploads them to the schema store. */
 async function uploadStudioSchema(
   options: DeployAppOptions,
-  {isExternal}: {isExternal: boolean},
+  {applicationId, isExternal}: {applicationId?: string; isExternal: boolean},
 ): Promise<StudioManifest | null> {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
 
@@ -336,6 +339,7 @@ async function uploadStudioSchema(
   try {
     studioManifest = await deployStudioSchemasAndManifests(
       {
+        applicationId,
         configPath: projectRoot.path,
         isExternal,
         outPath: `${sourceDir}/static`,

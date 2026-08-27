@@ -1,7 +1,12 @@
-import {type Command, type Interfaces} from '@oclif/core'
+import {Command, Flags, type Interfaces} from '@oclif/core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import SanityHelp, {prefixBinName, replaceInitWithCreateCommand} from '../SanityHelp.js'
+import SanityHelp, {
+  prefixBinName,
+  replaceInitWithCreateCommand,
+  resolveCommandHelpFlags,
+} from '../SanityHelp.js'
 
 class TestSanityHelp extends SanityHelp {
   getFlagSortOrder(commandId: string) {
@@ -18,6 +23,44 @@ describe('getCommandHelpClass', () => {
 
     expect(help.getFlagSortOrder('login')).toBe('none')
     expect(help.getFlagSortOrder('build')).toBe('alphabetical')
+  })
+})
+
+describe('resolveCommandHelpFlags', () => {
+  class TestCommand extends Command {
+    static override flags = {
+      name: requiredWhenUnattended(Flags.string({description: 'Organization name'})),
+      required: Flags.string({required: true}),
+    }
+
+    async run(): Promise<void> {}
+  }
+
+  const command = {
+    aliases: [],
+    args: {},
+    flags: {
+      name: {name: 'name', required: false, type: 'option'},
+      required: {name: 'required', required: true, type: 'option'},
+    },
+    hidden: false,
+    hiddenAliases: [],
+    id: 'organizations:create',
+    load: async () => TestCommand,
+  } as unknown as Command.Loadable
+
+  test('marks unattended-only flags as required in unattended help', async () => {
+    const resolved = await resolveCommandHelpFlags(command, true)
+
+    expect(resolved.flags.name.required).toBe(true)
+    expect(resolved.flags.required.required).toBe(true)
+  })
+
+  test('leaves unattended-only flags optional in interactive help', async () => {
+    const resolved = await resolveCommandHelpFlags(command, false)
+
+    expect(resolved.flags.name.required).toBe(false)
+    expect(resolved.flags.required.required).toBe(true)
   })
 })
 

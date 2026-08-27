@@ -35,6 +35,7 @@ describe('studioWorkerTask', () => {
     mockPromisifyWorker.mockResolvedValue({type: 'success'})
 
     await studioWorkerTask(TASK_URL, {
+      applicationId: 'studio-app',
       env: {CUSTOM_ENV: 'value'},
       name: 'example',
       studioRootPath: '/studio',
@@ -47,6 +48,7 @@ describe('studioWorkerTask', () => {
       {
         env: {
           CUSTOM_ENV: 'value',
+          STUDIO_WORKER_APPLICATION_ID: 'studio-app',
           STUDIO_WORKER_ONE_SHOT: '1',
           STUDIO_WORKER_STUDIO_ROOT_PATH: '/studio',
           STUDIO_WORKER_TASK_FILE: TASK_PATH,
@@ -66,6 +68,9 @@ describe('studioWorkerTask', () => {
     await expect(
       studioWorkerTask(TASK_URL, {name: 'example', studioRootPath: '/studio'}),
     ).resolves.toBe(result)
+    expect(mockPromisifyWorker.mock.calls[0][1].env).not.toHaveProperty(
+      'STUDIO_WORKER_APPLICATION_ID',
+    )
   })
 
   test('rejects with serialized loader errors and preserves their cause', async () => {
@@ -108,6 +113,7 @@ describe('createStudioWorker', () => {
 
   test('does not mark long-lived workers as one-shot', () => {
     createStudioWorker(TASK_URL, {
+      applicationId: 'studio-app',
       env: {CUSTOM_ENV: 'value'},
       name: 'example',
       studioRootPath: '/studio',
@@ -119,6 +125,7 @@ describe('createStudioWorker', () => {
       {
         env: {
           CUSTOM_ENV: 'value',
+          STUDIO_WORKER_APPLICATION_ID: 'studio-app',
           STUDIO_WORKER_STUDIO_ROOT_PATH: '/studio',
           STUDIO_WORKER_TASK_FILE: TASK_PATH,
         },

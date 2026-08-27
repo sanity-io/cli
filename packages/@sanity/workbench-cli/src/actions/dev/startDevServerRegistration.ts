@@ -19,6 +19,7 @@ interface DevServerRegistrationOptions {
    * the interface set alongside it.
    */
   extractManifest: (params: {
+    applicationId?: string
     configPath: string
     workDir: string
   }) => Promise<DevServerManifest['manifest']>
@@ -141,7 +142,7 @@ export async function startDevServerRegistration(
       return {
         configs: await deriveConfigs(nextConfig),
         interfaces: deriveInterfaces(nextConfig.app, {isApp}),
-        manifest: await extractManifest(params),
+        manifest: await extractManifest({...params, applicationId: id}),
       }
     },
     // A studio's root resolves to `sanity.config.*` but its interfaces live in
