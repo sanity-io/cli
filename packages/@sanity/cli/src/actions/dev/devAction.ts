@@ -1,7 +1,7 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/workbench-cli'
 
 import {checkForDeprecatedAppId} from '../../util/appId.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
@@ -38,7 +38,9 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       httpPort: params.httpPort,
     })
 
-  if (isWorkbenchApp(cliConfig?.app)) {
+  // A workbench app (an app to render) or a workbench config (config-only, like
+  // the media library, which needs the workbench to render it) both delegate.
+  if (isWorkbenchApp(cliConfig?.app) || isWorkbenchConfig(cliConfig?.app)) {
     // Lazy so a non-workbench `sanity dev` never loads the package. `doImport`
     // is path-based and doesn't apply to a bare specifier.
     // eslint-disable-next-line no-restricted-syntax
