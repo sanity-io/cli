@@ -2,21 +2,12 @@ import {styleText} from 'node:util'
 
 import {SchemaDeploy, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {getCliTelemetry, type Output, studioWorkerTask, subdebug} from '@sanity/cli-core'
-import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 
-import {type DeployStudioSchemasAndManifestsWorkerData} from './types.js'
-
-type DeployStudioSchemasAndManifestsWorkerMessage =
-  | {
-      error: string
-      type: 'error'
-      validation?: SchemaValidationProblemGroup[]
-    }
-  | {
-      studioManifest: StudioManifest | null
-      type: 'success'
-    }
+import {
+  type DeployStudioSchemasAndManifestsWorkerData,
+  type DeployStudioSchemasAndManifestsWorkerMessage,
+} from './types.js'
 
 const debug = subdebug('deployStudioSchemasAndManifests')
 
