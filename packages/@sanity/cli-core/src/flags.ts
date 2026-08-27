@@ -2,12 +2,16 @@ import {type Interfaces} from '@oclif/core'
 
 const requiredWhenUnattendedSymbol = Symbol.for('@sanity/cli-core/requiredWhenUnattended')
 
-type UnattendedFlag = Interfaces.Flag<unknown> & {
+// `Flag` is invariant in its parsed value, so `unknown` would reject concrete flag types.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyFlag = Interfaces.Flag<any>
+
+type UnattendedFlag = AnyFlag & {
   [requiredWhenUnattendedSymbol]?: true
 }
 
 /** Marks an optional flag as required whenever the command is invoked in unattended mode. */
-export function requiredWhenUnattended<T extends Interfaces.Flag<unknown>>(flag: T): T {
+export function requiredWhenUnattended<T extends AnyFlag>(flag: T): T {
   Object.defineProperty(flag, requiredWhenUnattendedSymbol, {value: true})
   return flag
 }
