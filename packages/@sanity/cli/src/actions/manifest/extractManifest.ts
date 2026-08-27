@@ -3,9 +3,10 @@ import {extractManifest as internalExtractManifest} from '@sanity/cli-build/_int
 type ExtractManifestOptions = Parameters<typeof internalExtractManifest>[0]
 
 export async function extractManifest({
+  applicationId,
   outPath,
   path,
   workDir,
 }: ExtractManifestOptions): Promise<void> {
-  await internalExtractManifest({outPath, path, workDir})
+  await internalExtractManifest({applicationId, outPath, path, workDir})
 }

@@ -23,11 +23,17 @@ const MANIFEST_DIR = `${SANITY_CACHE_DIR}/manifest`
  * every call.
  */
 export async function extractStudioManifest(options: {
+  applicationId?: string
   configPath: string
   workDir: string
 }): Promise<StudioManifest | undefined> {
   const outPath = resolve(options.workDir, MANIFEST_DIR)
-  await extractManifest({outPath, path: options.configPath, workDir: options.workDir})
+  await extractManifest({
+    applicationId: options.applicationId,
+    outPath,
+    path: options.configPath,
+    workDir: options.workDir,
+  })
   const raw = await readFile(join(outPath, MANIFEST_FILENAME), 'utf8')
   return JSON.parse(raw)
 }
