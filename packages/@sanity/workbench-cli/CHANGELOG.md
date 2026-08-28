@@ -1,5 +1,21 @@
 # @sanity/workbench-cli
 
+## 2.2.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.2...workbench-cli-v2.2.3)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- preserve the app id when loading Studio config ([#1768](https://github.com/sanity-io/cli/pull/1768)) ([e31dfd5](https://github.com/sanity-io/cli/commit/e31dfd5f5d3adb4c3008d30f0d34ada37f74604e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.0
+
 ## 2.2.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.1...workbench-cli-v2.2.2)
