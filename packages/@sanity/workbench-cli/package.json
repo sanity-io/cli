@@ -70,7 +70,7 @@
   },
   "dependencies": {
     "@module-federation/runtime": "2.8.2",
-    "@module-federation/vite": "1.20.7",
+    "@module-federation/vite": "1.20.8",
     "@sanity/cli-core": "workspace:^",
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
