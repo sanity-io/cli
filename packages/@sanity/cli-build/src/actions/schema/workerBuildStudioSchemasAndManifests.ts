@@ -42,15 +42,6 @@ export async function workerBuildStudioSchemasAndManifests(
   // still live. Both writeWorkspaceToDist and updateWorkspacesSchemas consume the result.
   const workspaceManifests = await extractWorkspaceManifest(workspaces, workDir)
 
-  // TODO move this over to the provider logic
-  // const schemaInputs: WorkspaceSchemaInput[] = workspaceManifests.map((manifest) => ({
-  //   dataset: manifest.dataset,
-  //   manifestSchema: manifest.schema,
-  //   name: manifest.name,
-  //   projectId: manifest.projectId,
-  //   title: manifest.title,
-  // }))
-
   debug('Handling build for %s', isExternal ? 'external' : 'internal')
 
   let studioManifest: StudioManifest | null
