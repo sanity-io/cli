@@ -280,7 +280,7 @@ describe('startDevServerRegistration', () => {
       ],
       manifest,
     })
-    expect(mockExtractManifest).toHaveBeenCalledWith(params)
+    expect(mockExtractManifest).toHaveBeenCalledWith({...params, applicationId: 'test-app'})
   })
 
   test('calls manifest cleanup on close', async () => {

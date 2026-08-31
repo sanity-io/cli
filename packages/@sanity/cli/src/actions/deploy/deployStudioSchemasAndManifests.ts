@@ -17,10 +17,19 @@ const debug = subdebug('deployStudioSchemasAndManifests')
  * 3. Creates a studio manifest, uploads it to user application and lexicon
  */
 export async function deployStudioSchemasAndManifests(
-  options: DeployStudioSchemasAndManifestsWorkerData,
+  options: DeployStudioSchemasAndManifestsWorkerData & {applicationId?: string},
   output: Output,
 ): Promise<StudioManifest | null> {
-  const {configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir} = options
+  const {
+    applicationId,
+    configPath,
+    isExternal,
+    outPath,
+    projectId,
+    schemaRequired,
+    verbose,
+    workDir,
+  } = options
 
   const trace = getCliTelemetry().trace(SchemaDeploy, {
     // If the studio is externally hosted, we don't need to extract the manifest
@@ -34,6 +43,7 @@ export async function deployStudioSchemasAndManifests(
     const result = await studioWorkerTask<DeployStudioSchemasAndManifestsWorkerMessage>(
       new URL('deployStudioSchemasAndManifests.worker.js', import.meta.url),
       {
+        applicationId,
         env: {
           ...process.env,
           // Workers don't inherit TTY state — propagate color support from parent

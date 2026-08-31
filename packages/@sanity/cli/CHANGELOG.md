@@ -1,5 +1,56 @@
 # Change Log
 
+## 8.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.4.2...cli-v8.5.0)
+
+_2026-08-27_
+
+### Features
+
+- **workflows:** mount Editorial Workflows CLI as `sanity workflows` (early access) ([#1733](https://github.com/sanity-io/cli/pull/1733)) ([875ae1c](https://github.com/sanity-io/cli/commit/875ae1c65caa8d07c7fe299634b854a1ab0e8e51))
+
+  Adds `@sanity/workflow-cli` so Editorial Workflows commands are available as `sanity workflows …` (singular `sanity workflow …` also works). Early access. Requires a `sanity.workflow.ts` in the working directory; authenticate with `sanity login` or `SANITY_AUTH_TOKEN`. The standalone `sanity-workflows` / `npx @sanity/workflow-cli` binary remains supported.
+
+  While in early access the topic is hidden from `sanity --help` and excluded from the published command reference. The commands run as normal, and `sanity workflows --help` lists them in full.
+
+### Bug Fixes
+
+- **cli-core:** support flags that are required in unattended mode and display them as required in unattended help ([#1765](https://github.com/sanity-io/cli/pull/1765)) ([1e839a9](https://github.com/sanity-io/cli/commit/1e839a9d2974f0fa013de4cf7f7fb4220166a1cc))
+- **cli:** document that `--organization` is required for unattended `sanity init` ([#1764](https://github.com/sanity-io/cli/pull/1764)) ([9dcceea](https://github.com/sanity-io/cli/commit/9dcceead7c1ac36a15af3025410e672bb83957a9))
+- preserve the app id when loading Studio config ([#1768](https://github.com/sanity-io/cli/pull/1768)) ([e31dfd5](https://github.com/sanity-io/cli/commit/e31dfd5f5d3adb4c3008d30f0d34ada37f74604e))
+- **cli:** accept `-y` as an alias for `--yes` in `sanity media delete-aspect` ([#1776](https://github.com/sanity-io/cli/pull/1776)) ([7fb94cc](https://github.com/sanity-io/cli/commit/7fb94cca663b70cb7202485be4f089f6fca369dd))
+- **cli:** accept `-y` as an alias for `--yes` in `sanity tokens delete` ([#1776](https://github.com/sanity-io/cli/pull/1776)) ([7fb94cc](https://github.com/sanity-io/cli/commit/7fb94cca663b70cb7202485be4f089f6fca369dd))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.0
+    - @sanity/cli-build bumped to 6.0.2
+    - @sanity/workbench-cli bumped to 2.2.3
+
+## 8.4.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.4.1...cli-v8.4.2)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- **workbench:** run `sanity dev` for media library configs and render local views ([#1769](https://github.com/sanity-io/cli/pull/1769)) ([9189bd5](https://github.com/sanity-io/cli/commit/9189bd5092dc8591b9c92df4f1822ea68a0eaa47))
+
+  - Route an `unstable_defineMediaLibrary` config through the workbench dev server so the shell starts and renders it
+  - Skip core app manifest extraction silently for config-only projects, dropping the misleading "Manifest creation skipped" warning
+  - Convert local dev view interfaces from `surface` to the remote's `type` wire shape, matching deployed apps
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.2
+    - @sanity/cli-build bumped to 6.0.1
+
 ## 8.4.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.4.0...cli-v8.4.1)

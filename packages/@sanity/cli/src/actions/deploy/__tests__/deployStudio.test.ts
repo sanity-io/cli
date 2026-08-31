@@ -136,6 +136,9 @@ describe('deployStudio (federated studio)', () => {
       payload: {appId: null, slug: 'my-studio', type: 'studio'},
       url: 'https://org-1.sanity.run/studio/studio-1',
     })
+    expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
+      expect.objectContaining({applicationId: 'studio-1'}),
+    )
   })
 
   test('a redeploy targets `deployment.appId` and reports the resolved record', async () => {
@@ -155,6 +158,9 @@ describe('deployStudio (federated studio)', () => {
     expect(action).toBe('update')
     expect(payload.appId).toBe('studio-9')
     expect(application).toMatchObject({id: 'studio-9', slug: 'my-studio'})
+    expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
+      expect.objectContaining({applicationId: 'studio-9'}),
+    )
   })
 
   test('derives one deduped datasets access entry per unique workspace dataset', async () => {

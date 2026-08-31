@@ -32,6 +32,7 @@ export const topicAliases: Record<string, string[]> = {
   schemas: ['schema'],
   tokens: ['token'],
   users: ['user'],
+  workflows: ['workflow'],
 }
 
 const canonicalTopicByAlias = new Map(

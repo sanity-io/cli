@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises'
 
 import {getCliConfigUncached} from '@sanity/cli-core'
-import {defineApplication} from '@sanity/workbench-cli'
+import {defineApplication, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {extractCoreAppManifest, resolveTitleUpdate} from '../extractCoreAppManifest.js'
@@ -19,11 +19,18 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(),
 }))
 
+const mockSpinner = vi.hoisted(() => ({
+  fail: vi.fn(),
+  info: vi.fn(),
+  start: vi.fn().mockReturnThis(),
+  succeed: vi.fn(),
+}))
+
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
   return {
     ...actual,
-    spinner: vi.fn(() => ({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()})),
+    spinner: vi.fn(() => mockSpinner),
   }
 })
 
@@ -39,6 +46,17 @@ describe('extractCoreAppManifest', () => {
     mockGetCliConfig.mockResolvedValue({app: undefined} as never)
     const result = await extractCoreAppManifest({workDir: '/project'})
     expect(result).toBeUndefined()
+  })
+
+  test('skips the manifest silently for a media library config (no warning)', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: unstable_defineMediaLibrary({organizationId: 'org-1'}),
+    } as never)
+
+    const result = await extractCoreAppManifest({workDir: '/project'})
+
+    expect(result).toBeUndefined()
+    expect(mockSpinner.info).not.toHaveBeenCalled()
   })
 
   test('returns manifest with title only when app has no icon', async () => {

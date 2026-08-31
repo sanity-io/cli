@@ -380,6 +380,8 @@ describe('#deploy app', () => {
 
     const app = defineApplication({
       entry: './src/App.tsx',
+      // @ts-expect-error Internal singleton flag.
+      isSingleton: true,
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -394,7 +396,7 @@ describe('#deploy app', () => {
     // The app is created before the build so the bundle carries its real id,
     // then that id ships the deployment.
     expect(mockCreateCoreApp).toHaveBeenCalledWith(
-      expect.objectContaining({slug: 'drop-desk-host'}),
+      expect.objectContaining({isSingleton: true, slug: 'drop-desk-host'}),
     )
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({applicationId: 'app_new'}),
