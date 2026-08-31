@@ -50,8 +50,8 @@
       "default": "./dist/_exports/debug.js"
     },
     "./dates": {
-      "source": "./src/util/dates.ts",
-      "default": "./dist/util/dates.js"
+      "source": "./src/_exports/dates.ts",
+      "default": "./dist/_exports/dates.js"
     },
     "./errors": {
       "source": "./src/_exports/errors.ts",
