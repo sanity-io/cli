@@ -29,6 +29,7 @@ const debug = subdebug('buildStudioSchemasAndManifests')
  * 3. Creates a studio manifest (which can be sent to populus)
  */
 export async function buildStudioSchemasAndManifests(
+  applicationId: string,
   options: BuildStudioSchemasAndManifestsWorkerData,
 ): Promise<BuildStudioSchemasAndManifestsWorkerSuccess> {
   const {configPath, isExternal, outPath, projectId, verbose, workDir} = options
@@ -44,6 +45,7 @@ export async function buildStudioSchemasAndManifests(
     const result = await studioWorkerTask<BuildStudioSchemasAndManifestsWorkerMessage>(
       new URL('buildStudioSchemasAndManifests.worker.js', import.meta.url),
       {
+        applicationId,
         env: {
           ...process.env,
           // Workers don't inherit TTY state — propagate color support from parent
