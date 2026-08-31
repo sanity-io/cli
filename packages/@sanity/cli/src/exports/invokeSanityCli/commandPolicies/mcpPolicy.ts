@@ -80,6 +80,9 @@ export const mcpPolicy: CommandPolicySet = {
   // Reads and rewrites local source code.
   codemod: deny,
 
+  'context:create': allow,
+  'context:list': allow,
+
   'cors:add': allow,
   'cors:delete': allow,
   'cors:list': allow,
