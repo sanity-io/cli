@@ -15,6 +15,11 @@ const createImportDebug = subdebug('context:imports:create')
 
 const TEXT_CONTENT_TYPES = ['text/markdown', 'text/plain'] as const
 
+function isTextContentType(value: string): value is (typeof TEXT_CONTENT_TYPES)[number] {
+  const textContentTypes: readonly string[] = TEXT_CONTENT_TYPES
+  return textContentTypes.includes(value)
+}
+
 const FILE_CONTENT_TYPES: Record<string, string> = {
   '.csv': 'text/csv',
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -176,12 +181,13 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
       url,
     } = this.flags
 
-    const sources: [flag: string, value: string | undefined][] = [
-      ['--text', text],
-      ['--file', file],
-      ['--url', url],
-      ['--query', query],
-    ]
+    const sources: [flag: '--file' | '--query' | '--text' | '--url', value: string | undefined][] =
+      [
+        ['--text', text],
+        ['--file', file],
+        ['--url', url],
+        ['--query', query],
+      ]
     const provided = sources.filter(([, value]) => value !== undefined)
     if (provided.length !== 1) {
       this.error('Provide exactly one of --text, --file, --url or --query.', {
@@ -194,12 +200,12 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
       this.error(`${sourceFlag} cannot be empty`, {exit: exitCodes.USAGE_ERROR})
     }
 
-    if (text !== undefined) {
-      return this.buildTextImportParams(text)
+    if (sourceFlag === '--text') {
+      return this.buildTextImportParams(sourceValue)
     }
 
-    if (file !== undefined) {
-      return this.buildFileImportParams(file)
+    if (sourceFlag === '--file') {
+      return this.buildFileImportParams(sourceValue)
     }
 
     if (contentType !== undefined) {
@@ -208,10 +214,11 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
       })
     }
 
-    if (url !== undefined) {
-      return {type: 'crawl', url}
+    if (sourceFlag === '--url') {
+      return {type: 'crawl', url: sourceValue}
     }
 
+    // Only --query remains; the checks above narrow `sourceFlag` to '--query'.
     if (!sanityProject || !sanityDataset) {
       this.error(
         'Dataset imports require --sanity-project and --sanity-dataset alongside --query.',
@@ -220,7 +227,7 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
     }
 
     return {
-      query: query as string,
+      query: sourceValue,
       sanityDatasetId: sanityDataset,
       sanityProjectId: sanityProject,
       type: 'dataset',
@@ -236,10 +243,7 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
       })
     }
 
-    if (
-      contentType !== undefined &&
-      !TEXT_CONTENT_TYPES.includes(contentType as (typeof TEXT_CONTENT_TYPES)[number])
-    ) {
+    if (contentType !== undefined && !isTextContentType(contentType)) {
       this.error(
         `Text imports support content types ${TEXT_CONTENT_TYPES.join(' and ')}, got "${contentType}".`,
         {exit: exitCodes.USAGE_ERROR},
@@ -250,9 +254,7 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
       content: text,
       title: title.trim(),
       type: 'text',
-      ...(contentType === undefined
-        ? {}
-        : {contentType: contentType as (typeof TEXT_CONTENT_TYPES)[number]}),
+      ...(contentType === undefined ? {} : {contentType}),
     }
   }
 }
