@@ -83,6 +83,13 @@ export const mcpPolicy: CommandPolicySet = {
   'context:create': allow,
   'context:delete': allow,
   'context:get': allow,
+  // --file reads the import payload from the local filesystem; text, URL and
+  // dataset imports are remote-only.
+  'context:imports:create': conditionalDenyFlags('file'),
+  'context:imports:delete': allow,
+  'context:imports:download': allow,
+  'context:imports:get': allow,
+  'context:imports:list': allow,
   'context:list': allow,
   'context:update': allow,
 
