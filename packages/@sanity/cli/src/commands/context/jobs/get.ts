@@ -2,10 +2,9 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
-import {waitForJob} from '../../../actions/context/waitForJob.js'
+import {watchJob} from '../../../actions/context/watchJob.js'
 import {getJob} from '../../../services/context.js'
 
 const getJobDebug = subdebug('context:jobs:get')
@@ -51,18 +50,12 @@ export class GetJobCommand extends SanityCommand<typeof GetJobCommand> {
     const {jobId, knowledgeBaseId} = this.args
     const {json, watch} = this.flags
 
-    const spin = watch ? spinner('Waiting for job').start() : null
     let job
     try {
       job = watch
-        ? await waitForJob(knowledgeBaseId, jobId, {
-            onPoll: (pending) => {
-              if (spin) spin.text = `Waiting for job (${pending.status})`
-            },
-          })
+        ? await watchJob(knowledgeBaseId, jobId, {label: 'Waiting for job'})
         : await getJob(knowledgeBaseId, jobId)
     } catch (error) {
-      spin?.fail()
       getJobDebug('Error getting job', error)
       if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Job "${jobId}" not found on knowledge base "${knowledgeBaseId}"`, {
@@ -72,14 +65,6 @@ export class GetJobCommand extends SanityCommand<typeof GetJobCommand> {
       this.error(`Failed to get job: ${getErrorMessage(error)}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
-    }
-
-    if (spin) {
-      if (job.status === 'succeeded') {
-        spin.succeed()
-      } else {
-        spin.fail()
-      }
     }
 
     if (json) {

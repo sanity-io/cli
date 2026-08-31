@@ -5,7 +5,7 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
-import {waitForJob} from '../../actions/context/waitForJob.js'
+import {watchJob} from '../../actions/context/watchJob.js'
 import {buildKnowledgeBase, cancelKnowledgeBaseBuild} from '../../services/context.js'
 
 const buildContextDebug = subdebug('context:build')
@@ -82,16 +82,13 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
       return
     }
 
-    const watchSpin = spinner('Building knowledge base').start()
     let job
     try {
-      job = await waitForJob(knowledgeBaseId, jobId, {
-        onPoll: (pending) => {
-          watchSpin.text = `Building knowledge base (${pending.status})`
-        },
+      job = await watchJob(knowledgeBaseId, jobId, {
+        label: 'Building knowledge base',
+        successText: 'Build succeeded',
       })
     } catch (error) {
-      watchSpin.fail()
       buildContextDebug('Error watching build job', error)
       this.error(`Failed to watch build job: ${getErrorMessage(error)}`, {
         exit: exitCodes.RUNTIME_ERROR,
@@ -99,13 +96,10 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
     }
 
     if (job.status !== 'succeeded') {
-      watchSpin.fail()
       this.error(`Build ${job.status}${job.error ? `: ${job.error}` : ''}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
-
-    watchSpin.succeed('Build succeeded')
   }
 
   private async cancelBuild(knowledgeBaseId: string): Promise<void> {
