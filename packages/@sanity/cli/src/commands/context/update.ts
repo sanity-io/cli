@@ -24,12 +24,12 @@ const flags = {
     description: 'Enable scheduled refresh (--no-refresh-enabled to disable)',
     required: false,
   }),
-  'refresh-frequency': Flags.string({
+  'refresh-frequency': Flags.custom<'monthly' | 'weekly'>({
     atLeastOne: [...UPDATE_FLAGS],
     description: 'How often scheduled refresh runs',
     options: ['weekly', 'monthly'],
     required: false,
-  }),
+  })(),
   title: Flags.string({
     atLeastOne: [...UPDATE_FLAGS],
     description: 'New knowledge base title',
@@ -95,8 +95,7 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
       params.refreshEnabled = refreshEnabled
     }
     if (refreshFrequency !== undefined) {
-      params.refreshFrequency =
-        refreshFrequency as Context.EditKnowledgeBaseParams['refreshFrequency']
+      params.refreshFrequency = refreshFrequency
     }
 
     const spin = spinner('Updating knowledge base').start()
