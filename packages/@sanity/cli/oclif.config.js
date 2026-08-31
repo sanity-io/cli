@@ -16,6 +16,7 @@ export default {
   plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/workflow-cli'],
   topics: {
     backups: {description: 'Manage dataset backups'},
+    context: {description: 'Manage Context knowledge bases'},
     cors: {description: 'Manage CORS origins for your project'},
     datasets: {description: 'Manage datasets in your project'},
     docs: {description: 'Browse and search Sanity documentation'},
