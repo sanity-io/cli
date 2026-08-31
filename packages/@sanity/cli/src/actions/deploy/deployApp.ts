@@ -176,6 +176,7 @@ async function runAppDeployment(
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && deployApplication && workbench && organizationId && !applicationId) {
     const created = await createCoreApp({
+      isSingleton: workbench.isSingleton,
       name: workbench.name,
       organizationId,
       slug: workbench.slug,

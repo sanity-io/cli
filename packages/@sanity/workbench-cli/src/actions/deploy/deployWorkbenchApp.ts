@@ -56,6 +56,7 @@ function toBrettInterface(iface: DerivedInterface, version: string): BrettInterf
  * @internal
  */
 export async function createCoreApp(options: {
+  isSingleton?: boolean
   name?: string
   organizationId: string
   slug: string

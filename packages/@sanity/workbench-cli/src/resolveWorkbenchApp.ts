@@ -46,6 +46,8 @@ export interface ResolvedWorkbenchApp {
   readonly entry?: string
   /** Path to the app's icon SVG, resolved and shipped to Brett on deploy. */
   readonly icon?: string
+  /** Explicit singleton flag for Sanity-owned apps. */
+  readonly isSingleton?: boolean
   /** Dashboard visibility declared by the app; `undefined` when unset. */
   readonly visibility?: AppVisibility
 }
@@ -70,6 +72,7 @@ export function resolveWorkbenchApp(
     applicationType: app.applicationType,
     entry: app.entry,
     icon: app.icon,
+    ...(app.isSingleton === undefined ? {} : {isSingleton: app.isSingleton}),
     // Identity defaults to the address, so existing apps behave identically.
     name: app.name ?? app.slug,
     organizationId: app.organizationId,
