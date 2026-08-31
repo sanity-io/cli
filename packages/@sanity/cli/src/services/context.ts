@@ -130,3 +130,39 @@ export async function deleteImport(knowledgeBaseId: string, importId: string): P
   const client = await getContextClient(knowledgeBaseId)
   await client.context.imports.delete({importId})
 }
+
+/**
+ * Start a build of a knowledge base
+ */
+export async function buildKnowledgeBase(knowledgeBaseId: string): Promise<Context.JobAccepted> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.build()
+}
+
+/**
+ * Cancel the running build of a knowledge base, if any
+ */
+export async function cancelKnowledgeBaseBuild(
+  knowledgeBaseId: string,
+): Promise<{cancelled: boolean}> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.cancelBuild()
+}
+
+/**
+ * Run an incremental refresh: re-check sources and apply what changed
+ */
+export async function refreshKnowledgeBase(
+  knowledgeBaseId: string,
+): Promise<{jobId: string; started: boolean}> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.refresh()
+}
+
+/**
+ * Get an async job (build, import) by ID
+ */
+export async function getJob(knowledgeBaseId: string, jobId: string): Promise<Context.Job> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.jobs.get({jobId})
+}

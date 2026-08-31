@@ -49,3 +49,11 @@ export const importItem: Context.ImportDetail = {
   totalDistillableCount: 4,
   unsupportedCount: 1,
 }
+
+export const succeededJob: Context.Job = {
+  completedAt: '2026-08-01T01:00:00.000Z',
+  error: null,
+  id: 'job-def456',
+  startedAt: '2026-08-01T00:00:00.000Z',
+  status: 'succeeded',
+}
