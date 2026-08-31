@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {Args, Flags} from '@oclif/core'
 import {exit} from '@oclif/core/errors'
 import {exitCodes} from '@sanity/cli-core'
+import {formatDuration, formatTimeAgo} from '@sanity/cli-core/dates'
 import {subdebug} from '@sanity/cli-core/debug'
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
@@ -20,7 +21,6 @@ import {
   listDatasetCopyJobs,
   listDatasets,
 } from '../../services/datasets.js'
-import {formatDuration, formatTimeAgo} from '../../util/dates.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
