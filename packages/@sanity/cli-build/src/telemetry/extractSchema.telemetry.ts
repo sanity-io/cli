@@ -23,12 +23,24 @@ type SchemaExtractionWatchModeAttributes =
       step: 'started'
     }
 
+interface SchemaBuildTraceData {
+  manifestDir: string
+
+  extractManifest?: boolean
+}
+
 interface SchemaDeployTraceData {
   manifestDir: string
   schemaRequired: boolean
 
   extractManifest?: boolean
 }
+
+export const SchemaBuild = defineTrace<SchemaBuildTraceData>({
+  description: 'Schema build action was executed',
+  name: 'Schema Built',
+  version: 0,
+})
 
 export const SchemaExtractedTrace = defineTrace<SchemaExtractedTraceAttributes>({
   description: 'Trace emitted when extracting schema',
