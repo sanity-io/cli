@@ -19,8 +19,8 @@ catalogs:
       specifier: ^3.2.88
       version: 3.2.88
     '@sanity/client':
-      specifier: ^8.1.0
-      version: 8.1.0
+      specifier: ^8.4.0
+      version: 8.4.0
     '@sanity/codegen':
       specifier: ^8.0.0
       version: 8.0.0
@@ -519,7 +519,7 @@ importers:
         version: 4.13.2
       '@sanity/client':
         specifier: 'catalog:'
-        version: 8.1.0(vitest@4.1.11)
+        version: 8.4.0(vitest@4.1.11)
       '@sanity/id-utils':
         specifier: ^1.0.0
         version: 1.0.0
@@ -565,7 +565,7 @@ importers:
         version: link:../cli-core
       '@sanity/client':
         specifier: 'catalog:'
-        version: 8.1.0(vitest@4.1.11)
+        version: 8.4.0(vitest@4.1.11)
       '@sanity/codegen':
         specifier: 'catalog:'
         version: 8.0.0(oxfmt@0.59.0)(react@19.2.7)
@@ -583,7 +583,7 @@ importers:
         version: 1.0.0
       '@sanity/import':
         specifier: ^6.0.4
-        version: 6.0.4(@sanity/client@8.1.0(vitest@4.1.11))(@types/react@19.2.17)
+        version: 6.0.4(@sanity/client@8.4.0(vitest@4.1.11))(@types/react@19.2.17)
       '@sanity/migrate':
         specifier: ^8.0.2
         version: 8.0.2(@types/react@19.2.17)(xstate@5.32.5)
@@ -1002,7 +1002,7 @@ importers:
         version: 4.13.2
       '@sanity/client':
         specifier: 'catalog:'
-        version: 8.1.0(vitest@4.1.11)
+        version: 8.4.0(vitest@4.1.11)
       boxen:
         specifier: ^8.0.1
         version: 8.0.1
@@ -1190,7 +1190,7 @@ importers:
         version: link:../../@repo/tsconfig
       '@sanity/client':
         specifier: 'catalog:'
-        version: 8.1.0(vitest@4.1.11)
+        version: 8.4.0(vitest@4.1.11)
       '@sanity/eslint-config-cli':
         specifier: workspace:*
         version: link:../eslint-config-cli
@@ -4532,8 +4532,8 @@ packages:
     resolution: {integrity: sha512-iEkGiHbrxCnT/A30A6pH+vX4otP3lLp935Vwuv0/YrnETxrKCn6PnsZU+TfTm6ZEZ9kZGs8wKP5yBLmZw5S6OQ==}
     engines: {node: '>=20'}
 
-  '@sanity/client@8.1.0':
-    resolution: {integrity: sha512-GS9q17kSIpF+NSOMJejAmTw0sKJA5oSTxtipkItnuWFvO4njVQnUQ+1OvRYZyg/AK9dwymlM35ROKuA5XuWyFQ==}
+  '@sanity/client@8.4.0':
+    resolution: {integrity: sha512-rwMtDxH3x9dc8ZiCMRDLStZoCr6MSPrH2LH4NIxWTCZ9Vz5OSgg0RolZy+ccM8p4yzK5lgC9XMF8tF6zsje0gQ==}
     engines: {node: '>=22.12.0'}
 
   '@sanity/code-input@7.1.6':
@@ -13361,11 +13361,10 @@ snapshots:
       nanoid: 3.3.18
       rxjs: 7.8.2
 
-  '@sanity/client@8.1.0(vitest@4.1.11)':
+  '@sanity/client@8.4.0(vitest@4.1.11)':
     dependencies:
       eventsource: 5.1.0
       get-it: 9.5.0(vitest@4.1.11)
-      nanoid: 6.0.1
       obug: 2.1.4
       rxjs: 7.8.2
     transitivePeerDependencies:
@@ -13507,10 +13506,10 @@ snapshots:
     dependencies:
       '@sanity/signed-urls': 2.0.4
 
-  '@sanity/import@6.0.4(@sanity/client@8.1.0(vitest@4.1.11))(@types/react@19.2.17)':
+  '@sanity/import@6.0.4(@sanity/client@8.4.0(vitest@4.1.11))(@types/react@19.2.17)':
     dependencies:
       '@sanity/asset-utils': 2.3.0
-      '@sanity/client': 8.1.0(vitest@4.1.11)
+      '@sanity/client': 8.4.0(vitest@4.1.11)
       '@sanity/generate-help-url': 4.0.0
       '@sanity/mutator': 6.7.0(@types/react@19.2.17)
       debug: 4.4.3(supports-color@8.1.1)
