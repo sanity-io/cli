@@ -17,3 +17,16 @@ export interface ExtractSchemaWorkerError {
 
   validation?: SchemaValidationProblemGroup[]
 }
+
+export const buildStudioSchemasAndManifestsWorkerData = z.object({
+  configPath: z.string(),
+  isExternal: z.boolean(),
+  outPath: z.string(),
+  projectId: z.string(),
+  verbose: z.boolean(),
+  workDir: z.string(),
+})
+
+export type BuildStudioSchemasAndManifestsWorkerData = z.infer<
+  typeof buildStudioSchemasAndManifestsWorkerData
+>

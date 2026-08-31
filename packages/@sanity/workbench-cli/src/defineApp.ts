@@ -38,6 +38,8 @@ export const DefineAppInputSchema = z
     entry: z.optional(z.string("must be a path to the app's entry file")),
     /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
     icon: z.optional(z.string()),
+    /** Sanity-owned app deployed once and installed per org. @internal */
+    isSingleton: z.optional(z.boolean()),
     /**
      * Stable identity, distinct from the `slug` address. Defaults to `slug` when
      * omitted. Identity keys — the build id and derived interface ids — are built
@@ -94,10 +96,13 @@ export const DefineAppInputSchema = z
 
 /**
  * User-facing input for `defineApplication`. Excludes the internal
- * `applicationType`.
+ * `applicationType` and `isSingleton`.
  * @public
  */
-export type DefineAppInput = Omit<z.output<typeof DefineAppInputSchema>, 'applicationType'>
+export type DefineAppInput = Omit<
+  z.output<typeof DefineAppInputSchema>,
+  'applicationType' | 'isSingleton'
+>
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy

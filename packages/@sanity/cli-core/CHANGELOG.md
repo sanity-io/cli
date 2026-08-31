@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.4.0...cli-core-v3.5.0)
+
+_2026-08-27_
+
+### Features
+
+- **cli-core:** support flags that are required in unattended mode and display them as required in unattended help ([#1765](https://github.com/sanity-io/cli/pull/1765)) ([1e839a9](https://github.com/sanity-io/cli/commit/1e839a9d2974f0fa013de4cf7f7fb4220166a1cc))
+
+### Bug Fixes
+
+- preserve the app id when loading Studio config ([#1768](https://github.com/sanity-io/cli/pull/1768)) ([e31dfd5](https://github.com/sanity-io/cli/commit/e31dfd5f5d3adb4c3008d30f0d34ada37f74604e))
+
 ## 3.4.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.3.0...cli-core-v3.4.0)
