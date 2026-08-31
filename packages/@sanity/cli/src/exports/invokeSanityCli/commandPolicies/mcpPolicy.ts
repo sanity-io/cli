@@ -81,7 +81,10 @@ export const mcpPolicy: CommandPolicySet = {
   codemod: deny,
 
   'context:create': allow,
+  'context:delete': allow,
+  'context:get': allow,
   'context:list': allow,
+  'context:update': allow,
 
   'cors:add': allow,
   'cors:delete': allow,
