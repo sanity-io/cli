@@ -81,11 +81,11 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     expect(files).toContain('index.html')
     expect(files).toContain('static')
 
-    // verify index.html contains `sanity-resource-bindings` script tag
-    const indexHtml = await readFile(join(outputFolder, 'index.html'), 'utf8')
-    expect(indexHtml).toContain(
-      '<script type="application/json" id="sanity-resource-bindings">[]</script>',
-    )
+    // Resource bindings live in a statically-imported module at the bundle root
+    // (Brett rewrites the token at deploy), not an index.html script tag.
+    expect(files).toContain('sanity-resource-bindings.js')
+    const bindingsModule = await readFile(join(outputFolder, 'sanity-resource-bindings.js'), 'utf8')
+    expect(bindingsModule).toContain('__SANITY_RESOURCE_BINDINGS__')
 
     // Federation artifacts should NOT be present when federation is not enabled
     expect(files).not.toContain('federation')
@@ -138,6 +138,15 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // default `assets` — this keeps federation output aligned with the studio
       // static layout the deploy/serve tooling expects.
       expect(distFiles).toContain('static')
+
+      // Resource bindings module is emitted at the bundle root (unhashed) so Brett
+      // can rewrite it — federation inlines nothing into the hashed remote entry.
+      expect(distFiles).toContain('sanity-resource-bindings.js')
+      const bindingsModule = await readFile(
+        join(cwd, 'dist', 'sanity-resource-bindings.js'),
+        'utf8',
+      )
+      expect(bindingsModule).toContain('__SANITY_RESOURCE_BINDINGS__')
 
       // The build output must satisfy the deploy gate: `sanity deploy` runs
       // `checkBuiltOutput` (not the static-SPA check) and ships only if it finds

@@ -2,6 +2,10 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {tryFindStudioConfigPath} from '@sanity/cli-core/config'
+import {
+  RESOURCE_BINDINGS_FILENAME,
+  RESOURCE_BINDINGS_MODULE_SOURCE,
+} from '@sanity/workbench-cli/build'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 
 import {buildDebug} from './buildDebug.js'
@@ -92,6 +96,15 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
     relativeConfigLocation,
   })
   await writeFile(path.join(runtimeDir, 'app.js'), appJsContent)
+
+  // Resource bindings ride in their own statically-imported module (see
+  // resource-bindings.ts) so a federated host and a standalone studio resolve
+  // them the same way. Brett bakes the resolved values in at deploy.
+  buildDebug('Writing resource bindings module to runtime directory')
+  await writeFile(
+    path.join(runtimeDir, RESOURCE_BINDINGS_FILENAME),
+    RESOURCE_BINDINGS_MODULE_SOURCE,
+  )
 
   return {
     entries: {

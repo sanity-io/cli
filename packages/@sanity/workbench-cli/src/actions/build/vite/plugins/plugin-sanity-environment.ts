@@ -1,6 +1,23 @@
 import {type Plugin} from 'vite'
 
+import {
+  resourceBindingsChunkFileName,
+  resourceBindingsCodeSplittingGroup,
+} from '../../resource-bindings.js'
 import {FEDERATION_DIR_NAME} from '../constants.js'
+
+// Keep the resource-bindings module in its own unhashed chunk at the bundle root
+// so Brett can rewrite it at deploy. `@module-federation/vite` preserves user
+// `codeSplitting` groups (clamped below its own), so this survives the federation
+// build. The chunk sizing lives on the group itself (see
+// `resourceBindingsCodeSplittingGroup`), so it only affects the bindings module.
+const resourceBindingsOutput = {
+  chunkFileNames: (chunk: {name: string}) =>
+    resourceBindingsChunkFileName(chunk.name) ?? 'static/[name]-[hash].js',
+  codeSplitting: {
+    groups: [resourceBindingsCodeSplittingGroup],
+  },
+}
 
 interface EnvironmentOptions {
   input: string
@@ -39,7 +56,10 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
                     copyPublicDir: false,
                     emptyOutDir: false,
                     outDir: `dist`,
-                    rolldownOptions: {input: {sanity: clientInput}},
+                    rolldownOptions: {
+                      input: {sanity: clientInput},
+                      output: resourceBindingsOutput,
+                    },
                   },
                   consumer: 'client',
                 },
@@ -51,7 +71,7 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
               copyPublicDir: false,
               emptyOutDir: false,
               outDir: `dist`,
-              rolldownOptions: {input},
+              rolldownOptions: {input, output: resourceBindingsOutput},
             },
             consumer: 'client',
           },
