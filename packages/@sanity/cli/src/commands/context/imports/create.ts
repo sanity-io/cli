@@ -37,6 +37,13 @@ const flags = {
     description:
       'Content type of the import (--text: text/markdown or text/plain; --file: any MIME type, inferred from the file extension when omitted)',
     helpValue: '<mime>',
+    parse: async (input: string) => {
+      const trimmed = input.trim()
+      if (trimmed === '') {
+        throw new Error('`--content-type` cannot be empty if provided')
+      }
+      return trimmed
+    },
     required: false,
   }),
   file: Flags.string({

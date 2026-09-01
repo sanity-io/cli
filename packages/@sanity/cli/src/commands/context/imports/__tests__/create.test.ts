@@ -171,6 +171,38 @@ describe('context imports create', () => {
     )
   })
 
+  test('errors when --content-type is empty', async () => {
+    const {error} = await testCommand(CreateImportCommand, [
+      'kb-abc123',
+      '--file',
+      './docs/handbook.pdf',
+      '--content-type',
+      '',
+    ])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('`--content-type` cannot be empty')
+    expect(mockImportsCreate).not.toHaveBeenCalled()
+  })
+
+  test('trims whitespace around --content-type', async () => {
+    const fileContent = Buffer.from('plain text')
+    mockReadFile.mockResolvedValue(fileContent)
+
+    const {error} = await testCommand(CreateImportCommand, [
+      'kb-abc123',
+      '--file',
+      './docs/notes.bin',
+      '--content-type',
+      '  text/plain  ',
+    ])
+
+    if (error) throw error
+    expect(mockImportsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({contentType: 'text/plain', type: 'file'}),
+    )
+  })
+
   test('errors when the file cannot be read', async () => {
     mockReadFile.mockRejectedValue(new Error('ENOENT: no such file'))
 
