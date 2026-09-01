@@ -87,8 +87,8 @@ export const apiRoutes: ApiRouteEntry[] = [
       'deploy',
       'deploy/quickstart',
       'installations',
+      'installations/catalog',
       'installations/defaults',
-      'installations/managed',
       'installations/{installationId}',
       'installations/{installationId}/access',
       'installations/{installationId}/configs',
@@ -126,8 +126,8 @@ export const apiRoutes: ApiRouteEntry[] = [
       'deploy',
       'deploy/quickstart',
       'installations',
+      'installations/catalog',
       'installations/defaults',
-      'installations/managed',
       'installations/{installationId}',
       'installations/{installationId}/access',
       'installations/{installationId}/configs',
@@ -211,7 +211,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'embeddings-index/{dataset}/{indexName}'
     ],
     slug: 'embeddings-index',
-    title: 'Embeddings Index API reference'
+    title: 'Embeddings Index API reference (deprecated)'
   },
   {
     defaultApiVersion: 'v2021-03-25',
