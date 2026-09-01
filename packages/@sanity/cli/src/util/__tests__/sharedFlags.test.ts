@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {getDatasetFlag, getProjectIdFlag} from '../sharedFlags.js'
+import {getDatasetFlag, getOrganizationFlag, getProjectIdFlag} from '../sharedFlags.js'
 
 describe('getProjectIdFlag', () => {
   test('override semantics: appends suffix and sets OVERRIDE helpGroup', () => {
@@ -96,6 +96,39 @@ describe('getDatasetFlag', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- testing parse in isolation, context/opts not used
     const invoke = (input: string) => parse(input, {} as any, {} as any)
     await expect(invoke('  staging  ')).resolves.toBe('staging')
+    await expect(invoke('  ')).rejects.toThrow('cannot be empty')
+  })
+})
+
+describe('getOrganizationFlag', () => {
+  test('override semantics: appends suffix and sets OVERRIDE helpGroup', () => {
+    const flags = getOrganizationFlag({description: 'Organization to query', semantics: 'override'})
+    const flag = flags.organization
+    expect(flag.description).toBe('Organization to query (overrides CLI configuration)')
+    expect(flag.helpGroup).toBe('OVERRIDE')
+  })
+
+  test('specify semantics: no suffix, no helpGroup', () => {
+    const flags = getOrganizationFlag({
+      description: 'Organization to list for',
+      semantics: 'specify',
+    })
+    const flag = flags.organization
+    expect(flag.description).toBe('Organization to list for')
+    expect(flag.helpGroup).toBeUndefined()
+  })
+
+  test('specify semantics: uses default description when none provided', () => {
+    const flags = getOrganizationFlag({semantics: 'specify'})
+    expect(flags.organization.description).toBe('Organization ID to use')
+  })
+
+  test('parse trims and validates non-empty', async () => {
+    const flags = getOrganizationFlag({semantics: 'specify'})
+    const parse = flags.organization.parse!
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- testing parse in isolation, context/opts not used
+    const invoke = (input: string) => parse(input, {} as any, {} as any)
+    await expect(invoke('  org-abc  ')).resolves.toBe('org-abc')
     await expect(invoke('  ')).rejects.toThrow('cannot be empty')
   })
 })
