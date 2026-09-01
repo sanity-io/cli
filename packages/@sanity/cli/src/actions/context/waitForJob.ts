@@ -26,7 +26,7 @@ export async function waitForJob(
 ): Promise<Context.Job> {
   const pollIntervalMs = options?.pollIntervalMs ?? JOB_POLL_INTERVAL_MS
 
-  for (;;) {
+  while (true) {
     const job = await getJob(knowledgeBaseId, jobId)
     if (TERMINAL_JOB_STATUSES.has(job.status)) {
       return job
