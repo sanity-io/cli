@@ -2,4 +2,4 @@
 "@sanity/cli-core": patch
 ---
 
-fix(cli-core): useJiti for CLI config loading instead of tsx
+fix(cli-core): use Jiti for CLI config loading instead of tsx
