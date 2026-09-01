@@ -107,7 +107,7 @@ describe('#dataset:delete', () => {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toBe('Dataset deletion requires confirmation. Re-run with `--force`.')
+    expect(error?.message).toContain('Missing required flag force')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
     expect(mockDeleteDataset).not.toHaveBeenCalled()

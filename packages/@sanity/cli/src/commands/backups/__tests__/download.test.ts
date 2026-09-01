@@ -172,7 +172,7 @@ describe('#backup:download', () => {
     })
 
     test('should require a dataset in unattended mode', async () => {
-      const {error} = await testCommand(DownloadBackupCommand, [], {
+      const {error} = await testCommand(DownloadBackupCommand, ['--backup-id', 'backup-123'], {
         mocks: {
           ...defaultMocks,
           cliConfig: {api: {}},
@@ -181,8 +181,7 @@ describe('#backup:download', () => {
       })
 
       expect(error?.message).toBe(
-        'Dataset is required in unattended mode. Pass it as the `<dataset>` argument.\n' +
-          'Error: Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.',
+        'Dataset is required in unattended mode. Pass it as the `<dataset>` argument.',
       )
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockListDatasets).not.toHaveBeenCalled()
@@ -199,9 +198,7 @@ describe('#backup:download', () => {
         },
       })
 
-      expect(error?.message).toBe(
-        'Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.',
-      )
+      expect(error?.message).toContain('Missing required flag backup-id')
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockListDatasets).not.toHaveBeenCalled()
       expect(mockSelect).not.toHaveBeenCalled()

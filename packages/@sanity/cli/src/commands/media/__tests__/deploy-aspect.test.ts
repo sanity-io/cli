@@ -204,6 +204,7 @@ describe('#media:deploy-aspect', () => {
     const {error} = await testCommand(MediaDeployAspectCommand, ['--all'], {
       mocks: {
         cliConfigError: new ProjectRootNotFoundError('No project root found'),
+        isInteractive: true,
         token: 'test-token',
       },
     })
@@ -293,7 +294,7 @@ describe('#media:deploy-aspect', () => {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.message).toContain('Missing required flag media-library-id')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
   })

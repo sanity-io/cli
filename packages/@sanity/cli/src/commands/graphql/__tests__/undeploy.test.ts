@@ -153,7 +153,7 @@ describe('graphql undeploy', () => {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toContain('Pass `--force` to continue')
+    expect(error?.message).toContain('Missing required flag force')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockConfirm).not.toHaveBeenCalled()
   })
