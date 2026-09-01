@@ -1031,9 +1031,6 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.12
       vite:
         specifier: 'catalog:'
         version: 8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)
