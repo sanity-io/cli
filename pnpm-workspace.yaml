@@ -114,7 +114,7 @@ minimumReleaseAgeExclude:
   - '@oxc-transform-react/*'
   - 'vitest'
   - 'postcss'
-  - '@module-federation/vite@1.16.14'
+  - '@module-federation/vite@1.21.1'
   - '@module-federation/dts-plugin@2.7.0'
   - '@module-federation/error-codes@2.7.0'
   - '@module-federation/managers@2.7.0'
