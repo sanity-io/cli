@@ -640,7 +640,7 @@ describe('startWorkbenchDevServer', () => {
               moduleId: 'App',
               name: 'main',
               src: './src/App.tsx',
-              surface: 'app',
+              surface: 'window',
               title: 'Main',
               version: '1',
             },
@@ -700,7 +700,7 @@ describe('startWorkbenchDevServer', () => {
           name: 'main',
           src: './src/App.tsx',
           title: 'Main',
-          type: 'app',
+          type: 'window',
           version: '1',
         },
         {

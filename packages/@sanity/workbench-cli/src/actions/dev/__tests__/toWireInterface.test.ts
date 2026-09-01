@@ -13,7 +13,7 @@ const base = {
 }
 
 describe('toWireInterface', () => {
-  test.each(['app', 'panel', 'asset_source', 'tile'] as const)(
+  test.each(['window', 'panel', 'asset_source', 'tile'] as const)(
     'renames a %s view surface to type',
     (surface) => {
       const result = toWireInterface({...base, metadata: null, surface} as DevServerInterface)

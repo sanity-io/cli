@@ -27,10 +27,10 @@ export interface ViewComponentBaseProps<TView> {
 
 /** Component slots per view surface; windows load outside the component artifact path. @internal */
 export const VIEW_COMPONENTS = {
-  app: [],
   asset_source: ['asset_source'],
   panel: ['title', 'panel'],
   tile: ['tile'],
+  window: [],
 } as const satisfies Record<string, readonly string[]>
 
 /** @public */
@@ -91,14 +91,14 @@ export type TileInterfaceMetadata = z.infer<typeof TileInterfaceMetadataSchema>
  * @internal
  */
 const INTERFACE_CONTRACT_VERSIONS = {
-  app: undefined,
   asset_source: VIEW_CONTRACT_VERSION,
   panel: VIEW_CONTRACT_VERSION,
   tile: VIEW_CONTRACT_VERSION,
+  window: undefined,
   worker: SERVICE_CONTRACT_VERSION,
 } as const
 
-/** Every interface type an app exposes — an `app` view, a view, or a service. */
+/** Every interface type an app exposes — a window, a view, or a service. */
 export type InterfaceKind = keyof typeof INTERFACE_CONTRACT_VERSIONS
 
 /** @internal */
@@ -114,13 +114,13 @@ export function interfaceContractVersion(kind: InterfaceKind): string | undefine
  */
 export function interfaceModuleId(kind: string, name: string): string {
   switch (kind) {
-    case 'app': {
-      return 'App'
-    }
     case 'asset_source':
     case 'panel':
     case 'tile': {
       return `views/${name}`
+    }
+    case 'window': {
+      return 'App'
     }
     case 'worker': {
       return `services/${name}`
@@ -167,7 +167,7 @@ export function definePanelView(view: DefinePanelViewInput): PanelView {
 }
 
 const WindowViewSchema = z.object({
-  surface: z.literal('app'),
+  surface: z.literal('window'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(DockSchema),
 })
@@ -180,7 +180,7 @@ export type DefineWindowViewInput = Omit<WindowView, 'surface'>
 
 /** @public */
 export function defineWindowView(view: DefineWindowViewInput): WindowView {
-  return {...view, surface: 'app'}
+  return {...view, surface: 'window'}
 }
 
 const AssetSourceViewSchema = z.object({

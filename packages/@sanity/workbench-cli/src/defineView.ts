@@ -12,7 +12,7 @@ import {
 export type WindowViewProps = ViewComponentBaseProps<{
   name: string
   src: string
-  surface: 'app'
+  surface: 'window'
   title: string
 }>
 
@@ -99,10 +99,10 @@ export type TileComponent = keyof TileViewComponents
  * @public
  */
 export interface ViewComponentsBySurface {
-  app: ViewComponent<WindowViewProps>
   asset_source: AssetSourceViewComponents
   panel: PanelViewComponents
   tile: TileViewComponents
+  window: ViewComponent<WindowViewProps>
 }
 
 /**

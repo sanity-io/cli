@@ -3,14 +3,14 @@ import {z} from 'zod/mini'
 const viewDeclarationSchema = z.looseObject({
   name: z.string().check(z.regex(/^[a-zA-Z0-9_-]+$/, 'View `name` must match /^[a-zA-Z0-9_-]+$/')),
   src: z.string(),
-  surface: z.enum(['app', 'panel', 'asset_source', 'tile']),
+  surface: z.enum(['window', 'panel', 'asset_source', 'tile']),
 })
 
 /** A view record as persisted to the application service. */
 const viewRecordSchema = z.looseObject({
   name: z.string().check(z.regex(/^[a-zA-Z0-9_-]+$/, 'View `name` must match /^[a-zA-Z0-9_-]+$/')),
   src: z.string(),
-  type: z.enum(['app', 'panel', 'asset_source', 'tile']),
+  type: z.enum(['window', 'panel', 'asset_source', 'tile']),
 })
 
 /**

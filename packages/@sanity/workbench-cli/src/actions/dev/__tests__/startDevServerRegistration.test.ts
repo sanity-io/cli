@@ -309,20 +309,20 @@ describe('startDevServerRegistration', () => {
     await expect(register()).rejects.toThrow(error)
   })
 
-  // `entry` declares an SDK app's navigable `app` view.
-  test('forwards an `app` interface derived from `entry` for an SDK app', async () => {
+  // `entry` declares an SDK app's navigable `window` view.
+  test('forwards a `window` interface derived from `entry` for an SDK app', async () => {
     await register({cliConfig: {app: workbenchApp({entry: './src/App.tsx'})} as any, isApp: true})
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
         interfaces: expect.arrayContaining([
           {
-            id: 'test-app-app-test-app',
+            id: 'test-app-window-test-app',
             metadata: null,
             moduleId: 'App',
             name: 'test-app',
             src: './src/App.tsx',
-            surface: 'app',
+            surface: 'window',
             title: 'Test App',
           },
         ]),
@@ -330,11 +330,11 @@ describe('startDevServerRegistration', () => {
     )
   })
 
-  test('forwards no `app` interface when an SDK app declares no `entry`', async () => {
+  test('forwards no `window` interface when an SDK app declares no `entry`', async () => {
     await register({cliConfig: {app: workbenchApp()} as any, isApp: true})
 
     const {interfaces} = mockRegisterDevServer.mock.calls[0][0]
-    expect((interfaces ?? []).some((i: {surface?: string}) => i.surface === 'app')).toBe(false)
+    expect((interfaces ?? []).some((i: {surface?: string}) => i.surface === 'window')).toBe(false)
   })
 
   test('rejects a studio that declares `entry` — app views for studios are not implemented yet', async () => {
