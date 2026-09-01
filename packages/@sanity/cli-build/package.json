@@ -72,7 +72,7 @@
     "@sanity/workbench-cli": "workspace:^",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
-    "cjs-module-lexer": "^2.2.0",
+    "cjs-module-lexer": "^2.2.1",
     "empathic": "catalog:",
     "isomorphic-dompurify": "~3.3.0",
     "lodash-es": "catalog:",
