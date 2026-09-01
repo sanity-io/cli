@@ -12,5 +12,6 @@ process.argv = [process.argv[0], scriptPath, ...scriptArguments]
 
 await runnerImport(scriptPath, {
   logLevel: 'error',
+  resolve: {tsconfigPaths: true},
   root: process.env.SANITY_BASE_PATH || process.cwd(),
 })
