@@ -1,5 +1,27 @@
 # Change Log
 
+## 8.7.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.6.0...cli-v8.7.0)
+
+_2026-09-01_
+
+### Features
+
+- serve a standalone entry point for all apps and studios ([#1815](https://github.com/sanity-io/cli/pull/1815)) ([ddfcdd1](https://github.com/sanity-io/cli/commit/ddfcdd185635ee189567161e79885cd35126fec8))
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1801](https://github.com/sanity-io/cli/pull/1801)) ([d315241](https://github.com/sanity-io/cli/commit/d315241affc6405ce03abb99a509a0250f36c8c2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.3.0
+    - @sanity/cli-build bumped to 6.2.0
+    - @sanity/cli-core bumped to 3.6.0
+
 ## 8.6.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.5.0...cli-v8.6.0)
