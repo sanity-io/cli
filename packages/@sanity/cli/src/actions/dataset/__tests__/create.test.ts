@@ -22,7 +22,7 @@ vi.mock('../determineDatasetAclMode.js', () => ({
 const mockCreateDatasetService = vi.mocked(createDatasetService)
 const mockDetermineDatasetAclMode = vi.mocked(determineDatasetAclMode)
 const output = createMockOutput()
-const dataset = {aclMode: 'public' as const, datasetName: 'production'}
+const dataset = {aclMode: 'public' as const, datasetName: 'production', description: ''}
 const options = {
   datasetName: 'production',
   output,
