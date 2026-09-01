@@ -1,6 +1,6 @@
 import path from 'node:path'
 import readline from 'node:readline'
-import {Readable, type Writable} from 'node:stream'
+import {Readable} from 'node:stream'
 import zlib from 'node:zlib'
 
 import {type SanityDocument} from '@sanity/types'
@@ -20,7 +20,11 @@ const isDeflate = (buf: Buffer) =>
 
 async function* extract<TReturn>(
   stream: AsyncIterable<Buffer>,
-  extractor: AsyncIterable<TReturn> & Writable,
+  extractor: AsyncIterable<TReturn> & {
+    destroy(): unknown
+    end(data: void): unknown
+    write(chunk: Buffer): unknown
+  },
 ) {
   // set up a task to drain the input iterable into the extractor asynchronously
   // before this function delegates to the extractor's iterable (containing the
@@ -81,7 +85,7 @@ async function* maybeExtractNdjson(stream: AsyncIterable<Buffer>): AsyncIterable
         // ignore hidden and non-ndjson files
         if (extname !== '.ndjson' || filename.startsWith('.')) continue
 
-        for await (const ndjsonChunk of entry) yield ndjsonChunk
+        for await (const ndjsonChunk of entry) yield ndjsonChunk as Buffer
         return
       }
     }

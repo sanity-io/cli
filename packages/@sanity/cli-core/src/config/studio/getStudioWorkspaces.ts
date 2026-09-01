@@ -46,7 +46,7 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
 
   const workDir = dirname(configPath)
   debug('Work dir %s', workDir)
-  const {resolveConfig} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
+  const {resolveConfig} = await resolveLocalPackage<{resolveConfig?: unknown}>('sanity', workDir)
   if (typeof resolveConfig !== 'function') {
     throw new TypeError('Expected `resolveConfig` from `sanity` to be a function')
   }
