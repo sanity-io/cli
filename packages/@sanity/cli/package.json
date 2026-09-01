@@ -162,7 +162,6 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "catalog:",
     "@types/picomatch": "^4.0.3",
-    "@types/react": "^19.2.17",
     "@types/semver": "^7.7.1",
     "@types/tar-fs": "catalog:",
     "@types/tar-stream": "^3.1.4",
