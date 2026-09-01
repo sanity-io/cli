@@ -98,13 +98,11 @@ export function deriveInterfaces(
       }
       return {...shared(view.surface, view), metadata: null, surface: view.surface}
     }),
-    ...(app.webWorkers ?? []).map(
-      (webWorker): DerivedInterface => ({
-        ...shared('worker', webWorker),
-        metadata: null,
-        type: 'worker',
-      }),
-    ),
+    ...(app.webWorkers ?? []).map((webWorker): DerivedInterface => ({
+      ...shared('worker', webWorker),
+      metadata: null,
+      type: 'worker',
+    })),
     ...(entry === undefined
       ? []
       : [

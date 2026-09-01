@@ -42,22 +42,18 @@ export function summarizeInterfaces({views, webWorkers}: WorkbenchExposes): {
   services: DeployedWebWorker[]
   views: DeployedView[]
 } {
-  const deployedViews = (views ?? []).map(
-    (view): DeployedView => ({
-      name: view.name,
-      src: view.src,
-      surface: view.surface,
-      title: view.title,
-    }),
-  )
-  const deployedServices = (webWorkers ?? []).map(
-    (webWorker): DeployedWebWorker => ({
-      name: webWorker.name,
-      src: webWorker.src,
-      title: webWorker.title,
-      type: webWorker.type,
-    }),
-  )
+  const deployedViews = (views ?? []).map((view): DeployedView => ({
+    name: view.name,
+    src: view.src,
+    surface: view.surface,
+    title: view.title,
+  }))
+  const deployedServices = (webWorkers ?? []).map((webWorker): DeployedWebWorker => ({
+    name: webWorker.name,
+    src: webWorker.src,
+    title: webWorker.title,
+    type: webWorker.type,
+  }))
 
   const lines: string[] = []
   if (deployedViews.length > 0) lines.push(summarizeGroup('Views', deployedViews))
