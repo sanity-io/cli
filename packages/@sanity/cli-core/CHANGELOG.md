@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.6.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.5.1...cli-core-v3.6.0)
+
+_2026-09-01_
+
+### Features
+
+- **cli-core:** export date and time parse/format utilities ([#1790](https://github.com/sanity-io/cli/pull/1790)) ([0f93a40](https://github.com/sanity-io/cli/commit/0f93a4085a5a17f33be6713a7a665d67ec75cf5e))
+
 ## 3.5.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.5.0...cli-core-v3.5.1)

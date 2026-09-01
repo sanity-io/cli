@@ -1,5 +1,26 @@
 # @sanity/workbench-cli
 
+## 2.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.4...workbench-cli-v2.3.0)
+
+_2026-09-01_
+
+### Features
+
+- **workbench-cli:** rename `surface: app` to `surface: window` ([#1797](https://github.com/sanity-io/cli/pull/1797)) ([fa3ac12](https://github.com/sanity-io/cli/commit/fa3ac120851a68c691628ed0e5c322f71e62975b))
+- serve a standalone entry point for all apps and studios ([#1815](https://github.com/sanity-io/cli/pull/1815)) ([ddfcdd1](https://github.com/sanity-io/cli/commit/ddfcdd185635ee189567161e79885cd35126fec8))
+
+### Bug Fixes
+
+- **deps:** update dependency oxfmt to ^0.65.0 ([#1808](https://github.com/sanity-io/cli/pull/1808)) ([5023d64](https://github.com/sanity-io/cli/commit/5023d64065a812aa3447cb015985ba947f478679))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.6.0
+
 ## 2.2.4
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.3...workbench-cli-v2.2.4)
