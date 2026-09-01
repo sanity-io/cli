@@ -41,8 +41,11 @@ describe('context jobs get', () => {
     const {error, stdout} = await testCommand(GetJobCommand, ['kb-abc123', 'job-def456'])
 
     if (error) throw error
-    expect(stdout).toContain('job-def456')
-    expect(stdout).toContain('succeeded')
+    expect(stdout).toContain('ID:        job-def456')
+    expect(stdout).toContain('Status:    succeeded')
+    expect(stdout).toContain('Started:   2026-08-01T00:00:00.000Z')
+    expect(stdout).toContain('Completed: 2026-08-01T01:00:00.000Z')
+    expect(stdout).toContain('Error:     -')
     expect(mockJobsGet).toHaveBeenCalledWith({jobId: 'job-def456'})
     expect(mockGetGlobalCliClient).toHaveBeenCalledWith(
       expect.objectContaining({resource: {id: 'kb-abc123', type: 'knowledge-base'}}),
@@ -55,8 +58,8 @@ describe('context jobs get', () => {
     const {error, stdout} = await testCommand(GetJobCommand, ['kb-abc123', 'job-def456'])
 
     if (error) throw error
-    expect(stdout).toContain('failed')
-    expect(stdout).toContain('boom')
+    expect(stdout).toContain('Status:    failed')
+    expect(stdout).toContain('Error:     boom')
   })
 
   test('outputs JSON with --json', async () => {

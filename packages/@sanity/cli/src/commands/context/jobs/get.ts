@@ -5,6 +5,7 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
 import {watchJob} from '../../../actions/context/watchJob.js'
+import {formatKeyValue} from '../../../actions/debug/output.js'
 import {getJob} from '../../../services/context.js'
 
 const getJobDebug = subdebug('context:jobs:get')
@@ -70,11 +71,12 @@ export class GetJobCommand extends SanityCommand<typeof GetJobCommand> {
     if (json) {
       this.log(JSON.stringify(job, null, 2))
     } else {
-      this.log(`ID:        ${job.id}`)
-      this.log(`Status:    ${job.status}`)
-      this.log(`Started:   ${job.startedAt ?? '-'}`)
-      this.log(`Completed: ${job.completedAt ?? '-'}`)
-      this.log(`Error:     ${job.error ?? '-'}`)
+      const padTo = 9 // "Completed" is the longest key
+      this.log(formatKeyValue('ID', job.id, {padTo}))
+      this.log(formatKeyValue('Status', job.status, {padTo}))
+      this.log(formatKeyValue('Started', job.startedAt ?? '-', {padTo}))
+      this.log(formatKeyValue('Completed', job.completedAt ?? '-', {padTo}))
+      this.log(formatKeyValue('Error', job.error ?? '-', {padTo}))
     }
 
     if (watch && job.status !== 'succeeded') {

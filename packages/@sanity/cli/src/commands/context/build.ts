@@ -6,6 +6,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
 import {watchJob} from '../../actions/context/watchJob.js'
+import {formatKeyValue} from '../../actions/debug/output.js'
 import {buildKnowledgeBase, cancelKnowledgeBaseBuild} from '../../services/context.js'
 
 const buildContextDebug = subdebug('context:build')
@@ -75,7 +76,7 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
       })
     }
 
-    this.log(`Job ID: ${jobId}`)
+    this.log(formatKeyValue('Job ID', jobId))
     this.log(`Track it with: sanity context jobs get ${knowledgeBaseId} ${jobId}`)
 
     if (!watch) {
