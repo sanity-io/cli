@@ -125,11 +125,11 @@ Zod schemas for CLI configuration and app manifests.
 
 Worker-based task runners.
 
-| Export                   | Description                                  |
-| ------------------------ | -------------------------------------------- |
-| `studioWorkerTask(task)` | Run a task in the studio worker.             |
-| `createStudioWorker()`   | Create a studio worker instance.             |
-| `tsxWorkerTask(task)`    | Run a TypeScript task via `tsx` in a worker. |
+| Export                   | Description                        |
+| ------------------------ | ---------------------------------- |
+| `studioWorkerTask(task)` | Run a task in the studio worker.   |
+| `createStudioWorker()`   | Create a studio worker instance.   |
+| `tsxWorkerTask(task)`    | Run a TypeScript task in a worker. |
 
 ## `@sanity/cli-core/telemetry`
 
