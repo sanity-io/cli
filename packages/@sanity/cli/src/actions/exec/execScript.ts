@@ -21,7 +21,7 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
 
   const resolvedScriptPath = path.resolve(scriptPath)
 
-  const browserEnvPath = path.join(import.meta.dirname, 'registerBrowserEnv.worker.js')
+  const browserEnvPath = new URL('registerBrowserEnv.worker.js', import.meta.url).href
   const scriptRunnerPath = path.join(import.meta.dirname, 'runScript.worker.js')
 
   // When --with-user-token is specified, resolve the token in the parent process
