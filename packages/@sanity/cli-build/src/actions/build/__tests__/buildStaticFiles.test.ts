@@ -105,7 +105,7 @@ describe('buildStaticFiles', () => {
       expect(mockBuildApp).toHaveBeenCalled()
     })
 
-    test('does not write sanity runtime or copy static files', async () => {
+    test('never runs the legacy single-environment vite build', async () => {
       await buildStaticFiles({
         basePath: '/',
         cwd,
@@ -113,7 +113,7 @@ describe('buildStaticFiles', () => {
         outputDir,
       })
 
-      expect(mockWriteSanityRuntime).not.toHaveBeenCalled()
+      // Federation builds go through createBuilder/buildApp, never vite.build.
       expect(mockBuild).not.toHaveBeenCalled()
     })
 
@@ -136,11 +136,7 @@ describe('buildStaticFiles', () => {
     })
   })
 
-  describe('workbench remote SPA (SANITY_INTERNAL_IS_WORKBENCH_REMOTE=true)', () => {
-    beforeEach(() => {
-      vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
-    })
-
+  describe('standalone SPA for federated apps and studios', () => {
     test('emits the SPA (runtime + static + favicons) for an app with an entry', async () => {
       await buildStaticFiles({
         basePath: '/',

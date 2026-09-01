@@ -80,16 +80,16 @@ export async function buildStaticFiles(
    * runtime generation, static file copies, and favicons.
    */
   if (isWorkbenchApp) {
-    // A workbench remote can also serve itself standalone. When
-    // `SANITY_INTERNAL_IS_WORKBENCH_REMOTE` is set, emit an SPA (index.html +
-    // bootstrap + favicons) into the same `dist` as the federation output via a
-    // dedicated `client` environment (see plugin-sanity-environment). Skipped for
-    // a dock-only app (no `./App` to mount), matching `exposesApp` in plugin.ts.
-    const emitSpa = process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true' && !(isApp && !entry)
+    // Every federated app and studio also serves itself standalone: emit an SPA
+    // (index.html + bootstrap + favicons) into the same `dist` as the federation
+    // output via a dedicated `client` environment (see plugin-sanity-environment).
+    // Skipped for a dock-only app (no `./App` to mount), matching `exposesApp` in
+    // plugin.ts.
+    const emitSpa = !(isApp && !entry)
 
     let entries: Awaited<ReturnType<typeof resolveEntries>>
     if (emitSpa) {
-      buildDebug('Writing Sanity runtime files (workbench remote SPA)')
+      buildDebug('Writing Sanity runtime files (standalone SPA)')
       ;({entries} = await writeSanityRuntime({
         appTitle,
         basePath,

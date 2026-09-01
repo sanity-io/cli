@@ -98,7 +98,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   // It's a test-harness limitation (real `sanity build` runs as its own process);
   // the federation-artifact shape is platform-independent, so Linux coverage suffices.
   test.skipIf(platform() === 'win32')(
-    'should build the "federated-studio" with only federation artifacts',
+    'should build the "federated-studio" with standalone SPA and federation artifacts',
     async () => {
       const cwd = await testFixture('federated-studio')
       process.chdir(cwd)
@@ -118,7 +118,11 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
       const distFiles = await readdir(join(cwd, 'dist'))
 
-      expect(distFiles).not.toContain('index.html')
+      // A federated studio also serves itself standalone: the SPA `index.html`
+      // is emitted alongside the federation output so the studio loads both on
+      // its own and embedded in the workbench.
+      expect(distFiles).toContain('index.html')
+      expect((await readFile(join(cwd, 'dist', 'index.html'), 'utf8')).length).toBeGreaterThan(0)
       expect(distFiles).not.toContain('vendor')
 
       expect(distFiles).toContain('mf-manifest.json')

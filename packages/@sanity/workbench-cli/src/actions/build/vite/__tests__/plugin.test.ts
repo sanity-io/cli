@@ -23,16 +23,14 @@ afterEach(() => {
 })
 
 describe('federation standalone SPA (clientInput) gate', () => {
-  test('passes clientInput for an app with an entry when the remote flag is set', () => {
-    vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
+  test('passes clientInput for an app with an entry', () => {
     federation({appEntry: '../../src/App', isApp: true, name: 'drop-desk', workDir})
     expect(mockEnvironmentPlugin).toHaveBeenCalledWith(
       expect.objectContaining({clientInput: appBootstrap}),
     )
   })
 
-  test('passes clientInput for a studio when the remote flag is set', () => {
-    vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
+  test('passes clientInput for a studio', () => {
     federation({
       isApp: false,
       name: 'drop-desk',
@@ -44,16 +42,8 @@ describe('federation standalone SPA (clientInput) gate', () => {
     )
   })
 
-  test('omits clientInput for a dock-only app (no ./App) even with the flag set', () => {
-    vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
+  test('omits clientInput for a dock-only app (no ./App)', () => {
     federation({isApp: true, name: 'drop-desk', workDir})
-    expect(mockEnvironmentPlugin).toHaveBeenCalledWith(
-      expect.objectContaining({clientInput: undefined}),
-    )
-  })
-
-  test('omits clientInput when the remote flag is unset', () => {
-    federation({appEntry: '../../src/App', isApp: true, name: 'drop-desk', workDir})
     expect(mockEnvironmentPlugin).toHaveBeenCalledWith(
       expect.objectContaining({clientInput: undefined}),
     )

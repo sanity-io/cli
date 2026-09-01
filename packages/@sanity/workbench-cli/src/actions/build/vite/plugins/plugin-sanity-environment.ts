@@ -8,7 +8,7 @@ interface EnvironmentOptions {
   /**
    * When set, also build a standalone `client` SPA environment (its own
    * `index.html` + bootstrap) alongside the federation remote, from this entry.
-   * Omitted for a dock-only app or when the workbench-remote SPA is disabled.
+   * Set for every federated app and studio; omitted only for a dock-only app.
    */
   clientInput?: string
 }
