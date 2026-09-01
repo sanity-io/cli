@@ -132,12 +132,57 @@ describe('context create', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Title is required')
-    expect(error?.message).toContain('--title')
-    expect(error?.message).toContain('Description is required')
-    expect(error?.message).toContain('--description')
+    expect(error?.message).toContain('Missing required flag title')
+    expect(error?.message).toContain('Missing required flag description')
     expect(error?.oclif?.exit).toBe(2)
+    expect(mockInput).not.toHaveBeenCalled()
     expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  test('errors when title is missing in a non-interactive environment', async () => {
+    const {error} = await testCommand(
+      CreateKnowledgeBaseCommand,
+      ['--organization', 'org-abc123', '--description', 'Product docs'],
+      {mocks: {isInteractive: false}},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Missing required flag title')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  test('errors when description is missing in a non-interactive environment', async () => {
+    const {error} = await testCommand(
+      CreateKnowledgeBaseCommand,
+      ['--organization', 'org-abc123', '--title', 'Support docs'],
+      {mocks: {isInteractive: false}},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Missing required flag description')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  test('creates without prompting when all flags are provided in a non-interactive environment', async () => {
+    mockCreate.mockResolvedValue(knowledgeBase)
+
+    const {error} = await testCommand(
+      CreateKnowledgeBaseCommand,
+      ['--organization', 'org-abc123', '--title', 'Support docs', '--description', 'Product docs'],
+      {mocks: {isInteractive: false}},
+    )
+
+    if (error) throw error
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockCreate).toHaveBeenCalledWith({
+      description: 'Product docs',
+      organizationId: 'org-abc123',
+      title: 'Support docs',
+    })
   })
 
   test('errors when --title is whitespace-only instead of prompting', async () => {

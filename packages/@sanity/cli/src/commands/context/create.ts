@@ -2,6 +2,7 @@ import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {input, spinner} from '@sanity/cli-core/ux'
 
 import {
@@ -9,7 +10,6 @@ import {
   resolveOrganizationId,
 } from '../../actions/context/resolveOrganizationId.js'
 import {createKnowledgeBase} from '../../services/context.js'
-import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getOrganizationFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
@@ -20,14 +20,16 @@ const flags = {
     description: 'Organization to create the knowledge base in',
     semantics: 'override',
   }),
-  description: Flags.string({
-    description: 'Knowledge base description',
-    required: false,
-  }),
-  title: Flags.string({
-    description: 'Knowledge base title',
-    required: false,
-  }),
+  description: requiredWhenUnattended(
+    Flags.string({
+      description: 'Knowledge base description',
+    }),
+  ),
+  title: requiredWhenUnattended(
+    Flags.string({
+      description: 'Knowledge base title',
+    }),
+  ),
 } satisfies FlagInput
 
 export class CreateKnowledgeBaseCommand extends SanityCommand<typeof CreateKnowledgeBaseCommand> {
@@ -57,19 +59,6 @@ export class CreateKnowledgeBaseCommand extends SanityCommand<typeof CreateKnowl
     }
     if (descriptionFlag !== undefined && descriptionFlag.trim() === '') {
       this.error('Description cannot be empty', {exit: exitCodes.USAGE_ERROR})
-    }
-
-    if (this.isUnattended()) {
-      const errors: string[] = []
-      if (!titleFlag?.trim()) {
-        errors.push('Title is required. Provide it with the --title flag.')
-      }
-      if (!descriptionFlag?.trim()) {
-        errors.push('Description is required. Provide it with the --description flag.')
-      }
-      if (errors.length > 0) {
-        this.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
-      }
     }
 
     let organizationId: string
