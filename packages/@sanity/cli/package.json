@@ -108,7 +108,7 @@
     "@vercel/frameworks": "3.29.0",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",
-    "eventsource": "^4.1.0",
+    "eventsource": "^4.1.1",
     "execa": "catalog:",
     "form-data": "catalog:",
     "get-latest-version": "^6.0.1",
