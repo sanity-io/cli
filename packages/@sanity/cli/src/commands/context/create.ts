@@ -9,6 +9,7 @@ import {
   MissingOrganizationError,
   resolveOrganizationId,
 } from '../../actions/context/resolveOrganizationId.js'
+import {formatKeyValue} from '../../actions/debug/output.js'
 import {createKnowledgeBase} from '../../services/context.js'
 import {getOrganizationFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
@@ -86,9 +87,10 @@ export class CreateKnowledgeBaseCommand extends SanityCommand<typeof CreateKnowl
     try {
       const knowledgeBase = await createKnowledgeBase({description, organizationId, title})
       spin.succeed('Knowledge base created')
-      this.log(`ID:           ${knowledgeBase.publicId}`)
-      this.log(`Title:        ${knowledgeBase.title}`)
-      this.log(`Organization: ${knowledgeBase.organizationId}`)
+      const padTo = 12 // "Organization" is the longest key
+      this.log(formatKeyValue('ID', knowledgeBase.publicId, {padTo}))
+      this.log(formatKeyValue('Title', knowledgeBase.title, {padTo}))
+      this.log(formatKeyValue('Organization', knowledgeBase.organizationId, {padTo}))
     } catch (error) {
       spin.fail()
       createContextDebug('Error creating knowledge base', error)

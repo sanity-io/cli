@@ -55,9 +55,9 @@ describe('context create', () => {
     ])
 
     if (error) throw error
-    expect(stdout).toContain('kb-abc123')
-    expect(stdout).toContain('Support docs')
-    expect(stdout).toContain('org-abc123')
+    expect(stdout).toContain('ID:           kb-abc123')
+    expect(stdout).toContain('Title:        Support docs')
+    expect(stdout).toContain('Organization: org-abc123')
     expect(mockCreate).toHaveBeenCalledWith({
       description: 'Product docs and troubleshooting guides',
       organizationId: 'org-abc123',
