@@ -76,7 +76,7 @@ const devServerInterfaceSchema = z.union([
     z.object({
       ...interfaceBaseFields,
       metadata: z.nullable(ViewPlacementMetadataSchema),
-      surface: z.literal('app'),
+      surface: z.literal('window'),
     }),
     z.object({
       ...interfaceBaseFields,

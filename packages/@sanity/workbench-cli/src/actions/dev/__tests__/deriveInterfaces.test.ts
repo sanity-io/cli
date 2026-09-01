@@ -115,37 +115,37 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('derives an app interface from entry for an SDK app', () => {
+  test('derives a window interface from entry for an SDK app', () => {
     const app = workbenchApp({entry: './src/App.tsx', slug: 'my-app'})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
-        id: 'my-app-app-my-app',
+        id: 'my-app-window-my-app',
         metadata: null,
         moduleId: 'App',
         name: 'my-app',
         src: './src/App.tsx',
-        surface: 'app',
+        surface: 'window',
         title: 'Test App',
       },
     ])
   })
 
-  test('keys the id prefix and app-view name on name, not the slug address', () => {
+  test('keys the id prefix and window name on name, not the slug address', () => {
     const app = workbenchApp({entry: './src/App.tsx', name: 'reviews', slug: 'reviews-host'})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
-        id: 'reviews-app-reviews',
+        id: 'reviews-window-reviews',
         metadata: null,
         moduleId: 'App',
         name: 'reviews',
         src: './src/App.tsx',
-        surface: 'app',
+        surface: 'window',
         title: 'Test App',
       },
     ])
   })
 
-  test('inherits global placement metadata for panel and app views', () => {
+  test('inherits global placement metadata for panel and window views', () => {
     const app = workbenchApp({
       dock: {group: 'dock.applications', order: 100},
       entry: './src/App.tsx',
@@ -155,7 +155,7 @@ describe('deriveInterfaces', () => {
           dock: {group: 'dock.user'},
           name: 'settings',
           src: './src/Settings.tsx',
-          surface: 'app',
+          surface: 'window',
           title: 'Settings',
         },
         {
@@ -171,7 +171,8 @@ describe('deriveInterfaces', () => {
     expect(
       deriveInterfaces(app, {isApp: true})
         .filter(
-          (iface) => 'surface' in iface && (iface.surface === 'app' || iface.surface === 'panel'),
+          (iface) =>
+            'surface' in iface && (iface.surface === 'panel' || iface.surface === 'window'),
         )
         .map((iface) => ({metadata: iface.metadata, name: iface.name, surface: iface.surface})),
     ).toEqual([
@@ -183,7 +184,7 @@ describe('deriveInterfaces', () => {
       {
         metadata: {dock: {group: 'dock.user', order: 100}},
         name: 'settings',
-        surface: 'app',
+        surface: 'window',
       },
       {
         metadata: {dock: {group: 'dock.applications', order: 20}},
@@ -193,7 +194,7 @@ describe('deriveInterfaces', () => {
       {
         metadata: {dock: {group: 'dock.applications', order: 100}},
         name: 'test-app',
-        surface: 'app',
+        surface: 'window',
       },
     ])
   })
@@ -228,12 +229,12 @@ describe('deriveInterfaces', () => {
     )
   })
 
-  test('omits the app interface for a dock-only app (no entry)', () => {
+  test('omits the window interface for a dock-only app (no entry)', () => {
     const app = workbenchApp({
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
     const result = deriveInterfaces(app, {isApp: true})
-    expect(result?.some((iface) => 'surface' in iface && iface.surface === 'app')).toBe(false)
+    expect(result?.some((iface) => 'surface' in iface && iface.surface === 'window')).toBe(false)
   })
 
   test('orders a panel view ahead of web workers', () => {
@@ -266,7 +267,7 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('places the app view after web workers', () => {
+  test('places the window view after web workers', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
       slug: 'my-app',
@@ -284,12 +285,12 @@ describe('deriveInterfaces', () => {
         version: '1',
       },
       {
-        id: 'my-app-app-my-app',
+        id: 'my-app-window-my-app',
         metadata: null,
         moduleId: 'App',
         name: 'my-app',
         src: './src/App.tsx',
-        surface: 'app',
+        surface: 'window',
         title: 'Test App',
       },
     ])
@@ -317,7 +318,7 @@ describe('deriveInterfaces', () => {
       deriveInterfaces(app, {isApp: true})?.map((iface) =>
         'surface' in iface ? iface.surface : iface.type,
       ),
-    ).toEqual(['panel', 'app'])
+    ).toEqual(['panel', 'window'])
   })
 
   test('does not put the config in the interface set', () => {
@@ -351,7 +352,7 @@ describe('deriveInterfaces', () => {
     )
   })
 
-  test('derives a studio app interface from the generated entry, after its panels/workers', () => {
+  test('derives a studio window interface from the generated entry, after its panels/workers', () => {
     const app = workbenchApp({
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
@@ -367,12 +368,12 @@ describe('deriveInterfaces', () => {
         version: '1',
       },
       {
-        id: 'test-app-app-test-app',
+        id: 'test-app-window-test-app',
         metadata: null,
         moduleId: 'App',
         name: 'test-app',
         src: './.sanity/federation/remote-entry.jsx',
-        surface: 'app',
+        surface: 'window',
         title: 'Test App',
       },
     ])

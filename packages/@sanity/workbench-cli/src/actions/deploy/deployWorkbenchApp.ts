@@ -31,10 +31,6 @@ function toBrettInterface(iface: DerivedInterface, version: string): BrettInterf
   if ('type' in declaration) return {...declaration, version}
 
   switch (declaration.surface) {
-    case 'app': {
-      const {surface, ...view} = declaration
-      return {...view, type: surface, version}
-    }
     case 'asset_source': {
       const {surface, ...view} = declaration
       return {...view, type: surface, version}
@@ -46,6 +42,10 @@ function toBrettInterface(iface: DerivedInterface, version: string): BrettInterf
     case 'tile': {
       const {surface, ...view} = declaration
       return {...view, type: surface, version}
+    }
+    case 'window': {
+      const {surface, ...view} = declaration
+      return {...view, type: 'app', version}
     }
   }
 }

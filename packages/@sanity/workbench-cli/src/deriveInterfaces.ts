@@ -30,11 +30,11 @@ export type DerivedInterface =
   | (DerivedInterfaceBase & {metadata: null; surface: 'asset_source'})
   | (DerivedInterfaceBase & {metadata: null; type: 'worker'})
   | (DerivedInterfaceBase & {metadata: TileInterfaceMetadata; surface: 'tile'})
-  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'app'})
   | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'panel'})
+  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'window'})
 
 /**
- * `appTitle` titles the app view where a deploy resolved one through `--title`;
+ * `appTitle` titles the window where a deploy resolved one through `--title`;
  * dev takes it from the config.
  * @internal
  */
@@ -51,7 +51,7 @@ export function deriveInterfaces(
   }
   const entry = isApp ? app.entry : GENERATED_ENTRY
 
-  // Identity, not address: interface ids and the app-view name key on `name`
+  // Identity, not address: interface ids and the window name key on `name`
   // (which defaults to `slug`, so existing apps derive byte-identical ids).
   const appName = app.name ?? app.slug
 
@@ -89,7 +89,7 @@ export function deriveInterfaces(
           surface: view.surface,
         }
       }
-      if (view.surface === 'app' || view.surface === 'panel') {
+      if (view.surface === 'panel' || view.surface === 'window') {
         return {
           ...shared(view.surface, view),
           metadata: placementMetadata(view.dock),
@@ -109,9 +109,9 @@ export function deriveInterfaces(
       ? []
       : [
           {
-            ...shared('app', {name: appName, src: entry, title: appTitle ?? app.title}),
+            ...shared('window', {name: appName, src: entry, title: appTitle ?? app.title}),
             metadata: placementMetadata(),
-            surface: 'app' as const,
+            surface: 'window' as const,
           },
         ]),
   ]
