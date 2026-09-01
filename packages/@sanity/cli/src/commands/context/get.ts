@@ -4,6 +4,7 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
+import {formatKeyValue} from '../../actions/debug/output.js'
 import {getKnowledgeBase} from '../../services/context.js'
 
 const getContextDebug = subdebug('context:get')
@@ -61,27 +62,32 @@ export class GetKnowledgeBaseCommand extends SanityCommand<typeof GetKnowledgeBa
     }
 
     const pending = knowledgeBase.pendingChanges
-    this.log(`ID:              ${knowledgeBase.publicId}`)
-    this.log(`Title:           ${knowledgeBase.title}`)
-    this.log(`Description:     ${knowledgeBase.description}`)
-    this.log(`Organization:    ${knowledgeBase.organizationId}`)
-    this.log(`State:           ${knowledgeBase.state}`)
-    this.log(`Active job:      ${knowledgeBase.activeJobId ?? '-'}`)
+    const padTo = 15 // "Pending changes" is the longest key
+    this.log(formatKeyValue('ID', knowledgeBase.publicId, {padTo}))
+    this.log(formatKeyValue('Title', knowledgeBase.title, {padTo}))
+    this.log(formatKeyValue('Description', knowledgeBase.description, {padTo}))
+    this.log(formatKeyValue('Organization', knowledgeBase.organizationId, {padTo}))
+    this.log(formatKeyValue('State', knowledgeBase.state, {padTo}))
+    this.log(formatKeyValue('Active job', knowledgeBase.activeJobId ?? '-', {padTo}))
     this.log(
-      `Pending changes: ${
+      formatKeyValue(
+        'Pending changes',
         pending
           ? `${pending.added} added, ${pending.changed} changed, ${pending.removed} removed`
-          : '-'
-      }`,
+          : '-',
+        {padTo},
+      ),
     )
     this.log(
-      `Refresh:         ${
-        knowledgeBase.refreshEnabled ? `enabled (${knowledgeBase.refreshFrequency})` : 'disabled'
-      }`,
+      formatKeyValue(
+        'Refresh',
+        knowledgeBase.refreshEnabled ? `enabled (${knowledgeBase.refreshFrequency})` : 'disabled',
+        {padTo},
+      ),
     )
-    this.log(`Open issues:     ${knowledgeBase.openIssueCount}`)
-    this.log(`Instructions:    ${knowledgeBase.instructionCount}`)
-    this.log(`Created:         ${knowledgeBase.createdAt}`)
-    this.log(`Updated:         ${knowledgeBase.updatedAt}`)
+    this.log(formatKeyValue('Open issues', knowledgeBase.openIssueCount, {padTo}))
+    this.log(formatKeyValue('Instructions', knowledgeBase.instructionCount, {padTo}))
+    this.log(formatKeyValue('Created', knowledgeBase.createdAt, {padTo}))
+    this.log(formatKeyValue('Updated', knowledgeBase.updatedAt, {padTo}))
   }
 }

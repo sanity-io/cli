@@ -28,10 +28,10 @@ describe('context get', () => {
     const {error, stdout} = await testCommand(GetKnowledgeBaseCommand, ['kb-abc123'])
 
     if (error) throw error
-    expect(stdout).toContain('kb-abc123')
-    expect(stdout).toContain('Support docs')
-    expect(stdout).toContain('ready')
-    expect(stdout).toContain('enabled (weekly)')
+    expect(stdout).toContain('ID:              kb-abc123')
+    expect(stdout).toContain('Title:           Support docs')
+    expect(stdout).toContain('State:           ready')
+    expect(stdout).toContain('Refresh:         enabled (weekly)')
     expect(mockGet).toHaveBeenCalledWith('kb-abc123')
   })
 
@@ -45,8 +45,8 @@ describe('context get', () => {
     const {error, stdout} = await testCommand(GetKnowledgeBaseCommand, ['kb-abc123'])
 
     if (error) throw error
-    expect(stdout).toContain('2 added, 1 changed, 0 removed')
-    expect(stdout).toContain('disabled')
+    expect(stdout).toContain('Pending changes: 2 added, 1 changed, 0 removed')
+    expect(stdout).toContain('Refresh:         disabled')
   })
 
   test('outputs JSON with --json', async () => {
