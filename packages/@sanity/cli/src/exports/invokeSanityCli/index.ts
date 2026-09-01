@@ -2,7 +2,9 @@
  * Programmatic (in-process) invocation of CLI commands, e.g. from an MCP
  * server. The invokable surface is governed by a per-source command policy
  * (see ./commandPolicies): every CLI command is explicitly allowed, denied,
- * or allowed conditionally on the parsed invocation.
+ * or allowed conditionally on the parsed invocation. Commands contributed by
+ * plugins are covered by the policies those plugins declare, subject to this
+ * package's veto, and are denied unless they declare one.
  *
  * {@link invokeSanityCli} handles arg parsing, policy enforcement, command
  * dispatch, per-invocation auth, and output capture.
@@ -23,35 +25,48 @@
 import {Command, Config, Parser, settings} from '@oclif/core'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {exitCodes} from '@sanity/cli-core'
+import {
+  type CommandPolicySet,
+  deny,
+  type InvocationSource,
+  isConditionalInvocationPolicy,
+} from '@sanity/cli-core/commandPolicy'
 import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
 import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {type FetchFunction} from 'get-it'
 import {parseArgsStringToArgv} from 'string-argv'
 
 import {resolveTopicAliasInArgv} from '../../topicAliases.js'
-import {commandPolicies} from './commandPolicies/index.js'
-import {
-  type CommandPolicySet,
-  deny,
-  type InvocationSource,
-  isConditionalInvocationPolicy,
-} from './commandPolicies/policy.js'
+import {resolveCommandPolicies} from './commandPolicies/index.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
 import {prettyPrintError} from './prettyPrintError.js'
 
 type InvokableCommand = Pick<SanityCommand<typeof Command>, 'runInExecutionContext'>
 
 /**
+ * Whether a command can run in isolation, which in practice means it extends
+ * `SanityCommand`: only that base class routes output, token resolution,
+ * interactivity, and project discovery through the CLI execution context.
+ *
+ * This is a capability check, not a policy check. A plugin can declare a
+ * policy for a command that still extends oclif's `Command` directly, and
+ * such a command must not run here — the policy says the invocation is safe,
+ * but nothing would hold it to the isolation guarantees that assessment
+ * assumes.
+ */
+function supportsIsolatedExecution(CommandClass: Command.Class): boolean {
+  const prototype = CommandClass.prototype as Partial<InvokableCommand> | undefined
+  return typeof prototype?.runInExecutionContext === 'function'
+}
+
+/**
  * Instantiate a policy-approved command for isolated execution.
  *
- * Every invokable command extends `SanityCommand`, whose
  * `runInExecutionContext()` runs the instance without oclif's static
  * `Command.run()` — the static runner re-enters `Config.load()` (filesystem
  * reads and a process-global config cache write) on every call. The manifest
  * types command classes as the abstract oclif `Command`, hence the
- * constructor cast. The method is probed rather than checked with
- * `instanceof`, because command modules may load from the compiled build
- * while this module runs from source, giving `SanityCommand` two identities.
+ * constructor cast.
  */
 function instantiateCommand(
   CommandClass: Command.Class,
@@ -59,11 +74,7 @@ function instantiateCommand(
   config: Config,
 ): InvokableCommand {
   const ConcreteCommand = CommandClass as unknown as new (argv: string[], config: Config) => Command
-  const command = new ConcreteCommand(argv, config) as Command & Partial<InvokableCommand>
-  if (typeof command.runInExecutionContext !== 'function') {
-    throw new TypeError(`Command "${CommandClass.id}" does not support isolated execution`)
-  }
-  return command as InvokableCommand
+  return new ConcreteCommand(argv, config) as unknown as InvokableCommand
 }
 
 /**
@@ -202,7 +213,9 @@ async function invokeSanityCliInContext(
   resolvedConfig: Config,
   output: string[],
 ): Promise<InvokeSanityCliResult> {
-  const policySet = commandPolicies[source]
+  // Combines this package's own policies with those each plugin declares for
+  // the commands it contributes. Resolved once per config, not per call.
+  const policySet = await resolveCommandPolicies(resolvedConfig, source)
 
   // Pre-split argv arrays are taken verbatim; only string input goes through
   // shell-style tokenization and quote normalization.
@@ -250,6 +263,11 @@ async function invokeSanityCliInContext(
   if (!commandDefinition) return unknownCommandResult(argv, policySet)
 
   const CommandClass = await commandDefinition.load()
+
+  // A policy can only speak to whether an invocation is safe; it cannot make
+  // a command isolatable. One that isn't is treated as if it did not exist,
+  // like every other fail-closed path here.
+  if (!supportsIsolatedExecution(CommandClass)) return unknownCommandResult(argv, policySet)
 
   // Parse with the command's real definitions (without executing anything) so
   // conditional policies are evaluated against typed args/flags, not tokens.
