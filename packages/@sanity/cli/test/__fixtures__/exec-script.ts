@@ -16,6 +16,7 @@ try {
   // eslint-disable-next-line no-console
   console.log(
     JSON.stringify({
+      argv: process.argv,
       browser: {
         intersectionObserver: !!globalThis?.window?.IntersectionObserver,
       },

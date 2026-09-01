@@ -100,7 +100,12 @@ describe('#exec', {timeout: 15 * 1000}, () => {
     })
 
     test.skipIf(isWindowsNode24OrUp)('executes script successfully', async (t) => {
-      const {error, stderr, stdout} = await testCommand(ExecCommand, [scriptPath])
+      const {error, stderr, stdout} = await testCommand(ExecCommand, [
+        scriptPath,
+        '--',
+        '--dry-run',
+        'positional-argument',
+      ])
       // output stdout and stderr to help diagnose the failure
       t.onTestFailed(() => {
         // eslint-disable-next-line no-console
@@ -115,6 +120,7 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       const data = JSON.parse(stdout.trim())
       expect(data.success).toBe(true)
       expect(data.env.SANITY_BASE_PATH).toBe(exampleDir)
+      expect(data.argv).toEqual([process.argv[0], scriptPath, '--dry-run', 'positional-argument'])
     })
 
     test.skipIf(!TEST_TOKEN)('executes script with --with-user-token flag', async (t) => {
