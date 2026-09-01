@@ -14,20 +14,19 @@ import {FEDERATION_FILE_NAME, RUNTIME_DIR} from '../constants.js'
 const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 
 // The studio wraps `Studio` with the user's config; HMR re-renders through the
-// new module so a config edit takes effect.
+// new module so a config edit takes effect. The `%RESOURCE_BINDINGS_IMPORT%`
+// placeholder is filled in per-build (Blueprints only — see below).
 const STUDIO_ENTRY = renderRemote({
   app: `(props) => createElement(Studio, { config, ...props })`,
   hmr: true,
-  preamble: `${RESOURCE_BINDINGS_ENTRY_IMPORT}
-import { Studio } from 'sanity'
+  preamble: `%RESOURCE_BINDINGS_IMPORT%import { Studio } from 'sanity'
 import config from %STUDIO_CONFIG%`,
 })
 
 // An SDK app's default export is the component; it Fast-Refreshes through its
 // own dev server, so the wrapper needs no HMR boundary.
 const APP_ENTRY = renderRemote({
-  preamble: `${RESOURCE_BINDINGS_ENTRY_IMPORT}
-import App from %APP_ENTRY%`,
+  preamble: `%RESOURCE_BINDINGS_IMPORT%import App from %APP_ENTRY%`,
 })
 
 // A branded app that declares no `entry` (e.g. a dock-only panel/worker app)
@@ -39,17 +38,18 @@ const HEADLESS_APP_ENTRY = `\
 // Modifications to this file are automatically discarded
 // This application declares no app view (no \`entry\`): it isn't navigable as a
 // full-page app, only its panels/web workers are exposed.
-${RESOURCE_BINDINGS_ENTRY_IMPORT}
-export function render() {
+%RESOURCE_BINDINGS_IMPORT%export function render() {
   throw new Error('This application has no app view: it declares no \`entry\`.')
 }
 `
 
 export type FederationRuntimeOptions =
-  | {appEntry?: string; isApp: true}
-  | {isApp: false; studioConfigPath: string}
+  | {appEntry?: string; isApp: true; isBlueprints?: boolean}
+  | {isApp: false; isBlueprints?: boolean; studioConfigPath: string}
 
 export function sanityFederationRuntime(options: FederationRuntimeOptions): Plugin {
+  const {isBlueprints} = options
+
   let content: string
   if (options.isApp) {
     content = options.appEntry
@@ -58,6 +58,15 @@ export function sanityFederationRuntime(options: FederationRuntimeOptions): Plug
   } else {
     content = STUDIO_ENTRY.replace(/%STUDIO_CONFIG%/, JSON.stringify(options.studioConfigPath))
   }
+
+  // Blueprints only: the remote entry statically imports the resource-bindings
+  // module first, so bindings evaluate before app code. Off Blueprints the
+  // placeholder resolves to nothing and the module is neither imported nor
+  // written below.
+  content = content.replace(
+    /%RESOURCE_BINDINGS_IMPORT%/,
+    isBlueprints ? `${RESOURCE_BINDINGS_ENTRY_IMPORT}\n` : '',
+  )
 
   let entryFileAbsPath = ''
 
@@ -69,10 +78,13 @@ export function sanityFederationRuntime(options: FederationRuntimeOptions): Plug
       fs.mkdirSync(dir, {recursive: true})
       fs.writeFileSync(entryFileAbsPath, content)
 
-      // The remote entry statically imports this module first (see the preambles
-      // above), so resource bindings are evaluated before app code. Brett bakes
-      // the resolved values in at deploy.
-      fs.writeFileSync(path.join(dir, RESOURCE_BINDINGS_FILENAME), RESOURCE_BINDINGS_MODULE_SOURCE)
+      if (isBlueprints) {
+        // Brett bakes the resolved values into this module at deploy.
+        fs.writeFileSync(
+          path.join(dir, RESOURCE_BINDINGS_FILENAME),
+          RESOURCE_BINDINGS_MODULE_SOURCE,
+        )
+      }
     },
     hotUpdate({file, modules, timestamp}) {
       if (options.isApp) return

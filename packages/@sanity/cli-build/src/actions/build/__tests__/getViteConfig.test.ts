@@ -231,6 +231,52 @@ describe('#getViteConfig', () => {
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
   })
 
+  test('omits the resource-bindings chunk when not a Blueprints build', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      minify: true,
+      mode: 'production' as const,
+      outputDir: mockCustomOutput,
+      reactCompiler: undefined,
+      sourceMap: false,
+    })
+
+    // Without autoUpdates or isBlueprints there is no bespoke output config, so
+    // Rolldown never forces the bindings module into its own chunk.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const output = (config.build?.rolldownOptions as any)?.output
+    expect(output?.codeSplitting).toBeUndefined()
+    expect(output?.chunkFileNames).toBeUndefined()
+  })
+
+  test('forces the resource-bindings chunk on a Blueprints build', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isBlueprints: true,
+      minify: true,
+      mode: 'production' as const,
+      outputDir: mockCustomOutput,
+      reactCompiler: undefined,
+      sourceMap: false,
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const output = (config.build?.rolldownOptions as any)?.output
+    expect(output?.codeSplitting?.groups).toEqual([
+      {name: 'sanity-resource-bindings', test: /sanity-resource-bindings/},
+    ])
+    // The chunkFileNames fn keeps the bindings chunk unhashed at the root and
+    // defers to the hashed default for everything else.
+    expect(output?.chunkFileNames({name: 'sanity-resource-bindings'})).toBe(
+      'sanity-resource-bindings.js',
+    )
+    expect(output?.chunkFileNames({name: 'vendor'})).toBe('static/[name]-[hash].js')
+  })
+
   test('should create production config without minification', async () => {
     const options = {
       cwd: mockTestCwd,

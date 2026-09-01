@@ -47,6 +47,13 @@ export interface BuildOptions {
   workDir: string
 
   exposes?: WorkbenchExposes
+  /**
+   * The build is running under Sanity Blueprints (invoked programmatically by
+   * `@sanity/runtime-cli`), so emit the statically-imported resource-bindings
+   * module Brett rewrites at deploy. Defaults to `false`, so a normal
+   * `sanity build`/`dev`/`preview` never emits it.
+   */
+  isBlueprints?: boolean
 
   /** The workbench app's bus identity (`__SANITY_APP_ID__`). */
   workbenchAppId?: string
@@ -202,6 +209,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       entry: options.entry,
       exposes: options.exposes,
       isApp: true,
+      isBlueprints: options.isBlueprints,
       isWorkbenchApp: options.isWorkbenchApp,
       minify: options.minify,
       outputDir,

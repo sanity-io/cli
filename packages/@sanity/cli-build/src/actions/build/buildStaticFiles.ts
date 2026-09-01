@@ -35,6 +35,8 @@ interface StaticBuildOptions {
   entry?: string
   exposes?: WorkbenchExposes
   isApp?: boolean
+  /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
+  isBlueprints?: boolean
   /** Workbench app (opted in via `defineApplication`) — drives the federation build. */
   isWorkbenchApp?: boolean
   minify?: boolean
@@ -63,6 +65,7 @@ export async function buildStaticFiles(
     entry,
     exposes,
     isApp,
+    isBlueprints,
     isWorkbenchApp,
     minify = true,
     outputDir,
@@ -96,6 +99,7 @@ export async function buildStaticFiles(
         cwd,
         entry,
         isApp,
+        isBlueprints,
         isWorkbenchApp,
         reactStrictMode: false,
         watch: false,
@@ -113,6 +117,7 @@ export async function buildStaticFiles(
       exposes,
       getEnvironmentVariables,
       isApp,
+      isBlueprints,
       isWorkbenchApp,
       minify,
       mode,
@@ -162,6 +167,7 @@ export async function buildStaticFiles(
     cwd,
     entry,
     isApp,
+    isBlueprints,
     isWorkbenchApp,
     reactStrictMode: false,
     watch: false,
@@ -181,6 +187,7 @@ export async function buildStaticFiles(
     entries,
     getEnvironmentVariables,
     isApp,
+    isBlueprints,
     isWorkbenchApp,
     minify,
     mode,
