@@ -34,8 +34,9 @@ export function getCliConfigSync(rootPath: string): CliConfig {
   const configPath = configPaths[0]
 
   const jiti = createJiti(import.meta.url, {
-    // Vite uses import.meta.require, which must be evaluated by Node instead of Jiti's CJS transform.
-    nativeModules: ['vite'],
+    // Vite uses import.meta.require, which must be evaluated by Node instead of Jiti's CJS transform
+    // Sanity's dependency graph is large, so avoid transforming it as well
+    nativeModules: ['sanity', 'vite'],
     tsconfigPaths: true,
   })
   const loaded = jiti(configPath)
