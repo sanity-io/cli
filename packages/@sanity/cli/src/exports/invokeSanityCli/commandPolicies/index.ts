@@ -1,1 +1,1 @@
-export {commandPolicies, resolveCommandPolicies} from './resolve'
+export {commandPolicies, resolveCommandPolicies} from './resolve.js'

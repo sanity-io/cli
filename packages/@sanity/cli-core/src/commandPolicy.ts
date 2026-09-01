@@ -81,13 +81,19 @@ export function conditionalPolicy(options: {
 }
 
 /**
- * Identified by `kind` rather than by identity, because a plugin's policies
- * are built against its own copy of this module.
+ * Identified by shape rather than by identity, because a plugin's policies are
+ * built against its own copy of this module.
+ *
+ * `deniedFlags` is checked as well as `kind`, so callers that read it off the
+ * narrowed type cannot be handed an object that only claims to be conditional.
  */
 export function isConditionalInvocationPolicy(
   policy: CommandPolicy,
 ): policy is ConditionalInvocationPolicy {
-  return policy.kind === 'conditional'
+  return (
+    policy.kind === 'conditional' &&
+    Array.isArray((policy as Partial<ConditionalInvocationPolicy>).deniedFlags)
+  )
 }
 
 /** A complete policy table, keyed by oclif command id. */
@@ -149,10 +155,20 @@ export function isCommandPolicySet(value: unknown): value is CommandPolicySet {
 
   return Object.values(value).every((policy: unknown) => {
     if (typeof policy !== 'object' || policy === null) return false
-    const {kind, validate} = policy as Partial<CommandPolicy>
+
+    const {deniedFlags, kind, validate} = policy as Partial<CommandPolicy> & {
+      deniedFlags?: readonly unknown[]
+    }
+    if (typeof validate !== 'function') return false
+    if (kind === 'allow' || kind === 'deny') return true
+
+    // A conditional entry must carry the flag list, since the help renderer and
+    // the refusal message both read it. Accepting `kind` on its own would let a
+    // declaration crash those paths instead of being refused here.
     return (
-      (kind === 'allow' || kind === 'conditional' || kind === 'deny') &&
-      typeof validate === 'function'
+      kind === 'conditional' &&
+      Array.isArray(deniedFlags) &&
+      deniedFlags.every((name) => typeof name === 'string')
     )
   })
 }
