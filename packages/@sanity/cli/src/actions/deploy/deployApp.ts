@@ -23,7 +23,7 @@ import {
   summarizeConfig,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
-import {pack} from 'tar-fs'
+import {c as createTar} from 'tar'
 
 import {
   createDeployment,
@@ -470,7 +470,7 @@ async function shipAppDeployment({
   sourceDir: string
   version: string
 }): Promise<void> {
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
 
   const spin = spinner('Deploying...').start()
   try {
