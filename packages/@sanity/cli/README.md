@@ -33,6 +33,8 @@ Code for sanity cli
 - [`sanity blueprints stacks`](#sanity-blueprints-stacks)
 - [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
 - [`sanity codemod [CODEMODNAME]`](#sanity-codemod-codemodname)
+- [`sanity context create`](#sanity-context-create)
+- [`sanity context list`](#sanity-context-list)
 - [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
 - [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
 - [`sanity cors list`](#sanity-cors-list)
@@ -948,6 +950,66 @@ EXAMPLES
   Run codemod to transform react-icons imports (dry run)
 
     $ sanity codemod reactIconsV3 --dry
+```
+
+## `sanity context create`
+
+Create a knowledge base
+
+```
+USAGE
+  $ sanity context create [--organization <id>] [--description <value>] [--title <value>]
+
+FLAGS
+  --description=<value>  Knowledge base description
+  --title=<value>        Knowledge base title
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to create the knowledge base in (overrides CLI configuration)
+
+DESCRIPTION
+  Create a knowledge base
+
+EXAMPLES
+  Interactively create a knowledge base
+
+    $ sanity context create
+
+  Create a knowledge base in a specific organization
+
+    $ sanity context create --organization org-abc123 --title "Support docs" --description "Product docs and \
+      troubleshooting guides"
+```
+
+## `sanity context list`
+
+List knowledge bases in an organization
+
+```
+USAGE
+  $ sanity context list [--organization <id>] [--json]
+
+FLAGS
+  --json  Output knowledge bases in JSON format
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to list knowledge bases for (overrides CLI configuration)
+
+DESCRIPTION
+  List knowledge bases in an organization
+
+EXAMPLES
+  List knowledge bases, selecting the organization interactively
+
+    $ sanity context list
+
+  List knowledge bases in a specific organization
+
+    $ sanity context list --organization org-abc123
+
+  Output knowledge bases as JSON
+
+    $ sanity context list --organization org-abc123 --json
 ```
 
 ## `sanity cors add ORIGIN`
