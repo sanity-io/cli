@@ -25,6 +25,8 @@ interface RuntimeOptions {
   basePath?: string
   entry?: string
   isApp?: boolean
+  /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
+  isBlueprints?: boolean
   isWorkbenchApp?: boolean
 }
 
@@ -40,7 +42,17 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
   entries: {relativeConfigLocation: string | null; relativeEntry: string | null}
   watcher: FSWatcher | undefined
 }> {
-  const {appTitle, basePath, cwd, entry, isApp, isWorkbenchApp, reactStrictMode, watch} = options
+  const {
+    appTitle,
+    basePath,
+    cwd,
+    entry,
+    isApp,
+    isBlueprints,
+    isWorkbenchApp,
+    reactStrictMode,
+    watch,
+  } = options
   const runtimeDir = path.join(cwd, '.sanity', 'runtime')
 
   buildDebug('Making runtime directory')
@@ -92,6 +104,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
     basePath,
     entry: relativeEntry ?? undefined,
     isApp,
+    isBlueprints,
     reactStrictMode,
     relativeConfigLocation,
   })
@@ -99,12 +112,16 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
 
   // Resource bindings ride in their own statically-imported module (see
   // resource-bindings.ts) so a federated host and a standalone studio resolve
-  // them the same way. Brett bakes the resolved values in at deploy.
-  buildDebug('Writing resource bindings module to runtime directory')
-  await writeFile(
-    path.join(runtimeDir, RESOURCE_BINDINGS_FILENAME),
-    RESOURCE_BINDINGS_MODULE_SOURCE,
-  )
+  // them the same way. Brett bakes the resolved values in at deploy. Only a
+  // Blueprints build emits it (and imports it — see getEntryModule); a normal
+  // `sanity build`/`dev`/`preview` skips it entirely.
+  if (isBlueprints) {
+    buildDebug('Writing resource bindings module to runtime directory')
+    await writeFile(
+      path.join(runtimeDir, RESOURCE_BINDINGS_FILENAME),
+      RESOURCE_BINDINGS_MODULE_SOURCE,
+    )
+  }
 
   return {
     entries: {

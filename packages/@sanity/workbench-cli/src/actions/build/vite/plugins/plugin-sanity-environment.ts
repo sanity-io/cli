@@ -28,10 +28,17 @@ interface EnvironmentOptions {
    * Set for every federated app and studio; omitted only for a dock-only app.
    */
   clientInput?: string
+
+  /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
+  isBlueprints?: boolean
 }
 
 export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
-  const {clientInput, input} = options
+  const {clientInput, input, isBlueprints} = options
+
+  // Blueprints only: force the resource-bindings module into its own unhashed
+  // chunk so Brett can rewrite it at deploy. Off Blueprints, no such chunk.
+  const output = isBlueprints ? resourceBindingsOutput : undefined
 
   return {
     config() {
@@ -58,7 +65,7 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
                     outDir: `dist`,
                     rolldownOptions: {
                       input: {sanity: clientInput},
-                      output: resourceBindingsOutput,
+                      output,
                     },
                   },
                   consumer: 'client',
@@ -71,7 +78,7 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
               copyPublicDir: false,
               emptyOutDir: false,
               outDir: `dist`,
-              rolldownOptions: {input, output: resourceBindingsOutput},
+              rolldownOptions: {input, output},
             },
             consumer: 'client',
           },
