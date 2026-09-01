@@ -1,6 +1,6 @@
-import {allow, deny} from '@sanity/cli-core/commandPolicy'
+import {allow, definePluginInvocationPolicies, deny} from '@sanity/cli-core/commandPolicy'
 
-export const invocationPolicies = {
+export const invocationPolicies = definePluginInvocationPolicies({
   mcp: {
     'fixtures:echo': allow,
     // Hidden from CLI users, so it stays out of help listings here too, but
@@ -16,4 +16,4 @@ export const invocationPolicies = {
     login: allow,
     'other:command': allow,
   },
-}
+})
