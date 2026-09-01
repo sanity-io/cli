@@ -1,5 +1,29 @@
 # Change Log
 
+## 8.6.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.5.0...cli-v8.6.0)
+
+_2026-09-01_
+
+### Features
+
+- extract build manifest logic from deployment ([#1777](https://github.com/sanity-io/cli/pull/1777)) ([f7bff14](https://github.com/sanity-io/cli/commit/f7bff14097322a59e814996b7d8962d4678ab216))
+
+### Bug Fixes
+
+- **deploy:** forward singleton flag during app creation ([#1778](https://github.com/sanity-io/cli/pull/1778)) ([d16ca8b](https://github.com/sanity-io/cli/commit/d16ca8bceb0f67dd4896b0ad8174f40a8d21a3b4))
+- **cli-core:** disable ora stdin discarding so ctrl+c interrupts spinners ([#1784](https://github.com/sanity-io/cli/pull/1784)) ([56726e1](https://github.com/sanity-io/cli/commit/56726e1567077424b00043b88e7c50c51a510b57))
+- **deps:** update dependency eventsource to ^4.1.1 ([#1805](https://github.com/sanity-io/cli/pull/1805)) ([bdcf1c0](https://github.com/sanity-io/cli/commit/bdcf1c0c58fb093ae8bbb7f1194d586b57fb9bb5))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 6.1.0
+    - @sanity/workbench-cli bumped to 2.2.4
+    - @sanity/cli-core bumped to 3.5.1
+
 ## 8.5.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.4.2...cli-v8.5.0)

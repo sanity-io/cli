@@ -1,5 +1,27 @@
 # Changelog
 
+## 6.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.2...cli-build-v6.1.0)
+
+_2026-09-01_
+
+### Features
+
+- extract build manifest logic from deployment ([#1777](https://github.com/sanity-io/cli/pull/1777)) ([f7bff14](https://github.com/sanity-io/cli/commit/f7bff14097322a59e814996b7d8962d4678ab216))
+
+### Bug Fixes
+
+- **deps:** update dependency isomorphic-dompurify to v3 ([#1794](https://github.com/sanity-io/cli/pull/1794)) ([7dbd9c0](https://github.com/sanity-io/cli/commit/7dbd9c050278d0fe9e2a9b4954896495c4e4b5bf))
+- **deps:** update dependency cjs-module-lexer to ^2.2.1 ([#1803](https://github.com/sanity-io/cli/pull/1803)) ([0427131](https://github.com/sanity-io/cli/commit/0427131bfc665633f0137fe79c16d69a74fdd318))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.4
+    - @sanity/cli-core bumped to 3.5.1
+
 ## 6.0.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.1...cli-build-v6.0.2)

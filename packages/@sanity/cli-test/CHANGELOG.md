@@ -1,5 +1,21 @@
 # Changelog
 
+## 15.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v15.0.0...cli-test-v15.1.0)
+
+_2026-09-01_
+
+### Features
+
+- extract build manifest logic from deployment ([#1777](https://github.com/sanity-io/cli/pull/1777)) ([f7bff14](https://github.com/sanity-io/cli/commit/f7bff14097322a59e814996b7d8962d4678ab216))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.1
+
 ## 15.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v14.0.0...cli-test-v15.0.0)
