@@ -1,5 +1,3 @@
-import {pluralize} from './pluralize.js'
-
 const MS_IN = {
   day: 86_400_000,
   hour: 3_600_000,
@@ -84,7 +82,8 @@ export function formatDuration(ms: number): string {
   const selected = selectUnit(Math.abs(ms))
   if (!selected || selected.unit === 'second') return 'less than a minute'
 
-  return `${selected.value} ${pluralize(selected.unit, selected.value)}`
+  const unit = selected.value === 1 ? selected.unit : `${selected.unit}s`
+  return `${selected.value} ${unit}`
 }
 
 /**

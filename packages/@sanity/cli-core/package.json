@@ -49,6 +49,10 @@
       "source": "./src/_exports/debug.ts",
       "default": "./dist/_exports/debug.js"
     },
+    "./dates": {
+      "source": "./src/_exports/dates.ts",
+      "default": "./dist/_exports/dates.js"
+    },
     "./errors": {
       "source": "./src/_exports/errors.ts",
       "default": "./dist/_exports/errors.js"
