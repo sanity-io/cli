@@ -46,7 +46,6 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
 
   const workDir = dirname(configPath)
   debug('Work dir %s', workDir)
-  // @ts-expect-error - resolveConfig is type-only in sanity@6.11.0; fixed in the next sanity release
   const {resolveConfig} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
   if (typeof resolveConfig !== 'function') {
     throw new TypeError('Expected `resolveConfig` from `sanity` to be a function')
