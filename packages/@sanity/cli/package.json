@@ -139,7 +139,6 @@
     "tar-fs": "catalog:",
     "tar-stream": "^3.2.0",
     "tinyglobby": "catalog:",
-    "tsx": "catalog:",
     "typeid-js": "^1.2.0",
     "vite": "catalog:",
     "which": "^6.0.1",
@@ -177,6 +176,7 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

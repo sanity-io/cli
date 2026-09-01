@@ -22,15 +22,7 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
   const resolvedScriptPath = path.resolve(scriptPath)
 
   const browserEnvPath = new URL('registerBrowserEnv.worker.js', import.meta.url).href
-
-  // Use tsx loader for TypeScript support in the spawned child process
-  // We need to resolve the tsx loader path from the CLI's node_modules since the child
-  // process will run from the user's script directory where tsx may not be installed.
-  // Resolve the tsx loader using Node's module resolution relative to package.json
-  const tsxLoaderPath: string = import.meta.resolve('tsx', import.meta.url)
-  if (!tsxLoaderPath) {
-    throw new Error('@sanity/cli not able to resolve tsx loader')
-  }
+  const scriptRunnerPath = path.join(import.meta.dirname, 'runScript.worker.js')
 
   // When --with-user-token is specified, resolve the token in the parent process
   // and pass it via environment variable. This avoids a module-instance mismatch where
@@ -48,11 +40,12 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
     tokenEnv = {SANITY_AUTH_TOKEN: token}
   }
 
-  const baseArgs = mockBrowserEnv
-    ? ['--import', tsxLoaderPath, '--import', browserEnvPath]
-    : ['--import', tsxLoaderPath]
-
-  const nodeArgs = [...baseArgs, resolvedScriptPath, ...extraArguments]
+  const nodeArgs = [
+    ...(mockBrowserEnv ? ['--import', browserEnvPath] : []),
+    scriptRunnerPath,
+    resolvedScriptPath,
+    ...extraArguments,
+  ]
 
   const proc = spawn(process.argv[0], nodeArgs, {
     env: {
