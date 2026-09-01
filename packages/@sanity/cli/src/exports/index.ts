@@ -7,9 +7,27 @@ export {loadEnv} from '../util/loadEnv.js'
 export type {CliConfig, UserViteConfig} from '@sanity/cli-core'
 
 export {
+  type AssetSourceView,
   type DefineAppInput,
+  defineApplication,
+  defineAssetSourceView,
+  type DefineAssetSourceViewInput,
   type DefineMediaLibraryInput,
+  definePanelView,
+  type DefinePanelViewInput,
+  defineTileView,
+  type DefineTileViewInput,
+  defineWebWorker,
+  type DefineWebWorkerInput,
+  defineWindowView,
+  type DefineWindowViewInput,
   type MediaLibraryField,
-  unstable_defineApp,
+  type PanelView,
+  type TileView,
+  // `sanity/cli` imports this compatibility name from `@sanity/cli`.
+  defineApplication as unstable_defineApp,
   unstable_defineMediaLibrary,
+  type ViewDeclaration,
+  type WebWorker,
+  type WindowView,
 } from '@sanity/workbench-cli'

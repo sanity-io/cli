@@ -6,12 +6,18 @@ import {describe, expect, test} from 'vitest'
 import {parseWorkbenchCliConfig} from '../workbenchApp.js'
 
 const BRAND = Symbol.for('sanity.workbench.defineApp')
+const CONFIG_BRAND = Symbol.for('sanity.workbench.defineConfig')
 // A dir with no `sanity.config.*`, so detection resolves to a core app.
 const APP_DIR = tmpdir()
 
-/** Mimics what `unstable_defineApp` returns: the input plus the brand. */
+/** Mimics what `defineApplication` returns: the input plus the brand. */
 function brandedApp(input: Record<string, unknown>) {
   return Object.defineProperty({...input}, BRAND, {enumerable: false, value: true})
+}
+
+/** Mimics what `unstable_defineMediaLibrary` returns: the config plus its brand. */
+function brandedConfig(input: Record<string, unknown>) {
+  return Object.defineProperty({...input}, CONFIG_BRAND, {enumerable: false, value: true})
 }
 
 describe('parseWorkbenchCliConfig', () => {
@@ -41,11 +47,26 @@ describe('parseWorkbenchCliConfig', () => {
   })
 
   test('keeps an explicit applicationType (no detection)', () => {
-    const app = brandedApp({applicationType: 'media-library', name: 'media', title: 'Media'})
+    const app = brandedApp({applicationType: 'canvas', name: 'media', title: 'Media'})
 
     const config = parseWorkbenchCliConfig({app}, join(APP_DIR, 'nope'))
 
-    expect((config.app as {applicationType?: string}).applicationType).toBe('media-library')
+    expect((config.app as {applicationType?: string}).applicationType).toBe('canvas')
+  })
+
+  test('passes a config through without stamping applicationType', () => {
+    const app = brandedConfig({
+      appType: 'media-library',
+      fields: [],
+      organizationId: 'o1',
+    })
+
+    const config = parseWorkbenchCliConfig({app}, APP_DIR)
+
+    // A config is not an app — it keeps its brand and gains no applicationType.
+    expect(CONFIG_BRAND in (config.app as object)).toBe(true)
+    expect('applicationType' in (config.app as object)).toBe(false)
+    expect((config.app as {appType?: string}).appType).toBe('media-library')
   })
 
   test('rejects an unknown applicationType', () => {

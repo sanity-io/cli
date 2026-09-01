@@ -1,4 +1,6 @@
-import {type Config} from 'isomorphic-dompurify'
+import type DOMPurify from 'isomorphic-dompurify'
+
+type Config = NonNullable<Parameters<typeof DOMPurify.sanitize>[1]>
 
 /**
  * This file maintains our sanitization configuration for DOMPurify.

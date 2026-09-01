@@ -1,3 +1,4 @@
+import {getCliToken} from '@sanity/cli-core/config'
 import {subdebug} from '@sanity/cli-core/debug'
 import {createRequester} from '@sanity/cli-core/request'
 import {isStaging} from '@sanity/cli-core/util'
@@ -14,9 +15,9 @@ export const PROVISION_API_VERSION = 'v2026-06-23'
 
 /**
  * Request tag identifying the caller to the provisioning funnel, using the same `?tag=` convention
- * as every other Sanity API request. `sanity new` is deliberately usable without an account, so
- * most mints have no user to attribute — this is what tells reporting who made them, and is how
- * synthetic callers are kept out of mint-to-claim conversion.
+ * as every other Sanity API request. `sanity new` is deliberately usable without an account, so a
+ * mint often has no user to attribute — the tag names the tool instead, and is how synthetic
+ * callers are kept out of mint-to-claim conversion.
  */
 export const MINT_REQUEST_TAG = 'sanity.cli'
 
@@ -123,6 +124,9 @@ function parseProvisionResponse(body: unknown): MintedProject {
 
 /**
  * Mint an unclaimed Sanity project through the public provision endpoint.
+ *
+ * Works logged out. Credentials, when there are any, are sent only so the mint can be attributed
+ * and are dropped on rejection, so being logged in changes reporting and nothing else.
  */
 export async function mintUnclaimedProject(options: {displayName: string}): Promise<MintedProject> {
   const displayName = options.displayName.trim()
@@ -134,12 +138,24 @@ export async function mintUnclaimedProject(options: {displayName: string}): Prom
   url.searchParams.set('tag', getRequestTag())
   debug('minting unclaimed project at %s', url.toString())
 
-  const response = await request({
-    body: JSON.stringify({displayName, resourceType: 'project'}),
-    headers: {'Content-Type': 'application/json'},
-    method: 'POST',
-    url: url.toString(),
-  })
+  const mint = (token?: string) =>
+    request({
+      body: JSON.stringify({displayName, resourceType: 'project'}),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? {Authorization: `Bearer ${token}`} : {}),
+      },
+      method: 'POST',
+      url: url.toString(),
+    })
+
+  const token = await getCliToken()
+  let response = await mint(token)
+
+  if (token && (response.status === 401 || response.status === 403)) {
+    debug('stored credentials rejected (HTTP %d), minting anonymously', response.status)
+    response = await mint()
+  }
 
   if (response.status === 404) {
     throw new Error(

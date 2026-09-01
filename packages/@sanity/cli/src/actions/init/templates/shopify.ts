@@ -74,5 +74,6 @@ const shopifyTemplate: ProjectTemplate = {
     '@types/lodash.get': '^4.4.7',
     '@types/slug': '^5.0.3',
   },
+  typescriptOnly: true,
 }
 export default shopifyTemplate

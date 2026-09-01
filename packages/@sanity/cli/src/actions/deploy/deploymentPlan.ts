@@ -3,7 +3,11 @@ import {join, relative, sep} from 'node:path'
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
-import {type DeployedInterface, summarizeInterfaces} from '@sanity/workbench-cli/deploy'
+import {
+  type DeployedView,
+  type DeployedWebWorker,
+  summarizeInterfaces,
+} from '@sanity/workbench-cli/deploy'
 
 import {checkStatusIcon, nestLines, renderIssues} from '../../util/checks.js'
 import {pluralize} from '../../util/pluralize.js'
@@ -112,7 +116,7 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
 export function reportInterfaces(
   reporter: DeployCheckReporter,
   app: Parameters<typeof summarizeInterfaces>[0],
-): {services: DeployedInterface[]; views: DeployedInterface[]} {
+): {services: DeployedWebWorker[]; views: DeployedView[]} {
   const {lines, services, views} = summarizeInterfaces(app)
   for (const message of lines) reporter.report({message, status: 'pass'})
   return {services, views}

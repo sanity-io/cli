@@ -8,7 +8,7 @@ import {NotFoundError} from '../../errors/NotFoundError.js'
 import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
-import {isWorkbenchApp, parseWorkbenchCliConfig} from './workbenchApp.js'
+import {isWorkbenchApp, isWorkbenchConfig, parseWorkbenchCliConfig} from './workbenchApp.js'
 
 /**
  * Get the CLI config for a project synchronously, given the root path.
@@ -48,9 +48,10 @@ export function getCliConfigSync(rootPath: string): CliConfig {
     unregister()
   }
 
-  // Branch as early as possible: a branded `unstable_defineApp(...)` opts into
-  // workbench behavior, so its `app` skips the legacy `app` schema entirely.
-  if (isWorkbenchApp(cliConfig?.app)) {
+  // Branch as early as possible: a branded `defineApplication(...)` app or a
+  // branded `unstable_defineMediaLibrary(...)` config opts into workbench
+  // behavior, so its `app` skips the legacy `app` schema entirely.
+  if (isWorkbenchApp(cliConfig?.app) || isWorkbenchConfig(cliConfig?.app)) {
     return parseWorkbenchCliConfig(cliConfig, rootPath)
   }
 

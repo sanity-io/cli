@@ -1,5 +1,5 @@
 import {type DeployableWorkbenchApp} from './getWorkbench.js'
-import {type DeployedInterface} from './summarizeInterfaces.js'
+import {type DeployedView, type DeployedWebWorker} from './summarizeInterfaces.js'
 
 /** What a workbench app contributes to a deploy payload. */
 export interface WorkbenchDeployPayload {
@@ -8,9 +8,8 @@ export interface WorkbenchDeployPayload {
 
   /** Media-library config summary. */
   config?: string
-  isSingleton?: boolean
-  services?: DeployedInterface[]
-  views?: DeployedInterface[]
+  services?: DeployedWebWorker[]
+  views?: DeployedView[]
   visibility?: string
 }
 
@@ -26,7 +25,7 @@ export function toWorkbenchPayload(
     title,
   }: {
     config?: string
-    interfaces: {services: DeployedInterface[]; views: DeployedInterface[]} | null
+    interfaces: {services: DeployedWebWorker[]; views: DeployedView[]} | null
     title: string
   },
 ): Partial<WorkbenchDeployPayload> {
@@ -34,7 +33,6 @@ export function toWorkbenchPayload(
   const {services, views} = interfaces ?? {services: [], views: []}
   return {
     ...(config ? {config} : {}),
-    ...(workbench.isSingleton === undefined ? {} : {isSingleton: workbench.isSingleton}),
     ...(services.length > 0 || views.length > 0 ? {services, views} : {}),
     slug: workbench.slug,
     title,

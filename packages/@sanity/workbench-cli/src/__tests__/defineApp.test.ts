@@ -2,13 +2,19 @@ import {type ApplicationType, type AppVisibility} from '@sanity/cli-core'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {
+  defineAssetSourceView,
+  definePanelView,
+  defineTileView,
+  defineWebWorker,
+  defineWindowView,
+  type DockGroup,
+} from '../contract.js'
+import {
   type DefineAppInput,
   DefineAppInputSchema,
+  defineApplication,
   type DefineAppResult,
-  type DockGroup,
   isWorkbenchApp,
-  readConfig,
-  unstable_defineApp,
   type WorkbenchApp,
 } from '../defineApp.js'
 
@@ -27,25 +33,25 @@ const validInput = (overrides: Record<string, unknown> = {}): Record<string, unk
   ...overrides,
 })
 
-describe('unstable_defineApp', () => {
+describe('defineApplication', () => {
   test('is identity at runtime — returns the same object reference', () => {
     const input = {organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'}
-    expect(unstable_defineApp(input)).toBe(input)
+    expect(defineApplication(input)).toBe(input)
   })
 
   test('brands the result so the CLI can discriminate it', () => {
-    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
+    const app = defineApplication({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
     expect(Object.getOwnPropertyDescriptor(app, WORKBENCH_APP)?.value).toBe(true)
   })
 
   test('leaves the brand non-enumerable so it does not leak into config spreads', () => {
-    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
+    const app = defineApplication({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
     expect(Object.keys(app)).toEqual(['organizationId', 'slug', 'title'])
     expect(Object.getOwnPropertySymbols({...app})).not.toContain(WORKBENCH_APP)
   })
 
   test('preserves declared fields', () => {
-    const app = unstable_defineApp({
+    const app = defineApplication({
       icon: './icon.svg',
       organizationId: 'org-1',
       slug: 'athlete-desk',
@@ -57,7 +63,7 @@ describe('unstable_defineApp', () => {
   })
 
   test('is recognised by `isWorkbenchApp` (Symbol.for brand contract)', () => {
-    const app = unstable_defineApp({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
+    const app = defineApplication({organizationId: 'org-1', slug: 'drop-desk', title: 'Drop Desk'})
     expect(isWorkbenchApp(app)).toBe(true)
   })
 
@@ -74,6 +80,112 @@ describe('unstable_defineApp', () => {
   })
 })
 
+describe('view declaration helpers', () => {
+  test('add the view surface', () => {
+    expect(
+      defineAssetSourceView({name: 'library', src: './src/Library.tsx', title: 'Library'}),
+    ).toEqual({
+      name: 'library',
+      src: './src/Library.tsx',
+      surface: 'asset_source',
+      title: 'Library',
+    })
+    expect(defineWindowView({name: 'app', src: './src/App.tsx', title: 'App'})).toEqual({
+      name: 'app',
+      src: './src/App.tsx',
+      surface: 'app',
+      title: 'App',
+    })
+    expect(definePanelView({name: 'feed', src: './src/Feed.tsx', title: 'Feed'})).toEqual({
+      name: 'feed',
+      src: './src/Feed.tsx',
+      surface: 'panel',
+      title: 'Feed',
+    })
+    expect(
+      defineTileView({name: 'agent', size: 'small', src: './src/Agent.tsx', title: 'Agent'}),
+    ).toEqual({
+      name: 'agent',
+      size: 'small',
+      src: './src/Agent.tsx',
+      surface: 'tile',
+      title: 'Agent',
+    })
+  })
+
+  test('provide strict input types without accepting a surface', () => {
+    defineAssetSourceView({
+      name: 'library',
+      src: './src/Library.tsx',
+      // @ts-expect-error `surface` is added by the helper.
+      surface: 'asset_source',
+      title: 'Library',
+    })
+    defineWindowView({
+      name: 'app',
+      src: './src/App.tsx',
+      // @ts-expect-error `surface` is added by the helper.
+      surface: 'app',
+      title: 'App',
+    })
+    definePanelView({
+      name: 'feed',
+      // @ts-expect-error `size` is only supported by tile views.
+      size: 'small',
+      src: './src/Feed.tsx',
+      title: 'Feed',
+    })
+    // @ts-expect-error `size` is required for tile views.
+    defineTileView({
+      name: 'agent',
+      src: './src/Agent.tsx',
+      title: 'Agent',
+    })
+  })
+
+  test('preserve panel and window placement metadata', () => {
+    expect(
+      defineWindowView({
+        dock: {group: 'dock.applications', order: 10},
+        name: 'app',
+        src: './src/App.tsx',
+        title: 'App',
+      }),
+    ).toMatchObject({dock: {group: 'dock.applications', order: 10}, surface: 'app'})
+    expect(
+      definePanelView({
+        dock: {group: 'dock.user', order: 20},
+        name: 'feed',
+        src: './src/Feed.tsx',
+        title: 'Feed',
+      }),
+    ).toMatchObject({dock: {group: 'dock.user', order: 20}, surface: 'panel'})
+  })
+})
+
+describe('web worker declaration helper', () => {
+  test('adds the worker type', () => {
+    expect(defineWebWorker({name: 'unread', src: './src/unread.ts', title: 'Unread'})).toEqual({
+      name: 'unread',
+      src: './src/unread.ts',
+      title: 'Unread',
+      type: 'worker',
+    })
+  })
+
+  test('provides strict input types without accepting a type', () => {
+    defineWebWorker({
+      name: 'unread',
+      src: './src/unread.ts',
+      title: 'Unread',
+      // @ts-expect-error `type` is added by the helper.
+      type: 'worker',
+    })
+    // @ts-expect-error `title` is required for web workers.
+    defineWebWorker({name: 'unread', src: './src/unread.ts'})
+  })
+})
+
 describe('DefineAppInputSchema (build-time validation)', () => {
   test('accepts a slug that is a valid DNS label', () => {
     expect(DefineAppInputSchema.parse(validInput({slug: 'drop-desk-1'})).slug).toBe('drop-desk-1')
@@ -85,6 +197,23 @@ describe('DefineAppInputSchema (build-time validation)', () => {
       const result = DefineAppInputSchema.safeParse(validInput({slug}))
       expect(result.success).toBe(false)
       expect(result.error?.issues[0]?.message).toMatch(/must be lowercase/)
+    },
+  )
+
+  test('accepts an optional name distinct from the slug', () => {
+    expect(DefineAppInputSchema.parse(validInput({name: 'reviews'})).name).toBe('reviews')
+  })
+
+  test('leaves name undefined when omitted (resolved to slug downstream)', () => {
+    expect(DefineAppInputSchema.parse(validInput()).name).toBeUndefined()
+  })
+
+  test.each(['Reviews', 'sanity/media-library', 'has space', '-leading', 'trailing-'])(
+    'rejects the name %j — it shares the slug grammar',
+    (name) => {
+      const result = DefineAppInputSchema.safeParse(validInput({name}))
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0]?.message).toMatch(/name.*must be lowercase/)
     },
   )
 
@@ -119,11 +248,11 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     ).toBe(false)
   })
 
-  test('accepts group and priority, rejecting an unknown group', () => {
-    const parsed = DefineAppInputSchema.parse(validInput({group: 'dock.system', priority: 20}))
-    expect(parsed.group).toBe('dock.system')
-    expect(parsed.priority).toBe(20)
-    expect(DefineAppInputSchema.safeParse(validInput({group: 'dock.nope'})).success).toBe(false)
+  test('accepts dock defaults, rejecting an unknown group', () => {
+    const parsed = DefineAppInputSchema.parse(validInput({dock: {group: 'dock.system', order: 20}}))
+    expect(parsed.dock).toEqual({group: 'dock.system', order: 20})
+    expect(DefineAppInputSchema.safeParse(validInput({dock: {}})).success).toBe(true)
+    expect(DefineAppInputSchema.safeParse(validInput({dock: {group: 'nope'}})).success).toBe(false)
   })
 
   test('accepts a valid visibility, rejecting an out-of-set value', () => {
@@ -135,19 +264,48 @@ describe('DefineAppInputSchema (build-time validation)', () => {
 
   test('accepts a panel view declaration', () => {
     const parsed = DefineAppInputSchema.parse(
-      validInput({views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}]}),
+      validInput({
+        views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'}],
+      }),
     )
     expect(parsed.views?.[0]).toEqual({
       name: 'feed',
       src: './src/panel.tsx',
+      surface: 'panel',
       title: 'feed',
-      type: 'panel',
     })
+  })
+
+  test('accepts a window view declaration', () => {
+    const parsed = DefineAppInputSchema.parse(
+      validInput({
+        views: [defineWindowView({name: 'app', src: './src/App.tsx', title: 'App'})],
+      }),
+    )
+    expect(parsed.views?.[0]).toEqual({
+      name: 'app',
+      src: './src/App.tsx',
+      surface: 'app',
+      title: 'App',
+    })
+  })
+
+  test('accepts multiple window views alongside the entry shortcut', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        entry: './src/Legacy.tsx',
+        views: [
+          defineWindowView({name: 'main', src: './src/Main.tsx', title: 'Main'}),
+          defineWindowView({name: 'settings', src: './src/Settings.tsx', title: 'Settings'}),
+        ],
+      }),
+    )
+    expect(result.success).toBe(true)
   })
 
   test('requires a view title, which Brett stores on the interface', () => {
     const result = DefineAppInputSchema.safeParse(
-      validInput({views: [{name: 'feed', src: './src/panel.tsx', type: 'panel'}]}),
+      validInput({views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel'}]}),
     )
     expect(result.success).toBe(false)
     expect(result.error?.issues[0]?.message).toBe('View `title` is required')
@@ -156,21 +314,23 @@ describe('DefineAppInputSchema (build-time validation)', () => {
   test('accepts an asset_source view declaration', () => {
     const parsed = DefineAppInputSchema.parse(
       validInput({
-        views: [{name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'}],
+        views: [
+          {name: 'library', src: './src/picker.tsx', surface: 'asset_source', title: 'Library'},
+        ],
       }),
     )
     expect(parsed.views?.[0]).toEqual({
       name: 'library',
       src: './src/picker.tsx',
+      surface: 'asset_source',
       title: 'Library',
-      type: 'asset_source',
     })
   })
 
-  test('rejects an unknown view type', () => {
+  test('rejects an unknown view surface', () => {
     expect(
       DefineAppInputSchema.safeParse(
-        validInput({views: [{name: 'feed', src: './src/panel.tsx', type: 'sidebar'}]}),
+        validInput({views: [{name: 'feed', src: './src/panel.tsx', surface: 'sidebar'}]}),
       ).success,
     ).toBe(false)
   })
@@ -179,8 +339,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/a.tsx', title: 'feed', type: 'panel'},
-          {name: 'feed', src: './src/b.tsx', title: 'feed', type: 'panel'},
+          {name: 'feed', src: './src/a.tsx', surface: 'panel', title: 'feed'},
+          {name: 'feed', src: './src/b.tsx', surface: 'panel', title: 'feed'},
         ],
       }),
     )
@@ -188,17 +348,17 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(result.error?.issues[0]?.message).toMatch(/unique/)
   })
 
-  test('accepts a worker service declaration, rejecting duplicate service names', () => {
+  test('accepts a web worker declaration, rejecting duplicate names', () => {
     expect(
       DefineAppInputSchema.safeParse(
         validInput({
-          services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+          webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
         }),
       ).success,
     ).toBe(true)
     const dupes = DefineAppInputSchema.safeParse(
       validInput({
-        services: [
+        webWorkers: [
           {name: 'unread', src: './src/a.ts', title: 'unread', type: 'worker'},
           {name: 'unread', src: './src/b.ts', title: 'unread', type: 'worker'},
         ],
@@ -208,141 +368,105 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(dupes.error?.issues[0]?.message).toMatch(/unique/)
   })
 
-  test('accepts an config and isSingleton', () => {
-    const parsed = DefineAppInputSchema.parse(
-      validInput({
-        config: {
-          appType: 'media-library',
-          fields: [
-            {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-          ],
-        },
-        isSingleton: true,
-      }),
-    )
-    expect(parsed.isSingleton).toBe(true)
-    expect(parsed.config).toEqual({
-      appType: 'media-library',
-      fields: [
-        {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-      ],
-    })
-  })
-
-  test('rejects an config on a non-singleton app', () => {
+  test('rejects a name shared by a view and web worker', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
-        config: {
-          appType: 'media-library',
-          fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-        },
+        views: [{name: 'sync', src: './src/Sync.tsx', surface: 'panel', title: 'Sync'}],
+        webWorkers: [{name: 'sync', src: './src/sync.ts', title: 'Sync', type: 'worker'}],
       }),
     )
-    expect(result.success).toBe(false)
-    expect(result.error?.issues.some((issue) => /singleton/.test(issue.message))).toBe(true)
-  })
 
-  test('rejects an config without fields', () => {
-    expect(
-      DefineAppInputSchema.safeParse(validInput({config: {appType: 'media-library'}})).success,
-    ).toBe(false)
-  })
-
-  test('rejects duplicate field names within an config', () => {
-    const dupes = DefineAppInputSchema.safeParse(
-      validInput({
-        config: {
-          appType: 'media-library',
-          fields: [
-            {name: 'description', src: './src/a.ts', title: 'A'},
-            {name: 'description', src: './src/b.ts', title: 'B'},
-          ],
-        },
-      }),
+    expect(result.error?.issues[0]?.message).toBe(
+      '`name` must be unique across views and web workers. Rename one of the duplicates.',
     )
-    expect(dupes.success).toBe(false)
-    expect(dupes.error?.issues[0]?.message).toMatch(/unique/)
   })
 
-  test('rejects declaring both an entry and panel views', () => {
+  test('rejects a declared view with the entry-generated view name', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         entry: './src/App.tsx',
-        views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
+        views: [{name: 'drop-desk', src: './src/Settings.tsx', surface: 'app', title: 'Settings'}],
       }),
     )
+
     expect(result.success).toBe(false)
-    expect(result.error?.issues.some((issue) => /cannot expose both/.test(issue.message))).toBe(
-      true,
-    )
   })
 
-  test('rejects more than one panel view', () => {
+  test('accepts declaring both an entry and panel views', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        entry: './src/App.tsx',
+        views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'}],
+      }),
+    )
+    expect(result.success).toBe(true)
+  })
+
+  test('accepts multiple panel views', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/a.tsx', title: 'feed', type: 'panel'},
-          {name: 'inbox', src: './src/b.tsx', title: 'inbox', type: 'panel'},
+          {name: 'feed', src: './src/a.tsx', surface: 'panel', title: 'feed'},
+          {name: 'inbox', src: './src/b.tsx', surface: 'panel', title: 'inbox'},
         ],
       }),
     )
-    expect(result.success).toBe(false)
-    expect(result.error?.issues.some((issue) => /at most one panel view/.test(issue.message))).toBe(
-      true,
-    )
+    expect(result.success).toBe(true)
   })
 
   test('accepts an `entry` alongside an asset_source view', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         entry: './src/App.tsx',
-        views: [{name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'}],
-      }),
-    )
-    expect(result.success).toBe(true)
-  })
-
-  test('does not count an asset_source view toward the one-panel cap', () => {
-    const result = DefineAppInputSchema.safeParse(
-      validInput({
         views: [
-          {name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'},
-          {name: 'library', src: './src/picker.tsx', title: 'Library', type: 'asset_source'},
+          {name: 'library', src: './src/picker.tsx', surface: 'asset_source', title: 'Library'},
         ],
       }),
     )
     expect(result.success).toBe(true)
   })
 
-  test('accepts a tile view declaration with a footprint size and optional priority', () => {
+  test('accepts an asset_source view alongside a panel view', () => {
+    const result = DefineAppInputSchema.safeParse(
+      validInput({
+        views: [
+          {name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'},
+          {name: 'library', src: './src/picker.tsx', surface: 'asset_source', title: 'Library'},
+        ],
+      }),
+    )
+    expect(result.success).toBe(true)
+  })
+
+  test('accepts a tile view declaration with a footprint size and optional order', () => {
     const parsed = DefineAppInputSchema.parse(
       validInput({
         views: [
           {
             name: 'agent-widget',
-            priority: 100,
+            order: 100,
             size: 'large',
             src: './src/tile.tsx',
+            surface: 'tile',
             title: 'Agent',
-            type: 'tile',
           },
         ],
       }),
     )
     expect(parsed.views?.[0]).toEqual({
       name: 'agent-widget',
-      priority: 100,
+      order: 100,
       size: 'large',
       src: './src/tile.tsx',
+      surface: 'tile',
       title: 'Agent',
-      type: 'tile',
     })
   })
 
   test('requires a size on a tile view', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
-        views: [{name: 'agent-widget', src: './src/tile.tsx', title: 'Agent', type: 'tile'}],
+        views: [{name: 'agent-widget', src: './src/tile.tsx', surface: 'tile', title: 'Agent'}],
       }),
     )
     expect(result.success).toBe(false)
@@ -352,7 +476,13 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'agent-widget', size: 'huge', src: './src/tile.tsx', title: 'Agent', type: 'tile'},
+          {
+            name: 'agent-widget',
+            size: 'huge',
+            src: './src/tile.tsx',
+            surface: 'tile',
+            title: 'Agent',
+          },
         ],
       }),
     )
@@ -368,8 +498,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
             name: 'agent-widget',
             size: 'banner',
             src: './src/tile.tsx',
+            surface: 'tile',
             title: 'Agent',
-            type: 'tile',
           },
         ],
       }),
@@ -377,17 +507,17 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(result.success).toBe(true)
   })
 
-  test('does not count a tile view toward the one-panel cap', () => {
+  test('accepts a tile view alongside a panel view', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         views: [
-          {name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'},
+          {name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'},
           {
             name: 'agent-widget',
             size: 'small',
             src: './src/tile.tsx',
+            surface: 'tile',
             title: 'Agent',
-            type: 'tile',
           },
         ],
       }),
@@ -419,26 +549,25 @@ describe('DefineAppInputSchema (build-time validation)', () => {
 })
 
 describe('type surface', () => {
-  test('exposes title/icon/entry/organizationId/group/priority', () => {
+  test('exposes title/icon/entry/organizationId/dock', () => {
     expectTypeOf<DefineAppResult['slug']>().toEqualTypeOf<string>()
     expectTypeOf<DefineAppResult['title']>().toEqualTypeOf<string>()
     expectTypeOf<DefineAppResult['icon']>().toEqualTypeOf<string | undefined>()
     expectTypeOf<DefineAppResult['entry']>().toEqualTypeOf<string | undefined>()
     expectTypeOf<DefineAppResult['organizationId']>().toEqualTypeOf<string>()
-    expectTypeOf<DefineAppResult['group']>().toEqualTypeOf<DockGroup | undefined>()
-    expectTypeOf<DefineAppResult['priority']>().toEqualTypeOf<number | undefined>()
+    expectTypeOf<DefineAppResult['dock']>().toEqualTypeOf<
+      {group?: DockGroup; order?: number} | undefined
+    >()
   })
 
-  test('does not expose the internal applicationType, isSingleton, or config', () => {
+  test('does not expose the internal applicationType', () => {
     expectTypeOf<DefineAppResult>().not.toHaveProperty('applicationType')
-    expectTypeOf<DefineAppResult>().not.toHaveProperty('isSingleton')
-    expectTypeOf<DefineAppResult>().not.toHaveProperty('config')
   })
 })
 
-describe('interface union (entry vs views)', () => {
+describe('interface surface', () => {
   type Base = {organizationId: string; slug: string; title: string}
-  type PanelView = {name: string; src: string; title: string; type: 'panel'}
+  type PanelView = {name: string; src: string; surface: 'panel'; title: string}
 
   test('allows an app entry without panel views', () => {
     expectTypeOf<Base & {entry: string}>().toExtend<DefineAppInput>()
@@ -448,28 +577,7 @@ describe('interface union (entry vs views)', () => {
     expectTypeOf<Base & {views: PanelView[]}>().toExtend<DefineAppInput>()
   })
 
-  test('rejects declaring an app entry and panel views together', () => {
-    expectTypeOf<Base & {entry: string; views: PanelView[]}>().not.toExtend<DefineAppInput>()
-  })
-})
-
-describe('readConfig', () => {
-  const config = {
-    appType: 'media-library',
-    fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-  }
-
-  test('returns the config for a singleton', () => {
-    const app = {config: config, isSingleton: true} as unknown as WorkbenchApp
-    expect(readConfig(app)).toBe(config)
-  })
-
-  test('returns undefined when the app declares none', () => {
-    expect(readConfig({isSingleton: true} as unknown as WorkbenchApp)).toBeUndefined()
-  })
-
-  test('throws when a non-singleton declares a config', () => {
-    const app = {config: config} as unknown as WorkbenchApp
-    expect(() => readConfig(app)).toThrow(/only supported for singleton apps/)
+  test('allows declaring an app entry and panel views together', () => {
+    expectTypeOf<Base & {entry: string; views: PanelView[]}>().toExtend<DefineAppInput>()
   })
 })

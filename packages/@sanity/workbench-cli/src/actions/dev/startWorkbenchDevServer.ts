@@ -1,10 +1,12 @@
-import {type CliConfig, type Output, resolveLocalPackage, subdebug} from '@sanity/cli-core'
+import {fileURLToPath} from 'node:url'
+
+import {type CliConfig, type Output, subdebug} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from 'vite'
 import {z} from 'zod/mini'
 
-import {isWorkbenchApp} from '../../defineApp.js'
+import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {createExposesTracker} from './exposesSetId.js'
 import {
   acquireWorkbenchLock,
@@ -14,9 +16,14 @@ import {
   readWorkbenchLock,
   watchRegistry,
 } from './registry.js'
+import {toWireInterface} from './toWireInterface.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
 const devDebug = subdebug('dev')
+const renderDashboardEntry = '@sanity/workbench-cli/_internal_render'
+const renderDashboardPath = fileURLToPath(
+  new URL('../../_exports/_internal_render.js', import.meta.url),
+)
 
 const noop = async () => {}
 
@@ -30,7 +37,8 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
     .map(({host, id, interfaces, manifest, port, projectId, type}) => ({
       host,
       id,
-      interfaces,
+      // Views cross to the remote keyed on `type`, never the internal `surface`.
+      interfaces: interfaces?.map((iface) => toWireInterface(iface)),
       manifest,
       port,
       projectId,
@@ -132,12 +140,6 @@ export interface StartWorkbenchOptions {
   workDir: string
 }
 
-/**
- * Start the workbench dev server when federation is enabled and the workbench
- * package is available. If the desired port is already taken — by another
- * workbench instance or an unrelated process — fall back to running without a
- * workbench and let the app/studio dev server claim the configured port.
- */
 export async function startWorkbenchDevServer(
   options: StartWorkbenchOptions,
 ): Promise<WorkbenchDevServerResult> {
@@ -152,23 +154,12 @@ export async function startWorkbenchDevServer(
     workDir,
   } = options
 
-  // Workbench is opted into solely by calling `unstable_defineApp`.
-  if (!isWorkbenchApp(cliConfig?.app)) {
-    devDebug('Not a workbench app, skipping workbench dev server')
+  // Workbench is opted into by a `defineApplication` app or a config-only
+  // `unstable_defineMediaLibrary` config — the latter still needs the shell to
+  // render it.
+  if (!isWorkbenchApp(cliConfig?.app) && !isWorkbenchConfig(cliConfig?.app)) {
+    devDebug('Not a workbench app or config, skipping workbench dev server')
     return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
-  }
-
-  let workbenchAvailable = false
-
-  try {
-    await resolveLocalPackage('sanity/workbench', workDir)
-    workbenchAvailable = true
-  } catch {
-    devDebug('Workbench not available, skipping workbench dev server')
-  }
-
-  if (!workbenchAvailable) {
-    return {close: noop, httpHost, workbenchAvailable, workbenchPort}
   }
 
   // Acquire an exclusive lock — only one workbench per machine.
@@ -224,7 +215,7 @@ export async function startWorkbenchDevServer(
       await close()
     },
     httpHost,
-    workbenchAvailable,
+    workbenchAvailable: true,
     workbenchPort: actualPort,
   }
 }
@@ -280,12 +271,8 @@ async function createWorkbenchViteServer(
     logLevel: 'warn',
     mode: 'development',
     optimizeDeps: {
-      // Exclude sanity/workbench (and its transitive dep @sanity/workbench)
-      // from dep pre-bundling so that `import.meta.hot` is available at
-      // runtime — pre-bundled modules do not receive Vite's HMR client
-      // injection, which causes the custom HMR events for local application
-      // discovery to silently not fire.
-      exclude: ['sanity', '@sanity/workbench'],
+      // Keep this entry out of pre-bundling so Vite injects its HMR context.
+      exclude: [renderDashboardEntry],
     },
     // viteReact looks inert here — it transforms none of the host's own modules —
     // but it's load-bearing for the remotes. It serves the Fast Refresh runtime at
@@ -295,7 +282,11 @@ async function createWorkbenchViteServer(
     // runtime their /@react-refresh import (wired by @module-federation/vite's
     // remoteHmr) fails. Dropping it as dead code broke every panel; see #1262.
     plugins: [viteReact(), ...(remoteUrl ? [remoteManifestPreloadHeaderPlugin(remoteUrl)] : [])],
-    resolve: {dedupe: ['react', 'react-dom']},
+    resolve: {
+      // The generated Vite root cannot reliably resolve this package.
+      alias: {[renderDashboardEntry]: renderDashboardPath},
+      dedupe: ['react', 'react-dom'],
+    },
     root,
     server: {
       host: httpHost,
@@ -343,7 +334,7 @@ async function createWorkbenchViteServer(
   }
 }
 
-// Workbench is opted into via `unstable_defineApp`, which carries the
+// Workbench is opted into via `defineApplication`, which carries the
 // organization ID. Deliberately no fallback (e.g. resolving it from the
 // configured project): the lookup would need an authenticated user and an
 // API round-trip on every startup for something the opt-in already declares.
@@ -353,7 +344,7 @@ const resolveOrganizationId = (cliConfig: CliConfig): string => {
   }
 
   throw new Error(
-    'Workbench requires an organization ID. Pass "organizationId" to unstable_defineApp() in sanity.cli.ts.',
+    'Workbench requires an organization ID. Pass "organizationId" to defineApplication() in sanity.cli.ts.',
   )
 }
 

@@ -8,11 +8,17 @@ import {getCliExecutionContext} from '../../executionContext.js'
 import {getSanityConfigDir} from '../../util/getSanityConfigDir.js'
 import {readJsonFileSync} from '../../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
-import {clearCliTokenCache, getCachedToken, setCachedToken} from './cliTokenCache.js'
+import {
+  clearCliTokenCache,
+  type CliTokenInfo,
+  getCachedTokenInfo,
+  setCachedTokenInfo,
+} from './cliTokenCache.js'
 import {type ConfigStore} from './types/cliConfig.js'
 
 // Re-export so existing consumers don't break
 export {clearCliTokenCache} from './cliTokenCache.js'
+export {type CliTokenInfo} from './cliTokenCache.js'
 
 // Only used for testing
 export const _internals = {
@@ -20,34 +26,53 @@ export const _internals = {
 }
 
 /**
- * Get the CLI authentication token from the environment or the config file
+ * Get the CLI authentication token selected for the current invocation.
  *
  * @returns A promise that resolves to a CLI token, or undefined if no token is found
  * @internal
  */
 export async function getCliToken(): Promise<string | undefined> {
+  return (await getCliTokenInfo())?.token
+}
+
+/**
+ * Get the CLI authentication token and where it was resolved from.
+ *
+ * @returns A promise that resolves to the token and its source, or undefined if no token is found
+ * @internal
+ */
+export async function getCliTokenInfo(): Promise<CliTokenInfo | undefined> {
   // A per-invocation execution context token (e.g. per-request from an MCP
   // server) takes precedence and must bypass the process-wide cache entirely:
   // reading the cache would leak another invocation's token, and writing it
   // would leak this one's.
   const context = getCliExecutionContext()
-  if (context) return context.token
+  if (context) {
+    return context.token === undefined
+      ? undefined
+      : {source: 'CLI execution context', token: context.token}
+  }
 
-  const cached = getCachedToken()
-  if (cached !== undefined) {
-    return cached
+  const cachedTokenInfo = getCachedTokenInfo()
+  if (cachedTokenInfo !== undefined) {
+    return cachedTokenInfo
   }
 
   const token = process.env.SANITY_AUTH_TOKEN
   if (token) {
-    const trimmed = token.trim()
-    setCachedToken(trimmed)
-    return trimmed
+    const tokenInfo = {
+      source: 'SANITY_AUTH_TOKEN environment variable',
+      token: token.trim(),
+    }
+    setCachedTokenInfo(tokenInfo)
+    return tokenInfo
   }
 
   const configToken = _internals.getCliUserConfig('authToken')
-  setCachedToken(configToken)
-  return configToken
+  const tokenInfo =
+    configToken === undefined ? undefined : {source: getCliUserConfigPath(), token: configToken}
+  setCachedTokenInfo(tokenInfo)
+  return tokenInfo
 }
 const cliUserConfigSchema = {
   authToken: z.optional(z.string()),

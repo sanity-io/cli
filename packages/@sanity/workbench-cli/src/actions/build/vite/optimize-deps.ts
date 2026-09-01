@@ -38,7 +38,7 @@ function resolveSourceFile(absPath: string): string {
  *
  * Vite's dep scanner crawls from the app's HTML entry, which reaches only the
  * app's `entry` (or a studio's config) — never the federation `exposes` (dock
- * views, worker services, media-library config fields), which the host loads
+ * views, web workers, media-library config fields), which the host loads
  * dynamically at runtime. So a dep imported only by an exposed module (e.g.
  * `sanity/workbench` in a service or view) escapes the startup scan; Vite
  * discovers it on first request, re-optimizes, and full-page reloads — which
@@ -54,7 +54,7 @@ function resolveSourceFile(absPath: string): string {
  *
  * @param cwd - Project root; `entries` are returned relative to it.
  * @param appSources - Absolute paths to the app's `entry` and/or studio config.
- * @param exposes - The app's declared views/services/config.
+ * @param exposes - The app's declared views/web workers/config.
  * @internal
  */
 export function workbenchOptimizeDeps(options: {
@@ -66,7 +66,7 @@ export function workbenchOptimizeDeps(options: {
 
   const interfaceSources = [
     ...(exposes?.views ?? []).map((view) => view.src),
-    ...(exposes?.services ?? []).map((service) => service.src),
+    ...(exposes?.webWorkers ?? []).map((webWorker) => webWorker.src),
     ...(exposes?.config?.fields ?? []).map((field) => field.src),
   ].map((src) => path.resolve(cwd, src))
 

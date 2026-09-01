@@ -27,13 +27,13 @@ catalog:
   '@sanity/vision': ^6.7.0
   '@sanity/types': ^6.7.0
   '@sanity/schema': ^6.7.0
-  '@sanity/client': ^8.1.0
+  '@sanity/client': ^8.4.0
   '@sanity/codegen': ^8.0.0
   '@sanity/telemetry': ^1.1.0
 
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
-  oxc-transform-react: ^0.145.0
+  oxc-transform-react: ^0.147.0
   typescript: ^6.0.3
   vite: ^8.2.2
   vite-node: ^6.0.0

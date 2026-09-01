@@ -1,7 +1,7 @@
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {unstable_defineApp, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
+import {defineApplication, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -614,7 +614,7 @@ describe('#undeploy', () => {
     const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
       mocks: {
         cliConfig: {
-          app: unstable_defineApp({
+          app: defineApplication({
             entry: './src/App.tsx',
             organizationId: 'org-1',
             slug: 'my-app-x1',
@@ -650,7 +650,7 @@ describe('#undeploy', () => {
     const {stdout} = await testCommand(UndeployCommand, ['--json', '--yes'], {
       mocks: {
         cliConfig: {
-          app: unstable_defineApp({
+          app: defineApplication({
             entry: './src/App.tsx',
             organizationId: 'org-1',
             slug: 'my-app-x1',

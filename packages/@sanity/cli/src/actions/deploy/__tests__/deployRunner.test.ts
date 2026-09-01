@@ -148,7 +148,7 @@ describe('runDeploy real deploy', () => {
     await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
 
     const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
-    for (const key of ['views', 'services', 'config', 'isSingleton', 'installationId']) {
+    for (const key of ['views', 'services', 'config', 'installationId']) {
       expect(payload.payload).not.toHaveProperty(key)
     }
   })

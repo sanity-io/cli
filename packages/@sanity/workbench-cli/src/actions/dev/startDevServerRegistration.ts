@@ -1,17 +1,14 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
-import {isWorkbenchApp} from '../../defineApp.js'
+import {applicationReference} from '../../applicationReference.js'
+import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
+import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs} from './deriveConfigs.js'
 import {trackExposesSet} from './exposesSetId.js'
-import {
-  type DevServerManifest,
-  getRegisteredServers,
-  isConfigOnlyServer,
-  registerDevServer,
-} from './registry.js'
+import {type DevServerManifest, getRegisteredServers, registerDevServer} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
@@ -22,6 +19,7 @@ interface DevServerRegistrationOptions {
    * the interface set alongside it.
    */
   extractManifest: (params: {
+    applicationId?: string
     configPath: string
     workDir: string
   }) => Promise<DevServerManifest['manifest']>
@@ -46,40 +44,16 @@ interface DevServerRegistrationHandle {
 }
 
 /**
- * Log any config validation errors without aborting. Unlike build and deploy,
- * dev stays up on an invalid config so the author sees the errors and fixes them
- * live on the next save.
+ * Log any app validation errors without aborting. Unlike build and deploy, dev
+ * stays up on an invalid app so the author sees the errors and fixes them live on
+ * the next save. A config is not an app — it isn't validated by the app schema
+ * (which would spuriously demand a slug/title), so skip it here.
  */
 function reportConfigErrors(app: CliConfig['app'], output: Output): void {
+  if (isWorkbenchConfig(app)) return
   const errors = validateWorkbenchApp(app)
   if (errors.length === 0) return
   output.warn(formatWorkbenchAppErrors(errors))
-}
-
-/**
- * A live server — other than this process — already playing the given role for
- * the slug. Only a *same-role* duplicate is a conflict: a config-only server
- * (configs, no interfaces — e.g. a media-library config app) is never routed
- * as an app, so it may share a slug with the app server it configures. The
- * workbench renders the app and publishes both servers' configs, and can
- * always tell them apart.
- */
-function findSameRoleConflict(id: string, configOnly: boolean): DevServerManifest | undefined {
-  return getRegisteredServers().find(
-    (server) =>
-      server.pid !== process.pid && server.id === id && isConfigOnlyServer(server) === configOnly,
-  )
-}
-
-/**
- * Remedy line for a same-role slug conflict, phrased for the role. Changing the
- * slug is only real advice for an app — a config app's slug is fixed by the
- * app it configures (e.g. `unstable_defineMediaLibrary` hard-codes it).
- */
-function conflictRemedy(configOnly: boolean): string {
-  return configOnly
-    ? 'Stop that server first.'
-    : 'Stop that server, or give this app its own `slug` in sanity.cli.ts.'
 }
 
 /** The address the server actually bound — the live socket, which can differ from the configured port under non-strict ports. */
@@ -109,36 +83,50 @@ export async function startDevServerRegistration(
   // Forwarded alongside (not inside) the manifest so the workbench renders local
   // panels/workers and reads the configs without a deploy.
   const interfaces = deriveInterfaces(cliConfig.app, {isApp})
-  const configs = await deriveConfigs(cliConfig.app)
+  const configs = await deriveConfigs(cliConfig)
 
-  const id = isWorkbenchApp(cliConfig.app) ? cliConfig.app.slug : undefined
+  const workbenchApp = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
+  const config = resolveWorkbenchConfig(cliConfig)
+  // A config runs alongside the app it configures, so give it its own id
+  // namespace — sharing the app's slug would make the two indistinguishable here.
+  const id = config ? `config:${config.appType}` : workbenchApp?.slug
+  // Identity is resolved and the reference composed here, so the workbench reads
+  // both off the registry entry instead of recomposing them. Name defaults to the
+  // slug, mirroring brett.
+  const name = workbenchApp?.name ?? workbenchApp?.slug
+  const reference =
+    workbenchApp && name
+      ? // No workbench app is a singleton now that the only one (the Media Library)
+        // is a config, not an app — so its reference is always `<org>/<name>`.
+        applicationReference({
+          isSingleton: false,
+          name,
+          organizationId: workbenchApp.organizationId,
+        })
+      : undefined
 
-  const configOnly = isConfigOnlyServer({configs, interfaces})
-  const devServer = id ? findSameRoleConflict(id, configOnly) : undefined
+  // Separate namespaces mean a shared id is a genuine duplicate, so the gate is
+  // a plain id match — no config-vs-app role left to reconcile.
+  const devServer = id ? getRegisteredServers().find((server) => server.id === id) : undefined
 
   if (id && devServer) {
-    const subject = configOnly ? `A config for "${id}"` : `The app "${id}"`
     output.error(
-      `${subject} is already served by another dev server running on port ${devServer.port}, ` +
-        "so the workbench can't tell them apart and this one stays out of it. " +
-        conflictRemedy(configOnly),
+      `"${id}" is already served by another dev server running on port ${devServer.port}, ` +
+        "so the workbench can't tell them apart and this one stays out of it. Stop that server first.",
       {exit: false},
     )
     return {close: async () => {}}
   }
-
-  // The role the registry currently advertises for this server; a config edit
-  // can flip it (see the re-check in `update`). Committed only after a
-  // successful registry patch, so a failed pass re-checks on the next save.
-  let registeredConfigOnly = configOnly
 
   const registration = registerDevServer({
     configs,
     host: appHost,
     id,
     interfaces,
+    name,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
+    reference,
     type: isApp ? 'coreApp' : 'studio',
     workDir,
   })
@@ -149,12 +137,12 @@ export async function startDevServerRegistration(
     // Re-derive every pass (don't omit): the registry patch is a shallow merge,
     // so omitting would wipe the registered set.
     extract: async (params) => {
-      const app = (await getCliConfigUncached(params.workDir)).app
-      reportConfigErrors(app, output)
+      const nextConfig = await getCliConfigUncached(params.workDir)
+      reportConfigErrors(nextConfig.app, output)
       return {
-        configs: await deriveConfigs(app),
-        interfaces: deriveInterfaces(app, {isApp}),
-        manifest: await extractManifest(params),
+        configs: await deriveConfigs(nextConfig),
+        interfaces: deriveInterfaces(nextConfig.app, {isApp}),
+        manifest: await extractManifest({...params, applicationId: id}),
       }
     },
     // A studio's root resolves to `sanity.config.*` but its interfaces live in
@@ -162,29 +150,6 @@ export async function startDevServerRegistration(
     extraWatchFilenames: isApp ? undefined : ['sanity.cli.js', 'sanity.cli.ts'],
     output,
     update: async (patch) => {
-      // A save can flip the server's role — e.g. a config-only app gaining an
-      // `entry` becomes app-role — so re-run the same-role collision check the
-      // registration gate applied, or the flip would quietly reintroduce the
-      // ambiguity (two app-role servers on one slug). The patch is skipped, not
-      // fatal: the registry keeps the previous shape and the next save retries.
-      const nextConfigOnly = isConfigOnlyServer({
-        configs: patch.configs,
-        interfaces: patch.interfaces,
-      })
-      if (id && nextConfigOnly !== registeredConfigOnly) {
-        const conflict = findSameRoleConflict(id, nextConfigOnly)
-        if (conflict) {
-          const subject = nextConfigOnly ? `a config for "${id}"` : `the app "${id}"`
-          output.error(
-            `This change makes this dev server serve ${subject} like the dev server running on ` +
-              `port ${conflict.port} already does, so the workbench couldn't tell them apart — ` +
-              `keeping the previous registration. ${conflictRemedy(nextConfigOnly)}`,
-            {exit: false},
-          )
-          return
-        }
-      }
-
       if (
         !exposesSet.changed({
           configs: patch.configs,
@@ -192,7 +157,6 @@ export async function startDevServerRegistration(
         })
       ) {
         registration.update(patch)
-        registeredConfigOnly = nextConfigOnly
         return
       }
       // Rebuild the remote *before* patching the registry — the patch reloads the
@@ -205,7 +169,6 @@ export async function startDevServerRegistration(
       })
       // The recreated server can bind a different port (non-strict ports).
       registration.update(rebuiltServer ? {...patch, ...serverAddress(rebuiltServer)} : patch)
-      registeredConfigOnly = nextConfigOnly
     },
     workDir,
   })

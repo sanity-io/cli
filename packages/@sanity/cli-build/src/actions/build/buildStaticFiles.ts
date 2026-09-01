@@ -35,7 +35,7 @@ interface StaticBuildOptions {
   entry?: string
   exposes?: WorkbenchExposes
   isApp?: boolean
-  /** Workbench app (opted in via `unstable_defineApp`) — drives the federation build. */
+  /** Workbench app (opted in via `defineApplication`) — drives the federation build. */
   isWorkbenchApp?: boolean
   minify?: boolean
   profile?: boolean

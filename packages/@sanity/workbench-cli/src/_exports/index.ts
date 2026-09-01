@@ -1,12 +1,40 @@
-export type {InterfaceType, ServiceType, TileSize} from '../contract.js'
-export {isWorkbenchApp, unstable_defineApp, unstable_defineMediaLibrary} from '../defineApp.js'
+export type {
+  AssetSourceView,
+  DefineAssetSourceViewInput,
+  DefinePanelViewInput,
+  DefineTileViewInput,
+  DefineWebWorkerInput,
+  DefineWindowViewInput,
+  DockGroup,
+  PanelView,
+  ServiceType,
+  TileSize,
+  TileView,
+  ViewDeclaration,
+  ViewSurface,
+  WebWorker,
+  WindowView,
+} from '../contract.js'
+export {
+  defineAssetSourceView,
+  definePanelView,
+  defineTileView,
+  defineWebWorker,
+  defineWindowView,
+} from '../contract.js'
+export {
+  defineApplication,
+  isWorkbenchApp,
+  isWorkbenchConfig,
+  unstable_defineMediaLibrary,
+} from '../defineApp.js'
 export type {
   DefineAppInput,
   DefineAppResult,
   DefineMediaLibraryInput,
-  DockGroup,
   MediaLibraryField,
   WorkbenchApp,
+  WorkbenchConfig,
 } from '../defineApp.js'
 export {unstable_defineService} from '../defineService.js'
 export type {
@@ -26,5 +54,6 @@ export type {
   TileComponent,
   TileViewComponents,
   TileViewProps,
-  ViewComponentsByType,
+  ViewComponentsBySurface,
+  WindowViewProps,
 } from '../defineView.js'

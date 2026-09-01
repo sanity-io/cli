@@ -1,6 +1,5 @@
 import {subdebug} from '@sanity/cli-core'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
-import groupBy from 'lodash-es/groupBy.js'
 
 import {getMediaLibraries} from '../services/mediaLibraries.js'
 
@@ -17,7 +16,7 @@ export async function selectMediaLibrary(projectId: string): Promise<string> {
   try {
     const activeLibraries = await getMediaLibraries(projectId)
 
-    const byOrg = groupBy(activeLibraries, 'organizationId')
+    const byOrg = Object.groupBy(activeLibraries, (library) => library.organizationId)
 
     spin.succeed()
 
@@ -26,7 +25,7 @@ export async function selectMediaLibrary(projectId: string): Promise<string> {
     for (const [orgId, libs] of Object.entries(byOrg)) {
       choices.push(
         new Separator(`Organization: ${orgId}`),
-        ...libs.map((lib) => ({name: lib.id, value: lib.id})),
+        ...(libs ?? []).map((lib) => ({name: lib.id, value: lib.id})),
       )
     }
 

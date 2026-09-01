@@ -1,5 +1,81 @@
 # Changelog
 
+## 6.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.1...cli-build-v6.0.2)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- preserve the app id when loading Studio config ([#1768](https://github.com/sanity-io/cli/pull/1768)) ([e31dfd5](https://github.com/sanity-io/cli/commit/e31dfd5f5d3adb4c3008d30f0d34ada37f74604e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.0
+    - @sanity/workbench-cli bumped to 2.2.3
+
+## 6.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.0...cli-build-v6.0.1)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- **workbench:** run `sanity dev` for media library configs and render local views ([#1769](https://github.com/sanity-io/cli/pull/1769)) ([9189bd5](https://github.com/sanity-io/cli/commit/9189bd5092dc8591b9c92df4f1822ea68a0eaa47))
+
+  - Route an `unstable_defineMediaLibrary` config through the workbench dev server so the shell starts and renders it
+  - Skip core app manifest extraction silently for config-only projects, dropping the misleading "Manifest creation skipped" warning
+  - Convert local dev view interfaces from `surface` to the remote's `type` wire shape, matching deployed apps
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.2
+
+## 6.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.3.1...cli-build-v6.0.0)
+
+_2026-08-26_
+
+### ⚠ BREAKING CHANGES
+
+- Move manifest logic into cli-build package to support blueprints deployment ([#1744](https://github.com/sanity-io/cli/pull/1744)) ([0f174c6](https://github.com/sanity-io/cli/commit/0f174c61e7cf84eda9c2de0b01a0e15224a2d5e2))
+
+### Features
+
+- **workbench:** enable type-safe window, panel, and tile declarations ([#1755](https://github.com/sanity-io/cli/pull/1755)) ([36b61b3](https://github.com/sanity-io/cli/commit/36b61b39d1d09010fa68098d2064d3dab51cdbd3))
+- **workbench:** stabilize unstable_defineApp ([#1756](https://github.com/sanity-io/cli/pull/1756)) ([69a180e](https://github.com/sanity-io/cli/commit/69a180ec221e5762e56b7afef59ea952e4d3fee3))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.0
+    - @sanity/cli-core bumped to 3.4.0
+
+## 5.3.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.3.0...cli-build-v5.3.1)
+
+_2026-08-24_
+
+### Bug Fixes
+
+- **cli:** remove react-dom dependency by loading from the local Studio project ([#1716](https://github.com/sanity-io/cli/pull/1716)) ([63dda1a](https://github.com/sanity-io/cli/commit/63dda1a687981d4870a5b9e12fa8f12b2bf9c48f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.3.0
+    - @sanity/workbench-cli bumped to 2.1.0
+
 ## 5.3.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.2.1...cli-build-v5.3.0)

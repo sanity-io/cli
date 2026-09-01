@@ -21,6 +21,7 @@ export interface StartWorkbenchPreviewOptions {
   cliConfig: CliConfig
   /** Extract the project manifest to inline into the registry (studio-vs-app handled by the CLI). */
   extractManifest: (params: {
+    applicationId?: string
     configPath: string
     workDir: string
   }) => Promise<DevServerManifest['manifest']>
@@ -99,14 +100,14 @@ export async function startWorkbenchPreview(
 
     if (!workbench) throw new Error('`sanity start` was invoked in a non-workbench application')
     const inlinedId = await readInlinedAppId(outDir)
-    const configs = await deriveConfigs(cliConfig.app)
+    const configs = await deriveConfigs(cliConfig)
     const id = inlinedId ?? (await buildAppId(workbench))
     const registration = registerDevServer({
       configs,
       host: remote.host,
       id,
       interfaces: deriveInterfaces(cliConfig.app, {isApp}),
-      manifest: await extractManifest({configPath, workDir}),
+      manifest: await extractManifest({applicationId: id, configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),
       port: remote.port,
       projectId: cliConfig?.api?.projectId,

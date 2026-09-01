@@ -1,15 +1,15 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
+import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import {unstable_defineApp} from '@sanity/workbench-cli'
+import {defineApplication} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../../src/actions/build/buildApp.js'
 import {checkDir} from '../../../src/actions/deploy/checkDir.js'
-import {extractCoreAppManifest} from '../../../src/actions/manifest/extractCoreAppManifest.js'
 import {DeployCommand} from '../../../src/commands/deploy.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../../src/services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../../src/util/dirIsEmptyOrNonExistent.js'
@@ -19,6 +19,11 @@ const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
 const mockCreateCoreApp = vi.hoisted(() => vi.fn())
 const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
 const mockListApplications = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@sanity/cli-build/_internal/manifest'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  extractCoreAppManifest: vi.fn(),
+}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -43,14 +48,6 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   deployWorkbenchApp: mockDeployWorkbenchApp,
   listApplications: mockListApplications,
 }))
-
-vi.mock(
-  import('../../../src/actions/manifest/extractCoreAppManifest.js'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    extractCoreAppManifest: vi.fn(),
-  }),
-)
 
 vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -339,11 +336,11 @@ describe('#deploy app', () => {
     expect(error?.message).toContain('Deploy blocked')
   })
 
-  test('should reject an unstable_defineApp app that declares no interfaces', async () => {
+  test('should reject a defineApplication app that declares no interfaces', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       organizationId,
       slug: 'workbench-app',
       title: 'Workbench App',
@@ -360,7 +357,7 @@ describe('#deploy app', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('declares no entry, views, services or config')
+    expect(error?.message).toContain('declares no entry, views or web workers')
     expect(error?.oclif?.exit).toBe(2)
     // fails before any directory check or API call
     expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
@@ -381,8 +378,10 @@ describe('#deploy app', () => {
       },
     })
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
+      // @ts-expect-error Internal singleton flag.
+      isSingleton: true,
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -397,7 +396,7 @@ describe('#deploy app', () => {
     // The app is created before the build so the bundle carries its real id,
     // then that id ships the deployment.
     expect(mockCreateCoreApp).toHaveBeenCalledWith(
-      expect.objectContaining({slug: 'drop-desk-host'}),
+      expect.objectContaining({isSingleton: true, slug: 'drop-desk-host'}),
     )
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({applicationId: 'app_new'}),
@@ -427,7 +426,7 @@ describe('#deploy app', () => {
     })
     mockBuildApp.mockRejectedValueOnce(new Error('build blew up'))
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -448,7 +447,7 @@ describe('#deploy app', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -470,7 +469,7 @@ describe('#deploy app', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -510,7 +509,7 @@ describe('#deploy app', () => {
       type: 'coreApp',
     })
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       organizationId,
       slug: 'drop-desk-host',
@@ -544,7 +543,7 @@ describe('#deploy app', () => {
       },
     })
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       icon: './icon.svg',
       organizationId,
@@ -568,7 +567,7 @@ describe('#deploy app', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    const app = unstable_defineApp({
+    const app = defineApplication({
       entry: './src/App.tsx',
       icon: './missing-icon.svg',
       organizationId,

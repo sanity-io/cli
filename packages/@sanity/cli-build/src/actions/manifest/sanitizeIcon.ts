@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify'
+import {sanitize} from 'isomorphic-dompurify'
 
 import {config} from './purifyConfig.js'
 
@@ -10,5 +10,5 @@ import {config} from './purifyConfig.js'
  * a file on disk — passes through the exact same trusted subset of SVG/HTML.
  */
 export function sanitizeIcon(html: string): string {
-  return DOMPurify.sanitize(html.trim(), config)
+  return sanitize(html.trim(), config)
 }

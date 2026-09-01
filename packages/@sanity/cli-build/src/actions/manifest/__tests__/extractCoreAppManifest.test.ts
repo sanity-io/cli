@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises'
 
 import {getCliConfigUncached} from '@sanity/cli-core'
-import {unstable_defineApp} from '@sanity/workbench-cli'
+import {defineApplication, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {extractCoreAppManifest, resolveTitleUpdate} from '../extractCoreAppManifest.js'
@@ -19,11 +19,18 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(),
 }))
 
+const mockSpinner = vi.hoisted(() => ({
+  fail: vi.fn(),
+  info: vi.fn(),
+  start: vi.fn().mockReturnThis(),
+  succeed: vi.fn(),
+}))
+
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
   return {
     ...actual,
-    spinner: vi.fn(() => ({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()})),
+    spinner: vi.fn(() => mockSpinner),
   }
 })
 
@@ -41,6 +48,17 @@ describe('extractCoreAppManifest', () => {
     expect(result).toBeUndefined()
   })
 
+  test('skips the manifest silently for a media library config (no warning)', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: unstable_defineMediaLibrary({organizationId: 'org-1'}),
+    } as never)
+
+    const result = await extractCoreAppManifest({workDir: '/project'})
+
+    expect(result).toBeUndefined()
+    expect(mockSpinner.info).not.toHaveBeenCalled()
+  })
+
   test('returns manifest with title only when app has no icon', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: {organizationId: 'org-1', title: 'My App'},
@@ -52,12 +70,11 @@ describe('extractCoreAppManifest', () => {
     expect(mockReadFile).not.toHaveBeenCalled()
   })
 
-  test('merges group and priority into the manifest', async () => {
+  test('merges group and order into the manifest', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: unstable_defineApp({
-        group: 'dock.system',
+      app: defineApplication({
+        dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
-        priority: 20,
         slug: 'my-slug',
         title: 'My App',
       }),
@@ -66,19 +83,18 @@ describe('extractCoreAppManifest', () => {
     const result = await extractCoreAppManifest({workDir: '/project'})
 
     expect(result).toEqual({
-      group: 'dock.system',
-      priority: 20,
+      dock: {group: 'dock.system', order: 20},
       slug: 'my-slug',
       title: 'My App',
       version: '1',
     })
   })
 
-  test('keeps priority 0 (not dropped as a falsy value)', async () => {
+  test('keeps order 0', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: unstable_defineApp({
+      app: defineApplication({
+        dock: {order: 0},
         organizationId: 'org-1',
-        priority: 0,
         slug: 'my-slug',
         title: 'My App',
       }),
@@ -86,12 +102,12 @@ describe('extractCoreAppManifest', () => {
 
     const result = await extractCoreAppManifest({workDir: '/project'})
 
-    expect(result?.priority).toBe(0)
+    expect(result?.dock?.order).toBe(0)
   })
 
   test('forwards slug from a workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: unstable_defineApp({
+      app: defineApplication({
         organizationId: 'org-1',
         slug: 'my-slug',
         title: 'My App',
@@ -106,9 +122,8 @@ describe('extractCoreAppManifest', () => {
   test('drops slug and dock placement for a non-workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: {
-        group: 'dock.system',
+        dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
-        priority: 20,
         slug: 'my-slug',
         title: 'My App',
       },

@@ -3,6 +3,7 @@
   "include": ["./src"],
   "compilerOptions": {
     "rootDir": ".",
+    "lib": ["ES2023", "DOM"],
     "jsx": "react-jsx",
     "paths": {
       "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/_exports/index.ts"],

@@ -25,19 +25,16 @@ export interface ViewComponentBaseProps<TView> {
   view: TView
 }
 
-/**
- * Component slots each interface type exposes, in render order. Source of truth
- * for {@link InterfaceType} and the build; add a type by registering it here.
- * @internal
- */
+/** Component slots per view surface; windows load outside the component artifact path. @internal */
 export const VIEW_COMPONENTS = {
+  app: [],
   asset_source: ['asset_source'],
   panel: ['title', 'panel'],
   tile: ['tile'],
 } as const satisfies Record<string, readonly string[]>
 
 /** @public */
-export type InterfaceType = keyof typeof VIEW_COMPONENTS
+export type ViewSurface = keyof typeof VIEW_COMPONENTS
 
 /**
  * A tile's footprint family — the shape it occupies on the dashboard. Modelled
@@ -54,28 +51,34 @@ export type TileSize = z.infer<typeof TileSizeSchema>
 /** @public */
 export type ServiceType = 'worker'
 
-/**
- * The `app` interface's dock-placement metadata. Interface metadata is
- * discriminated on `type`; `app` is the only type with a shape so far.
- * @internal
- */
-export const AppInterfaceMetadataSchema = z.object({
-  group: z.optional(z.string()),
-  priority: z.optional(z.number()),
+const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user'])
+
+/** @public */
+export type DockGroup = z.output<typeof DockGroupSchema>
+
+/** @internal */
+export const DockSchema = z.object({
+  group: z.optional(DockGroupSchema),
+  order: z.optional(z.number()),
 })
 
 /** @internal */
-export type AppInterfaceMetadata = z.infer<typeof AppInterfaceMetadataSchema>
+export type Dock = z.infer<typeof DockSchema>
+
+/** @internal */
+export const ViewPlacementMetadataSchema = z.object({dock: DockSchema})
+
+/** @internal */
+export type ViewPlacementMetadata = z.infer<typeof ViewPlacementMetadataSchema>
 
 /**
- * A tile's interface metadata: its footprint `size` and an optional `priority`
+ * A tile's interface metadata: its footprint `size` and an optional `order`
  * the dashboard sorts on, ascending. Both are authored as top-level view fields
  * (see {@link InterfaceDeclarationSchema}) but stored on the record as metadata.
- * Mirrors `app`'s dock metadata; tile is the first view type to carry any.
  * @internal
  */
 export const TileInterfaceMetadataSchema = z.object({
-  priority: z.optional(z.number()),
+  order: z.optional(z.number()),
   size: TileSizeSchema,
 })
 
@@ -99,8 +102,8 @@ const INTERFACE_CONTRACT_VERSIONS = {
 export type InterfaceKind = keyof typeof INTERFACE_CONTRACT_VERSIONS
 
 /** @internal */
-export function interfaceContractVersion(type: InterfaceKind): string | undefined {
-  const version = INTERFACE_CONTRACT_VERSIONS[type]
+export function interfaceContractVersion(kind: InterfaceKind): string | undefined {
+  const version = INTERFACE_CONTRACT_VERSIONS[kind]
   return version === undefined ? undefined : String(version)
 }
 
@@ -109,8 +112,8 @@ export function interfaceContractVersion(type: InterfaceKind): string | undefine
  * id a deploy would, so the workbench loads a local interface like a deployed one.
  * @internal
  */
-export function interfaceModuleId(type: string, name: string): string {
-  switch (type) {
+export function interfaceModuleId(kind: string, name: string): string {
+  switch (kind) {
     case 'app': {
       return 'App'
     }
@@ -123,13 +126,13 @@ export function interfaceModuleId(type: string, name: string): string {
       return `services/${name}`
     }
     default: {
-      throw new Error(`Cannot derive a moduleId for unknown interface type: ${type}`)
+      throw new Error(`Cannot derive a moduleId for unknown interface kind: ${kind}`)
     }
   }
 }
 
 // Shared `name` + `src`; `kind` only tailors the validation message.
-function extensionDeclarationFields(kind: 'Field' | 'Service' | 'View') {
+function extensionDeclarationFields(kind: 'Field' | 'View' | 'Web worker') {
   const pattern = /^[a-zA-Z0-9_-]+$/
   return {
     name: z.string().check(z.regex(pattern, `${kind} \`name\` must match ${pattern}`)),
@@ -137,9 +140,9 @@ function extensionDeclarationFields(kind: 'Field' | 'Service' | 'View') {
   }
 }
 
-// Every interface (view, service) shares `name` + `src` + a display `title`,
+// Every interface shares `name` + `src` + a display `title`,
 // which Brett requires on the record each becomes.
-function interfaceDeclarationFields(kind: 'Service' | 'View') {
+function interfaceDeclarationFields(kind: 'View' | 'Web worker') {
   return {
     ...extensionDeclarationFields(kind),
     title: z.string(`${kind} \`title\` is required`),
@@ -147,38 +150,104 @@ function interfaceDeclarationFields(kind: 'Service' | 'View') {
 }
 
 const PanelViewSchema = z.object({
-  type: z.literal('panel'),
+  surface: z.literal('panel'),
   ...interfaceDeclarationFields('View'),
+  dock: z.optional(DockSchema),
 })
+
+/** @public */
+export type PanelView = z.output<typeof PanelViewSchema>
+
+/** @public */
+export type DefinePanelViewInput = Omit<PanelView, 'surface'>
+
+/** @public */
+export function definePanelView(view: DefinePanelViewInput): PanelView {
+  return {...view, surface: 'panel'}
+}
+
+const WindowViewSchema = z.object({
+  surface: z.literal('app'),
+  ...interfaceDeclarationFields('View'),
+  dock: z.optional(DockSchema),
+})
+
+/** @public */
+export type WindowView = z.output<typeof WindowViewSchema>
+
+/** @public */
+export type DefineWindowViewInput = Omit<WindowView, 'surface'>
+
+/** @public */
+export function defineWindowView(view: DefineWindowViewInput): WindowView {
+  return {...view, surface: 'app'}
+}
 
 const AssetSourceViewSchema = z.object({
-  type: z.literal('asset_source'),
+  surface: z.literal('asset_source'),
   ...interfaceDeclarationFields('View'),
 })
 
+/** @public */
+export type AssetSourceView = z.output<typeof AssetSourceViewSchema>
+
+/** @public */
+export type DefineAssetSourceViewInput = Omit<AssetSourceView, 'surface'>
+
+/** @public */
+export function defineAssetSourceView(view: DefineAssetSourceViewInput): AssetSourceView {
+  return {...view, surface: 'asset_source'}
+}
+
 const TileViewSchema = z.object({
-  type: z.literal('tile'),
+  surface: z.literal('tile'),
   ...interfaceDeclarationFields('View'),
   /** Sort position within its layout track, ascending. Optional. */
-  priority: z.optional(z.number()),
+  order: z.optional(z.number()),
   /** Footprint family the dashboard lays the tile out by. */
   size: TileSizeSchema,
 })
 
+/** @public */
+export type TileView = z.output<typeof TileViewSchema>
+
+/** @public */
+export type DefineTileViewInput = Omit<TileView, 'surface'>
+
+/** @public */
+export function defineTileView(view: DefineTileViewInput): TileView {
+  return {...view, surface: 'tile'}
+}
+
 /** @internal */
-export const InterfaceDeclarationSchema = z.discriminatedUnion('type', [
+export const InterfaceDeclarationSchema = z.discriminatedUnion('surface', [
+  WindowViewSchema,
   PanelViewSchema,
   AssetSourceViewSchema,
   TileViewSchema,
 ])
 
-const WorkerServiceSchema = z.object({
+/** @public */
+export type ViewDeclaration = z.output<typeof InterfaceDeclarationSchema>
+
+const WebWorkerSchema = z.object({
   type: z.literal('worker'),
-  ...interfaceDeclarationFields('Service'),
+  ...interfaceDeclarationFields('Web worker'),
 })
 
+/** @public */
+export type WebWorker = z.output<typeof WebWorkerSchema>
+
+/** @public */
+export type DefineWebWorkerInput = Omit<WebWorker, 'type'>
+
+/** @public */
+export function defineWebWorker(webWorker: DefineWebWorkerInput): WebWorker {
+  return {...webWorker, type: 'worker'}
+}
+
 /** @internal */
-export const ServiceDeclarationSchema = z.discriminatedUnion('type', [WorkerServiceSchema])
+export const ServiceDeclarationSchema = z.discriminatedUnion('type', [WebWorkerSchema])
 
 const MediaLibraryFieldSchema = z.object({
   ...extensionDeclarationFields('Field'),
@@ -206,7 +275,15 @@ const MediaLibraryConfigSchema = z.object({
 })
 
 /**
- * An app's optional config, keyed by `appType`; deploys as a versioned snapshot, not an interface.
+ * A workbench config's built value, keyed by `appType`; deploys as a versioned
+ * snapshot, not an interface.
  * @internal
  */
 export const ConfigSchema = z.discriminatedUnion('appType', [MediaLibraryConfigSchema])
+
+/**
+ * The `{appType, fields}` config value the build expands into a federation
+ * remote and the deploy summarizes.
+ * @internal
+ */
+export type WorkbenchConfigValue = z.output<typeof ConfigSchema>

@@ -81,7 +81,7 @@ interface ViteOptions {
   isApp?: boolean
 
   /**
-   * Whether this is a workbench app (opted in via `unstable_defineApp`). Drives
+   * Whether this is a workbench app (opted in via `defineApplication`). Drives
    * the module-federation build.
    */
   isWorkbenchApp?: boolean

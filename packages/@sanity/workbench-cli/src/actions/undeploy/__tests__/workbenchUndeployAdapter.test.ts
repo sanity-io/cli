@@ -2,10 +2,14 @@ import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
+  defineApplication,
   type MediaLibraryField,
-  unstable_defineApp,
   unstable_defineMediaLibrary,
 } from '../../../defineApp.js'
+import {
+  type ResolvedMediaLibraryConfig,
+  resolveWorkbenchConfig,
+} from '../../../resolveWorkbenchConfig.js'
 import {type DeployableWorkbenchApp, getWorkbench} from '../../deploy/getWorkbench.js'
 import {createWorkbenchUndeployAdapter} from '../workbenchUndeployAdapter.js'
 
@@ -19,25 +23,27 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 
 function workbenchApp(): DeployableWorkbenchApp {
   const app = getWorkbench({
-    app: unstable_defineApp({
+    app: defineApplication({
       organizationId: 'org-1',
       slug: 'my-app',
       title: 'My App',
-      views: [{name: 'insights', src: './src/Insights.tsx', title: 'Insights', type: 'panel'}],
+      views: [{name: 'insights', src: './src/Insights.tsx', surface: 'panel', title: 'Insights'}],
     }),
   } as CliConfig)
   if (!app) throw new Error('expected a workbench app')
   return app
 }
 
-function mediaLibraryApp(
+// A media library is a config, not an app — it resolves through
+// `resolveWorkbenchConfig` and undeploys via the adapter's `config` path.
+function mediaLibraryConfig(
   fields: MediaLibraryField[] = [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
-): DeployableWorkbenchApp {
-  const app = getWorkbench({
+): ResolvedMediaLibraryConfig {
+  const config = resolveWorkbenchConfig({
     app: unstable_defineMediaLibrary({fields, organizationId: 'org-1'}),
   } as CliConfig)
-  if (!app) throw new Error('expected a workbench app')
-  return app
+  if (!config) throw new Error('expected a workbench config')
+  return config
 }
 
 beforeEach(() => mockGetGlobalCliClient.mockResolvedValue({request: mockRequest}))
@@ -54,9 +60,9 @@ const appAdapter = () =>
 const configAdapter = () =>
   createWorkbenchUndeployAdapter({
     appId: undefined,
+    config: mediaLibraryConfig(),
     organizationId: 'org-1',
     type: 'coreApp',
-    workbench: mediaLibraryApp(),
   })
 
 function stubInstallations(configs: unknown[]) {
@@ -113,7 +119,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
       title: 'My App',
       type: 'coreApp',
       url: 'https://org-1.sanity.run/application/wb-app-1',
-      views: [{name: 'insights', title: 'Insights', type: 'panel'}],
+      views: [{name: 'insights', surface: 'panel', title: 'Insights'}],
     })
   })
 
@@ -246,9 +252,9 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
 
     const resolution = await createWorkbenchUndeployAdapter({
       appId: undefined,
+      config: mediaLibraryConfig([]),
       organizationId: 'org-1',
       type: 'coreApp',
-      workbench: mediaLibraryApp([]),
     }).resolveTarget()
 
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
@@ -277,9 +283,9 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
     await expect(
       createWorkbenchUndeployAdapter({
         appId: undefined,
+        config: mediaLibraryConfig(),
         organizationId: undefined,
         type: 'coreApp',
-        workbench: mediaLibraryApp(),
       }).resolveTarget(),
     ).rejects.toThrow(/organization identifier/)
   })

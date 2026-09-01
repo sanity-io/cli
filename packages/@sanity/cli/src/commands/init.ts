@@ -126,7 +126,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       hidden: true,
     }),
     organization: Flags.string({
-      description: 'Organization ID to use for the project',
+      description:
+        'Organization ID to use for the project (required for unattended project creation)',
       helpValue: '<id>',
     }),
     'output-path': Flags.string({

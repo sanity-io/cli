@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
+import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
@@ -21,7 +22,6 @@ import {createDeployment, type UserApplication} from '../../services/userApplica
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {buildStudio} from '../build/buildStudio.js'
-import {readIconFromPath} from '../manifest/extractCoreAppManifest.js'
 import {createStudioUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
@@ -151,6 +151,7 @@ async function runStudioDeployment(
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
     const created = await createStudio({
+      name: workbench.name,
       organizationId,
       projectId,
       slug: workbench.slug,
@@ -206,7 +207,10 @@ async function runStudioDeployment(
     // resolved version means the deploy target was never resolved.
     if (!version) return
 
-    const studioManifest = await uploadStudioSchema(options, {isExternal})
+    const studioManifest = await uploadStudioSchema(options, {
+      applicationId: workbench ? applicationId : undefined,
+      isExternal,
+    })
     // The studio was created (or resolved from `deployment.appId`) before the
     // build, so this only ships the deployment; plain studios use user-applications.
     if (workbench && !isExternal && organizationId && applicationId) {
@@ -326,7 +330,7 @@ async function resolveStudioApplication(
 /** Extracts the studio schema and manifest and uploads them to the schema store. */
 async function uploadStudioSchema(
   options: DeployAppOptions,
-  {isExternal}: {isExternal: boolean},
+  {applicationId, isExternal}: {applicationId?: string; isExternal: boolean},
 ): Promise<StudioManifest | null> {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
 
@@ -334,6 +338,7 @@ async function uploadStudioSchema(
   try {
     studioManifest = await deployStudioSchemasAndManifests(
       {
+        applicationId,
         configPath: projectRoot.path,
         isExternal,
         outPath: `${sourceDir}/static`,

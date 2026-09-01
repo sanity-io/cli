@@ -1,5 +1,5 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {unstable_defineApp} from '@sanity/workbench-cli'
+import {defineApplication} from '@sanity/workbench-cli'
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import {afterEach, beforeEach, type Mock, vi} from 'vitest'
 
@@ -8,11 +8,11 @@ import {type DevActionOptions} from '../types.js'
 /** Shared test helpers for dev-action test suites. */
 
 /**
- * A CliConfig whose `app` is a branded `unstable_defineApp(...)` result — the
+ * A CliConfig whose `app` is a branded `defineApplication(...)` result — the
  * workbench opt-in. Replaces the old `federation: {enabled: true}` test signal.
  */
 export function workbenchApp(overrides: Record<string, unknown> = {}): CliConfig['app'] {
-  return unstable_defineApp({
+  return defineApplication({
     organizationId: 'org-123',
     slug: 'test-app',
     title: 'Test App',

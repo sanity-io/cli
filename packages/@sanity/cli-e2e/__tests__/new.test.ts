@@ -6,8 +6,11 @@ import {getE2EOrganizationId, runCli} from '../helpers/runCli.js'
 const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 const smokeTestTag = 'sanity.cli.smoketest'
 const projectsApiBase = 'https://api.sanity.io/v2025-09-22/projects'
+const claimRequestTimeout = 30_000
 const requestAttempts = 3
 const requestTimeout = 5000
+
+type ClaimState = 'claimable' | 'claimed' | 'expired'
 
 interface ClaimableProject {
   claimApiUrl: string
@@ -80,6 +83,17 @@ function taggedUrl(url: string): string {
 
 function projectUrl(projectId: string): string {
   return taggedUrl(`${projectsApiBase}/${encodeURIComponent(projectId)}`)
+}
+
+function claimLookupUrl(project: ClaimableProject): string {
+  const url = new URL(project.claimApiUrl)
+  const provisionPath = url.pathname.replace(/\/claim\/?$/u, '')
+  if (provisionPath === url.pathname) {
+    throw new Error('sanity new returned an invalid claimApiUrl')
+  }
+
+  url.pathname = `${provisionPath}/${encodeURIComponent(project.claimToken)}/lookup`
+  return taggedUrl(url.toString())
 }
 
 function authHeaders(token: string): Record<string, string> {
@@ -164,30 +178,65 @@ async function claimProject(
 ): Promise<ApiOutcome> {
   let response: Response
   try {
-    response = await fetchWithRetry('Project claim', taggedUrl(project.claimApiUrl), {
+    response = await fetch(taggedUrl(project.claimApiUrl), {
       body: JSON.stringify({claimToken: project.claimToken, organizationId}),
       headers: {...authHeaders(token), 'Content-Type': 'application/json'},
       method: 'POST',
+      signal: AbortSignal.timeout(claimRequestTimeout),
     })
-  } catch (claimError) {
-    try {
-      const lookup = await getClaimedProject(project.projectId, token)
-      if (await belongsToOrganization(lookup, organizationId)) return {ok: true, status: 200}
-    } catch {
-      // Preserve the claim failure when the reconciliation lookup is also unavailable.
-    }
-    throw claimError
+  } catch {
+    throw new Error('Project claim did not receive a response before its deadline')
   }
 
   if (response.ok) return {ok: true, status: response.status}
 
+  // Do not infer success from the project moving organizations. Populus moves the project and
+  // consumes the claim before its plan reconciliation finishes, so only this request's 2xx
+  // response proves the full claim workflow completed.
   const diagnostic = await responseDiagnostic(response, [project.claimToken, token])
-
-  const lookup = await getClaimedProject(project.projectId, token)
-  if (await belongsToOrganization(lookup, organizationId))
-    return {ok: true, status: response.status}
-
   return {diagnostic, ok: false, status: response.status}
+}
+
+async function getClaimState(project: ClaimableProject): Promise<ClaimState> {
+  const response = await fetchWithRetry('Claim status lookup', claimLookupUrl(project))
+  if (!response.ok) {
+    throw new Error(
+      failureMessage(
+        'Claim status lookup',
+        response.status,
+        await responseDiagnostic(response, [project.claimToken]),
+      ),
+    )
+  }
+
+  let value: unknown
+  try {
+    value = (await response.json()) as unknown
+  } catch {
+    throw new Error('Claim status lookup did not return valid JSON')
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Claim status lookup did not return a JSON object')
+  }
+
+  const state = (value as Record<string, unknown>).state
+  if (state === 'claimable' || state === 'claimed' || state === 'expired') return state
+
+  throw new Error('Claim status lookup returned an invalid state')
+}
+
+async function waitForClaimed(project: ClaimableProject): Promise<void> {
+  for (let attempt = 1; attempt <= requestAttempts; attempt += 1) {
+    const state = await getClaimState(project)
+    if (state === 'claimed') return
+    if (state === 'expired') throw new Error('Project claim expired before it could be verified')
+    if (attempt === requestAttempts) {
+      throw new Error('Project claim did not reach the claimed state before its deadline')
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500 * attempt))
+  }
 }
 
 async function getProject(projectId: string, token: string): Promise<Response> {
@@ -203,22 +252,6 @@ async function getClaimedProject(projectId: string, token: string): Promise<Resp
   }
 
   throw new Error('Claimed project lookup exhausted its retry attempts')
-}
-
-async function belongsToOrganization(response: Response, organizationId: string): Promise<boolean> {
-  if (!response.ok) return false
-
-  try {
-    const value = (await response.json()) as unknown
-    return (
-      Boolean(value) &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      (value as Record<string, unknown>).organizationId === organizationId
-    )
-  } catch {
-    return false
-  }
 }
 
 async function deleteProject(projectId: string, token: string): Promise<void> {
@@ -272,30 +305,35 @@ describe.skipIf(!isRegistryMode)('sanity new lifecycle', {timeout: 90_000}, () =
     if (result.error) throw result.error
     const mintResponse = parseMintResponse(result.stdout)
     const project = parseClaimableProject(mintResponse)
-    let claimed = false
+    let claimAttempted = false
+    let claimCompleted = false
 
     onTestFinished(async () => {
-      if (!claimed) {
-        const lookup = await getProject(project.projectId, e2eToken)
-        claimed = await belongsToOrganization(lookup, organizationId)
-
-        if (!claimed) {
-          const claimResponse = await claimProject(project, organizationId, e2eToken)
-          if (!claimResponse.ok) {
-            throw new Error(
-              failureMessage(
-                'Project cleanup claim',
-                claimResponse.status,
-                claimResponse.diagnostic,
-              ),
-            )
-          }
-
-          const claimedProject = await getClaimedProject(project.projectId, e2eToken)
-          if (!(await belongsToOrganization(claimedProject, organizationId))) {
-            throw new Error('Project cleanup could not verify the e2e organization claim')
-          }
+      if (!claimCompleted) {
+        if (claimAttempted) {
+          const state = await getClaimState(project)
+          // A claimed token does not mean plan reconciliation finished. Preserve the project
+          // rather than risk deleting it while the timed-out request is still running.
+          throw new Error(
+            `Project cleanup skipped deletion after an incomplete claim request (claim state: ${state})`,
+          )
         }
+
+        claimAttempted = true
+        const claimResponse = await claimProject(project, organizationId, e2eToken)
+        if (!claimResponse.ok) {
+          throw new Error(
+            failureMessage('Project cleanup claim', claimResponse.status, claimResponse.diagnostic),
+          )
+        }
+
+        claimCompleted = true
+        try {
+          await waitForClaimed(project)
+        } finally {
+          await deleteProject(project.projectId, e2eToken)
+        }
+        return
       }
 
       await deleteProject(project.projectId, e2eToken)
@@ -303,12 +341,15 @@ describe.skipIf(!isRegistryMode)('sanity new lifecycle', {timeout: 90_000}, () =
 
     validateMintResponse(mintResponse)
 
+    claimAttempted = true
     const claimResponse = await claimProject(project, organizationId, e2eToken)
     if (!claimResponse.ok) {
       throw new Error(
         failureMessage('Project claim', claimResponse.status, claimResponse.diagnostic),
       )
     }
+    claimCompleted = true
+    await waitForClaimed(project)
 
     const projectResponse = await getClaimedProject(project.projectId, e2eToken)
     if (!projectResponse.ok) {
@@ -330,7 +371,6 @@ describe.skipIf(!isRegistryMode)('sanity new lifecycle', {timeout: 90_000}, () =
     if (record.organizationId !== organizationId) {
       throw new Error('Claimed project was not attached to the e2e organization')
     }
-    claimed = true
     if (record.displayName !== displayName) {
       throw new Error('Claimed project did not retain its deterministic display name')
     }

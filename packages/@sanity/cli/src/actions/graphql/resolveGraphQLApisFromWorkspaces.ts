@@ -1,5 +1,4 @@
 import {type Schema} from '@sanity/types'
-import isPlainObject from 'lodash-es/isPlainObject.js'
 import {oneline} from 'oneline'
 
 import {
@@ -284,7 +283,12 @@ function strip(input: unknown): unknown {
 }
 
 function isPlainishObject(input: unknown): input is Record<string, unknown> {
-  return isPlainObject(input)
+  if (typeof input !== 'object' || input === null) {
+    return false
+  }
+
+  const prototype = Object.getPrototypeOf(input)
+  return prototype === null || prototype === Object.prototype
 }
 
 function isBasicType(input: unknown): boolean {

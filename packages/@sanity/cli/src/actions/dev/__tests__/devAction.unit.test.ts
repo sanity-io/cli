@@ -1,3 +1,5 @@
+import {type CliConfig} from '@sanity/cli-core'
+import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {devAction} from '../devAction.js'
@@ -120,6 +122,22 @@ describe('devAction', () => {
       expect(mockStartAppDevServer).toHaveBeenCalledWith(
         expect.objectContaining({announceUrl: false, httpPort: 3334}),
       )
+    })
+  })
+
+  describe('workbench config-only projects (media library)', () => {
+    // A media library is a branded config, not an app. It's config-only and
+    // needs the workbench to render it, so `sanity dev` must delegate to
+    // startWorkbenchDev — not fall through to a plain studio/app server.
+    test('delegates a media-library config to startWorkbenchDev', async () => {
+      const cliConfig = {
+        app: unstable_defineMediaLibrary({organizationId: 'org-123'}),
+      } as unknown as CliConfig
+
+      await devAction(createBaseDevOptions({cliConfig}))
+
+      expect(mockStartWorkbenchDev).toHaveBeenCalled()
+      expect(mockStartStudioDevServer).not.toHaveBeenCalled()
     })
   })
 

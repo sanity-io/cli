@@ -29,7 +29,7 @@ const HEADLESS_APP_ENTRY = `\
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file are automatically discarded
 // This application declares no app view (no \`entry\`): it isn't navigable as a
-// full-page app, only its panels/services are exposed.
+// full-page app, only its panels/web workers are exposed.
 export function render() {
   throw new Error('This application has no app view: it declares no \`entry\`.')
 }

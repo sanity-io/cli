@@ -1,5 +1,48 @@
 # Changelog
 
+## 3.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.4.0...cli-core-v3.5.0)
+
+_2026-08-27_
+
+### Features
+
+- **cli-core:** support flags that are required in unattended mode and display them as required in unattended help ([#1765](https://github.com/sanity-io/cli/pull/1765)) ([1e839a9](https://github.com/sanity-io/cli/commit/1e839a9d2974f0fa013de4cf7f7fb4220166a1cc))
+
+### Bug Fixes
+
+- preserve the app id when loading Studio config ([#1768](https://github.com/sanity-io/cli/pull/1768)) ([e31dfd5](https://github.com/sanity-io/cli/commit/e31dfd5f5d3adb4c3008d30f0d34ada37f74604e))
+
+## 3.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.3.0...cli-core-v3.4.0)
+
+_2026-08-26_
+
+### Features
+
+- **workbench:** enable type-safe window, panel, and tile declarations ([#1755](https://github.com/sanity-io/cli/pull/1755)) ([36b61b3](https://github.com/sanity-io/cli/commit/36b61b39d1d09010fa68098d2064d3dab51cdbd3))
+- **workbench:** stabilize unstable_defineApp ([#1756](https://github.com/sanity-io/cli/pull/1756)) ([69a180e](https://github.com/sanity-io/cli/commit/69a180ec221e5762e56b7afef59ea952e4d3fee3))
+
+### Bug Fixes
+
+- reduce dependency on lodash-es ([#1750](https://github.com/sanity-io/cli/pull/1750)) ([4a2dcce](https://github.com/sanity-io/cli/commit/4a2dcce5bbdbe42011cb6abf8b84a3c9cf030ea9))
+
+## 3.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.2.0...cli-core-v3.3.0)
+
+_2026-08-24_
+
+### Features
+
+- include source of auth token in `sanity debug` ([#1690](https://github.com/sanity-io/cli/pull/1690)) ([e64da59](https://github.com/sanity-io/cli/commit/e64da593359c6b8de6d62a07a0a7a07f77a11d3a))
+
+### Bug Fixes
+
+- **cli-core:** keep reactCompiler typed when a compiler package is not installed ([#1735](https://github.com/sanity-io/cli/pull/1735)) ([828009e](https://github.com/sanity-io/cli/commit/828009e18b4dac6540290c3259a820c5e22cb4ca))
+
 ## 3.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.1.0...cli-core-v3.2.0)

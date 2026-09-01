@@ -4,7 +4,7 @@ import {relative, resolve} from 'node:path'
 import {doImport, getCliConfigUncached} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/workbench-cli'
 
 import {type sanitizeIcon as sanitizeIconFn} from './sanitizeIcon.js'
 import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
@@ -97,6 +97,12 @@ export async function extractCoreAppManifest(
     return undefined
   }
 
+  // A config-only project (the Media Library) carries no icon or title and has
+  // no manifest by design — skip silently rather than warn about a missing one.
+  if (isWorkbenchConfig(app)) {
+    return undefined
+  }
+
   const spin = spinner('Extracting manifest').start()
 
   try {
@@ -114,10 +120,9 @@ export async function extractCoreAppManifest(
 
     const manifest: CoreAppManifest = coreAppManifestSchema.parse({
       version: '1',
+      ...(workbench?.dock ? {dock: workbench.dock} : {}),
       ...(icon ? {icon} : {}),
       ...(app.title ? {title: app.title} : {}),
-      ...(workbench?.group ? {group: workbench.group} : {}),
-      ...(workbench?.priority === undefined ? {} : {priority: workbench.priority}),
       ...(workbench?.slug ? {slug: workbench.slug} : {}),
     })
 
