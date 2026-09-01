@@ -1,5 +1,24 @@
 # @sanity/workbench-cli
 
+## 2.2.4
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.3...workbench-cli-v2.2.4)
+
+_2026-09-01_
+
+### Bug Fixes
+
+- **deploy:** forward singleton flag during app creation ([#1778](https://github.com/sanity-io/cli/pull/1778)) ([d16ca8b](https://github.com/sanity-io/cli/commit/d16ca8bceb0f67dd4896b0ad8174f40a8d21a3b4))
+- **deps:** update dependency @module-federation/vite to v1.20.8 ([#1779](https://github.com/sanity-io/cli/pull/1779)) ([874e181](https://github.com/sanity-io/cli/commit/874e181029da828e7a30306974684d1c5268e40d))
+- **deps:** update dependency @module-federation/runtime to v2.9.0 ([#1781](https://github.com/sanity-io/cli/pull/1781)) ([7318927](https://github.com/sanity-io/cli/commit/7318927db2ad52d483ed0eb20f258eaccd6c1455))
+- **deps:** update dependency @module-federation/vite to v1.21.0 ([#1782](https://github.com/sanity-io/cli/pull/1782)) ([b20496b](https://github.com/sanity-io/cli/commit/b20496b3f899b1894a740692f19f00536714d7f8))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.1
+
 ## 2.2.3
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.2...workbench-cli-v2.2.3)

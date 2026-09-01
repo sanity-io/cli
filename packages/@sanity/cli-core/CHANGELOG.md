@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.5.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.5.0...cli-core-v3.5.1)
+
+_2026-09-01_
+
+### Bug Fixes
+
+- **cli-core:** disable ora stdin discarding so ctrl+c interrupts spinners ([#1784](https://github.com/sanity-io/cli/pull/1784)) ([56726e1](https://github.com/sanity-io/cli/commit/56726e1567077424b00043b88e7c50c51a510b57))
+
 ## 3.5.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.4.0...cli-core-v3.5.0)

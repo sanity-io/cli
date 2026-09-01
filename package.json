@@ -61,6 +61,7 @@
     "@commitlint/types": "^20.4.0",
     "@eslint/compat": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
+    "@types/node": "catalog:",
     "@vercel/detect-agent": "^1.2.3",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
@@ -84,7 +85,8 @@
       "node-pty"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*"
+      "@sanity/cli": "workspace:*",
+      "@types/node": "catalog:"
     }
   }
 }
