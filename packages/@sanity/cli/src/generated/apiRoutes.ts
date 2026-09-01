@@ -223,6 +223,20 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Export API reference'
   },
   {
+    host: 'global',
+    pathPatterns: [
+      'functions',
+      'functions/{functionId}',
+      'functions/{functionId}/envvars',
+      'functions/{functionId}/envvars/{envVarKey}',
+      'functions/{functionId}/invoke',
+      'functions/{functionId}/logs',
+      'functions/{functionId}/logs/stream'
+    ],
+    slug: 'functions-api',
+    title: 'Functions API reference'
+  },
+  {
     defaultApiVersion: 'v2025-02-19',
     host: 'project',
     pathPatterns: [
