@@ -18,7 +18,7 @@ vi.mock('@sanity/cli-core/ux', () => ({
   spinner: () => ({start: () => ({clear: vi.fn(), fail: vi.fn(), succeed: vi.fn()})}),
 }))
 
-vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
+vi.mock('tar', () => ({c: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
 const app = defineApplication({

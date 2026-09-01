@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {type Output, subdebug} from '@sanity/cli-core'
-import {pack} from 'tar-fs'
+import {c as createTar} from 'tar'
 
 import {getWorkbenchUrl} from '../../services/applications.js'
 import {createConfig, resolveSingletonInstallationId} from '../../services/installations.js'
@@ -64,7 +64,7 @@ export async function deployConfig(options: {
   version: string
 }): Promise<void> {
   const {appType, installationId, organizationId, output, sourceDir, version} = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
   await createConfig(installationId, {tarball, version})
 
   debug('Deployed config for app type: %s', appType)

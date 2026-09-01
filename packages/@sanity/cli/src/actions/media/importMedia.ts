@@ -28,7 +28,7 @@ import {
   tap,
   zip,
 } from 'rxjs'
-import tar from 'tar-fs'
+import {x as extractTar} from 'tar'
 import {glob} from 'tinyglobby'
 
 import {isTar} from '../../util/isTar.js'
@@ -214,7 +214,7 @@ function untarMaybe(outputPath: string) {
   // @ts-expect-error `peek-stream` module currently untyped
   return peek({maxBuffer: 300, newline: false}, (data, swap) => {
     if (isTar(data)) {
-      return swap(null, tar.extract(outputPath))
+      return swap(null, extractTar({cwd: outputPath}))
     }
 
     return swap(null)
