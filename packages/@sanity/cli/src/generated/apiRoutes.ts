@@ -211,7 +211,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'embeddings-index/{dataset}/{indexName}'
     ],
     slug: 'embeddings-index',
-    title: 'Embeddings Index API reference'
+    title: 'Embeddings Index API reference (deprecated)'
   },
   {
     defaultApiVersion: 'v2021-03-25',
@@ -221,6 +221,20 @@ export const apiRoutes: ApiRouteEntry[] = [
     ],
     slug: 'export',
     title: 'Export API reference'
+  },
+  {
+    host: 'global',
+    pathPatterns: [
+      '{apiV}/functions',
+      '{apiV}/functions/{functionId}',
+      '{apiV}/functions/{functionId}/envvars',
+      '{apiV}/functions/{functionId}/envvars/{envVarKey}',
+      '{apiV}/functions/{functionId}/invoke',
+      '{apiV}/functions/{functionId}/logs',
+      '{apiV}/functions/{functionId}/logs/stream'
+    ],
+    slug: 'functions-api',
+    title: 'Functions API reference'
   },
   {
     defaultApiVersion: 'v2025-02-19',
