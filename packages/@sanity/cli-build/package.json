@@ -92,7 +92,7 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:^",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/ui": "^3.5.0",
+    "@sanity/ui": "^3.5.4",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/lodash-es": "catalog:",
