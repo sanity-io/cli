@@ -32,8 +32,8 @@ describe('context imports download', () => {
     const {error, stdout} = await testCommand(DownloadImportCommand, ['kb-abc123', 'import-def456'])
 
     if (error) throw error
-    expect(stdout).toContain('https://storage.example.com/signed-url')
-    expect(stdout).toContain('2026-08-01T01:00:00.000Z')
+    expect(stdout).toContain('URL:     https://storage.example.com/signed-url')
+    expect(stdout).toContain('Expires: 2026-08-01T01:00:00.000Z')
     expect(mockImportsDownload).toHaveBeenCalledWith({importId: 'import-def456'})
     expect(mockGetGlobalCliClient).toHaveBeenCalledWith(
       expect.objectContaining({resource: {id: 'kb-abc123', type: 'knowledge-base'}}),

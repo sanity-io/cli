@@ -4,6 +4,7 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
+import {formatKeyValue} from '../../../actions/debug/output.js'
 import {downloadImport} from '../../../services/context.js'
 
 const downloadImportDebug = subdebug('context:imports:download')
@@ -62,7 +63,8 @@ export class DownloadImportCommand extends SanityCommand<typeof DownloadImportCo
       return
     }
 
-    this.log(`URL:     ${download.url}`)
-    this.log(`Expires: ${download.expiresAt}`)
+    const padTo = 7 // "Expires" is the longest key
+    this.log(formatKeyValue('URL', download.url, {padTo}))
+    this.log(formatKeyValue('Expires', download.expiresAt, {padTo}))
   }
 }

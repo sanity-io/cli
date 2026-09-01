@@ -8,6 +8,7 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {type Context, isHttpError} from '@sanity/client'
 
+import {formatKeyValue} from '../../../actions/debug/output.js'
 import {createImport} from '../../../services/context.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 
@@ -133,7 +134,7 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
     try {
       const {jobId} = await createImport(knowledgeBaseId, params)
       spin.succeed('Import created')
-      this.log(`Job ID: ${jobId}`)
+      this.log(formatKeyValue('Job ID', jobId))
       this.log(`Track it with: sanity context jobs get ${knowledgeBaseId} ${jobId}`)
     } catch (error) {
       spin.fail()

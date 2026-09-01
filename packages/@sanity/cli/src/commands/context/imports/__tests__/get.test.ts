@@ -28,10 +28,10 @@ describe('context imports get', () => {
     const {error, stdout} = await testCommand(GetImportCommand, ['kb-abc123', 'import-def456'])
 
     if (error) throw error
-    expect(stdout).toContain('import-def456')
-    expect(stdout).toContain('handbook.pdf')
-    expect(stdout).toContain('complete')
-    expect(stdout).toContain('3/4')
+    expect(stdout).toContain('ID:        import-def456')
+    expect(stdout).toContain('Name:      handbook.pdf')
+    expect(stdout).toContain('Status:    complete')
+    expect(stdout).toContain('Distilled: 3/4')
     expect(mockImportsGet).toHaveBeenCalledWith({importId: 'import-def456'})
     expect(mockGetGlobalCliClient).toHaveBeenCalledWith(
       expect.objectContaining({resource: {id: 'kb-abc123', type: 'knowledge-base'}}),
