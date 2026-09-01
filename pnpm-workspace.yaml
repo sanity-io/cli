@@ -55,7 +55,7 @@ catalog:
   # Utilities
   get-it: ^9.5.0
   obug: ^2.1.4
-  jsdom: ^29.1.1
+  jsdom: ^30.0.1
   zod: ^4.4.3
   'get-tsconfig': ^4.14.0
   'import-meta-resolve': ^4.2.0
@@ -79,7 +79,7 @@ catalog:
 
   # Type Definitions
   '@types/node': ^22.20.0
-  '@types/jsdom': ^28.0.3
+  '@types/jsdom': ^30.0.0
   '@types/tar-fs': ^2.0.4
 
 minimumReleaseAge: 4320
