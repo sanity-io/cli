@@ -16,6 +16,11 @@ import {
   STUDIO_ENV_FILE,
 } from '../actions/scaffold/scaffoldProject.js'
 import {type MintedProject, mintUnclaimedProject} from '../services/mintProject.js'
+import {
+  fetchNewInstructions,
+  INSTRUCTIONS_URL,
+  InstructionsUnavailableError,
+} from '../services/newInstructions.js'
 import {formatClaimDeadline} from '../util/formatClaimDeadline.js'
 import {CLAIM_WINDOW_HOURS, SANITY_NEW_URL} from '../util/mintProjectConstants.js'
 import {renderNewCommandSplash} from '../util/newCommandSplash.js'
@@ -23,6 +28,12 @@ import {recordUnclaimedProject} from '../util/unclaimedProjects.js'
 
 const DEFAULT_PROJECT_NAME = 'My Sanity project'
 const HELP_DESCRIPTION_WIDTH = 78
+
+/**
+ * Prepended to the fetched instructions so an agent cannot read this command's success as the
+ * project already existing. The only addition to an otherwise verbatim document.
+ */
+const INSTRUCTIONS_HEADER = '# Nothing has been created yet — follow these steps.'
 
 function formatHelpDescription(...paragraphs: string[]): string {
   return paragraphs
@@ -124,10 +135,10 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
       'Claiming is free and takes about a minute. Miss the deadline and the project and its ' +
       'content are deleted.',
     'Two things to keep private: the claim link, because anyone who opens it becomes the owner, ' +
-      `and the access token saved in ./${STUDIO_ENV_FILE} and ./${FRONTEND_ENV_FILE}, because it ` +
-      'can read and change everything in the project. Keep both env files out of git, and never ' +
-      'put the token in code that runs in the browser.',
-    `Fetch ${SANITY_NEW_URL} for full instructions, or point your AI agent at it.`,
+      `and the access token saved in ./${STUDIO_ENV_FILE}, because it can read and change ` +
+      `everything in the project. ./${FRONTEND_ENV_FILE} has only the project ID and dataset. ` +
+      'Keep both env files out of git, and never put the token in code that runs in the browser.',
+    'Run this command with --instructions for the full agent setup guide.',
   )
 
   static override enableJsonFlag = true
@@ -153,9 +164,18 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
       command: '<%= config.bin %> <%= command.id %> --json',
       description: 'Create a project and print its details as JSON',
     },
+
+    {
+      command: '<%= config.bin %> <%= command.id %> --instructions',
+      description: 'Print the full setup guide for an AI agent, without creating anything',
+    },
   ]
 
   static override flags = {
+    instructions: Flags.boolean({
+      default: false,
+      description: `Print the full setup guide from ${SANITY_NEW_URL} and exit, creating nothing`,
+    }),
     scaffold: Flags.boolean({
       allowNo: true,
       default: true,
@@ -170,12 +190,30 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
 
   static override summary = `Create a Sanity project without an account, and claim it within ${CLAIM_WINDOW_HOURS} hours to keep it.`
 
-  public async run(): Promise<NewProjectResult> {
+  public async run(): Promise<NewProjectResult | undefined> {
     const {output} = this
     const json = this.jsonEnabled()
     const flow = createFlow(output.log)
     const invoked = [this.config.bin, ...(this.id?.split(':') ?? [])].join(' ')
     const cwd = process.cwd()
+
+    // Runs before every precondition and side effect: this flag creates nothing.
+    if (this.flags.instructions) {
+      // oclif's `exclusive` does not cover the json flag added by enableJsonFlag, so guard it here.
+      if (json) {
+        throw new CLIError('--instructions cannot be combined with --json.', {
+          code: 'INSTRUCTIONS_JSON_CONFLICT',
+          exit: exitCodes.USAGE_ERROR,
+          suggestions: [
+            `Run \`${invoked} --instructions\` for the setup guide as markdown`,
+            `Or run \`${invoked} --json\` to create a project and print its details as JSON`,
+          ],
+        })
+      }
+
+      await this.printInstructions()
+      return undefined
+    }
 
     const unavailableScaffoldTarget =
       !json && this.flags.scaffold ? await getUnavailableScaffoldTarget(cwd) : undefined
@@ -214,8 +252,12 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
       displayName = DEFAULT_PROJECT_NAME
     } else if (!displayName) {
       displayName =
-        (await input({default: DEFAULT_PROJECT_NAME, message: 'Project name'})).trim() ||
-        DEFAULT_PROJECT_NAME
+        (
+          await input({
+            default: DEFAULT_PROJECT_NAME,
+            message: 'Project name',
+          })
+        ).trim() || DEFAULT_PROJECT_NAME
     }
 
     const spin = json ? undefined : flow.spin('Creating your project...')
@@ -253,14 +295,16 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
       flow.gap()
     }
 
+    const studioUrl =
+      `http://localhost:3333/#token=${encodeURIComponent(project.token)}` +
+      `&claim=${encodeURIComponent(project.claimUrl)}`
+
     const printStudioInstructions = () => {
       flow.highlight('Start your Studio:')
       flow.gap()
-      flow.command(`cd ${STUDIO_DIR} && npx sanity dev`)
+      flow.command(`cd ${STUDIO_DIR} && npx sanity@latest dev`)
       flow.gap()
-      flow.link(`http://localhost:3333/#token=${encodeURIComponent(project.token)}`, {
-        label: 'Then open this link:',
-      })
+      flow.link(studioUrl, {label: 'Then open this link:'})
       flow.gap()
       flow.line('The token signs you in: there is no account yet.')
     }
@@ -359,7 +403,7 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
           'No folders or env files were created. Use the project ID and dataset above in your own setup.',
         )
         flow.gap()
-        flow.link(`http://localhost:3333/#token=${encodeURIComponent(project.token)}`, {
+        flow.link(studioUrl, {
           label: 'Once a Studio is running on http://localhost:3333, sign in with:',
         })
         flow.gap()
@@ -367,7 +411,6 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
         flow.gap()
       }
 
-      flow.line('Your content is private until you claim, to read it, you need the token.')
       flow.line("Treat your token as a password and don't expose it publicly in your app.")
       flow.gap()
       flow.line(
@@ -383,5 +426,30 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
     }
 
     return toResult(project)
+  }
+
+  /**
+   * Dumps the guide from sanity.new verbatim, so an agent gets the whole document rather than a
+   * summary produced by whatever fetched it.
+   */
+  private async printInstructions(): Promise<void> {
+    let instructions: string
+    try {
+      instructions = await fetchNewInstructions()
+    } catch (err) {
+      if (err instanceof InstructionsUnavailableError) {
+        throw new CLIError(err.message, {
+          code: 'INSTRUCTIONS_UNAVAILABLE',
+          exit: exitCodes.RUNTIME_ERROR,
+          suggestions: [
+            `Fetch them directly: curl -sSL ${INSTRUCTIONS_URL}`,
+            `Or open ${SANITY_NEW_URL} in a browser`,
+          ],
+        })
+      }
+      throw err
+    }
+
+    this.output.log(`${INSTRUCTIONS_HEADER}\n\n${instructions}`)
   }
 }

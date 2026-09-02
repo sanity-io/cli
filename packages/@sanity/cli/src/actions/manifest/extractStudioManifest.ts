@@ -2,10 +2,9 @@ import {readFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
+import {MANIFEST_FILENAME, type StudioManifest} from '@sanity/cli-build/_internal/manifest'
 
 import {extractManifest} from './extractManifest.js'
-import {type StudioManifest} from './types.js'
-import {MANIFEST_FILENAME} from './writeManifestFile.js'
 
 /**
  * Dev-time manifest output directory, relative to the studio working
@@ -24,11 +23,17 @@ const MANIFEST_DIR = `${SANITY_CACHE_DIR}/manifest`
  * every call.
  */
 export async function extractStudioManifest(options: {
+  applicationId?: string
   configPath: string
   workDir: string
 }): Promise<StudioManifest | undefined> {
   const outPath = resolve(options.workDir, MANIFEST_DIR)
-  await extractManifest({outPath, path: options.configPath, workDir: options.workDir})
+  await extractManifest({
+    applicationId: options.applicationId,
+    outPath,
+    path: options.configPath,
+    workDir: options.workDir,
+  })
   const raw = await readFile(join(outPath, MANIFEST_FILENAME), 'utf8')
   return JSON.parse(raw)
 }

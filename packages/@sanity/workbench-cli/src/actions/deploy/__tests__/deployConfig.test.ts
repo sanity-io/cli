@@ -15,16 +15,16 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 
 // The tarball content is irrelevant here — stub a readable so no build output
 // has to exist on disk.
-vi.mock('tar-fs', () => ({pack: () => Readable.from(['remote'])}))
+vi.mock('tar', () => ({c: () => Readable.from(['remote'])}))
 
 const output = {error: vi.fn(), log: vi.fn(), warn: vi.fn()} as unknown as Output
 
 /** Answer the installations list with `data`, and the config POST with a record. */
 function stubBrett(data: unknown[]) {
-  mockRequest.mockImplementation(async ({method, uri}) => {
-    if (uri === '/installations' && (!method || method === 'GET')) return {data}
+  mockRequest.mockImplementation(async ({method, url}) => {
+    if (url === '/installations' && (!method || method === 'GET')) return {data}
     if (method === 'POST') return {id: 'cfg_1', installationId: 'inst_1', isActive: true}
-    throw new Error(`unexpected request to ${uri}`)
+    throw new Error(`unexpected request to ${url}`)
   })
 }
 
@@ -47,7 +47,7 @@ describe('resolveInstallationId', () => {
     expect(mockRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         query: {limit: 'none', organizationId: 'org-1'},
-        uri: '/installations',
+        url: '/installations',
       }),
     )
   })
@@ -90,7 +90,7 @@ describe('deployConfig', () => {
       expect.objectContaining({requireUser: true}),
     )
     const post = mockRequest.mock.calls.find(([arg]) => arg.method === 'POST')?.[0]
-    expect(post.uri).toBe('/installations/inst_ml/configs')
+    expect(post.url).toBe('/installations/inst_ml/configs')
     expect(post.headers['content-type']).toMatch(/multipart\/form-data/)
   })
 

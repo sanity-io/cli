@@ -1,5 +1,184 @@
 # Changelog
 
+## 6.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.1.0...cli-build-v6.2.0)
+
+_2026-09-01_
+
+### Features
+
+- serve a standalone entry point for all apps and studios ([#1815](https://github.com/sanity-io/cli/pull/1815)) ([ddfcdd1](https://github.com/sanity-io/cli/commit/ddfcdd185635ee189567161e79885cd35126fec8))
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1801](https://github.com/sanity-io/cli/pull/1801)) ([d315241](https://github.com/sanity-io/cli/commit/d315241affc6405ce03abb99a509a0250f36c8c2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.3.0
+    - @sanity/cli-core bumped to 3.6.0
+
+## 6.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.2...cli-build-v6.1.0)
+
+_2026-09-01_
+
+### Features
+
+- extract build manifest logic from deployment ([#1777](https://github.com/sanity-io/cli/pull/1777)) ([f7bff14](https://github.com/sanity-io/cli/commit/f7bff14097322a59e814996b7d8962d4678ab216))
+
+### Bug Fixes
+
+- **deps:** update dependency isomorphic-dompurify to v3 ([#1794](https://github.com/sanity-io/cli/pull/1794)) ([7dbd9c0](https://github.com/sanity-io/cli/commit/7dbd9c050278d0fe9e2a9b4954896495c4e4b5bf))
+- **deps:** update dependency cjs-module-lexer to ^2.2.1 ([#1803](https://github.com/sanity-io/cli/pull/1803)) ([0427131](https://github.com/sanity-io/cli/commit/0427131bfc665633f0137fe79c16d69a74fdd318))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.4
+    - @sanity/cli-core bumped to 3.5.1
+
+## 6.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.1...cli-build-v6.0.2)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- preserve the app id when loading Studio config ([#1768](https://github.com/sanity-io/cli/pull/1768)) ([e31dfd5](https://github.com/sanity-io/cli/commit/e31dfd5f5d3adb4c3008d30f0d34ada37f74604e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.0
+    - @sanity/workbench-cli bumped to 2.2.3
+
+## 6.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.0...cli-build-v6.0.1)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- **workbench:** run `sanity dev` for media library configs and render local views ([#1769](https://github.com/sanity-io/cli/pull/1769)) ([9189bd5](https://github.com/sanity-io/cli/commit/9189bd5092dc8591b9c92df4f1822ea68a0eaa47))
+
+  - Route an `unstable_defineMediaLibrary` config through the workbench dev server so the shell starts and renders it
+  - Skip core app manifest extraction silently for config-only projects, dropping the misleading "Manifest creation skipped" warning
+  - Convert local dev view interfaces from `surface` to the remote's `type` wire shape, matching deployed apps
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.2
+
+## 6.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.3.1...cli-build-v6.0.0)
+
+_2026-08-26_
+
+### ⚠ BREAKING CHANGES
+
+- Move manifest logic into cli-build package to support blueprints deployment ([#1744](https://github.com/sanity-io/cli/pull/1744)) ([0f174c6](https://github.com/sanity-io/cli/commit/0f174c61e7cf84eda9c2de0b01a0e15224a2d5e2))
+
+### Features
+
+- **workbench:** enable type-safe window, panel, and tile declarations ([#1755](https://github.com/sanity-io/cli/pull/1755)) ([36b61b3](https://github.com/sanity-io/cli/commit/36b61b39d1d09010fa68098d2064d3dab51cdbd3))
+- **workbench:** stabilize unstable_defineApp ([#1756](https://github.com/sanity-io/cli/pull/1756)) ([69a180e](https://github.com/sanity-io/cli/commit/69a180ec221e5762e56b7afef59ea952e4d3fee3))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.0
+    - @sanity/cli-core bumped to 3.4.0
+
+## 5.3.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.3.0...cli-build-v5.3.1)
+
+_2026-08-24_
+
+### Bug Fixes
+
+- **cli:** remove react-dom dependency by loading from the local Studio project ([#1716](https://github.com/sanity-io/cli/pull/1716)) ([63dda1a](https://github.com/sanity-io/cli/commit/63dda1a687981d4870a5b9e12fa8f12b2bf9c48f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.3.0
+    - @sanity/workbench-cli bumped to 2.1.0
+
+## 5.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.2.1...cli-build-v5.3.0)
+
+_2026-08-20_
+
+### Features
+
+- React Compiler can now run on oxc, a native Rust port of the compiler. Opt in from `sanity.cli.ts`: ([#1724](https://github.com/sanity-io/cli/pull/1724)) ([95ee806](https://github.com/sanity-io/cli/commit/95ee806b99c84e4cfdef70d9fb052db7da41bdf8))
+
+  ```ts
+  export default defineCliConfig({
+    reactCompiler: { transform: "oxc" },
+  });
+  ```
+
+  - One native pass handles React Compiler, TypeScript/JSX, and Fast Refresh — no babel in the pipeline
+  - Install `oxc-transform-react` in your project first, the same way the default transform needs `babel-plugin-react-compiler`
+  - Experimental. Babel stays the default, and existing `reactCompiler` configs keep working unchanged
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.2.0
+
+## 5.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.2.0...cli-build-v5.2.1)
+
+_2026-08-18_
+
+### Bug Fixes
+
+- Migrate `@sanity/cli-core/request` to get-it v9 and upgrade `@sanity/client` to v8 ([#1534](https://github.com/sanity-io/cli/pull/1534)) ([9230315](https://github.com/sanity-io/cli/commit/92303158f7737bc21e40d4dc208e5158445cb0cd))
+- **cli-build:** mark @sanity/ui v4 as supported ([#1710](https://github.com/sanity-io/cli/pull/1710)) ([619278b](https://github.com/sanity-io/cli/commit/619278b70c94318c328c7917d85de3d87a836409))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.1.0
+
+## 5.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v5.1.0...cli-build-v5.2.0)
+
+_2026-08-14_
+
+### Features
+
+- add resource bindings script tag ([#1678](https://github.com/sanity-io/cli/pull/1678)) ([f1b284c](https://github.com/sanity-io/cli/commit/f1b284c1a4d8b09afa5d4c224d25754e946e06ec))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.0.0
+    - @sanity/cli-core bumped to 3.0.0
+
 ## [5.1.0](https://github.com/sanity-io/cli/compare/cli-build-v5.0.0...cli-build-v5.1.0)
 
 _2026-07-29_

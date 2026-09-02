@@ -14,6 +14,7 @@ Code for sanity cli
   <!-- commands -->
 
 - [`sanity api ENDPOINT`](#sanity-api-endpoint)
+- [`sanity assets upload`](#sanity-assets-upload)
 - [`sanity backups disable [DATASET]`](#sanity-backups-disable-dataset)
 - [`sanity backups download [DATASET]`](#sanity-backups-download-dataset)
 - [`sanity backups enable [DATASET]`](#sanity-backups-enable-dataset)
@@ -32,6 +33,8 @@ Code for sanity cli
 - [`sanity blueprints stacks`](#sanity-blueprints-stacks)
 - [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
 - [`sanity codemod [CODEMODNAME]`](#sanity-codemod-codemodname)
+- [`sanity context create`](#sanity-context-create)
+- [`sanity context list`](#sanity-context-list)
 - [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
 - [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
 - [`sanity cors list`](#sanity-cors-list)
@@ -119,11 +122,27 @@ Code for sanity cli
 - [`sanity tokens create [LABEL]`](#sanity-tokens-create-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
+- [`sanity tokens rotate`](#sanity-tokens-rotate)
 - [`sanity typegen generate`](#sanity-typegen-generate)
 - [`sanity undeploy`](#sanity-undeploy)
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
+- [`sanity workflows abort INSTANCEID`](#sanity-workflows-abort-instanceid)
+- [`sanity workflows definition delete NAME`](#sanity-workflows-definition-delete-name)
+- [`sanity workflows definition diff NAME`](#sanity-workflows-definition-diff-name)
+- [`sanity workflows definition list`](#sanity-workflows-definition-list)
+- [`sanity workflows definition show NAME`](#sanity-workflows-definition-show-name)
+- [`sanity workflows deploy`](#sanity-workflows-deploy)
+- [`sanity workflows diagnose INSTANCEID`](#sanity-workflows-diagnose-instanceid)
+- [`sanity workflows fire-action INSTANCEID`](#sanity-workflows-fire-action-instanceid)
+- [`sanity workflows list`](#sanity-workflows-list)
+- [`sanity workflows nuke`](#sanity-workflows-nuke)
+- [`sanity workflows reset-activity INSTANCEID ACTIVITY`](#sanity-workflows-reset-activity-instanceid-activity)
+- [`sanity workflows set-stage INSTANCEID`](#sanity-workflows-set-stage-instanceid)
+- [`sanity workflows show INSTANCEID`](#sanity-workflows-show-instanceid)
+- [`sanity workflows start NAME`](#sanity-workflows-start-name)
+- [`sanity workflows tail INSTANCEID`](#sanity-workflows-tail-instanceid)
 
 ## `sanity api ENDPOINT`
 
@@ -210,6 +229,40 @@ EXAMPLES
   Authenticate with a specific token instead of the logged-in session
 
     SANITY_AUTH_TOKEN=<token> sanity api users/me
+```
+
+## `sanity assets upload`
+
+Upload one local image or file to a Sanity dataset and print the asset document as JSON
+
+```
+USAGE
+  $ sanity assets upload --file <path> [-p <id>] [-d <name>] [--content-type <mime-type>] [--filename <filename>]
+    [--type image|file]
+
+FLAGS
+  --content-type=<mime-type>  MIME type of the asset, such as image/png or application/pdf
+  --file=<path>               (required) Path to the local file to upload
+  --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename
+  --type=<option>             [default: image] Asset type to create
+                              <options: image|file>
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>   Dataset to upload the asset to (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to upload the asset to (overrides CLI configuration)
+
+DESCRIPTION
+  Upload one local image or file to a Sanity dataset and print the asset document as JSON
+
+EXAMPLES
+  Upload an image using the configured project
+
+    $ sanity assets upload --file ./hero.png --type image --dataset production
+
+  Upload a file with explicit project, dataset, and MIME type
+
+    $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 \
+      --dataset production
 ```
 
 ## `sanity backups disable [DATASET]`
@@ -356,7 +409,7 @@ EXAMPLES
 USAGE
   $ sanity blueprints add TYPE [--json] [--example <value> | -n <value> | --fn-type
     document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-asset-dele
-    te|media-library-asset-update|scheduled-function|sync-tag-invalidate... | --language ts|js | --javascript |
+    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate... | --language ts|js | --javascript |
     --fn-helpers | --fn-installer skip|npm|pnpm|yarn] [-i | ]
 
 ARGUMENTS
@@ -373,8 +426,8 @@ FLAGS
       --fn-type=<option>...    Document change event(s) that should trigger the function; you can specify multiple
                                events by specifying this flag multiple times
                                <options: document-publish|document-create|document-delete|document-update|media-library-
-                               asset-create|media-library-asset-delete|media-library-asset-update|scheduled-function|syn
-                               c-tag-invalidate>
+                               asset-create|media-library-asset-delete|media-library-asset-update|pub-sub|scheduled-func
+                               tion|sync-tag-invalidate>
       --javascript             Use JavaScript instead of TypeScript
       --json                   Format output as json
       --language=<option>      [default: ts] Language of the new function
@@ -467,7 +520,9 @@ DESCRIPTION
 
   Use --fn-installer to force which package manager to use when deploying functions.
 
-  Set SANITY_ASSET_TIMEOUT (seconds) to override the 60-second timeout for processing resource assets.
+  Set SANITY_ASSET_TIMEOUT (seconds) to override the 180-second timeout for processing resource assets.
+
+  Set SANITY_ASSET_CONCURRENCY to override how many resource assets are processed at once (default 4).
 
   Exit codes: 0 deployed, 2 deployment failed, 75 deployment accepted but completion could not be confirmed (rerun
   'blueprints info' to check).
@@ -494,16 +549,16 @@ Destroy a remote Stack deployment and its resources
 
 ```
 USAGE
-  $ sanity blueprints destroy [--json] [--project-id <value> --stack <value> --force] [--organization-id <value>  ]
+  $ sanity blueprints destroy [--json] [--project-id <value> --stack <value> -f] [--organization-id <value>  ]
     [--no-wait]
 
 FLAGS
-  --force                    Force Stack destruction (skip confirmation)
-  --json                     Format output as json
-  --no-wait                  Do not wait for Stack destruction to complete
-  --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
-  --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
-  --stack=<value>            Stack name or ID to destroy (defaults to the locally configured Stack)
+  -f, --force                    Force Stack destruction (skip confirmation)
+      --json                     Format output as json
+      --no-wait                  Do not wait for Stack destruction to complete
+      --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
+      --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
+      --stack=<value>            Stack name or ID to destroy (defaults to the locally configured Stack)
 
 DESCRIPTION
   Destroy a remote Stack deployment and its resources
@@ -560,13 +615,14 @@ Display the status and resources of the remote Stack deployment
 
 ```
 USAGE
-  $ sanity blueprints info [--json] [--stack <value>] [--project-id <value> | --organization-id <value>]
+  $ sanity blueprints info [--json] [-v] [--stack <value>] [--project-id <value> | --organization-id <value>]
 
 FLAGS
-  --json                     Format output as json
-  --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
-  --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
-  --stack=<value>            Stack name or ID
+  -v, --verbose                  Show resource and external IDs
+      --json                     Format output as json
+      --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
+      --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
+      --stack=<value>            Stack name or ID
 
 DESCRIPTION
   Display the status and resources of the remote Stack deployment
@@ -617,12 +673,12 @@ DESCRIPTION
 
   A Blueprint is your local infrastructure-as-code configuration that defines Sanity resources (datasets, functions,
   etc.). A Stack is the remote deployment target where your Blueprint is applied.
-  [NOTE: Currently, accounts are limited to three (3) Stacks per project scope.]
 
   This is typically the first command you run in a new project. It creates a local Blueprint manifest file
   (sanity.blueprint.ts, .js, or .json) and provisions a new remote Stack.
-  Additionally, a Blueprint configuration file is created in .sanity/ containing the scope and Stack IDs. This is
-  .gitignored by default.
+  Additionally, a Blueprint configuration file is created in .sanity/ containing the scope and Stack IDs. A .gitignore
+  covering node_modules, .env, and Function build output is created or updated; the .sanity/ config itself is not
+  ignored.
 
   After initialization, use 'blueprints plan' to preview changes, then 'blueprints deploy' to apply them.
 
@@ -657,8 +713,8 @@ Display logs for the current Blueprint's Stack deployment
 
 ```
 USAGE
-  $ sanity blueprints logs [--json] [--stack <value>] [--project-id <value> | --organization-id <value>] [-l <value>
-    | -w] [--since <value> | ] [--before <value> | ]
+  $ sanity blueprints logs [--stack <value>] [--project-id <value> | --organization-id <value>] [-l <value> | [-w |
+    --json]] [--since <value> | ] [--before <value> | ]
 
 FLAGS
   -l, --limit=<value>            Maximum number of log entries to retrieve (1-500)
@@ -808,9 +864,10 @@ List remote Stack deployments for your project or organization
 
 ```
 USAGE
-  $ sanity blueprints stacks [--json] [--project-id <value> | --organization-id <value> | --include-projects]
+  $ sanity blueprints stacks [--json] [--project-id <value> | --organization-id <value> | --include-projects | --all]
 
 FLAGS
+  --all                      List Stacks from every organization and project you have access to
   --include-projects         Include Stacks from all projects within the organization. Requires --organization-id.
   --json                     Format output as json
   --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
@@ -824,10 +881,13 @@ DESCRIPTION
   Use this to discover existing Stacks you can scope a local Blueprint to (using 'blueprints config --edit'), or to
   audit what's deployed across your project.
 
-  Use --include-projects with --organization-id to also list Stacks from all projects within the organization.
+  Without a scope, prompts for an organization or project. Use --all to list Stacks across every organization and
+  project you can access, or --include-projects with --organization-id for one organization and its projects.
 
 EXAMPLES
   $ sanity blueprints stacks
+
+  $ sanity blueprints stacks --all
 
   $ sanity blueprints stacks --project-id <projectId>
 
@@ -890,6 +950,66 @@ EXAMPLES
   Run codemod to transform react-icons imports (dry run)
 
     $ sanity codemod reactIconsV3 --dry
+```
+
+## `sanity context create`
+
+Create a knowledge base
+
+```
+USAGE
+  $ sanity context create [--organization <id>] [--description <value>] [--title <value>]
+
+FLAGS
+  --description=<value>  Knowledge base description
+  --title=<value>        Knowledge base title
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to create the knowledge base in (overrides CLI configuration)
+
+DESCRIPTION
+  Create a knowledge base
+
+EXAMPLES
+  Interactively create a knowledge base
+
+    $ sanity context create
+
+  Create a knowledge base in a specific organization
+
+    $ sanity context create --organization org-abc123 --title "Support docs" --description "Product docs and \
+      troubleshooting guides"
+```
+
+## `sanity context list`
+
+List knowledge bases in an organization
+
+```
+USAGE
+  $ sanity context list [--organization <id>] [--json]
+
+FLAGS
+  --json  Output knowledge bases in JSON format
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to list knowledge bases for (overrides CLI configuration)
+
+DESCRIPTION
+  List knowledge bases in an organization
+
+EXAMPLES
+  List knowledge bases, selecting the organization interactively
+
+    $ sanity context list
+
+  List knowledge bases in a specific organization
+
+    $ sanity context list --organization org-abc123
+
+  Output knowledge bases as JSON
+
+    $ sanity context list --organization org-abc123 --json
 ```
 
 ## `sanity cors add ORIGIN`
@@ -1991,13 +2111,13 @@ Add a Function to your Blueprint
 
 ```
 USAGE
-  $ sanity functions add [--json] [--example <value> | -n <value> |  | --language ts|js | --javascript |  | ]
-    [--type document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-as
-    set-delete|media-library-asset-update|scheduled-function|sync-tag-invalidate... ] [--helpers] [--installer
-    skip|npm|pnpm|yarn] [-i | ]
+  $ sanity functions add [--json] [--example <value> | -n <value> | --type
+    document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-asset-dele
+    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate... | --language ts|js | --javascript |
+    --helpers | --installer skip|npm|pnpm|yarn | -i]
 
 FLAGS
-  -i, --install             Shortcut for --fn-installer npm
+  -i, --install             Shortcut for --installer npm
   -n, --name=<value>        Name of the Function to add
       --example=<value>     Example to use for the Function
       --[no-]helpers        Add helpers to the new Function
@@ -2010,8 +2130,8 @@ FLAGS
       --type=<option>...    Document change event(s) that should trigger the function; you can specify multiple events
                             by specifying this flag multiple times
                             <options: document-publish|document-create|document-delete|document-update|media-library-ass
-                            et-create|media-library-asset-delete|media-library-asset-update|scheduled-function|sync-tag-
-                            invalidate>
+                            et-create|media-library-asset-delete|media-library-asset-update|pub-sub|scheduled-function|s
+                            ync-tag-invalidate>
 
 DESCRIPTION
   Add a Function to your Blueprint
@@ -2057,13 +2177,13 @@ DESCRIPTION
 
   Open the emulator in your browser to interactively test your functions with the payload editor.
 
-  Optionally, set the host and port with the --host and --port flags. Function timeout can be configured with the
-  --timeout flag.
+  Optionally, set the host and port with the --host and --port flags. Port 8974 is reserved for the emulator's
+  live-reload WebSocket server. Function timeout can be configured with the --timeout flag.
 
   To invoke a function with the CLI, use 'functions test'.
 
 EXAMPLES
-  $ sanity functions dev --host 127.0.0.1 --port 8974
+  $ sanity functions dev --host 127.0.0.1 --port 3333
 
   $ sanity functions dev --timeout 60
 ```
@@ -2163,7 +2283,7 @@ Retrieve or delete logs for a Sanity Function
 
 ```
 USAGE
-  $ sanity functions logs [NAME] [--stack <value>] [-u] [-f [-d | -l <value> | --json]] [-w]
+  $ sanity functions logs [NAME] [--stack <value>] [-u] [-f [-d | -l <value> | --json]] [-w | ]
 
 ARGUMENTS
   [NAME]  The name of the Sanity Function
@@ -2204,7 +2324,7 @@ USAGE
   $ sanity functions test [NAME] [--json] [--data-before <value> | [-d <value> | -f <value> | --document-id <value>]
     |  |  | --file-before <value> | --file-after <value> | --document-id-before <value> | --document-id-after <value>]
     [--data-after <value> |  |  |  |  |  |  | ] [-e create|update|delete] [-t <value>] [-a <value>] [--with-user-token]
-    [--media-library-id <value> | [--project-id <value> | --organization-id <value>] | --dataset <value>]
+    [--media-library-id <value> | [--project-id <value> | --organization-id <value>] | --dataset <value>] [--no-wait]
 
 ARGUMENTS
   [NAME]  The name of the Sanity Function
@@ -2226,6 +2346,7 @@ FLAGS
       --file-before=<value>         Original document
       --json                        Format output as json
       --media-library-id=<value>    Sanity Media Library ID to use
+      --no-wait                     Skip durable wait delays instead of sleeping
       --organization-id=<value>     Sanity organization ID used to scope Blueprint and Stack
       --project-id=<value>          Sanity project ID used to scope Blueprint and Stack
       --with-user-token             Prime access token from CLI config
@@ -2543,7 +2664,7 @@ FLAGS
       --[no-]git=<message>         Specify a commit message for initial commit, or disable git init
       --[no-]import-dataset        Import template sample dataset
       --[no-]mcp                   Enable AI editor integration (MCP) setup
-      --organization=<id>          Organization ID to use for the project
+      --organization=<id>          Organization ID to use for the project (required for unattended project creation)
       --output-path=<path>         Path to write studio project to
       --[no-]overwrite-files       Overwrite existing files
       --package-manager=<manager>  Specify which package manager to use [allowed: npm, yarn, pnpm]
@@ -2757,14 +2878,14 @@ Delete an aspect definition
 
 ```
 USAGE
-  $ sanity media delete-aspect ASPECTNAME [-p <id>] [--media-library-id <value>] [--yes]
+  $ sanity media delete-aspect ASPECTNAME [-p <id>] [--media-library-id <value>] [-y]
 
 ARGUMENTS
   ASPECTNAME  Name of the aspect to delete
 
 FLAGS
-  --media-library-id=<value>  The id of the target media library
-  --yes                       Run without prompts and confirm deletion
+  -y, --yes                       Run without prompts and confirm deletion
+      --media-library-id=<value>  The id of the target media library
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
@@ -2972,13 +3093,14 @@ Create a Sanity project without an account, and claim it within 72 hours to keep
 
 ```
 USAGE
-  $ sanity new [PROJECTNAME] [--json] [--scaffold] [-y]
+  $ sanity new [PROJECTNAME] [--json] [--instructions] [--scaffold] [-y]
 
 ARGUMENTS
   [PROJECTNAME]  Display name for the new project
 
 FLAGS
   -y, --yes            Skip prompts and use defaults (project: "My Sanity project")
+      --instructions   Print the full setup guide from https://sanity.new and exit, creating nothing
       --[no-]scaffold  Set up a Studio in ./sanity and a Next.js website in ./web (on by default)
 
 GLOBAL FLAGS
@@ -2998,12 +3120,12 @@ DESCRIPTION
   the deadline and the project and its content are deleted.
 
   Two things to keep private: the claim link, because anyone who opens it
-  becomes the owner, and the access token saved in ./sanity/.env.local and
-  ./web/.env.local, because it can read and change everything in the project.
-  Keep both env files out of git, and never put the token in code that runs in
-  the browser.
+  becomes the owner, and the access token saved in ./sanity/.env.local, because
+  it can read and change everything in the project. ./web/.env.local has only
+  the project ID and dataset. Keep both env files out of git, and never put the
+  token in code that runs in the browser.
 
-  Fetch https://sanity.new for full instructions, or point your AI agent at it.
+  Run this command with --instructions for the full agent setup guide.
 
 EXAMPLES
   Create a project with a Studio and a website
@@ -3025,6 +3147,10 @@ EXAMPLES
   Create a project and print its details as JSON
 
     $ sanity new --json
+
+  Print the full setup guide for an AI agent, without creating anything
+
+    $ sanity new --instructions
 ```
 
 ## `sanity openapi get SLUG`
@@ -3596,15 +3722,16 @@ Create a new API token for the project
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [-p <id>] [--expires-at 2027-01-01] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes          Skip prompts and use defaults (unattended mode)
-      --json         Output as JSON
-      --role=viewer  Role to assign to the token (defaults to viewer in unattended mode)
+  -y, --yes                    Skip prompts and use defaults (unattended mode)
+      --expires-at=2027-01-01  Date or timestamp the token expires (ISO 8601; tokens never expire by default)
+      --json                   Output as JSON
+      --role=viewer            Role to assign to the token (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
@@ -3625,6 +3752,10 @@ EXAMPLES
 
     $ sanity tokens create "CI Token" --role=editor --yes
 
+  Create a token that expires on a given date
+
+    $ sanity tokens create "Build Token" --expires-at 2027-01-01
+
   Output token information as JSON
 
     $ sanity tokens create "API Token" --json
@@ -3640,13 +3771,13 @@ Delete an API token from the project
 
 ```
 USAGE
-  $ sanity tokens delete [TOKENID] [-p <id>] [--yes]
+  $ sanity tokens delete [TOKENID] [-p <id>] [-y]
 
 ARGUMENTS
   [TOKENID]  Token ID to delete (will prompt if not provided)
 
 FLAGS
-  --yes  Skip confirmation prompt (unattended mode)
+  -y, --yes  Skip confirmation prompt (unattended mode)
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
@@ -3701,6 +3832,35 @@ EXAMPLES
   List tokens for a specific project
 
     $ sanity tokens list --project-id abc123
+```
+
+## `sanity tokens rotate`
+
+Rotate an API token, replacing its secret with a new one
+
+```
+USAGE
+  $ sanity tokens rotate [--json] [-t <token>]
+
+FLAGS
+  -t, --token=<token>  Token to rotate (prefer standard input to keep it out of shell history)
+      --json           Output as JSON
+
+DESCRIPTION
+  Rotate an API token, replacing its secret with a new one
+
+EXAMPLES
+  Rotate the token piped on standard input
+
+    echo "$SANITY_TOKEN" | sanity tokens rotate
+
+  Rotate a token read from a file
+
+    $ sanity tokens rotate < token.txt
+
+  Output the rotated token as JSON
+
+    echo "$SANITY_TOKEN" | sanity tokens rotate --json
 ```
 
 ## `sanity typegen generate`
@@ -3868,6 +4028,465 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity versions
+```
+
+## `sanity workflows abort INSTANCEID`
+
+Abort an in-flight workflow instance — a hard stop: pending effects are cancelled, stage guards removed, and the instance is marked terminal where it stands.
+
+```
+USAGE
+  $ sanity workflows abort INSTANCEID [--deployment <value> | --tag <value>] [--reason <value>]
+
+ARGUMENTS
+  INSTANCEID  Workflow instance id.
+
+FLAGS
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+                        partition still comes from the loaded instance.
+  --reason=<value>      Reason for aborting (recorded in history).
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                        resources are searched; omit to span them all.
+
+DESCRIPTION
+  Abort an in-flight workflow instance — a hard stop: pending effects are cancelled, stage guards removed, and the
+  instance is marked terminal where it stands.
+
+EXAMPLES
+  $ sanity workflows abort wf-instance.abc123
+
+  $ sanity workflows abort wf-instance.abc123 --reason 'superseded by relaunch'
+```
+
+## `sanity workflows definition delete NAME`
+
+Delete a deployed workflow definition (every version, or one via --version). Refuses while non-terminal instances exist unless --cascade aborts them first — instances are aborted in place, never deleted.
+
+```
+USAGE
+  $ sanity workflows definition delete NAME [--deployment <value> | --tag <value>] [--version <value>] [--cascade] [--reason
+    <value>]
+
+ARGUMENTS
+  NAME  Workflow definition name.
+
+FLAGS
+  --cascade             Abort every non-terminal instance pinned to the targeted versions, then delete.
+  --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
+  --reason=<value>      Free-text reason — recorded on each cascade-abort history entry.
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
+                        names exactly one; pass --deployment when it spans several.
+  --version=<value>     Delete only this deployed version (default: every version).
+
+DESCRIPTION
+  Delete a deployed workflow definition (every version, or one via --version). Refuses while non-terminal instances
+  exist unless --cascade aborts them first — instances are aborted in place, never deleted.
+
+EXAMPLES
+  $ sanity workflows definition delete my-workflow
+
+  $ sanity workflows definition delete my-workflow --version 2
+
+  $ sanity workflows definition delete my-workflow --cascade --reason 'workflow retired'
+```
+
+## `sanity workflows definition diff NAME`
+
+Diff an in-code definition against the deployed version (latest by default).
+
+```
+USAGE
+  $ sanity workflows definition diff NAME [--deployment <value> | --tag <value>] [--version <value>]
+
+ARGUMENTS
+  NAME  Workflow definition name.
+
+FLAGS
+  --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
+                        names exactly one; pass --deployment when it spans several.
+  --version=<value>     Deployed version to diff against (default: latest).
+
+DESCRIPTION
+  Diff an in-code definition against the deployed version (latest by default).
+
+EXAMPLES
+  $ sanity workflows definition diff productLaunch
+
+  $ sanity workflows definition diff productLaunch --version 2
+```
+
+## `sanity workflows definition list`
+
+List deployed workflow definitions.
+
+```
+USAGE
+  $ sanity workflows definition list [--tag <value>] [--limit <value>] [--name <value>] [--json]
+
+FLAGS
+  --json           Emit structured JSON instead of rendered output.
+  --limit=<value>  [default: 100] The maximum number of definitions to return.
+  --name=<value>   Filter to a single workflow definition name (e.g. product-launch).
+  --tag=<value>    Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                   resources are searched; omit to span them all.
+
+DESCRIPTION
+  List deployed workflow definitions.
+
+EXAMPLES
+  $ sanity workflows definition list
+
+  $ sanity workflows definition list --tag prod
+
+  $ sanity workflows definition list --json
+```
+
+## `sanity workflows definition show NAME`
+
+Show a deployed workflow definition.
+
+```
+USAGE
+  $ sanity workflows definition show NAME [--tag <value>] [--version <value>] [--json]
+
+ARGUMENTS
+  NAME  Workflow definition name.
+
+FLAGS
+  --json             Emit structured JSON instead of rendered output.
+  --tag=<value>      Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                     resources are searched; omit to span them all.
+  --version=<value>  Specific version (default: latest).
+
+DESCRIPTION
+  Show a deployed workflow definition.
+```
+
+## `sanity workflows deploy`
+
+Validate, diff, and deploy workflow definitions to the resource bound by the selected deployment.
+
+```
+USAGE
+  $ sanity workflows deploy [--all-tags |  | [--deployment <value> | --tag <value>]] [--dry-run] [--check] [--only
+    <value>] [--share-defs]
+
+FLAGS
+  --all-tags            Deploy every deployment in the config, not just a selection.
+  --check               Validate definitions only; do not contact the dataset.
+  --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
+  --dry-run             Validate + diff against the deployed version; do not write.
+  --only=<value>        Limit deploy/check/diff to a single workflow definition by name (deployments are selected with
+                        --deployment). Every targeted deployment must contain it.
+  --[no-]share-defs     Share the definition documents newly created by this deploy with Sanity — the full document,
+                        verbatim (structure, names, filters, effect configuration, seeded values), plus its deployment
+                        coordinates (project and dataset, or resource id); never content documents, instances, or your
+                        Sanity auth token. Sharing is the default in every environment, including CI / non-TTY /
+                        DO_NOT_TRACK. Use --no-share-defs to opt out.
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — deploys every deployment carrying the tag (a tag is
+                        an environment group).
+
+DESCRIPTION
+  Validate, diff, and deploy workflow definitions to the resource bound by the selected deployment.
+
+EXAMPLES
+  $ sanity workflows deploy --deployment review-prod
+
+  $ sanity workflows deploy --tag prod
+
+  $ sanity workflows deploy --all-tags
+
+  $ sanity workflows deploy --check
+
+  $ sanity workflows deploy --dry-run
+
+  $ sanity workflows deploy --only productLaunch
+```
+
+## `sanity workflows diagnose INSTANCEID`
+
+Explain why a workflow instance is or isn't progressing, and what would unstick it.
+
+```
+USAGE
+  $ sanity workflows diagnose INSTANCEID [--deployment <value> | --tag <value>] [--json]
+
+ARGUMENTS
+  INSTANCEID  Workflow instance id.
+
+FLAGS
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+                        partition still comes from the loaded instance.
+  --json                Emit structured JSON instead of rendered output.
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                        resources are searched; omit to span them all.
+
+DESCRIPTION
+  Explain why a workflow instance is or isn't progressing, and what would unstick it.
+
+EXAMPLES
+  $ sanity workflows diagnose wf-instance.abc123
+
+  $ sanity workflows diagnose wf-instance.abc123 --tag prod
+
+  $ sanity workflows diagnose wf-instance.abc123 --json
+```
+
+## `sanity workflows fire-action INSTANCEID`
+
+Fire an action on an instance to unstick a waiting activity — the write acts as the configured token. Omit --action to list what can be fired.
+
+```
+USAGE
+  $ sanity workflows fire-action INSTANCEID [--deployment <value> | --tag <value>] [--activity <value>] [--action <value>]
+    [--param <value>...] [--json]
+
+ARGUMENTS
+  INSTANCEID  Workflow instance id.
+
+FLAGS
+  --action=<value>      Action to fire. Omit to list the actions available on the instance.
+  --activity=<value>    Activity the action belongs to. Required to fire; omit --action to list.
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+                        partition still comes from the loaded instance.
+  --json                Emit structured JSON instead of rendered output.
+  --param=<value>...    [default: ] Action param as key=value (repeatable). Values are JSON-parsed, falling back to a
+                        string.
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                        resources are searched; omit to span them all.
+
+DESCRIPTION
+  Fire an action on an instance to unstick a waiting activity — the write acts as the configured token. Omit --action to
+  list what can be fired.
+
+EXAMPLES
+  $ sanity workflows fire-action wf-instance.abc123
+
+  $ sanity workflows fire-action wf-instance.abc123 --activity approve --action approve
+
+  $ sanity workflows fire-action wf-instance.abc123 --activity publish --action publish --param note=shipping
+```
+
+## `sanity workflows list`
+
+List workflow instances in the configured dataset (in-flight by default).
+
+```
+USAGE
+  $ sanity workflows list [--tag <value>] [--include-completed] [--failed] [--definition <value>] [--document
+    <value>] [--limit <value>] [--json]
+
+FLAGS
+  --definition=<value>  Only instances of this workflow definition (its `name`; the instance's `definition` field).
+  --document=<value>    Only instances that reference this document (resource-qualified GDR URI, e.g.
+                        "dataset:proj:ds:article-1").
+  --failed              Only instances with at least one failed activity.
+  --include-completed   Include completed/aborted instances (default: in-flight only).
+  --json                Emit structured JSON instead of rendered output.
+  --limit=<value>       [default: 50] Maximum rows to return.
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                        resources are searched; omit to span them all.
+
+DESCRIPTION
+  List workflow instances in the configured dataset (in-flight by default).
+
+EXAMPLES
+  $ sanity workflows list
+
+  $ sanity workflows list --include-completed
+
+  $ sanity workflows list --definition productLaunch
+
+  $ sanity workflows list --document dataset:proj:ds:article-1
+
+  $ sanity workflows list --tag prod
+
+  $ sanity workflows list --json
+```
+
+## `sanity workflows nuke`
+
+Delete engine-owned documents — a whole deployment tag, or a single instance.
+
+```
+USAGE
+  $ sanity workflows nuke [--deployment <value>] [--tag <value>] [--instance <value>] [--force]
+
+FLAGS
+  --deployment=<value>  The deployment name to reset. With --instance, narrows which deployment the instance is looked
+                        up in when its tag spans several.
+  --force               Skip the confirmation prompt (for scripts/CI). The plan still prints.
+  --instance=<value>    Delete a single terminal instance by id, plus its guard docs, instead of a tag.
+  --tag=<value>         The deployment tag to reset (while it names exactly one deployment). Not valid with --instance,
+                        which reads its tag from the instance id.
+
+DESCRIPTION
+  Delete engine-owned documents — a whole deployment tag, or a single instance.
+
+  The reset for a dataset holding engine documents the versioned upgrade framework cannot yet migrate: deletes the tag's
+  instances, definitions, and guards (across every alias-bound resource). --instance <id> instead deletes one terminal
+  instance plus its guards. Content documents are never touched. Prints a dry-run plan, then confirms (--force skips the
+  prompt; the plan still prints).
+
+EXAMPLES
+  $ sanity workflows nuke --deployment plugin-dev
+
+  $ sanity workflows nuke --tag plugin-dev --force
+
+  $ sanity workflows nuke --instance plugin-dev.wf-instance.abc123
+```
+
+## `sanity workflows reset-activity INSTANCEID ACTIVITY`
+
+Reset a failed activity on an in-flight instance — back to active to re-run it, or --skip to bypass it (mark it skipped) so a gated exit transition can fire.
+
+```
+USAGE
+  $ sanity workflows reset-activity INSTANCEID ACTIVITY [--deployment <value> | --tag <value>] [--skip]
+
+ARGUMENTS
+  INSTANCEID  Workflow instance id.
+  ACTIVITY    Activity name within the current stage.
+
+FLAGS
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+                        partition still comes from the loaded instance.
+  --skip                Bypass the activity (mark it skipped) instead of re-running it (back to active).
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                        resources are searched; omit to span them all.
+
+DESCRIPTION
+  Reset a failed activity on an in-flight instance — back to active to re-run it, or --skip to bypass it (mark it
+  skipped) so a gated exit transition can fire.
+
+EXAMPLES
+  $ sanity workflows reset-activity wf-instance.abc123 legal-review
+
+  $ sanity workflows reset-activity wf-instance.abc123 legal-review --skip
+```
+
+## `sanity workflows set-stage INSTANCEID`
+
+Force an instance into a stage, regardless of its declared transitions and filters — the engine's setStage admin override. The target stage's enter lifecycle still runs (auto-activities start, stage guards reconcile), and the post-move cascade can immediately auto-transition the instance onward.
+
+```
+USAGE
+  $ sanity workflows set-stage INSTANCEID [--deployment <value> | --tag <value>] [--to <value>] [--reason <value>]
+
+ARGUMENTS
+  INSTANCEID  Workflow instance id to move.
+
+FLAGS
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+                        partition still comes from the loaded instance.
+  --reason=<value>      Free-text reason — recorded on the history entry for audit.
+  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                        resources are searched; omit to span them all.
+  --to=<value>          Target stage name. Omit on an interactive terminal to pick from the workflow’s stages.
+
+DESCRIPTION
+  Force an instance into a stage, regardless of its declared transitions and filters — the engine's setStage admin
+  override. The target stage's enter lifecycle still runs (auto-activities start, stage guards reconcile), and the
+  post-move cascade can immediately auto-transition the instance onward.
+
+EXAMPLES
+  $ sanity workflows set-stage wf-instance.abc123 --to ready
+
+  $ sanity workflows set-stage wf-instance.abc123
+
+  $ sanity workflows set-stage wf-instance.abc123 --to ready --reason 'unblock for demo'
+```
+
+## `sanity workflows show INSTANCEID`
+
+Show the state, activities, and effects of a workflow instance.
+
+```
+USAGE
+  $ sanity workflows show INSTANCEID [--tag <value>] [--include history...] [--json]
+
+ARGUMENTS
+  INSTANCEID  Workflow instance document id.
+
+FLAGS
+  --include=<option>...  [default: ] Optional sections to include in rendered output (--json always carries the full
+                         document).
+                         <options: history>
+  --json                 Emit structured JSON instead of rendered output.
+  --tag=<value>          Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
+                         resources are searched; omit to span them all.
+
+DESCRIPTION
+  Show the state, activities, and effects of a workflow instance.
+
+EXAMPLES
+  $ sanity workflows show wf-instance.abc123
+
+  $ sanity workflows show wf-instance.abc123 --include history
+
+  $ sanity workflows show wf-instance.abc123 --json
+```
+
+## `sanity workflows start NAME`
+
+Start a workflow instance from a deployed definition. Supply values for the workflow's input-sourced fields with --field (e.g. the subject document ref).
+
+```
+USAGE
+  $ sanity workflows start NAME [--deployment <value> | --tag <value>] [--version <value>] [--field <value>...]
+    [--instance-id <value>] [--json]
+
+ARGUMENTS
+  NAME  Workflow definition name.
+
+FLAGS
+  --deployment=<value>   Deployment name — the unique identity of one deployment in the config.
+  --field=<value>...     [default: ] Initial value for a declared input-sourced field, as name=value (repeatable).
+                         Values are JSON-parsed, falling back to a string; ref kinds take a JSON object with a GDR `id`
+                         and doc `type`.
+  --instance-id=<value>  Start under this instance id — for retries. The id is the start's idempotency key: pass the id
+                         of a start that failed partway and the engine resumes it instead of creating a duplicate (an
+                         already-settled start replays as a no-op). Omit to mint a fresh id.
+  --json                 Emit structured JSON instead of rendered output.
+  --tag=<value>          Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
+                         names exactly one; pass --deployment when it spans several.
+  --version=<value>      Definition version to start from (default: highest deployed).
+
+DESCRIPTION
+  Start a workflow instance from a deployed definition. Supply values for the workflow's input-sourced fields with
+  --field (e.g. the subject document ref).
+
+EXAMPLES
+  $ sanity workflows start productLaunch
+
+  $ sanity workflows start article-review --field subject='{"id":"dataset:proj:ds:article-1","type":"article"}'
+
+  $ sanity workflows start productLaunch --version 2 --tag prod
+
+  $ sanity workflows start productLaunch --instance-id prod.wf-instance.a1b2c3d4e5f6
+```
+
+## `sanity workflows tail INSTANCEID`
+
+Stream new history entries on a workflow instance as they land in the dataset.
+
+```
+USAGE
+  $ sanity workflows tail INSTANCEID [--tag <value>]
+
+ARGUMENTS
+  INSTANCEID  Workflow instance id to tail.
+
+FLAGS
+  --tag=<value>  Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which resources
+                 are searched; omit to span them all.
+
+DESCRIPTION
+  Stream new history entries on a workflow instance as they land in the dataset.
+
+EXAMPLES
+  $ sanity workflows tail wf-instance.abc123
 ```
 
 <!-- commandsstop -->

@@ -28,6 +28,7 @@ import {topicAliases} from '../src/topicAliases.ts'
 // runtime config with topics that will never have aliases.
 // ---------------------------------------------------------------------------
 const knownTopicsWithoutAliases: Set<string> = new Set([
+  'context',
   'cors',
   'docs',
   'graphql',
@@ -37,11 +38,12 @@ const knownTopicsWithoutAliases: Set<string> = new Set([
   'openapi',
   'skills',
   'telemetry',
+  'typegen',
 ])
 
 // Topics provided by oclif plugins (not in our manifest, but resolved at runtime).
 // The checker skips manifest validation for these - the hook handles them.
-const pluginTopics: Set<string> = new Set(['blueprints', 'functions'])
+const pluginTopics: Set<string> = new Set(['blueprints', 'functions', 'workflows'])
 
 // ---------------------------------------------------------------------------
 // Manifest types (subset of oclif manifest structure)

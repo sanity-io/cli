@@ -58,7 +58,7 @@ describe('organizations create', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {name: 'My Org'},
       method: 'post',
-      uri: '/organizations',
+      url: '/organizations',
     })
   })
 
@@ -77,7 +77,7 @@ describe('organizations create', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {defaultRoleName: 'viewer', name: 'My Org'},
       method: 'post',
-      uri: '/organizations',
+      url: '/organizations',
     })
   })
 
@@ -90,7 +90,7 @@ describe('organizations create', () => {
     expect(mockRequest).toHaveBeenCalledWith({
       body: {name: 'My Org'},
       method: 'post',
-      uri: '/organizations',
+      url: '/organizations',
     })
   })
 
@@ -132,9 +132,8 @@ describe('organizations create', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Organization name is required')
-    expect(error?.message).toContain('--name')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Missing required flag name')
+    expect(error?.oclif?.exit).toBe(2)
     expect(mockInput).not.toHaveBeenCalled()
     expect(mockRequest).not.toHaveBeenCalled()
   })

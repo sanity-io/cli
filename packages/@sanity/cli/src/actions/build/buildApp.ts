@@ -2,7 +2,7 @@ import {
   compareDependencyVersions,
   buildApp as internalBuildApp,
 } from '@sanity/cli-build/_internal/build'
-import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
+import {buildAppId, resolveWorkbenchApp, resolveWorkbenchConfig} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
@@ -19,12 +19,17 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   const {cliConfig, flags, outDir, output, workDir} = options
 
   const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined
-  // `views`/`services` live on the branded `unstable_defineApp` result, not the
-  // legacy `app` config object — resolve the workbench capability to read them.
+  // `views`/`webWorkers` live on the branded `defineApplication` result, not the
+  // legacy `app` config object — resolve the workbench capability to read them. A
+  // config is not an app: it resolves separately and only expands its `fields`.
   const workbench = resolveWorkbenchApp(cliConfig)
+  const workbenchConfig = resolveWorkbenchConfig(cliConfig)
   const exposes = workbench
-    ? {config: workbench.config, services: workbench.services, views: workbench.views}
-    : undefined
+    ? {views: workbench.views, webWorkers: workbench.webWorkers}
+    : workbenchConfig
+      ? {config: {appType: workbenchConfig.appType, fields: workbenchConfig.fields}}
+      : undefined
+  const isWorkbench = !!workbench || !!workbenchConfig
 
   const appId = getAppId(cliConfig)
 
@@ -44,7 +49,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: app?.entry,
     exposes,
-    isWorkbenchApp: !!workbench,
+    isWorkbenchApp: isWorkbench,
     minify: flags.minify,
     outDir,
     output,

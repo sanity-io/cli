@@ -167,7 +167,7 @@ describe('#checkDocumentAvailability', () => {
       json: true,
       query: {excludeContent: 'true'},
       tag: 'documents-availability',
-      uri: '/data/doc/doc1,doc2,doc3',
+      url: '/data/doc/doc1,doc2,doc3',
     })
     expect(result).toEqual(mockResponse)
   })

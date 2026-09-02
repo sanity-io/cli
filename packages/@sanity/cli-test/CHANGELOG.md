@@ -1,5 +1,139 @@
 # Changelog
 
+## 16.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v15.1.0...cli-test-v16.0.0)
+
+_2026-09-01_
+
+### Bug Fixes
+
+- **deps:** update dependency esbuild to ^0.28.2 ([#1804](https://github.com/sanity-io/cli/pull/1804)) ([ab363ec](https://github.com/sanity-io/cli/commit/ab363eca8b0f853dd77a34c8677290ecbe5ae7b4))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.6.0
+
+## 15.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v15.0.0...cli-test-v15.1.0)
+
+_2026-09-01_
+
+### Features
+
+- extract build manifest logic from deployment ([#1777](https://github.com/sanity-io/cli/pull/1777)) ([f7bff14](https://github.com/sanity-io/cli/commit/f7bff14097322a59e814996b7d8962d4678ab216))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.1
+
+## 15.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v14.0.0...cli-test-v15.0.0)
+
+_2026-08-27_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.0
+
+## 14.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v13.0.0...cli-test-v14.0.0)
+
+_2026-08-26_
+
+### Features
+
+- Move manifest logic into cli-build package to support blueprints deployment ([#1744](https://github.com/sanity-io/cli/pull/1744)) ([0f174c6](https://github.com/sanity-io/cli/commit/0f174c61e7cf84eda9c2de0b01a0e15224a2d5e2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.4.0
+
+## 13.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v12.0.0...cli-test-v13.0.0)
+
+_2026-08-24_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.3.0
+
+## 12.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v11.0.0...cli-test-v12.0.0)
+
+_2026-08-20_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.2.0
+
+## 11.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v10.0.0...cli-test-v11.0.0)
+
+_2026-08-18_
+
+### Bug Fixes
+
+- Migrate `@sanity/cli-core/request` to get-it v9 and upgrade `@sanity/client` to v8 ([#1534](https://github.com/sanity-io/cli/pull/1534)) ([9230315](https://github.com/sanity-io/cli/commit/92303158f7737bc21e40d4dc208e5158445cb0cd))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.1.0
+
+## 10.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v9.0.2...cli-test-v10.0.0)
+
+_2026-08-14_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.0.0
+
+## 9.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v9.0.1...cli-test-v9.0.2)
+
+_2026-08-04_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 2.8.1
+
+## 9.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v9.0.0...cli-test-v9.0.1)
+
+_2026-08-04_
+
+### Bug Fixes
+
+- **deps:** update dependency @vitejs/plugin-react to ^6.0.5 ([#1651](https://github.com/sanity-io/cli/pull/1651)) ([49abbcf](https://github.com/sanity-io/cli/commit/49abbcf568c20d3626538145077b87128e177d48))
+
 ## [9.0.0](https://github.com/sanity-io/cli/compare/cli-test-v8.0.1...cli-test-v9.0.0)
 
 _2026-08-03_

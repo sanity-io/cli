@@ -1,8 +1,8 @@
 import {CLIError} from '@oclif/core/errors'
+import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '@sanity/cli-build/_internal/manifest'
 import uniqBy from 'lodash-es/uniqBy.js'
 
-import {isDefined} from '../../manifest/schemaTypeHelpers.js'
-import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '../../manifest/types.js'
+import {isDefined} from '../schemaTypeHelpers.js'
 
 const validForIdChars = 'a-zA-Z0-9._-'
 const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`)

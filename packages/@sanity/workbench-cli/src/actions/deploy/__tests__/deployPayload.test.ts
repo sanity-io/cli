@@ -1,0 +1,45 @@
+import {describe, expect, test} from 'vitest'
+
+import {toWorkbenchPayload} from '../deployPayload.js'
+import {type DeployableWorkbenchApp} from '../getWorkbench.js'
+import {type DeployedView} from '../summarizeInterfaces.js'
+
+const views: DeployedView[] = [{name: 'edit', src: './edit.ts', surface: 'panel', title: 'Edit'}]
+const app = (overrides: Record<string, unknown> = {}) =>
+  ({slug: 'my-app', ...overrides}) as unknown as DeployableWorkbenchApp
+const none = {interfaces: null, title: 'My app'}
+
+describe('toWorkbenchPayload', () => {
+  test('contributes nothing for a plain app', () => {
+    expect(toWorkbenchPayload(null, none)).toEqual({})
+  })
+
+  test('always carries the locally declared slug and title', () => {
+    expect(toWorkbenchPayload(app(), none)).toEqual({slug: 'my-app', title: 'My app'})
+  })
+
+  test('omits both interface lists when the app declares neither', () => {
+    const payload = toWorkbenchPayload(app(), {...none, interfaces: {services: [], views: []}})
+    expect(payload).not.toHaveProperty('views')
+    expect(payload).not.toHaveProperty('services')
+  })
+
+  test('reports both interface lists when either kind is declared', () => {
+    expect(toWorkbenchPayload(app(), {...none, interfaces: {services: [], views}})).toMatchObject({
+      services: [],
+      views,
+    })
+  })
+
+  test('carries the optional workbench fields only when set', () => {
+    expect(
+      toWorkbenchPayload(app({visibility: 'unlisted'}), {
+        ...none,
+        config: 'Media library fields:\n  Title (title)',
+      }),
+    ).toMatchObject({
+      config: 'Media library fields:\n  Title (title)',
+      visibility: 'unlisted',
+    })
+  })
+})

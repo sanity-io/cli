@@ -102,12 +102,19 @@ describe('startWorkbenchPreview', () => {
     test('checks the deprecated app id, then registers the built remote with its manifest', async () => {
       await run()
 
+      const appId = await buildAppId(resolveWorkbenchApp(workbenchCliConfig())!)
+
       expect(mockCheckForDeprecatedAppId).toHaveBeenCalled()
+      expect(mockExtractManifest).toHaveBeenCalledWith({
+        applicationId: appId,
+        configPath: '/tmp/sanity-project/sanity.cli.ts',
+        workDir: '/tmp/sanity-project',
+      })
       expect(mockRegisterDevServer).toHaveBeenCalledWith(
         expect.objectContaining({
           host: 'localhost',
           // `start` advertises the build id (matching the bundle), not host-port.
-          id: await buildAppId(resolveWorkbenchApp(workbenchCliConfig())!),
+          id: appId,
           manifest: {title: 'Test App'},
           port: 3334,
           type: 'coreApp',
@@ -127,6 +134,9 @@ describe('startWorkbenchPreview', () => {
 
       await run()
 
+      expect(mockExtractManifest).toHaveBeenCalledWith(
+        expect.objectContaining({applicationId: 'app_deployed_id'}),
+      )
       expect(mockRegisterDevServer).toHaveBeenCalledWith(
         expect.objectContaining({id: 'app_deployed_id'}),
       )

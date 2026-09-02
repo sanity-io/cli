@@ -1,5 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
-import {type DefineAppResult, unstable_defineApp} from '@sanity/workbench-cli'
+import {defineApplication, type DefineAppResult} from '@sanity/workbench-cli'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {defineCliConfig} from '../defineCliConfig.js'
@@ -27,17 +27,16 @@ describe('#defineCliConfig', () => {
   })
 })
 
-// An `unstable_defineApp(...)` result fits `CliConfig['app']` only because every
+// A `defineApplication(...)` result fits `CliConfig['app']` only because every
 // field declared there is optional; nothing in the type states the relationship.
 describe('the `app` config slot', () => {
-  test('accepts an `unstable_defineApp` result, workbench fields and all', () => {
+  test('accepts a `defineApplication` result, workbench fields and all', () => {
     expectTypeOf<DefineAppResult>().toExtend<CliConfig['app']>()
 
     defineCliConfig({
-      app: unstable_defineApp({
-        group: 'dock.system',
+      app: defineApplication({
+        dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
-        priority: 20,
         slug: 'my-app',
         title: 'My App',
       }),
@@ -48,17 +47,9 @@ describe('the `app` config slot', () => {
   test('rejects workbench fields written by hand', () => {
     defineCliConfig({
       app: {
-        // @ts-expect-error `group` comes from `unstable_defineApp`
-        group: 'dock.system',
+        // @ts-expect-error `dock` comes from `defineApplication`
+        dock: {group: 'dock.system', order: 20},
         organizationId: 'org-1',
-      },
-    })
-
-    defineCliConfig({
-      app: {
-        organizationId: 'org-1',
-        // @ts-expect-error `priority` comes from `unstable_defineApp`
-        priority: 20,
       },
     })
   })

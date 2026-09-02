@@ -2,12 +2,12 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deleteAspect} from '../../services/mediaLibraries.js'
-import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteAspectDebug = subdebug('media:delete-aspect')
@@ -34,35 +34,22 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
       description: 'Project ID to delete media aspect from',
       semantics: 'override',
     }),
-    'media-library-id': Flags.string({
-      description: 'The id of the target media library',
-      required: false,
-    }),
-    yes: Flags.boolean({
-      aliases: ['y'],
-      description: 'Run without prompts and confirm deletion',
-      required: false,
-    }),
+    'media-library-id': requiredWhenUnattended(
+      Flags.string({
+        description: 'The id of the target media library',
+      }),
+    ),
+    yes: requiredWhenUnattended(
+      Flags.boolean({
+        char: 'y',
+        description: 'Run without prompts and confirm deletion',
+      }),
+    ),
   }
 
   public async run(): Promise<void> {
     const {aspectName} = this.args
     const {'media-library-id': mediaLibraryIdFlag, yes: skipConfirmation} = this.flags
-
-    if (this.isUnattended()) {
-      const errors: string[] = []
-
-      if (!mediaLibraryIdFlag) {
-        errors.push('Media library ID is required. Pass it with `--media-library-id <id>`.')
-      }
-      if (!skipConfirmation) {
-        errors.push('Deletion requires confirmation. Pass `--yes` to delete the aspect.')
-      }
-
-      if (errors.length > 0) {
-        this.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
-      }
-    }
 
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 

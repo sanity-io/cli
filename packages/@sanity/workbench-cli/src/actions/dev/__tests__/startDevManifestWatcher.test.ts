@@ -1,5 +1,6 @@
 import {afterEach, beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 
+import {type DevServerInterface} from '../deriveConfigs.js'
 import {startDevManifestWatcher} from '../startDevManifestWatcher.js'
 import {createMockOutput, FakeFsWatcher} from './devTestHelpers.js'
 
@@ -29,7 +30,7 @@ describe('startDevManifestWatcher', () => {
   let fakeWatcher: FakeFsWatcher
   let mockExtract: Mock<
     (params: {configPath: string; workDir: string}) => Promise<{
-      interfaces?: {name: string; src: string; type: string}[] | undefined
+      interfaces?: DevServerInterface[] | undefined
       manifest: unknown
     }>
   >
@@ -260,11 +261,21 @@ describe('startDevManifestWatcher', () => {
     const appManifest = {icon: '<svg/>', title: 'My App', version: '1'}
     // Interfaces ride alongside the manifest (not inside it) and re-sync on
     // every config edit.
-    const appInterfaces = [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}]
+    const appInterfaces: DevServerInterface[] = [
+      {
+        id: 'sdk-app-panel-feed',
+        metadata: null,
+        moduleId: 'views/feed',
+        name: 'feed',
+        src: './src/FeedPanel.tsx',
+        surface: 'panel',
+        title: 'feed',
+      },
+    ]
     mockFindProjectRoot.mockResolvedValue({
       directory: APP_WORK_DIR,
       path: APP_CONFIG_PATH,
-      type: 'app',
+      surface: 'app',
     })
     mockExtract.mockResolvedValue({interfaces: appInterfaces, manifest: appManifest})
     const update = vi.fn()

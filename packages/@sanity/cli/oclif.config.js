@@ -1,4 +1,5 @@
 export default {
+  additionalVersionFlags: ['-v'],
   bin: 'sanity',
   commands: './dist/commands',
   dirname: 'sanity',
@@ -12,12 +13,10 @@ export default {
       './dist/hooks/prerun/warnings.js',
     ],
   },
-  // Note: do not add '@sanity/migrate' here. The `migrations` commands now ship
-  // natively (see commands/migrations/); re-adding the plugin would register
-  // duplicate command ids.
-  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/codegen'],
+  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/workflow-cli'],
   topics: {
     backups: {description: 'Manage dataset backups'},
+    context: {description: 'Manage Context knowledge bases'},
     cors: {description: 'Manage CORS origins for your project'},
     datasets: {description: 'Manage datasets in your project'},
     docs: {description: 'Browse and search Sanity documentation'},
@@ -35,7 +34,9 @@ export default {
     skills: {description: 'Install Sanity agent skills for AI agents'},
     telemetry: {description: 'Manage telemetry consent'},
     tokens: {description: 'Manage API tokens for your project'},
+    typegen: {description: 'Generate TypeScript types for schema and GROQ'},
     users: {description: 'Manage project users and invitations'},
+    workflows: {hidden: true},
   },
   topicSeparator: ' ',
 }

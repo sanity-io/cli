@@ -1,4 +1,4 @@
-import {exitCodes, isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, toError} from '@sanity/cli-core/errors'
 
 import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
@@ -11,7 +11,6 @@ const debug = subdebug('mcp:configure')
 export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpCommand> {
   static override description =
     'Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)'
-
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
@@ -44,7 +43,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
     try {
       const mcpResult = await setupMCP({
         explicit: true,
-        mode: isInteractive() ? 'prompt' : 'auto',
+        mode: this.resolveIsInteractive() ? 'prompt' : 'auto',
         output: this.output,
         skillsMode: 'skip',
       })

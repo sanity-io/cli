@@ -17,6 +17,8 @@ import {
 
 interface FederationPluginOptionsBase extends Omit<Partial<FederationOptions>, 'exposes'> {
   exposes?: WorkbenchExposes
+  /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
+  isBlueprints?: boolean
   pkgJson?: PackageJson
   /**
    * Current working directory to read package.json from, defaults to process.cwd()
@@ -60,7 +62,7 @@ type FederationPluginOptions = AppFederationPluginOptions | StudioFederationPlug
  * @internal
  */
 export const federation = (options: FederationPluginOptions): PluginOption => {
-  const {exposes, name: defaultName, pkgJson, workDir = process.cwd()} = options
+  const {exposes, isBlueprints, name: defaultName, pkgJson, workDir = process.cwd()} = options
 
   let name = defaultName
 
@@ -108,19 +110,16 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
   }
 
   const runtimeOptions: FederationRuntimeOptions = options.isApp
-    ? {appEntry: options.appEntry, isApp: true}
-    : {isApp: false, studioConfigPath: options.studioConfigPath}
+    ? {appEntry: options.appEntry, isApp: true, isBlueprints}
+    : {isApp: false, isBlueprints, studioConfigPath: options.studioConfigPath}
 
-  // A workbench remote can also serve itself standalone. When the remote flag is
-  // set (and there's an `./App` to mount — never for a dock-only app), build the
-  // SPA client environment from the runtime bootstrap cli-build writes.
-  const clientInput =
-    process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true' && exposesApp
-      ? path.join(workDir, '.sanity', 'runtime', 'app.js')
-      : undefined
+  // Every federated app and studio also serves itself standalone. Whenever there's
+  // an `./App` to mount (never for a dock-only app), build the SPA client
+  // environment from the runtime bootstrap cli-build writes.
+  const clientInput = exposesApp ? path.join(workDir, '.sanity', 'runtime', 'app.js') : undefined
 
   return [
-    sanityEnvironmentPlugin({clientInput, input: entryPath}),
+    sanityEnvironmentPlugin({clientInput, input: entryPath, isBlueprints}),
     sanityFederationRuntime(runtimeOptions),
     sanityExtensionArtifacts({artifacts}),
     sanityModuleFederation({exposes: federationExposes, name}),

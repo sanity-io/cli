@@ -1,12 +1,23 @@
+import {type ServiceType, type ViewSurface} from '../../contract.js'
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 
-/** A view or service as the deploy report and `--json` output surface it. */
-export interface DeployedExpose {
+interface DeployedInterfaceBase {
   name: string
   src: string
   title: string
-  type: string
 }
+
+/** A view as the deploy report and `--json` output surface it. */
+export interface DeployedView extends DeployedInterfaceBase {
+  surface: ViewSurface
+}
+
+/** A web worker as the deploy report and `--json` output surface it. */
+export interface DeployedWebWorker extends DeployedInterfaceBase {
+  type: ServiceType
+}
+
+export type DeployedInterface = DeployedView | DeployedWebWorker
 
 const label = (item: {name: string; title: string}) =>
   item.title === item.name ? item.name : `${item.title} (${item.name})`
@@ -15,7 +26,7 @@ const label = (item: {name: string; title: string}) =>
  * One `Title (name): src` report line per declared entry point.
  * @internal
  */
-export function summarizeExposeGroup(
+export function summarizeGroup(
   heading: string,
   items: readonly {name: string; src: string; title: string}[],
 ): string {
@@ -23,25 +34,29 @@ export function summarizeExposeGroup(
 }
 
 /**
- * The deploy summary of an app's exposes: the structured records (for `--json`)
- * and one report line per non-empty group (for the human report).
+ * One report line per non-empty group, alongside the records `--json` reports.
  * @internal
  */
-export function summarizeInterfaces({services, views}: WorkbenchExposes): {
-  exposes: DeployedExpose[]
+export function summarizeInterfaces({views, webWorkers}: WorkbenchExposes): {
   lines: string[]
+  services: DeployedWebWorker[]
+  views: DeployedView[]
 } {
-  const toExpose = (decl: DeployedExpose): DeployedExpose => ({
-    name: decl.name,
-    src: decl.src,
-    title: decl.title,
-    type: decl.type,
-  })
-  const viewExposes = (views ?? []).map((view) => toExpose(view))
-  const serviceExposes = (services ?? []).map((service) => toExpose(service))
+  const deployedViews = (views ?? []).map((view): DeployedView => ({
+    name: view.name,
+    src: view.src,
+    surface: view.surface,
+    title: view.title,
+  }))
+  const deployedServices = (webWorkers ?? []).map((webWorker): DeployedWebWorker => ({
+    name: webWorker.name,
+    src: webWorker.src,
+    title: webWorker.title,
+    type: webWorker.type,
+  }))
 
   const lines: string[] = []
-  if (viewExposes.length > 0) lines.push(summarizeExposeGroup('Views', viewExposes))
-  if (serviceExposes.length > 0) lines.push(summarizeExposeGroup('Services', serviceExposes))
-  return {exposes: [...viewExposes, ...serviceExposes], lines}
+  if (deployedViews.length > 0) lines.push(summarizeGroup('Views', deployedViews))
+  if (deployedServices.length > 0) lines.push(summarizeGroup('Web workers', deployedServices))
+  return {lines, services: deployedServices, views: deployedViews}
 }

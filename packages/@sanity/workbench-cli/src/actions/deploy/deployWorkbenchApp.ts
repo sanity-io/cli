@@ -3,10 +3,12 @@ import {createGzip} from 'node:zlib'
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {pack} from 'tar-fs'
+import {c as createTar} from 'tar'
 
-import {deriveInterfaces} from '../../deriveInterfaces.js'
+import {type DerivedInterface, deriveInterfaces} from '../../deriveInterfaces.js'
 import {
+  type Application,
+  type BrettAccess,
   type BrettInterface,
   type BrettWorkspace,
   createApplication,
@@ -16,14 +18,36 @@ import {
 } from '../../services/applications.js'
 
 /**
- * A freshly created application record: its id, plus a way to undo the creation.
- * The caller builds and deploys with the id, and calls `rollback` if a later
- * step fails so the record isn't stranded at its slug.
+ * `rollback` undoes the creation, so a later failure leaves no record stranded at the slug.
  * @internal
  */
 export interface CreatedApplication {
-  applicationId: string
+  application: Application
   rollback: () => Promise<void>
+}
+
+function toBrettInterface(iface: DerivedInterface, version: string): BrettInterface {
+  const {id: _id, src: _src, ...declaration} = iface
+  if ('type' in declaration) return {...declaration, version}
+
+  switch (declaration.surface) {
+    case 'asset_source': {
+      const {surface, ...view} = declaration
+      return {...view, type: surface, version}
+    }
+    case 'panel': {
+      const {surface, ...view} = declaration
+      return {...view, type: surface, version}
+    }
+    case 'tile': {
+      const {surface, ...view} = declaration
+      return {...view, type: surface, version}
+    }
+    case 'window': {
+      const {surface, ...view} = declaration
+      return {...view, type: 'app', version}
+    }
+  }
 }
 
 /**
@@ -33,6 +57,7 @@ export interface CreatedApplication {
  */
 export async function createCoreApp(options: {
   isSingleton?: boolean
+  name?: string
   organizationId: string
   slug: string
   title: string
@@ -40,9 +65,9 @@ export async function createCoreApp(options: {
 }): Promise<CreatedApplication> {
   const spin = spinner('Creating application...').start()
   try {
-    const {id} = await createApplication({...options, type: 'coreApp'})
+    const application = await createApplication({...options, type: 'coreApp'})
     spin.succeed()
-    return {applicationId: id, rollback: () => deleteApplication(id)}
+    return {application, rollback: () => deleteApplication(application.id)}
   } catch (error) {
     spin.fail()
     throw error
@@ -54,6 +79,7 @@ export async function createCoreApp(options: {
  * @internal
  */
 export async function createStudio(options: {
+  name?: string
   organizationId: string
   projectId: string | undefined
   slug: string
@@ -62,9 +88,9 @@ export async function createStudio(options: {
 }): Promise<CreatedApplication> {
   const spin = spinner('Creating studio...').start()
   try {
-    const {id} = await createApplication({...options, type: 'studio'})
+    const application = await createApplication({...options, type: 'studio'})
     spin.succeed()
-    return {applicationId: id, rollback: () => deleteApplication(id)}
+    return {application, rollback: () => deleteApplication(application.id)}
   } catch (error) {
     spin.fail()
     throw error
@@ -83,6 +109,7 @@ export async function createStudio(options: {
  * @internal
  */
 export async function deployWorkbenchApp(options: {
+  access?: readonly BrettAccess[]
   app: CliConfig['app']
   applicationId: string
   icon?: string
@@ -97,6 +124,7 @@ export async function deployWorkbenchApp(options: {
   workspaces?: readonly BrettWorkspace[]
 }): Promise<void> {
   const {
+    access,
     app,
     applicationId,
     icon,
@@ -110,15 +138,16 @@ export async function deployWorkbenchApp(options: {
     visibility,
     workspaces,
   } = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
 
   const spin = spinner(label).start()
   try {
     await createDeployment({
+      access,
       applicationId,
       // Brett assigns the id and resolves modules by `moduleId`, so neither travels.
-      interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map(
-        ({id: _id, src: _src, ...iface}): BrettInterface => ({...iface, version}),
+      interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map((iface) =>
+        toBrettInterface(iface, version),
       ),
       isAutoUpdating,
       tarball,

@@ -101,12 +101,13 @@ Package manager detection and utilities.
 
 HTTP request utilities built on [`get-it`](https://github.com/sanity-io/get-it).
 
-| Export                                                                                                                                  | Description                                                       |
-| --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `createRequester(middleware?)`                                                                                                          | Create a configured `get-it` requester instance.                  |
-| `Requester`                                                                                                                             | `get-it` `Requester` type.                                        |
-| `MiddlewareOptions`                                                                                                                     | Options type for `createRequester`.                               |
-| `agent`, `base`, `injectResponse`, `jsonRequest`, `jsonResponse`, `keepAlive`, `observable`, `progress`, `proxy`, `retry`, `urlEncoded` | Optional `get-it` middleware for use alongside `createRequester`. |
+| Export                                                                                                                    | Description                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `createRequester(options?)`                                                                                               | Create a configured get-it v9 requester with CLI defaults (User-Agent, debug). |
+| `CreateRequesterOptions`                                                                                                  | Options type for `createRequester`.                                            |
+| `nodeReadableFromWeb(stream)`                                                                                             | Convert a Web `ReadableStream` to a Node.js `Readable`.                        |
+| `HttpError`, `RequestFunction`, `RequestOptions`, `BufferedResponse`, `JsonResponse`, `TextResponse`, `StreamResponse`, … | Re-exported get-it types/helpers.                                              |
+| `retry`, `debug`                                                                                                          | get-it middleware for use alongside `createRequester`.                         |
 
 ## `@sanity/cli-core/schemas`
 
@@ -124,11 +125,11 @@ Zod schemas for CLI configuration and app manifests.
 
 Worker-based task runners.
 
-| Export                   | Description                                  |
-| ------------------------ | -------------------------------------------- |
-| `studioWorkerTask(task)` | Run a task in the studio worker.             |
-| `createStudioWorker()`   | Create a studio worker instance.             |
-| `tsxWorkerTask(task)`    | Run a TypeScript task via `tsx` in a worker. |
+| Export                   | Description                        |
+| ------------------------ | ---------------------------------- |
+| `studioWorkerTask(task)` | Run a task in the studio worker.   |
+| `createStudioWorker()`   | Create a studio worker instance.   |
+| `tsxWorkerTask(task)`    | Run a TypeScript task in a worker. |
 
 ## `@sanity/cli-core/telemetry`
 

@@ -1,19 +1,20 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
+import {unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {deriveInterfaces} from '../../../deriveInterfaces.js'
 import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
 import {workbenchApp} from './devTestHelpers.js'
 
 describe('deriveInterfaces', () => {
-  test('derives nothing for a non-branded app (no unstable_defineApp)', () => {
+  test('derives nothing for a non-branded app (no defineApplication)', () => {
     expect(deriveInterfaces({title: 'Plain'} as CliConfig['app'], {isApp: true})).toEqual([])
     expect(deriveInterfaces(undefined, {isApp: true})).toEqual([])
   })
 
   test('maps views to panel interfaces', () => {
     const app = workbenchApp({
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -22,8 +23,8 @@ describe('deriveInterfaces', () => {
         moduleId: 'views/feed',
         name: 'feed',
         src: './src/FeedPanel.tsx',
+        surface: 'panel',
         title: 'feed',
-        type: 'panel',
         version: '1',
       },
     ])
@@ -31,7 +32,9 @@ describe('deriveInterfaces', () => {
 
   test('maps asset_source views to asset_source interfaces', () => {
     const app = workbenchApp({
-      views: [{name: 'library', src: './src/Picker.tsx', title: 'library', type: 'asset_source'}],
+      views: [
+        {name: 'library', src: './src/Picker.tsx', surface: 'asset_source', title: 'library'},
+      ],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -40,16 +43,63 @@ describe('deriveInterfaces', () => {
         moduleId: 'views/library',
         name: 'library',
         src: './src/Picker.tsx',
+        surface: 'asset_source',
         title: 'library',
-        type: 'asset_source',
         version: '1',
       },
     ])
   })
 
-  test('maps services to worker interfaces', () => {
+  test('maps tile views to tile interfaces, carrying size and order metadata', () => {
     const app = workbenchApp({
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      views: [
+        {
+          name: 'agent',
+          order: 100,
+          size: 'large',
+          src: './src/Tile.tsx',
+          surface: 'tile',
+          title: 'agent',
+        },
+      ],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-tile-agent',
+        metadata: {order: 100, size: 'large'},
+        moduleId: 'views/agent',
+        name: 'agent',
+        src: './src/Tile.tsx',
+        surface: 'tile',
+        title: 'agent',
+        version: '1',
+      },
+    ])
+  })
+
+  test('maps a tile view without order to size-only metadata', () => {
+    const app = workbenchApp({
+      views: [
+        {name: 'agent', size: 'small', src: './src/Tile.tsx', surface: 'tile', title: 'agent'},
+      ],
+    })
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'test-app-tile-agent',
+        metadata: {size: 'small'},
+        moduleId: 'views/agent',
+        name: 'agent',
+        src: './src/Tile.tsx',
+        surface: 'tile',
+        title: 'agent',
+        version: '1',
+      },
+    ])
+  })
+
+  test('maps web workers to worker interfaces', () => {
+    const app = workbenchApp({
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -65,25 +115,94 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('derives an app interface from entry for an SDK app', () => {
+  test('derives a window interface from entry for an SDK app', () => {
     const app = workbenchApp({entry: './src/App.tsx', slug: 'my-app'})
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
-        id: 'my-app-app-my-app',
+        id: 'my-app-window-my-app',
         metadata: null,
         moduleId: 'App',
         name: 'my-app',
         src: './src/App.tsx',
+        surface: 'window',
         title: 'Test App',
-        type: 'app',
+      },
+    ])
+  })
+
+  test('keys the id prefix and window name on name, not the slug address', () => {
+    const app = workbenchApp({entry: './src/App.tsx', name: 'reviews', slug: 'reviews-host'})
+    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+      {
+        id: 'reviews-window-reviews',
+        metadata: null,
+        moduleId: 'App',
+        name: 'reviews',
+        src: './src/App.tsx',
+        surface: 'window',
+        title: 'Test App',
+      },
+    ])
+  })
+
+  test('inherits global placement metadata for panel and window views', () => {
+    const app = workbenchApp({
+      dock: {group: 'dock.applications', order: 100},
+      entry: './src/App.tsx',
+      views: [
+        {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'Feed'},
+        {
+          dock: {group: 'dock.user'},
+          name: 'settings',
+          src: './src/Settings.tsx',
+          surface: 'window',
+          title: 'Settings',
+        },
+        {
+          dock: {order: 20},
+          name: 'inbox',
+          src: './src/Inbox.tsx',
+          surface: 'panel',
+          title: 'Inbox',
+        },
+      ],
+    })
+
+    expect(
+      deriveInterfaces(app, {isApp: true})
+        .filter(
+          (iface) =>
+            'surface' in iface && (iface.surface === 'panel' || iface.surface === 'window'),
+        )
+        .map((iface) => ({metadata: iface.metadata, name: iface.name, surface: iface.surface})),
+    ).toEqual([
+      {
+        metadata: {dock: {group: 'dock.applications', order: 100}},
+        name: 'feed',
+        surface: 'panel',
+      },
+      {
+        metadata: {dock: {group: 'dock.user', order: 100}},
+        name: 'settings',
+        surface: 'window',
+      },
+      {
+        metadata: {dock: {group: 'dock.applications', order: 20}},
+        name: 'inbox',
+        surface: 'panel',
+      },
+      {
+        metadata: {dock: {group: 'dock.applications', order: 100}},
+        name: 'test-app',
+        surface: 'window',
       },
     ])
   })
 
   test('stamps the moduleId a deploy would, so a local interface resolves like a deployed one', () => {
     const panelApp = workbenchApp({
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(panelApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
       'views/feed',
@@ -92,7 +211,7 @@ describe('deriveInterfaces', () => {
 
     const entryApp = workbenchApp({
       entry: './src/App.tsx',
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(entryApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
       'services/unread',
@@ -103,26 +222,26 @@ describe('deriveInterfaces', () => {
   test('carries null metadata on every interface (not yet populated)', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})?.every((iface) => iface.metadata === null)).toBe(
       true,
     )
   })
 
-  test('omits the app interface for a dock-only app (no entry)', () => {
+  test('omits the window interface for a dock-only app (no entry)', () => {
     const app = workbenchApp({
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
     const result = deriveInterfaces(app, {isApp: true})
-    expect(result?.some((iface) => iface.type === 'app')).toBe(false)
+    expect(result?.some((iface) => 'surface' in iface && iface.surface === 'window')).toBe(false)
   })
 
-  test('orders a panel view ahead of services', () => {
+  test('orders a panel view ahead of web workers', () => {
     const app = workbenchApp({
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
       slug: 'my-app',
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -131,8 +250,8 @@ describe('deriveInterfaces', () => {
         moduleId: 'views/feed',
         name: 'feed',
         src: './src/FeedPanel.tsx',
+        surface: 'panel',
         title: 'feed',
-        type: 'panel',
         version: '1',
       },
       {
@@ -148,11 +267,11 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('places the app view after services', () => {
+  test('places the window view after web workers', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
       slug: 'my-app',
+      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
       {
@@ -166,22 +285,22 @@ describe('deriveInterfaces', () => {
         version: '1',
       },
       {
-        id: 'my-app-app-my-app',
+        id: 'my-app-window-my-app',
         metadata: null,
         moduleId: 'App',
         name: 'my-app',
         src: './src/App.tsx',
+        surface: 'window',
         title: 'Test App',
-        type: 'app',
       },
     ])
   })
 
-  test('derives a unique id per interface, disambiguating a view and service that share a name', () => {
+  test('derives a unique id when a view and web worker share a name', () => {
     const app = workbenchApp({
-      services: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
       slug: 'my-app',
-      views: [{name: 'sync', src: './src/SyncPanel.tsx', title: 'sync', type: 'panel'}],
+      views: [{name: 'sync', src: './src/SyncPanel.tsx', surface: 'panel', title: 'sync'}],
+      webWorkers: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
     })
     const ids = deriveInterfaces(app, {isApp: true})?.map((iface) => iface.id) ?? []
     expect(ids).toEqual(['my-app-panel-sync', 'my-app-worker-sync'])
@@ -193,12 +312,13 @@ describe('deriveInterfaces', () => {
     // stays pure, so an invalid combination still maps to its records.
     const app = workbenchApp({
       entry: './src/App.tsx',
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
-    expect(deriveInterfaces(app, {isApp: true})?.map((iface) => iface.type)).toEqual([
-      'panel',
-      'app',
-    ])
+    expect(
+      deriveInterfaces(app, {isApp: true})?.map((iface) =>
+        'surface' in iface ? iface.surface : iface.type,
+      ),
+    ).toEqual(['panel', 'window'])
   })
 
   test('does not put the config in the interface set', () => {
@@ -208,7 +328,7 @@ describe('deriveInterfaces', () => {
         fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
       },
       isSingleton: true,
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
     // only the panel — the config rides deriveConfigs, not interfaces
     expect(deriveInterfaces(app, {isApp: true})).toEqual([
@@ -218,8 +338,8 @@ describe('deriveInterfaces', () => {
         moduleId: 'views/feed',
         name: 'feed',
         src: './src/FeedPanel.tsx',
+        surface: 'panel',
         title: 'feed',
-        type: 'panel',
         version: '1',
       },
     ])
@@ -232,9 +352,9 @@ describe('deriveInterfaces', () => {
     )
   })
 
-  test('derives a studio app interface from the generated entry, after its panels/workers', () => {
+  test('derives a studio window interface from the generated entry, after its panels/workers', () => {
     const app = workbenchApp({
-      views: [{name: 'feed', src: './src/FeedPanel.tsx', title: 'feed', type: 'panel'}],
+      views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
     expect(deriveInterfaces(app, {isApp: false})).toEqual([
       {
@@ -243,49 +363,62 @@ describe('deriveInterfaces', () => {
         moduleId: 'views/feed',
         name: 'feed',
         src: './src/FeedPanel.tsx',
+        surface: 'panel',
         title: 'feed',
-        type: 'panel',
         version: '1',
       },
       {
-        id: 'test-app-app-test-app',
+        id: 'test-app-window-test-app',
         metadata: null,
         moduleId: 'App',
         name: 'test-app',
         src: './.sanity/federation/remote-entry.jsx',
+        surface: 'window',
         title: 'Test App',
-        type: 'app',
       },
     ])
   })
 })
 
+// deriveConfigs reads the config off the CLI config via resolveWorkbenchConfig.
+const cfg = (app: unknown) => ({app}) as CliConfig
+const mediaLibrary = (fields: {name: string; public?: boolean; src: string; title: string}[]) =>
+  cfg(unstable_defineMediaLibrary({fields, organizationId: 'org-1'}))
+
 describe('deriveConfigs', () => {
   test('returns [] for a non-branded app', async () => {
-    await expect(deriveConfigs({title: 'Plain'} as CliConfig['app'])).resolves.toEqual([])
+    await expect(deriveConfigs(cfg({title: 'Plain'}))).resolves.toEqual([])
     await expect(deriveConfigs(undefined)).resolves.toEqual([])
   })
 
-  test('[] for an app with no config', async () => {
+  test('[] for an app (not a config), even one with interfaces', async () => {
     await expect(
       deriveConfigs(
-        workbenchApp({views: [{name: 'feed', src: './f.tsx', title: 'feed', type: 'panel'}]}),
+        cfg(
+          workbenchApp({views: [{name: 'feed', src: './f.tsx', surface: 'panel', title: 'feed'}]}),
+        ),
       ),
     ).resolves.toEqual([])
   })
 
-  test('forwards the serializable config on the wire, keeping `src` as each field entry', async () => {
-    const app = workbenchApp({
-      config: {
+  test('derives a config with no fields — keyed on its appType, not its fields', async () => {
+    await expect(deriveConfigs(mediaLibrary([]))).resolves.toEqual([
+      {
         appType: 'media-library',
-        fields: [
-          {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-          {name: 'language', src: './src/language.ts', title: 'Language'},
-        ],
+        fields: [],
+        id: expect.any(String),
+        moduleName: 'media-library',
+        version: '1',
       },
-      isSingleton: true,
-    })
-    await expect(deriveConfigs(app)).resolves.toEqual([
+    ])
+  })
+
+  test('forwards the serializable config on the wire, keying moduleName on the target appType', async () => {
+    const config = mediaLibrary([
+      {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
+      {name: 'language', src: './src/language.ts', title: 'Language'},
+    ])
+    await expect(deriveConfigs(config)).resolves.toEqual([
       {
         appType: 'media-library',
         fields: [
@@ -293,46 +426,28 @@ describe('deriveConfigs', () => {
           {name: 'language', public: undefined, src: './src/language.ts', title: 'Language'},
         ],
         id: expect.any(String),
-        moduleName: 'test-app',
+        moduleName: 'media-library',
         version: '1',
       },
     ])
   })
 
   test('id is stable for the same config and changes when the config changes', async () => {
-    const config = {
-      appType: 'media-library' as const,
-      fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-    }
-    const app = workbenchApp({config, isSingleton: true})
-    const edited = workbenchApp({
-      config: {...config, fields: [{...config.fields[0]!, title: 'Edited'}]},
-      isSingleton: true,
-    })
-    expect((await deriveConfigs(app))[0]?.id).toBe((await deriveConfigs(app))[0]?.id)
-    expect((await deriveConfigs(edited))[0]?.id).not.toBe((await deriveConfigs(app))[0]?.id)
+    const config = mediaLibrary([
+      {name: 'description', src: './src/description.ts', title: 'Description'},
+    ])
+    const edited = mediaLibrary([
+      {name: 'description', src: './src/description.ts', title: 'Edited'},
+    ])
+    expect((await deriveConfigs(config))[0]?.id).toBe((await deriveConfigs(config))[0]?.id)
+    expect((await deriveConfigs(edited))[0]?.id).not.toBe((await deriveConfigs(config))[0]?.id)
   })
 
   test("forwards the config's appType discriminator (assigns the singleton, no app id)", async () => {
-    const app = workbenchApp({
-      applicationType: 'media-library',
-      config: {
-        appType: 'media-library',
-        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-      },
-      isSingleton: true,
-    })
-    expect((await deriveConfigs(app))[0]?.appType).toBe('media-library')
-  })
-
-  test('rejects an config on a non-singleton app', async () => {
-    const app = workbenchApp({
-      config: {
-        appType: 'media-library',
-        fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
-      },
-    })
-    await expect(deriveConfigs(app)).rejects.toThrow(/only supported for singleton apps/)
+    const config = mediaLibrary([
+      {name: 'description', src: './src/description.ts', title: 'Description'},
+    ])
+    expect((await deriveConfigs(config))[0]?.appType).toBe('media-library')
   })
 })
 

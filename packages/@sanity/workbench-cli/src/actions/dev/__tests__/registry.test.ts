@@ -88,7 +88,7 @@ const liveManifest = (port: number): DevServerManifest => ({
   port,
   startedAt: OS_START.toISOString(),
   type: 'studio',
-  version: 1,
+  version: 2,
   workDir: '/tmp/watch',
 })
 
@@ -129,7 +129,7 @@ describe('registerDevServer', () => {
       pid: process.pid,
       port: 3334,
       type: 'studio',
-      version: 1,
+      version: 2,
       workDir: '/tmp/project',
     })
 
@@ -149,6 +149,31 @@ describe('registerDevServer', () => {
 
     expect(readJson(manifestPath())).toMatchObject({id: 'app-abc', projectId: 'x1g7jygt'})
     expect(getRegisteredServers()[0]).toMatchObject({id: 'app-abc', projectId: 'x1g7jygt'})
+  })
+
+  test('forwards a tile interface with its size + order metadata through a round-trip', () => {
+    const tile = {
+      id: 'test-app-tile-agent',
+      metadata: {order: 100, size: 'large' as const},
+      moduleId: 'views/agent',
+      name: 'agent',
+      src: './src/tile.tsx',
+      surface: 'tile' as const,
+      title: 'Agent',
+      version: '1',
+    }
+
+    registerDevServer({
+      host: 'localhost',
+      interfaces: [tile],
+      port: 3334,
+      type: 'coreApp',
+      workDir: '/tmp/project',
+    })
+
+    // The read-back parses through `devServerInterfaceSchema`, so the tile's
+    // metadata survives write → read intact.
+    expect(getRegisteredServers()[0]?.interfaces).toEqual([tile])
   })
 
   test('omits optional metadata when not provided', () => {
@@ -273,7 +298,7 @@ describe('acquireWorkbenchLock', () => {
       pid: process.pid,
       port: 4000,
       startedAt: OS_START.toISOString(),
-      version: 1,
+      version: 2,
     })
   })
 

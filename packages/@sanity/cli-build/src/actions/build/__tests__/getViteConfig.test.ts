@@ -31,6 +31,12 @@ vi.mock('@sanity/cli-core/telemetry', () => ({
 }))
 
 vi.mock('@sanity/workbench-cli/build', () => ({
+  resourceBindingsChunkFileName: (name: string) =>
+    name === 'sanity-resource-bindings' ? 'sanity-resource-bindings.js' : undefined,
+  resourceBindingsCodeSplittingGroup: {
+    name: 'sanity-resource-bindings',
+    test: /sanity-resource-bindings/,
+  },
   workbenchOptimizeDeps: mockWorkbenchOptimizeDeps,
   workbenchVitePlugins: mockWorkbenchVitePlugins,
 }))
@@ -225,6 +231,52 @@ describe('#getViteConfig', () => {
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
   })
 
+  test('omits the resource-bindings chunk when not a Blueprints build', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      minify: true,
+      mode: 'production' as const,
+      outputDir: mockCustomOutput,
+      reactCompiler: undefined,
+      sourceMap: false,
+    })
+
+    // Without autoUpdates or isBlueprints there is no bespoke output config, so
+    // Rolldown never forces the bindings module into its own chunk.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const output = (config.build?.rolldownOptions as any)?.output
+    expect(output?.codeSplitting).toBeUndefined()
+    expect(output?.chunkFileNames).toBeUndefined()
+  })
+
+  test('forces the resource-bindings chunk on a Blueprints build', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isBlueprints: true,
+      minify: true,
+      mode: 'production' as const,
+      outputDir: mockCustomOutput,
+      reactCompiler: undefined,
+      sourceMap: false,
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const output = (config.build?.rolldownOptions as any)?.output
+    expect(output?.codeSplitting?.groups).toEqual([
+      {name: 'sanity-resource-bindings', test: /sanity-resource-bindings/},
+    ])
+    // The chunkFileNames fn keeps the bindings chunk unhashed at the root and
+    // defers to the hashed default for everything else.
+    expect(output?.chunkFileNames({name: 'sanity-resource-bindings'})).toBe(
+      'sanity-resource-bindings.js',
+    )
+    expect(output?.chunkFileNames({name: 'vendor'})).toBe('static/[name]-[hash].js')
+  })
+
   test('should create production config without minification', async () => {
     const options = {
       cwd: mockTestCwd,
@@ -281,7 +333,7 @@ describe('#getViteConfig', () => {
 
   test('should handle react compiler configuration', async () => {
     const {default: babel} = await import('@rolldown/plugin-babel')
-    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+    const {default: viteReact, reactCompilerPreset} = await import('@vitejs/plugin-react')
 
     const reactCompilerConfig = {
       target: '19' as const,
@@ -303,11 +355,13 @@ describe('#getViteConfig', () => {
     expect(babel).toHaveBeenCalledWith({
       presets: [expect.objectContaining({name: 'react-compiler-preset'})],
     })
+    // The babel transform leaves the react plugin's own compiler disabled
+    expect(viteReact).toHaveBeenCalledWith()
   })
 
   test('should handle react compiler boolean configuration', async () => {
     const {default: babel} = await import('@rolldown/plugin-babel')
-    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+    const {default: viteReact, reactCompilerPreset} = await import('@vitejs/plugin-react')
 
     const options = {
       cwd: mockTestCwd,
@@ -323,6 +377,73 @@ describe('#getViteConfig', () => {
     expect(babel).toHaveBeenCalledWith({
       presets: [expect.objectContaining({name: 'react-compiler-preset'})],
     })
+    expect(viteReact).toHaveBeenCalledWith()
+  })
+
+  test('should strip the transform discriminator for the babel react compiler', async () => {
+    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: {target: '19', transform: 'babel'},
+    })
+
+    expect(reactCompilerPreset).toHaveBeenCalledWith({target: '19'})
+  })
+
+  test('should handle oxc react compiler configuration', async () => {
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {default: viteReact, reactCompilerPreset} = await import('@vitejs/plugin-react')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: {target: '19', transform: 'oxc'},
+    })
+
+    // The compiler runs inside the react plugin; the transform
+    // discriminator is stripped and the babel pipeline is skipped entirely
+    expect(viteReact).toHaveBeenCalledWith({compiler: {target: '19'}})
+    expect(babel).not.toHaveBeenCalled()
+    expect(reactCompilerPreset).not.toHaveBeenCalled()
+  })
+
+  test('should handle oxc react compiler configuration without options', async () => {
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {default: viteReact} = await import('@vitejs/plugin-react')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: {transform: 'oxc'},
+    })
+
+    expect(viteReact).toHaveBeenCalledWith({compiler: {}})
+    expect(babel).not.toHaveBeenCalled()
+  })
+
+  test('should not enable any react compiler by default', async () => {
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {default: viteReact, reactCompilerPreset} = await import('@vitejs/plugin-react')
+
+    await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    })
+
+    expect(viteReact).toHaveBeenCalledWith()
+    expect(babel).not.toHaveBeenCalled()
+    expect(reactCompilerPreset).not.toHaveBeenCalled()
   })
 
   test('should set staging flag when SANITY_INTERNAL_ENV is staging', async () => {
@@ -564,7 +685,7 @@ describe('#getViteConfig', () => {
     const config = await getViteConfig({
       cwd: mockTestCwd,
       entries: mockEntries,
-      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', title: 'Panel', type: 'panel'}]},
+      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', surface: 'panel', title: 'Panel'}]},
       getEnvironmentVariables,
       isApp: true,
       isWorkbenchApp: true,
@@ -577,7 +698,7 @@ describe('#getViteConfig', () => {
     expect(mockWorkbenchOptimizeDeps).toHaveBeenCalledWith({
       appSources: [join(mockTestCwd, 'src/App'), join(mockTestCwd, 'sanity.config.ts')],
       cwd: mockTestCwd,
-      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', title: 'Panel', type: 'panel'}]},
+      exposes: {views: [{name: 'panel', src: './src/Panel.tsx', surface: 'panel', title: 'Panel'}]},
     })
     expect(config.optimizeDeps).toEqual({
       entries: ['src/App.tsx'],

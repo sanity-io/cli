@@ -14,7 +14,7 @@ vi.mock('../util/findConfigsPaths.js', () => ({
 const ROOT = '/mock/project'
 const BRAND = Symbol.for('sanity.workbench.defineApp')
 
-/** Mimics what `unstable_defineApp` returns: the input plus the brand. */
+/** Mimics what `defineApplication` returns: the input plus the brand. */
 function brandedApp(input: Record<string, unknown>) {
   return Object.defineProperty({...input}, BRAND, {enumerable: false, value: true})
 }

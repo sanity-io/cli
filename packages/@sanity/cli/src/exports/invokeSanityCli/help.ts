@@ -1,6 +1,7 @@
 import {type Command, type Config, Help, type Interfaces} from '@oclif/core'
 import {getHelpFlagAdditions} from '@oclif/core/help'
 
+import {resolveTopicAliasInArgv} from '../../topicAliases.js'
 import {
   type CommandPolicy,
   type CommandPolicySet,
@@ -118,6 +119,10 @@ class InvokableHelp extends Help {
     if (!this.commandIds.has(command.id)) throw new NotInvokableError(command.id)
     this.commandId = command.id
     return super.showCommandHelp(withoutDeniedFlags(command, this.policySet[command.id]))
+  }
+
+  public override async showHelp(argv: string[]): Promise<void> {
+    return super.showHelp(resolveTopicAliasInArgv(argv))
   }
 
   protected override async showTopicHelp(topic: Interfaces.Topic): Promise<void> {

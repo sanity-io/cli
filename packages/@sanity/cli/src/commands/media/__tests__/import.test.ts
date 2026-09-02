@@ -123,20 +123,11 @@ describe('#media:import', () => {
   })
 
   test('requires a media library ID in unattended mode', async () => {
-    mockApi({
-      apiVersion: MEDIA_LIBRARY_API_VERSION,
-      method: 'get',
-      query: {projectId: '1234'},
-      uri: '/media-libraries',
-    }).reply(200, {
-      data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
-    })
-
     const {error} = await testCommand(MediaImportCommand, ['test-source'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.message).toContain('Missing required flag media-library-id')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
   })

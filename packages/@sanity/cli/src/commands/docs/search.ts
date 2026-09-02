@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {exitCodes, isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {readDoc, searchDocs, type SearchResult} from '../../services/docs.js'
@@ -82,7 +82,7 @@ export class DocsSearchCommand extends SanityCommand<typeof DocsSearchCommand> {
     }
 
     // Show usage hint in non-interactive mode
-    if (!isInteractive()) {
+    if (!this.resolveIsInteractive()) {
       this.log('Use `sanity docs read <url>` to read an article in terminal.')
       this.log('Use `sanity docs read <path>` to follow links found within articles.')
       this.log('')

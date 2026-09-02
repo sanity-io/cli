@@ -31,13 +31,13 @@ export async function createMCPToken(): Promise<string> {
       withStamp: false,
     },
     method: 'POST',
-    uri: '/auth/session/create',
+    url: '/auth/session/create',
   })
 
   const tokenResponse = await client.request<{label: string; token: string}>({
     method: 'GET',
     query: {sid: sessionResponse.sid},
-    uri: '/auth/fetch',
+    url: '/auth/fetch',
   })
 
   return tokenResponse.token
@@ -69,7 +69,7 @@ export async function validateMCPToken(token: string): Promise<boolean> {
   })
 
   try {
-    await client.request({timeout: 2500, uri: '/users/me'})
+    await client.request({timeout: 2500, url: '/users/me'})
     return true
   } catch (err) {
     // 401/403 definitively mean "dead token"
@@ -94,6 +94,6 @@ export async function getPostInitPrompt() {
   return await client.request<PostInitPromptResponse | null>({
     method: 'GET',
     timeout: 1000,
-    uri: '/journey/mcp/post-init-prompt',
+    url: '/journey/mcp/post-init-prompt',
   })
 }

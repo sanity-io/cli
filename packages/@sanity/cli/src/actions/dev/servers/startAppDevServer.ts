@@ -1,6 +1,10 @@
 import {styleText} from 'node:util'
 
-import {isWorkbenchApp as determineIsWorkbenchApp} from '@sanity/workbench-cli'
+import {exitCodes} from '@sanity/cli-core'
+import {
+  isWorkbenchApp as determineIsWorkbenchApp,
+  isWorkbenchConfig as determineIsWorkbenchConfig,
+} from '@sanity/workbench-cli'
 
 import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
@@ -21,7 +25,10 @@ function toDisplayHost(host: string | undefined): string {
 export async function startAppDevServer(options: DevActionOptions): Promise<StartDevServerResult> {
   const {announceUrl = true, cliConfig, flags, httpPort, output, workDir} = options
 
-  const isWorkbenchApp = determineIsWorkbenchApp(cliConfig?.app)
+  // A config (the Media Library) surfaces through the workbench, not the
+  // dashboard, so it takes the same path as an app here.
+  const isWorkbenchApp =
+    determineIsWorkbenchApp(cliConfig?.app) || determineIsWorkbenchConfig(cliConfig?.app)
 
   // Workbench apps don't load through the dashboard, so the flag has no
   // meaning for them and is ignored.
@@ -37,7 +44,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
 
   if (!organizationId) {
     output.error(`Apps require an organization ID (orgId) specified in your sanity.cli.ts file`, {
-      exit: 1,
+      exit: exitCodes.RUNTIME_ERROR,
     })
     return {reason: 'missing-organization-id', started: false}
   }

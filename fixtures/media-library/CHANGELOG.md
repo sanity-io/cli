@@ -1,5 +1,133 @@
 # media-library-fixture
 
+## 1.0.30
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.7.0
+
+## 1.0.29
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.6.0
+
+## 1.0.28
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.5.0
+
+## 1.0.27
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.4.2
+
+## 1.0.26
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.4.1
+
+## 1.0.25
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.4.0
+
+## 1.0.24
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.3.0
+
+## 1.0.23
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.2.1
+
+## 1.0.22
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.2.0
+
+## 1.0.21
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.1.0
+
+## 1.0.20
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.0.3
+
+## 1.0.19
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.0.2
+
+## 1.0.18
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.0.1
+
+## 1.0.17
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.0.0
+
+## 1.0.16
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 7.18.0
+
+## 1.0.15
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 7.17.0
+
 ## 1.0.14
 
 ### Patch Changes

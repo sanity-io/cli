@@ -122,12 +122,12 @@ describe('#media:delete-aspect', () => {
     expect(mockSelect).not.toHaveBeenCalled()
   })
 
-  test('should require the media library ID with --yes', async () => {
-    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {
+  test.each(['--yes', '-y'])('should require the media library ID with %s', async (yesFlag) => {
+    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', yesFlag], {
       mocks: defaultMocks,
     })
 
-    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.message).toContain('Missing required flag media-library-id')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
     expect(mockConfirm).not.toHaveBeenCalled()
@@ -170,10 +170,7 @@ describe('#media:delete-aspect', () => {
         isInteractive: false,
       },
     })
-    expect(missingLibrary.error?.message).toBe(
-      'Media library ID is required. Pass it with `--media-library-id <id>`.\n' +
-        'Error: Deletion requires confirmation. Pass `--yes` to delete the aspect.',
-    )
+    expect(missingLibrary.error?.message).toContain('Missing required flag')
     expect(missingLibrary.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
     const missingConfirmation = await testCommand(
@@ -181,7 +178,7 @@ describe('#media:delete-aspect', () => {
       ['myAspect', '--media-library-id', 'test-library-id'],
       {mocks: {...defaultMocks, isInteractive: false}},
     )
-    expect(missingConfirmation.error?.message).toContain('--yes')
+    expect(missingConfirmation.error?.message).toContain('Missing required flag yes')
     expect(missingConfirmation.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
     expect(mockConfirm).not.toHaveBeenCalled()

@@ -1,6 +1,6 @@
 {
   "name": "@sanity/workbench-cli",
-  "version": "1.9.0",
+  "version": "2.3.0",
   "description": "Internal implementation detail of the Sanity CLI's unstable workbench support. Not intended for direct use.",
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
@@ -43,6 +43,10 @@
       "source": "./src/_exports/preview.ts",
       "default": "./dist/_exports/preview.js"
     },
+    "./_internal_render": {
+      "source": "./src/_exports/_internal_render.ts",
+      "default": "./dist/_exports/_internal_render.js"
+    },
     "./undeploy": {
       "source": "./src/_exports/undeploy.ts",
       "default": "./dist/_exports/undeploy.js"
@@ -65,12 +69,14 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@module-federation/vite": "1.20.1",
+    "@module-federation/runtime": "2.9.0",
+    "@module-federation/vite": "1.21.0",
     "@sanity/cli-core": "workspace:^",
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",
-    "tar-fs": "catalog:",
+    "rxjs": "catalog:",
+    "tar": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
   },
@@ -83,7 +89,6 @@
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/node": "catalog:",
-    "@types/tar-fs": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",

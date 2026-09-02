@@ -135,8 +135,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       await session.waitForText(/Would you like to add the project ID and dataset/i)
       session.sendKey('Enter')
 
-      const exitCode = await session.waitForExit(90_000)
-      expect(exitCode).toBe(0)
+      await session.waitForExit(0, 90_000)
 
       expect(existsSync(`${nextjsDir}/sanity.config.ts`)).toBe(true)
 
@@ -180,8 +179,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       await session.waitForText(/Would you like to add the project ID and dataset/i)
       session.sendKey('Enter')
 
-      const exitCode = await session.waitForExit(90_000)
-      expect(exitCode).toBe(0)
+      await session.waitForExit(0, 90_000)
 
       expect(existsSync(`${nextjsDir}/app/admin/[[...tool]]/page.tsx`)).toBe(true)
       expect(existsSync(`${nextjsDir}/sanity.config.ts`)).toBe(true)

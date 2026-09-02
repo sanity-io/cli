@@ -58,8 +58,8 @@ vi.mock('../../../src/util/dirIsEmptyOrNonExistent.js', () => ({
   dirIsEmptyOrNonExistent: vi.fn(() => true),
 }))
 
-vi.mock('tar-fs', () => ({
-  pack: vi.fn(() => {
+vi.mock('tar', () => ({
+  c: vi.fn(() => {
     return {
       pipe: vi.fn(),
     }
@@ -273,6 +273,46 @@ describe('#deploy studio', () => {
     expect(stdout).toContain('Files to deploy (')
     expect(stdout).toContain('dist/index.html (')
     expect(stdout).not.toContain('Success! Studio deployed')
+  })
+
+  test('a plain studio collects no workbench data into the --json payload', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+    await mkdir(join(cwd, 'dist'), {recursive: true})
+    await writeFile(join(cwd, 'dist', 'index.html'), '<html></html>')
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appHost: studioHost, appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: 'studio-app-id',
+      projectId,
+      title: 'Existing Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--dry-run', '--json'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {api: {projectId}, studioHost}},
+    })
+
+    if (error) throw error
+    const {payload} = JSON.parse(stdout)
+    expect(Object.keys(payload).toSorted()).toEqual([
+      'appId',
+      'isAutoUpdating',
+      'projectId',
+      'type',
+      'version',
+    ])
   })
 
   test('runs the dry-run build unattended so it cannot prompt', async () => {
@@ -1833,6 +1873,51 @@ describe('#deploy studio', () => {
       })
 
       expect(error?.message).toContain('Missing title')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should show the worker error when SchemaExtractionError has no validation details', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+
+      mockStudioWorkerTask.mockResolvedValue({
+        error: 'Workspace base paths must share the same first segment',
+        type: 'error',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      expect(error?.message).toContain('Workspace base paths must share the same first segment')
       expect(error?.oclif?.exit).toBe(1)
     })
 

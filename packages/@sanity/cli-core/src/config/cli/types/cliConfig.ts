@@ -1,6 +1,52 @@
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
+import {type PluginOptions as BabelReactCompilerOptions} from 'babel-plugin-react-compiler'
+import {type ReactCompilerOptions as OxcReactCompilerOptions} from 'oxc-transform-react'
 
 import {type UserViteConfig} from './userViteConfig'
+
+/**
+ * An optional peer dependency's options type, or `unknown` when the peer's
+ * typings did not resolve.
+ *
+ * `babel-plugin-react-compiler` and `oxc-transform-react` are optional peer
+ * dependencies, so the type-only imports above only resolve in projects that
+ * install them. When one is missing, TypeScript degrades its import to `any`
+ * (the unresolved-module error is suppressed inside declaration files under
+ * `skipLibCheck`), and intersecting `any` into a {@link ReactCompilerConfig}
+ * branch would collapse the whole union to `any` — silently disabling type
+ * checking of the `reactCompiler` option, including for the compiler that IS
+ * installed. Mapping a missing peer's options to `unknown` (the identity
+ * under intersection) instead reduces that branch to just its `transform`
+ * discriminator, keeping the other branch fully checked.
+ *
+ * `unknown extends T` is only true when `T` degraded to `any`/`unknown`;
+ * resolved options types pass through untouched. (`0 extends 1 & T` — the
+ * usual any-detector — does not work here: an unresolved import produces the
+ * checker's error type, which that intersection propagates.)
+ */
+type OptionalPeerOptions<T> = unknown extends T ? unknown : T
+
+/**
+ * Configuration for React Compiler.
+ *
+ * The `transform` field selects which React Compiler transform to run; the
+ * remaining options are passed to the selected transform:
+ *
+ * - `'babel'` (default) - the Babel plugin
+ *   ({@link https://www.npmjs.com/package/babel-plugin-react-compiler | babel-plugin-react-compiler}
+ *   must be installed in your project)
+ * - `'oxc'` (experimental) - the native Rust port
+ *   ({@link https://www.npmjs.com/package/oxc-transform-react | oxc-transform-react}
+ *   must be installed in your project)
+ *
+ * Each branch's options are only type-checked when the corresponding package
+ * is installed; a missing package reduces its branch to just the `transform`
+ * discriminator.
+ *
+ * @public
+ */
+export type ReactCompilerConfig =
+  | (OptionalPeerOptions<BabelReactCompilerOptions> & {transform?: 'babel'})
+  | (OptionalPeerOptions<OxcReactCompilerOptions> & {transform: 'oxc'})
 
 export interface TypeGenConfig {
   formatGeneratedCode: boolean
@@ -93,7 +139,12 @@ export interface CliConfig {
     basePath?: string
   }
 
-  /** Configuration options for React Compiler */
+  /**
+   * Configuration options for React Compiler. Pass `true` to enable it with
+   * the default (babel) transform, or an object to configure it — see
+   * {@link ReactCompilerConfig} for choosing between the babel and the
+   * experimental oxc transform.
+   */
   reactCompiler?: boolean | ReactCompilerConfig
 
   /** Wraps the Studio in \<React.StrictMode\> root to aid in flagging potential problems related to concurrent features (startTransition, useTransition, useDeferredValue, Suspense). Can also be enabled by setting SANITY_STUDIO_REACT_STRICT_MODE="true"|"false". It only applies to sanity dev in development mode and is ignored in sanity build and in production. Defaults to true. */

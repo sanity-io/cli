@@ -8,6 +8,7 @@ import {
   SanityCommand,
   subdebug,
 } from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {spinner} from '@sanity/cli-core/ux'
 import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 
@@ -52,10 +53,11 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       description: 'Deploy all aspects',
       required: false,
     }),
-    'media-library-id': Flags.string({
-      description: 'The id of the target media library',
-      required: false,
-    }),
+    'media-library-id': requiredWhenUnattended(
+      Flags.string({
+        description: 'The id of the target media library',
+      }),
+    ),
   }
 
   public async run(): Promise<void> {
@@ -96,12 +98,6 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
     }
 
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
-
-    if (!mediaLibraryIdFlag && this.isUnattended()) {
-      this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
-        exit: exitCodes.USAGE_ERROR,
-      })
-    }
 
     try {
       // Determine target media library

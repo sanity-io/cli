@@ -130,11 +130,24 @@ export default defineConfig(
       'n/no-unsupported-features/es-syntax': 'off',
       'n/no-unsupported-features/node-builtins': [
         'error',
-        {ignores: ['import.meta.dirname', 'fetch', 'Response', 'util.styleText']},
+        {
+          // ReadableStream is required by get-it v9 streaming responses. The eslint-plugin-n
+          // version matrix still marks it experimental below 22.15, but our engines are >=22.12
+          // and Node provides the web streams API there.
+          ignores: ['import.meta.dirname', 'fetch', 'Response', 'ReadableStream', 'util.styleText'],
+        },
       ],
       'no-console': 'error',
       'no-dupe-class-members': 'off',
       'no-redeclare': 'off',
+      'no-restricted-globals': [
+        'error',
+        {
+          message:
+            'Use `safeStructuredClone` from @sanity/cli-core/util instead of bare `structuredClone`.',
+          name: 'structuredClone',
+        },
+      ],
       'no-restricted-imports': [
         'error',
         {
@@ -255,6 +268,7 @@ export default defineConfig(
   {
     files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts'],
     rules: {
+      'no-restricted-globals': 'off',
       'no-restricted-syntax': 'off',
       'unicorn/prefer-string-raw': 'off',
     },

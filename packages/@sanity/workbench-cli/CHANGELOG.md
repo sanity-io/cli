@@ -1,5 +1,186 @@
 # @sanity/workbench-cli
 
+## 2.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.4...workbench-cli-v2.3.0)
+
+_2026-09-01_
+
+### Features
+
+- **workbench-cli:** rename `surface: app` to `surface: window` ([#1797](https://github.com/sanity-io/cli/pull/1797)) ([fa3ac12](https://github.com/sanity-io/cli/commit/fa3ac120851a68c691628ed0e5c322f71e62975b))
+- serve a standalone entry point for all apps and studios ([#1815](https://github.com/sanity-io/cli/pull/1815)) ([ddfcdd1](https://github.com/sanity-io/cli/commit/ddfcdd185635ee189567161e79885cd35126fec8))
+
+### Bug Fixes
+
+- **deps:** update dependency oxfmt to ^0.65.0 ([#1808](https://github.com/sanity-io/cli/pull/1808)) ([5023d64](https://github.com/sanity-io/cli/commit/5023d64065a812aa3447cb015985ba947f478679))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.6.0
+
+## 2.2.4
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.3...workbench-cli-v2.2.4)
+
+_2026-09-01_
+
+### Bug Fixes
+
+- **deploy:** forward singleton flag during app creation ([#1778](https://github.com/sanity-io/cli/pull/1778)) ([d16ca8b](https://github.com/sanity-io/cli/commit/d16ca8bceb0f67dd4896b0ad8174f40a8d21a3b4))
+- **deps:** update dependency @module-federation/vite to v1.20.8 ([#1779](https://github.com/sanity-io/cli/pull/1779)) ([874e181](https://github.com/sanity-io/cli/commit/874e181029da828e7a30306974684d1c5268e40d))
+- **deps:** update dependency @module-federation/runtime to v2.9.0 ([#1781](https://github.com/sanity-io/cli/pull/1781)) ([7318927](https://github.com/sanity-io/cli/commit/7318927db2ad52d483ed0eb20f258eaccd6c1455))
+- **deps:** update dependency @module-federation/vite to v1.21.0 ([#1782](https://github.com/sanity-io/cli/pull/1782)) ([b20496b](https://github.com/sanity-io/cli/commit/b20496b3f899b1894a740692f19f00536714d7f8))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.1
+
+## 2.2.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.2...workbench-cli-v2.2.3)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- preserve the app id when loading Studio config ([#1768](https://github.com/sanity-io/cli/pull/1768)) ([e31dfd5](https://github.com/sanity-io/cli/commit/e31dfd5f5d3adb4c3008d30f0d34ada37f74604e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.0
+
+## 2.2.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.1...workbench-cli-v2.2.2)
+
+_2026-08-27_
+
+### Bug Fixes
+
+- **workbench:** run `sanity dev` for media library configs and render local views ([#1769](https://github.com/sanity-io/cli/pull/1769)) ([9189bd5](https://github.com/sanity-io/cli/commit/9189bd5092dc8591b9c92df4f1822ea68a0eaa47))
+
+  - Route an `unstable_defineMediaLibrary` config through the workbench dev server so the shell starts and renders it
+  - Skip core app manifest extraction silently for config-only projects, dropping the misleading "Manifest creation skipped" warning
+  - Convert local dev view interfaces from `surface` to the remote's `type` wire shape, matching deployed apps
+
+## 2.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.0...workbench-cli-v2.2.1)
+
+_2026-08-26_
+
+### Bug Fixes
+
+- **workbench:** enforce app-wide interface name uniqueness ([#1760](https://github.com/sanity-io/cli/pull/1760)) ([027db7f](https://github.com/sanity-io/cli/commit/027db7f9792757243e94e76c7924012dd5a002ed))
+
+## 2.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.1.0...workbench-cli-v2.2.0)
+
+_2026-08-26_
+
+### Features
+
+- make name the application identity, slug the address ([#1748](https://github.com/sanity-io/cli/pull/1748)) ([cec18fc](https://github.com/sanity-io/cli/commit/cec18fc56c7874b890797c5679ba9fd2ac561303))
+- **workbench:** enable type-safe window, panel, and tile declarations ([#1755](https://github.com/sanity-io/cli/pull/1755)) ([36b61b3](https://github.com/sanity-io/cli/commit/36b61b39d1d09010fa68098d2064d3dab51cdbd3))
+- **workbench:** stabilize unstable_defineApp ([#1756](https://github.com/sanity-io/cli/pull/1756)) ([69a180e](https://github.com/sanity-io/cli/commit/69a180ec221e5762e56b7afef59ea952e4d3fee3))
+- **workbench:** align application workers with the web worker api ([#1757](https://github.com/sanity-io/cli/pull/1757)) ([ee095b5](https://github.com/sanity-io/cli/commit/ee095b5fe9f2268d4d542e5eb170c5d111eb6832))
+- **workbench:** rename view type discriminator to surface ([#1759](https://github.com/sanity-io/cli/pull/1759)) ([d9bd013](https://github.com/sanity-io/cli/commit/d9bd01305e08d5c5dc5a006a50d899453283b1c7))
+
+### Bug Fixes
+
+- append content-hash to remote-entry ([#1747](https://github.com/sanity-io/cli/pull/1747)) ([aae7de5](https://github.com/sanity-io/cli/commit/aae7de5d1a0ac2a021f1a6eb0e7f89e62b623817))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.4.0
+
+## 2.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.2...workbench-cli-v2.1.0)
+
+_2026-08-24_
+
+### Features
+
+- **workbench:** allow window entries with multiple panel views ([#1741](https://github.com/sanity-io/cli/pull/1741)) ([3f8c612](https://github.com/sanity-io/cli/commit/3f8c6120887335f1bdd76a2c76f91bfd31b9272d))
+
+### Bug Fixes
+
+- **workbench:** decouple cli from sanity/workbench ([#1734](https://github.com/sanity-io/cli/pull/1734)) ([ea4dc56](https://github.com/sanity-io/cli/commit/ea4dc5660f10eb4b1758c3924ea2241d4007e35f))
+- **workbench:** disable federation dts plugins ([#1740](https://github.com/sanity-io/cli/pull/1740)) ([666d2fb](https://github.com/sanity-io/cli/commit/666d2fbb2725f77684724bb944f31c7b06e8d634))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.3.0
+
+## 2.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.1...workbench-cli-v2.0.2)
+
+_2026-08-19_
+
+### Bug Fixes
+
+- **workbench-cli:** let a config-only dev server share a slug with its app server ([#1725](https://github.com/sanity-io/cli/pull/1725)) ([9925e21](https://github.com/sanity-io/cli/commit/9925e214ff98ca9f49c8194cb8990514de081aef))
+
+## 2.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.0.0...workbench-cli-v2.0.1)
+
+_2026-08-17_
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.20.7 ([#1706](https://github.com/sanity-io/cli/pull/1706)) ([60e664f](https://github.com/sanity-io/cli/commit/60e664f0ad3bddf2b35d1b6db04b10e44420011a))
+
+## 2.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.10.0...workbench-cli-v2.0.0)
+
+_2026-08-14_
+
+### ⚠ BREAKING CHANGES
+
+- **cli:** unify the --json shape of deploy and undeploy ([#1691](https://github.com/sanity-io/cli/pull/1691)) ([8ed25bb](https://github.com/sanity-io/cli/commit/8ed25bbc0c2e2b3365d5b3dcd88567563ae9ab5a))
+
+### Features
+
+- **workbench:** key a dev app's id on its slug ([#1667](https://github.com/sanity-io/cli/pull/1667)) ([e11a2d3](https://github.com/sanity-io/cli/commit/e11a2d3d7f72beb5575f0cde1f455cc8e39a01d0))
+- send deployment access array for workbench studios ([#1676](https://github.com/sanity-io/cli/pull/1676)) ([3601ecf](https://github.com/sanity-io/cli/commit/3601ecfa7ff232ed42caf67d9e7b98847222b605))
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.20.5 ([#1683](https://github.com/sanity-io/cli/pull/1683)) ([a5779c1](https://github.com/sanity-io/cli/commit/a5779c1e83fffe5acde2877d8e54c0dad6f3abb1))
+- **cli:** trim deploy payload and undeploy dry-run output ([#1696](https://github.com/sanity-io/cli/pull/1696)) ([1462d82](https://github.com/sanity-io/cli/commit/1462d8236f67a706397ca774fb3f9abaf4929cd6))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.0.0
+
+## 1.10.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v1.9.0...workbench-cli-v1.10.0)
+
+_2026-08-04_
+
+### Features
+
+- **workbench:** register tile view type ([#1659](https://github.com/sanity-io/cli/pull/1659)) ([1ae4d8e](https://github.com/sanity-io/cli/commit/1ae4d8e1ae625e08fca3ae1273fab46f91c33677))
+
 ## [1.9.0](https://github.com/sanity-io/cli/compare/workbench-cli-v1.8.0...workbench-cli-v1.9.0)
 
 _2026-08-03_

@@ -86,7 +86,6 @@ export async function login(options: LoginOptions) {
   output.log(`\n${actionText} ${loginUrl.href}\n`)
 
   const spin = spinner({
-    discardStdin: false, // dont swallow ctrl-c
     text: 'Waiting for browser login to complete... Press Ctrl + C to cancel',
   }).start()
 

@@ -1,11 +1,11 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
+import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/workbench-cli'
 
 import {checkForDeprecatedAppId} from '../../util/appId.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
-import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {extractStudioManifest} from '../manifest/extractStudioManifest.js'
 import {startAppDevServer} from './servers/startAppDevServer.js'
 import {startStudioDevServer} from './servers/startStudioDevServer.js'
@@ -15,7 +15,7 @@ const noop = async () => {}
 
 /**
  * Entry point for `sanity dev`. A plain studio/app starts a single dev server, as
- * before workbench existed. A workbench app (via `unstable_defineApp`) delegates to
+ * before workbench existed. A workbench app (via `defineApplication`) delegates to
  * `@sanity/workbench-cli`, injecting the CLI-domain pieces (app server, manifest
  * extraction, app id) and loading the package lazily so plain projects never do.
  */
@@ -38,7 +38,9 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       httpPort: params.httpPort,
     })
 
-  if (isWorkbenchApp(cliConfig?.app)) {
+  // A workbench app (an app to render) or a workbench config (config-only, like
+  // the media library, which needs the workbench to render it) both delegate.
+  if (isWorkbenchApp(cliConfig?.app) || isWorkbenchConfig(cliConfig?.app)) {
     // Lazy so a non-workbench `sanity dev` never loads the package. `doImport`
     // is path-based and doesn't apply to a bare specifier.
     // eslint-disable-next-line no-restricted-syntax

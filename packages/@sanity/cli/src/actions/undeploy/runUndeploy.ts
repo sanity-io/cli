@@ -37,8 +37,15 @@ export interface UndeployOptions {
 
 /** What a real undeploy produced — the payload `--json` reports. */
 type UndeployResult =
-  | {application: UndeployTarget; undeployed: true}
-  | {reason: string; undeployed: false}
+  | {application: null; payload: null; reason: string; undeployed: false}
+  | {
+      application: object | null
+      deletes: UndeployTarget['deletes']
+      payload: UndeployTarget['payload']
+      reason: null
+      undeployed: true
+      url: string | null
+    }
 
 /**
  * Runs an undeploy in the mode the flags select: a real undeploy fails fast,
@@ -52,9 +59,7 @@ export async function runUndeploy(
 ): Promise<void> {
   const {flags, output} = options
   const json = !!flags.json
-  // The report-only `summary` lines never enter the payload
-  const emitJson = (payload: unknown) =>
-    output.log(JSON.stringify(payload, (key, value) => (key === 'summary' ? undefined : value), 2))
+  const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only
   // the final JSON.stringify writes to stdout.
@@ -85,7 +90,13 @@ export async function runUndeploy(
     // A blocked dry run reaches this catch too (its exit throws) and already
     // printed its plan, so only a real undeploy adds the {undeployed: false} envelope.
     if (json && !flags['dry-run']) {
-      emitJson({error: {message: failure.message}, undeployed: false})
+      emitJson({
+        application: null,
+        error: {message: failure.message},
+        payload: null,
+        reason: failure.message,
+        undeployed: false,
+      })
     }
     output.error(failure.message, {exit: failure.exit})
   }
@@ -105,7 +116,7 @@ async function undeployApp(
     output.log(`${resolution.message}.`)
     if (resolution.solution) output.log(`${resolution.solution}.`)
     output.log('Nothing to undeploy.')
-    return {reason: resolution.message, undeployed: false}
+    return {application: null, payload: null, reason: resolution.message, undeployed: false}
   }
 
   const {target} = resolution
@@ -133,12 +144,21 @@ async function undeployApp(
     spin.fail()
     undeployDebug(`Error undeploying ${label}`, error)
     // Labeled here, where the target is known — `normalizeFailure` only sees the adapter type.
-    throw new CLIError(`Error undeploying ${label}: ${getErrorMessage(error)}`, {exit: 1})
+    throw new CLIError(`Error undeploying ${label}: ${getErrorMessage(error)}`, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
   }
   spin.succeed()
 
   printUndeployed(target, output)
-  return {application: target, undeployed: true}
+  return {
+    application: target.application ?? null,
+    deletes: target.deletes,
+    payload: target.payload,
+    reason: null,
+    undeployed: true,
+    url: target.url,
+  }
 }
 
 /**
@@ -231,5 +251,8 @@ function normalizeFailure(
   }
   const label = type === 'coreApp' ? 'application' : 'studio'
   undeployDebug(`Error undeploying ${label}`, error)
-  return {exit: 1, message: `Error undeploying ${label}: ${getErrorMessage(error)}`}
+  return {
+    exit: exitCodes.RUNTIME_ERROR,
+    message: `Error undeploying ${label}: ${getErrorMessage(error)}`,
+  }
 }

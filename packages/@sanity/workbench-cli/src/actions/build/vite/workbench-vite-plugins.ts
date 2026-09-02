@@ -30,6 +30,8 @@ interface WorkbenchViteOptions {
   exposes?: WorkbenchExposes
   /** App (vs studio) build — selects the discriminated federation option shape. */
   isApp?: boolean
+  /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
+  isBlueprints?: boolean
 }
 
 /**
@@ -42,7 +44,7 @@ function requireStudioConfigPath(relativeConfigLocation: string | null): string 
   if (relativeConfigLocation === null) {
     throw new Error(
       'Workbench studios need a sanity.config.js or sanity.config.ts file. ' +
-        "Add one, or remove `applicationType: 'studio'` from `unstable_defineApp` " +
+        "Add one, or remove `applicationType: 'studio'` from `defineApplication` " +
         'to let the CLI infer the application type.',
     )
   }
@@ -51,7 +53,7 @@ function requireStudioConfigPath(relativeConfigLocation: string | null): string 
 
 /** Build the Vite plugins for a workbench app's module-federation remote. */
 export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promise<PluginOption> {
-  const {appId, cwd, entries, exposes, isApp} = options
+  const {appId, cwd, entries, exposes, isApp, isBlueprints} = options
   const pkgJson = await readPackageJson(path.join(cwd, 'package.json'))
 
   const federationPlugin = federation({
@@ -67,6 +69,7 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
           studioConfigPath: requireStudioConfigPath(entries.relativeConfigLocation),
         }),
     exposes,
+    isBlueprints,
     pkgJson,
     workDir: cwd,
   })

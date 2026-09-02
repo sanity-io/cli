@@ -2,7 +2,7 @@ import {type CliConfig, exitCodes, getLocalPackageVersion} from '@sanity/cli-cor
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
-import {checkBuiltOutput, type DeployedExpose} from '@sanity/workbench-cli/deploy'
+import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
 import {type Check, type CheckReporter, runStep} from '../../util/checks.js'
@@ -33,31 +33,21 @@ import {type DeployFlags} from './types.js'
 export interface DeployTarget {
   /** Whether the deploy creates a new application/studio or updates an existing one. */
   action: 'create' | 'update'
-  /** The application the deploy targets; `null` when a deploy would create one. */
-  applicationId: string | null
-  /** The application's title; `null` when it has none (or isn't created yet). */
+  /** `null` until the deploy creates the application. */
+  id: string | null
   title: string | null
-  /** Where the deployed studio/app is reachable; `null` when it can't be resolved yet. */
+  type: 'coreApp' | 'studio'
   url: string | null
 
-  /**
-   * Slug the deploy creates the application at. Omitted on redeploys, and in a
-   * dry run when no slug is configured (it's generated on deploy).
-   */
+  /** Absent on a plain app, whose backend reports `appHost` instead. */
   slug?: string
 }
 
 export interface DeployCheck extends Check {
-  /** Set on the config check with its summary both reporters read. */
-  config?: string
-  /** Set on the exposes check with the workbench exposes both reporters read. */
-  exposes?: DeployedExpose[]
-  /** Set on the singleton check when the app declares the flag explicitly. */
-  isSingleton?: boolean
+  /** The backend's record, verbatim; `--json` reports it once the deploy succeeds. */
+  application?: object
   /** Set on the deploy-target check with the resolved target both reporters read. */
   target?: DeployTarget
-  /** Set on the package-version check with the version both reporters read. */
-  version?: string
 }
 
 export type DeployCheckReporter = CheckReporter<DeployCheck>
@@ -69,7 +59,7 @@ export async function checkPackageVersion(
   const version = await getLocalPackageVersion(moduleName, workDir)
   reporter.report(
     version
-      ? {message: `Using ${moduleName} ${version}`, status: 'pass', version}
+      ? {message: `Using ${moduleName} ${version}`, status: 'pass'}
       : {
           message: `Failed to find installed ${moduleName} version`,
           solution: `Install ${moduleName} in this project`,
@@ -202,12 +192,14 @@ export function describeAppTarget(
       const title = application.title ?? application.appHost
       const url = application.url ?? getCoreAppUrl(application.organizationId, application.id)
       return {
+        application,
         message: `Deploys to existing application "${title}" at ${url}`,
         status: 'pass',
         target: {
           action: 'update',
-          applicationId: application.id,
-          title: application.title ?? null,
+          id: application.id,
+          title: application.title,
+          type: 'coreApp',
           url,
         },
       }
@@ -239,9 +231,10 @@ export function describeAppTarget(
           status: 'pass',
           target: {
             action: 'create',
-            applicationId: null,
+            id: null,
             ...(appHost ? {slug: appHost} : {}),
             title,
+            type: 'coreApp',
             url: null,
           },
         }
@@ -266,14 +259,16 @@ function describeSlugTaken({
   existing: DeployTargetApp
 }): DeployCheck {
   return {
+    application: existing,
     exitCode: exitCodes.USAGE_ERROR,
     message: `An application already exists at slug "${appHost}" in this organization (app ID ${existing.id})`,
     solution: `Add \`deployment: {appId: '${existing.id}'}\` to sanity.cli.ts to redeploy it`,
     status: 'fail',
     target: {
       action: 'update',
-      applicationId: existing.id,
+      id: existing.id,
       title: existing.title,
+      type: existing.type,
       url: existing.url ?? null,
     },
   }
@@ -306,7 +301,7 @@ export async function checkAppTarget(
         organizationId: string | undefined
         title?: string
       },
-): Promise<DeployTarget | null> {
+): Promise<DeployCheck | null> {
   const {title} = options
   if (options.isWorkbenchApp) {
     const {appId, organizationId, slug} = options
@@ -317,7 +312,7 @@ export async function checkAppTarget(
         const resolution = await resolveWorkbenchApp({appId, organizationId, slug})
         const check = describeAppTarget(resolution, {title})
         reporter.report(check)
-        return check.target ?? null
+        return check
       },
     })
   }
@@ -332,7 +327,7 @@ export async function checkAppTarget(
         title,
       })
       reporter.report(check)
-      return check.target ?? null
+      return check
     },
   })
 }
@@ -349,14 +344,17 @@ export function describeStudioTarget(
       return {message: `Deploy target not resolved — ${resolution.message}`, status: 'skip'}
     }
     case 'found': {
-      const url = resolution.application.url ?? studioUrl(resolution.application.appHost)
+      const {appHost} = resolution.application
+      const url = resolution.application.url ?? (appHost ? studioUrl(appHost) : null)
       return {
+        application: resolution.application,
         message: `Deploys to existing studio ${url}`,
         status: 'pass',
         target: {
           action: 'update',
-          applicationId: resolution.application.id,
-          title: resolution.application.title ?? null,
+          id: resolution.application.id,
+          title: resolution.application.title,
+          type: 'studio',
           url,
         },
       }
@@ -388,12 +386,7 @@ export function describeStudioTarget(
       const url = isWorkbench ? null : studioUrl(appHost)
       const result = {
         status: 'pass',
-        target: {
-          action: 'create',
-          applicationId: null,
-          title: title || null,
-          url,
-        },
+        target: {action: 'create', id: null, title: title || null, type: 'studio', url},
       } as const
       const titled = title ? ` titled "${title}"` : ''
 
@@ -444,7 +437,7 @@ export async function checkStudioTarget(
         slug: string
         title?: string
       },
-): Promise<DeployTarget | null> {
+): Promise<DeployCheck | null> {
   const {title} = options
   const resolve = options.isWorkbenchApp
     ? resolveWorkbenchStudio(options)
@@ -463,7 +456,7 @@ export async function checkStudioTarget(
         title,
       })
       reporter.report(check)
-      return check.target ?? null
+      return check
     },
   })
 }

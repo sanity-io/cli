@@ -29,6 +29,14 @@ export default defineType({
         collapsible: true,
       },
     },
+    {
+      name: 'metafields',
+      title: 'Metafields',
+      options: {
+        collapsed: true,
+        collapsible: true,
+      },
+    },
   ],
   fields: [
     // Created at
@@ -153,6 +161,17 @@ export default defineType({
           to: [{type: 'productVariant'}],
         },
       ],
+    }),
+    // Metafields
+    defineField({
+      fieldset: 'metafields',
+      name: 'metafields',
+      title: 'Metafields',
+      type: 'array',
+      description: 'Read-only. Replaced in full on every sync',
+      // Shopify owns the order, and `readOnly` does not remove the drag handles on its own.
+      options: {sortable: false},
+      of: [{type: 'shopifyMetafield'}],
     }),
     // Shop details
     defineField({

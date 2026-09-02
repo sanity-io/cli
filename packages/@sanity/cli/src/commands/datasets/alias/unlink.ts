@@ -1,6 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
@@ -42,10 +43,11 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
       description: 'Project ID to unlink dataset alias in',
       semantics: 'override',
     }),
-    force: Flags.boolean({
-      description: 'Skip confirmation prompt and unlink immediately',
-      required: false,
-    }),
+    force: requiredWhenUnattended(
+      Flags.boolean({
+        description: 'Skip confirmation prompt and unlink immediately',
+      }),
+    ),
   }
 
   static override hiddenAliases: string[] = ['dataset:alias:unlink']
@@ -104,11 +106,6 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
       if (force) {
         this.warn(`'--force' used: skipping confirmation, unlinking alias "${displayName}"`)
       } else {
-        if (this.isUnattended()) {
-          this.error('Unlinking a dataset alias requires confirmation. Re-run with `--force`.', {
-            exit: exitCodes.USAGE_ERROR,
-          })
-        }
         await this.confirmUnlink(linkedAlias.datasetName)
       }
 

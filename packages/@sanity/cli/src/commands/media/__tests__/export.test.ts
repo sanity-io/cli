@@ -311,22 +311,12 @@ describe('#media:export', () => {
   })
 
   test('requires a media library ID in unattended mode', async () => {
-    mockApi({
-      apiVersion: MEDIA_LIBRARY_API_VERSION,
-      method: 'get',
-      query: {projectId: TEST_CONFIG.PROJECT_ID},
-      uri: '/media-libraries',
-    }).reply(200, {
-      data: [{id: TEST_CONFIG.MEDIA_LIBRARY_ID, organizationId: 'org-1', status: 'active'}],
-    })
-
-    createTestToken('test-token')
     const ctx = createTestContext()
     const {error} = await testCommand(MediaExportCommand, [TEST_OUTPUTS.TAR_GZ], {
       mocks: {...ctx.mocks, isInteractive: false},
     })
 
-    expect(error?.message).toContain('--media-library-id <id>')
+    expect(error?.message).toContain('Missing required flag media-library-id')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockSelect).not.toHaveBeenCalled()
   })

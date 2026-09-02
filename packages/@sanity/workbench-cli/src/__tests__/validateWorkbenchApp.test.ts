@@ -10,7 +10,7 @@ const app = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-const panel = {name: 'feed', src: './src/Feed.tsx', title: 'feed', type: 'panel'}
+const panel = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
 
 describe('validateWorkbenchApp', () => {
   test('returns no errors for a valid app', () => {
@@ -23,20 +23,18 @@ describe('validateWorkbenchApp', () => {
     )
   })
 
-  test('reports the app-view / panel exclusion', () => {
-    expect(validateWorkbenchApp(app({entry: './src/App.tsx', views: [panel]}))).toContainEqual(
-      expect.stringContaining('cannot expose both an app view (`entry`) and panel views'),
-    )
+  test('accepts an app view alongside a panel view', () => {
+    expect(validateWorkbenchApp(app({entry: './src/App.tsx', views: [panel]}))).toEqual([])
   })
 
-  test('reports more than one panel view', () => {
+  test('accepts multiple panel views', () => {
     expect(
       validateWorkbenchApp(
         app({
-          views: [panel, {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'}],
+          views: [panel, {name: 'inbox', src: './src/Inbox.tsx', surface: 'panel', title: 'inbox'}],
         }),
       ),
-    ).toContainEqual(expect.stringContaining('at most one panel view'))
+    ).toEqual([])
   })
 
   test('locates a malformed declaration', () => {
@@ -48,14 +46,14 @@ describe('validateWorkbenchApp', () => {
   test('collects every error at once so they can be fixed together', () => {
     const errors = validateWorkbenchApp(
       app({
-        entry: './src/App.tsx',
         slug: 'bad!',
-        views: [panel, {name: 'inbox', src: './src/Inbox.tsx', title: 'inbox', type: 'panel'}],
+        views: [panel, {...panel, src: './src/Inbox.tsx'}],
       }),
     )
     expect(errors).toContainEqual(expect.stringMatching(/slug: App `slug` must be lowercase/))
-    expect(errors).toContainEqual(expect.stringContaining('cannot expose both an app view'))
-    expect(errors).toContainEqual(expect.stringContaining('at most one panel view'))
+    expect(errors).toContainEqual(
+      expect.stringContaining('`name` must be unique across views and web workers'),
+    )
   })
 })
 

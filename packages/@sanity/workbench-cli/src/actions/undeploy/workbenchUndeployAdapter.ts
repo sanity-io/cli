@@ -5,57 +5,58 @@ import {
   type UndeployTargetResolution,
 } from '@sanity/cli-core/undeploy'
 
+import {type ResolvedMediaLibraryConfig} from '../../resolveWorkbenchConfig.js'
 import {
   deleteApplication,
   getApplication,
   getApplicationUrl,
   getWorkbenchUrl,
 } from '../../services/applications.js'
-import {deleteConfig, listConfigs} from '../../services/installations.js'
+import {type ConfigSnapshot, deleteConfig, listConfigs} from '../../services/installations.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
-import {type DeployedExpose, summarizeInterfaces} from '../deploy/summarizeInterfaces.js'
+import {
+  type DeployedView,
+  type DeployedWebWorker,
+  summarizeInterfaces,
+} from '../deploy/summarizeInterfaces.js'
 
 /** The workbench extension of the shared target; serializes into `--json` as-is. */
 export type WorkbenchUndeployTarget =
   | (UndeployApplicationTarget & {
-      /** Interfaces (views and services) registered by the application. */
-      interfaces: DeployedExpose[]
+      services: DeployedWebWorker[]
+      views: DeployedView[]
     })
   | (UndeployConfigTarget & {
-      /** The deployed config snapshots an undeploy deletes. */
-      configs: {
-        createdAt: string | null
-        deployedBy: string | null
-        id: string
-      }[]
+      configs: ConfigSnapshot[]
     })
 
 /**
- * The undeploy adapter for workbench apps, mirroring what a workbench deploy
- * creates: apps that expose interfaces delete their Brett application (the
- * server soft-deletes its deployments and refuses singletons with active
- * installations); a singleton without interfaces — the media library — deletes
- * its installation's config snapshots instead.
+ * The undeploy adapter for workbench apps and configs, mirroring what a
+ * workbench deploy creates: an app that exposes interfaces deletes its Brett
+ * application (the server soft-deletes its deployments and refuses singletons
+ * with active installations); a config — the media library — deletes its
+ * installation's config snapshots instead. The two are severed at the source,
+ * so exactly one of `workbench`/`config` is supplied and the brand decides the path.
  */
 export function createWorkbenchUndeployAdapter(options: {
   appId: string | undefined
+  config?: ResolvedMediaLibraryConfig
   organizationId: string | undefined
   type: 'coreApp' | 'studio'
-  workbench: DeployableWorkbenchApp
+  workbench?: DeployableWorkbenchApp
 }): UndeployAdapter<WorkbenchUndeployTarget> {
-  const {appId, organizationId, type, workbench} = options
-  // Keyed on singleton-ness, not on a locally declared config, so an undeploy
-  // still reaches the server's config snapshots after the fields are removed
-  // from sanity.cli.ts.
-  const configOnly = !!workbench.isSingleton && !workbench.hasInterfaces
+  const {appId, config, organizationId, type, workbench} = options
   // Workbench-internal, so kept off the reported target; resolveTarget stashes it for the delete.
   let installationId: string | undefined
 
   return {
     resolveTarget: async () => {
-      if (!configOnly) return resolveApplicationTarget({appId, type, workbench})
-      const resolved = await resolveConfigTarget({organizationId, workbench})
+      if (!config) {
+        if (!workbench) throw new Error('No workbench app or config to undeploy')
+        return resolveApplicationTarget({appId, type, workbench})
+      }
+      const resolved = await resolveConfigTarget({config, organizationId})
       installationId = resolved.installationId
       return resolved.resolution
     },
@@ -95,42 +96,35 @@ async function resolveApplicationTarget({
     return {message: 'Application with the given ID does not exist', type: 'none'}
   }
 
-  const {exposes, lines} = summarizeInterfaces(workbench)
+  const {lines, services, views} = summarizeInterfaces(workbench)
   return {
     target: {
-      activeDeployment: null,
-      appHost: application.slug,
-      createdAt: null,
+      application,
       deletes: 'application',
       id: application.id,
-      interfaces: exposes,
-      organizationId: application.organizationId,
-      projectId: null,
-      summary: [
-        ...lines,
-        ...(workbench.isSingleton === undefined ? [] : [`Singleton: ${workbench.isSingleton}`]),
-      ],
+      payload: {appId: application.id, services, type, views},
+      services,
+      summary: lines,
       title: application.title,
       type,
       url: getApplicationUrl({...application, type}),
+      views,
     },
     type: 'found',
   }
 }
 
 async function resolveConfigTarget({
+  config,
   organizationId,
-  workbench,
 }: {
+  config: ResolvedMediaLibraryConfig
   organizationId: string | undefined
-  workbench: DeployableWorkbenchApp
 }): Promise<{
   installationId?: string
   resolution: UndeployTargetResolution<WorkbenchUndeployTarget>
 }> {
-  const config = workbench.config
-  const appType = config?.appType ?? workbench.applicationType
-  if (!appType) throw new Error('The app declares no app type to resolve its installation')
+  const {appType} = config
   if (!organizationId) {
     throw new Error(
       'sanity.cli.ts does not contain an organization identifier ("app.organizationId"), which is required to resolve the installation',
@@ -158,28 +152,20 @@ async function resolveConfigTarget({
     }
   }
 
-  // At most one snapshot is active (served); the rest are deactivated history.
-  const active = configs.find((snapshot) => snapshot.isActive)
   return {
     installationId,
     resolution: {
       target: {
-        activeDeployment: active
-          ? {deployedAt: active.createdAt ?? '', deployedBy: active.deployedBy ?? ''}
-          : null,
-        appHost: null,
-        configs: configs.map((snapshot) => ({
-          createdAt: snapshot.createdAt ?? null,
-          deployedBy: snapshot.deployedBy ?? null,
-          id: snapshot.id,
-        })),
-        createdAt: configs.at(-1)?.createdAt ?? null,
+        configs,
         deletes: 'config',
         id: null,
-        organizationId,
-        projectId: null,
-        summary: config ? [summarizeConfig(config)] : undefined,
-        title: workbench.slug,
+        payload: {
+          appId: null,
+          config: summarizeConfig(config),
+          type: 'coreApp',
+        },
+        summary: [summarizeConfig(config)],
+        title: appType,
         type: 'coreApp',
         url: getWorkbenchUrl(organizationId),
       },

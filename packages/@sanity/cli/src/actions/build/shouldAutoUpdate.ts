@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {type DeployFlags} from '../deploy/types.js'
@@ -135,7 +135,7 @@ export function shouldAutoUpdate({
 
   switch (issue?.type) {
     case 'conflicting-config': {
-      output.error(getAutoUpdateIssueMessage(issue), {exit: 1})
+      output.error(getAutoUpdateIssueMessage(issue), {exit: exitCodes.RUNTIME_ERROR})
       break
     }
     case 'deprecated-config': {

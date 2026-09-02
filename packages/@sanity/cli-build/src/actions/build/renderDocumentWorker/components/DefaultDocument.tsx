@@ -107,7 +107,7 @@ const globalStyles = `
 `
 
 /**
- * @hidden
+ * @internal
  * @beta
  */
 export interface DefaultDocumentProps {

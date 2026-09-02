@@ -39,6 +39,7 @@ if (!workerScriptPath) {
 await setupBrowserStubs()
 
 const studioEnvVars = await getStudioEnvironmentVariables(rootPath)
+const applicationId = process.env.STUDIO_WORKER_APPLICATION_ID
 
 // Allow the CLI config (`sanity.cli.(js|ts)`) to define a `vite` property which can
 // extend/modify the default vite configuration for the studio.
@@ -82,12 +83,16 @@ const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
   configFile: false,
   // Inject environment variables as compile-time constants for Vite
-  define: Object.fromEntries(
-    Object.entries(studioEnvVars).map(([key, value]) => [
-      `process.env.${key}`,
-      JSON.stringify(value),
-    ]),
-  ),
+  define: {
+    // Config imports must use the same bus identity as the surrounding app bundle.
+    ...(applicationId ? {__SANITY_APP_ID__: JSON.stringify(applicationId)} : {}),
+    ...Object.fromEntries(
+      Object.entries(studioEnvVars).map(([key, value]) => [
+        `process.env.${key}`,
+        JSON.stringify(value),
+      ]),
+    ),
+  },
   envPrefix: cliConfig && 'app' in cliConfig ? 'SANITY_APP_' : 'SANITY_STUDIO_',
   esbuild: {
     jsx: 'automatic',

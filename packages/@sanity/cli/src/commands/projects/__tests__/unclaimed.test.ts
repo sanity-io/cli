@@ -1,6 +1,8 @@
 import {stripVTControlCharacters} from 'node:util'
 
+import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
+import stringWidth from 'string-width'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 const mockGet = vi.hoisted(() => vi.fn())
@@ -51,6 +53,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers()
   vi.clearAllMocks()
+  Reflect.deleteProperty(process.stdout, 'columns')
   process.exitCode = undefined
 })
 
@@ -59,9 +62,13 @@ describe('#projects:unclaimed', () => {
     await UnclaimedProjectsCommand.run([])
 
     const output = outputText()
-    expect(output.split('\n')[0]?.trimEnd()).toMatch(
-      /^id\s+dataset\s+created\s+claim deadline\s+claim url$/u,
-    )
+    expect(output).toContain('ID')
+    expect(output).toContain('Dataset')
+    expect(output).toContain('Created')
+    expect(output).toContain('Claim deadline')
+    expect(output).toContain('Claim URL')
+    expect(output).toContain('┌')
+    expect(output).toContain('└')
     expect(output).toContain(record.projectId)
     expect(output).toContain(record.dataset)
     expect(output).toContain(record.mintedAt)
@@ -70,6 +77,21 @@ describe('#projects:unclaimed', () => {
     expect(output).not.toContain(robotToken)
     expect(mockGetProjectClaimStatus).toHaveBeenCalledWith(record.projectId, robotToken)
     expect(mockSet).not.toHaveBeenCalled()
+  })
+
+  test('wraps local records within the terminal width', async () => {
+    Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 80})
+
+    await UnclaimedProjectsCommand.run([])
+
+    const output = outputText()
+    expect(output).toContain(record.projectId)
+    expect(output).toContain('https://')
+    expect(output).not.toContain('...')
+    expect(output).not.toContain(robotToken)
+    for (const line of output.trim().split('\n')) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(80)
+    }
   })
 
   test('removes claimed records before listing', async () => {
@@ -294,7 +316,7 @@ describe('#projects:unclaimed', () => {
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('No local recovery record found for project "missing"'),
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
 
     expect(outputText()).not.toContain(robotToken)
@@ -310,7 +332,7 @@ describe('#projects:unclaimed', () => {
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('Could not read local unclaimed projects'),
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
 
     const errorCalls = vi.mocked(mocks.SanityCmdOutput.error).mock.calls.flat().join('\n')

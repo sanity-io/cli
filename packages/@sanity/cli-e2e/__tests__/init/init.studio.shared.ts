@@ -67,7 +67,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
     expect(existsSync(`${tmp.path}/sanity.config.js`)).toBe(false)
   })
 
-  test.each(['clean', 'blog', 'page-builder'])(
+  test.each(['clean', 'blog', 'page-builder', 'shopify', 'shopify-online-storefront'])(
     'creates studio with %s template',
     async (template) => {
       const {error} = await runCli({
@@ -89,7 +89,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
       if (error) throw error
       expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
       expect(existsSync(`${tmp.path}/package.json`)).toBe(true)
-      if (template === 'blog' || template === 'page-builder') {
+      if (template !== 'clean') {
         expect(existsSync(`${tmp.path}/schemaTypes`)).toBe(true)
       }
     },
@@ -119,9 +119,9 @@ export function registerStudioInitTests(yFlag: string[]): void {
     expect(cliConfig).toContain(projectId)
     expect(cliConfig).toContain('production')
     // Inverse guard: a default studio init must not opt into workbench. The
-    // projectId/dataset above also appear in the `unstable_defineApp` variant, so
+    // projectId/dataset above also appear in the `defineApplication` variant, so
     // assert the brand is absent to catch workbench leaking in without the flag.
-    expect(cliConfig).not.toContain('unstable_defineApp')
+    expect(cliConfig).not.toContain('defineApplication')
 
     const config = readFileSync(`${tmp.path}/sanity.config.ts`, 'utf8')
     expect(config).toContain(projectId)

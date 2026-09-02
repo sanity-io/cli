@@ -126,7 +126,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       hidden: true,
     }),
     organization: Flags.string({
-      description: 'Organization ID to use for the project',
+      description:
+        'Organization ID to use for the project (required for unattended project creation)',
       helpValue: '<id>',
     }),
     'output-path': Flags.string({
@@ -203,7 +204,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     'unstable--workbench': Flags.boolean({
       allowNo: true,
       default: undefined,
-      description: 'Opt into workbench: scaffolds the CLI config with unstable_defineApp',
+      description: 'Opt into workbench: scaffolds the CLI config with defineApplication',
       // Internal-only while workbench is unstable — keep it out of help/docs
       hidden: true,
     }),

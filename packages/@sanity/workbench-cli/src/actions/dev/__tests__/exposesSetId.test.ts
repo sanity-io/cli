@@ -5,12 +5,18 @@ import {createExposesTracker, exposesSetId, trackExposesSet} from '../exposesSet
 import {type DevServerManifest} from '../registry.js'
 
 const panel = (name: string, src = `./src/${name}.tsx`): DevServerInterface => ({
+  id: `test-app-panel-${name}`,
+  metadata: null,
+  moduleId: `views/${name}`,
   name,
   src,
+  surface: 'panel',
   title: name,
-  type: 'panel',
 })
 const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => ({
+  id: `test-app-worker-${name}`,
+  metadata: null,
+  moduleId: `services/${name}`,
   name,
   src,
   title: name,
@@ -37,7 +43,7 @@ const server = (
   port,
   startedAt: '2026-01-01T00:00:00.000Z',
   type: 'coreApp',
-  version: 1,
+  version: 2,
   workDir: '/tmp/app',
 })
 
@@ -48,7 +54,7 @@ describe('exposesSetId', () => {
     expect(exposesSetId({interfaces: undefined})).toBe(exposesSetId({interfaces: []}))
   })
 
-  test('is order-independent — reordering views/services is not a change', () => {
+  test('is order-independent — reordering views/web workers is not a change', () => {
     expect(exposesSetId({interfaces: [panel('a'), worker('b')]})).toBe(
       exposesSetId({interfaces: [worker('b'), panel('a')]}),
     )

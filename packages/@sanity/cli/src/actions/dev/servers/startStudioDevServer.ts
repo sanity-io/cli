@@ -5,7 +5,7 @@ import {
   checkStudioDependencyVersions,
   compareDependencyVersions,
 } from '@sanity/cli-build/_internal/build'
-import {getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
+import {exitCodes, getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
 import {parse as semverParse} from 'semver'
@@ -16,6 +16,7 @@ import {getProjectById} from '../../../services/projects.js'
 import {getAppId} from '../../../util/appId.js'
 import {getPackageManagerChoice} from '../../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../../util/packageManager/upgradePackages.js'
+import {hasLocalUnclaimedProject} from '../../../util/unclaimedProjects.js'
 import {checkDependenciesEventListenerFactory} from '../../build/eventListenerFactory.js'
 import {shouldAutoUpdate} from '../../build/shouldAutoUpdate.js'
 import {devDebug} from '../devDebug.js'
@@ -114,7 +115,7 @@ export async function startStudioDevServer(
 
   if (loadInDashboard) {
     if (!projectId) {
-      output.error('Project Id is required to load in dashboard', {exit: 1})
+      output.error('Project Id is required to load in dashboard', {exit: exitCodes.RUNTIME_ERROR})
     }
 
     try {
@@ -122,7 +123,7 @@ export async function startStudioDevServer(
       organizationId = project.organizationId!
     } catch (error) {
       devDebug('Error getting organization id from project id', error)
-      output.error('Failed to get organization id from project id', {exit: 1})
+      output.error('Failed to get organization id from project id', {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
@@ -152,7 +153,10 @@ export async function startStudioDevServer(
       )
     } else {
       const startupDuration = Date.now() - startTime
-      const url = `http://${httpHost || 'localhost'}:${port}${config.basePath}`
+      const url = withUnclaimedSignInHash(
+        `http://${httpHost || 'localhost'}:${port}${config.basePath}`,
+        projectId,
+      )
       const appType = 'Sanity Studio'
 
       const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
@@ -171,4 +175,10 @@ export async function startStudioDevServer(
     devDebug('Error starting studio dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
+}
+
+function withUnclaimedSignInHash(url: string, projectId: string | undefined): string {
+  const token = process.env.SANITY_AUTH_TOKEN
+  if (!token || !projectId || !hasLocalUnclaimedProject(projectId)) return url
+  return `${url}#token=${encodeURIComponent(token)}`
 }

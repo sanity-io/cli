@@ -2,15 +2,15 @@ import {randomUUID} from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import {isDeepStrictEqual} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {isRecord} from '@sanity/cli-core/util'
 import {type MultipleMutationResult, type Mutation} from '@sanity/client'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
 import json5 from 'json5'
-import isEqual from 'lodash-es/isEqual.js'
-import isPlainObject from 'lodash-es/isPlainObject.js'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {getEditor, registerUnlinkOnSigInt} from '../../actions/documents/editor.js'
@@ -281,7 +281,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       return
     }
 
-    if (isEqual(content, defaultValue)) {
+    if (isDeepStrictEqual(content, defaultValue)) {
       this.log('Value not modified, doing nothing.')
       this.log('Modify document to trigger creation.')
       return
@@ -307,7 +307,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
   private validateDocument(doc: unknown, index: number, arr: unknown[]): void {
     const isSingle = arr.length === 1
 
-    if (!isPlainObject(doc)) {
+    if (!isRecord(doc)) {
       throw new Error(this.getErrorMessage('must be an object', index, isSingle))
     }
 

@@ -7,7 +7,7 @@ import {
   runSchemaExtraction,
   SchemaExtractionError,
 } from '@sanity/cli-build/_internal/extract'
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 import debounce from 'lodash-es/debounce.js'
@@ -136,7 +136,7 @@ export async function startExtractSchemaWatcher(
         output.log('')
         output.log(formatSchemaValidation(err.validation))
       } else if (err instanceof Error) {
-        output.error(err.message, {exit: 1})
+        output.error(err.message, {exit: exitCodes.RUNTIME_ERROR})
       }
 
       return false

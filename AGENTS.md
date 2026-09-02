@@ -31,6 +31,25 @@ All commands are run from the root of the repo.
 
 `packages/@sanity/cli-core/src/ux/flowOutput.ts` is reserved for the `new.ts` command. Before reusing its [`@clack/prompts`-style output](https://www.npmjs.com/package/@clack/prompts) in another CLI feature, clearly articulate the compelling use case to the end user or harness.
 
+# Telemetry redaction
+
+Flag telemetry keeps its existing value unless the command opts into redaction with `defineCommandTelemetry`:
+
+```ts
+const flags = {
+  file: Flags.string({description: 'Input file'}),
+  format: Flags.string({options: ['json', 'ndjson']}),
+}
+static flags = flags
+static telemetry = defineCommandTelemetry(flags, {
+  redact: ['file'],
+})
+// --file=private.ndjson --format=json
+// telemetry: ["--file", "--format=json"]
+```
+
+The helper type-checks names against the command's option flags and applies the declaration to registered aliases. When configuring a command, consider whether an input can contain PII, customer data, credentials, local paths, or other unbounded user content, and weigh that risk against any concrete support or debugging need for the value. Add focused coverage for the flag forms the command supports.
+
 # Testing Rules
 
 Follow all instructions and guidance laid out in the Testing Requirements section in `CONTRIBUTING.md`.
@@ -123,7 +142,6 @@ jq '{total: .numTotalTests, passed: .numPassedTests, failed: .numFailedTests, fi
 ## Cursor Cloud specific instructions
 
 - The update script runs `pnpm install --frozen-lockfile` and `pnpm build:cli` on startup. Dependencies and build artifacts should already be up to date when a session begins.
-- The test results JSON file requires `CLAUDECODE=1` (or `CODEX_CI=1`). Set `export CLAUDECODE=1` before running tests so the `$TEST_RESULTS` / `jq` workflow described above works as expected.
 - The full test suite takes ~10 minutes. Prefer scoped runs (`--changed`, `--project`, or single files) during development. Before assuming a test failure is caused by your changes, check whether the same test also fails on `origin/main`.
 - CLI commands that hit the Sanity API (e.g. `documents query`, `login`) require authentication. Use fixture directories (e.g. `fixtures/basic-studio`) to run commands like `npx sanity debug`, `npx sanity doctor`, or `npx sanity versions` without authentication.
 - `pnpm install` may warn about ignored build scripts for `sharp` and `unrs-resolver`. These are safe to ignore; the `pnpm.onlyBuiltDependencies` allowlist in `package.json` already covers the required native modules (`@swc/core`, `esbuild`, `node-pty`).

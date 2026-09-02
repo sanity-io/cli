@@ -87,6 +87,8 @@ export const apiRoutes: ApiRouteEntry[] = [
       'deploy',
       'deploy/quickstart',
       'installations',
+      'installations/catalog',
+      'installations/defaults',
       'installations/{installationId}',
       'installations/{installationId}/access',
       'installations/{installationId}/configs',
@@ -124,6 +126,8 @@ export const apiRoutes: ApiRouteEntry[] = [
       'deploy',
       'deploy/quickstart',
       'installations',
+      'installations/catalog',
+      'installations/defaults',
       'installations/{installationId}',
       'installations/{installationId}/access',
       'installations/{installationId}/configs',
@@ -207,7 +211,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'embeddings-index/{dataset}/{indexName}'
     ],
     slug: 'embeddings-index',
-    title: 'Embeddings Index API reference'
+    title: 'Embeddings Index API reference (deprecated)'
   },
   {
     defaultApiVersion: 'v2021-03-25',
@@ -217,6 +221,20 @@ export const apiRoutes: ApiRouteEntry[] = [
     ],
     slug: 'export',
     title: 'Export API reference'
+  },
+  {
+    host: 'global',
+    pathPatterns: [
+      'functions',
+      'functions/{functionId}',
+      'functions/{functionId}/envvars',
+      'functions/{functionId}/envvars/{envVarKey}',
+      'functions/{functionId}/invoke',
+      'functions/{functionId}/logs',
+      'functions/{functionId}/logs/stream'
+    ],
+    slug: 'functions-api',
+    title: 'Functions API reference'
   },
   {
     defaultApiVersion: 'v2025-02-19',

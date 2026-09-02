@@ -6,11 +6,8 @@ import {runCli} from '../../helpers/runCli.js'
 // Workbench isn't on the published `latest` CLI yet, so skip against the registry.
 const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
-// The federated-studio fixture opts into workbench via `unstable_defineApp` and
-// pins the `sanity` workbench dist-tag, so `sanity/workbench` resolves and
-// `sanity dev` starts the real workbench host dev server. This is the only place
-// that orchestration runs unmocked, end-to-end, through the actual binary — the
-// in-process command test stubs `startWorkbenchDevServer`.
+// The federated-studio fixture opts into workbench via `defineApplication`, so `sanity/workbench` resolves and `sanity dev` starts the real workbench host dev server.
+// This is the only place that orchestration runs unmocked, end-to-end, through the actual binary — the in-process command test stubs `startWorkbenchDevServer`.
 describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 120_000}, () => {
   test('starts the workbench host and pushes the studio to the next port', async () => {
     const cwd = await testFixture('federated-studio')
@@ -45,17 +42,17 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     expect(output).toContain(`app on port ${port + 1}`)
 
     // The app server carries the app's bus identity (`__SANITY_APP_ID__`) for
-    // `@sanity/runtime` — in dev, the address it's served at (`<host>-<port>`),
-    // so a running app never collides with its deployed twin. Vite delivers
-    // `define` entries through the per-server `/@vite/env` module rather than by
-    // text replacement, so that module is where the id is observable.
+    // `@sanity/runtime` — its slug, so a running app never collides with its
+    // deployed twin. Vite delivers `define` entries through the per-server
+    // `/@vite/env` module rather than by text replacement, so that module is
+    // where the id is observable.
     const env = await fetch(`http://localhost:${port + 1}/@vite/env`)
     expect(env.ok).toBe(true)
     const envSource = await env.text()
     expect(envSource).toContain('__SANITY_APP_ID__')
-    expect(envSource).toContain(`"localhost-${port + 1}"`)
+    expect(envSource).toContain('"federated-studio"')
 
     session.sendControl('c')
-    await session.waitForExit(15_000).catch(() => session.kill())
+    await session.waitForExit('any', 15_000).catch(() => session.kill())
   })
 })

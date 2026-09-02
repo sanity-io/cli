@@ -1,15 +1,9 @@
 import {Command, CommandHelp, Help, Interfaces} from '@oclif/core'
+import {resolveUnattendedFlagRequirements} from '@sanity/cli-core/flags'
 import {getBinCommand, getRunningPackageManager} from '@sanity/cli-core/package-manager'
+import {isInteractive, isUnattendedInvocation} from '@sanity/cli-core/util'
 
-import {topicAliases} from './topicAliases.js'
-
-// Reverse map: alias name → canonical topic name
-const aliasToCanonical = new Map<string, string>()
-for (const [canonical, aliases] of Object.entries(topicAliases)) {
-  for (const alias of aliases) {
-    aliasToCanonical.set(alias, canonical)
-  }
-}
+import {resolveTopicAliasInArgv} from './topicAliases.js'
 
 // Running `oclif readme`, we don't want to apply the `prefixBinName` transformation,
 // as it will include whatever pm was used to spawn the script in the generated readme.
@@ -28,6 +22,8 @@ const IS_README_GENERATION = (process.argv[process.argv.indexOf('readme') - 1] ?
  * @internal
  */
 export default class SanityHelp extends Help {
+  private unattended = false
+
   protected formatCommand(command: Command.Loadable): string {
     let help = super.formatCommand(command)
 
@@ -42,7 +38,7 @@ export default class SanityHelp extends Help {
     return prefixBinName(help)
   }
 
-  protected formatRoot(): string {
+  formatRoot(): string {
     return prefixBinName(super.formatRoot())
   }
 
@@ -58,8 +54,38 @@ export default class SanityHelp extends Help {
     return commandHelp
   }
 
+  async showCommandHelp(command: Command.Loadable): Promise<void> {
+    return super.showCommandHelp(await resolveCommandHelpFlags(command, this.unattended))
+  }
+
   async showHelp(argv: string[]): Promise<void> {
-    return super.showHelp(resolveTopicAliasInArgv(argv))
+    this.unattended = isUnattendedInvocation({argv, isInteractive: isInteractive()})
+    try {
+      return await super.showHelp(resolveTopicAliasInArgv(argv))
+    } finally {
+      this.unattended = false
+    }
+  }
+}
+
+export async function resolveCommandHelpFlags(
+  command: Command.Loadable,
+  unattended: boolean,
+): Promise<Command.Loadable> {
+  const CommandClass = await command.load()
+  const loadedFlags = {...CommandClass.baseFlags, ...CommandClass.flags}
+  const resolvedFlags = resolveUnattendedFlagRequirements(loadedFlags, unattended)
+
+  if (resolvedFlags === loadedFlags) return command
+
+  return {
+    ...command,
+    flags: Object.fromEntries(
+      Object.entries(command.flags).map(([name, flag]) => {
+        const required = resolvedFlags[name]?.required
+        return [name, required === undefined ? flag : {...flag, required}]
+      }),
+    ),
   }
 }
 
@@ -106,32 +132,4 @@ function guessCreateCommand() {
 function needsFlagSeparator() {
   const pm = getRunningPackageManager()
   return pm === 'npm' || !pm
-}
-
-/**
- * Replace the first positional argument in argv with the canonical topic name
- * if it is a known topic alias. This ensures that `sanity dataset --help`
- * resolves to the same help output as `sanity datasets --help`.
- *
- * Without this, `--help` bypasses the command_not_found hook (which normally
- * handles alias resolution) and the help system fails to find the topic.
- *
- * @internal
- */
-export function resolveTopicAliasInArgv(argv: string[]): string[] {
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]
-    if (arg === '--') break
-    if (arg.startsWith('-')) continue
-
-    // First positional argument is the topic/command name
-    const canonical = aliasToCanonical.get(arg)
-    if (canonical) {
-      const resolved = [...argv]
-      resolved[i] = canonical
-      return resolved
-    }
-    break
-  }
-  return argv
 }

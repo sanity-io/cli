@@ -1,7 +1,8 @@
+import {randomInt} from 'node:crypto'
+
 import {CLIError} from '@oclif/core/errors'
-import {type AppVisibility} from '@sanity/cli-core'
+import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {input, spinner} from '@sanity/cli-core/ux'
-import {customAlphabet} from 'nanoid'
 
 import {
   createUserApplication as createUserApplicationRequest,
@@ -13,12 +14,14 @@ import {deployDebug} from './deployDebug.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
+const ALPHANUMERIC = `${LETTERS}0123456789`
+
+const randomString = (alphabet: string, length: number) =>
+  Array.from({length}, () => alphabet[randomInt(alphabet.length)]).join('')
 
 // appHosts have some restrictions (no uppercase, must start with a letter)
-export function generateAppSlug(): string {
-  const firstChar = customAlphabet(LETTERS, 1)()
-  const rest = customAlphabet(`${LETTERS}0123456789`, 11)()
-  return `${firstChar}${rest}`
+export function generateAppSlug() {
+  return randomString(LETTERS, 1) + randomString(ALPHANUMERIC, 11)
 }
 
 // TODO: replace with `Promise.withResolvers()` once it lands in node 22
@@ -79,7 +82,7 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
 
         deployDebug('Error creating user application', e)
         // otherwise, it's a fatal error
-        throw new CLIError('Error creating user application', {exit: 1})
+        throw new CLIError('Error creating user application', {exit: exitCodes.RUNTIME_ERROR})
       }
     },
   })

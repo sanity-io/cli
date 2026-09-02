@@ -2,10 +2,12 @@ import {type CliConfig} from '@sanity/cli-core'
 
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './actions/build/vite/constants.js'
 import {
-  type AppInterfaceMetadata,
+  type Dock,
   interfaceContractVersion,
   type InterfaceKind,
   interfaceModuleId,
+  type TileInterfaceMetadata,
+  type ViewPlacementMetadata,
 } from './contract.js'
 import {isWorkbenchApp} from './defineApp.js'
 
@@ -25,13 +27,14 @@ interface DerivedInterfaceBase {
 
 /** @internal */
 export type DerivedInterface =
-  | (DerivedInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
-  | (DerivedInterfaceBase & {metadata: null; type: 'asset_source'})
-  | (DerivedInterfaceBase & {metadata: null; type: 'panel'})
+  | (DerivedInterfaceBase & {metadata: null; surface: 'asset_source'})
   | (DerivedInterfaceBase & {metadata: null; type: 'worker'})
+  | (DerivedInterfaceBase & {metadata: TileInterfaceMetadata; surface: 'tile'})
+  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'panel'})
+  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'window'})
 
 /**
- * `appTitle` titles the app view where a deploy resolved one through `--title`;
+ * `appTitle` titles the window where a deploy resolved one through `--title`;
  * dev takes it from the config.
  * @internal
  */
@@ -48,32 +51,65 @@ export function deriveInterfaces(
   }
   const entry = isApp ? app.entry : GENERATED_ENTRY
 
-  const shared = <T extends InterfaceKind>(
-    type: T,
+  // Identity, not address: interface ids and the window name key on `name`
+  // (which defaults to `slug`, so existing apps derive byte-identical ids).
+  const appName = app.name ?? app.slug
+
+  const shared = (
+    kind: InterfaceKind,
     declaration: {name: string; src: string; title: string},
   ) => ({
-    id: `${app.slug}-${type}-${declaration.name}`,
-    moduleId: interfaceModuleId(type, declaration.name),
+    id: `${appName}-${kind}-${declaration.name}`,
+    moduleId: interfaceModuleId(kind, declaration.name),
     name: declaration.name,
     src: declaration.src,
     title: declaration.title,
-    type,
-    version: interfaceContractVersion(type),
+    version: interfaceContractVersion(kind),
   })
 
+  const placementMetadata = (dock?: Dock): ViewPlacementMetadata | null => {
+    const group = dock?.group ?? app.dock?.group
+    const order = dock?.order ?? app.dock?.order
+    if (group === undefined && order === undefined) return null
+    return {
+      dock: {
+        ...(group === undefined ? {} : {group}),
+        ...(order === undefined ? {} : {order}),
+      },
+    }
+  }
+
   return [
-    ...(app.views ?? []).map(
-      (view): DerivedInterface => ({...shared(view.type, view), metadata: null}),
-    ),
-    ...(app.services ?? []).map(
-      (service): DerivedInterface => ({...shared('worker', service), metadata: null}),
-    ),
+    ...(app.views ?? []).map((view): DerivedInterface => {
+      if (view.surface === 'tile') {
+        return {
+          ...shared(view.surface, view),
+          metadata:
+            view.order === undefined ? {size: view.size} : {order: view.order, size: view.size},
+          surface: view.surface,
+        }
+      }
+      if (view.surface === 'panel' || view.surface === 'window') {
+        return {
+          ...shared(view.surface, view),
+          metadata: placementMetadata(view.dock),
+          surface: view.surface,
+        }
+      }
+      return {...shared(view.surface, view), metadata: null, surface: view.surface}
+    }),
+    ...(app.webWorkers ?? []).map((webWorker): DerivedInterface => ({
+      ...shared('worker', webWorker),
+      metadata: null,
+      type: 'worker',
+    })),
     ...(entry === undefined
       ? []
       : [
           {
-            ...shared('app', {name: app.slug, src: entry, title: appTitle ?? app.title}),
-            metadata: null,
+            ...shared('window', {name: appName, src: entry, title: appTitle ?? app.title}),
+            metadata: placementMetadata(),
+            surface: 'window' as const,
           },
         ]),
   ]

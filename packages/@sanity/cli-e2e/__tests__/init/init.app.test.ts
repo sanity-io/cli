@@ -52,9 +52,9 @@ describe('sanity init - app', {timeout: 120_000}, () => {
       expect(cliConfig).toContain('organizationId')
       expect(cliConfig).toContain('entry')
       // Inverse guard: without `--unstable--workbench` the app config is the plain
-      // `app: {}` literal, never the `unstable_defineApp` (workbench) variant. The
+      // `app: {}` literal, never the `defineApplication` (workbench) variant. The
       // shared fields above don't distinguish the two, so assert the brand is absent.
-      expect(cliConfig).not.toContain('unstable_defineApp')
+      expect(cliConfig).not.toContain('defineApplication')
 
       expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(false)
 
@@ -117,8 +117,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
     await session.waitForText(/Package manager to use/i)
     await session.selectOption('pnpm')
 
-    const exitCode = await session.waitForExit(90_000)
-    expect(exitCode).toBe(0)
+    await session.waitForExit(0, 90_000)
 
     expect(existsSync(`${tmp.path}/src/App.tsx`)).toBe(true)
     expect(existsSync(`${tmp.path}/package.json`)).toBe(true)

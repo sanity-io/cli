@@ -8,7 +8,7 @@ import {runCli} from '../../helpers/runCli.js'
 // studio/app over HTTP, then Ctrl+C. No auth/API is involved — the dev server
 // only serves the local studio/app, so a placeholder token is enough.
 //
-// These double as the inverse workbench guard: a plain (non-`unstable_defineApp`)
+// These double as the inverse workbench guard: a plain (non-`defineApplication`)
 // project must serve on the *configured* port. If a gating regression started the
 // workbench host, the studio/app would be pushed to port+1 — and the studio's
 // "running at" line suppressed in favour of "Workbench dev server started…" — so
@@ -42,7 +42,7 @@ describe('sanity dev', {timeout: 120_000}, () => {
 
       session.sendControl('c')
       // Ctrl+C should tear the server down; kill as a fallback if it's swallowed.
-      await session.waitForExit(15_000).catch(() => session.kill())
+      await session.waitForExit('any', 15_000).catch(() => session.kill())
     },
   )
 })

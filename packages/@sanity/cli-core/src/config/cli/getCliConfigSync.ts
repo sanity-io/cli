@@ -1,19 +1,18 @@
 import {existsSync} from 'node:fs'
-import {createRequire} from 'node:module'
 import {join} from 'node:path'
 
-import {register} from 'tsx/esm/api'
+import {createJiti} from 'jiti'
 
 import {NotFoundError} from '../../errors/NotFoundError.js'
 import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
-import {isWorkbenchApp, parseWorkbenchCliConfig} from './workbenchApp.js'
+import {isWorkbenchApp, isWorkbenchConfig, parseWorkbenchCliConfig} from './workbenchApp.js'
 
 /**
  * Get the CLI config for a project synchronously, given the root path.
  *
- * This loads the CLI config in the main thread using tsx/register for TypeScript support.
+ * This loads the CLI config in the main thread using Jiti for TypeScript support.
  * Note: This is a synchronous operation and does not use worker threads like the async version.
  *
  * @param rootPath - Root path for the project, eg where `sanity.cli.(ts|js)` is located.
@@ -34,23 +33,19 @@ export function getCliConfigSync(rootPath: string): CliConfig {
 
   const configPath = configPaths[0]
 
-  // Register tsx for TypeScript support
-  const unregister = register()
+  const jiti = createJiti(import.meta.url, {
+    // Vite uses import.meta.require, which must be evaluated by Node instead of Jiti's CJS transform
+    // Sanity's dependency graph is large, so avoid transforming it as well
+    nativeModules: ['sanity', 'vite'],
+    tsconfigPaths: true,
+  })
+  const loaded = jiti(configPath)
+  const cliConfig = tryGetDefaultExport(loaded) as CliConfig | undefined
 
-  let cliConfig: CliConfig | undefined
-  try {
-    // Use createRequire for synchronous loading in ESM contexts
-    // This works when tsx loader is active
-    const require = createRequire(import.meta.url)
-    const loaded = require(configPath)
-    cliConfig = tryGetDefaultExport(loaded) as CliConfig | undefined
-  } finally {
-    unregister()
-  }
-
-  // Branch as early as possible: a branded `unstable_defineApp(...)` opts into
-  // workbench behavior, so its `app` skips the legacy `app` schema entirely.
-  if (isWorkbenchApp(cliConfig?.app)) {
+  // Branch as early as possible: a branded `defineApplication(...)` app or a
+  // branded `unstable_defineMediaLibrary(...)` config opts into workbench
+  // behavior, so its `app` skips the legacy `app` schema entirely.
+  if (isWorkbenchApp(cliConfig?.app) || isWorkbenchConfig(cliConfig?.app)) {
     return parseWorkbenchCliConfig(cliConfig, rootPath)
   }
 

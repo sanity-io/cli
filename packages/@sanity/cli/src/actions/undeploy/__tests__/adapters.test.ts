@@ -77,12 +77,10 @@ describe('createAppUndeployAdapter', () => {
 
     expect(resolution.type).toBe('found')
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
-      activeDeployment: {
-        deployedAt: '2024-01-02T00:00:00Z',
-        deployedBy: 'gustav@sanity.io',
-      },
+      application: expect.objectContaining({
+        activeDeployment: expect.objectContaining({deployedAt: '2024-01-02T00:00:00Z'}),
+      }),
       id: 'core-1',
-      organizationId: 'org-1',
       title: 'My App',
       type: 'coreApp',
       url: expect.stringContaining('/@org-1/application/core-1'),
@@ -150,7 +148,6 @@ describe('createStudioUndeployAdapter', () => {
     } as CliConfig).resolveTarget()
 
     expect(resolution.type === 'found' && resolution.target).toMatchObject({
-      appHost: 'my-studio',
       id: 'app-1',
       type: 'studio',
       url: 'https://my-studio.sanity.studio',

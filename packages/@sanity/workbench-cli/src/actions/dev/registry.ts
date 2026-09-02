@@ -17,7 +17,7 @@ import {
 } from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
-import {AppInterfaceMetadataSchema} from '../../contract.js'
+import {TileInterfaceMetadataSchema, ViewPlacementMetadataSchema} from '../../contract.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
@@ -44,7 +44,7 @@ import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 const devDebug = subdebug('dev')
 
 /** Bump when the manifest/lock shape changes in a breaking way. */
-const REGISTRY_VERSION = 1
+const REGISTRY_VERSION = 2
 
 /**
  * The current process's start time as reported by the OS, for the `startedAt`
@@ -68,17 +68,28 @@ const interfaceBaseFields = {
 }
 
 /**
- * A forwarded interface, discriminated on `type`. Kept outside the manifest so
+ * A forwarded interface. Kept outside the manifest so
  * the workbench renders local panels and runs workers without a deploy.
  */
-const devServerInterfaceSchema = z.discriminatedUnion('type', [
-  z.object({
-    ...interfaceBaseFields,
-    metadata: z.nullable(AppInterfaceMetadataSchema),
-    type: z.literal('app'),
-  }),
-  z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('panel')}),
-  z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('asset_source')}),
+const devServerInterfaceSchema = z.union([
+  z.discriminatedUnion('surface', [
+    z.object({
+      ...interfaceBaseFields,
+      metadata: z.nullable(ViewPlacementMetadataSchema),
+      surface: z.literal('window'),
+    }),
+    z.object({
+      ...interfaceBaseFields,
+      metadata: z.nullable(ViewPlacementMetadataSchema),
+      surface: z.literal('panel'),
+    }),
+    z.object({...interfaceBaseFields, metadata: z.null(), surface: z.literal('asset_source')}),
+    z.object({
+      ...interfaceBaseFields,
+      metadata: TileInterfaceMetadataSchema,
+      surface: z.literal('tile'),
+    }),
+  ]),
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('worker')}),
 ])
 
@@ -104,7 +115,7 @@ const devServerManifestSchema = z.object({
         // Content hash of the config — the workbench's change-detection key
         // (see deriveConfigs).
         id: z.string(),
-        // The app's `unstable_defineApp` slug — the module-federation alias the
+        // The app's `defineApplication` slug — the module-federation alias the
         // workbench loads this config's live values from.
         moduleName: z.optional(z.string()),
         // The version the workbench federates this config's module under —
@@ -128,9 +139,13 @@ const devServerManifestSchema = z.object({
    * workbench `watchRegistry` watcher and forces a rebroadcast to clients.
    */
   manifestUpdatedAt: z.optional(z.string()),
+  // Stable identity + qualified reference, composed by the CLI (the authority for
+  // local apps, which never reach brett) and read straight by the workbench.
+  name: z.optional(z.string()),
   pid: z.number(),
   port: z.number(),
   projectId: z.optional(z.string()),
+  reference: z.optional(z.string()),
   startedAt: z.string(),
   type: z.enum(['coreApp', 'studio']),
   version: z.literal(REGISTRY_VERSION),
@@ -144,6 +159,19 @@ const devServerManifestSchema = z.object({
  * `acquireWorkbenchLock` and `readWorkbenchLock` below.
  */
 export type DevServerManifest = z.infer<typeof devServerManifestSchema>
+
+/**
+ * A config-only server carries configs but no interfaces — e.g. a
+ * media-library config app under development. The workbench never routes it
+ * as an app; only its configs are published. It therefore plays a different
+ * role than an app server, and the two may share a slug (a config app
+ * developed alongside the locally served singleton it configures).
+ */
+export function isConfigOnlyServer(
+  server: Pick<DevServerManifest, 'configs' | 'interfaces'>,
+): boolean {
+  return Boolean(server.configs?.length) && !server.interfaces?.length
+}
 
 /**
  * Path to the dev server registry directory. Lives under the shared Sanity

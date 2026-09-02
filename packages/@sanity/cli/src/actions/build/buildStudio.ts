@@ -4,6 +4,7 @@ import {
   compareDependencyVersions,
   buildStudio as internalBuildStudio,
 } from '@sanity/cli-build/_internal/build'
+import {exitCodes} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner} from '@sanity/cli-core/ux'
 import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
@@ -27,10 +28,10 @@ import {type BuildOptions} from './types.js'
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  // `views`/`services` live on the branded `unstable_defineApp` result — resolve
+  // `views`/`webWorkers` live on the branded `defineApplication` result — resolve
   // the workbench capability so it's gated on the brand, like the app build.
   const workbench = resolveWorkbenchApp(cliConfig)
-  const exposes = workbench ? {services: workbench.services, views: workbench.views} : undefined
+  const exposes = workbench ? {views: workbench.views, webWorkers: workbench.webWorkers} : undefined
 
   const appId = getAppId(cliConfig)
 
@@ -85,7 +86,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
           buildSpinner.fail()
         }
 
-        output.error(message, {exit: 1})
+        output.error(message, {exit: exitCodes.RUNTIME_ERROR})
       },
       onBuildStart({message}) {
         if (!buildSpinner) {
@@ -135,7 +136,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
         })
 
         if (choice === 'cancel') {
-          output.error('Declined to continue with build', {exit: 1})
+          output.error('Declined to continue with build', {exit: exitCodes.RUNTIME_ERROR})
           return {stopBuild: true}
         }
 

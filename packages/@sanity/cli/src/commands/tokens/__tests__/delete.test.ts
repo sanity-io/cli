@@ -4,41 +4,44 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
-import {type Token} from '../../../actions/tokens/types.js'
+import {type Robot} from '../../../actions/tokens/types.js'
 import {DeleteTokensCommand} from '../delete.js'
 
+const testProjectId = 'test-project'
+
 // Test fixtures
-const createToken = (overrides: Partial<Token> & {id: string}): Token => ({
+const createRobot = (overrides: {id: string; label?: string; roleNames?: string[]}): Robot => ({
   createdAt: '2023-01-01T00:00:00Z',
-  createdBy: 'user-creator',
-  label: 'Test Token',
-  lastUsedAt: null,
-  permissions: ['read', 'write'],
-  projectId: 'test-project',
-  projectUserId: 'user-123',
-  roles: [{name: 'editor', title: 'Editor'}],
-  ...overrides,
+  id: overrides.id,
+  label: overrides.label ?? 'Test Token',
+  memberships: [
+    {
+      lastSeenAt: null,
+      resourceId: testProjectId,
+      resourceType: 'project',
+      resourceUserId: 'user-123',
+      roleNames: overrides.roleNames ?? ['editor'],
+    },
+  ],
+  tokenId: `${overrides.id}-active-token`,
 })
 
-const TEST_TOKENS = {
-  API_TOKEN: createToken({
+const TEST_ROBOTS = {
+  API_TOKEN: createRobot({
     id: 'token-api-123',
     label: 'API Token',
-    roles: [{name: 'editor', title: 'Editor'}],
+    roleNames: ['editor'],
   }),
-  READ_TOKEN: createToken({
+  READ_TOKEN: createRobot({
     id: 'token-read-456',
     label: 'Read Token',
-    roles: [{name: 'viewer', title: 'Viewer'}],
-  }),
-  WRITE_TOKEN: createToken({
-    id: 'token-write-789',
-    label: 'Write Token',
-    roles: [{name: 'administrator', title: 'Administrator'}],
+    roleNames: ['viewer'],
   }),
 } as const
 
-const testProjectId = 'test-project'
+function robotsPage(robots: Robot[]) {
+  return {data: robots, nextCursor: null}
+}
 
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
@@ -75,7 +78,7 @@ describe('#tokens:delete', () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
-      uri: '/projects/test-project/tokens/token-api-123',
+      uri: '/access/project/test-project/robots/token-api-123',
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123'], {
@@ -93,7 +96,7 @@ describe('#tokens:delete', () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
-      uri: '/projects/test-project/tokens/token-api-123',
+      uri: '/access/project/test-project/robots/token-api-123',
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'], {
@@ -107,7 +110,7 @@ describe('#tokens:delete', () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
-      uri: '/projects/test-project/tokens/token-api-123',
+      uri: '/access/project/test-project/robots/token-api-123',
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123', '-y'], {
@@ -130,7 +133,7 @@ describe('#tokens:delete', () => {
 
   test('requires a token ID and --yes in unattended mode', async () => {
     const {confirm, select} = await import('@sanity/cli-core/ux')
-    const missingId = await testCommand(DeleteTokensCommand, [], {
+    const missingId = await testCommand(DeleteTokensCommand, ['--yes'], {
       mocks: {
         ...defaultMocks,
         cliConfig: {api: {projectId: undefined}},
@@ -138,15 +141,14 @@ describe('#tokens:delete', () => {
       },
     })
     expect(missingId.error?.message).toBe(
-      'Token ID is required. Pass it as the `<tokenId>` argument.\n' +
-        'Error: Deletion requires confirmation. Pass `--yes` to delete the token.',
+      'Token ID is required. Pass it as the `<tokenId>` argument.',
     )
     expect(missingId.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
     const missingConfirmation = await testCommand(DeleteTokensCommand, ['token-api-123'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
-    expect(missingConfirmation.error?.message).toContain('--yes')
+    expect(missingConfirmation.error?.message).toContain('Missing required flag yes')
     expect(missingConfirmation.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(confirm).not.toHaveBeenCalled()
     expect(select).not.toHaveBeenCalled()
@@ -159,21 +161,21 @@ describe('#tokens:delete', () => {
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(200, [TEST_TOKENS.API_TOKEN, TEST_TOKENS.READ_TOKEN])
+      uri: '/access/project/test-project/robots',
+    }).reply(200, robotsPage([TEST_ROBOTS.API_TOKEN, TEST_ROBOTS.READ_TOKEN]))
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
-      uri: '/projects/test-project/tokens/token-read-456',
+      uri: '/access/project/test-project/robots/token-read-456',
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
       choices: [
-        {name: 'API Token (Editor)', value: 'token-api-123'},
-        {name: 'Read Token (Viewer)', value: 'token-read-456'},
+        {name: 'API Token (editor)', value: 'token-api-123'},
+        {name: 'Read Token (viewer)', value: 'token-read-456'},
       ],
       message: 'Select token to delete:',
     })
@@ -181,55 +183,52 @@ describe('#tokens:delete', () => {
 
   test('handles tokens with multiple roles', async () => {
     const {confirm, select} = await import('@sanity/cli-core/ux')
-    const multiRoleToken = createToken({
+    const multiRoleRobot = createRobot({
       id: 'token-multi-123',
       label: 'Multi Role Token',
-      roles: [
-        {name: 'editor', title: 'Editor'},
-        {name: 'viewer', title: 'Viewer'},
-      ],
+      roleNames: ['editor', 'viewer'],
     })
     vi.mocked(select).mockResolvedValue('token-multi-123')
     vi.mocked(confirm).mockResolvedValue(true)
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(200, [multiRoleToken])
+      uri: '/access/project/test-project/robots',
+    }).reply(200, robotsPage([multiRoleRobot]))
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
-      uri: '/projects/test-project/tokens/token-multi-123',
+      uri: '/access/project/test-project/robots/token-multi-123',
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
-      choices: [{name: 'Multi Role Token (Editor, Viewer)', value: 'token-multi-123'}],
+      choices: [{name: 'Multi Role Token (editor, viewer)', value: 'token-multi-123'}],
       message: 'Select token to delete:',
     })
   })
 
   test('handles tokens with no roles', async () => {
     const {confirm, select} = await import('@sanity/cli-core/ux')
-    const noRoleToken = createToken({
+    const noRoleRobot = createRobot({
       id: 'token-no-role-123',
       label: 'No Role Token',
-      roles: [],
+      roleNames: [],
     })
     vi.mocked(select).mockResolvedValue('token-no-role-123')
     vi.mocked(confirm).mockResolvedValue(true)
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(200, [noRoleToken])
+      uri: '/access/project/test-project/robots',
+    }).reply(200, robotsPage([noRoleRobot]))
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
-      uri: '/projects/test-project/tokens/token-no-role-123',
+      uri: '/access/project/test-project/robots/token-no-role-123',
     }).reply(204)
 
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
@@ -244,7 +243,7 @@ describe('#tokens:delete', () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
-      uri: '/projects/test-project/tokens/nonexistent-token',
+      uri: '/access/project/test-project/robots/nonexistent-token',
     }).reply(404, {message: 'Token not found'})
 
     const {error} = await testCommand(DeleteTokensCommand, ['nonexistent-token', '--yes'], {
@@ -258,8 +257,8 @@ describe('#tokens:delete', () => {
   test('throws error when no tokens exist in project', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
-    }).reply(200, [])
+      uri: '/access/project/test-project/robots',
+    }).reply(200, robotsPage([]))
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
@@ -274,7 +273,7 @@ describe('#tokens:delete', () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
-      uri: '/projects/test-project/tokens/token-api-123',
+      uri: '/access/project/test-project/robots/token-api-123',
     }).reply(statusCode, {message})
 
     const {error} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'], {
@@ -289,7 +288,7 @@ describe('#tokens:delete', () => {
   test('handles API error when fetching tokens', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: '/access/project/test-project/robots',
     }).reply(404, {message: 'Project not found'})
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
@@ -303,7 +302,7 @@ describe('#tokens:delete', () => {
   test('handles API error with server error when fetching tokens', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: '/access/project/test-project/robots',
     }).reply(500, {message: 'Internal Server Error'})
 
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})

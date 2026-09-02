@@ -13,7 +13,7 @@ const dataset = getE2EDataset()
 const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
 // `--unstable--workbench` swaps the scaffolded `sanity.cli.ts` over to the
-// `unstable_defineApp` variant (the sole federation opt-in). It applies to both
+// `defineApplication` variant (the sole federation opt-in). It applies to both
 // the studio and SDK-app templates, which use different workbench config shapes.
 describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, () => {
   let tmp: Awaited<ReturnType<typeof createTmpDir>>
@@ -52,10 +52,10 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     // Studio files are scaffolded as usual...
     expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
 
-    // ...but the CLI config is the workbench (`unstable_defineApp`) variant,
+    // ...but the CLI config is the workbench (`defineApplication`) variant,
     // branded with the project's org id.
     const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
-    expect(cliConfig).toContain('unstable_defineApp')
+    expect(cliConfig).toContain('defineApplication')
     expect(cliConfig).toContain(projectId)
     expect(cliConfig).toContain('organizationId')
     // `slug` is pre-filled, defaulted from the name/title
@@ -89,10 +89,10 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     expect(existsSync(`${tmp.path}/src/App.tsx`)).toBe(true)
     expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(false)
 
-    // ...and its CLI config is the workbench app variant: `unstable_defineApp`
+    // ...and its CLI config is the workbench app variant: `defineApplication`
     // with an `entry` (the navigable app view), branded with the org id.
     const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
-    expect(cliConfig).toContain('unstable_defineApp')
+    expect(cliConfig).toContain('defineApplication')
     expect(cliConfig).toContain('entry')
     expect(cliConfig).toContain(orgId)
     // `slug` is pre-filled — app init derives it from the output directory,

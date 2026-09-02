@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
 
 /**
@@ -17,7 +17,7 @@ export function assertDatasetExists(
   if (!exists) {
     output.error(
       `Dataset '${datasetName}' not found in this project. Available datasets: ${datasets.map((d) => d.name).join(', ')}`,
-      {exit: 1},
+      {exit: exitCodes.RUNTIME_ERROR},
     )
   }
 }

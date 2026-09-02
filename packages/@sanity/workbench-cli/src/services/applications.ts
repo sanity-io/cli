@@ -5,7 +5,7 @@ import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
-import {type AppInterfaceMetadata} from '../contract.js'
+import {type TileInterfaceMetadata, type ViewPlacementMetadata} from '../contract.js'
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
 export type ApplicationType = 'coreApp' | 'studio'
@@ -31,10 +31,20 @@ interface BrettInterfaceBase {
  * @internal
  */
 export type BrettInterface =
-  | (BrettInterfaceBase & {metadata: AppInterfaceMetadata | null; type: 'app'})
   | (BrettInterfaceBase & {metadata: null; type: 'asset_source'})
-  | (BrettInterfaceBase & {metadata: null; type: 'panel'})
   | (BrettInterfaceBase & {metadata: null; type: 'worker'})
+  | (BrettInterfaceBase & {metadata: TileInterfaceMetadata; type: 'tile'})
+  | (BrettInterfaceBase & {metadata: ViewPlacementMetadata | null; type: 'app'})
+  | (BrettInterfaceBase & {metadata: ViewPlacementMetadata | null; type: 'panel'})
+
+/**
+ * A resource a deployment may interact with, as Brett stores it. Per-deployment
+ * and forbidden for singletons (the server 400s).
+ */
+export interface BrettAccess {
+  resourceId: string
+  resourceType: 'canvas' | 'dashboard' | 'dataset' | 'media-library'
+}
 
 /** A studio workspace as Brett stores it. */
 export interface BrettWorkspace {
@@ -69,7 +79,7 @@ async function getClient() {
 export async function getApplication(applicationId: string): Promise<Application | null> {
   const client = await getClient()
   try {
-    return await client.request({uri: `/applications/${applicationId}`})
+    return await client.request({url: `/applications/${applicationId}`})
   } catch (err) {
     if ((err as {statusCode?: number})?.statusCode === 404) return null
     throw err
@@ -81,7 +91,7 @@ export async function listApplications(organizationId: string): Promise<Applicat
   const client = await getClient()
   const {data}: {data: Application[]} = await client.request({
     query: {limit: 'none', organizationId},
-    uri: '/applications',
+    url: '/applications',
   })
   return data
 }
@@ -92,6 +102,7 @@ export async function listApplications(organizationId: string): Promise<Applicat
  */
 export async function createApplication(options: {
   isSingleton?: boolean
+  name?: string
   organizationId: string
   projectId?: string
   slug: string
@@ -99,7 +110,7 @@ export async function createApplication(options: {
   type: ApplicationType
   visibility?: AppVisibility
 }): Promise<Application> {
-  const {isSingleton, organizationId, projectId, slug, title, type, visibility} = options
+  const {isSingleton, name, organizationId, projectId, slug, title, type, visibility} = options
   const client = await getClient()
   return client.request({
     body: {
@@ -107,13 +118,17 @@ export async function createApplication(options: {
       slug,
       title,
       type,
+      // Identity, distinct from the slug address. Omitted → Brett defaults it to slug.
+      ...(name ? {name} : {}),
+      // Brett requires `isSingleton` on `POST /applications`, so the request
+      // builder keeps forwarding it even though the CLI itself never sets it.
       ...(isSingleton === undefined ? {} : {isSingleton}),
       ...(visibility ? {visibility} : {}),
       // Studio config is set once, at create — it's immutable on redeploy.
       ...(projectId ? {config: {studio: {projectId}}} : {}),
     },
     method: 'POST',
-    uri: `/applications`,
+    url: `/applications`,
   })
 }
 
@@ -130,11 +145,12 @@ export async function updateApplication(
   update: ApplicationUpdate,
 ): Promise<void> {
   const client = await getClient()
-  await client.request({body: update, method: 'PATCH', uri: `/applications/${applicationId}`})
+  await client.request({body: update, method: 'PATCH', url: `/applications/${applicationId}`})
 }
 
 /** Deploy a new active version to an existing application. */
 export async function createDeployment(options: {
+  access?: readonly BrettAccess[]
   applicationId: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
@@ -142,10 +158,10 @@ export async function createDeployment(options: {
   version: string
   workspaces?: readonly BrettWorkspace[]
 }): Promise<{id: string}> {
-  const {applicationId, interfaces, isAutoUpdating, tarball, version, workspaces} = options
+  const {access, applicationId, interfaces, isAutoUpdating, tarball, version, workspaces} = options
   const formData = new FormData()
   formData.append('isAutoUpdating', isAutoUpdating.toString())
-  appendDeploymentParts(formData, {interfaces, tarball, version, workspaces})
+  appendDeploymentParts(formData, {access, interfaces, tarball, version, workspaces})
   return request(`/applications/${applicationId}/deployments`, formData)
 }
 
@@ -153,7 +169,7 @@ export async function createDeployment(options: {
 export async function deleteApplication(applicationId: string): Promise<void> {
   const client = await getClient()
   try {
-    await client.request({method: 'DELETE', uri: `/applications/${applicationId}`})
+    await client.request({method: 'DELETE', url: `/applications/${applicationId}`})
   } catch (err) {
     if ((err as {statusCode?: number})?.statusCode !== 404) throw err
   }
@@ -162,11 +178,13 @@ export async function deleteApplication(applicationId: string): Promise<void> {
 function appendDeploymentParts(
   formData: FormData,
   {
+    access,
     interfaces,
     tarball,
     version,
     workspaces,
   }: {
+    access?: readonly BrettAccess[]
     interfaces: readonly BrettInterface[]
     tarball: Gzip
     version: string
@@ -177,6 +195,8 @@ function appendDeploymentParts(
   appendJson(formData, 'interfaces', interfaces)
   // Studio-only — the server rejects a workspaces part on non-studio types.
   if (workspaces?.length) appendJson(formData, 'workspaces', workspaces)
+  // Per-deployment; forbidden for singletons, so callers omit it there.
+  if (access?.length) appendJson(formData, 'access', access)
   formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
 }
 
@@ -185,12 +205,12 @@ function appendJson(formData: FormData, name: string, value: unknown): void {
   formData.append(name, JSON.stringify(value), {contentType: 'application/json'})
 }
 
-async function request<T>(uri: string, formData: FormData): Promise<T> {
+async function request<T>(url: string, formData: FormData): Promise<T> {
   const client = await getClient()
   return client.request({
     body: formData.pipe(new PassThrough()),
     headers: formData.getHeaders(),
     method: 'POST',
-    uri,
+    url,
   })
 }

@@ -2,7 +2,9 @@
 
 export {
   clearCliTokenCache,
+  type CliTokenInfo,
   getCliToken,
+  getCliTokenInfo,
   getCliUserConfig,
   getUserConfig,
   setCliUserConfig,

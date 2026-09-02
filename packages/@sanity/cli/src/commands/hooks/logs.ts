@@ -3,7 +3,6 @@ import {inspect, styleText} from 'node:util'
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
-import groupBy from 'lodash-es/groupBy.js'
 
 import {formatFailure} from '../../actions/hook/formatFailure.js'
 import {type DeliveryAttempt, type Hook, type HookMessage} from '../../actions/hook/types'
@@ -128,7 +127,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     }
 
     // Group attempts by message ID
-    const groupedAttempts = groupBy(attempts, 'messageId')
+    const groupedAttempts = Object.groupBy(attempts, (attempt) => attempt.messageId)
 
     // Populate messages with attempts
     const populated = messages.map((msg): HookMessage & {attempts: DeliveryAttempt[]} => ({

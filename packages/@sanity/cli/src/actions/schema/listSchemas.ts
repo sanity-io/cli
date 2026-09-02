@@ -1,13 +1,13 @@
 import {styleText} from 'node:util'
 
+import {type StoredWorkspaceSchema} from '@sanity/cli-build/_internal/manifest'
 import {type Output, studioWorkerTask} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
-import {Table} from 'console-table-printer'
 import {type Workspace} from 'sanity'
 
 import {getSchemas} from '../../services/schemas.js'
-import {isDefined} from '../manifest/schemaTypeHelpers.js'
-import {type StoredWorkspaceSchema} from '../manifest/types.js'
+import {Table} from '../../util/responsiveTable.js'
+import {isDefined} from './schemaTypeHelpers.js'
 import {type UniqWorkspaceWorkerData} from './types.js'
 import {getDatasetsOutString} from './utils/schemaStoreOutStrings.js'
 import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'

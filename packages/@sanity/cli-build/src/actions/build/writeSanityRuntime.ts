@@ -2,6 +2,10 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {tryFindStudioConfigPath} from '@sanity/cli-core/config'
+import {
+  RESOURCE_BINDINGS_FILENAME,
+  RESOURCE_BINDINGS_MODULE_SOURCE,
+} from '@sanity/workbench-cli/build'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 
 import {buildDebug} from './buildDebug.js'
@@ -21,6 +25,8 @@ interface RuntimeOptions {
   basePath?: string
   entry?: string
   isApp?: boolean
+  /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
+  isBlueprints?: boolean
   isWorkbenchApp?: boolean
 }
 
@@ -36,7 +42,17 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
   entries: {relativeConfigLocation: string | null; relativeEntry: string | null}
   watcher: FSWatcher | undefined
 }> {
-  const {appTitle, basePath, cwd, entry, isApp, isWorkbenchApp, reactStrictMode, watch} = options
+  const {
+    appTitle,
+    basePath,
+    cwd,
+    entry,
+    isApp,
+    isBlueprints,
+    isWorkbenchApp,
+    reactStrictMode,
+    watch,
+  } = options
   const runtimeDir = path.join(cwd, '.sanity', 'runtime')
 
   buildDebug('Making runtime directory')
@@ -88,10 +104,24 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
     basePath,
     entry: relativeEntry ?? undefined,
     isApp,
+    isBlueprints,
     reactStrictMode,
     relativeConfigLocation,
   })
   await writeFile(path.join(runtimeDir, 'app.js'), appJsContent)
+
+  // Resource bindings ride in their own statically-imported module (see
+  // resource-bindings.ts) so a federated host and a standalone studio resolve
+  // them the same way. Brett bakes the resolved values in at deploy. Only a
+  // Blueprints build emits it (and imports it — see getEntryModule); a normal
+  // `sanity build`/`dev`/`preview` skips it entirely.
+  if (isBlueprints) {
+    buildDebug('Writing resource bindings module to runtime directory')
+    await writeFile(
+      path.join(runtimeDir, RESOURCE_BINDINGS_FILENAME),
+      RESOURCE_BINDINGS_MODULE_SOURCE,
+    )
+  }
 
   return {
     entries: {
@@ -125,7 +155,7 @@ export async function resolveEntries(options: {
       : null
   }
 
-  // Only a *branded* app (`unstable_defineApp`) that declares no `entry` has no
+  // Only a *branded* app (`defineApplication`) that declares no `entry` has no
   // navigable app view (sanity-io/workbench spec 002-workbench-extension-api,
   // US5): `null` entry tells the runtime/federation to skip the `./App` render
   // path. Non-branded (legacy SDK) apps keep the historical `./src/App` default,

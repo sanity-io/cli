@@ -2,7 +2,8 @@ import path from 'node:path'
 
 import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
-import {isWorkbenchApp, resolveAppId} from '@sanity/workbench-cli'
+import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {resolveWorkbenchConfig} from '@sanity/workbench-cli/build'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
 import {determineIsApp} from '../../../util/determineIsApp.js'
@@ -38,9 +39,11 @@ export function getDevServerConfig({
 
   const isApp = cliConfig ? determineIsApp(cliConfig) : false
   const reactStrictMode = resolveReactStrictMode(cliConfig)
-  // `views`/`services` are declared via `unstable_defineApp`, so read them off
-  // the branded app result rather than the legacy `app` config type.
+  // `views`/`webWorkers` are declared via `defineApplication`, so read them off
+  // the branded app result rather than the legacy `app` config type. A config is
+  // not an app — it resolves separately and expands only its `fields`.
   const app = cliConfig?.app
+  const workbenchConfig = resolveWorkbenchConfig(cliConfig)
 
   const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
   if (envBasePath && cliConfig?.project?.basePath) {
@@ -63,21 +66,18 @@ export function getDevServerConfig({
     // view: the runtime/federation skip the `./App` render path entirely.
     entry: app?.entry,
     exposes: isWorkbenchApp(app)
-      ? {config: app.config, services: app.services, views: app.views}
-      : undefined,
+      ? {views: app.views, webWorkers: app.webWorkers}
+      : workbenchConfig
+        ? {config: {appType: workbenchConfig.appType, fields: workbenchConfig.fields}}
+        : undefined,
     // `devAction` passes an explicit port when a running workbench claimed the
     // configured one; otherwise the shared resolution stands.
     httpPort: httpPort ?? baseConfig.httpPort,
-    isWorkbenchApp: isWorkbenchApp(app),
+    isWorkbenchApp: isWorkbenchApp(app) || !!workbenchConfig,
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
-    // Inline the same id the dev registry advertises so the app's bus identity
-    // matches how the workbench addresses it. The registry re-reads the bound
-    // port if a non-strict shift moves it.
-    workbenchAppId: isWorkbenchApp(app)
-      ? resolveAppId({host: baseConfig.httpHost, port: httpPort ?? baseConfig.httpPort})
-      : undefined,
+    workbenchAppId: isWorkbenchApp(app) ? app.slug : undefined,
   }
 }

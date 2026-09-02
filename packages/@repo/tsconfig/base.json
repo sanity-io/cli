@@ -2,8 +2,9 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "description": "Shared TS config that are used for builds, dts generation, etl extract, and vscode/intellisense",
   "compilerOptions": {
-    // Everything needs to use the same lib settings for `paths` to work consistently throughout the monorepo
-    "lib": ["ES2023"],
+    // Everything needs to use the same lib settings for `paths` to work consistently throughout the monorepo.
+    // Node 22.12 provides all of ES2024 at runtime; `target` stays at ES2023 to match the swc configs that emit.
+    "lib": ["ES2024"],
 
     // Output settings
     "target": "ES2023",

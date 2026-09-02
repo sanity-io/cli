@@ -3,16 +3,16 @@ import path from 'node:path'
 import babel from '@rolldown/plugin-babel'
 import {findProjectRoot} from '@sanity/cli-core/config'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
-import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
+import {type CliConfig, type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {isStaging} from '@sanity/cli-core/util'
 import {
+  resourceBindingsChunkFileName,
+  resourceBindingsCodeSplittingGroup,
   type WorkbenchExposes,
   workbenchOptimizeDeps,
   workbenchVitePlugins,
 } from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
-import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
-import debug from 'debug'
 import {
   type ConfigEnv,
   esmExternalRequirePlugin,
@@ -26,6 +26,7 @@ import {
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
+import {buildDebug} from './buildDebug.js'
 import {VENDOR_DIR} from './constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
@@ -57,7 +58,7 @@ interface ViteOptions {
    */
   mode: 'development' | 'production'
 
-  reactCompiler: boolean | ReactCompilerConfig | undefined
+  reactCompiler: CliConfig['reactCompiler']
 
   /**
    * Additional plugins when configured, eg. typegen
@@ -82,7 +83,14 @@ interface ViteOptions {
   isApp?: boolean
 
   /**
-   * Whether this is a workbench app (opted in via `unstable_defineApp`). Drives
+   * Blueprints build (invoked via `@sanity/runtime-cli`). When set, the
+   * resource-bindings module is forced into its own unhashed chunk at the bundle
+   * root; otherwise no such chunk is produced.
+   */
+  isBlueprints?: boolean
+
+  /**
+   * Whether this is a workbench app (opted in via `defineApplication`). Drives
    * the module-federation build.
    */
   isWorkbenchApp?: boolean
@@ -133,6 +141,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     entries,
     exposes,
     isApp,
+    isBlueprints,
     isWorkbenchApp,
     minify,
     mode,
@@ -156,10 +165,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const envVars = options.getEnvironmentVariables()
 
   const sharedPlugins: PluginOption = [
-    viteReact(),
-    ...(reactCompiler
-      ? [babel({presets: [reactCompilerPreset(reactCompiler === true ? {} : reactCompiler)]})]
-      : []),
+    ...getReactPlugins(reactCompiler),
     ...(schemaExtraction?.enabled
       ? [
           sanitySchemaExtractionPlugin({
@@ -214,7 +220,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ...(isWorkbenchApp
         ? [
             ...sharedPlugins,
-            await workbenchVitePlugins({appId: workbenchAppId, cwd, entries, exposes, isApp}),
+            await workbenchVitePlugins({
+              appId: workbenchAppId,
+              cwd,
+              entries,
+              exposes,
+              isApp,
+              isBlueprints,
+            }),
             {
               ...sanityBuildEntries({basePath, bridge: false, cwd, isApp}),
               applyToEnvironment: (env) => env.name === 'client',
@@ -323,19 +336,41 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
           ...autoUpdates?.vendor.entries,
         },
         onwarn: onRolldownWarn,
+        ...(isBlueprints || autoUpdates
+          ? {
+              output: {
+                ...(isBlueprints
+                  ? {
+                      // Blueprints only: keep the resource-bindings module in its
+                      // own unhashed chunk at the bundle root so Brett can rewrite
+                      // it at deploy. The chunk sizing lives on the group itself
+                      // (see `resourceBindingsCodeSplittingGroup`), so it only
+                      // affects the bindings module and not automatic chunking.
+                      chunkFileNames: (chunk) =>
+                        resourceBindingsChunkFileName(chunk.name) ?? 'static/[name]-[hash].js',
+                      codeSplitting: {
+                        groups: [resourceBindingsCodeSplittingGroup],
+                      },
+                    }
+                  : {}),
+                ...(autoUpdates
+                  ? {
+                      entryFileNames: (chunk) =>
+                        vendorChunkNames!.has(chunk.name)
+                          ? `${VENDOR_DIR}/[name]-[hash].mjs`
+                          : 'static/[name]-[hash].js',
+                      exports: 'named',
+                    }
+                  : {}),
+              },
+            }
+          : {}),
         ...(autoUpdates
           ? {
               // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
               // the vendor named-exports plugin can edit chunks without a JS
               // dependency.
               experimental: {nativeMagicString: true},
-              output: {
-                entryFileNames: (chunk) =>
-                  vendorChunkNames!.has(chunk.name)
-                    ? `${VENDOR_DIR}/[name]-[hash].mjs`
-                    : 'static/[name]-[hash].js',
-                exports: 'named',
-              },
               // App-style builds default to `preserveEntrySignatures: false`, which
               // treeshakes the exports off entry chunks. Vendor chunks are loaded by
               // the browser via the import map, so their exports must survive (e.g.
@@ -350,6 +385,33 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   return viteConfig
+}
+
+/**
+ * The React plugin(s) for the given `reactCompiler` configuration.
+ *
+ * With the (default) babel transform the compiler runs as a babel preset
+ * next to a plain `viteReact()`. With the experimental oxc transform,
+ * `viteReact`'s `compiler` option lets `oxc-transform-react` own the React
+ * Compiler, TypeScript/JSX and Fast Refresh transforms in one pass. The
+ * `transform` discriminator is stripped so neither compiler receives an
+ * option it does not know.
+ */
+function getReactPlugins(reactCompiler: CliConfig['reactCompiler']): PluginOption[] {
+  const config: ReactCompilerConfig | undefined =
+    reactCompiler === true ? {} : reactCompiler || undefined
+
+  if (!config) {
+    return [viteReact()]
+  }
+
+  if (config.transform === 'oxc') {
+    const {transform, ...compilerOptions} = config
+    return [viteReact({compiler: compilerOptions})]
+  }
+
+  const {transform, ...compilerOptions} = config
+  return [viteReact(), babel({presets: [reactCompilerPreset(compilerOptions)]})]
 }
 
 function onRolldownWarn(warning: Rolldown.RolldownLog, warn: Rolldown.LoggingFunction) {
@@ -437,10 +499,10 @@ export async function extendViteConfigWithUserConfig(
   let config = defaultConfig
 
   if (typeof userConfig === 'function') {
-    debug('Extending vite config using user-specified function')
+    buildDebug('Extending vite config using user-specified function')
     config = await userConfig(config, env)
   } else if (typeof userConfig === 'object') {
-    debug('Merging vite config using user-specified object')
+    buildDebug('Merging vite config using user-specified object')
     config = mergeConfig(config, userConfig)
   }
 

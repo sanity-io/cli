@@ -41,7 +41,7 @@ describe('sanityExtensionArtifacts', () => {
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
+          views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'}],
         }),
       }),
       root,
@@ -57,7 +57,7 @@ describe('sanityExtensionArtifacts', () => {
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          views: [{name: 'feed', src: './src/panel.tsx', title: 'feed', type: 'panel'}],
+          views: [{name: 'feed', src: './src/panel.tsx', surface: 'panel', title: 'feed'}],
         }),
       }),
       root,
@@ -82,7 +82,7 @@ describe('sanityExtensionArtifacts', () => {
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
           views: [
-            {name: 'library', src: './src/picker.tsx', title: 'library', type: 'asset_source'},
+            {name: 'library', src: './src/picker.tsx', surface: 'asset_source', title: 'library'},
           ],
         }),
       }),
@@ -100,19 +100,43 @@ describe('sanityExtensionArtifacts', () => {
     expect(picker).toContain('import.meta.hot.accept')
   })
 
+  it('emits a single render-contract artifact for a tile view', () => {
+    const root = makeRoot()
+    runConfigResolved(
+      sanityExtensionArtifacts({
+        artifacts: workbenchArtifacts({
+          views: [
+            {name: 'agent', size: 'large', src: './src/tile.tsx', surface: 'tile', title: 'agent'},
+          ],
+        }),
+      }),
+      root,
+    )
+
+    // A tile exposes a single `tile` island.
+    const agentDir = path.join(root, '.sanity/federation/views/agent')
+    expect(fs.readdirSync(agentDir).toSorted()).toEqual(['tile.js'])
+
+    const tile = fs.readFileSync(path.join(agentDir, 'tile.js'), 'utf8')
+    expect(tile).toContain('import view from "../../../../src/tile.tsx"')
+    expect(tile).toContain('view.components["tile"]')
+    expect(tile).toContain('export function render(rootElement, props')
+    expect(tile).toContain('import.meta.hot.accept')
+  })
+
   it('writes nothing when no views are declared', () => {
     const root = makeRoot()
     runConfigResolved(sanityExtensionArtifacts({artifacts: workbenchArtifacts({views: []})}), root)
     expect(fs.existsSync(path.join(root, '.sanity/federation/views'))).toBe(false)
   })
 
-  it('emits a worker bundle and loader for each service', () => {
+  it('emits a worker bundle and loader for each web worker', () => {
     const root = makeRoot()
     runConfigResolved(
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
-          services: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
           views: [],
+          webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
         }),
       }),
       root,

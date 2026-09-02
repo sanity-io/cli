@@ -8,6 +8,7 @@ const mockRecordUnclaimedProject = vi.hoisted(() => vi.fn())
 const mockGetUnavailableScaffoldTarget = vi.hoisted(() => vi.fn())
 const mockInput = vi.hoisted(() => vi.fn())
 const mockScaffoldProject = vi.hoisted(() => vi.fn())
+const mockFetchNewInstructions = vi.hoisted(() => vi.fn())
 
 vi.mock(
   '@sanity/cli-core/SanityCommand',
@@ -22,6 +23,10 @@ vi.mock('../../services/mintProject.js', () => ({
 }))
 vi.mock('../../util/unclaimedProjects.js', () => ({
   recordUnclaimedProject: mockRecordUnclaimedProject,
+}))
+vi.mock('../../services/newInstructions.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/newInstructions.js')>()),
+  fetchNewInstructions: mockFetchNewInstructions,
 }))
 vi.mock('../../actions/scaffold/scaffoldProject.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../actions/scaffold/scaffoldProject.js')>()),
@@ -54,7 +59,22 @@ const result = {
   token: project.token,
 }
 
+const INSTRUCTIONS_MARKDOWN = [
+  '# Set up a Sanity project (mint and claim)',
+  '',
+  '## 1. Mint a project',
+  '',
+  '```sh',
+  'npx sanity@latest new "My Project" --yes',
+  '```',
+].join('\n')
+
+const studioUrl =
+  'http://localhost:3333/#token=sk-robot-token' +
+  '&claim=https%3A%2F%2Fwww.sanity.io%2Fclaim%2Fclaim-token'
+
 const {NewCommand} = await import('../new.js')
+const {InstructionsUnavailableError} = await import('../../services/newInstructions.js')
 
 function outputText(): string {
   return stripVTControlCharacters(vi.mocked(mocks.SanityCmdOutput.log).mock.calls.flat().join('\n'))
@@ -65,6 +85,12 @@ function outputLines(): string[] {
     .mocked(mocks.SanityCmdOutput.log)
     .mock.calls.flat()
     .map((line) => stripVTControlCharacters(String(line)))
+}
+
+function stderrText(): string {
+  return stripVTControlCharacters(
+    vi.mocked(process.stderr.write).mock.calls.flat().map(String).join('\n'),
+  )
 }
 
 beforeEach(() => {
@@ -78,6 +104,7 @@ beforeEach(() => {
     frontendPath: '/tmp/project/web',
     studioPath: '/tmp/project/sanity',
   })
+  mockFetchNewInstructions.mockResolvedValue(INSTRUCTIONS_MARKDOWN)
   mocks.SanityCmdIsUnattended.mockReturnValue(true)
 })
 
@@ -125,18 +152,15 @@ describe('#new', () => {
       '│  To use the Sanity CLI before claiming use your token by setting',
       `│  SANITY_AUTH_TOKEN="${project.token}" sanity "command"`,
     ])
-    expect(output).toContain('http://localhost:3333/#token=sk-robot-token')
-    const studioLinkIndex = lines.indexOf(
-      '│  Then open this link: http://localhost:3333/#token=sk-robot-token',
-    )
+    expect(output).toContain(studioUrl)
+    expect(output).toContain('cd sanity && npx sanity@latest dev')
+    const studioLinkIndex = lines.indexOf(`│  Then open this link: ${studioUrl}`)
     expect(lines.slice(studioLinkIndex, studioLinkIndex + 3)).toEqual([
-      '│  Then open this link: http://localhost:3333/#token=sk-robot-token',
+      `│  Then open this link: ${studioUrl}`,
       '│',
       '│  The token signs you in: there is no account yet.',
     ])
-    expect(output).toContain(
-      'Your content is private until you claim, to read it, you need the token.',
-    )
+    expect(output).not.toContain('Your content is private until you claim')
     expect(output).toContain(
       "Treat your token as a password and don't expose it publicly in your app.",
     )
@@ -200,13 +224,67 @@ describe('#new', () => {
       '│  No folders or env files were created. Use the project ID and dataset above',
       '│  in your own setup.',
       '│',
-      '│  Once a Studio is running on http://localhost:3333, sign in with: http://localhost:3333/#token=sk-robot-token',
+      `│  Once a Studio is running on http://localhost:3333, sign in with: ${studioUrl}`,
       '│',
       '│  The token signs you in: there is no account yet.',
     ])
     expect(outputLines()).toContain(`◇  Token: ${project.token}`)
     expect(outputLines()).toContain(`│  Claim link: ${project.claimUrl}`)
     expect(outputText()).toContain('Claim your project by 1 August 2026, 00:00 UTC')
+  })
+
+  test('--instructions prints the guide verbatim under a header and creates nothing', async () => {
+    await expect(NewCommand.run(['--instructions'])).resolves.toBeUndefined()
+
+    expect(outputText()).toBe(
+      `# Nothing has been created yet — follow these steps.\n\n${INSTRUCTIONS_MARKDOWN}`,
+    )
+    expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    expect(mockRecordUnclaimedProject).not.toHaveBeenCalled()
+  })
+
+  test('--instructions skips the directory check that would otherwise block the command', async () => {
+    mockGetUnavailableScaffoldTarget.mockResolvedValue('sanity')
+
+    await expect(NewCommand.run(['--instructions'])).resolves.toBeUndefined()
+
+    expect(outputText()).toContain(INSTRUCTIONS_MARKDOWN)
+    expect(mockGetUnavailableScaffoldTarget).not.toHaveBeenCalled()
+  })
+
+  test('--instructions fails with the direct fetch fallback when sanity.new is unreachable', async () => {
+    mockFetchNewInstructions.mockRejectedValue(
+      new InstructionsUnavailableError('the server responded with HTTP 503'),
+    )
+
+    await expect(NewCommand.run(['--instructions'])).rejects.toMatchObject({
+      code: 'INSTRUCTIONS_UNAVAILABLE',
+      message: expect.stringContaining('the server responded with HTTP 503'),
+      suggestions: [
+        'Fetch them directly: curl -sSL https://sanity.new/llms.txt',
+        'Or open https://sanity.new in a browser',
+      ],
+    })
+    expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
+  })
+
+  // In json mode oclif reports the error itself and sets a non-zero exit code rather than
+  // rejecting, so the observable contract is the failure plus doing neither of the two things.
+  test('--instructions cannot be combined with --json', async () => {
+    await NewCommand.run(['--instructions', '--json']).catch(() => null)
+
+    expect(process.exitCode).not.toBe(0)
+    expect(process.exitCode).toBeDefined()
+    expect(mockFetchNewInstructions).not.toHaveBeenCalled()
+    expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
+  })
+
+  test('a project named "instructions" still mints, so the flag is the only guide path', async () => {
+    await NewCommand.run(['instructions', '--no-scaffold'])
+
+    expect(mockMintUnclaimedProject).toHaveBeenCalledWith({displayName: 'instructions'})
+    expect(mockFetchNewInstructions).not.toHaveBeenCalled()
   })
 
   test('refuses a non-empty Studio target before creating a project', async () => {
@@ -231,6 +309,35 @@ describe('#new', () => {
       ],
     })
     expect(mockMintUnclaimedProject).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['a transport failure', new Error('network unavailable')],
+    [
+      'rate limiting',
+      new Error('Project creation rate limit reached for this machine. Try again later.'),
+    ],
+  ])('reports %s before recording or scaffolding', async (_, error) => {
+    mockMintUnclaimedProject.mockRejectedValue(error)
+
+    await expect(NewCommand.run(['My New Project'])).rejects.toThrow(error.message)
+
+    expect(stderrText()).toContain('Creating your project failed.')
+    expect(mockRecordUnclaimedProject).not.toHaveBeenCalled()
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    expect(outputText()).not.toContain(project.claimUrl)
+    expect(outputText()).not.toContain(project.token)
+  })
+
+  test('keeps the credential handoff when the local recovery record cannot be saved', async () => {
+    mockRecordUnclaimedProject.mockReturnValue(false)
+
+    await expect(NewCommand.run(['My New Project', '--no-scaffold'])).resolves.toEqual(result)
+
+    expect(outputText()).toContain('The local recovery record was not saved.')
+    expect(outputText()).toContain('Keep the claim URL and access token from this output.')
+    expect(outputText()).toContain(project.claimUrl)
+    expect(outputText()).toContain(project.token)
   })
 
   test('keeps project details without suggesting unsupported manual recovery', async () => {
@@ -310,6 +417,16 @@ describe('#new', () => {
   })
 
   test('--json records recovery but does not scaffold or print flow output', async () => {
+    await expect(NewCommand.run(['My New Project', '--json'])).resolves.toEqual(result)
+
+    expect(mockRecordUnclaimedProject).toHaveBeenCalledWith(project)
+    expect(mockScaffoldProject).not.toHaveBeenCalled()
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalled()
+  })
+
+  test('--json returns credentials when the best-effort recovery write fails', async () => {
+    mockRecordUnclaimedProject.mockReturnValue(false)
+
     await expect(NewCommand.run(['My New Project', '--json'])).resolves.toEqual(result)
 
     expect(mockRecordUnclaimedProject).toHaveBeenCalledWith(project)

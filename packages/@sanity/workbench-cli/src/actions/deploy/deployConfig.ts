@@ -3,11 +3,11 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {type Output, subdebug} from '@sanity/cli-core'
-import {pack} from 'tar-fs'
+import {c as createTar} from 'tar'
 
 import {getWorkbenchUrl} from '../../services/applications.js'
 import {createConfig, resolveSingletonInstallationId} from '../../services/installations.js'
-import {summarizeExposeGroup} from './summarizeInterfaces.js'
+import {summarizeGroup} from './summarizeInterfaces.js'
 
 const debug = subdebug('deploy')
 
@@ -41,7 +41,7 @@ export function summarizeConfig(config: {
 }): string {
   switch (config.appType) {
     case 'media-library': {
-      return summarizeExposeGroup('Media library fields', config.fields)
+      return summarizeGroup('Media library fields', config.fields)
     }
     default: {
       throw new Error(`Cannot create config for unknown app type: ${config.appType}`)
@@ -64,7 +64,7 @@ export async function deployConfig(options: {
   version: string
 }): Promise<void> {
   const {appType, installationId, organizationId, output, sourceDir, version} = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
   await createConfig(installationId, {tarball, version})
 
   debug('Deployed config for app type: %s', appType)

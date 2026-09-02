@@ -38,7 +38,7 @@ describe('#listGraphQLEndpoints', () => {
 
     expect(mockClient.request).toHaveBeenCalledWith({
       method: 'GET',
-      uri: '/apis/graphql',
+      url: '/apis/graphql',
     })
     expect(endpoints).toEqual([result])
   })

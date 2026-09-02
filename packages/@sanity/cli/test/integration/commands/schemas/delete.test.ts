@@ -33,7 +33,7 @@ describe('#schema:delete', {timeout: 60 * 1000}, () => {
       mocks: {isInteractive: false},
     })
 
-    expect(error?.message).toContain('Pass `--yes`')
+    expect(error?.message).toContain('Missing required flag yes')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockConfirm).not.toHaveBeenCalled()
   })

@@ -4,8 +4,9 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {unstable_defineApp} from '../../../defineApp.js'
-import {type BrettWorkspace} from '../../../services/applications.js'
+import {definePanelView, defineWindowView} from '../../../contract.js'
+import {defineApplication} from '../../../defineApp.js'
+import {type BrettAccess, type BrettWorkspace} from '../../../services/applications.js'
 import {createCoreApp, createStudio, deployWorkbenchApp} from '../deployWorkbenchApp.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
@@ -17,16 +18,15 @@ vi.mock('@sanity/cli-core/ux', () => ({
   spinner: () => ({start: () => ({clear: vi.fn(), fail: vi.fn(), succeed: vi.fn()})}),
 }))
 
-vi.mock('tar-fs', () => ({pack: () => ({pipe: () => Readable.from(['tar'])})}))
+vi.mock('tar', () => ({c: () => ({pipe: () => Readable.from(['tar'])})}))
 
 const mockClient = {request: vi.fn()}
-const app = unstable_defineApp({
+const app = defineApplication({
   entry: './src/App.tsx',
-  name: 'drop-desk',
   organizationId: 'org-1',
-  services: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
   slug: 'drop-desk',
   title: 'Drop Desk',
+  webWorkers: [{name: 'unread', src: './src/unread.ts', title: 'unread', type: 'worker'}],
 })
 const workspaces: BrettWorkspace[] = [
   {
@@ -38,6 +38,7 @@ const workspaces: BrettWorkspace[] = [
     title: 'Default',
   },
 ]
+const access: BrettAccess[] = [{resourceId: 'proj-1.production', resourceType: 'dataset'}]
 const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
 
 /** The (name, value) pairs a call appended to its FormData. */
@@ -62,19 +63,37 @@ describe('createCoreApp', () => {
 
     expect(
       await createCoreApp({organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk'}),
-    ).toMatchObject({applicationId: 'app_new'})
+    ).toMatchObject({application: {id: 'app_new'}})
     // A record-only create is a plain JSON POST (no multipart, no tarball).
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {organizationId: 'org-1', slug: 'abc123', title: 'Drop Desk', type: 'coreApp'},
       method: 'POST',
-      uri: '/applications',
+      url: '/applications',
     })
   })
 
-  test('forwards isSingleton when creating a singleton core app', async () => {
+  test('forwards name (the identity) in the create body', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_new'})
 
-    await createCoreApp({isSingleton: true, organizationId: 'org-1', slug: 'ml', title: 'Media'})
+    await createCoreApp({
+      name: 'drop-desk',
+      organizationId: 'org-1',
+      slug: 'drop-desk-host',
+      title: 'Drop Desk',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({name: 'drop-desk'})
+  })
+
+  test('forwards isSingleton in the create body', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'app_new'})
+
+    await createCoreApp({
+      isSingleton: true,
+      organizationId: 'org-1',
+      slug: 'media-library',
+      title: 'Media Library',
+    })
 
     expect(mockClient.request.mock.calls[0][0].body).toMatchObject({isSingleton: true})
   })
@@ -104,13 +123,13 @@ describe('createCoreApp', () => {
 
     expect(mockClient.request).toHaveBeenLastCalledWith({
       method: 'DELETE',
-      uri: '/applications/app_new',
+      url: '/applications/app_new',
     })
   })
 })
 
 describe('createStudio', () => {
-  test('creates a studio at the given slug and returns the id', async () => {
+  test('creates a studio at the given slug and returns the record', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
 
     expect(
@@ -120,7 +139,7 @@ describe('createStudio', () => {
         slug: 'my-studio',
         title: 'My Studio',
       }),
-    ).toMatchObject({applicationId: 'studio_new'})
+    ).toMatchObject({application: {id: 'studio_new'}})
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {
         config: {studio: {projectId: 'proj-1'}},
@@ -130,7 +149,7 @@ describe('createStudio', () => {
         type: 'studio',
       },
       method: 'POST',
-      uri: '/applications',
+      url: '/applications',
     })
   })
 
@@ -178,7 +197,7 @@ describe('deployWorkbenchApp', () => {
 
     expect(mockClient.request.mock.calls[0][0]).toMatchObject({
       method: 'POST',
-      uri: '/applications/app_1/deployments',
+      url: '/applications/app_1/deployments',
     })
     const fields = appendedFields()
     expect(fields).toContainEqual(['version', '1.0.0'])
@@ -205,6 +224,113 @@ describe('deployWorkbenchApp', () => {
     expect(fields.map(([name]) => name)).toContain('tarball')
   })
 
+  test('sends a tile interface carrying its size + order as metadata', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    const tileApp = defineApplication({
+      entry: './src/App.tsx',
+      organizationId: 'org-1',
+      slug: 'drop-desk',
+      title: 'Drop Desk',
+      views: [
+        {
+          name: 'agent',
+          order: 100,
+          size: 'large',
+          src: './src/tile.tsx',
+          surface: 'tile',
+          title: 'Agent',
+        },
+      ],
+    })
+
+    await deployWorkbenchApp({
+      app: tileApp,
+      applicationId: 'app_1',
+      isApp: true,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
+
+    const fields = appendedFields()
+    const interfaces = JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))
+    // Brett owns `id`/`src`, so they're stripped; `size`/`order` ride as metadata.
+    expect(interfaces).toContainEqual({
+      metadata: {order: 100, size: 'large'},
+      moduleId: 'views/agent',
+      name: 'agent',
+      title: 'Agent',
+      type: 'tile',
+      version: '1.0.0',
+    })
+  })
+
+  test('sends entry, panel, and window views with inherited placement metadata', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    const placedApp = defineApplication({
+      dock: {group: 'dock.applications', order: 100},
+      entry: './src/App.tsx',
+      organizationId: 'org-1',
+      slug: 'drop-desk',
+      title: 'Drop Desk',
+      views: [
+        definePanelView({
+          dock: {order: 20},
+          name: 'feed',
+          src: './src/Feed.tsx',
+          title: 'Feed',
+        }),
+        defineWindowView({
+          dock: {group: 'dock.user'},
+          name: 'settings',
+          src: './src/Settings.tsx',
+          title: 'Settings',
+        }),
+      ],
+    })
+
+    await deployWorkbenchApp({
+      app: placedApp,
+      applicationId: 'app_1',
+      isApp: true,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
+
+    const fields = appendedFields()
+    expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
+      {
+        metadata: {dock: {group: 'dock.applications', order: 20}},
+        moduleId: 'views/feed',
+        name: 'feed',
+        title: 'Feed',
+        type: 'panel',
+        version: '1.0.0',
+      },
+      {
+        metadata: {dock: {group: 'dock.user', order: 100}},
+        moduleId: 'App',
+        name: 'settings',
+        title: 'Settings',
+        type: 'app',
+        version: '1.0.0',
+      },
+      {
+        metadata: {dock: {group: 'dock.applications', order: 100}},
+        moduleId: 'App',
+        name: 'drop-desk',
+        title: 'Drop Desk',
+        type: 'app',
+        version: '1.0.0',
+      },
+    ])
+  })
+
   test('sends workspaces for a studio deployment', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
@@ -220,6 +346,24 @@ describe('deployWorkbenchApp', () => {
     })
 
     expect(appendedFields()).toContainEqual(['workspaces', JSON.stringify(workspaces)])
+  })
+
+  test('forwards access to the deployment when provided', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    await deployWorkbenchApp({
+      access,
+      app: {...app, entry: undefined},
+      applicationId: 'studio_1',
+      isApp: false,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/studio',
+      title: 'My Studio',
+      version: '3.0.0',
+      workspaces,
+    })
+
+    expect(appendedFields()).toContainEqual(['access', JSON.stringify(access)])
   })
 
   test('syncs the title and icon after shipping the deployment', async () => {
@@ -239,7 +383,7 @@ describe('deployWorkbenchApp', () => {
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {icon, title: 'Drop Desk'},
       method: 'PATCH',
-      uri: '/applications/app_1',
+      url: '/applications/app_1',
     })
   })
 
@@ -259,7 +403,7 @@ describe('deployWorkbenchApp', () => {
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {title: 'Drop Desk'},
       method: 'PATCH',
-      uri: '/applications/app_1',
+      url: '/applications/app_1',
     })
   })
 
@@ -280,7 +424,7 @@ describe('deployWorkbenchApp', () => {
     expect(mockClient.request.mock.calls[1][0]).toEqual({
       body: {title: 'Drop Desk', visibility: 'unlisted'},
       method: 'PATCH',
-      uri: '/applications/app_1',
+      url: '/applications/app_1',
     })
   })
 

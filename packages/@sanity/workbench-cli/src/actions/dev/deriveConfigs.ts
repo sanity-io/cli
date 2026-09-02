@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 
 import {MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../contract.js'
-import {isWorkbenchApp, readConfig} from '../../defineApp.js'
+import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {type DevServerManifest} from './registry.js'
 
 /** One forwarded interface record on the dev-server registry entry. */
@@ -31,14 +31,18 @@ export function deriveConfigEntries(config: DevServerConfig): {name: string; src
  * The fields' schema *values* can't serialize — the workbench loads them from
  * the federation module. `src` stays on so the exposes-set id keys on it and a
  * repoint rebuilds. `appType` routes the config to the singleton (no app id to
- * key on). `id` is a content hash of the entry — it fills the
+ * key on) and names the federation `moduleName`, so the alias no longer borrows
+ * the app slug. `id` is a content hash of the entry — it fills the
  * installation-config id slot deployed apps get from the applications API,
  * and the workbench keys change detection on it. `version` is a string, like
  * the one Brett returns on a deployed `activeConfig`.
  */
-export async function deriveConfigs(app: CliConfig['app']): Promise<DevServerConfig[]> {
-  if (!isWorkbenchApp(app)) return []
-  const config = readConfig(app)
+export async function deriveConfigs(
+  cliConfig: CliConfig | null | undefined,
+): Promise<DevServerConfig[]> {
+  // Keyed on the config brand (its target `appType`), not on having fields — an
+  // empty config is still a config; dev just has nothing local to load for it.
+  const config = resolveWorkbenchConfig(cliConfig)
   if (!config) return []
   const entry = {
     appType: config.appType,
@@ -48,7 +52,8 @@ export async function deriveConfigs(app: CliConfig['app']): Promise<DevServerCon
       src: field.src,
       title: field.title,
     })),
-    moduleName: app.slug,
+    // A config keys on its target `appType`, not a fabricated slug.
+    moduleName: config.appType,
     version: String(MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION),
   }
   return [{...entry, id: await contentHash(JSON.stringify(entry))}]
