@@ -33,8 +33,19 @@ Code for sanity cli
 - [`sanity blueprints stacks`](#sanity-blueprints-stacks)
 - [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
 - [`sanity codemod [CODEMODNAME]`](#sanity-codemod-codemodname)
+- [`sanity context build KNOWLEDGEBASEID`](#sanity-context-build-knowledgebaseid)
 - [`sanity context create`](#sanity-context-create)
+- [`sanity context delete KNOWLEDGEBASEID`](#sanity-context-delete-knowledgebaseid)
+- [`sanity context get KNOWLEDGEBASEID`](#sanity-context-get-knowledgebaseid)
+- [`sanity context imports create KNOWLEDGEBASEID`](#sanity-context-imports-create-knowledgebaseid)
+- [`sanity context imports delete KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-delete-knowledgebaseid-importid)
+- [`sanity context imports download KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-download-knowledgebaseid-importid)
+- [`sanity context imports get KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-get-knowledgebaseid-importid)
+- [`sanity context imports list KNOWLEDGEBASEID`](#sanity-context-imports-list-knowledgebaseid)
+- [`sanity context jobs get KNOWLEDGEBASEID JOBID`](#sanity-context-jobs-get-knowledgebaseid-jobid)
 - [`sanity context list`](#sanity-context-list)
+- [`sanity context refresh KNOWLEDGEBASEID`](#sanity-context-refresh-knowledgebaseid)
+- [`sanity context update KNOWLEDGEBASEID`](#sanity-context-update-knowledgebaseid)
 - [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
 - [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
 - [`sanity cors list`](#sanity-cors-list)
@@ -952,6 +963,38 @@ EXAMPLES
     $ sanity codemod reactIconsV3 --dry
 ```
 
+## `sanity context build KNOWLEDGEBASEID`
+
+Build a knowledge base from its imported content
+
+```
+USAGE
+  $ sanity context build KNOWLEDGEBASEID [--cancel | --watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  --cancel  Cancel the running build instead of starting one
+  --watch   Wait for the build to finish, exiting non-zero if it fails
+
+DESCRIPTION
+  Build a knowledge base from its imported content
+
+EXAMPLES
+  Start a build and return the job ID
+
+    $ sanity context build kb-abc123
+
+  Start a build and wait for it to finish (non-zero exit on failure)
+
+    $ sanity context build kb-abc123 --watch
+
+  Cancel the running build, if any
+
+    $ sanity context build kb-abc123 --cancel
+```
+
 ## `sanity context create`
 
 Create a knowledge base
@@ -979,6 +1022,241 @@ EXAMPLES
 
     $ sanity context create --organization org-abc123 --title "Support docs" --description "Product docs and \
       troubleshooting guides"
+```
+
+## `sanity context delete KNOWLEDGEBASEID`
+
+Delete a knowledge base and its generated content
+
+```
+USAGE
+  $ sanity context delete KNOWLEDGEBASEID [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+DESCRIPTION
+  Delete a knowledge base and its generated content
+
+EXAMPLES
+  Delete a knowledge base after confirmation
+
+    $ sanity context delete kb-abc123
+
+  Delete a knowledge base without confirmation prompt
+
+    $ sanity context delete kb-abc123 --yes
+```
+
+## `sanity context get KNOWLEDGEBASEID`
+
+Get details of a knowledge base
+
+```
+USAGE
+  $ sanity context get KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  --json  Output the knowledge base in JSON format
+
+DESCRIPTION
+  Get details of a knowledge base
+
+EXAMPLES
+  Get details of a specific knowledge base
+
+    $ sanity context get kb-abc123
+
+  Output the knowledge base as JSON
+
+    $ sanity context get kb-abc123 --json
+```
+
+## `sanity context imports create KNOWLEDGEBASEID`
+
+Import content into a knowledge base
+
+```
+USAGE
+  $ sanity context imports create KNOWLEDGEBASEID [--content-type <mime>] [--file <path> | --text <value> | --url <url> |
+    --query <value>] [--sanity-dataset <name> ] [--sanity-project <id> ] [--title <value> ]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  --content-type=<mime>    Content type of the import (--text: text/markdown or text/plain; --file: any MIME type,
+                           inferred from the file extension when omitted)
+  --file=<path>            Path to a local file to import
+  --query=<value>          GROQ query binding a Sanity dataset as a source
+  --sanity-dataset=<name>  Sanity dataset for a dataset import
+  --sanity-project=<id>    Sanity project ID for a dataset import
+  --text=<value>           Inline text content to import (requires --title)
+  --title=<value>          Title for an inline text import
+  --url=<url>              Website URL to crawl
+
+DESCRIPTION
+  Import content into a knowledge base
+
+EXAMPLES
+  Import inline text
+
+    $ sanity context imports create kb-abc123 --text "Refunds are processed within 5 days" --title "Refund policy"
+
+  Upload and import a local file
+
+    $ sanity context imports create kb-abc123 --file ./handbook.pdf
+
+  Crawl a website
+
+    $ sanity context imports create kb-abc123 --url https://example.com/docs
+
+  Bind a Sanity dataset as a source
+
+    $ sanity context imports create kb-abc123 --query '*[_type == "article"]' --sanity-project abc123 \
+      --sanity-dataset production
+```
+
+## `sanity context imports delete KNOWLEDGEBASEID IMPORTID`
+
+Delete an import from a knowledge base
+
+```
+USAGE
+  $ sanity context imports delete KNOWLEDGEBASEID IMPORTID [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  IMPORTID         Import ID
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+DESCRIPTION
+  Delete an import from a knowledge base
+
+EXAMPLES
+  Delete an import after confirmation
+
+    $ sanity context imports delete kb-abc123 import-def456
+
+  Delete an import without confirmation prompt
+
+    $ sanity context imports delete kb-abc123 import-def456 --yes
+```
+
+## `sanity context imports download KNOWLEDGEBASEID IMPORTID`
+
+Get a short-lived signed URL for the original uploaded bytes of a file import
+
+```
+USAGE
+  $ sanity context imports download KNOWLEDGEBASEID IMPORTID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  IMPORTID         Import ID
+
+FLAGS
+  --json  Output the download URL in JSON format
+
+DESCRIPTION
+  Get a short-lived signed URL for the original uploaded bytes of a file import
+
+EXAMPLES
+  Get a download URL for an uploaded file
+
+    $ sanity context imports download kb-abc123 import-def456
+```
+
+## `sanity context imports get KNOWLEDGEBASEID IMPORTID`
+
+Get details of an import
+
+```
+USAGE
+  $ sanity context imports get KNOWLEDGEBASEID IMPORTID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  IMPORTID         Import ID
+
+FLAGS
+  --json  Output the import in JSON format
+
+DESCRIPTION
+  Get details of an import
+
+EXAMPLES
+  Get details of a specific import
+
+    $ sanity context imports get kb-abc123 import-def456
+
+  Output the import as JSON
+
+    $ sanity context imports get kb-abc123 import-def456 --json
+```
+
+## `sanity context imports list KNOWLEDGEBASEID`
+
+List imports for a knowledge base
+
+```
+USAGE
+  $ sanity context imports list KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  --json  Output imports in JSON format
+
+DESCRIPTION
+  List imports for a knowledge base
+
+EXAMPLES
+  List all imports for a knowledge base
+
+    $ sanity context imports list kb-abc123
+
+  Output imports as JSON
+
+    $ sanity context imports list kb-abc123 --json
+```
+
+## `sanity context jobs get KNOWLEDGEBASEID JOBID`
+
+Get the status of a knowledge base job
+
+```
+USAGE
+  $ sanity context jobs get KNOWLEDGEBASEID JOBID [--json] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  JOBID            Job ID
+
+FLAGS
+  --json   Output the job in JSON format
+  --watch  Poll until the job reaches a terminal state
+
+DESCRIPTION
+  Get the status of a knowledge base job
+
+EXAMPLES
+  Get the current status of a job
+
+    $ sanity context jobs get kb-abc123 job-def456
+
+  Wait for the job to finish (non-zero exit if it does not succeed)
+
+    $ sanity context jobs get kb-abc123 job-def456 --watch
 ```
 
 ## `sanity context list`
@@ -1010,6 +1288,62 @@ EXAMPLES
   Output knowledge bases as JSON
 
     $ sanity context list --organization org-abc123 --json
+```
+
+## `sanity context refresh KNOWLEDGEBASEID`
+
+Refresh a knowledge base: re-check sources and apply what changed
+
+```
+USAGE
+  $ sanity context refresh KNOWLEDGEBASEID
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+DESCRIPTION
+  Refresh a knowledge base: re-check sources and apply what changed
+
+EXAMPLES
+  Start an incremental refresh
+
+    $ sanity context refresh kb-abc123
+```
+
+## `sanity context update KNOWLEDGEBASEID`
+
+Update a knowledge base
+
+```
+USAGE
+  $ sanity context update KNOWLEDGEBASEID [--description <value>] [--refresh-enabled] [--refresh-frequency
+    weekly|monthly] [--title <value>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  --description=<value>         New knowledge base description
+  --[no-]refresh-enabled        Enable scheduled refresh (--no-refresh-enabled to disable)
+  --refresh-frequency=<option>  How often scheduled refresh runs
+                                <options: weekly|monthly>
+  --title=<value>               New knowledge base title
+
+DESCRIPTION
+  Update a knowledge base
+
+EXAMPLES
+  Rename a knowledge base
+
+    $ sanity context update kb-abc123 --title "New title"
+
+  Enable weekly scheduled refresh
+
+    $ sanity context update kb-abc123 --refresh-enabled --refresh-frequency weekly
+
+  Disable scheduled refresh
+
+    $ sanity context update kb-abc123 --no-refresh-enabled
 ```
 
 ## `sanity cors add ORIGIN`
