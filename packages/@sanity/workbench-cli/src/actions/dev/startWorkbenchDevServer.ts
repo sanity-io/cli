@@ -34,14 +34,16 @@ const isLocalApp = (server: DevServerManifest): boolean => !isConfigOnlyServer(s
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
   applications: servers
     .filter((server) => isLocalApp(server))
-    .map(({host, id, interfaces, manifest, port, projectId, type}) => ({
+    .map(({host, id, interfaces, manifest, name, port, projectId, reference, type}) => ({
       host,
       id,
       // Views cross to the remote keyed on `type`, never the internal `surface`.
       interfaces: interfaces?.map((iface) => toWireInterface(iface)),
       manifest,
+      name,
       port,
       projectId,
+      reference,
       type,
     })),
   configs: servers.flatMap(({configs, host, port}) =>

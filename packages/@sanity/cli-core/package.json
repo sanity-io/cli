@@ -146,9 +146,7 @@
     "obug": "catalog:",
     "ora": "catalog:",
     "rxjs": "catalog:",
-    "tsx": "catalog:",
     "vite": "catalog:",
-    "vite-node": "catalog:",
     "wrap-ansi": "^9.0.2",
     "zod": "catalog:"
   },

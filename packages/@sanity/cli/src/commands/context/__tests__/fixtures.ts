@@ -28,3 +28,32 @@ export const knowledgeBase: Context.KnowledgeBase = {
   title: 'Support docs',
   updatedAt: '2026-08-02T00:00:00.000Z',
 }
+
+export const importItem: Context.ImportDetail = {
+  completedAt: '2026-08-01T01:00:00.000Z',
+  crawlOptions: null,
+  createdAt: '2026-08-01T00:00:00.000Z',
+  createdBy: null,
+  datasetSource: null,
+  distilledCount: 3,
+  error: null,
+  id: 'import-def456',
+  knowledgeBaseId: '00000000-0000-0000-0000-000000000001',
+  lastCheckedAt: null,
+  name: 'handbook.pdf',
+  sizeBytes: 1024,
+  sourceCount: 5,
+  sourceKind: 'file',
+  status: 'complete',
+  statusDetail: null,
+  totalDistillableCount: 4,
+  unsupportedCount: 1,
+}
+
+export const succeededJob: Context.Job = {
+  completedAt: '2026-08-01T01:00:00.000Z',
+  error: null,
+  id: 'job-def456',
+  startedAt: '2026-08-01T00:00:00.000Z',
+  status: 'succeeded',
+}

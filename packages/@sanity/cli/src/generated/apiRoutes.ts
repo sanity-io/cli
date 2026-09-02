@@ -225,13 +225,13 @@ export const apiRoutes: ApiRouteEntry[] = [
   {
     host: 'global',
     pathPatterns: [
-      '{apiV}/functions',
-      '{apiV}/functions/{functionId}',
-      '{apiV}/functions/{functionId}/envvars',
-      '{apiV}/functions/{functionId}/envvars/{envVarKey}',
-      '{apiV}/functions/{functionId}/invoke',
-      '{apiV}/functions/{functionId}/logs',
-      '{apiV}/functions/{functionId}/logs/stream'
+      'functions',
+      'functions/{functionId}',
+      'functions/{functionId}/envvars',
+      'functions/{functionId}/envvars/{envVarKey}',
+      'functions/{functionId}/invoke',
+      'functions/{functionId}/logs',
+      'functions/{functionId}/logs/stream'
     ],
     slug: 'functions-api',
     title: 'Functions API reference'

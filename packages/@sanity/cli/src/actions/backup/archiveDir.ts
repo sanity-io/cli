@@ -1,7 +1,7 @@
 import {createWriteStream} from 'node:fs'
 import {createGzip} from 'node:zlib'
 
-import {pack} from 'tar-fs'
+import {c as createTar} from 'tar'
 
 import {backupDownloadDebug} from './backupDownloadDebug.js'
 
@@ -40,10 +40,10 @@ export function archiveDir(
       reject(err)
     })
 
-    const tarStream = pack(tmpOutDir)
+    const tarStream = createTar({cwd: tmpOutDir}, ['.'])
 
-    tarStream.on('error', (err: Error) => {
-      backupDownloadDebug('Tar stream error: %s', err.message)
+    tarStream.on('error', (err) => {
+      backupDownloadDebug('Tar stream error: %s', err instanceof Error ? err.message : String(err))
       reject(err)
     })
 

@@ -3,7 +3,7 @@ import {createGzip} from 'node:zlib'
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {pack} from 'tar-fs'
+import {c as createTar} from 'tar'
 
 import {type DerivedInterface, deriveInterfaces} from '../../deriveInterfaces.js'
 import {
@@ -138,7 +138,7 @@ export async function deployWorkbenchApp(options: {
     visibility,
     workspaces,
   } = options
-  const tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+  const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
 
   const spin = spinner(label).start()
   try {

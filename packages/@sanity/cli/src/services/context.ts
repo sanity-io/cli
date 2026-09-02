@@ -44,3 +44,125 @@ export async function listKnowledgeBases(organizationId: string): Promise<Contex
 
   return knowledgeBases
 }
+
+/**
+ * Get a single knowledge base by ID
+ */
+export async function getKnowledgeBase(knowledgeBaseId: string): Promise<Context.KnowledgeBase> {
+  const client = await getContextClient()
+  return client.context.knowledgeBases.get(knowledgeBaseId)
+}
+
+/**
+ * Update a knowledge base's configuration
+ */
+export async function updateKnowledgeBase(
+  knowledgeBaseId: string,
+  params: Context.EditKnowledgeBaseParams,
+): Promise<Context.KnowledgeBase> {
+  const client = await getContextClient()
+  return client.context.knowledgeBases.edit(knowledgeBaseId, params)
+}
+
+/**
+ * Delete a knowledge base and its generated content
+ */
+export async function deleteKnowledgeBase(knowledgeBaseId: string): Promise<void> {
+  const client = await getContextClient()
+  await client.context.knowledgeBases.delete(knowledgeBaseId)
+}
+
+/**
+ * Import content into a knowledge base. File imports are staged and uploaded
+ * to signed storage by the client.
+ */
+export async function createImport(
+  knowledgeBaseId: string,
+  params: Context.CreateFileImportParams | Context.CreateImportParams,
+): Promise<Context.JobAccepted> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.imports.create(params)
+}
+
+/**
+ * List all imports for a knowledge base (drains pagination)
+ */
+export async function listImports(knowledgeBaseId: string): Promise<Context.Import[]> {
+  const client = await getContextClient(knowledgeBaseId)
+
+  const imports: Context.Import[] = []
+  let cursor: string | undefined
+  do {
+    const page = await client.context.imports.list({cursor})
+    imports.push(...page.data)
+    cursor = page.nextCursor ?? undefined
+  } while (cursor !== undefined)
+
+  return imports
+}
+
+/**
+ * Get a single import by ID
+ */
+export async function getImport(
+  knowledgeBaseId: string,
+  importId: string,
+): Promise<Context.ImportDetail> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.imports.get({importId})
+}
+
+/**
+ * Get a short-lived signed URL for an import's original uploaded bytes
+ */
+export async function downloadImport(
+  knowledgeBaseId: string,
+  importId: string,
+): Promise<Context.ImportDownloadResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.imports.download({importId})
+}
+
+/**
+ * Delete an import from a knowledge base
+ */
+export async function deleteImport(knowledgeBaseId: string, importId: string): Promise<void> {
+  const client = await getContextClient(knowledgeBaseId)
+  await client.context.imports.delete({importId})
+}
+
+/**
+ * Start a build of a knowledge base
+ */
+export async function buildKnowledgeBase(knowledgeBaseId: string): Promise<Context.JobAccepted> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.build()
+}
+
+/**
+ * Cancel the running build of a knowledge base, if any
+ */
+export async function cancelKnowledgeBaseBuild(
+  knowledgeBaseId: string,
+): Promise<{cancelled: boolean}> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.cancelBuild()
+}
+
+/**
+ * Run an incremental refresh: re-check sources and apply what changed
+ */
+export async function refreshKnowledgeBase(
+  knowledgeBaseId: string,
+): Promise<{jobId: string; started: boolean}> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.refresh()
+}
+
+/**
+ * Get an async job (build, import) by ID
+ */
+export async function getJob(knowledgeBaseId: string, jobId: string): Promise<Context.Job> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.jobs.get({jobId})
+}
