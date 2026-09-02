@@ -80,6 +80,9 @@ export const mcpPolicy: CommandPolicySet = {
   // Reads and rewrites local source code.
   codemod: deny,
 
+  // --watch polls a job with no deadline; a stuck job would hang the MCP tool
+  // call indefinitely. Non-watch invocations are single remote requests.
+  'context:build': conditionalDenyFlags('watch'),
   'context:create': allow,
   'context:delete': allow,
   'context:get': allow,
@@ -90,7 +93,10 @@ export const mcpPolicy: CommandPolicySet = {
   'context:imports:download': allow,
   'context:imports:get': allow,
   'context:imports:list': allow,
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:jobs:get': conditionalDenyFlags('watch'),
   'context:list': allow,
+  'context:refresh': allow,
   'context:update': allow,
 
   'cors:add': allow,
