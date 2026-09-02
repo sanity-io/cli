@@ -271,7 +271,7 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     const placedApp = defineApplication({
-      dock: {group: 'dock.applications', order: 100},
+      dock: {group: 'applications', order: 100},
       entry: './src/App.tsx',
       organizationId: 'org-1',
       slug: 'drop-desk',
@@ -284,7 +284,7 @@ describe('deployWorkbenchApp', () => {
           title: 'Feed',
         }),
         defineWindowView({
-          dock: {group: 'dock.user'},
+          dock: {group: 'user'},
           name: 'settings',
           src: './src/Settings.tsx',
           title: 'Settings',
@@ -305,7 +305,7 @@ describe('deployWorkbenchApp', () => {
     const fields = appendedFields()
     expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
       {
-        metadata: {dock: {group: 'dock.applications', order: 20}},
+        metadata: {dock: {group: 'applications', order: 20}},
         moduleId: 'views/feed',
         name: 'feed',
         title: 'Feed',
@@ -313,7 +313,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {dock: {group: 'dock.user', order: 100}},
+        metadata: {dock: {group: 'user', order: 100}},
         moduleId: 'App',
         name: 'settings',
         title: 'Settings',
@@ -321,7 +321,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {dock: {group: 'dock.applications', order: 100}},
+        metadata: {dock: {group: 'applications', order: 100}},
         moduleId: 'App',
         name: 'drop-desk',
         title: 'Drop Desk',

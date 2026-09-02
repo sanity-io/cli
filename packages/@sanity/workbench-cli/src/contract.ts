@@ -51,7 +51,7 @@ export type TileSize = z.infer<typeof TileSizeSchema>
 /** @public */
 export type ServiceType = 'worker'
 
-const DockGroupSchema = z.enum(['dock.system', 'dock.applications', 'dock.user'])
+const DockGroupSchema = z.enum(['system', 'applications', 'user'])
 
 /** @public */
 export type DockGroup = z.output<typeof DockGroupSchema>
