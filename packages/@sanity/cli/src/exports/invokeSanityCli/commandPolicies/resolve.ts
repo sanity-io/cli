@@ -82,6 +82,19 @@ async function buildCommandPolicies(
   for (const plugin of config.plugins.values()) {
     if (plugin.name === hostName) continue
 
+    // Only plugins this CLI declares itself may speak. oclif loads plugins
+    // recursively, so a dependency of a plugin also lands here — but it
+    // arrives through a version range this package does not control, and
+    // could start declaring policy without any diff to review here.
+    if (plugin.parent) {
+      debug(
+        'ignoring %s, contributed by %s rather than declared here',
+        plugin.name,
+        plugin.parent.name,
+      )
+      continue
+    }
+
     const declared = await loadPluginPolicies(plugin, source)
     if (!declared) continue
 

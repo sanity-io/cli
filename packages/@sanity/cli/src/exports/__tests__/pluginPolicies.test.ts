@@ -39,6 +39,33 @@ async function loadConfigWithPlugins(...names: string[]): Promise<Config> {
   return Config.load({plugins, root: cliRoot})
 }
 
+/**
+ * The same, but with one fixture attributed to another as its parent — the
+ * shape oclif produces for a plugin that a plugin brought in, rather than one
+ * this package declares.
+ */
+async function loadConfigWithNestedPlugin(name: string, carrier: string): Promise<Config> {
+  const rootPlugin = new Plugin({isRoot: true, root: cliRoot, type: 'core'})
+  await rootPlugin.load()
+
+  const parent = new Plugin({root: fixtureRoot(carrier), type: 'core'})
+  await parent.load()
+
+  const nested = new Plugin({root: fixtureRoot(name), type: 'core'})
+  await nested.load()
+  // What oclif's loader does when it recurses into a plugin's own plugins.
+  nested.parent = parent
+
+  return Config.load({
+    plugins: new Map([
+      [nested.name, nested],
+      [parent.name, parent],
+      [rootPlugin.name, rootPlugin],
+    ]),
+    root: cliRoot,
+  })
+}
+
 describe('plugin-declared invocation policies', () => {
   let config: Config
 
@@ -122,6 +149,28 @@ describe('plugin-declared invocation policies', () => {
     const policies = await resolveCommandPolicies(config, 'mcp')
 
     expect(policies['broken:run']).toBeUndefined()
+  })
+
+  test('a plugin contributed by another plugin cannot declare policies', async () => {
+    // oclif loads plugins recursively, so a plugin's own plugins land in the
+    // same map. Those arrive through a version range this package does not
+    // control, so their declarations are ignored however well-formed.
+    const nestedConfig = await loadConfigWithNestedPlugin(
+      'fixture-plugin',
+      'fixture-plugin-malformed',
+    )
+
+    // The commands are still contributed; only the declaration is refused.
+    // Without this the assertions below would pass on a plugin that simply
+    // failed to load.
+    expect(nestedConfig.commands.map((command) => command.id)).toEqual(
+      expect.arrayContaining(['fixtures:echo', 'fixtures:hidden']),
+    )
+
+    const policies = await resolveCommandPolicies(nestedConfig, 'mcp')
+
+    expect(policies['fixtures:echo']).toBeUndefined()
+    expect(policies['fixtures:hidden']).toBeUndefined()
   })
 
   test('resolution is memoized per config', async () => {

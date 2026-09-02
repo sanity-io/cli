@@ -22,6 +22,8 @@
  * (or `help`) renders root help listing the invokable topics, and a subject
  * (`cors --help`, `cors list --help`) renders topic or command help.
  */
+import {fileURLToPath} from 'node:url'
+
 import {Command, Config, Parser, settings} from '@oclif/core'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {exitCodes} from '@sanity/cli-core'
@@ -83,9 +85,15 @@ function instantiateCommand(
  * re-reading the command manifest per call. It only reads this package's own
  * installed files — process-lifetime initialization, not per-invocation host
  * state — so it happens outside any execution context.
+ *
+ * `userPlugins: false` keeps this surface to the plugins this package ships
+ * with. oclif otherwise loads whatever `<dataDir>/package.json` lists, which
+ * nothing writes today, but the programmatic surface should not widen as a
+ * side effect if that ever changes. The path is resolved explicitly because
+ * oclif only converts a `file://` URL when the argument is a bare string.
  */
 function loadCliCommandConfig(): Promise<Config> {
-  return Config.load(import.meta.url)
+  return Config.load({root: fileURLToPath(import.meta.url), userPlugins: false})
 }
 
 let cachedConfig: Promise<Config> | undefined
