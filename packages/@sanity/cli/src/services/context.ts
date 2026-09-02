@@ -44,3 +44,30 @@ export async function listKnowledgeBases(organizationId: string): Promise<Contex
 
   return knowledgeBases
 }
+
+/**
+ * Get a single knowledge base by ID
+ */
+export async function getKnowledgeBase(knowledgeBaseId: string): Promise<Context.KnowledgeBase> {
+  const client = await getContextClient()
+  return client.context.knowledgeBases.get(knowledgeBaseId)
+}
+
+/**
+ * Update a knowledge base's configuration
+ */
+export async function updateKnowledgeBase(
+  knowledgeBaseId: string,
+  params: Context.EditKnowledgeBaseParams,
+): Promise<Context.KnowledgeBase> {
+  const client = await getContextClient()
+  return client.context.knowledgeBases.edit(knowledgeBaseId, params)
+}
+
+/**
+ * Delete a knowledge base and its generated content
+ */
+export async function deleteKnowledgeBase(knowledgeBaseId: string): Promise<void> {
+  const client = await getContextClient()
+  await client.context.knowledgeBases.delete(knowledgeBaseId)
+}
