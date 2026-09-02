@@ -540,7 +540,7 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
-    test('forwards projectId from registry entries through the broadcast payload', async () => {
+    test('forwards application identity from registry entries through the broadcast payload', async () => {
       // Workbench needs the projectId on the very first event to resolve a
       // local studio's primary project before the manifest arrives.
       const mockServer = createMockViteServer()
@@ -553,9 +553,11 @@ describe('startWorkbenchDevServer', () => {
         {
           host: 'localhost',
           id: 'app-1',
+          name: 'studio',
           pid: 2,
           port: 3334,
           projectId: 'x1g7jygt',
+          reference: 'org-1/studio',
           type: 'studio',
         },
       ])
@@ -565,8 +567,10 @@ describe('startWorkbenchDevServer', () => {
           expect.objectContaining({
             host: 'localhost',
             id: 'app-1',
+            name: 'studio',
             port: 3334,
             projectId: 'x1g7jygt',
+            reference: 'org-1/studio',
             type: 'studio',
           }),
         ],
