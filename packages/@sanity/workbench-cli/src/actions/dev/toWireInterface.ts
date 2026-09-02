@@ -13,25 +13,18 @@ type ViewInterface = Extract<DevServerInterface, {surface: unknown}>
 /** A registry worker interface — already keyed on `type`. */
 type WorkerInterface = Extract<DevServerInterface, {type: unknown}>
 
-/**
- * An interface as the workbench remote consumes it: every member keyed on
- * `type`. Views have their `surface` renamed to `type`; workers pass through.
- * @internal
- */
+/** A local interface keyed on the type Brett returns. @internal */
 export type WorkbenchWireInterface =
-  | (Omit<ViewInterface, 'surface'> & {type: ViewInterface['surface']})
+  | (Omit<ViewInterface, 'surface'> & {
+      type: 'app' | Exclude<ViewInterface['surface'], 'window'>
+    })
   | WorkerInterface
 
-/**
- * Convert a registry interface to the remote's wire shape. Views rename
- * `surface` → `type`; workers (already `type`) pass through untouched. The only
- * surface→type conversion for local dev — mirrors the deploy boundary.
- * @internal
- */
+/** Maps local view surfaces to Brett interface types. @internal */
 export function toWireInterface(iface: DevServerInterface): WorkbenchWireInterface {
   if ('surface' in iface) {
     const {surface, ...rest} = iface
-    return {...rest, type: surface}
+    return {...rest, type: surface === 'window' ? 'app' : surface}
   }
   return iface
 }

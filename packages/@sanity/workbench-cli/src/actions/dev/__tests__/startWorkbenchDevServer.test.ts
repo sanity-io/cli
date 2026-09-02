@@ -700,7 +700,7 @@ describe('startWorkbenchDevServer', () => {
           name: 'main',
           src: './src/App.tsx',
           title: 'Main',
-          type: 'window',
+          type: 'app',
           version: '1',
         },
         {
