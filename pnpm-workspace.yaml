@@ -1,5 +1,13 @@
 linkWorkspacePackages: true
 
+onlyBuiltDependencies:
+  - '@swc/core'
+  - 'esbuild'
+  - 'node-pty'
+overrides:
+  '@sanity/cli': 'workspace:*'
+  '@types/node': 'catalog:'
+
 packages:
   - 'packages/@repo/*'
   - 'packages/@sanity/cli'
