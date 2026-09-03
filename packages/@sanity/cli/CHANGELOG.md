@@ -1,5 +1,31 @@
 # Change Log
 
+## 8.9.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.8.0...cli-v8.9.0)
+
+_2026-09-03_
+
+### Features
+
+- **typegen:** register query result types on a global SanityQueries interface ([#1840](https://github.com/sanity-io/cli/pull/1840)) ([4c653b9](https://github.com/sanity-io/cli/commit/4c653b9dde5bb56d194af848b0e3d50008f90299))
+
+  `sanity typegen generate` now writes the query type map to a global `SanityQueries` interface, plus a compatibility bridge for older `@sanity/client` releases. Typed `client.fetch` and `sanityFetch` results no longer depend on resolving the same `@sanity/client` copy as the rest of the program.
+
+  That means generated types work in strict pnpm and monorepo layouts where `@sanity/client` is not a direct dependency of the generated file, when multiple copies of the client are installed (for example one nested under `next-sanity`), and from every client entry point including `@sanity/client/stega` on `@sanity/client` 8.5.0 and the 7.x backport.
+
+  The generated file no longer starts the type map with a side-effect `import "@sanity/client"`. Existing generated files that used `declare module '@sanity/client'` keep working unchanged.
+
+### Bug Fixes
+
+- **deploy:** send the configured app slug on redeploy ([#1841](https://github.com/sanity-io/cli/pull/1841)) ([379c185](https://github.com/sanity-io/cli/commit/379c1855517edc5067efc9562922a20b54c50e83))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.1
+
 ## 8.8.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.7.0...cli-v8.8.0)
