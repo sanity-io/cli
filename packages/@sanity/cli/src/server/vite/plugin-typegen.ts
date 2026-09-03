@@ -4,7 +4,6 @@ import path from 'node:path'
 import {CLITelemetryStore} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {
-  configDefinition,
   type GenerationResult,
   runTypegenGenerate,
   type TypeGenConfig,
@@ -17,6 +16,7 @@ import once from 'lodash-es/once.js'
 import picomatch from 'picomatch'
 import {type Plugin} from 'vite'
 
+import {parseTypegenConfig} from '../../actions/typegen/parseTypegenConfig.js'
 import {toForwardSlashes} from '../../util/toForwardSlashes.js'
 
 /** Default debounce delay in milliseconds */
@@ -82,7 +82,7 @@ export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
 
   // Apply defaults through the same schema as `sanity typegen generate`,
   // so watch mode and manual generation produce identical output
-  const config: TypeGenConfig = configDefinition.parse(inputConfig)
+  const config: TypeGenConfig = parseTypegenConfig(inputConfig)
 
   // Build query patterns from config
   const queryPatterns = Array.isArray(config.path) ? config.path : [config.path]
