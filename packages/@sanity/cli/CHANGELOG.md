@@ -1,5 +1,24 @@
 # Change Log
 
+## 8.9.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.9.0...cli-v8.9.1)
+
+_2026-09-03_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1837](https://github.com/sanity-io/cli/pull/1837)) ([865305b](https://github.com/sanity-io/cli/commit/865305b14fac3e35e117710bb3724423cada6d5b))
+- **deps:** update dependency @sanity/import to v7 ([#1838](https://github.com/sanity-io/cli/pull/1838)) ([d715b64](https://github.com/sanity-io/cli/commit/d715b645e18a5c1f39b78c4b50a949e9c7dd432d))
+- **deps:** update dependency eventsource to v5 ([#1839](https://github.com/sanity-io/cli/pull/1839)) ([a2cc032](https://github.com/sanity-io/cli/commit/a2cc0322c7608be75ad6ec587f18621dd7139990))
+- **workbench:** resolve singleton installation by application name ([#1847](https://github.com/sanity-io/cli/pull/1847)) ([60c4b2e](https://github.com/sanity-io/cli/commit/60c4b2ecb8237d879b0db7ef489e5c193687b702))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.2
+
 ## 8.9.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.8.0...cli-v8.9.0)
