@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 2.4.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.1...workbench-cli-v2.4.2)
+
+_2026-09-03_
+
+### Bug Fixes
+
+- **workbench:** resolve singleton installation by application name ([#1847](https://github.com/sanity-io/cli/pull/1847)) ([60c4b2e](https://github.com/sanity-io/cli/commit/60c4b2ecb8237d879b0db7ef489e5c193687b702))
+
 ## 2.4.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.0...workbench-cli-v2.4.1)
