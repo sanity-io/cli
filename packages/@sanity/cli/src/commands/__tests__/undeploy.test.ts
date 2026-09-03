@@ -676,7 +676,7 @@ describe('#undeploy', () => {
       query: {limit: 'none', organizationId: 'org-1'},
       uri: '/installations',
     }).reply(200, {
-      data: [{application: {slug: 'media-library'}, id: 'inst-1'}],
+      data: [{application: {name: 'media-library'}, id: 'inst-1'}],
     })
 
     mockApi({
@@ -719,7 +719,7 @@ describe('#undeploy', () => {
       query: {limit: 'none', organizationId: 'org-1'},
       uri: '/installations',
     }).reply(200, {
-      data: [{application: {slug: 'media-library'}, id: 'inst-1'}],
+      data: [{application: {name: 'media-library'}, id: 'inst-1'}],
     })
 
     mockApi({
