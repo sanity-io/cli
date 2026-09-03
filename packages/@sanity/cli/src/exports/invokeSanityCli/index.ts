@@ -87,10 +87,7 @@ function instantiateCommand(
  * state — so it happens outside any execution context.
  *
  * `userPlugins: false` keeps this surface to the plugins this package ships
- * with. oclif otherwise loads whatever `<dataDir>/package.json` lists, which
- * nothing writes today, but the programmatic surface should not widen as a
- * side effect if that ever changes. The path is resolved explicitly because
- * oclif only converts a `file://` URL when the argument is a bare string.
+ * with. oclif otherwise loads whatever `<dataDir>/package.json` lists.
  */
 function loadCliCommandConfig(): Promise<Config> {
   return Config.load({root: fileURLToPath(import.meta.url), userPlugins: false})
