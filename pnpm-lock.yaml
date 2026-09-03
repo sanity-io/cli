@@ -22,8 +22,8 @@ catalogs:
       specifier: ^8.4.0
       version: 8.4.0
     '@sanity/codegen':
-      specifier: ^8.0.0
-      version: 8.0.0
+      specifier: ^8.1.0
+      version: 8.1.0
     '@sanity/pkg-utils':
       specifier: ^12.3.4
       version: 12.3.4
@@ -569,7 +569,7 @@ importers:
         version: 8.4.0(vitest@4.1.11)
       '@sanity/codegen':
         specifier: 'catalog:'
-        version: 8.0.0(oxfmt@0.65.0)(react@19.2.8)(supports-color@8.1.1)
+        version: 8.1.0(oxfmt@0.65.0)(react@19.2.8)(supports-color@8.1.1)(typescript@6.0.3)
       '@sanity/descriptors':
         specifier: ^1.3.0
         version: 1.3.0
@@ -4326,8 +4326,8 @@ packages:
       sanity: ^5 || ^6.0.0-0
       styled-components: ^6.1
 
-  '@sanity/codegen@8.0.0':
-    resolution: {integrity: sha512-TE1yn1j52l7sNkDul0vnDKV1UHHaRvFq+G9iNYGybYvMXmZI/eVDbc2ti4cOK2RXRrO59oQMa9u4+8RlBlqs/Q==}
+  '@sanity/codegen@8.1.0':
+    resolution: {integrity: sha512-rZjT5+sbzgRbeuenK9qaxu7tFLc+vmrKvyU8ie79DWXq3TP8S1adnxwv1W7o5MyK40Ju5SkTqbR/xNujnsCrzQ==}
     engines: {node: '>=22.12'}
     peerDependencies:
       oxfmt: '*'
@@ -12866,7 +12866,7 @@ snapshots:
       - codemirror
       - react-dom
 
-  '@sanity/codegen@8.0.0(oxfmt@0.65.0)(react@19.2.8)(supports-color@8.1.1)':
+  '@sanity/codegen@8.1.0(oxfmt@0.65.0)(react@19.2.8)(supports-color@8.1.1)(typescript@6.0.3)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
       '@babel/generator': 7.29.8
@@ -12888,12 +12888,13 @@ snapshots:
       prettier: 3.9.6
       reselect: 5.3.0
       tsconfig-paths: 4.2.0
-      zod: 4.5.4
+      valibot: 1.4.2(typescript@6.0.3)
     optionalDependencies:
       oxfmt: 0.65.0
     transitivePeerDependencies:
       - react
       - supports-color
+      - typescript
 
   '@sanity/color@3.0.8': {}
 
