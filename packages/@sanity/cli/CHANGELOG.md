@@ -1,5 +1,37 @@
 # Change Log
 
+## 8.8.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.7.0...cli-v8.8.0)
+
+_2026-09-03_
+
+### Features
+
+- **context:** add context topic with knowledge base create and list commands ([#1785](https://github.com/sanity-io/cli/pull/1785)) ([fe1114f](https://github.com/sanity-io/cli/commit/fe1114fbbaf340b64ff7e292c88c40689da39c4f))
+- **context:** add knowledge base get, update and delete commands ([#1786](https://github.com/sanity-io/cli/pull/1786)) ([0cce117](https://github.com/sanity-io/cli/commit/0cce117d2fb38b2ac95a776181469c3d7cdae8e1))
+- **context:** add knowledge base import commands ([#1787](https://github.com/sanity-io/cli/pull/1787)) ([6e16211](https://github.com/sanity-io/cli/commit/6e16211e018482c5de66aedb3e0ae43a1d3e5c7b))
+- **context:** add build, refresh and job commands for knowledge bases ([#1789](https://github.com/sanity-io/cli/pull/1789)) ([6ab2e21](https://github.com/sanity-io/cli/commit/6ab2e211223eaf101532194601c52bee5e8d9871))
+- **cli:** add Functions API to `sanity api` ([#1827](https://github.com/sanity-io/cli/pull/1827)) ([67e20ad](https://github.com/sanity-io/cli/commit/67e20ad5c27bf211d28c795112fdf4b6485bb007))
+- **cli:** mark flags that are required in unattended mode as being required in `--help` ([#1766](https://github.com/sanity-io/cli/pull/1766)) ([8e472c1](https://github.com/sanity-io/cli/commit/8e472c14c6653556198b68a1c3769b9d42cebf22))
+
+### Bug Fixes
+
+- **cli:** remove accidentally introduced react-dom and react dependencies ([#1791](https://github.com/sanity-io/cli/pull/1791)) ([7075087](https://github.com/sanity-io/cli/commit/7075087fbd3d4025b804377dc214a5ed7dd19a36))
+- scaffold workbench configurations using the stable `defineApplication` export. ([#1823](https://github.com/sanity-io/cli/pull/1823)) ([47dba3c](https://github.com/sanity-io/cli/commit/47dba3c810c8edf3cf0eea0c8b1966ad2b49d4f4))
+- replace `tar-fs` with `tar` for archive packing and extraction ([#1796](https://github.com/sanity-io/cli/pull/1796)) ([d2b3576](https://github.com/sanity-io/cli/commit/d2b357638176c2c936ee3ddafd386d5617605d9f))
+- **cli:** use Vite for `sanity exec` instead of tsx ([#1792](https://github.com/sanity-io/cli/pull/1792)) ([0b230cb](https://github.com/sanity-io/cli/commit/0b230cbb8d82317aec1fb5f9ef9135b6ab10cece))
+- **deps:** update sanity-tooling ([#1831](https://github.com/sanity-io/cli/pull/1831)) ([a82ce5c](https://github.com/sanity-io/cli/commit/a82ce5c95f8ef7e63c2d6911e710cb51b7d35906))
+- **cli:** remove dock prefix from view groups ([#1834](https://github.com/sanity-io/cli/pull/1834)) ([1f3adf8](https://github.com/sanity-io/cli/commit/1f3adf82c2a842bfbb2507d4e12b36d54ccf27b6))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.0
+    - @sanity/cli-build bumped to 6.3.0
+    - @sanity/cli-core bumped to 3.6.1
+
 ## 8.7.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.6.0...cli-v8.7.0)

@@ -1,5 +1,33 @@
 # @sanity/workbench-cli
 
+## 2.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.3.0...workbench-cli-v2.4.0)
+
+_2026-09-03_
+
+### Features
+
+- bake resource bindings into a statically-imported module instead of an index.html script tag ([#1762](https://github.com/sanity-io/cli/pull/1762)) ([6189dda](https://github.com/sanity-io/cli/commit/6189dda8828fde06edd12a66e2cde3b2e739a32a))
+
+  Resource bindings now ride in a dedicated `sanity-resource-bindings.js` module emitted at the bundle root and imported before app code, so both standalone studios and federated apps resolve them the same way. The index.html script-tag placeholder has been removed.
+
+### Bug Fixes
+
+- scaffold workbench configurations using the stable `defineApplication` export. ([#1823](https://github.com/sanity-io/cli/pull/1823)) ([47dba3c](https://github.com/sanity-io/cli/commit/47dba3c810c8edf3cf0eea0c8b1966ad2b49d4f4))
+- replace `tar-fs` with `tar` for archive packing and extraction ([#1796](https://github.com/sanity-io/cli/pull/1796)) ([d2b3576](https://github.com/sanity-io/cli/commit/d2b357638176c2c936ee3ddafd386d5617605d9f))
+- **workbench-cli:** map window surfaces to app interfaces ([#1832](https://github.com/sanity-io/cli/pull/1832)) ([803dfda](https://github.com/sanity-io/cli/commit/803dfda33e3987f25c34165fdfcad534f930ad16))
+- **cli:** remove dock prefix from view groups ([#1834](https://github.com/sanity-io/cli/pull/1834)) ([1f3adf8](https://github.com/sanity-io/cli/commit/1f3adf82c2a842bfbb2507d4e12b36d54ccf27b6))
+- only emit the resource-bindings module for Blueprints builds ([#1821](https://github.com/sanity-io/cli/pull/1821)) ([e975887](https://github.com/sanity-io/cli/commit/e9758875ee28cfa7b65b676e9aee5e917fdd8eb8))
+
+  The `sanity-resource-bindings.js` module is now gated behind an `isBlueprints` flag (default off), which `@sanity/runtime-cli` sets when it builds a studio or app for a Blueprint. A normal `sanity build`, `dev`, or `preview` no longer emits or imports it.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.6.1
+
 ## 2.3.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.4...workbench-cli-v2.3.0)
