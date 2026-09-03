@@ -2,6 +2,7 @@ import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {c as createTar} from 'tar'
 
@@ -99,9 +100,9 @@ export async function createStudio(options: {
 
 /**
  * Ship a deployment to an already-created (or `deployment.appId`) application,
- * then sync its mutable metadata (`title`, and `icon`/`visibility` when set)
- * from config. The deploy endpoint ignores these, so a redeploy patches them
- * here alongside the new deployment.
+ * then sync its mutable metadata (`title`, and `icon`/`slug`/`visibility` when
+ * set) from config. The deploy endpoint ignores these, so a redeploy patches
+ * them here alongside the new deployment.
  *
  * `onDeployed` fires the instant the deployment is live, before the metadata
  * sync — so a caller can disarm a create-time rollback that must not delete an
@@ -117,6 +118,11 @@ export async function deployWorkbenchApp(options: {
   isAutoUpdating: boolean
   label?: string
   onDeployed?: () => void
+  /**
+   * The address from config. Only `createApplication` used to send it, so an
+   * app with a `deployment.appId` kept whatever slug it was created at.
+   */
+  slug?: string
   sourceDir: string
   title: string
   version: string
@@ -132,6 +138,7 @@ export async function deployWorkbenchApp(options: {
     isAutoUpdating,
     label = 'Deploying...',
     onDeployed,
+    slug,
     sourceDir,
     title,
     version,
@@ -155,14 +162,34 @@ export async function deployWorkbenchApp(options: {
       workspaces,
     })
     onDeployed?.()
-    await updateApplication(applicationId, {
-      title,
-      ...(icon ? {icon} : {}),
-      ...(visibility ? {visibility} : {}),
-    })
+    try {
+      await updateApplication(applicationId, {
+        title,
+        ...(icon ? {icon} : {}),
+        ...(slug ? {slug} : {}),
+        ...(visibility ? {visibility} : {}),
+      })
+    } catch (error) {
+      throw toSlugRejection(error, slug)
+    }
     spin.succeed()
   } catch (error) {
     spin.clear()
     throw error
   }
+}
+
+/**
+ * The slug is the one synced field the server validates — it must be free
+ * within the organization, and a singleton app only accepts its reserved
+ * identifiers — so a 4xx on the metadata patch is a rejected rename. Name the
+ * slug and the server's reason; anything else propagates untouched.
+ */
+function toSlugRejection(error: unknown, slug: string | undefined): unknown {
+  const statusCode = (error as {statusCode?: number})?.statusCode
+  if (!slug || statusCode === undefined || statusCode < 400 || statusCode >= 500) return error
+  return new Error(
+    `Slug "${slug}" was rejected: ${getErrorMessage(error)}. The deployment is live at the application's previous slug — change \`app.slug\` in sanity.cli.ts and deploy again.`,
+    {cause: error},
+  )
 }
