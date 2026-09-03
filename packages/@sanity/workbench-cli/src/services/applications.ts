@@ -135,6 +135,8 @@ export async function createApplication(options: {
 /** Mutable application fields the deploy flow patches after create. */
 export interface ApplicationUpdate {
   icon?: string | null
+  /** The address the application is served at; renaming moves it. */
+  slug?: string
   title?: string
   visibility?: AppVisibility
 }
