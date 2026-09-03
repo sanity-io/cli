@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 2.4.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.0...workbench-cli-v2.4.1)
+
+_2026-09-03_
+
+### Bug Fixes
+
+- **deploy:** send the configured app slug on redeploy ([#1841](https://github.com/sanity-io/cli/pull/1841)) ([379c185](https://github.com/sanity-io/cli/commit/379c1855517edc5067efc9562922a20b54c50e83))
+
 ## 2.4.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.3.0...workbench-cli-v2.4.0)
