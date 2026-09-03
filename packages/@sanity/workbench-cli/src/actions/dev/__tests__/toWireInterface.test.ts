@@ -26,7 +26,7 @@ describe('toWireInterface', () => {
   })
 
   test('carries the rest of the interface across untouched', () => {
-    const metadata = {dock: {group: 'dock.system', order: 2}}
+    const metadata = {dock: {group: 'system', order: 2}}
     const result = toWireInterface({...base, metadata, surface: 'panel'} as DevServerInterface)
 
     expect(result).toEqual({...base, metadata, type: 'panel'})

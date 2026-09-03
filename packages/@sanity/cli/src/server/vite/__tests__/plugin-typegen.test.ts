@@ -2,9 +2,9 @@ import path from 'node:path'
 
 import {CLITelemetryStore} from '@sanity/cli-core'
 import {createMockHttpServer, createMockWatcher} from '@sanity/cli-test'
-import {configDefinition} from '@sanity/codegen'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
+import {parseTypegenConfig} from '../../../actions/typegen/parseTypegenConfig.js'
 import {sanityTypegenPlugin} from '../plugin-typegen.js'
 
 const TEST_PROJECT_DIR = path.resolve('/project')
@@ -289,7 +289,7 @@ describe('sanityTypegenPlugin', () => {
     await buildEnd()
 
     expect(runTypegenGenerate).toHaveBeenCalledWith({
-      config: configDefinition.parse({}),
+      config: parseTypegenConfig({}),
       workDir: TEST_PROJECT_DIR,
     })
   })

@@ -1,4 +1,7 @@
 linkWorkspacePackages: true
+overrides:
+  '@sanity/cli': 'workspace:*'
+  '@types/node': 'catalog:'
 
 packages:
   - 'packages/@repo/*'
@@ -23,12 +26,12 @@ catalog:
   groq-js: ^2.0.0
 
   # Sanity
-  sanity: ^6.11.0
-  '@sanity/vision': ^6.11.0
+  sanity: ^6.12.0
+  '@sanity/vision': ^6.12.0
   '@sanity/types': ^6.12.0
   '@sanity/schema': ^6.12.0
-  '@sanity/client': ^8.4.0
-  '@sanity/codegen': ^8.0.0
+  '@sanity/client': ^8.5.0
+  '@sanity/codegen': ^8.1.0
   '@sanity/telemetry': ^1.1.0
 
   # Build & Development Tools
@@ -74,7 +77,7 @@ catalog:
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^12.3.4
-  oxfmt: ^0.65.0
+  oxfmt: ^0.66.0
 
   # Type Definitions
   '@types/node': ^22.20.0
@@ -112,26 +115,24 @@ minimumReleaseAgeExclude:
   - '@oxc-transform-react/*'
   - 'vitest'
   - 'postcss'
-  - '@module-federation/vite@1.16.14'
-  - '@module-federation/dts-plugin@2.7.0'
-  - '@module-federation/error-codes@2.7.0'
-  - '@module-federation/managers@2.7.0'
-  - '@module-federation/runtime@2.7.0'
-  - '@module-federation/runtime-core@2.7.0'
-  - '@module-federation/sdk@2.7.0'
-  - '@module-federation/third-party-dts-extractor@2.7.0'
   - '@vitest/*'
-  # Bump for jiti with ts path support, can remove after ~May 9th
-  - 'jiti@2.7.0'
-  # Renovate security update: turbo@2.9.14
-  - turbo@2.9.14
-  # Renovate security update: tar@7.5.16
-  - tar@7.5.16
-  # Renovate security update: esbuild@0.28.1
-  - esbuild@0.28.1
-  # Renovate security update: form-data@4.0.6
-  - form-data@4.0.6
-  # Renovate devDependency update: @changesets/cli@2.31.1
-  - '@changesets/cli@2.31.1'
-  # Renovate devDependency update: knip@6.27.0
-  - knip@6.27.0
+
+  # pnpm v11 upgrade
+  - '@codemirror/search@6.7.2'
+  - '@codemirror/state@6.7.2'
+  - '@codemirror/view@6.43.10'
+  - '@sentry/browser-utils@10.73.0'
+  - '@sentry/browser@10.73.0'
+  - '@sentry/core@10.73.0'
+  - '@sentry/feedback@10.73.0'
+  - '@sentry/react@10.73.0'
+  - '@sentry/replay-canvas@10.73.0'
+  - '@sentry/replay@10.73.0'
+  - i18next@26.4.1
+  - react-i18next@17.0.13
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  node-pty: true
+  sharp: false
+  unrs-resolver: false

@@ -271,7 +271,7 @@ describe('deployWorkbenchApp', () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     const placedApp = defineApplication({
-      dock: {group: 'dock.applications', order: 100},
+      dock: {group: 'applications', order: 100},
       entry: './src/App.tsx',
       organizationId: 'org-1',
       slug: 'drop-desk',
@@ -284,7 +284,7 @@ describe('deployWorkbenchApp', () => {
           title: 'Feed',
         }),
         defineWindowView({
-          dock: {group: 'dock.user'},
+          dock: {group: 'user'},
           name: 'settings',
           src: './src/Settings.tsx',
           title: 'Settings',
@@ -305,7 +305,7 @@ describe('deployWorkbenchApp', () => {
     const fields = appendedFields()
     expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
       {
-        metadata: {dock: {group: 'dock.applications', order: 20}},
+        metadata: {dock: {group: 'applications', order: 20}},
         moduleId: 'views/feed',
         name: 'feed',
         title: 'Feed',
@@ -313,7 +313,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {dock: {group: 'dock.user', order: 100}},
+        metadata: {dock: {group: 'user', order: 100}},
         moduleId: 'App',
         name: 'settings',
         title: 'Settings',
@@ -321,7 +321,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {dock: {group: 'dock.applications', order: 100}},
+        metadata: {dock: {group: 'applications', order: 100}},
         moduleId: 'App',
         name: 'drop-desk',
         title: 'Drop Desk',
@@ -426,6 +426,85 @@ describe('deployWorkbenchApp', () => {
       method: 'PATCH',
       url: '/applications/app_1',
     })
+  })
+
+  test('syncs the configured slug on redeploy, so renaming it in config takes effect', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    await deployWorkbenchApp({
+      app,
+      applicationId: 'app_1',
+      isApp: true,
+      isAutoUpdating: false,
+      slug: 'media',
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
+
+    expect(mockClient.request.mock.calls[1][0]).toEqual({
+      body: {slug: 'media', title: 'Drop Desk'},
+      method: 'PATCH',
+      url: '/applications/app_1',
+    })
+  })
+
+  test('omits the slug when none is passed', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    await deployWorkbenchApp({
+      app,
+      applicationId: 'app_1',
+      isApp: true,
+      isAutoUpdating: false,
+      sourceDir: '/tmp/build/app',
+      title: 'Drop Desk',
+      version: '1.0.0',
+    })
+
+    expect(mockClient.request.mock.calls[1][0].body).not.toHaveProperty('slug')
+  })
+
+  test('names the slug and the server reason when the slug is rejected', async () => {
+    mockClient.request
+      .mockResolvedValueOnce({id: 'dep_1'})
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Slug "media" is already in use'), {statusCode: 409}),
+      )
+
+    await expect(
+      deployWorkbenchApp({
+        app,
+        applicationId: 'app_1',
+        isApp: true,
+        isAutoUpdating: false,
+        slug: 'media',
+        sourceDir: '/tmp/build/app',
+        title: 'Drop Desk',
+        version: '1.0.0',
+      }),
+    ).rejects.toThrow(
+      'Slug "media" was rejected: Slug "media" is already in use. The deployment is live at the application\'s previous slug — change `app.slug` in sanity.cli.ts and deploy again.',
+    )
+  })
+
+  test('leaves a non-rejection failure of the metadata sync untouched', async () => {
+    mockClient.request
+      .mockResolvedValueOnce({id: 'dep_1'})
+      .mockRejectedValueOnce(Object.assign(new Error('Internal server error'), {statusCode: 500}))
+
+    await expect(
+      deployWorkbenchApp({
+        app,
+        applicationId: 'app_1',
+        isApp: true,
+        isAutoUpdating: false,
+        slug: 'media',
+        sourceDir: '/tmp/build/app',
+        title: 'Drop Desk',
+        version: '1.0.0',
+      }),
+    ).rejects.toThrow('Internal server error')
   })
 
   test('fires onDeployed before syncing metadata, so a failed sync cannot roll back', async () => {

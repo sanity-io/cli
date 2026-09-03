@@ -309,6 +309,7 @@ async function runAppDeployment(
         onDeployed: () => {
           rollbackApp = undefined
         },
+        slug: workbench.slug,
         sourceDir,
         title: appTitle,
         version,

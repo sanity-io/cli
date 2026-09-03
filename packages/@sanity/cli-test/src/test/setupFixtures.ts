@@ -33,10 +33,9 @@ export interface SetupTestFixturesOptions {
   additionalFixtures?: string[]
 
   /**
-   * When true, passes `--ignore-workspace` to pnpm install so fixtures get
-   * their own node_modules even when the temp directory is inside a pnpm
-   * workspace. Required for E2E tests that spawn the CLI binary against
-   * fixture directories.
+   * When true, creates an isolated pnpm workspace so fixtures get their own
+   * node_modules even when the temp directory is inside another pnpm workspace.
+   * Required for E2E tests that spawn the CLI binary against fixture directories.
    */
   ignoreWorkspace?: boolean
 
@@ -144,17 +143,23 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
       packageJsonData.name = `${packageJsonData.name}-test`
       await writeFile(packageJsonPath, JSON.stringify(packageJsonData, null, 2))
 
+      if (ignoreWorkspace) {
+        // pnpm 11 reads build-script policy from pnpm-workspace.yaml.
+        // A fixture-local workspace both isolates the install and applies the repository's policy.
+        await writeFile(
+          join(toPath, 'pnpm-workspace.yaml'),
+          "allowBuilds:\n  '@swc/core': true\n  esbuild: true\n  node-pty: true\n  sharp: false\n  unrs-resolver: false\n",
+        )
+      }
+
       // Run pnpm install --no-lockfile in the temp directory
       try {
-        const ignoreWsFlag = ignoreWorkspace ? ' --ignore-workspace' : ''
         // Disable pnpm's minimumReleaseAge for fixture installs. With
-        // `--ignore-workspace`, the workspace's `minimumReleaseAgeExclude` list
-        // is not applied, which can reject freshly-published Sanity versions
-        // pinned in fixture package.json files.
-        await exec(
-          `pnpm install --prefer-offline --no-lockfile --config.minimum-release-age=0${ignoreWsFlag}`,
-          {cwd: toPath},
-        )
+        // an isolated workspace, the repository's `minimumReleaseAgeExclude`
+        // list is not applied, which can reject freshly-published Sanity versions.
+        await exec(`pnpm install --prefer-offline --no-lockfile --config.minimum-release-age=0`, {
+          cwd: toPath,
+        })
       } catch (error) {
         const execError = error as {message: string; stderr?: string; stdout?: string}
         console.error('Failed to install dependencies')

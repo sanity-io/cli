@@ -79,16 +79,5 @@
   "engines": {
     "node": "^22.18.0 || >=24.11.0"
   },
-  "packageManager": "pnpm@10.34.4",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "esbuild",
-      "node-pty"
-    ],
-    "overrides": {
-      "@sanity/cli": "workspace:*",
-      "@types/node": "catalog:"
-    }
-  }
+  "packageManager": "pnpm@11.25.0"
 }

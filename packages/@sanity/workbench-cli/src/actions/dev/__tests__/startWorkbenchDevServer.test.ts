@@ -640,7 +640,7 @@ describe('startWorkbenchDevServer', () => {
           interfaces: [
             {
               id: 'a-app',
-              metadata: {dock: {group: 'dock.system', order: 1}},
+              metadata: {dock: {group: 'system', order: 1}},
               moduleId: 'App',
               name: 'main',
               src: './src/App.tsx',
@@ -699,7 +699,7 @@ describe('startWorkbenchDevServer', () => {
       expect(payload.applications[0].interfaces).toEqual([
         {
           id: 'a-app',
-          metadata: {dock: {group: 'dock.system', order: 1}},
+          metadata: {dock: {group: 'system', order: 1}},
           moduleId: 'App',
           name: 'main',
           src: './src/App.tsx',
