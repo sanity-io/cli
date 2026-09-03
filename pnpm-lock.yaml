@@ -583,8 +583,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       '@sanity/import':
-        specifier: ^6.0.4
-        version: 6.0.4(@sanity/client@8.4.0(vitest@4.1.11))(@types/react@19.2.18)(supports-color@8.1.1)(vitest@4.1.11)
+        specifier: ^7.0.0
+        version: 7.0.0(@sanity/client@8.4.0(vitest@4.1.11))(@types/react@19.2.18)(supports-color@8.1.1)(vitest@4.1.11)
       '@sanity/migrate':
         specifier: ^8.0.2
         version: 8.0.2(@types/react@19.2.18)(supports-color@8.1.1)(vitest@4.1.11)(xstate@5.32.6)
@@ -4411,9 +4411,9 @@ packages:
     resolution: {integrity: sha512-qVXsF1teWR6FO3ZFAz46HDcRU+E6EQkpyncPnkGOzeJ1PgnaOiWMVbiSrZtX10s3txzzu/tAjKwbxbGHfDWgGw==}
     engines: {node: '>=20.19.0'}
 
-  '@sanity/import@6.0.4':
-    resolution: {integrity: sha512-65XfN5cSUos2l4PtzjUqbxV4z50odqqqoS01WWJJa5qfqzsAjn4sXn/8Dr6JW3Qt/V5Wg5jc5OPtHJY97zgmEw==}
-    engines: {node: '>=20.19.1 <22 || >=22.12'}
+  '@sanity/import@7.0.0':
+    resolution: {integrity: sha512-ZTcYCXCajuU6pgZt9xPzizuJw3II/oCFPr7rr/PAoEoUqt90RvoxeKtnHp7kM7UXJmqhHX3Q9Iytp17BoCwlcw==}
+    engines: {node: '>=22.12.0'}
     peerDependencies:
       '@sanity/client': ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
 
@@ -12980,23 +12980,19 @@ snapshots:
     dependencies:
       '@sanity/signed-urls': 2.0.5
 
-  '@sanity/import@6.0.4(@sanity/client@8.4.0(vitest@4.1.11))(@types/react@19.2.18)(supports-color@8.1.1)(vitest@4.1.11)':
+  '@sanity/import@7.0.0(@sanity/client@8.4.0(vitest@4.1.11))(@types/react@19.2.18)(supports-color@8.1.1)(vitest@4.1.11)':
     dependencies:
       '@sanity/asset-utils': 2.3.0
       '@sanity/client': 8.4.0(vitest@4.1.11)
       '@sanity/generate-help-url': 4.0.0
       '@sanity/mutator': 6.12.0(@types/react@19.2.18)(supports-color@8.1.1)(vitest@4.1.11)
-      debug: 4.4.3(supports-color@8.1.1)
-      get-it: 8.8.3
+      get-it: 9.5.2(vitest@4.1.11)
       gunzip-maybe: 1.4.2
+      obug: 2.1.4
       p-map: 7.0.7
-      tar-fs: 3.1.3
-      tinyglobby: 0.2.17
+      tar: 7.5.22
     transitivePeerDependencies:
       - '@types/react'
-      - bare-abort-controller
-      - bare-buffer
-      - react-native-b4a
       - supports-color
       - vitest
 
