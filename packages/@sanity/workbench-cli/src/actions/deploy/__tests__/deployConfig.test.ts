@@ -37,8 +37,8 @@ describe('resolveInstallationId', () => {
 
   test('resolves the org media-library installation in one unpaginated request', async () => {
     stubBrett([
-      {application: {slug: 'some-studio'}, id: 'inst_studio'},
-      {application: {slug: 'media-library'}, id: 'inst_ml'},
+      {application: {name: 'some-studio'}, id: 'inst_studio'},
+      {application: {name: 'media-library'}, id: 'inst_ml'},
     ])
 
     const id = await resolveInstallationId({appType: 'media-library', organizationId: 'org-1'})
@@ -53,7 +53,7 @@ describe('resolveInstallationId', () => {
   })
 
   test('returns undefined when the org has no media-library installation', async () => {
-    stubBrett([{application: {slug: 'dashboard'}, id: 'inst_a'}])
+    stubBrett([{application: {name: 'dashboard'}, id: 'inst_a'}])
     expect(
       await resolveInstallationId({appType: 'media-library', organizationId: 'org-1'}),
     ).toBeUndefined()

@@ -68,7 +68,7 @@ const configAdapter = () =>
 function stubInstallations(configs: unknown[]) {
   mockRequest.mockImplementation(async ({url}: {url: string}) => {
     if (url === '/installations') {
-      return {data: [{application: {slug: 'media-library'}, id: 'inst-1'}]}
+      return {data: [{application: {name: 'media-library'}, id: 'inst-1'}]}
     }
     if (url === '/installations/inst-1/configs') return {data: configs}
     throw new Error(`unexpected request to ${url}`)
