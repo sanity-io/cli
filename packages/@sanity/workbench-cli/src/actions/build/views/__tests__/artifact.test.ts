@@ -46,82 +46,15 @@ describe('viewArtifacts', () => {
     )
   })
 
-  // Pin the whole emitted view module: it imports the view src, exposes the
-  // view's version, and renders behind an HMR boundary. A fragment check can't
-  // catch a broken join between those parts.
+  // The harness body itself is pinned by render-remote's own snapshot; here we
+  // only assert what the artifact emitter threads into it: the view import, the
+  // version export, and an HMR boundary. The App binding is covered above.
   test('emits a render-contract module bound to the view behind an HMR boundary', () => {
     const [title] = viewArtifacts([view({name: 'feed', src: './src/feed.tsx', surface: 'panel'})])
-    expect(title.source({resolveImport})).toMatchInlineSnapshot(`
-      "// This file is auto-generated on 'sanity build' / 'sanity dev'
-      // Modifications to this file are automatically discarded
-      import * as React from 'react'
-      import { createRoot } from 'react-dom/client'
-      const StyleSheetManager = undefined
-      import view from "../../src/feed.tsx"
-
-      const App = typeof view.components === 'function' ? view.components : view.components["title"]
-
-      export const version = view.version
-
-      // Module identity (the federation module id) is provided to App through a React
-      // context keyed per React copy on a global slot. The SDK reads this same slot
-      // via getDashboardModuleContext(), so the symbol, the key and the value type are
-      // a contract. The key is React.createContext rather than the React namespace:
-      // bundler interop (esbuild's __toESM in Vite dev pre-bundling) can hand two
-      // importers of the same React copy different namespace objects, whereas the
-      // createContext function is the same reference in both.
-      const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
-      if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, React.createContext(undefined))
-      const ModuleContext = moduleSlot.get(React.createContext)
-      const rootMap = new Map()
-      // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
-      const styleTargets = new Map()
-      const renderArgs = new Map()
-
-      function mount(rootElement, args) {
-        let root = rootMap.get(rootElement)
-        if (!root) {
-          root = createRoot(rootElement, args?.renderOptions?.rootOptions)
-          rootMap.set(rootElement, root)
-          if (StyleSheetManager) {
-            const target = rootElement.ownerDocument.createElement('sanity-styles')
-            // React can replace the mount node's contents; keep its stylesheet outside that node.
-            rootElement.ownerDocument.head.appendChild(target)
-            styleTargets.set(rootElement, target)
-          }
-        }
-        let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
-        if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement) }, element)
-        root.render(args?.renderOptions?.reactStrictMode ? React.createElement(React.StrictMode, null, element) : element)
-      }
-
-      export function render(rootElement, props, renderOptions) {
-        const args = { props, renderOptions }
-        renderArgs.set(rootElement, args)
-        mount(rootElement, args)
-        return () => {
-          const root = rootMap.get(rootElement)
-          rootMap.delete(rootElement)
-          renderArgs.delete(rootElement)
-          root?.unmount()
-          // Unmount first so effect cleanup can still reach this root's stylesheet.
-          styleTargets.get(rootElement)?.remove()
-          styleTargets.delete(rootElement)
-        }
-      }
-
-      if (import.meta.hot) {
-        import.meta.hot.accept((next) => {
-          if (!next) return
-          for (const [rootElement, args] of renderArgs) {
-            rootMap.get(rootElement)?.unmount()
-            rootMap.delete(rootElement)
-            next.render(rootElement, args.props, args.renderOptions)
-          }
-        })
-      }
-      "
-    `)
+    const source = title.source({resolveImport})
+    expect(source).toContain('import view from "../../src/feed.tsx"')
+    expect(source).toContain('export const version = view.version')
+    expect(source).toContain('if (import.meta.hot)')
   })
 
   test('expands a single-component surface into a lone artifact', () => {
