@@ -33,6 +33,8 @@ const APP_ENTRY = renderRemote({
 // has no navigable full-page view, so there's no `App` to import. The runtime
 // still needs a valid module for the federation build input, but it exposes no
 // `./App` (see `plugin.ts`) — its `render` is unreachable and throws if reached.
+// It renders no React tree, so it carries no lifecycle controller: there is
+// nothing to pause.
 const HEADLESS_APP_ENTRY = `\
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file are automatically discarded

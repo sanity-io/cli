@@ -9,12 +9,39 @@
  * identical everywhere — just renders `App`. {@link renderRemote} assembles a
  * module from a `preamble` (its imports), the `app` expression, and, optionally,
  * the shared HMR snippet.
+ *
+ * ## Render contract v2 — the return value
+ *
+ * The host keeps an application alive across navigation by hiding it rather than
+ * unmounting it, but the host's React cannot pause a remote: the remote owns its
+ * own root, so its effects and timers keep running while hidden. So the harness —
+ * which sits above everything the user wrote — wraps the user's tree in the
+ * *remote's* own `<Activity>` and drives its mode from the host.
+ *
+ * `render` returns a **callable disposer with the controller attached**:
+ *
+ * ```js
+ * const controller = render(el, props)
+ * controller()                          // v1 hosts: the return value IS the disposer
+ * controller.dispose()                  // v2 hosts: same thing, named
+ * controller.setLifecycle('background')  // pause: Activity mode="hidden"
+ * controller.setLifecycle('foreground')  // resume: Activity mode="visible"
+ * ```
+ *
+ * A function object rather than a plain `{dispose, setLifecycle}` because
+ * existing hosts call the return value directly; `dispose` is also exposed as
+ * a property so a host can destructure.
+ *
+ * A remote built before this harness change hands back a bare disposer and
+ * cannot be paused; the host's guarded `setLifecycle?.()` call covers both.
  */
 
 /**
  * Hot-reload: on an update, re-render every live root through the new module —
  * so whatever it now binds `App` to (a recompiled component, a new studio
- * config) takes effect without a full page reload. Stripped from prod builds.
+ * config) takes effect without a full page reload. The new module starts in the
+ * foreground, so a root the host had backgrounded is put back into its lifecycle
+ * state before it can run visible. Stripped from prod builds.
  */
 const HMR_REMOUNT = `if (import.meta.hot) {
   import.meta.hot.accept((next) => {
@@ -22,7 +49,7 @@ const HMR_REMOUNT = `if (import.meta.hot) {
     for (const [rootElement, args] of renderArgs) {
       rootMap.get(rootElement)?.unmount()
       rootMap.delete(rootElement)
-      next.render(rootElement, args.props, args.renderOptions)
+      next.render(rootElement, args.props, args.renderOptions).setLifecycle(args.lifecycle)
     }
   })
 }`
@@ -50,9 +77,14 @@ export function renderRemote({
   return `\
 // This file is auto-generated on 'sanity build' / 'sanity dev'
 // Modifications to this file are automatically discarded
-import { createElement, StrictMode } from 'react'
+import * as React from 'react'
 import { createRoot } from 'react-dom/client'
 ${preamble}
+const { createElement, StrictMode } = React
+// \`Activity\` is stable from React 19.2. The remote bundles its own React, so on
+// an older one it is simply absent: the tree renders unwrapped and always
+// visible, and \`setLifecycle\` becomes a no-op.
+const Activity = React.Activity
 ${app ? `\nconst App = ${app}\n` : ''}${version ? `\nexport const version = ${version}\n` : ''}
 const rootMap = new Map()
 const renderArgs = new Map()
@@ -63,20 +95,34 @@ function mount(rootElement, args) {
     root = createRoot(rootElement)
     rootMap.set(rootElement, root)
   }
-  const element = createElement(App, args.props)
-  root.render(args?.renderOptions?.reactStrictMode ? createElement(StrictMode, null, element) : element)
+  let element = createElement(App, args.props)
+  if (args?.renderOptions?.reactStrictMode) element = createElement(StrictMode, null, element)
+  if (Activity) {
+    element = createElement(Activity, { mode: args.lifecycle === 'background' ? 'hidden' : 'visible' }, element)
+  }
+  root.render(element)
 }
 
 export function render(rootElement, props, renderOptions) {
-  const args = { props, renderOptions }
+  const args = { lifecycle: 'foreground', props, renderOptions }
   renderArgs.set(rootElement, args)
   mount(rootElement, args)
-  return () => {
+
+  // A callable disposer, so hosts predating this contract still work.
+  const dispose = () => {
     const root = rootMap.get(rootElement)
     rootMap.delete(rootElement)
     renderArgs.delete(rootElement)
     root?.unmount()
   }
+  dispose.dispose = dispose
+  dispose.setLifecycle = (lifecycle) => {
+    const current = renderArgs.get(rootElement)
+    if (!current) return
+    current.lifecycle = lifecycle
+    mount(rootElement, current)
+  }
+  return dispose
 }${hmr ? `\n\n${HMR_REMOUNT}` : ''}
 `
 }
