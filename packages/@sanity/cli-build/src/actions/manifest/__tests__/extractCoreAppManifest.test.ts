@@ -73,7 +73,7 @@ describe('extractCoreAppManifest', () => {
   test('merges group and order into the manifest', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: defineApplication({
-        dock: {group: 'dock.system', order: 20},
+        dock: {group: 'system', order: 20},
         organizationId: 'org-1',
         slug: 'my-slug',
         title: 'My App',
@@ -83,7 +83,7 @@ describe('extractCoreAppManifest', () => {
     const result = await extractCoreAppManifest({workDir: '/project'})
 
     expect(result).toEqual({
-      dock: {group: 'dock.system', order: 20},
+      dock: {group: 'system', order: 20},
       slug: 'my-slug',
       title: 'My App',
       version: '1',
@@ -122,7 +122,7 @@ describe('extractCoreAppManifest', () => {
   test('drops slug and dock placement for a non-workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: {
-        dock: {group: 'dock.system', order: 20},
+        dock: {group: 'system', order: 20},
         organizationId: 'org-1',
         slug: 'my-slug',
         title: 'My App',
