@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.6.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.6.0...cli-core-v3.6.1)
+
+_2026-09-03_
+
+### Bug Fixes
+
+- **cli:** remove dock prefix from view groups ([#1834](https://github.com/sanity-io/cli/pull/1834)) ([1f3adf8](https://github.com/sanity-io/cli/commit/1f3adf82c2a842bfbb2507d4e12b36d54ccf27b6))
+- **cli-core:** use Jiti for CLI config loading instead of tsx ([#1793](https://github.com/sanity-io/cli/pull/1793)) ([5664c73](https://github.com/sanity-io/cli/commit/5664c731f95acf6ea65c13aeea2676a1fca51c22))
+
 ## 3.6.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.5.1...cli-core-v3.6.0)

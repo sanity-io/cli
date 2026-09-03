@@ -1,5 +1,32 @@
 # Changelog
 
+## 6.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.2.0...cli-build-v6.3.0)
+
+_2026-09-03_
+
+### Features
+
+- bake resource bindings into a statically-imported module instead of an index.html script tag ([#1762](https://github.com/sanity-io/cli/pull/1762)) ([6189dda](https://github.com/sanity-io/cli/commit/6189dda8828fde06edd12a66e2cde3b2e739a32a))
+
+  Resource bindings now ride in a dedicated `sanity-resource-bindings.js` module emitted at the bundle root and imported before app code, so both standalone studios and federated apps resolve them the same way. The index.html script-tag placeholder has been removed.
+
+### Bug Fixes
+
+- **cli:** remove dock prefix from view groups ([#1834](https://github.com/sanity-io/cli/pull/1834)) ([1f3adf8](https://github.com/sanity-io/cli/commit/1f3adf82c2a842bfbb2507d4e12b36d54ccf27b6))
+- **cli-build:** remove isomorphic-dompurify in favor of inline JSDOM wrapper ([#1830](https://github.com/sanity-io/cli/pull/1830)) ([d1c8007](https://github.com/sanity-io/cli/commit/d1c8007945746ce36ea2847bfd06e51f2cee29f6))
+- only emit the resource-bindings module for Blueprints builds ([#1821](https://github.com/sanity-io/cli/pull/1821)) ([e975887](https://github.com/sanity-io/cli/commit/e9758875ee28cfa7b65b676e9aee5e917fdd8eb8))
+
+  The `sanity-resource-bindings.js` module is now gated behind an `isBlueprints` flag (default off), which `@sanity/runtime-cli` sets when it builds a studio or app for a Blueprint. A normal `sanity build`, `dev`, or `preview` no longer emits or imports it.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.0
+    - @sanity/cli-core bumped to 3.6.1
+
 ## 6.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.1.0...cli-build-v6.2.0)
