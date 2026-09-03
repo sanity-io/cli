@@ -14,7 +14,6 @@ import {type Config, type Interfaces} from '@oclif/core'
 import {
   type CommandPolicy,
   type CommandPolicySet,
-  deny,
   type InvocationSource,
   isCommandPolicySet,
 } from '@sanity/cli-core/commandPolicy'
@@ -22,7 +21,6 @@ import {subdebug} from '@sanity/cli-core/debug'
 import {doImport} from '@sanity/cli-core/util'
 
 import {mcpPolicy} from './mcpPolicy.js'
-import {deniedPluginCommands, deniedPlugins} from './pluginOverlay.js'
 
 const debug = subdebug('commandPolicies')
 
@@ -32,9 +30,7 @@ export const commandPolicies: Record<InvocationSource, CommandPolicySet> = {
 }
 
 /**
- * Policy entries annotated with the package that declared each one. Merging
- * several sources makes provenance load-bearing: it decides whether the host
- * overlay applies, and it lets the tests attribute every entry.
+ * Policy entries annotated with the package that declared each one.
  */
 export type ResolvedCommandPolicySet = Readonly<
   Record<string, CommandPolicy & {declaredBy: string}>
@@ -45,8 +41,7 @@ type ResolvedCommandPolicy = ResolvedCommandPolicySet[string]
 /**
  * Resolution reads plugin package.json files and imports their policy
  * modules, so it is async and depends on the loaded oclif config. Memoized
- * per config so that work happens once per process rather than per
- * invocation, and so a config supplied by a test gets its own entry.
+ * per config so that work happens once per process rather than per invocation.
  */
 const cache = new WeakMap<Config, Map<InvocationSource, Promise<ResolvedCommandPolicySet>>>()
 
@@ -82,10 +77,8 @@ async function buildCommandPolicies(
   for (const plugin of config.plugins.values()) {
     if (plugin.name === hostName) continue
 
-    // Only plugins this CLI declares itself may speak. oclif loads plugins
-    // recursively, so a dependency of a plugin also lands here — but it
-    // arrives through a version range this package does not control, and
-    // could start declaring policy without any diff to review here.
+    // Only plugins this CLI declares itself should contribute commands.
+    // oclif loads plugins recursively, so a dependency of a plugin also lands here.
     if (plugin.parent) {
       debug(
         'ignoring %s, contributed by %s rather than declared here',
@@ -98,9 +91,7 @@ async function buildCommandPolicies(
     const declared = await loadPluginPolicies(plugin, source)
     if (!declared) continue
 
-    // A plugin only speaks for the commands it actually contributes.
-    // Otherwise declaring a policy for, say, `login` would be a way to grant
-    // itself surface that belongs to another package.
+    // Plugin policy can only be set for commands they actually contributed.
     const contributed = new Set(plugin.commands.map((command) => command.id))
 
     for (const [id, policy] of Object.entries(declared)) {
@@ -112,20 +103,11 @@ async function buildCommandPolicies(
       // oclif's own first-one-wins command resolution.
       if (entries[id]) continue
 
-      entries[id] = {...applyOverlay(id, policy, plugin.name), declaredBy: plugin.name}
+      entries[id] = {...policy, declaredBy: plugin.name}
     }
   }
 
   return entries
-}
-
-/** The host's veto over a plugin-declared entry. Only ever denies. */
-function applyOverlay(id: string, policy: CommandPolicy, pluginName: string): CommandPolicy {
-  const vetoed = deniedPlugins[pluginName] ?? deniedPluginCommands[id]
-  if (!vetoed) return policy
-
-  debug('denying %s from %s: %s', id, pluginName, vetoed)
-  return deny
 }
 
 /**

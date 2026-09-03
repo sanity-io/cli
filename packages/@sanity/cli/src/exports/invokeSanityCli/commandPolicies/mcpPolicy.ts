@@ -55,7 +55,7 @@ function apiValidator({
  *
  * Commands contributed by plugins are not listed here. Each plugin declares
  * policies for its own commands (see `PluginInvocationPolicies` in
- * `@sanity/cli-core/commandPolicy`), subject to the veto in `pluginOverlay`.
+ * `@sanity/cli-core/commandPolicy`).
  */
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful

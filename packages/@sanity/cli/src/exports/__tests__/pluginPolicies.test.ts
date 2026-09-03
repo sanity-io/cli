@@ -183,50 +183,6 @@ describe('plugin-declared invocation policies', () => {
   })
 })
 
-describe('the host veto over plugin declarations', () => {
-  test('denies a plugin command the plugin itself allowed', async () => {
-    vi.resetModules()
-    vi.doMock('../invokeSanityCli/commandPolicies/pluginOverlay.js', () => ({
-      deniedPluginCommands: {'fixtures:echo': 'Vetoed by the test'},
-      deniedPlugins: {},
-    }))
-
-    const {resolveCommandPolicies: resolveWithVeto} =
-      await import('../invokeSanityCli/commandPolicies/index.js')
-    const config = await loadConfigWithPlugins('fixture-plugin')
-    const policies = await resolveWithVeto(config, 'mcp')
-
-    expect(policies['fixtures:echo']).toMatchObject({
-      declaredBy: '@sanity-test/fixture-plugin',
-      kind: 'deny',
-    })
-    // The veto subtracts one command rather than the whole plugin.
-    expect(policies['fixtures:hidden']).toMatchObject({kind: 'allow'})
-
-    vi.doUnmock('../invokeSanityCli/commandPolicies/pluginOverlay.js')
-    vi.resetModules()
-  })
-
-  test('denies every command from a vetoed plugin', async () => {
-    vi.resetModules()
-    vi.doMock('../invokeSanityCli/commandPolicies/pluginOverlay.js', () => ({
-      deniedPluginCommands: {},
-      deniedPlugins: {'@sanity-test/fixture-plugin': 'Vetoed by the test'},
-    }))
-
-    const {resolveCommandPolicies: resolveWithVeto} =
-      await import('../invokeSanityCli/commandPolicies/index.js')
-    const config = await loadConfigWithPlugins('fixture-plugin')
-    const policies = await resolveWithVeto(config, 'mcp')
-
-    expect(policies['fixtures:echo']).toMatchObject({kind: 'deny'})
-    expect(policies['fixtures:hidden']).toMatchObject({kind: 'deny'})
-
-    vi.doUnmock('../invokeSanityCli/commandPolicies/pluginOverlay.js')
-    vi.resetModules()
-  })
-})
-
 describe('invoking plugin-contributed commands', () => {
   let config: Config
 

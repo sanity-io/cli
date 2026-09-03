@@ -85,9 +85,9 @@ describe('isConditionalInvocationPolicy', () => {
   test('refuses a policy that claims `conditional` without deniedFlags', () => {
     // Guards the same shape from the other side: callers read `deniedFlags`
     // off the narrowed type, so claiming the kind alone must not be enough.
-    const policy = {kind: 'conditional', validate: () => true} as CommandPolicy
+    const policy = {kind: 'conditional', validate: () => true}
 
-    expect(isConditionalInvocationPolicy(policy)).toBe(false)
+    expect(isConditionalInvocationPolicy(policy as CommandPolicy)).toBe(false)
   })
 
   test('refuses unconditional policies', () => {

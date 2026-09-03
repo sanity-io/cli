@@ -3,8 +3,8 @@
  * server. The invokable surface is governed by a per-source command policy
  * (see ./commandPolicies): every CLI command is explicitly allowed, denied,
  * or allowed conditionally on the parsed invocation. Commands contributed by
- * plugins are covered by the policies those plugins declare, subject to this
- * package's veto, and are denied unless they declare one.
+ * plugins are covered by the policies those plugins declare, and are denied
+ * unless they declare one.
  *
  * {@link invokeSanityCli} handles arg parsing, policy enforcement, command
  * dispatch, per-invocation auth, and output capture.

@@ -16,9 +16,8 @@ import {resolveCommandPolicies} from '../invokeSanityCli/commandPolicies/index.j
  * matters most — a new flag can turn an already-allowed command into one that
  * reads from the host.
  *
- * When this snapshot changes, check whether the new surface should be exposed
- * (which is the plugin's call to declare, see `PluginInvocationPolicies`) and
- * whether anything newly allowed needs a veto in `pluginOverlay.ts`.
+ * When this snapshot changes, check whether the new surface should be exposed,
+ * which is the plugin's call to declare (see `PluginInvocationPolicies`).
  *
  * Hidden commands are included deliberately. Being hidden keeps a command out
  * of help listings but does not stop it being declared allowed and invoked, so
