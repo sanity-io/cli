@@ -57,6 +57,10 @@ describe('viewArtifacts', () => {
       import * as React from 'react'
       import { createRoot } from 'react-dom/client'
       import view from "../../src/feed.tsx"
+      // \`Activity\` is stable from React 19.2. The remote bundles its own React, so on
+      // an older one it is simply absent: the tree renders unwrapped and always
+      // visible, and \`setLifecycle\` becomes a no-op.
+      const Activity = React.Activity
 
       const App = typeof view.components === 'function' ? view.components : view.components["title"]
 
@@ -81,20 +85,34 @@ describe('viewArtifacts', () => {
           root = createRoot(rootElement)
           rootMap.set(rootElement, root)
         }
-        const element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
-        root.render(args?.renderOptions?.reactStrictMode ? React.createElement(React.StrictMode, null, element) : element)
+        let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+        if (args?.renderOptions?.reactStrictMode) element = React.createElement(React.StrictMode, null, element)
+        if (Activity) {
+          element = React.createElement(Activity, { mode: args.lifecycle === 'background' ? 'hidden' : 'visible' }, element)
+        }
+        root.render(element)
       }
 
       export function render(rootElement, props, renderOptions) {
-        const args = { props, renderOptions }
+        const args = { lifecycle: 'foreground', props, renderOptions }
         renderArgs.set(rootElement, args)
         mount(rootElement, args)
-        return () => {
+
+        // A callable disposer, so hosts predating this contract still work.
+        const dispose = () => {
           const root = rootMap.get(rootElement)
           rootMap.delete(rootElement)
           renderArgs.delete(rootElement)
           root?.unmount()
         }
+        dispose.dispose = dispose
+        dispose.setLifecycle = (lifecycle) => {
+          const current = renderArgs.get(rootElement)
+          if (!current) return
+          current.lifecycle = lifecycle
+          mount(rootElement, current)
+        }
+        return dispose
       }
 
       if (import.meta.hot) {
@@ -103,7 +121,7 @@ describe('viewArtifacts', () => {
           for (const [rootElement, args] of renderArgs) {
             rootMap.get(rootElement)?.unmount()
             rootMap.delete(rootElement)
-            next.render(rootElement, args.props, args.renderOptions)
+            next.render(rootElement, args.props, args.renderOptions).setLifecycle(args.lifecycle)
           }
         })
       }

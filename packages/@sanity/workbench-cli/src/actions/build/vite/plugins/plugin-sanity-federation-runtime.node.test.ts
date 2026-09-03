@@ -88,3 +88,24 @@ test('the app entry renders the imported App with forwarded props', () => {
   const [app] = provider.children as Element[]
   expect(app.props).toEqual({greeting: 'hi'})
 })
+
+test('an SDK app entry renders through the lifecycle harness', () => {
+  const entry = emitEntry({appEntry: '/app/src/App.tsx', isApp: true})
+
+  expect(entry).toContain('dispose.setLifecycle')
+  expect(entry).toContain(`import App from "/app/src/App.tsx"`)
+})
+
+test('a studio entry renders through the lifecycle harness', () => {
+  const entry = emitEntry({isApp: false, studioConfigPath: '/studio/sanity.config.ts'})
+
+  expect(entry).toContain('dispose.setLifecycle')
+  expect(entry).toContain('import.meta.hot')
+})
+
+test('a headless app exposes no `./App`, so it carries no controller', () => {
+  const entry = emitEntry({isApp: true})
+
+  expect(entry).not.toContain('setLifecycle')
+  expect(entry).toContain('This application has no app view')
+})
