@@ -142,13 +142,16 @@ const devServerManifestSchema = z.object({
   // Stable identity + qualified reference, composed by the CLI (the authority for
   // local apps, which never reach brett) and read straight by the workbench.
   name: z.optional(z.string()),
+  organizationId: z.optional(z.string()),
   pid: z.number(),
   port: z.number(),
   projectId: z.optional(z.string()),
   reference: z.optional(z.string()),
+  slug: z.optional(z.string()),
   startedAt: z.string(),
   type: z.enum(['coreApp', 'studio']),
   version: z.literal(REGISTRY_VERSION),
+  visibility: z.optional(z.enum(['default', 'unlisted', 'disabled'])),
   workDir: z.string(),
 })
 /**
