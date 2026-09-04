@@ -100,8 +100,9 @@ export function formatDuration(ms: number): string {
 export function formatElapsed(ms: number): string {
   if (!Number.isFinite(ms)) return ''
 
-  const elapsed = Math.abs(ms)
-  if (elapsed < MS_IN.second) return `${Math.round(elapsed)}ms`
+  // Round to whole milliseconds first, so 999.6ms reads as `1s` rather than `1000ms`
+  const elapsed = Math.round(Math.abs(ms))
+  if (elapsed < MS_IN.second) return `${elapsed}ms`
 
   const seconds = Math.floor(elapsed / MS_IN.second)
   if (elapsed < MS_IN.minute) return `${seconds}s`

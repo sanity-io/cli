@@ -140,9 +140,12 @@ describe('formatElapsed', () => {
     expect(formatElapsed(MINUTE + 59 * SECOND + 900)).toBe('1m 59s')
   })
 
-  test('rounds fractional milliseconds', () => {
+  test('rounds fractional milliseconds before choosing a unit', () => {
     expect(formatElapsed(450.4)).toBe('450ms')
     expect(formatElapsed(450.6)).toBe('451ms')
+    expect(formatElapsed(999.4)).toBe('999ms')
+    expect(formatElapsed(999.6)).toBe('1s')
+    expect(formatElapsed(59 * SECOND + 999.6)).toBe('1m 0s')
   })
 
   test('ignores the direction of the elapsed time', () => {
