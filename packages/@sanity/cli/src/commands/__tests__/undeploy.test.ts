@@ -6,6 +6,7 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {UndeployCommand} from '../undeploy.js'
+import {anInstallation, installationsResponse} from './fixtures/installations.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -675,9 +676,7 @@ describe('#undeploy', () => {
       apiVersion: 'vX',
       query: {limit: 'none', organizationId: 'org-1'},
       uri: '/installations',
-    }).reply(200, {
-      data: [{application: {name: 'media-library'}, id: 'inst-1'}],
-    })
+    }).reply(200, installationsResponse([anInstallation({id: 'inst-1', name: 'media-library'})]))
 
     mockApi({
       apiVersion: 'vX',
@@ -718,9 +717,7 @@ describe('#undeploy', () => {
       apiVersion: 'vX',
       query: {limit: 'none', organizationId: 'org-1'},
       uri: '/installations',
-    }).reply(200, {
-      data: [{application: {name: 'media-library'}, id: 'inst-1'}],
-    })
+    }).reply(200, installationsResponse([anInstallation({id: 'inst-1', name: 'media-library'})]))
 
     mockApi({
       apiVersion: 'vX',

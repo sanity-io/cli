@@ -4,6 +4,7 @@ import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {deployConfig, resolveInstallationId, summarizeConfig} from '../deployConfig.js'
+import {anInstallation} from './fixtures/installations.js'
 
 const mockGetGlobalCliClient = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())
@@ -37,8 +38,8 @@ describe('resolveInstallationId', () => {
 
   test('resolves the org media-library installation in one unpaginated request', async () => {
     stubBrett([
-      {application: {name: 'some-studio'}, id: 'inst_studio'},
-      {application: {name: 'media-library'}, id: 'inst_ml'},
+      anInstallation({id: 'inst_studio', name: 'some-studio'}),
+      anInstallation({id: 'inst_ml', name: 'media-library'}),
     ])
 
     const id = await resolveInstallationId({appType: 'media-library', organizationId: 'org-1'})
@@ -53,7 +54,7 @@ describe('resolveInstallationId', () => {
   })
 
   test('returns undefined when the org has no media-library installation', async () => {
-    stubBrett([{application: {name: 'dashboard'}, id: 'inst_a'}])
+    stubBrett([anInstallation({id: 'inst_a', name: 'dashboard'})])
     expect(
       await resolveInstallationId({appType: 'media-library', organizationId: 'org-1'}),
     ).toBeUndefined()
