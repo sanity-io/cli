@@ -29,12 +29,12 @@ describe('toWireInterface', () => {
     const metadata = {dock: {group: 'system', order: 2}}
     const result = toWireInterface({...base, metadata, surface: 'panel'} as DevServerInterface)
 
-    expect(result).toEqual({...base, metadata, type: 'panel'})
+    expect(result).toStrictEqual({...base, metadata, type: 'panel'})
   })
 
   test('passes a worker through unchanged (already keyed on type)', () => {
     const worker = {...base, metadata: null, type: 'worker'} as DevServerInterface
 
-    expect(toWireInterface(worker)).toEqual(worker)
+    expect(toWireInterface(worker)).toStrictEqual(worker)
   })
 })
