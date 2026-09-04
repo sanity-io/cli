@@ -1,0 +1,88 @@
+name: Promote to latest
+
+# Recovery / break-glass counterpart to release.yml.
+#
+# release.yml publishes behind a holding dist-tag and only moves `latest` once
+# every published version has cleared npm's malware scan. If that wait times
+# out - or the job dies part way through - the versions are on the registry but
+# still parked on the holding tag, and re-running release.yml will not finish
+# the job: changesets reports nothing as newly published the second time, so its
+# promote step is skipped. Run this workflow instead. It reads the versions back
+# off the holding tag, so it needs no input and cannot promote a version that
+# release.yml did not park there.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    name: Promote to latest
+    runs-on: ubuntu-latest
+
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      # Keep in sync with HOLDING_TAG in release.yml
+      HOLDING_TAG: pending
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: 24
+
+      - name: Find packages awaiting promotion
+        id: specs
+        run: |
+          specs=()
+          for name in $(pnpm ls -r --json --depth -1 | jq -r '.[] | select(.private != true) | .name'); do
+            version=$(npm view "$name" "dist-tags.$HOLDING_TAG" --prefer-online 2>/dev/null || true)
+            if [ -n "$version" ]; then
+              echo "$name@$version is parked on '$HOLDING_TAG'"
+              specs+=("$name@$version")
+            else
+              echo "$name has nothing on '$HOLDING_TAG', skipping"
+            fi
+          done
+
+          if [ "${#specs[@]}" -eq 0 ]; then
+            echo "Error: no packages are tagged '$HOLDING_TAG', so there is nothing to promote"
+            exit 1
+          fi
+
+          {
+            echo 'specs<<SPECS_EOF'
+            printf '%s\n' "${specs[@]}"
+            echo 'SPECS_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Promote packages to latest
+        uses: ./.github/actions/promote-npm-packages
+        with:
+          specs: ${{ steps.specs.outputs.specs }}
+          holding-tag: ${{ env.HOLDING_TAG }}
+          npm-token: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
+      - name: Summary
+        env:
+          SPECS: ${{ steps.specs.outputs.specs }}
+        run: |
+          {
+            echo "## Promoted to latest 🚀"
+            echo ""
+            echo '```'
+            echo "$SPECS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

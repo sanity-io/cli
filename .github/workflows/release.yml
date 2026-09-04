@@ -25,6 +25,9 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      # Temporary dist-tag that new versions are parked under until npm has
+      # finished scanning them. Must not collide with a tag anyone consumes.
+      HOLDING_TAG: pending
 
     steps:
       - name: Generate GitHub App Token
@@ -64,12 +67,35 @@ jobs:
       - name: Build packages
         run: pnpm run build:cli
 
+      - name: Determine publish mode
+        id: publish-mode
+        # npm holds newly published versions for malware scanning (usually 5-15
+        # minutes, sometimes longer) before they resolve on the registry. Since
+        # our packages pin each other (`create-sanity` pins `@sanity/cli`
+        # exactly; the `@sanity/cli*` packages pin each other with a caret
+        # range), a package whose scan clears first would become `latest` while
+        # a dependency it needs is still held, breaking `npm create sanity`.
+        # So publish behind a holding tag and only move `latest` once every
+        # version resolves. In prerelease mode changesets picks its own dist-tag
+        # from .changeset/pre.json, so leave it alone and never touch `latest`.
+        # https://github.blog/changelog/2026-07-28-npm-publish-time-malware-scanning-and-dual-use-metadata/
+        run: |
+          if [ -f .changeset/pre.json ]; then
+            echo "Prerelease mode - publishing with the changesets-managed dist-tag"
+            echo "publish-args=" >> "$GITHUB_OUTPUT"
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Publishing behind the '$HOLDING_TAG' tag, promoting to latest once installable"
+            echo "publish-args=--tag $HOLDING_TAG" >> "$GITHUB_OUTPUT"
+            echo "promote=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
           version: pnpm version-packages
-          publish: pnpm publish-packages
+          publish: pnpm run publish-packages ${{ steps.publish-mode.outputs.publish-args }}
           title: 'chore: version packages'
           commit: 'chore: version packages'
           createGithubReleases: true
@@ -89,6 +115,32 @@ jobs:
           echo '```json' >> $GITHUB_STEP_SUMMARY
           echo "$PUBLISHED_PACKAGES" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Resolve published specs
+        id: specs
+        if: ${{ steps.changesets.outputs.published == 'true' }}
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          {
+            echo 'specs<<SPECS_EOF'
+            jq -r '.[] | "\(.name)@\(.version)"' <<<"$PUBLISHED_PACKAGES"
+            echo 'SPECS_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Promote packages to latest
+        # Waits until the whole set has cleared npm's scan, then moves `latest`.
+        # If it times out the job fails with `latest` still pointing at the
+        # previous, mutually consistent set of versions; recover by re-running
+        # promote-latest.yml, which picks the versions back up from the holding
+        # tag (a re-run of this workflow will not, since changesets reports
+        # nothing as newly published the second time around).
+        if: ${{ steps.changesets.outputs.published == 'true' && steps.publish-mode.outputs.promote == 'true' }}
+        uses: ./.github/actions/promote-npm-packages
+        with:
+          specs: ${{ steps.specs.outputs.specs }}
+          holding-tag: ${{ env.HOLDING_TAG }}
+          npm-token: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
   post-release:
     runs-on: ubuntu-latest
