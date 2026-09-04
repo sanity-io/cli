@@ -1,5 +1,21 @@
 # @sanity/workbench-cli
 
+## 2.4.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.2...workbench-cli-v2.4.3)
+
+_2026-09-04_
+
+### Bug Fixes
+
+- **workbench:** complete local application metdata ([#1850](https://github.com/sanity-io/cli/pull/1850)) ([67f31e3](https://github.com/sanity-io/cli/commit/67f31e3227c5cb118ccc452986d3950254b7b754))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.7.0
+
 ## 2.4.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.1...workbench-cli-v2.4.2)
