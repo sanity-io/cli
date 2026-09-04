@@ -1,3 +1,5 @@
+import {join} from 'node:path'
+
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildAppId} from '../../../appId.js'
@@ -11,10 +13,19 @@ import {startWorkbenchPreview, type StartWorkbenchPreviewOptions} from '../start
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockServeBuiltApplication = vi.hoisted(() => vi.fn())
-const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
 const mockReadFile = vi.hoisted(() => vi.fn())
 
+// A fresh in-memory `node:fs` for this file (see dev/__tests__/fsMock.ts): own
+// state per file, reset per test, so the real `registerDevServer` runs with no
+// disk I/O and tests assert the persisted registry manifest.
+const fsMock = await vi.hoisted(async () =>
+  (await import('../../dev/__tests__/fsMock.js')).createFsMock(),
+)
+
+const mockGetSanityDataDir = vi.hoisted(() => vi.fn())
+
+vi.mock('node:fs', () => fsMock.module)
 vi.mock('node:fs/promises', async (importOriginal) => ({
   ...(await importOriginal<typeof import('node:fs/promises')>()),
   readFile: mockReadFile,
@@ -22,15 +33,28 @@ vi.mock('node:fs/promises', async (importOriginal) => ({
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   findProjectRoot: mockFindProjectRoot,
+  getSanityDataDir: mockGetSanityDataDir,
+}))
+// Liveness is a mocked seam so read-back keeps our freshly written entry
+// (exercised for real in processLiveness.test.ts).
+vi.mock('../../dev/processLiveness.js', () => ({
+  __resetStartTimeCacheForTesting: vi.fn(),
+  getProcessStartTime: vi.fn(() => undefined),
+  isOurProcess: vi.fn((pid: number) => pid === process.pid),
 }))
 vi.mock('../../dev/startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
 }))
 vi.mock('../serveBuiltApplication.js', () => ({serveBuiltApplication: mockServeBuiltApplication}))
-vi.mock('../../dev/registry.js', () => ({registerDevServer: mockRegisterDevServer}))
 
 const mockExtractManifest = vi.hoisted(() => vi.fn())
 const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
+
+const DATA_DIR = '/tmp/sanity-data'
+const manifestPath = () => join(DATA_DIR, 'dev-servers', `${process.pid}.json`)
+
+/** The manifest the registry persisted for this process — what the workbench reads. */
+const readManifest = () => JSON.parse(fsMock.files.get(manifestPath())!)
 
 function run(overrides: Partial<StartWorkbenchPreviewOptions> = {}) {
   return startWorkbenchPreview({
@@ -51,13 +75,14 @@ function run(overrides: Partial<StartWorkbenchPreviewOptions> = {}) {
 
 describe('startWorkbenchPreview', () => {
   beforeEach(() => {
+    fsMock.reset()
+    mockGetSanityDataDir.mockReturnValue(DATA_DIR)
     mockStartWorkbenchDevServer.mockResolvedValue(mockWorkbenchServer())
     mockServeBuiltApplication.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
       host: 'localhost',
       port: 3334,
     })
-    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockFindProjectRoot.mockResolvedValue({path: '/tmp/sanity-project/sanity.cli.ts'})
     mockExtractManifest.mockResolvedValue({title: 'Test App'})
     // Default: no id file in the build output, so start falls back to the hash.
@@ -110,25 +135,23 @@ describe('startWorkbenchPreview', () => {
         configPath: '/tmp/sanity-project/sanity.cli.ts',
         workDir: '/tmp/sanity-project',
       })
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({
-          host: 'localhost',
-          // `start` advertises the build id (matching the bundle), not host-port.
-          id: appId,
-          manifest: {title: 'Test App'},
-          organizationId: 'org-123',
-          port: 3334,
-          slug: 'test-app',
-          type: 'coreApp',
-          visibility: 'default',
-        }),
-      )
+      expect(readManifest()).toMatchObject({
+        host: 'localhost',
+        // `start` advertises the build id (matching the bundle), not host-port.
+        id: appId,
+        manifest: {title: 'Test App'},
+        organizationId: 'org-123',
+        port: 3334,
+        slug: 'test-app',
+        type: 'coreApp',
+        visibility: 'default',
+      })
     })
 
     test('registers a studio build as a studio', async () => {
       await run({isApp: false})
 
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'studio'}))
+      expect(readManifest().type).toBe('studio')
     })
 
     test('advertises the id the build inlined, so a deploy build (API id) still matches', async () => {
@@ -140,9 +163,7 @@ describe('startWorkbenchPreview', () => {
       expect(mockExtractManifest).toHaveBeenCalledWith(
         expect.objectContaining({applicationId: 'app_deployed_id'}),
       )
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({id: 'app_deployed_id'}),
-      )
+      expect(readManifest().id).toBe('app_deployed_id')
     })
   })
 
@@ -157,7 +178,8 @@ describe('startWorkbenchPreview', () => {
 
       expect(thrown).toBe(serveError)
       expect(workbench.close).toHaveBeenCalled()
-      expect(mockRegisterDevServer).not.toHaveBeenCalled()
+      // Serving failed before registration, so the registry never gained an entry.
+      expect(fsMock.files.has(manifestPath())).toBe(false)
     })
 
     test('tears down both servers and re-throws when registration fails', async () => {
@@ -169,8 +191,8 @@ describe('startWorkbenchPreview', () => {
         host: 'localhost',
         port: 3334,
       })
-      const registrationError = new Error('deriveInterfaces failed')
-      mockRegisterDevServer.mockImplementation(() => {
+      const registrationError = new Error('registry write failed')
+      fsMock.module.writeFileSync.mockImplementationOnce(() => {
         throw registrationError
       })
 
@@ -184,19 +206,20 @@ describe('startWorkbenchPreview', () => {
     test('close releases the registration and both servers', async () => {
       const workbench = mockWorkbenchServer()
       const remoteClose = vi.fn().mockResolvedValue(undefined)
-      const release = vi.fn()
       mockStartWorkbenchDevServer.mockResolvedValue(workbench)
       mockServeBuiltApplication.mockResolvedValue({
         close: remoteClose,
         host: 'localhost',
         port: 3334,
       })
-      mockRegisterDevServer.mockReturnValue({release, update: vi.fn()})
 
       const {close} = await run()
+      expect(fsMock.files.has(manifestPath())).toBe(true)
+
       await close()
 
-      expect(release).toHaveBeenCalled()
+      // Releasing removes the registry entry so the workbench drops the server.
+      expect(fsMock.files.has(manifestPath())).toBe(false)
       expect(remoteClose).toHaveBeenCalled()
       expect(workbench.close).toHaveBeenCalled()
     })
