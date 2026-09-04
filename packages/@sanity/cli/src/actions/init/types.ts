@@ -24,6 +24,7 @@ export interface InitOptions {
   bare: boolean
   datasetDefault: boolean
   fromCreate: boolean
+  install: boolean
   mcpMode: 'auto' | 'prompt' | 'skip'
   skillsMode: 'auto' | 'prompt' | 'skip'
   unattended: boolean
@@ -64,6 +65,7 @@ interface InitCommandFlags {
   bare: boolean
   'dataset-default': boolean
   'from-create': boolean
+  install: boolean
   mcp: boolean
   'no-git': boolean
   skills: boolean
@@ -129,6 +131,7 @@ export function flagsToInitOptions(
     fromCreate: flags['from-create'],
     git: flags['no-git'] ? false : flags.git,
     importDataset: flags['import-dataset'],
+    install: flags.install,
     mcpMode,
     nextjsAddConfigFiles: flags['nextjs-add-config-files'],
     nextjsAppendEnv: flags['nextjs-append-env'],
