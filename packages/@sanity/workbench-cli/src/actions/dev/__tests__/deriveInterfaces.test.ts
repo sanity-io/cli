@@ -8,15 +8,15 @@ import {workbenchApp} from './devTestHelpers.js'
 
 describe('deriveInterfaces', () => {
   test('derives nothing for a non-branded app (no defineApplication)', () => {
-    expect(deriveInterfaces({title: 'Plain'} as CliConfig['app'], {isApp: true})).toEqual([])
-    expect(deriveInterfaces(undefined, {isApp: true})).toEqual([])
+    expect(deriveInterfaces({title: 'Plain'} as CliConfig['app'], {isApp: true})).toStrictEqual([])
+    expect(deriveInterfaces(undefined, {isApp: true})).toStrictEqual([])
   })
 
   test('maps views to panel interfaces', () => {
     const app = workbenchApp({
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'test-app-panel-feed',
         metadata: null,
@@ -36,7 +36,7 @@ describe('deriveInterfaces', () => {
         {name: 'library', src: './src/Picker.tsx', surface: 'asset_source', title: 'library'},
       ],
     })
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'test-app-asset_source-library',
         metadata: null,
@@ -63,7 +63,7 @@ describe('deriveInterfaces', () => {
         },
       ],
     })
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'test-app-tile-agent',
         metadata: {order: 100, size: 'large'},
@@ -83,7 +83,7 @@ describe('deriveInterfaces', () => {
         {name: 'agent', size: 'small', src: './src/Tile.tsx', surface: 'tile', title: 'agent'},
       ],
     })
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'test-app-tile-agent',
         metadata: {size: 'small'},
@@ -101,7 +101,7 @@ describe('deriveInterfaces', () => {
     const app = workbenchApp({
       webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'test-app-worker-unread',
         metadata: null,
@@ -117,7 +117,7 @@ describe('deriveInterfaces', () => {
 
   test('derives a window interface from entry for an SDK app', () => {
     const app = workbenchApp({entry: './src/App.tsx', slug: 'my-app'})
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'my-app-window-my-app',
         metadata: null,
@@ -126,13 +126,30 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
+        version: undefined,
+      },
+    ])
+  })
+
+  test('titles the window with the passed appTitle, overriding the config title', () => {
+    const app = workbenchApp({entry: './src/App.tsx', slug: 'my-app', title: 'Config Title'})
+    expect(deriveInterfaces(app, {appTitle: 'Deploy Title', isApp: true})).toStrictEqual([
+      {
+        id: 'my-app-window-my-app',
+        metadata: null,
+        moduleId: 'App',
+        name: 'my-app',
+        src: './src/App.tsx',
+        surface: 'window',
+        title: 'Deploy Title',
+        version: undefined,
       },
     ])
   })
 
   test('keys the id prefix and window name on name, not the slug address', () => {
     const app = workbenchApp({entry: './src/App.tsx', name: 'reviews', slug: 'reviews-host'})
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'reviews-window-reviews',
         metadata: null,
@@ -141,6 +158,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
+        version: undefined,
       },
     ])
   })
@@ -175,7 +193,7 @@ describe('deriveInterfaces', () => {
             'surface' in iface && (iface.surface === 'panel' || iface.surface === 'window'),
         )
         .map((iface) => ({metadata: iface.metadata, name: iface.name, surface: iface.surface})),
-    ).toEqual([
+    ).toStrictEqual([
       {
         metadata: {dock: {group: 'applications', order: 100}},
         name: 'feed',
@@ -204,19 +222,17 @@ describe('deriveInterfaces', () => {
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
       webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
-    expect(deriveInterfaces(panelApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
-      'views/feed',
-      'services/unread',
-    ])
+    expect(deriveInterfaces(panelApp, {isApp: true})?.map((iface) => iface.moduleId)).toStrictEqual(
+      ['views/feed', 'services/unread'],
+    )
 
     const entryApp = workbenchApp({
       entry: './src/App.tsx',
       webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
-    expect(deriveInterfaces(entryApp, {isApp: true})?.map((iface) => iface.moduleId)).toEqual([
-      'services/unread',
-      'App',
-    ])
+    expect(deriveInterfaces(entryApp, {isApp: true})?.map((iface) => iface.moduleId)).toStrictEqual(
+      ['services/unread', 'App'],
+    )
   })
 
   test('carries null metadata on every interface (not yet populated)', () => {
@@ -243,7 +259,7 @@ describe('deriveInterfaces', () => {
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
       webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'my-app-panel-feed',
         metadata: null,
@@ -273,7 +289,7 @@ describe('deriveInterfaces', () => {
       slug: 'my-app',
       webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
     })
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'my-app-worker-unread',
         metadata: null,
@@ -292,6 +308,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
+        version: undefined,
       },
     ])
   })
@@ -303,7 +320,7 @@ describe('deriveInterfaces', () => {
       webWorkers: [{name: 'sync', src: './src/sync.ts', title: 'sync', type: 'worker'}],
     })
     const ids = deriveInterfaces(app, {isApp: true})?.map((iface) => iface.id) ?? []
-    expect(ids).toEqual(['my-app-panel-sync', 'my-app-worker-sync'])
+    expect(ids).toStrictEqual(['my-app-panel-sync', 'my-app-worker-sync'])
     expect(new Set(ids).size).toBe(ids.length)
   })
 
@@ -318,7 +335,7 @@ describe('deriveInterfaces', () => {
       deriveInterfaces(app, {isApp: true})?.map((iface) =>
         'surface' in iface ? iface.surface : iface.type,
       ),
-    ).toEqual(['panel', 'window'])
+    ).toStrictEqual(['panel', 'window'])
   })
 
   test('does not put the config in the interface set', () => {
@@ -331,7 +348,7 @@ describe('deriveInterfaces', () => {
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
     // only the panel — the config rides deriveConfigs, not interfaces
-    expect(deriveInterfaces(app, {isApp: true})).toEqual([
+    expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
         id: 'test-app-panel-feed',
         metadata: null,
@@ -356,7 +373,7 @@ describe('deriveInterfaces', () => {
     const app = workbenchApp({
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
     })
-    expect(deriveInterfaces(app, {isApp: false})).toEqual([
+    expect(deriveInterfaces(app, {isApp: false})).toStrictEqual([
       {
         id: 'test-app-panel-feed',
         metadata: null,
@@ -375,6 +392,7 @@ describe('deriveInterfaces', () => {
         src: './.sanity/federation/remote-entry.jsx',
         surface: 'window',
         title: 'Test App',
+        version: undefined,
       },
     ])
   })
@@ -387,8 +405,8 @@ const mediaLibrary = (fields: {name: string; public?: boolean; src: string; titl
 
 describe('deriveConfigs', () => {
   test('returns [] for a non-branded app', async () => {
-    await expect(deriveConfigs(cfg({title: 'Plain'}))).resolves.toEqual([])
-    await expect(deriveConfigs(undefined)).resolves.toEqual([])
+    await expect(deriveConfigs(cfg({title: 'Plain'}))).resolves.toStrictEqual([])
+    await expect(deriveConfigs(undefined)).resolves.toStrictEqual([])
   })
 
   test('[] for an app (not a config), even one with interfaces', async () => {
@@ -398,11 +416,11 @@ describe('deriveConfigs', () => {
           workbenchApp({views: [{name: 'feed', src: './f.tsx', surface: 'panel', title: 'feed'}]}),
         ),
       ),
-    ).resolves.toEqual([])
+    ).resolves.toStrictEqual([])
   })
 
   test('derives a config with no fields — keyed on its appType, not its fields', async () => {
-    await expect(deriveConfigs(mediaLibrary([]))).resolves.toEqual([
+    await expect(deriveConfigs(mediaLibrary([]))).resolves.toStrictEqual([
       {
         appType: 'media-library',
         fields: [],
@@ -418,7 +436,7 @@ describe('deriveConfigs', () => {
       {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
       {name: 'language', src: './src/language.ts', title: 'Language'},
     ])
-    await expect(deriveConfigs(config)).resolves.toEqual([
+    await expect(deriveConfigs(config)).resolves.toStrictEqual([
       {
         appType: 'media-library',
         fields: [
@@ -463,7 +481,7 @@ describe('deriveConfigEntries', () => {
         id: 'cfg-hash',
         version: '1',
       }),
-    ).toEqual([
+    ).toStrictEqual([
       {name: 'description', src: './src/description.ts'},
       {name: 'language', src: './src/language.ts'},
     ])
@@ -472,7 +490,7 @@ describe('deriveConfigEntries', () => {
   test('an empty field set yields no entries', () => {
     expect(
       deriveConfigEntries({appType: 'media-library', fields: [], id: 'cfg-hash', version: '1'}),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   test('throws on an app type it cannot handle', () => {
