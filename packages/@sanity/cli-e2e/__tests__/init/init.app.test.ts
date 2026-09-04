@@ -39,6 +39,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
           '--package-manager',
           'pnpm',
           '--no-git',
+          '--no-install',
         ],
       })
 
@@ -77,6 +78,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
           '--package-manager',
           'pnpm',
           '--no-git',
+          '--no-install',
         ],
       })
 
@@ -92,6 +94,8 @@ describe('sanity init - app', {timeout: 120_000}, () => {
     })
   })
 
+  // Keeps a real install: the flow drives the package manager prompt, which
+  // only appears when there is an install to run.
   test('complete interactive flow selects project and dataset', async () => {
     const session = await runCli({
       args: [

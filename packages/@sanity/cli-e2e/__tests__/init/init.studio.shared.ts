@@ -56,6 +56,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         'production',
         '--output-path',
         tmp.path,
+        '--no-install',
       ],
     })
 
@@ -67,6 +68,10 @@ export function registerStudioInitTests(yFlag: string[]): void {
     expect(existsSync(`${tmp.path}/sanity.config.js`)).toBe(false)
   })
 
+  // These keep a real install on purpose. Each template declares its own
+  // third-party dependencies (`@sanity/presets`, `sanity-plugin-hotspot-array`,
+  // `sanity-plugin-shopify-assets`), and installing is the only thing that
+  // verifies those version pins still resolve.
   test.each(['clean', 'blog', 'page-builder', 'shopify', 'shopify-online-storefront'])(
     'creates studio with %s template',
     async (template) => {
@@ -107,6 +112,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--output-path',
         tmp.path,
         '--typescript',
+        '--no-install',
       ],
     })
 
@@ -140,6 +146,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--output-path',
         tmp.path,
         '--no-typescript',
+        '--no-install',
       ],
     })
 
@@ -184,6 +191,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--output-path',
         tmp.path,
         '--no-git',
+        '--no-install',
       ],
     })
 
@@ -204,6 +212,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         tmp.path,
         '--git',
         'initial commit',
+        '--no-install',
       ],
       env: {
         GIT_AUTHOR_EMAIL: 'test@example.com',
@@ -228,6 +237,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--output-path',
         tmp.path,
         '--typescript',
+        '--no-install',
       ],
     })
 
@@ -248,6 +258,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--output-path',
         tmp.path,
         '--typescript',
+        '--no-install',
       ],
     })
 
@@ -273,6 +284,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--visibility',
         'public',
         '--typescript',
+        '--no-install',
       ],
     })
 
@@ -319,6 +331,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--coupon',
         'invalid-coupon-xyz',
         '--typescript',
+        '--no-install',
       ],
     })
 
@@ -340,6 +353,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--output-path',
         tmp.path,
         '--no-mcp',
+        '--no-install',
       ],
     })
 
@@ -360,6 +374,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         tmp.path,
         '--no-auto-updates',
         '--typescript',
+        '--no-install',
       ],
     })
 
@@ -428,6 +443,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         'production',
         '--output-path',
         tmp.path,
+        '--no-install',
       ],
     })
     if (firstResult.error) throw firstResult.error
@@ -443,6 +459,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--output-path',
         tmp.path,
         '--overwrite-files',
+        '--no-install',
       ],
     })
 

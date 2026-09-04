@@ -94,6 +94,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       default: undefined,
       description: 'Import template sample dataset',
     }),
+    install: Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Install dependencies after scaffolding',
+      exclusive: ['bare'],
+    }),
     mcp: Flags.boolean({
       allowNo: true,
       default: true,

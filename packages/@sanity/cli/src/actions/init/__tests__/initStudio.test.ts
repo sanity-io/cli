@@ -23,7 +23,7 @@ const args = {
   displayName: 'My Project',
   isFirstProject: false,
   mcpConfigured: [],
-  options: {unattended: true},
+  options: {install: true, unattended: true},
   organizationId: undefined,
   output,
   outputPath: '/tmp/my-project/sanity',
@@ -62,5 +62,16 @@ describe('initStudio', () => {
     const lines = mockOutputLog.mock.calls.flat().join('\n')
     expect(lines).toContain('Success! Your Studio has been created')
     expect(lines).toContain('Get started by running npm run dev')
+  })
+
+  test('tells the user to install first when the install was skipped', async () => {
+    await initStudio({
+      ...args,
+      options: {...args.options, install: false},
+      preclaim: false,
+    } as never)
+
+    const lines = mockOutputLog.mock.calls.flat().join('\n')
+    expect(lines).toContain('Get started by running npm install, then npm run dev')
   })
 })

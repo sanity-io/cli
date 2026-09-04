@@ -6,6 +6,7 @@ import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {updateProjectInitializedAt} from '../../services/projects.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
+import {getInstallCommand} from '../../util/packageManager/installPackages.js'
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {InitError} from './initError.js'
@@ -58,7 +59,7 @@ export async function initStudio({
   workbench: boolean
   workDir: string
 }): Promise<void> {
-  const {importDataset, unattended} = options
+  const {importDataset, install, unattended} = options
   const {
     template: resolvedTemplate,
     templateName,
@@ -160,8 +161,11 @@ export async function initStudio({
   //output for Studios here
   output.log(`\u2705 ${styleText(['green', 'bold'], 'Success!')} Your Studio has been created.`)
   if (!isCurrentDir) output.log(goToProjectDir)
+  const startupCommands = install
+    ? styleText('cyan', devCommand)
+    : `${styleText('cyan', getInstallCommand(pkgManager))}, then ${styleText('cyan', devCommand)}`
   output.log(
-    `\nGet started by running ${styleText('cyan', devCommand)} to launch your Studio's development server`,
+    `\nGet started by running ${startupCommands} to launch your Studio's development server`,
   )
   if (mcpConfigured && mcpConfigured.length > 0) {
     const message = await getPostInitMCPPrompt(mcpConfigured)

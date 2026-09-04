@@ -43,6 +43,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
         '--no-git',
         '--no-mcp',
         '--unstable--workbench',
+        '--no-install',
       ],
     })
 
@@ -79,6 +80,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
         '--no-git',
         '--no-mcp',
         '--unstable--workbench',
+        '--no-install',
       ],
     })
 
