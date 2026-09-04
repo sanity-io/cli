@@ -29,23 +29,37 @@ const noop = async () => {}
 
 // Every server is a local app except a config-only one — a config
 // with no interfaces (the media library). A server with both lands in both channels.
-const isLocalApp = (server: DevServerManifest): boolean => !isConfigOnlyServer(server)
-
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
   applications: servers
-    .filter((server) => isLocalApp(server))
-    .map(({host, id, interfaces, manifest, name, port, projectId, reference, type}) => ({
-      host,
-      id,
-      // Views cross to the remote keyed on `type`, never the internal `surface`.
-      interfaces: interfaces?.map((iface) => toWireInterface(iface)),
-      manifest,
-      name,
-      port,
-      projectId,
-      reference,
-      type,
-    })),
+    .filter((server) => !isConfigOnlyServer(server))
+    .map(
+      ({
+        host,
+        id,
+        interfaces,
+        manifest,
+        name,
+        organizationId,
+        port,
+        projectId,
+        reference,
+        slug,
+        type,
+        visibility,
+      }) => ({
+        host,
+        id,
+        // Views cross to the remote keyed on `type`, never the internal `surface`.
+        interfaces: interfaces?.map((iface) => toWireInterface(iface)),
+        manifest,
+        name,
+        port,
+        projectId,
+        reference,
+        type,
+        ...(organizationId && slug && visibility ? {organizationId, slug, visibility} : {}),
+      }),
+    ),
   configs: servers.flatMap(({configs, host, port}) =>
     // The registry stores the config flat; the workbench wire shape nests the
     // type-specific payload (`fields` for a media library) under `config`, keyed
