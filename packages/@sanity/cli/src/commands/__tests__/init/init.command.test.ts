@@ -163,9 +163,6 @@ describe('install resolution', () => {
     mockIsInteractive.mockReturnValue(true)
   })
 
-  // Goes through the real oclif parse, so this pins the flag's `default: true`.
-  // If that default ever stopped applying, `install` would arrive as undefined
-  // and every scaffold would silently stop installing.
   test.each([
     {argv: [], expected: true, label: 'installs by default'},
     {argv: ['--yes'], expected: true, label: 'still installs with --yes'},
