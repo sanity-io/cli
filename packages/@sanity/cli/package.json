@@ -161,7 +161,7 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "catalog:",
     "@types/picomatch": "^4.0.3",
-    "@types/semver": "^7.7.1",
+    "@types/semver": "^7.8.0",
     "@types/tar-stream": "^3.1.4",
     "@types/which": "^3.0.4",
     "@vitest/coverage-istanbul": "catalog:",
