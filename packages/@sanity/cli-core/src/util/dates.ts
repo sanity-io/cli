@@ -54,15 +54,16 @@ function selectUnit(
 }
 
 /**
- * Formats a timestamp as `YYYY-MM-DD HH:mm:ss` in the local time zone. Unparseable
- * timestamps are returned as-is, so a bad value from the API doesn't fail the command.
+ * Formats a timestamp as `YYYY-MM-DD HH:mm:ss` in the local time zone. An unparseable
+ * string is returned as-is, so a bad value from the API doesn't fail the command. An
+ * invalid `Date` or a non-finite number formats as an empty string.
  *
- * @param timestamp - An ISO 8601 timestamp
+ * @param timestamp - An ISO 8601 timestamp, epoch milliseconds, or a `Date`
  * @internal
  */
-export function formatDateTime(timestamp: string): string {
-  const date = new Date(timestamp)
-  if (!Number.isFinite(date.getTime())) return timestamp
+export function formatDateTime(timestamp: Date | number | string): string {
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
+  if (!Number.isFinite(date.getTime())) return typeof timestamp === 'string' ? timestamp : ''
 
   const day = `${pad(date.getFullYear(), 4)}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
   const time = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
@@ -71,7 +72,8 @@ export function formatDateTime(timestamp: string): string {
 
 /**
  * Formats a duration in milliseconds as an approximate, human readable length of
- * time, eg `less than a minute`, `5 minutes` or `2 days`.
+ * time, eg `less than a minute`, `5 minutes` or `2 days`. Use {@link formatElapsed}
+ * where the exact length matters.
  *
  * @param ms - The duration in milliseconds
  * @internal
@@ -84,6 +86,34 @@ export function formatDuration(ms: number): string {
 
   const unit = selected.value === 1 ? selected.unit : `${selected.unit}s`
   return `${selected.value} ${unit}`
+}
+
+/**
+ * Formats an elapsed time in milliseconds precisely, eg `450ms`, `12s`, `1m 30s` or
+ * `2h 5m`. Two adjacent units are shown once the time reaches a minute, so a column
+ * of values lines up. Use this for how long an operation took, where a second of
+ * difference is meaningful; use {@link formatDuration} for an approximate description.
+ *
+ * @param ms - The elapsed time in milliseconds
+ * @internal
+ */
+export function formatElapsed(ms: number): string {
+  if (!Number.isFinite(ms)) return ''
+
+  const elapsed = Math.abs(ms)
+  if (elapsed < MS_IN.second) return `${Math.round(elapsed)}ms`
+
+  const seconds = Math.floor(elapsed / MS_IN.second)
+  if (elapsed < MS_IN.minute) return `${seconds}s`
+
+  const minutes = Math.floor(elapsed / MS_IN.minute)
+  if (elapsed < MS_IN.hour) return `${minutes}m ${seconds % 60}s`
+
+  const hours = Math.floor(elapsed / MS_IN.hour)
+  if (elapsed < MS_IN.day) return `${hours}h ${minutes % 60}m`
+
+  const days = Math.floor(elapsed / MS_IN.day)
+  return `${days}d ${hours % 24}h`
 }
 
 /**

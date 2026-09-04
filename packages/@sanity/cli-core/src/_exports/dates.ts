@@ -1,1 +1,7 @@
-export {formatDateTime, formatDuration, formatTimeAgo, parseDateOnly} from '../util/dates.js'
+export {
+  formatDateTime,
+  formatDuration,
+  formatElapsed,
+  formatTimeAgo,
+  parseDateOnly,
+} from '../util/dates.js'
