@@ -232,4 +232,25 @@ describe('deployStudio (federated studio)', () => {
       {exit: exitCodes.RUNTIME_ERROR},
     )
   })
+
+  test('renders the cause chain of schema extraction errors', async () => {
+    const options = deployOptions()
+    const transportError = new Error('connect ETIMEDOUT 1.2.3.4:443')
+    Object.assign(transportError, {code: 'ETIMEDOUT'})
+    vi.mocked(deployStudioSchemasAndManifests).mockRejectedValue(
+      new SchemaExtractionError('Failed to upload schema for workspace "default"', undefined, {
+        cause: new TypeError('fetch failed', {cause: transportError}),
+      }),
+    )
+    const outputError = vi.mocked(options.output.error).mockImplementation((message) => {
+      throw new Error(String(message))
+    })
+
+    await expect(deployStudio(options)).rejects.toThrow('Caused by: TypeError: fetch failed')
+
+    expect(outputError).toHaveBeenCalledWith(
+      expect.stringContaining('Caused by: Error: connect ETIMEDOUT 1.2.3.4:443\nCode: ETIMEDOUT'),
+      {exit: exitCodes.RUNTIME_ERROR},
+    )
+  })
 })
