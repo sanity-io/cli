@@ -7,4 +7,27 @@ export default [
   includeIgnoreFile(resolve(import.meta.dirname, '.gitignore')),
   {ignores: ['**/fixtures/prebuilt-*/dist/**', '.changeset/**']},
   ...eslintConfig,
+  {
+    files: ['packages/groq/**/*.cjs'],
+    languageOptions: {
+      globals: {
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        exports: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+      },
+      sourceType: 'commonjs',
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    files: ['packages/groq/groq.d.{ts,cts}'],
+    rules: {
+      // Preserve the declaration signature already published by groq.
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ]
