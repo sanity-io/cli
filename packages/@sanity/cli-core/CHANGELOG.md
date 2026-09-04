@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.7.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.6.1...cli-core-v3.7.0)
+
+_2026-09-04_
+
+### Features
+
+- **cli-core:** accept numbers and Dates in `formatDateTime`, add `formatElapsed` for precise durations ([#1848](https://github.com/sanity-io/cli/pull/1848)) ([48fa623](https://github.com/sanity-io/cli/commit/48fa623dd56cf82bdb4bb3d5c76161face016715))
+
 ## 3.6.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.6.0...cli-core-v3.6.1)
