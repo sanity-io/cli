@@ -9,9 +9,14 @@ import {parseArguments} from '../../../util/parseArguments.js'
 import {UploadAssetCommand} from '../upload.js'
 
 const mockUploadAssetWithProgress = vi.hoisted(() => vi.fn())
+const mockIngestAssetFromUrlWithProgress = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../actions/assets/uploadAssetWithProgress.js', () => ({
   uploadAssetWithProgress: mockUploadAssetWithProgress,
+}))
+
+vi.mock('../../../actions/assets/ingestAssetFromUrlWithProgress.js', () => ({
+  ingestAssetFromUrlWithProgress: mockIngestAssetFromUrlWithProgress,
 }))
 
 const defaultMocks = {
@@ -55,6 +60,22 @@ describe('#assets:upload', () => {
     )
 
     expect(result.extraArguments).toEqual(['--file', '--filename', '--dataset=production'])
+  })
+
+  test('redacts the source URL from command telemetry', () => {
+    const result = parseArguments(
+      [
+        'node',
+        'sanity',
+        'assets',
+        'upload',
+        '--from-url=https://private.example.com/hero.png?signature=secret',
+        '--dataset=production',
+      ],
+      UploadAssetCommand.telemetry,
+    )
+
+    expect(result.extraArguments).toEqual(['--from-url', '--dataset=production'])
   })
 
   test('uploads an image and prints a reusable image reference', async () => {
@@ -270,10 +291,108 @@ Check the asset requirements and current technical limits, then try again: https
     expect(error?.message).not.toContain('sanity login')
   })
 
-  test('requires --file', async () => {
+  test('requires a source', async () => {
     const {error} = await testCommand(UploadAssetCommand, [], {mocks: defaultMocks})
 
-    expect(error?.message).toContain('Missing required flag file')
+    expect(error?.message).toContain(
+      'Exactly one of the following must be provided: --file, --from-url',
+    )
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('rejects --file combined with --from-url', async () => {
+    const {error} = await testCommand(
+      UploadAssetCommand,
+      ['--file', './hero.png', '--from-url', 'https://example.com/hero.png'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error?.message).toContain('--file cannot also be provided when using --from-url')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('ingests from a URL and prints a reusable image reference', async () => {
+    mockIngestAssetFromUrlWithProgress.mockImplementation(async ({logToStderr}) => {
+      logToStderr('Fetching image asset from URL')
+      return imageAsset
+    })
+
+    const {error, stderr, stdout} = await testCommand(
+      UploadAssetCommand,
+      ['--from-url', 'https://example.com/hero.png'],
+      {mocks: defaultMocks},
+    )
+
+    if (error) throw error
+    expect(mockUploadAssetWithProgress).not.toHaveBeenCalled()
+    expect(mockIngestAssetFromUrlWithProgress).toHaveBeenCalledWith({
+      assetType: 'image',
+      dataset: 'production',
+      filename: undefined,
+      isInteractive: false,
+      logToStderr: expect.any(Function),
+      projectId: 'test-project',
+      url: 'https://example.com/hero.png',
+    })
+    expect(stderr).toBe('Fetching image asset from URL\n')
+    expect(JSON.parse(stdout)).toEqual({
+      asset: imageAsset,
+      reference: {
+        _type: 'image',
+        asset: {_ref: imageAsset._id, _type: 'reference'},
+      },
+    })
+  })
+
+  test('passes an explicit --filename through to URL ingestion', async () => {
+    mockIngestAssetFromUrlWithProgress.mockResolvedValue(imageAsset)
+
+    const {error} = await testCommand(
+      UploadAssetCommand,
+      ['--from-url', 'https://example.com/download?id=42', '--filename', 'hero.png'],
+      {mocks: defaultMocks},
+    )
+
+    if (error) throw error
+    expect(mockIngestAssetFromUrlWithProgress).toHaveBeenCalledWith(
+      expect.objectContaining({filename: 'hero.png'}),
+    )
+  })
+
+  test('rejects --content-type combined with --from-url', async () => {
+    const {error} = await testCommand(
+      UploadAssetCommand,
+      ['--from-url', 'https://example.com/hero.png', '--content-type', 'image/png'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error?.message).toContain('--content-type cannot be combined with --from-url')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockIngestAssetFromUrlWithProgress).not.toHaveBeenCalled()
+  })
+
+  test('explains a failed fetch of the source URL', async () => {
+    mockIngestAssetFromUrlWithProgress.mockRejectedValue(
+      Object.assign(new Error('Could not fetch source'), {
+        response: {
+          body: {error: 'Bad Gateway', message: 'Could not fetch source', statusCode: 502},
+          headers: {},
+          method: 'POST',
+          statusCode: 502,
+          statusMessage: 'Bad Gateway',
+          url: 'https://test-project.api.sanity.io/v2024-06-24/assets/images/production/from-url',
+        },
+        statusCode: 502,
+      }),
+    )
+
+    const {error} = await testCommand(
+      UploadAssetCommand,
+      ['--from-url', 'https://example.com/hero.png'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error?.message).toContain('Sanity could not fetch the source URL')
+    expect(error?.oclif?.exit).toBe(exitCodes.RUNTIME_ERROR)
   })
 })
