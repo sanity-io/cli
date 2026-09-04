@@ -244,17 +244,20 @@ EXAMPLES
 
 ## `sanity assets upload`
 
-Upload one local image or file to a Sanity dataset and print the asset document as JSON
+Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
 
 ```
 USAGE
-  $ sanity assets upload --file <path> [-p <id>] [-d <name>] [--content-type <mime-type>] [--filename <filename>]
-    [--type image|file]
+  $ sanity assets upload [-p <id>] [-d <name>] [--content-type <mime-type>] [--file <path>] [--filename <filename>]
+    [--from-url <url>] [--type image|file]
 
 FLAGS
-  --content-type=<mime-type>  MIME type of the asset, such as image/png or application/pdf
-  --file=<path>               (required) Path to the local file to upload
-  --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename
+  --content-type=<mime-type>  MIME type of the asset, such as image/png or application/pdf. Only applies to --file
+  --file=<path>               Path to the local file to upload
+  --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename when using
+                              --file
+  --from-url=<url>            URL for Sanity to fetch the asset from, instead of uploading a local file. Must be
+                              reachable from the public internet without authentication
   --type=<option>             [default: image] Asset type to create
                               <options: image|file>
 
@@ -263,7 +266,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to upload the asset to (overrides CLI configuration)
 
 DESCRIPTION
-  Upload one local image or file to a Sanity dataset and print the asset document as JSON
+  Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
 
 EXAMPLES
   Upload an image using the configured project
@@ -274,6 +277,10 @@ EXAMPLES
 
     $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 \
       --dataset production
+
+  Have Sanity fetch an image from a public URL
+
+    $ sanity assets upload --from-url https://example.com/hero.png --type image --dataset production
 ```
 
 ## `sanity backups disable [DATASET]`
