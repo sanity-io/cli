@@ -10,6 +10,10 @@ import {
   type ResolvedMediaLibraryConfig,
   resolveWorkbenchConfig,
 } from '../../../resolveWorkbenchConfig.js'
+import {
+  anInstallation,
+  installationsResponse,
+} from '../../deploy/__tests__/fixtures/installations.js'
 import {type DeployableWorkbenchApp, getWorkbench} from '../../deploy/getWorkbench.js'
 import {createWorkbenchUndeployAdapter} from '../workbenchUndeployAdapter.js'
 
@@ -68,7 +72,7 @@ const configAdapter = () =>
 function stubInstallations(configs: unknown[]) {
   mockRequest.mockImplementation(async ({url}: {url: string}) => {
     if (url === '/installations') {
-      return {data: [{application: {name: 'media-library'}, id: 'inst-1'}]}
+      return installationsResponse([anInstallation({id: 'inst-1', name: 'media-library'})])
     }
     if (url === '/installations/inst-1/configs') return {data: configs}
     throw new Error(`unexpected request to ${url}`)
