@@ -111,6 +111,42 @@ describe('parseFields', () => {
     })
   })
 
+  test('keeps filling the current array element across a shared nested key', () => {
+    expect(
+      parseFields({
+        fields: ['mutations[][patch][id]=doc-1', 'mutations[][patch][set][language]=en'],
+      }),
+    ).toEqual({
+      mutations: [{patch: {id: 'doc-1', set: {language: 'en'}}}],
+    })
+  })
+
+  test('merges sibling fields nested under a shared key at any depth', () => {
+    expect(parseFields({fields: ['a[][x]=1', 'a[][y]=2']})).toEqual({a: [{x: 1, y: 2}]})
+    expect(parseFields({fields: ['a[][p][x]=1', 'a[][p][y]=2']})).toEqual({
+      a: [{p: {x: 1, y: 2}}],
+    })
+  })
+
+  test('starts a new array element when a nested leaf repeats', () => {
+    expect(parseFields({fields: ['a[][x]=1', 'a[][x]=2']})).toEqual({a: [{x: 1}, {x: 2}]})
+    expect(parseFields({fields: ['a[][p][x]=1', 'a[][p][x]=2']})).toEqual({
+      a: [{p: {x: 1}}, {p: {x: 2}}],
+    })
+  })
+
+  test('starts a new array element when a nested array meets a plain object', () => {
+    expect(parseFields({fields: ['a[][p][q]=1', 'a[][p][][x]=2']})).toEqual({
+      a: [{p: {q: 1}}, {p: [{x: 2}]}],
+    })
+  })
+
+  test('starts a new array element when a path descends through a nested leaf', () => {
+    expect(parseFields({fields: ['a[][p]=1', 'a[][p][x]=2']})).toEqual({
+      a: [{p: 1}, {p: {x: 2}}],
+    })
+  })
+
   test('builds deeply nested objects inside arrays', () => {
     expect(parseFields({rawFields: ['nested[][key1][key2][key3]=value']})).toEqual({
       nested: [{key1: {key2: {key3: 'value'}}}],
@@ -140,6 +176,9 @@ describe('parseFields', () => {
     expect(() => parseFields({rawFields: ['a=1', 'a[]=2']})).toThrow(/conflicts/)
     expect(() => parseFields({rawFields: ['a[b]=1', 'a[]=2']})).toThrow(/conflicts/)
     expect(() => parseFields({rawFields: ['a[]=1', 'a[b]=2']})).toThrow(/conflicts/)
+    expect(() => parseFields({rawFields: ['a[]=1', 'a[0]=2']})).toThrow(/conflicts/)
+    expect(() => parseFields({rawFields: ['a[0]=1', 'a[]=2']})).toThrow(/conflicts/)
+    expect(() => parseFields({rawFields: ['a[b]=1', 'a[][x]=2']})).toThrow(/conflicts/)
   })
 
   test('throws on missing "=" separator', () => {
