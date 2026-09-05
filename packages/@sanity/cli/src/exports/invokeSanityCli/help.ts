@@ -1,12 +1,12 @@
 import {type Command, type Config, Help, type Interfaces} from '@oclif/core'
 import {getHelpFlagAdditions} from '@oclif/core/help'
-
-import {resolveTopicAliasInArgv} from '../../topicAliases.js'
 import {
   type CommandPolicy,
   type CommandPolicySet,
   isConditionalInvocationPolicy,
-} from './commandPolicies/policy.js'
+} from '@sanity/cli-core/commandPolicy'
+
+import {resolveTopicAliasInArgv} from '../../topicAliases.js'
 
 /** Command ids a policy exposes: entries that are not denied. */
 function visibleCommandIds(policySet: CommandPolicySet): Set<string> {
@@ -93,6 +93,13 @@ class InvokableHelp extends Help {
     this.topicNames = visibleTopicNames(this.commandIds)
   }
 
+  // Both listings start from oclif's, which already drops `hidden` entries, so
+  // help advertises the same commands a CLI user sees, minus the ones the
+  // policy denies. Hiding and denying answer different questions — "should this
+  // be advertised?" and "may this be invoked?" — and a command that is hidden
+  // but allowed stays invocable by id, exactly as it is for a CLI user who
+  // knows the name.
+  //
   // The copies below are load-bearing: oclif's formatters rewrite ids/names
   // in place (`cors:list` → `cors list`). Without copies those writes corrupt
   // the shared (cached) config, breaking the policy checks on subsequent
