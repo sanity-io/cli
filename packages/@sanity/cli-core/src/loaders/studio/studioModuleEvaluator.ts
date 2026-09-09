@@ -10,15 +10,6 @@ import {
   ssrModuleExportsKey,
 } from 'vite/module-runner'
 
-function isCommonJsCode(code: string): boolean {
-  return (
-    /\bmodule\.exports\b/.test(code) ||
-    /\bexports\.[a-zA-Z_$]/.test(code) ||
-    /(?:^|[;\n])\s*exports\s=/.test(code) ||
-    /(?:^|\n|\s)require\s*\(/.test(code)
-  )
-}
-
 function isPrimitive(value: unknown): boolean {
   return !value || (typeof value !== 'object' && typeof value !== 'function')
 }
@@ -66,10 +57,11 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
     code: string,
     module: Readonly<EvaluatedModuleNode>,
   ): Promise<void> {
-    if (!isCommonJsCode(code)) {
-      return (this.esmEvaluator as ModuleEvaluator).runInlinedModule(context, code, module)
-    }
-
+    // Every inlined module gets the CommonJS bindings, like vite-node did. Detecting
+    // CommonJS from the source text is not reliable (minified UMD wrappers, bracket
+    // notation and `Object.defineProperty(exports, …)` all evade it), and the extra
+    // bindings are inert in SSR-transformed ESM, which only ever references
+    // `__vite_ssr_*` names.
     return this.runCommonJsModule(context, code, module)
   }
 
@@ -95,6 +87,9 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
       getPrototypeOf: () => Object.prototype,
       set: (_, property, value) => {
         if (property === 'default') {
+          // Modules that assign an object to `default` (`exports.default = api`) should
+          // keep their named exports; `exportAll` forwards them onto the namespace.
+          if (cjsExports !== value) exportAll(exports, value)
           exports.default = value
           return true
         }
@@ -105,7 +100,7 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
           defineExport(exports, String(property), () => {})
           return true
         }
-        if (!isPrimitive(exports.default) && typeof exports.default === 'object') {
+        if (!isPrimitive(exports.default)) {
           ;(exports.default as Record<string, unknown>)[String(property)] = value
         }
         if (property !== 'default') {
