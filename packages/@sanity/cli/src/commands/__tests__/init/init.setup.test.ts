@@ -338,6 +338,7 @@ const baseOptions = {
   bare: false,
   datasetDefault: false,
   fromCreate: false,
+  install: true,
   mcpMode: 'skip' as const,
   skillsMode: 'skip' as const,
   template: 'clean',

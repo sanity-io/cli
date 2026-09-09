@@ -4,7 +4,10 @@ import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {promptForTypeScript} from '../../prompts/init/promptForTypescript.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
-import {installDeclaredPackages} from '../../util/packageManager/installPackages.js'
+import {
+  getInstallCommand,
+  installDeclaredPackages,
+} from '../../util/packageManager/installPackages.js'
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {bootstrapTemplate} from './bootstrapTemplate.js'
 import {tryGitInit} from './git.js'
@@ -117,7 +120,8 @@ export async function scaffoldAndInstall({
   workbench: boolean
   workDir: string
 }): Promise<{pkgManager: PackageManager}> {
-  const {autoUpdates, git, overwriteFiles, packageManager, templateToken, unattended} = options
+  const {autoUpdates, git, install, overwriteFiles, packageManager, templateToken, unattended} =
+    options
   const noGit = typeof git === 'boolean' && !git ? true : undefined
 
   await bootstrapTemplate({
@@ -149,11 +153,14 @@ export async function scaffoldAndInstall({
     step: 'selectPackageManager',
   })
 
-  // Now for the slow part... installing dependencies
-  await installDeclaredPackages(outputPath, pkgManager, {
-    output,
-    workDir,
-  })
+  if (install) {
+    await installDeclaredPackages(outputPath, pkgManager, {
+      output,
+      workDir,
+    })
+  } else {
+    output.log(`Skipped dependency install. Run ${getInstallCommand(pkgManager)} to install them.`)
+  }
 
   const useGit = !noGit && (git === undefined || Boolean(git))
   const commitMessage = git
