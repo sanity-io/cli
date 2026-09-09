@@ -2981,7 +2981,7 @@ Initialize a new Sanity Studio, project and/or app
 ```
 USAGE
   $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dataset
-    <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--import-dataset] [--mcp]
+    <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--import-dataset] [--install | ] [--mcp]
     [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path
     <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name <name>]
     [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
@@ -2997,6 +2997,7 @@ FLAGS
       --env=<filename>             Write environment variables to file
       --[no-]git=<message>         Specify a commit message for initial commit, or disable git init
       --[no-]import-dataset        Import template sample dataset
+      --[no-]install               Install dependencies after scaffolding
       --[no-]mcp                   Enable AI editor integration (MCP) setup
       --organization=<id>          Organization ID to use for the project (required for unattended project creation)
       --output-path=<path>         Path to write studio project to
