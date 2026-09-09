@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import {execute, settings} from '@oclif/core'
+/* eslint-disable n/no-unsupported-features/node-builtins -- Supported by the Node version guard. */
+import module from 'node:module'
 
 var err = '\u001B[31m\u001B[1mERROR:\u001B[22m\u001B[39m '
 var nodeVersionParts = process.version.replace(/^v/i, '').split('.').map(Number)
@@ -20,6 +21,11 @@ if (!isSupportedNodeVersion(majorVersion, minorVersion)) {
   console.error('')
   process.exit(1)
 }
+
+module.enableCompileCache()
+setTimeout(() => module.flushCompileCache(), 10 * 1000).unref()
+
+const {execute, settings} = module.createRequire(import.meta.url)('@oclif/core')
 
 settings.enableAutoTranspile = false
 
