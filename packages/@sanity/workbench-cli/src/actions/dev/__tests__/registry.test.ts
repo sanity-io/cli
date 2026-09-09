@@ -137,18 +137,26 @@ describe('registerDevServer', () => {
     expect(fsMock.module.existsSync(manifestPath())).toBe(false)
   })
 
-  test('persists id and projectId when provided', () => {
+  test('persists local application metadata when provided', () => {
     registerDevServer({
       host: 'localhost',
       id: 'app-abc',
+      organizationId: 'org-123',
       port: 3334,
       projectId: 'x1g7jygt',
+      slug: 'app-abc',
       type: 'coreApp',
+      visibility: 'unlisted',
       workDir: '/tmp/project',
     })
 
-    expect(readJson(manifestPath())).toMatchObject({id: 'app-abc', projectId: 'x1g7jygt'})
-    expect(getRegisteredServers()[0]).toMatchObject({id: 'app-abc', projectId: 'x1g7jygt'})
+    const metadata = {
+      organizationId: 'org-123',
+      slug: 'app-abc',
+      visibility: 'unlisted',
+    }
+    expect(readJson(manifestPath())).toMatchObject(metadata)
+    expect(getRegisteredServers()[0]).toMatchObject(metadata)
   })
 
   test('forwards a tile interface with its size + order metadata through a round-trip', () => {

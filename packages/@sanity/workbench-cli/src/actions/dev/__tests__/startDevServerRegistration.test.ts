@@ -88,11 +88,15 @@ describe('startDevServerRegistration', () => {
     expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'test-app'}))
   })
 
-  test('forwards the composed name and reference for the workbench to read', async () => {
+  test('forwards local application metadata for the workbench to read', async () => {
     await register()
 
     expect(mockRegisterDevServer).toHaveBeenCalledWith(
-      expect.objectContaining({name: 'test-app', reference: 'org-123/test-app'}),
+      expect.objectContaining({
+        organizationId: 'org-123',
+        slug: 'test-app',
+        visibility: 'default',
+      }),
     )
   })
 

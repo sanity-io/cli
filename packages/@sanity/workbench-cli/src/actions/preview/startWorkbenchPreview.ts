@@ -109,9 +109,12 @@ export async function startWorkbenchPreview(
       interfaces: deriveInterfaces(cliConfig.app, {isApp}),
       manifest: await extractManifest({applicationId: id, configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),
+      organizationId: workbench.organizationId,
       port: remote.port,
       projectId: cliConfig?.api?.projectId,
+      slug: workbench.slug,
       type: isApp ? 'coreApp' : 'studio',
+      visibility: workbench.visibility ?? 'default',
       workDir,
     })
     closers.push(async () => registration.release())

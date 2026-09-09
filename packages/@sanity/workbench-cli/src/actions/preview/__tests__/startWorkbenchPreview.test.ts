@@ -116,8 +116,11 @@ describe('startWorkbenchPreview', () => {
           // `start` advertises the build id (matching the bundle), not host-port.
           id: appId,
           manifest: {title: 'Test App'},
+          organizationId: 'org-123',
           port: 3334,
+          slug: 'test-app',
           type: 'coreApp',
+          visibility: 'default',
         }),
       )
     })

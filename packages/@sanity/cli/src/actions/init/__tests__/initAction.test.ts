@@ -79,6 +79,7 @@ const defaultOptions: InitOptions = {
   bare: false,
   datasetDefault: false,
   fromCreate: false,
+  install: true,
   mcpMode: 'skip',
   skillsMode: 'skip',
   unattended: false,
