@@ -60,8 +60,6 @@ function getAssetUploadErrorMessage(error: unknown, options: {fromUrl: boolean})
   if ([400, 413, 422].includes(error.statusCode)) {
     return `${response}\n\nCheck the asset requirements and current technical limits, then try again: ${DATASET_ASSET_LIMITS_URL}`
   }
-  // Only meaningful for URL ingestion, where the gateway failure describes
-  // Sanity's own fetch of the source rather than the request made here.
   if (options.fromUrl && [502, 504].includes(error.statusCode)) {
     return `${response}\n\nSanity could not fetch the source URL. Check that it is reachable from the public internet without authentication and serves the asset directly, then try again.`
   }
@@ -179,8 +177,6 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
         asset = await ingestAssetFromUrlWithProgress({
           assetType: flags.type,
           dataset,
-          // Left undefined so Content Lake names the asset from the fetched
-          // response rather than from the URL path, which often carries none.
           filename: flags.filename,
           isInteractive,
           logToStderr: (message) => this.logToStderr(message),
