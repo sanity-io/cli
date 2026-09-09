@@ -65,9 +65,7 @@ export const mcpPolicy: CommandPolicySet = {
     validate: apiValidator,
   }),
 
-  // --file reads from the machine running the command and must only run
-  // locally. --from-url has Content Lake fetch the bytes itself, so nothing is
-  // read from the host and the invocation is safe to run remotely.
+  // --file reads from the machine running the command and must only run locally.
   'assets:upload': conditionalPolicy({
     deniedFlags: ['content-type', 'file'],
     validate: ({flags}) => typeof flags['from-url'] === 'string' && flags['from-url'].length > 0,
