@@ -122,6 +122,24 @@ describe('StudioModuleEvaluator', () => {
     expect(namespace.helper()).toBe('helped')
   })
 
+  test('keeps the function default when a module points `default` back at `module.exports`', async () => {
+    // The CommonJS interop footer that every `@babel/runtime` helper ends with
+    // assigns the exports object to its own `default`, which must not replace the
+    // function the module already exported.
+    const namespace = await evaluate(
+      `"use strict";\n` +
+        `function impl(x) {return "impl:" + x}\n` +
+        `module.exports = impl;\n` +
+        `module.exports.__esModule = true;\n` +
+        `module.exports["default"] = module.exports;\n`,
+    )
+
+    expect(namespace.default).toBeTypeOf('function')
+    expect(namespace.default('value')).toBe('impl:value')
+    // A `default` that resolves back to itself is the self-referential exports object.
+    expect(namespace.default.default).not.toBe(namespace.default)
+  })
+
   test('leaves SSR-transformed ESM to the `__vite_ssr_*` bindings', async () => {
     const namespace = await evaluate(
       `const value = "esm";\n` +

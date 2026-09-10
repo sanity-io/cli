@@ -86,10 +86,15 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
       },
       getPrototypeOf: () => Object.prototype,
       set: (_, property, value) => {
-        if (property === 'default') {
+        // The `cjsExports !== value` check has to gate the whole branch: the CommonJS
+        // interop footer `module.exports.__esModule = true; module.exports.default =
+        // module.exports` points `default` at the exports object itself, and assigning
+        // that would replace a real function default with the exports proxy. Falling
+        // through to the generic path leaves the existing `default` untouched.
+        if (property === 'default' && cjsExports !== value) {
           // Modules that assign an object to `default` (`exports.default = api`) should
           // keep their named exports; `exportAll` forwards them onto the namespace.
-          if (cjsExports !== value) exportAll(exports, value)
+          exportAll(exports, value)
           exports.default = value
           return true
         }
