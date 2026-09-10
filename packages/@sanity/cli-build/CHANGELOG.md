@@ -1,5 +1,22 @@
 # Changelog
 
+## 6.3.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.0...cli-build-v6.3.1)
+
+_2026-09-10_
+
+### Bug Fixes
+
+- **cli-build:** disable lightningcss light-dark polyfill ([#1868](https://github.com/sanity-io/cli/pull/1868)) ([d81302e](https://github.com/sanity-io/cli/commit/d81302ed9abc5dbaf287250ba6bb400eebff96ce))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.3
+    - @sanity/cli-core bumped to 3.7.0
+
 ## 6.3.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.2.0...cli-build-v6.3.0)

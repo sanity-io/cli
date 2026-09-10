@@ -1,5 +1,23 @@
 # Change Log
 
+## 8.10.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.9.1...cli-v8.10.0)
+
+_2026-09-10_
+
+### Features
+
+- add `--install` flag, update e2e tests ([#1853](https://github.com/sanity-io/cli/pull/1853)) ([6da410d](https://github.com/sanity-io/cli/commit/6da410d4808eb0dff2d518b31d781e2ec17b2644))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.3
+    - @sanity/cli-build bumped to 6.3.1
+    - @sanity/cli-core bumped to 3.7.0
+
 ## 8.9.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.9.0...cli-v8.9.1)
