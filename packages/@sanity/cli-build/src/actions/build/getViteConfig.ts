@@ -13,6 +13,7 @@ import {
   workbenchVitePlugins,
 } from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
+import {Features} from 'lightningcss'
 import {
   type ConfigEnv,
   esmExternalRequirePlugin,
@@ -191,6 +192,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     // does not conflict with any potential local vite projects
     cacheDir: `${SANITY_CACHE_DIR}/vite`,
     configFile: false,
+    // Leave native `light-dark()` alone. Lightning CSS's polyfill
+    // (`--lightningcss-light`/`--lightningcss-dark` + prefers-color-scheme)
+    // ignores Studio theme / `color-scheme`. See lightningcss#873.
+    css: {
+      lightningcss: {
+        exclude: Features.LightDark,
+      },
+    },
     define: {
       __SANITY_BUILD_TIMESTAMP__: JSON.stringify(Date.now()),
       __SANITY_STAGING__: isStaging(),

@@ -76,6 +76,7 @@
     "dompurify": "^3.4.14",
     "empathic": "catalog:",
     "jsdom": "catalog:",
+    "lightningcss": "^1.33.0",
     "lodash-es": "catalog:",
     "node-html-parser": "^7.1.0",
     "oneline": "^2.0.0",
