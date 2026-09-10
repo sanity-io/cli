@@ -136,7 +136,7 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
 
     if (sourceUrl && flags['content-type']) {
       this.error(
-        'Asset upload failed: --content-type cannot be combined with --from-url. Sanity derives the MIME type from the fetched response.',
+        'Asset upload failed: --content-type cannot be combined with --from-url. Sanity derives the MIME type automatically.',
         {exit: exitCodes.USAGE_ERROR},
       )
     }
