@@ -16,10 +16,18 @@ function isCombinedError(error: unknown): error is CombinedError {
 }
 
 /**
+ * Render an error and its full `cause` chain as plain text, with each nested
+ * cause on its own `Caused by: ...` line, so callers do not silently drop the
+ * detail that `String(error)` omits.
+ *
  * Adapted from oclif's unexported `prettyPrint` implementation:
  * https://github.com/oclif/core/blob/4.11.14/src/errors/errors/pretty-print.ts
  *
  * Terminal wrapping, indentation, ANSI decoration, and debug stack handling are omitted so programmatic callers receive stable plain text.
+ *
+ * @param error - The error to render; non-error values render as an empty string
+ * @returns The rendered error chain, or an empty string when nothing could be rendered
+ * @internal
  */
 export function prettyPrintError(error: unknown): string {
   const prettyPrintedErrors: string[] = []

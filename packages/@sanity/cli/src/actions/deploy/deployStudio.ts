@@ -5,6 +5,7 @@ import {createGzip, type Gzip} from 'node:zlib'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
 import {exitCodes} from '@sanity/cli-core'
+import {prettyPrintError} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   type BrettAccess,
@@ -355,9 +356,14 @@ async function uploadStudioSchema(
     if (error instanceof SchemaExtractionError && error.validation?.length) {
       output.error(formatSchemaValidation(error.validation), {exit: exitCodes.RUNTIME_ERROR})
     }
-    output.error(`Error deploying studio schemas and manifests: ${error}`, {
-      exit: exitCodes.RUNTIME_ERROR,
-    })
+    // prettyPrintError renders the full cause chain (`Caused by: ...` lines),
+    // which `${error}` would silently drop
+    output.error(
+      `Error deploying studio schemas and manifests: ${prettyPrintError(error) || String(error)}`,
+      {
+        exit: exitCodes.RUNTIME_ERROR,
+      },
+    )
   }
 
   if (!studioManifest) {
