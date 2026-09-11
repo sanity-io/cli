@@ -371,6 +371,32 @@ Check the asset requirements and current technical limits, then try again: https
     expect(mockIngestAssetFromUrlWithProgress).not.toHaveBeenCalled()
   })
 
+  test.each([
+    ['a local path', 'file:///srv/media/hero.png', 'must use http or https'],
+    ['credentials in the URL', 'https://user:pass@example.com/hero.png', 'username or password'],
+    ['an unparseable URL', 'not a URL', 'is not a valid URL'],
+  ])('rejects %s before requesting the ingest', async (_label, url, expected) => {
+    const {error} = await testCommand(UploadAssetCommand, ['--from-url', url], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain(expected)
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockIngestAssetFromUrlWithProgress).not.toHaveBeenCalled()
+  })
+
+  test('rejects a --filename holding a path before uploading', async () => {
+    const {error} = await testCommand(
+      UploadAssetCommand,
+      ['--file', './hero.png', '--filename', '../hero.png'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error?.message).toContain('must not contain path separators or null bytes')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockUploadAssetWithProgress).not.toHaveBeenCalled()
+  })
+
   test('explains a failed fetch of the source URL', async () => {
     mockIngestAssetFromUrlWithProgress.mockRejectedValue(
       Object.assign(new Error('Could not fetch source'), {

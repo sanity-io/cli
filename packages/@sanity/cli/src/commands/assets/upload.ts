@@ -9,6 +9,7 @@ import {ingestAssetFromUrlWithProgress} from '../../actions/assets/ingestAssetFr
 import {uploadAssetWithProgress} from '../../actions/assets/uploadAssetWithProgress.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {type AssetType} from '../../services/assets.js'
+import {getAssetFilenameError, getIngestUrlError} from '../../util/assetSourceValidation.js'
 import {getAssetUploadErrorMessage} from '../../util/assetUploadErrors.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
@@ -88,6 +89,17 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
         'Asset upload failed: --content-type cannot be combined with --from-url. Sanity derives the MIME type automatically.',
         {exit: exitCodes.USAGE_ERROR},
       )
+    }
+
+    const sourceUrlError = sourceUrl === undefined ? undefined : getIngestUrlError(sourceUrl)
+    if (sourceUrlError) {
+      this.error(`Asset upload failed: ${sourceUrlError}`, {exit: exitCodes.USAGE_ERROR})
+    }
+
+    const filenameError =
+      flags.filename === undefined ? undefined : getAssetFilenameError(flags.filename)
+    if (filenameError) {
+      this.error(`Asset upload failed: ${filenameError}`, {exit: exitCodes.USAGE_ERROR})
     }
 
     const cliConfig = await this.tryGetCliConfig()
