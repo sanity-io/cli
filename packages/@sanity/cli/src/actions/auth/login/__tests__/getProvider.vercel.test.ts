@@ -43,7 +43,6 @@ describe('#getProvider vercel provider', () => {
 
   test('returns Vercel provider and skips provider selection flow', async () => {
     const provider = await getProvider({
-      experimental: false,
       orgSlug: 'acme',
       specifiedProvider: 'vercel',
       ssoProvider: undefined,

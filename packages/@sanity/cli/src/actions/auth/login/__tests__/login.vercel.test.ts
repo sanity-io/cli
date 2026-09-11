@@ -100,7 +100,6 @@ describe('#login vercel provider', () => {
     await login({open: false, output, provider: 'vercel', telemetry})
 
     expect(mockedGetProvider).toHaveBeenCalledWith({
-      experimental: undefined,
       orgSlug: undefined,
       specifiedProvider: 'vercel',
     })
