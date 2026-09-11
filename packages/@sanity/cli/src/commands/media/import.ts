@@ -14,6 +14,7 @@ import {ingestMediaAssetFromUrlWithProgress} from '../../actions/media/ingestMed
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
+import {getAssetFilenameError, getIngestUrlError} from '../../util/assetSourceValidation.js'
 import {getAssetUploadErrorMessage} from '../../util/assetUploadErrors.js'
 import {isIngestableUrl} from '../../util/isIngestableUrl.js'
 import {parseAspectFlags} from '../../util/parseAspectFlags.js'
@@ -110,6 +111,17 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       )
     }
 
+    const filenameError =
+      flags.filename === undefined ? undefined : getAssetFilenameError(flags.filename)
+    if (filenameError) {
+      this.error(filenameError, {exit: exitCodes.USAGE_ERROR})
+    }
+
+    const sourceUrlError = isUrlSource ? getIngestUrlError(source) : undefined
+    if (sourceUrlError) {
+      this.error(sourceUrlError, {exit: exitCodes.USAGE_ERROR})
+    }
+
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     const cliConfig = await this.tryGetCliConfig()
@@ -191,9 +203,6 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
 
     const spin = spinner('Beginning import…').start()
 
-    // ingest assets from url with progress --from-url
-
-    // if not ingest do this
     await this.importAssets({projectClient, replaceAspects, source, spin})
   }
 

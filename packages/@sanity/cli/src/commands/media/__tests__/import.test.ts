@@ -368,6 +368,30 @@ describe('#media:import', () => {
       expect(options).not.toHaveProperty('filename')
     })
 
+    test('rejects credentials in the source URL before any request', async () => {
+      const {error} = await testCommand(
+        MediaImportCommand,
+        ['https://user:pass@example.com/hero.png', '--media-library-id', 'test-media-library'],
+        {mocks: defaultMocks},
+      )
+
+      expect(error?.message).toContain('must not contain a username or password')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(mockIngestFromUrl).not.toHaveBeenCalled()
+    })
+
+    test('rejects a --filename holding a path before any request', async () => {
+      const {error} = await testCommand(
+        MediaImportCommand,
+        [SOURCE_URL, '--media-library-id', 'test-media-library', '--filename', 'media/hero.png'],
+        {mocks: defaultMocks},
+      )
+
+      expect(error?.message).toContain('must not contain path separators or null bytes')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(mockIngestFromUrl).not.toHaveBeenCalled()
+    })
+
     test('reports a failed ingest with media library guidance', async () => {
       mockLibraries()
       mockIngestFromUrl.mockRejectedValue(
