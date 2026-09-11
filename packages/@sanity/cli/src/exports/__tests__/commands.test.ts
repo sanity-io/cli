@@ -71,9 +71,10 @@ describe('invokeSanityCli', () => {
     // until it is deliberately categorized (allow/conditional/deny), and a
     // policy entry for a removed command fails too. Command ids come from the
     // loaded oclif config — the same source invokeSanityCli resolves against —
-    // scoped to this package's own visible commands: hidden entries are alias
-    // redirects, and commands contributed by other plugins (blueprints, help)
-    // are uncategorized by design, so they fail closed.
+    // scoped to this package's own visible commands, since hidden entries are
+    // alias redirects. Commands contributed by plugins are governed by the
+    // policies those plugins declare rather than by this table; see
+    // pluginCommandSurface.test.ts for the record of that surface.
     const commandIds = config.commands
       .filter((command) => command.pluginName === config.pjson.name && !command.hidden)
       .map((command) => command.id)

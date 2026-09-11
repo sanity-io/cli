@@ -88,10 +88,13 @@ export default [
     },
   },
   {
-    files: ['test/__fixtures__/**/*.ts'],
+    // Fixtures stand in for packages outside this one, so they import as
+    // their real counterparts would rather than as this package's own source.
+    files: ['test/__fixtures__/**/*.{ts,js}'],
     rules: {
       'import-x/no-extraneous-dependencies': 'off',
       'import-x/no-unresolved': 'off',
+      'n/no-extraneous-import': 'off',
     },
   },
 ]

@@ -1,0 +1,14 @@
+{
+  "name": "@sanity-test/fixture-plugin-malformed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plugin whose policy module exports something that is not a policy table",
+  "type": "module",
+  "oclif": {
+    "commands": "./commands",
+    "topicSeparator": " "
+  },
+  "sanity": {
+    "invocationPolicies": "./invocationPolicies.js"
+  }
+}
