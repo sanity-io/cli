@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
+import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, getProjectCliClient, SanityCommand} from '@sanity/cli-core'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {boxen, spinner} from '@sanity/cli-core/ux'
@@ -9,15 +10,48 @@ import {type OperatorFunction, pipe, scan, tap} from 'rxjs'
 
 import {importer, type State} from '../../actions/media/importMedia.js'
 import {importMediaDebug} from '../../actions/media/importMediaDebug.js'
+import {ingestMediaAssetFromUrlWithProgress} from '../../actions/media/ingestMediaAssetFromUrlWithProgress.js'
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
+import {getAssetUploadErrorMessage} from '../../util/assetUploadErrors.js'
+import {isIngestableUrl} from '../../util/isIngestableUrl.js'
+import {parseAspectFlags} from '../../util/parseAspectFlags.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
+
+const flags = {
+  ...getProjectIdFlag({
+    description: 'Project ID to import media to',
+    semantics: 'override',
+  }),
+  aspect: Flags.string({
+    description:
+      'Aspect value to set on the imported asset, as key=value. Repeatable. Only applies when the source is a URL - directory and archive imports read aspects from their data.ndjson',
+    helpValue: '<key=value>',
+    multiple: true,
+  }),
+  filename: Flags.string({
+    description:
+      'Original filename to store on the asset. Only applies when the source is a URL. Defaults to a name derived from the URL',
+    helpValue: '<filename>',
+  }),
+  'media-library-id': requiredWhenUnattended(
+    Flags.string({
+      description: 'The id of the target media library',
+    }),
+  ),
+  'replace-aspects': Flags.boolean({
+    description:
+      'Replace existing aspect data. All versions will be replaced (e.g. published and draft aspect data). Only applies to directory and archive imports',
+  }),
+} satisfies FlagInput
 
 export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand> {
   static override args = {
     source: Args.string({
-      description: 'Image file or folder to import from',
+      description:
+        'Directory, archive, or asset URL to import from. An http(s) URL imports one asset that Sanity fetches itself',
       required: true,
     }),
   }
@@ -37,28 +71,44 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       command: '<%= config.bin %> <%= command.id %> products --replace-aspects',
       description: 'Import all assets from the "products" directory and replace aspects',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> https://example.com/hero.png',
+      description: 'Have Sanity fetch a single asset from a public URL',
+    },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> https://example.com/hero.png --aspect department=Brand',
+      description: 'Fetch an asset from a URL and set aspect data on it',
+    },
   ]
 
-  static override flags = {
-    ...getProjectIdFlag({
-      description: 'Project ID to import media to',
-      semantics: 'override',
-    }),
-    'media-library-id': requiredWhenUnattended(
-      Flags.string({
-        description: 'The id of the target media library',
-      }),
-    ),
-    'replace-aspects': Flags.boolean({
-      description:
-        'Replace existing aspect data. All versions will be replaced (e.g. published and draft aspect data)',
-    }),
-  }
+  static override flags = flags
+
+  static telemetry = defineCommandTelemetry(flags, {
+    redact: ['aspect', 'filename'],
+  })
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(MediaImportCommand)
     const {source} = args
     const replaceAspects = flags['replace-aspects']
+    const isUrlSource = isIngestableUrl(source)
+
+    const aspects = this.resolveAspects({aspectFlags: flags.aspect, isUrlSource})
+
+    if (!isUrlSource && flags.filename !== undefined) {
+      this.error(
+        'The --filename flag only applies when importing from a URL. Directory and archive imports keep each asset\u2019s own filename.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
+    if (isUrlSource && replaceAspects) {
+      this.error(
+        'The --replace-aspects flag only applies to directory and archive imports. Aspects passed with --aspect are set when the asset is created.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
 
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
@@ -103,6 +153,16 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       })
     }
 
+    if (isUrlSource) {
+      await this.importFromUrl({
+        ...(aspects ? {aspects} : {}),
+        ...(flags.filename ? {filename: flags.filename} : {}),
+        mediaLibraryId,
+        url: source,
+      })
+      return
+    }
+
     const projectClient = await getProjectCliClient({
       apiVersion: 'v2025-02-19',
       dataset,
@@ -131,6 +191,9 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
 
     const spin = spinner('Beginning import…').start()
 
+    // ingest assets from url with progress --from-url
+
+    // if not ingest do this
     await this.importAssets({projectClient, replaceAspects, source, spin})
   }
 
@@ -172,6 +235,62 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
     })
   }
 
+  /**
+   * Import one asset that Sanity fetches from a URL itself.
+   *
+   * Nothing but the resulting documents goes to stdout, so the output stays
+   * consumable as JSON; the wait is reported on stderr by the spinner.
+   */
+  private async importFromUrl(options: {
+    aspects?: Record<string, string>
+    filename?: string
+
+    mediaLibraryId: string
+    url: string
+  }): Promise<void> {
+    const {aspects, filename, mediaLibraryId, url} = options
+
+    let result
+    try {
+      result = await ingestMediaAssetFromUrlWithProgress({
+        ...(aspects ? {aspects} : {}),
+        ...(filename ? {filename} : {}),
+        isInteractive: this.resolveIsInteractive(),
+        logToStderr: (message) => this.logToStderr(message),
+        mediaLibraryId,
+        url,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'SIGINT') throw error
+      importMediaDebug('Error importing asset from URL', error)
+      this.error(getAssetUploadErrorMessage(error, {fromUrl: true, target: 'media-library'}), {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
+    }
+
+    this.log(
+      JSON.stringify(
+        {
+          asset: {
+            _id: result.asset._id,
+            _type: result.asset._type,
+            assetType: result.asset.assetType,
+          },
+          assetInstance: {
+            _id: result.assetInstance._id,
+            extension: result.assetInstance.extension,
+            mimeType: result.assetInstance.mimeType,
+            originalFilename: result.assetInstance.originalFilename,
+            size: result.assetInstance.size,
+            url: result.assetInstance.url,
+          },
+        },
+        null,
+        2,
+      ),
+    )
+  }
+
   private reportResult(
     spin: ReturnType<typeof spinner>,
   ): OperatorFunction<State, [number, State | undefined]> {
@@ -190,5 +309,32 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
         },
       }),
     )
+  }
+
+  /**
+   * Validate `--aspect` against the source kind and shape it for the request.
+   * Runs before any network call so a malformed flag fails immediately.
+   */
+  private resolveAspects(options: {
+    aspectFlags?: string[]
+
+    isUrlSource: boolean
+  }): Record<string, string> | undefined {
+    const {aspectFlags, isUrlSource} = options
+    if (!aspectFlags?.length) return undefined
+
+    if (!isUrlSource) {
+      this.error(
+        'The --aspect flag only applies when importing from a URL. Directory and archive imports read aspect data from their data.ndjson file.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
+    const parsed = parseAspectFlags(aspectFlags)
+    if ('error' in parsed) {
+      this.error(parsed.error, {exit: exitCodes.USAGE_ERROR})
+    }
+
+    return parsed.aspects
   }
 }

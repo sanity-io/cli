@@ -11,7 +11,7 @@ export const ASSETS_API_VERSION = 'v2024-06-24'
  * budget to persist the asset, so this waits far longer than an ordinary API
  * call before giving up on a request that may still be doing useful work.
  */
-const URL_INGEST_TIMEOUT_MS = 370_000
+export const URL_INGEST_TIMEOUT_MS = 370_000
 
 export type AssetType = 'file' | 'image'
 
