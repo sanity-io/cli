@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 2.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.3...workbench-cli-v2.5.0)
+
+_2026-09-11_
+
+### Features
+
+- **workbench-cli:** provide module identity context from renderOptions.moduleId ([#1862](https://github.com/sanity-io/cli/pull/1862)) ([2d15481](https://github.com/sanity-io/cli/commit/2d1548145226222516d201b69fb00179c4ba17d9))
+
 ## 2.4.3
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.2...workbench-cli-v2.4.3)
