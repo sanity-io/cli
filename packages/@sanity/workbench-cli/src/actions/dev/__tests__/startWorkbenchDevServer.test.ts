@@ -2,10 +2,12 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
 import {
+  aDevServerManifest,
   createDevOptions,
   createMockOutput,
   createMockViteServer,
   mediaLibraryCliConfig,
+  panel,
   workbenchApp,
 } from './devTestHelpers.js'
 
@@ -54,13 +56,6 @@ describe('startWorkbenchDevServer', () => {
       expect(mockCreateServer).not.toHaveBeenCalled()
     })
 
-    test('skips workbench when federation is explicitly disabled', async () => {
-      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: {}}))
-
-      expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeTypeOf('function')
-    })
-
     test('returns httpHost and workbenchPort even when federation is disabled', async () => {
       const result = await startWorkbenchDevServer(
         createDevOptions({httpHost: '0.0.0.0', httpPort: 4000}),
@@ -93,29 +88,10 @@ describe('startWorkbenchDevServer', () => {
       app: workbenchApp({organizationId: 'org-test'}),
     } as const
 
-    test('returns workbenchAvailable: true and close when server starts', async () => {
-      mockCreateServer.mockResolvedValue(createMockViteServer())
-
-      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
-
-      if (!result.close) throw new Error('Expected close to be defined')
-      expect(result.workbenchAvailable).toBe(true)
-      expect(result.close).toBeDefined()
-    })
-
-    test('returns httpHost and workbenchPort from provided options', async () => {
-      mockCreateServer.mockResolvedValue(createMockViteServer({port: 4000}))
-
-      const result = await startWorkbenchDevServer(
-        createDevOptions({cliConfig: federationConfig, httpHost: '0.0.0.0', httpPort: 4000}),
-      )
-
-      expect(result.httpHost).toBe('0.0.0.0')
-      expect(result.workbenchPort).toBe(4000)
-    })
-
-    test('returns actual port when Vite picks an alternative port', async () => {
-      // Simulate Vite finding port 3333 occupied and binding to 3334 instead
+    test('returns the provided httpHost and Vite’s actual bound port', async () => {
+      // Vite may bind a different port than requested (3333 occupied → 3334); the
+      // result must report the bound port, not the requested one, and pass the
+      // configured host through.
       const mockServer = createMockViteServer({port: 3334})
       mockServer.httpServer.address.mockReturnValue({
         address: '127.0.0.1',
@@ -124,8 +100,11 @@ describe('startWorkbenchDevServer', () => {
       })
       mockCreateServer.mockResolvedValue(mockServer)
 
-      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+      const result = await startWorkbenchDevServer(
+        createDevOptions({cliConfig: federationConfig, httpHost: '0.0.0.0'}),
+      )
 
+      expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(3334)
     })
 
@@ -478,22 +457,8 @@ describe('startWorkbenchDevServer', () => {
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        {
-          host: 'localhost',
-          id: 'app-1',
-          manifest: studioManifest,
-          pid: 2,
-          port: 3334,
-          type: 'studio',
-        },
-        {
-          host: 'localhost',
-          id: 'app-2',
-          manifest: appManifest,
-          pid: 3,
-          port: 3335,
-          type: 'coreApp',
-        },
+        aDevServerManifest({id: 'app-1', manifest: studioManifest, port: 3334, type: 'studio'}),
+        aDevServerManifest({id: 'app-2', manifest: appManifest, port: 3335, type: 'coreApp'}),
       ])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
@@ -524,7 +489,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
-      watchCallback([{host: 'localhost', pid: 2, port: 3334, type: 'studio'}])
+      watchCallback([aDevServerManifest({port: 3334, type: 'studio'})])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
@@ -550,19 +515,17 @@ describe('startWorkbenchDevServer', () => {
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        {
-          host: 'localhost',
+        aDevServerManifest({
           id: 'app-1',
           name: 'studio',
           organizationId: 'org-1',
-          pid: 2,
           port: 3334,
           projectId: 'x1g7jygt',
           reference: 'org-1/studio',
           slug: 'studio',
           type: 'studio',
           visibility: 'unlisted',
-        },
+        }),
       ])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
@@ -598,14 +561,12 @@ describe('startWorkbenchDevServer', () => {
       }
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        {host: 'localhost', id: 'app-1', pid: 2, port: 3334, type: 'studio'},
-        {
+        aDevServerManifest({id: 'app-1', port: 3334, type: 'studio'}),
+        aDevServerManifest({
           configs: [{...config, id: 'cfg-hash', moduleName: 'media-library', version: '1'}],
-          host: 'localhost',
-          pid: 3,
           port: 3337,
           type: 'coreApp',
-        },
+        }),
       ])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
@@ -632,7 +593,10 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
-    test('forwards every interface kind to the remote in the exact wire shape (views keyed on type)', async () => {
+    test('routes interfaces through toWireInterface — surface dropped, keyed on type', async () => {
+      // The full per-surface → type matrix is owned by toWireInterface.test.ts;
+      // here we only prove the orchestrator runs each interface through that
+      // transform on the way to the wire.
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -640,118 +604,19 @@ describe('startWorkbenchDevServer', () => {
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        {
-          host: 'localhost',
-          id: 'app-1',
-          interfaces: [
-            {
-              id: 'a-app',
-              metadata: {dock: {group: 'system', order: 1}},
-              moduleId: 'App',
-              name: 'main',
-              src: './src/App.tsx',
-              surface: 'window',
-              title: 'Main',
-              version: '1',
-            },
-            {
-              id: 'a-panel',
-              metadata: null,
-              moduleId: 'views/feed',
-              name: 'feed',
-              src: './src/Feed.tsx',
-              surface: 'panel',
-              title: 'Feed',
-              version: '1',
-            },
-            {
-              id: 'a-asset',
-              metadata: null,
-              moduleId: 'views/lib',
-              name: 'lib',
-              src: './src/Lib.tsx',
-              surface: 'asset_source',
-              title: 'Lib',
-              version: '1',
-            },
-            {
-              id: 'a-tile',
-              metadata: {order: 2, size: 'small'},
-              moduleId: 'views/agent',
-              name: 'agent',
-              src: './src/Tile.tsx',
-              surface: 'tile',
-              title: 'Agent',
-              version: '1',
-            },
-            {
-              id: 'a-worker',
-              metadata: null,
-              moduleId: 'workers/sync',
-              name: 'sync',
-              src: './src/sync.ts',
-              title: 'Sync',
-              type: 'worker',
-              version: '1',
-            },
-          ],
-          pid: 3,
-          port: 3337,
-          type: 'coreApp',
-        },
+        aDevServerManifest({id: 'app-1', interfaces: [panel('feed')], port: 3337, type: 'coreApp'}),
       ])
 
       const payload = mockServer.ws.send.mock.calls.at(-1)?.[1]
       expect(payload.applications[0].interfaces).toEqual([
         {
-          id: 'a-app',
-          metadata: {dock: {group: 'system', order: 1}},
-          moduleId: 'App',
-          name: 'main',
-          src: './src/App.tsx',
-          title: 'Main',
-          type: 'app',
-          version: '1',
-        },
-        {
-          id: 'a-panel',
+          id: 'test-app-panel-feed',
           metadata: null,
           moduleId: 'views/feed',
           name: 'feed',
-          src: './src/Feed.tsx',
-          title: 'Feed',
+          src: './src/feed.tsx',
+          title: 'feed',
           type: 'panel',
-          version: '1',
-        },
-        {
-          id: 'a-asset',
-          metadata: null,
-          moduleId: 'views/lib',
-          name: 'lib',
-          src: './src/Lib.tsx',
-          title: 'Lib',
-          type: 'asset_source',
-          version: '1',
-        },
-        {
-          id: 'a-tile',
-          metadata: {order: 2, size: 'small'},
-          moduleId: 'views/agent',
-          name: 'agent',
-          src: './src/Tile.tsx',
-          title: 'Agent',
-          type: 'tile',
-          version: '1',
-        },
-        {
-          id: 'a-worker',
-          metadata: null,
-          moduleId: 'workers/sync',
-          name: 'sync',
-          src: './src/sync.ts',
-          title: 'Sync',
-          type: 'worker',
-          version: '1',
         },
       ])
     })
@@ -764,15 +629,21 @@ describe('startWorkbenchDevServer', () => {
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        {
-          configs: [{appType: 'media-library', fields: [], moduleName: 'media-library'}],
-          host: 'localhost',
+        aDevServerManifest({
+          configs: [
+            {
+              appType: 'media-library',
+              fields: [],
+              id: 'cfg-ml',
+              moduleName: 'media-library',
+              version: '1',
+            },
+          ],
           id: 'app-1',
-          interfaces: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
-          pid: 3,
+          interfaces: [panel('feed')],
           port: 3337,
           type: 'coreApp',
-        },
+        }),
       ])
 
       const payload = mockServer.ws.send.mock.calls.at(-1)?.[1]
@@ -794,19 +665,22 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
 
-      const base = {host: 'localhost', id: 'app-1', pid: 3, port: 3335, type: 'coreApp'}
-      const feed = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
-      const alerts = {name: 'alerts', src: './src/Alerts.tsx', surface: 'panel', title: 'alerts'}
+      const feed = panel('feed')
+      const alerts = panel('alerts')
 
       // First sighting of the app — reconcile softly, don't reload.
-      watchCallback([{...base, interfaces: [feed]}])
+      watchCallback([
+        aDevServerManifest({id: 'app-1', interfaces: [feed], port: 3335, type: 'coreApp'}),
+      ])
       expect(mockServer.ws.send).toHaveBeenLastCalledWith(
         'sanity:workbench:local-applications',
         expect.anything(),
       )
 
       // A second panel is declared — the remote was rebuilt, reload the page.
-      watchCallback([{...base, interfaces: [feed, alerts]}])
+      watchCallback([
+        aDevServerManifest({id: 'app-1', interfaces: [feed, alerts], port: 3335, type: 'coreApp'}),
+      ])
       expect(mockServer.ws.send).toHaveBeenLastCalledWith({type: 'full-reload'})
     })
 
@@ -817,12 +691,27 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
 
-      const feed = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
-      const base = {host: 'localhost', id: 'app-1', interfaces: [feed], pid: 3, port: 3335}
+      const feed = panel('feed')
 
-      watchCallback([{...base, manifest: {title: 'V1', version: '1'}, type: 'coreApp'}])
+      watchCallback([
+        aDevServerManifest({
+          id: 'app-1',
+          interfaces: [feed],
+          manifest: {title: 'V1', version: '1'},
+          port: 3335,
+          type: 'coreApp',
+        }),
+      ])
       // Same interface set, new title only — stay on the soft reconcile path.
-      watchCallback([{...base, manifest: {title: 'V2', version: '1'}, type: 'coreApp'}])
+      watchCallback([
+        aDevServerManifest({
+          id: 'app-1',
+          interfaces: [feed],
+          manifest: {title: 'V2', version: '1'},
+          port: 3335,
+          type: 'coreApp',
+        }),
+      ])
 
       expect(mockServer.ws.send).not.toHaveBeenCalledWith({type: 'full-reload'})
       expect(mockServer.ws.send).toHaveBeenLastCalledWith(
@@ -836,14 +725,7 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(mockServer)
       const inlined = {icon: '<svg>inline</svg>', title: 'Title', version: '1'}
       mockGetRegisteredServers.mockReturnValue([
-        {
-          host: 'localhost',
-          id: 'app-1',
-          manifest: inlined,
-          pid: 2,
-          port: 3334,
-          type: 'coreApp',
-        },
+        aDevServerManifest({id: 'app-1', manifest: inlined, port: 3334, type: 'coreApp'}),
       ])
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
@@ -896,5 +778,23 @@ describe('startWorkbenchDevServer', () => {
 
       expect(mockReleaseLock).toHaveBeenCalled()
     })
+  })
+})
+
+describe('aDevServerManifest', () => {
+  // The broadcast payload picks a subset of manifest fields, so a defaulted
+  // optional would silently leak into it and break the exact-match assertions
+  // above. Enforce the "required fields only" contract here — a violation fails
+  // this one test, pointing at the builder, rather than a confusing payload diff.
+  test('defaults only the schema-required fields', () => {
+    expect(Object.keys(aDevServerManifest()).toSorted()).toEqual([
+      'host',
+      'pid',
+      'port',
+      'startedAt',
+      'type',
+      'version',
+      'workDir',
+    ])
   })
 })

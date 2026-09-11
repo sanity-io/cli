@@ -93,7 +93,9 @@ const devServerInterfaceSchema = z.union([
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('worker')}),
 ])
 
-const devServerManifestSchema = z.object({
+// Exported so test fixtures can validate against the same schema the registry
+// parses with — see `aDevServerManifest`. Used internally by `getRegisteredServers`.
+export const devServerManifestSchema = z.object({
   /**
    * Field schema *values* load from the federation module; each field's `src`
    * rides along so a repoint bumps the exposes-set id and forces a rebuild.
