@@ -54,7 +54,7 @@ describe('viewArtifacts', () => {
     expect(title.source({resolveImport})).toMatchInlineSnapshot(`
       "// This file is auto-generated on 'sanity build' / 'sanity dev'
       // Modifications to this file are automatically discarded
-      import { createElement, StrictMode } from 'react'
+      import * as React from 'react'
       import { createRoot } from 'react-dom/client'
       import view from "../../src/feed.tsx"
 
@@ -62,6 +62,12 @@ describe('viewArtifacts', () => {
 
       export const version = view.version
 
+      // Module identity (the federation module id) is provided to App through a React
+      // context keyed per React copy on a global slot. The SDK reads this same slot
+      // via getDashboardModuleContext(), so the symbol and value type are a contract.
+      const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
+      if (!moduleSlot.has(React)) moduleSlot.set(React, React.createContext(undefined))
+      const ModuleContext = moduleSlot.get(React)
       const rootMap = new Map()
       const renderArgs = new Map()
 
@@ -71,8 +77,8 @@ describe('viewArtifacts', () => {
           root = createRoot(rootElement)
           rootMap.set(rootElement, root)
         }
-        const element = createElement(App, args.props)
-        root.render(args?.renderOptions?.reactStrictMode ? createElement(StrictMode, null, element) : element)
+        const element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+        root.render(args?.renderOptions?.reactStrictMode ? React.createElement(React.StrictMode, null, element) : element)
       }
 
       export function render(rootElement, props, renderOptions) {

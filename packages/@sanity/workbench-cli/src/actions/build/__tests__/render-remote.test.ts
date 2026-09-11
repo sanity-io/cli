@@ -11,7 +11,9 @@ describe('renderRemote', () => {
     expect(source).toContain('const App = view.components["panel"]')
     expect(source).toContain('export function render(rootElement, props, renderOptions)')
     expect(source).toContain('createElement(App, args.props)')
-    expect(source).toContain('reactStrictMode ? createElement(StrictMode, null, element)')
+    expect(source).toContain(
+      'reactStrictMode ? React.createElement(React.StrictMode, null, element)',
+    )
   })
 
   // Pin the whole emitted module: fragment checks can't catch a dropped newline
@@ -27,7 +29,7 @@ describe('renderRemote', () => {
     expect(source).toMatchInlineSnapshot(`
       "// This file is auto-generated on 'sanity build' / 'sanity dev'
       // Modifications to this file are automatically discarded
-      import { createElement, StrictMode } from 'react'
+      import * as React from 'react'
       import { createRoot } from 'react-dom/client'
       import view from "./view.js"
 
@@ -35,6 +37,12 @@ describe('renderRemote', () => {
 
       export const version = view.version
 
+      // Module identity (the federation module id) is provided to App through a React
+      // context keyed per React copy on a global slot. The SDK reads this same slot
+      // via getDashboardModuleContext(), so the symbol and value type are a contract.
+      const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
+      if (!moduleSlot.has(React)) moduleSlot.set(React, React.createContext(undefined))
+      const ModuleContext = moduleSlot.get(React)
       const rootMap = new Map()
       const renderArgs = new Map()
 
@@ -44,8 +52,8 @@ describe('renderRemote', () => {
           root = createRoot(rootElement)
           rootMap.set(rootElement, root)
         }
-        const element = createElement(App, args.props)
-        root.render(args?.renderOptions?.reactStrictMode ? createElement(StrictMode, null, element) : element)
+        const element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+        root.render(args?.renderOptions?.reactStrictMode ? React.createElement(React.StrictMode, null, element) : element)
       }
 
       export function render(rootElement, props, renderOptions) {
@@ -81,10 +89,16 @@ describe('renderRemote', () => {
     expect(source).toMatchInlineSnapshot(`
       "// This file is auto-generated on 'sanity build' / 'sanity dev'
       // Modifications to this file are automatically discarded
-      import { createElement, StrictMode } from 'react'
+      import * as React from 'react'
       import { createRoot } from 'react-dom/client'
       import App from "./app.js"
 
+      // Module identity (the federation module id) is provided to App through a React
+      // context keyed per React copy on a global slot. The SDK reads this same slot
+      // via getDashboardModuleContext(), so the symbol and value type are a contract.
+      const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
+      if (!moduleSlot.has(React)) moduleSlot.set(React, React.createContext(undefined))
+      const ModuleContext = moduleSlot.get(React)
       const rootMap = new Map()
       const renderArgs = new Map()
 
@@ -94,8 +108,8 @@ describe('renderRemote', () => {
           root = createRoot(rootElement)
           rootMap.set(rootElement, root)
         }
-        const element = createElement(App, args.props)
-        root.render(args?.renderOptions?.reactStrictMode ? createElement(StrictMode, null, element) : element)
+        const element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+        root.render(args?.renderOptions?.reactStrictMode ? React.createElement(React.StrictMode, null, element) : element)
       }
 
       export function render(rootElement, props, renderOptions) {
