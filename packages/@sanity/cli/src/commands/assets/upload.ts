@@ -3,68 +3,17 @@ import {basename, resolve} from 'node:path'
 import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
-import {getErrorMessage} from '@sanity/cli-core/errors'
-import {isHttpError} from '@sanity/client'
 
 import {AssetFileError} from '../../actions/assets/assetFileError.js'
 import {ingestAssetFromUrlWithProgress} from '../../actions/assets/ingestAssetFromUrlWithProgress.js'
 import {uploadAssetWithProgress} from '../../actions/assets/uploadAssetWithProgress.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {type AssetType} from '../../services/assets.js'
+import {getAssetUploadErrorMessage} from '../../util/assetUploadErrors.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const uploadAssetDebug = subdebug('assets:upload')
-const DATASET_ASSET_LIMITS_URL =
-  'https://www.sanity.io/docs/content-lake/technical-limits#k2c53dc30e24b'
-
-function isProjectUserNotFoundError(body: Record<string, unknown>): boolean {
-  const responseError = body.error
-  return (
-    typeof responseError === 'object' &&
-    responseError !== null &&
-    'type' in responseError &&
-    responseError.type === 'projectUserNotFoundError'
-  )
-}
-
-function getAssetUploadErrorMessage(error: unknown, options: {fromUrl: boolean}): string {
-  if (!isHttpError(error)) {
-    return `Asset upload failed: ${getErrorMessage(error)}`
-  }
-
-  const body =
-    typeof error.response.body === 'object' &&
-    error.response.body !== null &&
-    !Array.isArray(error.response.body)
-      ? (error.response.body as Record<string, unknown>)
-      : {}
-  const responseError =
-    typeof body.error === 'string' ? body.error : error.response.statusMessage || 'HTTP error'
-  const statusCode =
-    typeof body.statusCode === 'number' || typeof body.statusCode === 'string'
-      ? body.statusCode
-      : error.statusCode
-  const projectUserNotFound = isProjectUserNotFoundError(body)
-  const responseMessage = projectUserNotFound ? error.message : getErrorMessage(error)
-  const message = /[.!?]$/.test(responseMessage) ? responseMessage : `${responseMessage}.`
-  const details = typeof body.details === 'string' ? `\n\nDetails:\n${body.details}` : ''
-  const response = `Asset upload failed: HTTP ${statusCode} - ${responseError}\n${message}${details}`
-
-  if (error.statusCode === 401 && !projectUserNotFound) {
-    return `${response}\n\nRun \`sanity login\` to authenticate, then try again.`
-  }
-  if (error.statusCode === 403) {
-    return `${response}\n\nCheck that your account has write access to this dataset, then try again.`
-  }
-  if ([400, 413, 422].includes(error.statusCode)) {
-    return `${response}\n\nCheck the asset requirements and current technical limits, then try again: ${DATASET_ASSET_LIMITS_URL}`
-  }
-  if (options.fromUrl && [502, 504].includes(error.statusCode)) {
-    return `${response}\n\nSanity could not fetch the source URL. Check that it is reachable from the public internet without authentication and serves the asset directly, then try again.`
-  }
-  return `${response}\n\nTry again.`
-}
 
 const flags = {
   ...getProjectIdFlag({
@@ -221,9 +170,13 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
         )
       }
       uploadAssetDebug('Asset upload failed', error)
-      this.error(getAssetUploadErrorMessage(error, {fromUrl: sourceUrl !== undefined}), {
-        exit: exitCodes.RUNTIME_ERROR,
-      })
+      this.error(
+        getAssetUploadErrorMessage(error, {
+          fromUrl: sourceUrl !== undefined,
+          target: 'dataset',
+        }),
+        {exit: exitCodes.RUNTIME_ERROR},
+      )
     }
   }
 }
