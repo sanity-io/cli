@@ -63,7 +63,6 @@ export async function login(options: LoginOptions) {
   }
 
   const provider = await getProvider({
-    experimental: options.experimental,
     orgSlug: options.sso,
     specifiedProvider: options.provider,
     ssoProvider: options.ssoProvider,
