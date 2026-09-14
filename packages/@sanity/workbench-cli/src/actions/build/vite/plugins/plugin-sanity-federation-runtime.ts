@@ -17,7 +17,7 @@ const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 // new module so a config edit takes effect. The `%RESOURCE_BINDINGS_IMPORT%`
 // placeholder is filled in per-build (Blueprints only — see below).
 const STUDIO_ENTRY = renderRemote({
-  app: `(props) => createElement(Studio, { config, ...props })`,
+  app: `(props) => React.createElement(Studio, { config, ...props })`,
   hmr: true,
   preamble: `%RESOURCE_BINDINGS_IMPORT%import { Studio } from 'sanity'
 import config from %STUDIO_CONFIG%`,

@@ -24,7 +24,7 @@ function makeReact(): ReactStub {
 
 /**
  * Execute a generated wrapper against injected React / react-dom stubs, without
- * a real React copy. Rewrites the wrapper's three static imports into locals
+ * a real React copy. Rewrites the wrapper's two static imports into locals
  * pulled from `deps`, so the ESM template runs as a plain function body.
  */
 function loadWrapper(
@@ -41,10 +41,6 @@ function loadWrapper(
   })
   const body = source
     .replace(/^import \* as React from 'react'$/m, 'const React = deps.React')
-    .replace(
-      /^import \{ createElement, StrictMode \} from 'react'$/m,
-      'const {createElement, StrictMode} = deps.React',
-    )
     .replace(/^import \{ createRoot \} from 'react-dom\/client'$/m, 'const {createRoot} = deps')
     // `export`/`import.meta` are illegal in a Function body; drop them so the
     // ESM template runs as a plain module scope. `render` is still captured via
