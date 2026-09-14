@@ -66,13 +66,27 @@ afterEach(() => {
 })
 
 describe('renderRemote module context', () => {
-  test('sources ModuleContext from the symbol-keyed WeakMap<ReactModule, Context>', () => {
+  test('sources ModuleContext from the symbol-keyed WeakMap<createContext, Context>', () => {
     const React = makeReact()
     loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
 
     const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
     expect(slot).toBeInstanceOf(WeakMap)
-    expect(slot.has(React)).toBe(true)
+    // The key is the createContext function, not the namespace object: the SDK reads the
+    // slot with the same key, and namespace objects can differ under bundler interop.
+    expect(slot.has(React.createContext)).toBe(true)
+    expect(slot.has(React)).toBe(false)
+  })
+
+  test('two namespace objects over the same React copy resolve the same context', () => {
+    const React = makeReact()
+    // What esbuild's __toESM interop produces: a fresh wrapper object per importer.
+    const interopCopy = {...React}
+    loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
+    loadWrapper(renderRemote({app: APP, preamble: ''}), interopCopy).render({}, {}, {})
+
+    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    expect(slot.get(React.createContext)).toBe(slot.get(interopCopy.createContext))
   })
 
   test('a second wrapper on the same React copy resolves the same context object', () => {
@@ -87,7 +101,7 @@ describe('renderRemote module context', () => {
 
     const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
     // Both wrappers wrote/read the WeakMap, so a single Context object exists.
-    expect(slot.get(React)).toBeDefined()
+    expect(slot.get(React.createContext)).toBeDefined()
   })
 
   test('a different React copy gets its own context (no cross-copy leak)', () => {
@@ -97,7 +111,7 @@ describe('renderRemote module context', () => {
     loadWrapper(renderRemote({app: APP, preamble: ''}), reactB).render({}, {}, {})
 
     const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
-    expect(slot.get(reactA)).not.toBe(slot.get(reactB))
+    expect(slot.get(reactA.createContext)).not.toBe(slot.get(reactB.createContext))
   })
 
   test('passes renderOptions.moduleId as the provider value, wrapping App', () => {
