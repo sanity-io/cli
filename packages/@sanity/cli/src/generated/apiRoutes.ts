@@ -159,7 +159,9 @@ export const apiRoutes: ApiRouteEntry[] = [
     host: 'project',
     pathPatterns: [
       'assets/files/{dataset}',
+      'assets/files/{dataset}/from-url',
       'assets/images/{dataset}',
+      'assets/images/{dataset}/from-url',
       'assets/media-library-link/{dataset}'
     ],
     slug: 'assets',
@@ -281,6 +283,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2025-02-19',
     host: 'global',
     pathPatterns: [
+      'media-libraries/{libraryId}/from-url',
       'media-libraries/{libraryId}/mutate',
       'media-libraries/{libraryId}/query',
       'media-libraries/{libraryId}/references/documents/{assetId}/to',
@@ -302,6 +305,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2025-02-19',
     host: 'project',
     pathPatterns: [
+      'media-libraries/{libraryId}/from-url',
       'media-libraries/{libraryId}/mutate',
       'media-libraries/{libraryId}/query',
       'media-libraries/{libraryId}/references/documents/{assetId}/to',
