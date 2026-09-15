@@ -23,6 +23,7 @@
 import {Command, Config, Parser, settings} from '@oclif/core'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {exitCodes} from '@sanity/cli-core'
+import {prettyPrintError} from '@sanity/cli-core/errors'
 import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
 import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {type FetchFunction} from 'get-it'
@@ -37,7 +38,6 @@ import {
   isConditionalInvocationPolicy,
 } from './commandPolicies/policy.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
-import {prettyPrintError} from './prettyPrintError.js'
 
 type InvokableCommand = Pick<SanityCommand<typeof Command>, 'runInExecutionContext'>
 
