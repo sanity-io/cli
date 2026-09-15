@@ -2,7 +2,6 @@ import {type ModuleFederationOptions} from '@module-federation/vite'
 
 interface SharedDependency {
   name: string
-  scopeKey: string
 
   optional?: boolean
   share?: false
@@ -10,11 +9,11 @@ interface SharedDependency {
 
 // Add approved packages here; every version contributes to the compatibility scope.
 export const sharedDependencies: readonly SharedDependency[] = [
-  {name: 'react', scopeKey: 'react'},
-  {name: 'react-dom', scopeKey: 'dom'},
+  {name: 'react'},
+  {name: 'react-dom'},
   // React DOM owns scheduler's mutable queue, so only its version joins the scope.
-  {name: 'scheduler', scopeKey: 'scheduler', share: false},
-  {name: 'styled-components', optional: true, scopeKey: 'styled'},
+  {name: 'scheduler', share: false},
+  {name: 'styled-components', optional: true},
 ]
 
 export interface ResolvedDependency {
@@ -80,10 +79,7 @@ function getSingleInstalledVersion(copies: ResolvedDependency[]): string | undef
 
 function createShareScope(versions: Map<string, string>): string {
   // A matching renderer or styled-components version is unsafe with a different React runtime.
-  return (
-    'sanity-' +
-    sharedDependencies.map(({name, scopeKey}) => `${scopeKey}-${versions.get(name)}`).join('-')
-  )
+  return 'sanity-' + sharedDependencies.map(({name}) => `${name}-${versions.get(name)}`).join('-')
 }
 
 function createSharedEntries(

@@ -29,7 +29,7 @@ describe('shared dependency policy', () => {
     const reactProvider = {
       eager: false,
       requiredVersion: '19.2.0',
-      shareScope: 'sanity-react-19.2.0-dom-19.2.0-scheduler-0.27.0-styled-6.1.19',
+      shareScope: 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0-styled-components-6.1.19',
       singleton: false,
       strictVersion: true,
       version: '19.2.0',
@@ -41,7 +41,7 @@ describe('shared dependency policy', () => {
         'react/jsx-runtime': reactProvider,
         'styled-components': {...reactProvider, requiredVersion: '6.1.19', version: '6.1.19'},
       },
-      shareScope: 'sanity-react-19.2.0-dom-19.2.0-scheduler-0.27.0-styled-6.1.19',
+      shareScope: 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0-styled-components-6.1.19',
       shareStrategy: 'loaded-first',
     })
   })
@@ -58,7 +58,7 @@ describe('shared dependency policy', () => {
     const sharing = createFederationSharing(changed)
     assert(sharing)
     expect(sharing.shareScope).not.toBe(
-      'sanity-react-19.2.0-dom-19.2.0-scheduler-0.27.0-styled-6.1.19',
+      'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0-styled-components-6.1.19',
     )
   })
 
@@ -67,7 +67,7 @@ describe('shared dependency policy', () => {
       dependencies().filter(({name}) => name !== 'styled-components'),
     )
     assert(sharing)
-    expect(sharing.shareScope).toContain('-styled-none')
+    expect(sharing.shareScope).toContain('-styled-components-none')
     expect(sharing.shared).not.toHaveProperty('styled-components')
   })
 

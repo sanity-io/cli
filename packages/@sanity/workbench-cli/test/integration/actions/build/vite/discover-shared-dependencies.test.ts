@@ -147,7 +147,7 @@ describe('a production app using React and styled-components', () => {
       Object.fromEntries(manifest.shared.map(({name, requiredVersion}) => [name, requiredVersion])),
     ).toEqual(Object.fromEntries(manifest.shared.map(({name, version}) => [name, version])))
     expect(manifest.metaData.shareScope).toMatch(
-      /^sanity-react-19\..*-dom-19\..*-scheduler-.*-styled-6\./,
+      /^sanity-react-19\..*-react-dom-19\..*-scheduler-.*-styled-components-6\./,
     )
   })
 
@@ -208,5 +208,5 @@ test('shares React without adding an unused styled-components provider', async (
     'react-dom/client',
     'react/jsx-runtime',
   ])
-  expect(manifest.metaData.shareScope).toMatch(/-styled-none$/)
+  expect(manifest.metaData.shareScope).toMatch(/-styled-components-none$/)
 }, 60_000)
