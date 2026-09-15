@@ -1,5 +1,21 @@
 # Change Log
 
+## 8.11.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.11.0...cli-v8.11.1)
+
+_2026-09-15_
+
+### Bug Fixes
+
+- **cli:** always use an OS-assigned free port for the local auth server to avoid conflicting with local IPv6 servers running on 4321 ([#1883](https://github.com/sanity-io/cli/pull/1883)) ([8dd3fa6](https://github.com/sanity-io/cli/commit/8dd3fa6bd68a545fcc720422f987b3c5383fcf3b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.5.2
+
 ## 8.11.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.10.0...cli-v8.11.0)
