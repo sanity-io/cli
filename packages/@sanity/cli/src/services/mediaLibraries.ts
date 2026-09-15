@@ -1,8 +1,13 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 import {
+  type FileAsset,
+  type ImageAsset,
   MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
   type MediaLibraryAssetAspectDocument,
+  type SanityDocument,
 } from '@sanity/types'
+
+import {URL_INGEST_TIMEOUT_MS} from './assets.js'
 
 export const MEDIA_LIBRARY_API_VERSION = 'v2025-02-19'
 
@@ -114,5 +119,67 @@ export async function deployAspects(options: DeployAspectsOptions): Promise<Depl
     },
     method: 'POST',
     url: `/media-libraries/${mediaLibraryId}/mutate`,
+  })
+}
+
+/**
+ * The pair of documents a media library creates for one asset: the
+ * `sanity.asset` document that carries aspects, and the asset instance holding
+ * the file metadata.
+ *
+ * @internal
+ */
+export interface MediaLibraryAsset {
+  asset: SanityDocument & {
+    _type: 'sanity.asset'
+    aspects: unknown
+    assetType: FileAsset['_type'] | ImageAsset['_type']
+  }
+  assetInstance: FileAsset | ImageAsset
+}
+
+interface IngestMediaLibraryAssetFromUrlOptions {
+  mediaLibraryId: string
+  url: string
+
+  aspects?: Record<string, unknown>
+  filename?: string
+  signal?: AbortSignal
+}
+
+/**
+ * Create a media library asset from a URL that Sanity fetches itself.
+ *
+ * Unlike the dataset equivalent in `./assets.ts`, the asset type is not part of
+ * the request — the library derives it from the fetched content — and aspects
+ * are set inline here rather than patched on afterwards.
+ *
+ * The source must be reachable without authentication from Sanity's side; a
+ * presigned URL qualifies, a private one behind a login does not.
+ *
+ * @internal
+ */
+export async function ingestMediaLibraryAssetFromUrl({
+  aspects,
+  filename,
+  mediaLibraryId,
+  signal,
+  url,
+}: IngestMediaLibraryAssetFromUrlOptions): Promise<MediaLibraryAsset> {
+  signal?.throwIfAborted()
+
+  const client = await getMediaLibraryClient()
+
+  return client.request<MediaLibraryAsset>({
+    body: {
+      url,
+      ...(filename ? {filename} : {}),
+      ...(aspects ? {aspects} : {}),
+    },
+    method: 'POST',
+    signal,
+    tag: 'asset.ingest.from-url',
+    timeout: URL_INGEST_TIMEOUT_MS,
+    url: `/media-libraries/${mediaLibraryId}/from-url`,
   })
 }
