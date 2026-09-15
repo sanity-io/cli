@@ -5,6 +5,7 @@ import {type Plugin} from 'vite'
 
 import {type GeneratedArtifact} from '../../artifact.js'
 import {RUNTIME_DIR} from '../constants.js'
+import {getFederationApi} from './plugin-module-federation.js'
 
 function relativeImport(fromFile: string, toFile: string): string {
   const rel = path.relative(path.dirname(fromFile), toFile).split(path.sep).join('/')
@@ -37,11 +38,15 @@ function writeArtifacts(
  */
 export function sanityExtensionArtifacts(options: {
   artifacts: readonly GeneratedArtifact[]
-  isolateStyles?: boolean
 }): Plugin {
   return {
     configResolved(config) {
-      writeArtifacts(config.root, options.artifacts, options.isolateStyles ?? false)
+      const shared = getFederationApi(config.plugins)?.sharing?.shared
+      writeArtifacts(
+        config.root,
+        options.artifacts,
+        Boolean(shared && 'styled-components' in shared),
+      )
     },
     name: 'sanity/extension-artifacts',
   }

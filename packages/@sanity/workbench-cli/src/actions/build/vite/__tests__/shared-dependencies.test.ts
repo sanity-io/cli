@@ -1,6 +1,6 @@
 import {assert, describe, expect, test} from 'vitest'
 
-import {createFederationSharing} from './shared-dependencies.js'
+import {createFederationSharing} from '../shared-dependencies.js'
 
 function dependencies(reactVersion = '19.2.0', styledVersion = '6.1.19') {
   return [
@@ -19,6 +19,12 @@ function dependencies(reactVersion = '19.2.0', styledVersion = '6.1.19') {
 }
 
 describe('shared dependency policy', () => {
+  test('produces the same provider order regardless of discovery order', () => {
+    expect(JSON.stringify(createFederationSharing(dependencies().toReversed()))).toBe(
+      JSON.stringify(createFederationSharing(dependencies())),
+    )
+  })
+
   test('shares consumed entrypoints lazily with exact versions in one scope', () => {
     const reactProvider = {
       eager: false,

@@ -10,6 +10,7 @@ import {
   RESOURCE_BINDINGS_MODULE_SOURCE,
 } from '../../resource-bindings.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from '../constants.js'
+import {getFederationApi} from './plugin-module-federation.js'
 
 const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 
@@ -47,13 +48,12 @@ const HEADLESS_APP_ENTRY = `\
 }
 `
 
-export type FederationRuntimeOptions = (
+export type FederationRuntimeOptions =
   | {appEntry?: string; isApp: true; isBlueprints?: boolean}
   | {isApp: false; isBlueprints?: boolean; studioConfigPath: string}
-) & {isolateStyles?: boolean}
 
-export function sanityFederationRuntime(options: FederationRuntimeOptions): Plugin {
-  const {isBlueprints, isolateStyles = false} = options
+function renderEntry(options: FederationRuntimeOptions, isolateStyles: boolean): string {
+  const {isBlueprints} = options
 
   let content: string
   if (options.isApp) {
@@ -71,11 +71,14 @@ export function sanityFederationRuntime(options: FederationRuntimeOptions): Plug
   // module first, so bindings evaluate before app code. Off Blueprints the
   // placeholder resolves to nothing and the module is neither imported nor
   // written below.
-  content = content.replace(
+  return content.replace(
     /%RESOURCE_BINDINGS_IMPORT%/,
     isBlueprints ? `${RESOURCE_BINDINGS_ENTRY_IMPORT}\n` : '',
   )
+}
 
+export function sanityFederationRuntime(options: FederationRuntimeOptions): Plugin {
+  const {isBlueprints} = options
   let entryFileAbsPath = ''
 
   return {
@@ -84,7 +87,9 @@ export function sanityFederationRuntime(options: FederationRuntimeOptions): Plug
       entryFileAbsPath = path.join(dir, REMOTE_ENTRY_FILE)
 
       fs.mkdirSync(dir, {recursive: true})
-      fs.writeFileSync(entryFileAbsPath, content)
+      const shared = getFederationApi(config.plugins)?.sharing?.shared
+      const isolateStyles = Boolean(shared && 'styled-components' in shared)
+      fs.writeFileSync(entryFileAbsPath, renderEntry(options, isolateStyles))
 
       if (isBlueprints) {
         // Brett bakes the resolved values into this module at deploy.

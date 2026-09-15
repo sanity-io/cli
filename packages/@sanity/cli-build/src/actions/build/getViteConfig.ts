@@ -6,7 +6,6 @@ import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {isStaging} from '@sanity/cli-core/util'
 import {
-  type FederationBuildOptions,
   resourceBindingsChunkFileName,
   resourceBindingsCodeSplittingGroup,
   type WorkbenchExposes,
@@ -81,7 +80,6 @@ interface ViteOptions {
   basePath?: string
 
   exposes?: WorkbenchExposes
-  federationBuild?: FederationBuildOptions
 
   isApp?: boolean
 
@@ -233,7 +231,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             ...sharedPlugins,
             await workbenchVitePlugins({
               appId: workbenchAppId,
-              build: options.federationBuild,
               cwd,
               entries,
               exposes,

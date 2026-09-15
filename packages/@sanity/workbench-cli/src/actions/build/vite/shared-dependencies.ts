@@ -4,19 +4,17 @@ interface SharedDependency {
   name: string
   scopeKey: string
 
-  required?: boolean
-  requireRootImport?: boolean
-  sameVersionAs?: string
-  share?: boolean
+  optional?: boolean
+  share?: false
 }
 
-// Every entry joins the compatibility tuple; only consumed public imports become providers.
+// Add approved packages here; every version contributes to the compatibility scope.
 export const sharedDependencies: readonly SharedDependency[] = [
-  {name: 'react', required: true, requireRootImport: true, scopeKey: 'react', share: true},
-  {name: 'react-dom', required: true, sameVersionAs: 'react', scopeKey: 'dom', share: true},
-  // React DOM owns scheduler's mutable queue; its version matters, but its module stays local.
-  {name: 'scheduler', required: true, scopeKey: 'scheduler'},
-  {name: 'styled-components', scopeKey: 'styled', share: true},
+  {name: 'react', scopeKey: 'react'},
+  {name: 'react-dom', scopeKey: 'dom'},
+  // React DOM owns scheduler's mutable queue, so only its version joins the scope.
+  {name: 'scheduler', scopeKey: 'scheduler', share: false},
+  {name: 'styled-components', optional: true, scopeKey: 'styled'},
 ]
 
 export interface ResolvedDependency {
@@ -32,54 +30,84 @@ export type FederationSharing = Pick<
   'shared' | 'shareScope' | 'shareStrategy'
 >
 
+type SharedEntries = Exclude<ModuleFederationOptions['shared'], string[] | undefined>
+
 export function createFederationSharing(
   dependencies: ResolvedDependency[],
 ): FederationSharing | undefined {
+  const versions = resolveCompatibleVersions(dependencies)
+  if (!versions) return undefined
+
+  const shareScope = createShareScope(versions)
+  return {
+    shared: createSharedEntries(dependencies, shareScope),
+    shareScope,
+    shareStrategy: 'loaded-first',
+  }
+}
+
+function resolveCompatibleVersions(
+  dependencies: ResolvedDependency[],
+): Map<string, string> | undefined {
   const versions = new Map<string, string>()
-  for (const {name, required, requireRootImport} of sharedDependencies) {
+  for (const {name, optional} of sharedDependencies) {
     const copies = dependencies.filter((dependency) => dependency.name === name)
-    // Sharing a renderer without its React import would split hook and context identity.
-    if (requireRootImport && !copies.some(({specifier}) => specifier === name)) return undefined
-    if (new Set(copies.map(({root}) => root)).size > 1) return undefined
-    // A local patch can change behavior without changing package.json's version.
-    if (copies.some(({root}) => root.includes('patch_hash='))) return undefined
-    if (copies.length === 0) {
-      if (required) return undefined
+    if (copies.length === 0 && optional) {
       versions.set(name, 'none')
       continue
     }
-    const {version} = copies[0]
-    if (!/^\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?$/.test(version)) return undefined
-    if (copies.some((copy) => copy.version !== version)) return undefined
+    const version = getSingleInstalledVersion(copies)
+    if (!version) return undefined
     versions.set(name, version)
   }
-  for (const {name, sameVersionAs} of sharedDependencies) {
-    if (sameVersionAs && versions.get(name) !== versions.get(sameVersionAs)) return undefined
-  }
 
-  const shareScope =
+  // Sharing the renderer without its React import would split hook and context identity.
+  if (!dependencies.some(({name, specifier}) => name === 'react' && specifier === 'react'))
+    return undefined
+  if (versions.get('react') !== versions.get('react-dom')) return undefined
+  return versions
+}
+
+function getSingleInstalledVersion(copies: ResolvedDependency[]): string | undefined {
+  if (copies.length === 0) return undefined
+  const {root, version} = copies[0]
+  if (copies.some((copy) => copy.root !== root || copy.version !== version)) return undefined
+  // A local patch can change runtime internals without changing the package version.
+  if (root.includes('patch_hash=')) return undefined
+  if (!/^\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?$/.test(version)) return undefined
+  return version
+}
+
+function createShareScope(versions: Map<string, string>): string {
+  // A matching renderer or styled-components version is unsafe with a different React runtime.
+  return (
     'sanity-' +
     sharedDependencies.map(({name, scopeKey}) => `${scopeKey}-${versions.get(name)}`).join('-')
-  const shared: Exclude<ModuleFederationOptions['shared'], string[] | undefined> = {}
-  const entries = dependencies.toSorted((a, b) =>
-    (a.specifier ?? '').localeCompare(b.specifier ?? ''),
   )
-  for (const {name, specifier, version} of entries) {
-    if (
-      !specifier ||
-      !sharedDependencies.some((dependency) => dependency.name === name && dependency.share)
-    )
-      continue
-    shared[specifier] = {
+}
+
+function createSharedEntries(
+  dependencies: ResolvedDependency[],
+  shareScope: string,
+): SharedEntries {
+  const entries: SharedEntries = {}
+  const providers = new Set(
+    sharedDependencies.filter(({share}) => share !== false).map(({name}) => name),
+  )
+  for (const {name, specifier, version} of dependencies) {
+    if (!specifier || !providers.has(name)) continue
+    entries[specifier] = {
       eager: false,
       requiredVersion: version,
-      // Vite 1.21 normalizes each entry's missing scope to "default".
+      // Vite 1.21 defaults each entry to "default", even when the container has another scope.
       shareScope,
       singleton: false,
       strictVersion: true,
       version,
     }
   }
-  if (Object.keys(shared).length === 0) return undefined
-  return {shared, shareScope, shareStrategy: 'loaded-first'}
+  // Resolution finishes asynchronously; stable provider order keeps chunk hashes reproducible.
+  return Object.fromEntries(
+    Object.entries(entries).toSorted(([left], [right]) => left.localeCompare(right)),
+  )
 }

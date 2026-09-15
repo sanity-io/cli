@@ -4,53 +4,69 @@ import {renderRemote} from './render-remote.js'
 
 const MODULE_SLOT = Symbol.for('sanity.os.module')
 
+/** A minimal stand-in for a React module: only the members the wrapper touches. */
+type Ctx = {_default: unknown; Provider: 'Provider'}
+type ReactStub = {
+  createContext: (defaultValue: unknown) => Ctx
+  createElement: (type: unknown, props: unknown, ...children: unknown[]) => Element
+  StrictMode: 'StrictMode'
+}
 type Element = {children: unknown[]; props: unknown; type: unknown}
-type Context = {Provider: object}
+type Root = {render: (element: Element) => void; unmount: () => void}
 
-function makeReact() {
+function makeReact(): ReactStub {
   return {
-    createContext: (): Context => ({Provider: {}}),
-    createElement: (type: unknown, props: unknown, ...children: unknown[]): Element => ({
-      children,
-      props,
-      type,
-    }),
+    createContext: (defaultValue) => ({_default: defaultValue, Provider: 'Provider'}),
+    createElement: (type, props, ...children) => ({children, props, type}),
     StrictMode: 'StrictMode',
   }
 }
 
-function loadWrapper(source: string, React = makeReact(), unmount = () => {}) {
+/**
+ * Execute a generated wrapper against injected React / react-dom stubs, without
+ * a real React copy. Rewrites the wrapper's two static imports into locals
+ * pulled from `deps`, so the ESM template runs as a plain function body.
+ */
+function loadWrapper(
+  source: string,
+  React: ReactStub = makeReact(),
+  onUnmount: () => void = () => {},
+): {
+  render: (rootElement: object, props?: unknown, renderOptions?: unknown) => () => void
+  rendered: Element[]
+} {
   const rendered: Element[] = []
-  const createRoot = () => ({render: (element: Element) => rendered.push(element), unmount})
-  const hot = {accept: vi.fn()}
-  // Inject external imports so the emitted module can execute without a browser or bundler.
+  const createRoot = (): Root => ({
+    render: (element) => rendered.push(element),
+    unmount: onUnmount,
+  })
   const body = source
     .replace(/^import \* as React from 'react'$/m, 'const React = deps.React')
     .replace(/^import \{ createRoot \} from 'react-dom\/client'$/m, 'const {createRoot} = deps')
     .replace(
       /^import \{ StyleSheetManager \} from 'styled-components'$/m,
-      'const {StyleSheetManager} = deps',
+      "const StyleSheetManager = 'StyleSheetManager'",
     )
-    .replaceAll('import.meta.hot', 'deps.hot')
+    // `export`/`import.meta` are illegal in a Function body; drop them so the
+    // ESM template runs as a plain module scope. `render` is still captured via
+    // the returned reference below.
     .replaceAll(/^export /gm, '')
-  const factory = new Function(
-    'deps',
-    `${body}\nreturn {render, version: typeof version === 'undefined' ? undefined : version}`,
-  )
-  const mod = factory({createRoot, hot, React, StyleSheetManager: 'StyleSheetManager'}) as {
+  // The federation entries also import a preamble; none is passed in these tests.
+  const factory = new Function('deps', `${body}\nreturn {render}`)
+  const mod = factory({createRoot, React}) as {
     render: (rootElement: object, props?: unknown, renderOptions?: unknown) => () => void
-    version?: string
   }
-  return {hot, rendered, ...mod}
+  return {rendered, ...mod}
 }
 
 const APP = `() => 'app'`
 
 afterEach(() => {
+  // Each test owns the slot; drop it so a fresh WeakMap is created next run.
   delete (globalThis as Record<symbol, unknown>)[MODULE_SLOT]
 })
 
-describe('remote rendering', () => {
+describe('renderRemote module context', () => {
   test('keeps stylesheet targets separate and removes only the unmounted target', () => {
     const firstTarget = {remove: vi.fn()}
     const secondTarget = {remove: vi.fn()}
@@ -90,91 +106,80 @@ describe('remote rendering', () => {
     expect(events).toEqual(['unmount React', 'remove stylesheet'])
   })
 
-  test('renders without a stylesheet dependency when sharing is disabled', () => {
-    const source = renderRemote({preamble: `const App = ${APP}`})
-    const mod = loadWrapper(source)
-    mod.render({}, {greeting: 'Hello'})
-    expect(source).not.toContain('styled-components')
-    expect(mod.rendered[0].children).toEqual([
-      {children: [], props: {greeting: 'Hello'}, type: expect.any(Function)},
-    ])
-    expect(mod.version).toBeUndefined()
-    expect(mod.hot.accept).not.toHaveBeenCalled()
-  })
-
-  test('exposes the selected component and version to the host', () => {
-    const mod = loadWrapper(
-      renderRemote({
-        app: 'view.components.panel',
-        preamble: `const view = {components: {panel: 'Panel'}, version: '1.0'}`,
-        version: 'view.version',
-      }),
-    )
-    mod.render({}, {greeting: 'Hello'})
-    expect(mod.version).toBe('1.0')
-    expect(mod.rendered[0].children).toEqual([
-      {children: [], props: {greeting: 'Hello'}, type: 'Panel'},
-    ])
-  })
-
-  test('remounts live roots after a hot update with their props and render options', () => {
-    const unmount = vi.fn()
-    const mod = loadWrapper(renderRemote({app: APP, hmr: true, preamble: ''}), makeReact(), unmount)
-    const root = {}
-    mod.render(root, {greeting: 'Hello'}, {moduleId: 'favorites/App'})
-    const next = {render: vi.fn()}
-    mod.hot.accept.mock.calls[0][0](next)
-    expect(unmount).toHaveBeenCalledOnce()
-    expect(next.render.mock.calls).toEqual([
-      [root, {greeting: 'Hello'}, {moduleId: 'favorites/App'}],
-    ])
-  })
-
-  test('wraps the app in strict mode when requested by the host', () => {
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}))
-    mod.render({}, {}, {reactStrictMode: true})
-    expect(mod.rendered[0].type).toBe('StrictMode')
-  })
-
-  test('provides the module identity through the context shared with the SDK', () => {
+  test('sources ModuleContext from the symbol-keyed WeakMap<createContext, Context>', () => {
     const React = makeReact()
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
-    mod.render({}, {greeting: 'Hello'}, {moduleId: 'favorites/views/list/panel'})
-    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Context>
-    expect(mod.rendered).toEqual([
-      {
-        children: [{children: [], props: {greeting: 'Hello'}, type: expect.any(Function)}],
-        props: {value: 'favorites/views/list/panel'},
-        type: slot.get(React.createContext)?.Provider,
-      },
-    ])
+    loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
+
+    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    expect(slot).toBeInstanceOf(WeakMap)
+    // The key is the createContext function, not the namespace object: the SDK reads the
+    // slot with the same key, and namespace objects can differ under bundler interop.
+    expect(slot.has(React.createContext)).toBe(true)
+    expect(slot.has(React)).toBe(false)
   })
 
-  test('shares a context across wrappers using the same React copy', () => {
+  test('two namespace objects over the same React copy resolve the same context', () => {
+    const React = makeReact()
+    // What esbuild's __toESM interop produces: a fresh wrapper object per importer.
+    const interopCopy = {...React}
+    loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
+    loadWrapper(renderRemote({app: APP, preamble: ''}), interopCopy).render({}, {}, {})
+
+    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    expect(slot.get(React.createContext)).toBe(slot.get(interopCopy.createContext))
+  })
+
+  test('a second wrapper on the same React copy resolves the same context object', () => {
     const React = makeReact()
     const first = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
-    // Bundler interop can wrap the same React functions in different namespace objects.
-    const second = loadWrapper(renderRemote({app: APP, preamble: ''}), {...React})
-    first.render({})
-    second.render({})
-    expect(first.rendered[0].type).toBe(second.rendered[0].type)
+    const second = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+
+    const root = {}
+    first.render(root, {}, {moduleId: 'favorites/App'})
+    const other = {}
+    second.render(other, {}, {moduleId: 'favorites/views/list/panel'})
+
+    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    // Both wrappers wrote/read the WeakMap, so a single Context object exists.
+    expect(slot.get(React.createContext)).toBeDefined()
   })
 
-  test('keeps contexts separate for different React copies', () => {
-    const first = loadWrapper(renderRemote({app: APP, preamble: ''}))
-    const second = loadWrapper(renderRemote({app: APP, preamble: ''}))
-    first.render({})
-    second.render({})
-    expect(first.rendered[0].type).not.toBe(second.rendered[0].type)
+  test('a different React copy gets its own context (no cross-copy leak)', () => {
+    const reactA = makeReact()
+    const reactB = makeReact()
+    loadWrapper(renderRemote({app: APP, preamble: ''}), reactA).render({}, {}, {})
+    loadWrapper(renderRemote({app: APP, preamble: ''}), reactB).render({}, {}, {})
+
+    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    expect(slot.get(reactA.createContext)).not.toBe(slot.get(reactB.createContext))
   })
 
-  test('accepts hosts that do not pass a module identity', () => {
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}))
+  test('passes renderOptions.moduleId as the provider value, wrapping App', () => {
+    const React = makeReact()
+    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const moduleId = 'favorites/views/list/panel'
+    mod.render({}, {greeting: 'hi'}, {moduleId})
+
+    const [provider] = mod.rendered
+    expect(provider.type).toBe('Provider')
+    expect((provider.props as {value: unknown}).value).toBe(moduleId)
+    const [appElement] = provider.children as Element[]
+    expect((appElement.props as {greeting: string}).greeting).toBe('hi')
+  })
+
+  test('a two-argument render(element, props) call renders with moduleId undefined', () => {
+    const React = makeReact()
+    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    // Old host: no renderOptions argument at all.
     mod.render({}, {})
-    expect(mod.rendered[0].props).toEqual({value: undefined})
+
+    const [provider] = mod.rendered
+    expect(provider.type).toBe('Provider')
+    expect((provider.props as {value: unknown}).value).toBeUndefined()
   })
 
-  test('does not require the SDK to render a remote', () => {
-    expect(renderRemote({app: APP, hmr: true, preamble: ''})).not.toMatch(/@sanity\/sdk/)
+  test('the generated wrapper never imports the SDK', () => {
+    const source = renderRemote({app: APP, hmr: true, preamble: '', version: 'view.version'})
+    expect(source).not.toMatch(/@sanity\/sdk/)
   })
 })

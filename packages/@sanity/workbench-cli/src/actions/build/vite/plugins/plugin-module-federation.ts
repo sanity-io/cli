@@ -6,6 +6,17 @@ import {type FederationSharing} from '../shared-dependencies.js'
 
 type ManifestAssets = Record<'css' | 'js', {async: string[]; sync: string[]}>
 
+interface FederationPluginApi {
+  create: (sharing?: FederationSharing) => PluginOption
+  inputs: string[]
+
+  sharing?: FederationSharing
+}
+
+export function getFederationApi(plugins: readonly Plugin[] = []): FederationPluginApi | undefined {
+  return plugins.find((plugin) => plugin.api?.sanityFederation)?.api.sanityFederation
+}
+
 /**
  * @internal
  */
@@ -23,6 +34,14 @@ export function sanityModuleFederation(
   sharing?: FederationSharing,
 ): PluginOption {
   const {exposes, name} = options
+  // Discovery replaces this plugin set as a group; callers need no knowledge of upstream plugin names.
+  const api: FederationPluginApi = {
+    create: (sharing) => sanityModuleFederation(options, sharing),
+    inputs: Object.values(exposes ?? {}).flatMap((expose) =>
+      typeof expose === 'string' ? expose : expose.import,
+    ),
+    sharing,
+  }
   const mfPlugins = moduleFederation({
     dev: {
       disableDynamicRemoteTypeHints: true,
@@ -72,14 +91,14 @@ export function sanityModuleFederation(
     if (!option) return option
     if (option instanceof Promise) return option.then((resolved) => scopeToEnvironment(resolved))
     if (Array.isArray(option)) return option.map((entry) => scopeToEnvironment(entry))
-    const plugin = {
+    return {
       ...option,
+      api: {...('api' in option ? option.api : {}), sanityFederation: api},
       // In dev, MF must run on client — the dev server serves through it.
       // In build, scope to the federation environment to keep the library build clean.
       applyToEnvironment: (env) =>
         env.config.command === 'serve' || env.name === FEDERATION_DIR_NAME,
     } satisfies Plugin
-    return plugin
   }
 
   return mfPlugins.map((plugin: PluginOption) => scopeToEnvironment(plugin))

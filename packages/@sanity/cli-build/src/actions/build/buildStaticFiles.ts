@@ -1,12 +1,8 @@
 import path from 'node:path'
 
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
-import {
-  buildFederatedApp,
-  type FederationBuildOptions,
-  type WorkbenchExposes,
-} from '@sanity/workbench-cli/build'
-import {build} from 'vite'
+import {discoverSharedDependencies, type WorkbenchExposes} from '@sanity/workbench-cli/build'
+import {build, createBuilder} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
 import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
@@ -114,41 +110,36 @@ export async function buildStaticFiles(
     }
 
     buildDebug('Resolving vite config (federation)')
-    async function createConfig(federationBuild: FederationBuildOptions) {
-      let viteConfig = await getViteConfig({
-        basePath,
-        cwd,
-        entries,
-        exposes,
-        federationBuild,
-        getEnvironmentVariables,
-        isApp,
-        isBlueprints,
-        isWorkbenchApp,
-        minify,
-        mode,
-        outputDir,
-        reactCompiler,
-        // Schema extraction is a build-time artifact, not a client-specific step,
-        // so a federated studio extracts its schema like the legacy studio build.
-        schemaExtraction,
-        sourceMap,
-        workbenchAppId,
-      })
+    let viteConfig = await getViteConfig({
+      basePath,
+      cwd,
+      entries,
+      exposes,
+      getEnvironmentVariables,
+      isApp,
+      isBlueprints,
+      isWorkbenchApp,
+      minify,
+      mode,
+      outputDir,
+      reactCompiler,
+      // Schema extraction is a build-time artifact, not a client-specific step,
+      // so a federated studio extracts its schema like the legacy studio build.
+      schemaExtraction,
+      sourceMap,
+      workbenchAppId,
+    })
 
-      // Apply the user's Vite config so plugins like `@vanilla-extract/vite-plugin`
-      // transform source files before the federation environment is bundled.
-      // `finalizeViteConfig` is intentionally skipped: the federation environment
-      // has its own entry and does not use `.sanity/runtime/app.js`.
-      if (extendViteConfig) {
-        viteConfig = await extendViteConfigWithUserConfig(
-          {command: 'build', mode},
-          viteConfig,
-          extendViteConfig,
-        )
-      }
-
-      return viteConfig
+    // Apply the user's Vite config so plugins like `@vanilla-extract/vite-plugin`
+    // transform source files before the federation environment is bundled.
+    // `finalizeViteConfig` is intentionally skipped: the federation environment
+    // has its own entry and does not use `.sanity/runtime/app.js`.
+    if (extendViteConfig) {
+      viteConfig = await extendViteConfigWithUserConfig(
+        {command: 'build', mode},
+        viteConfig,
+        extendViteConfig,
+      )
     }
 
     if (emitSpa) {
@@ -161,8 +152,11 @@ export async function buildStaticFiles(
       await writeFavicons(faviconBasePath, staticPath)
     }
 
+    viteConfig = await discoverSharedDependencies(viteConfig)
+
     buildDebug('Bundling federation environment')
-    await buildFederatedApp(createConfig)
+    const builder = await createBuilder(viteConfig)
+    await builder.buildApp()
     buildDebug('Bundling complete')
     // TODO: add stats here
     return {chunks: []}

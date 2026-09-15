@@ -1,14 +1,13 @@
-import {mkdtemp, readFile, rm, symlink, writeFile} from 'node:fs/promises'
+import {mkdir, mkdtemp, readFile, rm, symlink, writeFile} from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
 import react from '@vitejs/plugin-react'
+import {createBuilder} from 'vite'
 import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {renderRemote} from '../render-remote.js'
-import {buildFederatedApp} from './build-federated-app.js'
-import {sanityModuleFederation} from './plugins/plugin-module-federation.js'
-import {sanityEnvironmentPlugin} from './plugins/plugin-sanity-environment.js'
+import {discoverSharedDependencies} from '../../../../../src/actions/build/vite/discover-shared-dependencies.js'
+import {federation} from '../../../../../src/actions/build/vite/plugin.js'
 
 type Assets = {js: {async: string[]; sync: string[]}}
 type Manifest = {
@@ -35,7 +34,7 @@ async function buildApp({aliasReact = false, styled = true} = {}) {
   roots.push(root)
   const fixture = path.resolve(
     import.meta.dirname,
-    '../../../../../../../fixtures/federated-studio',
+    '../../../../../../../../fixtures/federated-studio',
   )
   await symlink(path.join(fixture, 'node_modules'), path.join(root, 'node_modules'), 'junction')
   await writeFile(
@@ -50,64 +49,71 @@ const Box = styled.div\`color: red;\`
 export default function App() { return <Box>Hello</Box> }`
       : `export default function App() { return <div>Hello</div> }`,
   )
-  const entry = path.join(root, 'entry.js')
+  await writeFile(
+    path.join(root, 'View.tsx'),
+    "import App from './App.tsx'; export default {components: App, version: '1.0'}",
+  )
+  await mkdir(path.join(root, '.sanity/runtime'), {recursive: true})
+  await writeFile(path.join(root, '.sanity/runtime/app.js'), "import '../../App.tsx'")
   let chunks: Chunk[] = []
   const finalized = vi.fn()
-  await buildFederatedApp(async ({discovery, sharing}) => {
-    await writeFile(
-      entry,
-      renderRemote({
-        isolateStyles: 'styled-components' in (sharing?.shared ?? {}),
-        preamble: "import App from './App.tsx'",
+  const config = await discoverSharedDependencies({
+    configFile: false,
+    logLevel: 'silent',
+    plugins: [
+      react(),
+      federation({
+        appEntry: '../../App.tsx',
+        exposes: {views: [{name: 'tile', src: './View.tsx', surface: 'tile', title: 'Tile'}]},
+        isApp: true,
+        name: 'sharing-test',
+        workDir: root,
       }),
-    )
-    return {
-      configFile: false,
-      logLevel: 'silent',
-      plugins: [
-        react(),
-        sanityEnvironmentPlugin({input: entry}),
-        !discovery &&
-          sanityModuleFederation({exposes: {'./App': entry}, name: 'sharing-test'}, sharing),
-        {buildEnd: finalized, name: 'test/finalize'},
-        {
-          config: () =>
-            aliasReact
-              ? {
-                  resolve: {
-                    alias: [
-                      {
-                        find: /^react$/,
-                        replacement: path.join(fixture, 'node_modules/react/index.js'),
-                      },
-                    ],
-                  },
-                }
-              : {},
-          generateBundle(_options, bundle) {
-            chunks = Object.values(bundle).flatMap((chunk) =>
-              chunk.type === 'chunk'
-                ? [
+      {buildEnd: finalized, name: 'test/finalize'},
+      {
+        config: () =>
+          aliasReact
+            ? {
+                resolve: {
+                  alias: [
                     {
-                      fileName: chunk.fileName,
-                      imports: chunk.imports,
-                      modules: Object.keys(chunk.modules),
+                      find: /^react$/,
+                      replacement: path.join(fixture, 'node_modules/react/index.js'),
                     },
-                  ]
-                : [],
-            )
-          },
-          name: 'test/capture-chunks',
+                  ],
+                },
+              }
+            : {},
+        generateBundle(_options, bundle) {
+          chunks = Object.values(bundle).flatMap((chunk) =>
+            chunk.type === 'chunk'
+              ? [
+                  {
+                    fileName: chunk.fileName,
+                    imports: chunk.imports,
+                    modules: Object.keys(chunk.modules),
+                  },
+                ]
+              : [],
+          )
         },
-      ],
-      root,
-    }
+        name: 'test/capture-chunks',
+      },
+    ],
+    root,
   })
+  const builder = await createBuilder(config)
+  await builder.buildApp()
   const manifest: Manifest = JSON.parse(
     await readFile(path.join(root, 'dist/mf-manifest.json'), 'utf8'),
   )
   const stats: Manifest = JSON.parse(await readFile(path.join(root, 'dist/mf-stats.json'), 'utf8'))
-  return {chunks, finalized, manifest, stats}
+  const appSource = await readFile(path.join(root, '.sanity/federation/remote-entry.jsx'), 'utf8')
+  const viewSource = await readFile(
+    path.join(root, '.sanity/federation/views/tile/tile.js'),
+    'utf8',
+  )
+  return {appSource, chunks, finalized, manifest, stats, viewSource}
 }
 
 function staticImports(chunks: Chunk[], entrypoints: string[]) {
@@ -173,13 +179,18 @@ describe('a production app using React and styled-components', () => {
     ).toEqual([])
   })
 
+  test('isolates styles in both generated app and view entries', () => {
+    expect(result.appSource).toContain("import { StyleSheetManager } from 'styled-components'")
+    expect(result.viewSource).toContain("import { StyleSheetManager } from 'styled-components'")
+  })
+
   test('writes the same share scope and expose assets to both manifest formats', () => {
     expect(result.stats.metaData.shareScope).toBe(result.manifest.metaData.shareScope)
     expect(result.stats.exposes).toEqual(result.manifest.exposes)
   })
 
-  test('finalizes the build once after discovery', () => {
-    expect(result.finalized).toHaveBeenCalledOnce()
+  test('finalizes only the standalone and federation builds', () => {
+    expect(result.finalized).toHaveBeenCalledTimes(2)
   })
 })
 

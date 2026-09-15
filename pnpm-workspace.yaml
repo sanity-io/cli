@@ -137,4 +137,6 @@ allowBuilds:
   sharp: false
   unrs-resolver: false
 patchedDependencies:
+  # Keep custom-scope providers lazy and the federation environment client-side.
+  # This workspace-only patch needs an upstream release before dependency sharing can ship.
   '@module-federation/vite@1.21.0': patches/@module-federation__vite@1.21.0.patch

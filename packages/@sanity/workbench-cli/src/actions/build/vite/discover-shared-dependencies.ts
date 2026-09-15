@@ -4,6 +4,7 @@ import path from 'node:path'
 import {createBuilder, type InlineConfig, type Plugin, type PluginOption} from 'vite'
 
 import {FEDERATION_DIR_NAME} from './constants.js'
+import {getFederationApi} from './plugins/plugin-module-federation.js'
 import {
   createFederationSharing,
   type FederationSharing,
@@ -11,49 +12,18 @@ import {
   sharedDependencies,
 } from './shared-dependencies.js'
 
-export interface FederationBuildOptions {
-  discovery?: boolean
-  sharing?: FederationSharing
-}
+export async function discoverSharedDependencies(config: InlineConfig): Promise<InlineConfig> {
+  const plugins = await flattenPlugins(config.plugins ?? [])
+  const federation = getFederationApi(plugins)
+  if (!federation) return config
 
-async function discoveryPlugins(options: PluginOption[]): Promise<Plugin[]> {
-  return (
-    await Promise.all(
-      options.map(async (option): Promise<Plugin[]> => {
-        const resolved = await option
-        if (Array.isArray(resolved)) return discoveryPlugins(resolved)
-        if (!resolved) return []
-        // Discovery needs transforms, but must not publish artifacts or finalize a build.
-        return [
-          {
-            ...resolved,
-            augmentChunkHash: undefined,
-            buildEnd: undefined,
-            closeBundle: undefined,
-            generateBundle: undefined,
-            outputOptions: undefined,
-            renderChunk: undefined,
-            renderError: undefined,
-            renderStart: undefined,
-            writeBundle: undefined,
-          },
-        ]
-      }),
-    )
-  ).flat()
-}
-
-// Recreate Sanity plugins per pass; object-form user plugins still share their closures.
-export async function buildFederatedApp(
-  createConfig: (options: FederationBuildOptions) => InlineConfig | Promise<InlineConfig>,
-): Promise<void> {
-  // Federation fixes its providers before Vite resolves imports, including compiler-generated subpaths.
-  const config = await createConfig({discovery: true})
-  const discovery = discoverSharedDependencies()
+  const discovery = collectDependencies()
   const scanner = await createBuilder({
     ...config,
     plugins: [
-      ...(await discoveryPlugins(config.plugins ?? [])),
+      ...plugins
+        .filter((plugin) => plugin.api?.sanityFederation !== federation)
+        .map((plugin) => forDiscovery(plugin)),
       discovery.plugin,
       {
         config: () => ({
@@ -63,6 +33,9 @@ export async function buildFederatedApp(
                 minify: false,
                 sourcemap: false,
                 write: false,
+                ...(federation.inputs.length > 0
+                  ? {rolldownOptions: {input: federation.inputs}}
+                  : {}),
               },
             },
           },
@@ -73,11 +46,49 @@ export async function buildFederatedApp(
     ],
   })
   await scanner.build(scanner.environments[FEDERATION_DIR_NAME])
-  const builder = await createBuilder(await createConfig({sharing: discovery.sharing()}))
-  await builder.buildApp()
+
+  const firstFederationPlugin = plugins.find(
+    (plugin) => plugin.api?.sanityFederation === federation,
+  )
+  const replacement = federation.create(discovery.sharing())
+  return {
+    ...config,
+    plugins: plugins.flatMap((plugin): PluginOption[] => {
+      if (plugin === firstFederationPlugin) return [replacement]
+      return plugin.api?.sanityFederation === federation ? [] : [plugin]
+    }),
+  }
 }
 
-function discoverSharedDependencies(): {
+async function flattenPlugins(options: PluginOption[]): Promise<Plugin[]> {
+  return (
+    await Promise.all(
+      options.map(async (option): Promise<Plugin[]> => {
+        const plugin = await option
+        if (!plugin) return []
+        return Array.isArray(plugin) ? flattenPlugins(plugin) : [plugin]
+      }),
+    )
+  ).flat()
+}
+
+function forDiscovery(plugin: Plugin): Plugin {
+  // Discovery must resolve and transform imports without emitting or uploading build artifacts.
+  return {
+    ...plugin,
+    augmentChunkHash: undefined,
+    buildEnd: undefined,
+    closeBundle: undefined,
+    generateBundle: undefined,
+    outputOptions: undefined,
+    renderChunk: undefined,
+    renderError: undefined,
+    renderStart: undefined,
+    writeBundle: undefined,
+  }
+}
+
+function collectDependencies(): {
   plugin: Plugin
   sharing: () => FederationSharing | undefined
 } {
