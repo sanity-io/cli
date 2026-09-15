@@ -80,9 +80,12 @@ describe('shared dependency policy', () => {
     },
   )
 
-  test.each(['^19.2.0', '', '19.2.0+patched'])('keeps uncertain version %s local', (version) => {
-    expect(createFederationSharing(dependencies(version))).toBeUndefined()
-  })
+  test.each(['^19.2.0', '', '19.2.0+patched', '19.2.0-01'])(
+    'keeps uncertain version %s local',
+    (version) => {
+      expect(createFederationSharing(dependencies(version))).toBeUndefined()
+    },
+  )
 
   test('keeps multiple installed copies local', () => {
     expect(

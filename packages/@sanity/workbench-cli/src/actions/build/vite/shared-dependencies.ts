@@ -1,4 +1,5 @@
 import {type ModuleFederationOptions} from '@module-federation/vite'
+import {valid as validSemver} from 'semver'
 
 interface SharedDependency {
   name: string
@@ -73,7 +74,8 @@ function getSingleInstalledVersion(copies: ResolvedDependency[]): string | undef
   if (copies.some((copy) => copy.root !== root || copy.version !== version)) return undefined
   // A local patch can change runtime internals without changing the package version.
   if (root.includes('patch_hash=')) return undefined
-  if (!/^\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?$/.test(version)) return undefined
+  // Semver ignores build metadata, so only its unchanged canonical form is safe to share.
+  if (validSemver(version) !== version) return undefined
   return version
 }
 
