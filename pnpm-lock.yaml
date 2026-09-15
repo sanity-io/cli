@@ -73,8 +73,8 @@ catalogs:
       specifier: ^4.0.5
       version: 4.0.6
     get-it:
-      specifier: ^9.5.2
-      version: 9.5.2
+      specifier: ^9.5.4
+      version: 9.5.4
     get-tsconfig:
       specifier: ^4.14.3
       version: 4.14.3
@@ -798,7 +798,7 @@ importers:
         version: 10.9.1(jiti@2.7.0)(supports-color@8.1.1)
       get-it:
         specifier: 'catalog:'
-        version: 9.5.2(vitest@4.1.11)
+        version: 9.5.4(vitest@4.1.11)
       jsdom:
         specifier: 'catalog:'
         version: 29.1.1(@noble/hashes@2.4.0)
@@ -1006,7 +1006,7 @@ importers:
         version: 2.0.1
       get-it:
         specifier: 'catalog:'
-        version: 9.5.2(vitest@4.1.11)
+        version: 9.5.4(vitest@4.1.11)
       get-tsconfig:
         specifier: 'catalog:'
         version: 4.14.3
@@ -1157,7 +1157,7 @@ importers:
         version: 0.28.2
       get-it:
         specifier: 'catalog:'
-        version: 9.5.2(vitest@4.1.11)
+        version: 9.5.4(vitest@4.1.11)
       nock:
         specifier: 'catalog:'
         version: 14.0.17
@@ -6878,6 +6878,15 @@ packages:
 
   get-it@9.5.2:
     resolution: {integrity: sha512-n4iCIF3/STaCsEIgestecjGJ3Oa+GEIwMT91HU+5TBHQ8DIpBCS1/BXjaxS5HuYHtVMRVTFDRX2bf3+gP/MOPg==}
+    engines: {node: '>=22.12.0'}
+    peerDependencies:
+      vitest: '>=2.0.0'
+    peerDependenciesMeta:
+      vitest:
+        optional: true
+
+  get-it@9.5.4:
+    resolution: {integrity: sha512-LXbU86HfKWzssHTTsQtUphDh5RB9ilOvncCPPDjaJTbli8zPIJBv4KA9EMB/Wv8GfPXy0dpulfRJzd76n7c3bg==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       vitest: '>=2.0.0'
@@ -12806,7 +12815,7 @@ snapshots:
       '@sanity/client': 8.4.0(vitest@4.1.11)
       boxen: 8.0.1
       empathic: 2.0.1
-      get-it: 9.5.2(vitest@4.1.11)
+      get-it: 9.5.4(vitest@4.1.11)
       get-tsconfig: 4.14.3
       import-meta-resolve: 4.2.0
       jiti: 2.7.0
@@ -13012,7 +13021,7 @@ snapshots:
       '@sanity/client': 8.5.0(vitest@4.1.11)
       '@sanity/generate-help-url': 4.0.0
       '@sanity/mutator': 6.12.0(@types/react@19.2.18)(supports-color@8.1.1)(vitest@4.1.11)
-      get-it: 9.5.2(vitest@4.1.11)
+      get-it: 9.5.4(vitest@4.1.11)
       gunzip-maybe: 1.4.2
       obug: 2.1.4
       p-map: 7.0.7
@@ -13230,7 +13239,7 @@ snapshots:
       '@sanity/generate-help-url': 4.0.0
       '@sanity/types': 6.12.0(@types/react@19.2.18)(vitest@4.1.11)
       arrify: 3.0.0
-      get-it: 9.5.2(vitest@4.1.11)
+      get-it: 9.5.4(vitest@4.1.11)
       groq-js: 2.0.0
       humanize-list: 1.0.1
       leven: 4.1.0
@@ -15872,6 +15881,12 @@ snapshots:
       tunnel-agent: 0.6.0
 
   get-it@9.5.2(vitest@4.1.11):
+    dependencies:
+      undici: 7.29.0
+    optionalDependencies:
+      vitest: 4.1.11(@types/node@22.20.1)(@vitest/coverage-istanbul@4.1.11)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
+
+  get-it@9.5.4(vitest@4.1.11):
     dependencies:
       undici: 7.29.0
     optionalDependencies:
