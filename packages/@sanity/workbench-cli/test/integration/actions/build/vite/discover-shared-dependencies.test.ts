@@ -1,4 +1,4 @@
-import {mkdir, mkdtemp, readFile, rm, symlink, writeFile} from 'node:fs/promises'
+import {mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile} from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -15,7 +15,7 @@ type Manifest = {
   metaData: {remoteEntry: {name: string}; shareScope?: string}
   shared: {assets: Assets; name: string; requiredVersion: string; version: string}[]
 }
-type Chunk = {fileName: string; imports: string[]; modules: string[]}
+type Chunk = {fileName: string; imports: string[]}
 
 const roots: string[] = []
 
@@ -36,7 +36,14 @@ async function buildApp({aliasReact = false, styled = true} = {}) {
     import.meta.dirname,
     '../../../../../../../../fixtures/federated-studio',
   )
-  await symlink(path.join(fixture, 'node_modules'), path.join(root, 'node_modules'), 'junction')
+  await mkdir(path.join(root, 'node_modules'))
+  for (const dependency of ['react', 'react-dom', 'styled-components']) {
+    await symlink(
+      await realpath(path.join(fixture, 'node_modules', dependency)),
+      path.join(root, 'node_modules', dependency),
+      'junction',
+    )
+  }
   await writeFile(
     path.join(root, 'package.json'),
     JSON.stringify({name: 'sharing-test', type: 'module'}),
@@ -91,7 +98,6 @@ export default function App() { return <Box>Hello</Box> }`
                   {
                     fileName: chunk.fileName,
                     imports: chunk.imports,
-                    modules: Object.keys(chunk.modules),
                   },
                 ]
               : [],
@@ -166,17 +172,15 @@ describe('a production app using React and styled-components', () => {
 
   test('defers provider code until the host selects a shared dependency', () => {
     const {chunks, manifest} = result
-    const providers = chunks.filter((chunk) =>
-      chunk.modules.some((id) => /\/(react|react-dom|styled-components)\//.test(id)),
+    const providers = new Set(
+      manifest.shared.flatMap(({assets}) => [...assets.js.sync, ...assets.js.async]),
     )
-    expect(providers.length).toBeGreaterThan(0)
+    expect(providers.size).toBeGreaterThan(0)
     const reachable = staticImports(chunks, [
       manifest.metaData.remoteEntry.name,
       ...manifest.exposes.flatMap(({assets}) => assets.js.sync),
     ])
-    expect(
-      providers.filter(({fileName}) => reachable.has(fileName)).map(({fileName}) => fileName),
-    ).toEqual([])
+    expect([...providers].filter((fileName) => reachable.has(fileName))).toEqual([])
   })
 
   test('isolates styles in both generated app and view entries', () => {
