@@ -13,6 +13,10 @@ export {
   resourceBindingsChunkFileName,
   resourceBindingsCodeSplittingGroup,
 } from '../actions/build/resource-bindings.js'
+export {
+  buildFederatedApp,
+  type FederationBuildOptions,
+} from '../actions/build/vite/build-federated-app.js'
 export {workbenchOptimizeDeps} from '../actions/build/vite/optimize-deps.js'
 export {workbenchVitePlugins} from '../actions/build/vite/workbench-vite-plugins.js'
 export {buildAppId} from '../appId.js'

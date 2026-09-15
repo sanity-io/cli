@@ -13,7 +13,12 @@ export default defineConfig({
       provider: 'istanbul',
     },
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**', 'test/integration/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'test/integration/**',
+      'src/actions/build/vite/build-federated-app.test.ts',
+    ],
     globals: false,
     name: '@sanity/workbench-cli/unit',
     setupFiles: ['../../../test/vitest/setup.ts'],

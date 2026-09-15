@@ -16,18 +16,22 @@ const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 // The studio wraps `Studio` with the user's config; HMR re-renders through the
 // new module so a config edit takes effect. The `%RESOURCE_BINDINGS_IMPORT%`
 // placeholder is filled in per-build (Blueprints only — see below).
-const STUDIO_ENTRY = renderRemote({
-  app: `(props) => React.createElement(Studio, { config, ...props })`,
-  hmr: true,
-  preamble: `%RESOURCE_BINDINGS_IMPORT%import { Studio } from 'sanity'
+const studioEntry = (isolateStyles: boolean) =>
+  renderRemote({
+    app: `(props) => React.createElement(Studio, { config, ...props })`,
+    hmr: true,
+    isolateStyles,
+    preamble: `%RESOURCE_BINDINGS_IMPORT%import { Studio } from 'sanity'
 import config from %STUDIO_CONFIG%`,
-})
+  })
 
 // An SDK app's default export is the component; it Fast-Refreshes through its
 // own dev server, so the wrapper needs no HMR boundary.
-const APP_ENTRY = renderRemote({
-  preamble: `%RESOURCE_BINDINGS_IMPORT%import App from %APP_ENTRY%`,
-})
+const appEntry = (isolateStyles: boolean) =>
+  renderRemote({
+    isolateStyles,
+    preamble: `%RESOURCE_BINDINGS_IMPORT%import App from %APP_ENTRY%`,
+  })
 
 // A branded app that declares no `entry` (e.g. a dock-only panel/worker app)
 // has no navigable full-page view, so there's no `App` to import. The runtime
@@ -43,20 +47,24 @@ const HEADLESS_APP_ENTRY = `\
 }
 `
 
-export type FederationRuntimeOptions =
+export type FederationRuntimeOptions = (
   | {appEntry?: string; isApp: true; isBlueprints?: boolean}
   | {isApp: false; isBlueprints?: boolean; studioConfigPath: string}
+) & {isolateStyles?: boolean}
 
 export function sanityFederationRuntime(options: FederationRuntimeOptions): Plugin {
-  const {isBlueprints} = options
+  const {isBlueprints, isolateStyles = false} = options
 
   let content: string
   if (options.isApp) {
     content = options.appEntry
-      ? APP_ENTRY.replace(/%APP_ENTRY%/, JSON.stringify(options.appEntry))
+      ? appEntry(isolateStyles).replace(/%APP_ENTRY%/, JSON.stringify(options.appEntry))
       : HEADLESS_APP_ENTRY
   } else {
-    content = STUDIO_ENTRY.replace(/%STUDIO_CONFIG%/, JSON.stringify(options.studioConfigPath))
+    content = studioEntry(isolateStyles).replace(
+      /%STUDIO_CONFIG%/,
+      JSON.stringify(options.studioConfigPath),
+    )
   }
 
   // Blueprints only: the remote entry statically imports the resource-bindings

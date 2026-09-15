@@ -3,10 +3,9 @@ import path from 'node:path'
 import {type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {buildStaticFiles} from '../buildStaticFiles.js'
+import {buildStaticFiles} from './buildStaticFiles.js'
 
-const mockBuildApp = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
-const mockCreateBuilder = vi.hoisted(() => vi.fn().mockResolvedValue({buildApp: mockBuildApp}))
+const mockBuildFederatedApp = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const mockBuild = vi.hoisted(() =>
   vi.fn().mockResolvedValue({output: [{modules: {}, name: 'test', type: 'chunk'}]}),
 )
@@ -20,28 +19,29 @@ const mockWriteFavicons = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
   build: mockBuild,
-  createBuilder: mockCreateBuilder,
 }))
 
-vi.mock('../../../util/copyDir.js', () => ({
+vi.mock('@sanity/workbench-cli/build', () => ({buildFederatedApp: mockBuildFederatedApp}))
+
+vi.mock('../../util/copyDir.js', () => ({
   copyDir: mockCopyDir,
 }))
 
-vi.mock('../buildDebug.js', () => ({
+vi.mock('./buildDebug.js', () => ({
   buildDebug: vi.fn(),
 }))
 
-vi.mock('../getViteConfig.js', () => ({
+vi.mock('./getViteConfig.js', () => ({
   extendViteConfigWithUserConfig: mockExtendViteConfigWithUserConfig,
   finalizeViteConfig: mockFinalizeViteConfig,
   getViteConfig: mockGetViteConfig,
 }))
 
-vi.mock('../writeFavicons.js', () => ({
+vi.mock('./writeFavicons.js', () => ({
   writeFavicons: mockWriteFavicons,
 }))
 
-vi.mock('../writeSanityRuntime.js', () => ({
+vi.mock('./writeSanityRuntime.js', () => ({
   resolveEntries: mockResolveEntries,
   writeSanityRuntime: mockWriteSanityRuntime,
 }))
@@ -52,6 +52,9 @@ const defaultViteConfig: InlineConfig = {plugins: [{name: 'sanity-default'}], ro
 
 describe('buildStaticFiles', () => {
   beforeEach(() => {
+    mockBuildFederatedApp.mockImplementation(async (createConfig) => {
+      await createConfig({})
+    })
     mockGetViteConfig.mockResolvedValue(defaultViteConfig)
     mockExtendViteConfigWithUserConfig.mockImplementation(async (_env, base, user) =>
       typeof user === 'function' ? user(base, _env) : {...base, ...user},
@@ -72,7 +75,7 @@ describe('buildStaticFiles', () => {
   })
 
   describe('federation enabled / isWorkbenchApp=true', () => {
-    test('applies user vite config so custom plugins run during build', async () => {
+    test('preserves custom plugins and sharing options in both build configurations', async () => {
       const userPlugin = {name: 'vanilla-extract-plugin'}
       const userVite = vi.fn((config: InlineConfig) => ({
         ...config,
@@ -87,22 +90,18 @@ describe('buildStaticFiles', () => {
         vite: userVite,
       })
 
-      expect(mockExtendViteConfigWithUserConfig).toHaveBeenCalledWith(
-        {command: 'build', mode: 'production'},
-        expect.objectContaining({root: cwd}),
-        userVite,
-      )
-
-      // Config passed to createBuilder must contain the user plugin — otherwise
-      // transforms like vanilla-extract never run on `.css.ts` files.
-      const builderConfig = mockCreateBuilder.mock.calls[0][0]
-      expect(builderConfig.plugins).toContainEqual(userPlugin)
-
-      // Federation builds must not call finalizeViteConfig; it forces a
-      // Studio-specific entry the federation environment does not use.
+      const createConfig = mockBuildFederatedApp.mock.calls[0][0]
+      const sharing = {shared: {}, shareScope: 'sanity-test', shareStrategy: 'loaded-first'}
+      const discoveryConfig = await createConfig({discovery: true})
+      expect(mockGetViteConfig.mock.lastCall?.[0].federationBuild).toEqual({discovery: true})
+      const finalConfig = await createConfig({sharing})
+      expect(mockGetViteConfig.mock.lastCall?.[0].federationBuild).toEqual({sharing})
+      expect(discoveryConfig).toEqual({
+        ...defaultViteConfig,
+        plugins: [{name: 'sanity-default'}, userPlugin],
+      })
+      expect(finalConfig).toEqual(discoveryConfig)
       expect(mockFinalizeViteConfig).not.toHaveBeenCalled()
-
-      expect(mockBuildApp).toHaveBeenCalled()
     })
 
     test('never runs the legacy single-environment vite build', async () => {
@@ -155,7 +154,7 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).toHaveBeenCalledWith('/static', path.join(outputDir, 'static'))
       // The SPA path resolves entries via writeSanityRuntime, not resolveEntries.
       expect(mockResolveEntries).not.toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalled()
+      expect(mockBuildFederatedApp).toHaveBeenCalled()
     })
 
     test('emits the SPA for a federated studio (no entry)', async () => {
@@ -168,7 +167,7 @@ describe('buildStaticFiles', () => {
 
       expect(mockWriteSanityRuntime).toHaveBeenCalled()
       expect(mockWriteFavicons).toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalled()
+      expect(mockBuildFederatedApp).toHaveBeenCalled()
     })
 
     test('skips the SPA for a dock-only app (isApp with no entry)', async () => {
@@ -184,7 +183,7 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).not.toHaveBeenCalled()
       expect(mockCopyDir).not.toHaveBeenCalled()
       expect(mockResolveEntries).toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalled()
+      expect(mockBuildFederatedApp).toHaveBeenCalled()
     })
   })
 

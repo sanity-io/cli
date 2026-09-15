@@ -11,6 +11,7 @@ import {readPackageJson} from '@sanity/cli-core'
 import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
+import {type FederationBuildOptions} from './build-federated-app.js'
 import {federation} from './plugin.js'
 import {sanityAppId} from './plugins/plugin-sanity-app-id.js'
 
@@ -27,6 +28,7 @@ interface WorkbenchViteOptions {
   /** The app's bus identity, stamped into its modules for `@sanity/runtime`. */
   appId?: string
 
+  build?: FederationBuildOptions
   exposes?: WorkbenchExposes
   /** App (vs studio) build — selects the discriminated federation option shape. */
   isApp?: boolean
@@ -68,6 +70,7 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
           isApp: false as const,
           studioConfigPath: requireStudioConfigPath(entries.relativeConfigLocation),
         }),
+    build: options.build,
     exposes,
     isBlueprints,
     pkgJson,

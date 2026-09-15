@@ -6,6 +6,7 @@ import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {artifactExposes, workbenchArtifacts} from '../artifact.js'
+import {type FederationBuildOptions} from './build-federated-app.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './constants.js'
 import {type FederationOptions, sanityModuleFederation} from './plugins/plugin-module-federation.js'
 import {sanityEnvironmentPlugin} from './plugins/plugin-sanity-environment.js'
@@ -16,6 +17,7 @@ import {
 } from './plugins/plugin-sanity-federation-runtime.js'
 
 interface FederationPluginOptionsBase extends Omit<Partial<FederationOptions>, 'exposes'> {
+  build?: FederationBuildOptions
   exposes?: WorkbenchExposes
   /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
   isBlueprints?: boolean
@@ -118,10 +120,16 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
   // environment from the runtime bootstrap cli-build writes.
   const clientInput = exposesApp ? path.join(workDir, '.sanity', 'runtime', 'app.js') : undefined
 
+  const {discovery, sharing} = options.build ?? {}
+  const isolateStyles = Boolean(sharing?.shared && 'styled-components' in sharing.shared)
   return [
-    sanityEnvironmentPlugin({clientInput, input: entryPath, isBlueprints}),
-    sanityFederationRuntime(runtimeOptions),
-    sanityExtensionArtifacts({artifacts}),
-    sanityModuleFederation({exposes: federationExposes, name}),
+    sanityEnvironmentPlugin({
+      clientInput,
+      input: discovery ? [entryPath, ...Object.values(artifactModuleExposes)] : entryPath,
+      isBlueprints,
+    }),
+    sanityFederationRuntime({...runtimeOptions, isolateStyles}),
+    sanityExtensionArtifacts({artifacts, isolateStyles}),
+    !discovery && sanityModuleFederation({exposes: federationExposes, name}, sharing),
   ]
 }

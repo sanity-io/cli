@@ -1,0 +1,201 @@
+import {mkdtemp, readFile, rm, symlink, writeFile} from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+
+import react from '@vitejs/plugin-react'
+import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
+
+import {renderRemote} from '../render-remote.js'
+import {buildFederatedApp} from './build-federated-app.js'
+import {sanityModuleFederation} from './plugins/plugin-module-federation.js'
+import {sanityEnvironmentPlugin} from './plugins/plugin-sanity-environment.js'
+
+type Assets = {js: {async: string[]; sync: string[]}}
+type Manifest = {
+  exposes: {assets: Assets}[]
+  metaData: {remoteEntry: {name: string}; shareScope?: string}
+  shared: {assets: Assets; name: string; requiredVersion: string; version: string}[]
+}
+type Chunk = {fileName: string; imports: string[]; modules: string[]}
+
+const roots: string[] = []
+
+beforeAll(() => {
+  vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
+  vi.stubEnv('NODE_ENV', 'production')
+})
+
+afterAll(async () => {
+  vi.unstubAllEnvs()
+  await Promise.all(roots.map((root) => rm(root, {force: true, recursive: true})))
+})
+
+async function buildApp({aliasReact = false, styled = true} = {}) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'sanity-sharing-'))
+  roots.push(root)
+  const fixture = path.resolve(
+    import.meta.dirname,
+    '../../../../../../../fixtures/federated-studio',
+  )
+  await symlink(path.join(fixture, 'node_modules'), path.join(root, 'node_modules'), 'junction')
+  await writeFile(
+    path.join(root, 'package.json'),
+    JSON.stringify({name: 'sharing-test', type: 'module'}),
+  )
+  await writeFile(
+    path.join(root, 'App.tsx'),
+    styled
+      ? `import styled from 'styled-components'
+const Box = styled.div\`color: red;\`
+export default function App() { return <Box>Hello</Box> }`
+      : `export default function App() { return <div>Hello</div> }`,
+  )
+  const entry = path.join(root, 'entry.js')
+  let chunks: Chunk[] = []
+  const finalized = vi.fn()
+  await buildFederatedApp(async ({discovery, sharing}) => {
+    await writeFile(
+      entry,
+      renderRemote({
+        isolateStyles: 'styled-components' in (sharing?.shared ?? {}),
+        preamble: "import App from './App.tsx'",
+      }),
+    )
+    return {
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [
+        react(),
+        sanityEnvironmentPlugin({input: entry}),
+        !discovery &&
+          sanityModuleFederation({exposes: {'./App': entry}, name: 'sharing-test'}, sharing),
+        {buildEnd: finalized, name: 'test/finalize'},
+        {
+          config: () =>
+            aliasReact
+              ? {
+                  resolve: {
+                    alias: [
+                      {
+                        find: /^react$/,
+                        replacement: path.join(fixture, 'node_modules/react/index.js'),
+                      },
+                    ],
+                  },
+                }
+              : {},
+          generateBundle(_options, bundle) {
+            chunks = Object.values(bundle).flatMap((chunk) =>
+              chunk.type === 'chunk'
+                ? [
+                    {
+                      fileName: chunk.fileName,
+                      imports: chunk.imports,
+                      modules: Object.keys(chunk.modules),
+                    },
+                  ]
+                : [],
+            )
+          },
+          name: 'test/capture-chunks',
+        },
+      ],
+      root,
+    }
+  })
+  const manifest: Manifest = JSON.parse(
+    await readFile(path.join(root, 'dist/mf-manifest.json'), 'utf8'),
+  )
+  const stats: Manifest = JSON.parse(await readFile(path.join(root, 'dist/mf-stats.json'), 'utf8'))
+  return {chunks, finalized, manifest, stats}
+}
+
+function staticImports(chunks: Chunk[], entrypoints: string[]) {
+  const reachable = new Set<string>()
+  const pending = [...entrypoints]
+  while (pending.length > 0) {
+    const file = pending.pop()!
+    if (reachable.has(file)) continue
+    reachable.add(file)
+    pending.push(...(chunks.find((chunk) => chunk.fileName === file)?.imports ?? []))
+  }
+  return reachable
+}
+
+describe('a production app using React and styled-components', () => {
+  let result: Awaited<ReturnType<typeof buildApp>>
+  beforeAll(async () => {
+    result = await buildApp()
+  }, 60_000)
+
+  test('shares only the approved imports with exact installed versions', () => {
+    const {manifest} = result
+    expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react/jsx-runtime',
+      'styled-components',
+    ])
+    expect(
+      Object.fromEntries(manifest.shared.map(({name, requiredVersion}) => [name, requiredVersion])),
+    ).toEqual(Object.fromEntries(manifest.shared.map(({name, version}) => [name, version])))
+    expect(manifest.metaData.shareScope).toMatch(
+      /^sanity-react-19\..*-dom-19\..*-scheduler-.*-styled-6\./,
+    )
+  })
+
+  test('keeps fallback providers out of preload requests', () => {
+    const {manifest} = result
+    const fallbacks = new Set(
+      manifest.shared.flatMap(({assets}) => [...assets.js.sync, ...assets.js.async]),
+    )
+    expect(fallbacks.size).toBeGreaterThan(0)
+    expect(
+      manifest.exposes
+        .flatMap(({assets}) => assets.js.async)
+        .filter((asset) => fallbacks.has(asset)),
+    ).toEqual([])
+  })
+
+  test('defers provider code until the host selects a shared dependency', () => {
+    const {chunks, manifest} = result
+    const providers = chunks.filter((chunk) =>
+      chunk.modules.some((id) => /\/(react|react-dom|styled-components)\//.test(id)),
+    )
+    expect(providers.length).toBeGreaterThan(0)
+    const reachable = staticImports(chunks, [
+      manifest.metaData.remoteEntry.name,
+      ...manifest.exposes.flatMap(({assets}) => assets.js.sync),
+    ])
+    expect(
+      providers.filter(({fileName}) => reachable.has(fileName)).map(({fileName}) => fileName),
+    ).toEqual([])
+  })
+
+  test('writes the same share scope and expose assets to both manifest formats', () => {
+    expect(result.stats.metaData.shareScope).toBe(result.manifest.metaData.shareScope)
+    expect(result.stats.exposes).toEqual(result.manifest.exposes)
+  })
+
+  test('finalizes the build once after discovery', () => {
+    expect(result.finalized).toHaveBeenCalledOnce()
+  })
+})
+
+test('keeps dependencies local when a user plugin aliases React during configuration', async () => {
+  const {manifest} = await buildApp({aliasReact: true})
+  expect(manifest.shared).toEqual([])
+  expect(manifest.metaData).not.toHaveProperty('shareScope')
+}, 60_000)
+
+test('shares React without adding an unused styled-components provider', async () => {
+  const {manifest} = await buildApp({styled: false})
+  expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
+    'react',
+    'react-dom',
+    'react-dom/client',
+    'react/jsx-runtime',
+  ])
+  expect(manifest.metaData.shareScope).toMatch(/-styled-none$/)
+}, 60_000)

@@ -20,7 +20,7 @@ const resourceBindingsOutput = {
 }
 
 interface EnvironmentOptions {
-  input: string
+  input: string | string[]
 
   /**
    * When set, also build a standalone `client` SPA environment (its own

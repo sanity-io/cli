@@ -11,13 +11,18 @@ function relativeImport(fromFile: string, toFile: string): string {
   return rel.startsWith('.') ? rel : `./${rel}`
 }
 
-function writeArtifacts(root: string, artifacts: readonly GeneratedArtifact[]): void {
+function writeArtifacts(
+  root: string,
+  artifacts: readonly GeneratedArtifact[],
+  isolateStyles: boolean,
+): void {
   for (const artifact of artifacts) {
     const artifactPath = path.resolve(root, RUNTIME_DIR, artifact.path)
     fs.mkdirSync(path.dirname(artifactPath), {recursive: true})
     fs.writeFileSync(
       artifactPath,
       artifact.source({
+        isolateStyles,
         resolveImport: (src) => relativeImport(artifactPath, path.resolve(root, src)),
       }),
     )
@@ -32,10 +37,11 @@ function writeArtifacts(root: string, artifacts: readonly GeneratedArtifact[]): 
  */
 export function sanityExtensionArtifacts(options: {
   artifacts: readonly GeneratedArtifact[]
+  isolateStyles?: boolean
 }): Plugin {
   return {
     configResolved(config) {
-      writeArtifacts(config.root, options.artifacts)
+      writeArtifacts(config.root, options.artifacts, options.isolateStyles ?? false)
     },
     name: 'sanity/extension-artifacts',
   }

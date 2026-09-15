@@ -2,6 +2,9 @@ import {federation as moduleFederation, type ModuleFederationOptions} from '@mod
 import {type Plugin, type PluginOption} from 'vite'
 
 import {FEDERATION_DIR_NAME} from '../constants.js'
+import {type FederationSharing} from '../shared-dependencies.js'
+
+type ManifestAssets = Record<'css' | 'js', {async: string[]; sync: string[]}>
 
 /**
  * @internal
@@ -15,7 +18,11 @@ export interface FederationOptions extends Pick<ModuleFederationOptions, 'expose
   name: string
 }
 
-export function sanityModuleFederation({exposes, name}: FederationOptions): PluginOption {
+export function sanityModuleFederation(
+  options: FederationOptions,
+  sharing?: FederationSharing,
+): PluginOption {
+  const {exposes, name} = options
   const mfPlugins = moduleFederation({
     dev: {
       disableDynamicRemoteTypeHints: true,
@@ -26,18 +33,36 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     // Ctrl-C by sending on a still-CONNECTING websocket.
     dts: false,
     exposes,
-    manifest: true,
+    manifest: sharing
+      ? {
+          additionalData: ({stats}) => {
+            const {exposes, metaData, shared} = stats as {
+              exposes: {assets: ManifestAssets}[]
+              metaData: Record<string, unknown>
+              shared: {assets: ManifestAssets}[]
+            }
+            metaData.shareScope = sharing.shareScope
+            // Preloading an expose must leave fallback selection to loadShare, or reuse saves no bytes.
+            for (const kind of ['js', 'css'] as const) {
+              const providers = new Set(
+                shared.flatMap(({assets}) => [...assets[kind].sync, ...assets[kind].async]),
+              )
+              for (const expose of exposes) {
+                expose.assets[kind].async = expose.assets[kind].async.filter(
+                  (asset) => !providers.has(asset),
+                )
+              }
+            }
+            return stats
+          },
+        }
+      : true,
     name,
     // Resolves the remote entry path relative to the manifest rather than the
     // host origin.
     publicPath: 'auto',
-    // @module-federation/vite auto-shares every package.json dependency
-    // that exposes an `exports` field. That breaks for workspace packages with
-    // subpath-only exports (no `.` entry) like `@sanity/cli-build` and
-    // `@sanity/workbench`, because vite tries to resolve them as bare imports
-    // and fails. Workbench remotes manage runtime sharing through the host's
-    // federation runtime, so we opt out of auto-share entirely.
     shared: {},
+    ...sharing,
   })
 
   // module-federation can deliver a plugin as a Promise resolving to an array;
@@ -47,13 +72,14 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     if (!option) return option
     if (option instanceof Promise) return option.then((resolved) => scopeToEnvironment(resolved))
     if (Array.isArray(option)) return option.map((entry) => scopeToEnvironment(entry))
-    return {
+    const plugin = {
       ...option,
       // In dev, MF must run on client — the dev server serves through it.
       // In build, scope to the federation environment to keep the library build clean.
       applyToEnvironment: (env) =>
         env.config.command === 'serve' || env.name === FEDERATION_DIR_NAME,
     } satisfies Plugin
+    return plugin
   }
 
   return mfPlugins.map((plugin: PluginOption) => scopeToEnvironment(plugin))
