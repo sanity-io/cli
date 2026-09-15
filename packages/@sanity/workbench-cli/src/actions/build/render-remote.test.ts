@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {renderRemote} from './render-remote.js'
 
@@ -29,7 +29,8 @@ function makeReact(): ReactStub {
  */
 function loadWrapper(
   source: string,
-  React: ReactStub,
+  React: ReactStub = makeReact(),
+  onUnmount: () => void = () => {},
 ): {
   render: (rootElement: object, props?: unknown, renderOptions?: unknown) => () => void
   rendered: Element[]
@@ -37,11 +38,15 @@ function loadWrapper(
   const rendered: Element[] = []
   const createRoot = (): Root => ({
     render: (element) => rendered.push(element),
-    unmount: () => {},
+    unmount: onUnmount,
   })
   const body = source
     .replace(/^import \* as React from 'react'$/m, 'const React = deps.React')
     .replace(/^import \{ createRoot \} from 'react-dom\/client'$/m, 'const {createRoot} = deps')
+    .replace(
+      /^import \{ StyleSheetManager \} from 'styled-components'$/m,
+      "const StyleSheetManager = 'StyleSheetManager'",
+    )
     // `export`/`import.meta` are illegal in a Function body; drop them so the
     // ESM template runs as a plain module scope. `render` is still captured via
     // the returned reference below.
@@ -62,6 +67,45 @@ afterEach(() => {
 })
 
 describe('renderRemote module context', () => {
+  test('keeps stylesheet targets separate and removes only the unmounted target', () => {
+    const firstTarget = {remove: vi.fn()}
+    const secondTarget = {remove: vi.fn()}
+    const ownerDocument = {
+      createElement: vi.fn().mockReturnValueOnce(firstTarget).mockReturnValueOnce(secondTarget),
+      head: {appendChild: vi.fn()},
+    }
+    const firstRoot = {ownerDocument}
+    const secondRoot = {ownerDocument}
+    const mod = loadWrapper(renderRemote({app: APP, isolateStyles: true, preamble: ''}))
+    const unmount = mod.render(firstRoot)
+    const unmountSecond = mod.render(secondRoot)
+    mod.render(firstRoot)
+    expect(mod.rendered.map(({props, type}) => ({props, type}))).toEqual([
+      {props: {target: firstTarget}, type: 'StyleSheetManager'},
+      {props: {target: secondTarget}, type: 'StyleSheetManager'},
+      {props: {target: firstTarget}, type: 'StyleSheetManager'},
+    ])
+    expect(ownerDocument.head.appendChild.mock.calls).toEqual([[firstTarget], [secondTarget]])
+    unmount()
+    expect(firstTarget.remove).toHaveBeenCalledOnce()
+    expect(secondTarget.remove).not.toHaveBeenCalled()
+    unmountSecond()
+    expect(secondTarget.remove).toHaveBeenCalledOnce()
+  })
+
+  test('keeps the stylesheet attached until React finishes unmounting', () => {
+    const events: string[] = []
+    const target = {remove: () => events.push('remove stylesheet')}
+    const root = {ownerDocument: {createElement: () => target, head: {appendChild: () => {}}}}
+    const mod = loadWrapper(
+      renderRemote({app: APP, isolateStyles: true, preamble: ''}),
+      makeReact(),
+      () => events.push('unmount React'),
+    )
+    mod.render(root)()
+    expect(events).toEqual(['unmount React', 'remove stylesheet'])
+  })
+
   test('sources ModuleContext from the symbol-keyed WeakMap<createContext, Context>', () => {
     const React = makeReact()
     loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
