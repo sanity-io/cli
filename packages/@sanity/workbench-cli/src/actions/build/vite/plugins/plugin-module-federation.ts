@@ -4,6 +4,8 @@ import {type Plugin, type PluginOption} from 'vite'
 import {FEDERATION_DIR_NAME} from '../constants.js'
 import {type FederationSharing} from '../shared-dependencies.js'
 
+type ManifestAssets = Record<'css' | 'js', {async: string[]; sync: string[]}>
+
 interface FederationPluginApi {
   create: (sharing?: FederationSharing) => PluginOption
   inputs: string[]
@@ -50,11 +52,34 @@ export function sanityModuleFederation(
     // Ctrl-C by sending on a still-CONNECTING websocket.
     dts: false,
     exposes,
-    manifest: true,
+    manifest: sharing
+      ? {
+          additionalData: ({stats}) => {
+            const {exposes, shared} = stats as {
+              exposes: {assets: ManifestAssets}[]
+              shared: {assets: ManifestAssets}[]
+            }
+            // TODO: Remove after https://github.com/module-federation/vite/pull/1313 ships; expose preloads otherwise fetch fallback providers.
+            for (const kind of ['js', 'css'] as const) {
+              const providers = new Set(
+                shared.flatMap(({assets}) => [...assets[kind].sync, ...assets[kind].async]),
+              )
+              for (const expose of exposes) {
+                expose.assets[kind].async = expose.assets[kind].async.filter(
+                  (asset) => !providers.has(asset),
+                )
+              }
+            }
+            return stats
+          },
+        }
+      : true,
     name,
     // Resolves the remote entry path relative to the manifest rather than the
     // host origin.
     publicPath: 'auto',
+    // Keep dependencies local when discovery cannot prove that sharing is safe.
+    shared: {},
     ...sharing,
   }).map((plugin: Plugin): Plugin => ({
     ...plugin,
