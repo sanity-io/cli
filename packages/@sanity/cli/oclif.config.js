@@ -36,7 +36,6 @@ export default {
     tokens: {description: 'Manage API tokens for your project'},
     typegen: {description: 'Generate TypeScript types for schema and GROQ'},
     users: {description: 'Manage project users and invitations'},
-    workflows: {hidden: true},
   },
   topicSeparator: ' ',
 }
