@@ -101,6 +101,7 @@ minimumReleaseAgeExclude:
   - '@oxfmt/*'
   - 'vite'
   - '@vitejs/*'
+  - '@module-federation/vite'
   # Vite's bundler; same trust domain and release cadence as vite itself.
   # Needed so vite's `rolldown: ~x.y.z` range can pick up fresh patch fixes.
   # `@rolldown/*` covers the per-platform native binding packages released in
