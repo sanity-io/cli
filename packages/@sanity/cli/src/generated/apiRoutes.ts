@@ -159,7 +159,9 @@ export const apiRoutes: ApiRouteEntry[] = [
     host: 'project',
     pathPatterns: [
       'assets/files/{dataset}',
+      'assets/files/{dataset}/from-url',
       'assets/images/{dataset}',
+      'assets/images/{dataset}/from-url',
       'assets/media-library-link/{dataset}'
     ],
     slug: 'assets',
