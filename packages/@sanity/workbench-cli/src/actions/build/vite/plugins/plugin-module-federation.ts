@@ -2,6 +2,17 @@ import {federation as moduleFederation, type ModuleFederationOptions} from '@mod
 import {type Plugin, type PluginOption} from 'vite'
 
 import {FEDERATION_DIR_NAME} from '../constants.js'
+import {type FederationSharing} from '../shared-dependencies.js'
+
+interface FederationPluginApi {
+  create: (sharing?: FederationSharing) => PluginOption
+  inputs: string[]
+  isolateStyles: boolean
+}
+
+export function getFederationApi(plugins: readonly Plugin[] = []): FederationPluginApi | undefined {
+  return plugins.find((plugin) => plugin.api?.sanityFederation)?.api.sanityFederation
+}
 
 /**
  * @internal
@@ -15,8 +26,21 @@ export interface FederationOptions extends Pick<ModuleFederationOptions, 'expose
   name: string
 }
 
-export function sanityModuleFederation({exposes, name}: FederationOptions): PluginOption {
-  const mfPlugins = moduleFederation({
+export function sanityModuleFederation(
+  options: FederationOptions,
+  sharing?: FederationSharing,
+): PluginOption {
+  const {exposes, name} = options
+  const isolateStyles = Boolean(sharing && 'styled-components' in sharing.shared)
+  // Discovery replaces this plugin set as a group; callers need no knowledge of upstream plugin names.
+  const api: FederationPluginApi = {
+    create: (sharing) => sanityModuleFederation(options, sharing),
+    inputs: Object.values(exposes ?? {}).flatMap((expose) =>
+      typeof expose === 'string' ? expose : expose.import,
+    ),
+    isolateStyles,
+  }
+  return moduleFederation({
     dev: {
       disableDynamicRemoteTypeHints: true,
       remoteHmr: true,
@@ -31,30 +55,12 @@ export function sanityModuleFederation({exposes, name}: FederationOptions): Plug
     // Resolves the remote entry path relative to the manifest rather than the
     // host origin.
     publicPath: 'auto',
-    // @module-federation/vite auto-shares every package.json dependency
-    // that exposes an `exports` field. That breaks for workspace packages with
-    // subpath-only exports (no `.` entry) like `@sanity/cli-build` and
-    // `@sanity/workbench`, because vite tries to resolve them as bare imports
-    // and fails. Workbench remotes manage runtime sharing through the host's
-    // federation runtime, so we opt out of auto-share entirely.
-    shared: {},
-  })
-
-  // module-federation can deliver a plugin as a Promise resolving to an array;
-  // spreading a promise (or an array) yields a junk object that silently drops
-  // it. Recurse through the PluginOption shape so every actual plugin gets scoped.
-  const scopeToEnvironment = (option: PluginOption): PluginOption => {
-    if (!option) return option
-    if (option instanceof Promise) return option.then((resolved) => scopeToEnvironment(resolved))
-    if (Array.isArray(option)) return option.map((entry) => scopeToEnvironment(entry))
-    return {
-      ...option,
-      // In dev, MF must run on client — the dev server serves through it.
-      // In build, scope to the federation environment to keep the library build clean.
-      applyToEnvironment: (env) =>
-        env.config.command === 'serve' || env.name === FEDERATION_DIR_NAME,
-    } satisfies Plugin
-  }
-
-  return mfPlugins.map((plugin: PluginOption) => scopeToEnvironment(plugin))
+    ...sharing,
+  }).map((plugin: Plugin): Plugin => ({
+    ...plugin,
+    api: {...plugin.api, sanityFederation: api},
+    // In dev, MF must run on client — the dev server serves through it.
+    // In build, scope to the federation environment to keep the library build clean.
+    applyToEnvironment: (env) => env.config.command === 'serve' || env.name === FEDERATION_DIR_NAME,
+  }))
 }
