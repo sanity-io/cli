@@ -197,6 +197,19 @@ describe('a production app using React and styled-components', () => {
     expect([...providers].filter((fileName) => reachable.has(fileName))).toEqual([])
   })
 
+  test('keeps fallback providers out of preload requests', () => {
+    const {manifest} = result
+    const fallbacks = new Set(
+      manifest.shared.flatMap(({assets}) => [...assets.js.sync, ...assets.js.async]),
+    )
+    expect(fallbacks.size).toBeGreaterThan(0)
+    expect(
+      manifest.exposes
+        .flatMap(({assets}) => assets.js.async)
+        .filter((asset) => fallbacks.has(asset)),
+    ).toEqual([])
+  })
+
   test('isolates styles in both generated app and view entries', () => {
     expect(result.appSource).toContain("import { StyleSheetManager } from 'styled-components'")
     expect(result.viewSource).toContain("import { StyleSheetManager } from 'styled-components'")

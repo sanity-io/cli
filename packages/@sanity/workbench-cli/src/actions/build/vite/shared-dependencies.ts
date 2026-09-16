@@ -85,6 +85,7 @@ function getSingleInstalledVersion(copies: ResolvedDependency[]): string | undef
   if (copies.length === 0) return undefined
   const {root, version} = copies[0]
   if (copies.some((copy) => copy.root !== root || copy.version !== version)) return undefined
+  // pnpm patch hashes identify different package code under the same version, so patched copies stay local.
   if (root.includes('patch_hash=')) return undefined
   // Semver ignores build metadata, so only its unchanged canonical form is safe to share.
   if (validSemver(version) !== version) return undefined
