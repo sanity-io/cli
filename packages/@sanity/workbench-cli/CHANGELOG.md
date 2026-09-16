@@ -1,5 +1,26 @@
 # @sanity/workbench-cli
 
+## 2.5.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.5.0...workbench-cli-v2.5.1)
+
+_2026-09-14_
+
+### Bug Fixes
+
+- **workbench-cli:** key the module identity context by `React.createContext` so the SDK resolves the same context ([#1878](https://github.com/sanity-io/cli/pull/1878)) ([2497267](https://github.com/sanity-io/cli/commit/24972671db3e6f99512a26b048fdbdc44643775b))
+- **workbench-cli:** reference `React.createElement` in the generated studio entry so the studio renders instead of throwing `createElement is not defined` ([#1880](https://github.com/sanity-io/cli/pull/1880)) ([9d4f10c](https://github.com/sanity-io/cli/commit/9d4f10ccfad4fc92d12486e7d0885a3ae8c0be59))
+
+## 2.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.3...workbench-cli-v2.5.0)
+
+_2026-09-11_
+
+### Features
+
+- **workbench-cli:** provide module identity context from renderOptions.moduleId ([#1862](https://github.com/sanity-io/cli/pull/1862)) ([2d15481](https://github.com/sanity-io/cli/commit/2d1548145226222516d201b69fb00179c4ba17d9))
+
 ## 2.4.3
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.2...workbench-cli-v2.4.3)

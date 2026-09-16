@@ -16,12 +16,10 @@ const debug = subdebug('login:getProvider')
  * @internal
  */
 export async function getProvider({
-  experimental,
   orgSlug,
   specifiedProvider,
   ssoProvider,
 }: {
-  experimental: boolean | undefined
   orgSlug: string | undefined
   specifiedProvider: string | undefined
   ssoProvider: string | undefined
@@ -43,13 +41,9 @@ export async function getProvider({
 
     spin = spinner('Fetching providers...').start()
     // Fetch and prompt for login provider to use
-    let {providers} = await getProviders()
-    if (experimental) {
-      providers = [...providers, {name: 'sso', title: 'SSO', url: '_not_used_'}]
-    }
+    const {providers} = await getProviders()
     spin.stop()
 
-    // Real providers excludes the synthetic SSO entry used by --experimental
     const realProviderNames = providers.filter((p) => p.name !== 'sso').map((p) => p.name)
 
     if (specifiedProvider) {
@@ -82,7 +76,10 @@ export async function getProvider({
       }
     }
 
-    const provider = await promptForProviders(providers)
+    const provider = await promptForProviders([
+      ...providers,
+      {name: 'sso', title: 'SSO', url: '_not_used_'},
+    ])
     if (provider.name === 'sso') {
       const orgSlug = await input({message: 'Organization slug:'})
       return getSSOProvider(orgSlug)

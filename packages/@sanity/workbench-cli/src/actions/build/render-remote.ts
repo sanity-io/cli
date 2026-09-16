@@ -14,9 +14,9 @@
  * `render(rootElement, props, renderOptions?: {reactStrictMode?: boolean; moduleId?: string})`.
  * `moduleId` is the host's canonical federation module id (e.g. `favorites/App`,
  * `favorites/views/list/panel`, `favorites/workers/sync`). It is provided to
- * `App` through a `React.Context<string | undefined>` keyed per React copy on a
- * global slot (`Symbol.for('sanity.os.module')`), which the SDK reads via
- * `getDashboardModuleContext()`.
+ * `App` through a `React.Context<string | undefined>` keyed per React copy (by
+ * `React.createContext`) on a global slot (`Symbol.for('sanity.os.module')`),
+ * which the SDK reads via `getDashboardModuleContext()`.
  */
 
 /**
@@ -64,10 +64,14 @@ ${preamble}
 ${app ? `\nconst App = ${app}\n` : ''}${version ? `\nexport const version = ${version}\n` : ''}
 // Module identity (the federation module id) is provided to App through a React
 // context keyed per React copy on a global slot. The SDK reads this same slot
-// via getDashboardModuleContext(), so the symbol and value type are a contract.
+// via getDashboardModuleContext(), so the symbol, the key and the value type are
+// a contract. The key is React.createContext rather than the React namespace:
+// bundler interop (esbuild's __toESM in Vite dev pre-bundling) can hand two
+// importers of the same React copy different namespace objects, whereas the
+// createContext function is the same reference in both.
 const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
-if (!moduleSlot.has(React)) moduleSlot.set(React, React.createContext(undefined))
-const ModuleContext = moduleSlot.get(React)
+if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, React.createContext(undefined))
+const ModuleContext = moduleSlot.get(React.createContext)
 const rootMap = new Map()
 const renderArgs = new Map()
 

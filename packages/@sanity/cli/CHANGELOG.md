@@ -1,5 +1,21 @@
 # Change Log
 
+## 8.11.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.10.0...cli-v8.11.0)
+
+_2026-09-11_
+
+### Features
+
+- **login:** show sso in the default login menu ([#1874](https://github.com/sanity-io/cli/pull/1874)) ([5f35541](https://github.com/sanity-io/cli/commit/5f35541939f8fb15bf7b43ff445442799d3ea013))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.5.0
+
 ## 8.10.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.9.1...cli-v8.10.0)

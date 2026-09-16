@@ -4,7 +4,7 @@ import {Readable} from 'node:stream'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startServerForTokenCallback} from '../../actions/auth/authServer.js'
 import {LOGIN_PROVIDER_IDS} from '../../actions/auth/login/loginInstructions.js'
@@ -199,6 +199,10 @@ function testTokenLogin(token: string) {
 }
 
 describe('#login', {timeout: 10_000}, () => {
+  beforeEach(() => {
+    mockSelect.mockReset().mockImplementation(({choices}) => Promise.resolve(choices[0].value))
+  })
+
   afterEach(() => {
     if (originalStdinDescriptor) {
       Object.defineProperty(process, 'stdin', originalStdinDescriptor)
@@ -616,6 +620,7 @@ describe('#login', {timeout: 10_000}, () => {
           {name: 'Google', value: expect.objectContaining({name: 'google'})},
           {name: 'GitHub', value: expect.objectContaining({name: 'github'})},
           {name: 'Microsoft', value: expect.objectContaining({name: 'microsoft'})},
+          {name: 'SSO', value: expect.objectContaining({name: 'sso'})},
         ],
         message: 'Please log in or create a new account',
       })
@@ -653,60 +658,65 @@ describe('#login', {timeout: 10_000}, () => {
       expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('auth/github'))
     })
 
-    test('includes experimental SSO provider when --experimental flag is set', async () => {
-      mockedGetCliToken.mockResolvedValue('')
+    test.each([{flags: []}, {flags: ['--experimental']}])(
+      'offers interactive SSO with flags $flags',
+      async ({flags}) => {
+        mockedGetCliToken.mockResolvedValue('')
 
-      mockApi({
-        apiVersion: AUTH_API_VERSION,
-        method: 'get',
-        uri: '/auth/providers',
-      }).reply(200, {
-        providers: [{name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'}],
-      })
+        mockApi({
+          apiVersion: AUTH_API_VERSION,
+          method: 'get',
+          uri: '/auth/providers',
+        }).reply(200, {
+          providers: [{name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'}],
+        })
 
-      mockApi({
-        apiVersion: AUTH_API_VERSION,
-        method: 'get',
-        uri: '/auth/organizations/by-slug/test-org/providers',
-      }).reply(200, [
-        {
-          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
-          disabled: false,
-          id: 'sso-provider-1',
-          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-provider-1',
-          name: 'My SSO',
-          organizationId: 'org-123',
-          type: 'saml' as const,
-        },
-      ])
+        mockApi({
+          apiVersion: AUTH_API_VERSION,
+          method: 'get',
+          uri: '/auth/organizations/by-slug/test-org/providers',
+        }).reply(200, [
+          {
+            callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+            disabled: false,
+            id: 'sso-provider-1',
+            loginUrl: 'https://api.sanity.io/auth/saml/login/sso-provider-1',
+            name: 'My SSO',
+            organizationId: 'org-123',
+            type: 'saml' as const,
+          },
+        ])
 
-      mockApi({
-        apiVersion: AUTH_API_VERSION,
-        method: 'get',
-        query: {sid: 'test-session-id'},
-        uri: '/auth/fetch',
-      }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
+        mockApi({
+          apiVersion: AUTH_API_VERSION,
+          method: 'get',
+          query: {sid: 'test-session-id'},
+          uri: '/auth/fetch',
+        }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 
-      // User selects SSO, then enters org slug
-      mockSelect.mockResolvedValue({name: 'sso', title: 'SSO', url: '_not_used_'})
-      mockInput.mockResolvedValue('test-org')
+        // User selects SSO, then enters org slug
+        mockSelect.mockResolvedValue({name: 'sso', title: 'SSO', url: '_not_used_'})
+        mockInput.mockResolvedValue('test-org')
 
-      const commandPromise = testCommand(LoginCommand, ['--experimental'])
-      await simulateOAuthCallback(commandPromise, 'test-session-id')
-      const {error, stdout} = await commandPromise
+        const commandPromise = testCommand(LoginCommand, flags)
+        await simulateOAuthCallback(commandPromise, 'test-session-id')
+        const {error, stdout} = await commandPromise
 
-      expect(error).toBeUndefined()
-      expect(stdout).toContain('Login successful')
-      expect(mockSelect).toHaveBeenCalledWith({
-        choices: [
-          {name: 'Google', value: expect.objectContaining({name: 'google'})},
-          {name: 'SSO', value: expect.objectContaining({name: 'sso'})},
-        ],
-        message: 'Please log in or create a new account',
-      })
-      expect(mockInput).toHaveBeenCalledWith({message: 'Organization slug:'})
-      expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('saml/login/sso-provider-1'))
-    })
+        expect(error).toBeUndefined()
+        expect(stdout).toContain('Login successful')
+        expect(mockSelect).toHaveBeenCalledWith({
+          choices: [
+            {name: 'Google', value: expect.objectContaining({name: 'google'})},
+            {name: 'SSO', value: expect.objectContaining({name: 'sso'})},
+          ],
+          message: 'Please log in or create a new account',
+        })
+        expect(mockInput).toHaveBeenCalledWith({message: 'Organization slug:'})
+        expect(mockedOpen).toHaveBeenCalledWith(
+          expect.stringContaining('saml/login/sso-provider-1'),
+        )
+      },
+    )
   })
 
   describe('SSO Flows', () => {
@@ -807,24 +817,59 @@ describe('#login', {timeout: 10_000}, () => {
       expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('saml/login/sso-provider-1'))
     })
 
-    test('prompts user to select from multiple SSO providers', async () => {
-      mockedGetCliToken.mockResolvedValue('')
+    test.each([{flags: []}, {flags: ['--sso', 'my-org']}])(
+      'selects from multiple SSO providers with flags $flags',
+      async ({flags}) => {
+        mockedGetCliToken.mockResolvedValue('')
 
-      mockApi({
-        apiVersion: AUTH_API_VERSION,
-        method: 'get',
-        uri: '/auth/organizations/by-slug/my-org/providers',
-      }).reply(200, [
-        {
-          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
-          disabled: false,
-          id: 'sso-provider-1',
-          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-provider-1',
-          name: 'Okta SSO',
-          organizationId: 'org-123',
-          type: 'saml' as const,
-        },
-        {
+        mockApi({
+          apiVersion: AUTH_API_VERSION,
+          method: 'get',
+          uri: '/auth/organizations/by-slug/my-org/providers',
+        }).reply(200, [
+          {
+            callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+            disabled: false,
+            id: 'sso-provider-1',
+            loginUrl: 'https://api.sanity.io/auth/saml/login/sso-provider-1',
+            name: 'Okta SSO',
+            organizationId: 'org-123',
+            type: 'saml' as const,
+          },
+          {
+            callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+            disabled: false,
+            id: 'sso-provider-2',
+            loginUrl: 'https://api.sanity.io/auth/saml/login/sso-provider-2',
+            name: 'Azure AD',
+            organizationId: 'org-123',
+            type: 'saml' as const,
+          },
+        ])
+
+        mockApi({
+          apiVersion: AUTH_API_VERSION,
+          method: 'get',
+          query: {sid: 'test-session-id'},
+          uri: '/auth/fetch',
+        }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
+
+        if (flags.length === 0) {
+          mockApi({
+            apiVersion: AUTH_API_VERSION,
+            method: 'get',
+            uri: '/auth/providers',
+          }).reply(200, {
+            providers: [
+              {name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'},
+            ],
+          })
+          mockSelect.mockResolvedValueOnce({name: 'sso', title: 'SSO', url: '_not_used_'})
+          mockInput.mockResolvedValue('my-org')
+        }
+
+        // User selects Azure AD
+        mockSelect.mockResolvedValue({
           callbackUrl: 'https://api.sanity.io/auth/saml/callback',
           disabled: false,
           id: 'sso-provider-2',
@@ -832,42 +877,26 @@ describe('#login', {timeout: 10_000}, () => {
           name: 'Azure AD',
           organizationId: 'org-123',
           type: 'saml' as const,
-        },
-      ])
+        })
 
-      mockApi({
-        apiVersion: AUTH_API_VERSION,
-        method: 'get',
-        query: {sid: 'test-session-id'},
-        uri: '/auth/fetch',
-      }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
+        const commandPromise = testCommand(LoginCommand, flags)
+        await simulateOAuthCallback(commandPromise, 'test-session-id')
+        const {error, stdout} = await commandPromise
 
-      // User selects Azure AD
-      mockSelect.mockResolvedValue({
-        callbackUrl: 'https://api.sanity.io/auth/saml/callback',
-        disabled: false,
-        id: 'sso-provider-2',
-        loginUrl: 'https://api.sanity.io/auth/saml/login/sso-provider-2',
-        name: 'Azure AD',
-        organizationId: 'org-123',
-        type: 'saml' as const,
-      })
-
-      const commandPromise = testCommand(LoginCommand, ['--sso', 'my-org'])
-      await simulateOAuthCallback(commandPromise, 'test-session-id')
-      const {error, stdout} = await commandPromise
-
-      expect(error).toBeUndefined()
-      expect(stdout).toContain('Login successful')
-      expect(mockSelect).toHaveBeenCalledWith({
-        choices: [
-          {name: 'Okta SSO', value: expect.objectContaining({id: 'sso-provider-1'})},
-          {name: 'Azure AD', value: expect.objectContaining({id: 'sso-provider-2'})},
-        ],
-        message: 'Select SSO provider',
-      })
-      expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('saml/login/sso-provider-2'))
-    })
+        expect(error).toBeUndefined()
+        expect(stdout).toContain('Login successful')
+        expect(mockSelect).toHaveBeenCalledWith({
+          choices: [
+            {name: 'Okta SSO', value: expect.objectContaining({id: 'sso-provider-1'})},
+            {name: 'Azure AD', value: expect.objectContaining({id: 'sso-provider-2'})},
+          ],
+          message: 'Select SSO provider',
+        })
+        expect(mockedOpen).toHaveBeenCalledWith(
+          expect.stringContaining('saml/login/sso-provider-2'),
+        )
+      },
+    )
 
     test('filters out disabled SSO providers', async () => {
       mockedGetCliToken.mockResolvedValue('')
