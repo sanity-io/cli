@@ -67,7 +67,7 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> --from-url https://example.com/hero.png --type image --dataset production',
+        "<%= config.bin %> <%= command.id %> --from-url 'https://example.com/hero.png' --type image --dataset production",
       description: 'Have Sanity fetch an image from a public URL',
     },
   ]

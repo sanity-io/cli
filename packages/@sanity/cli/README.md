@@ -280,7 +280,7 @@ EXAMPLES
 
   Have Sanity fetch an image from a public URL
 
-    $ sanity assets upload --from-url https://example.com/hero.png --type image --dataset production
+    $ sanity assets upload --from-url 'https://example.com/hero.png' --type image --dataset production
 ```
 
 ## `sanity backups disable [DATASET]`
