@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
-import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
+import {discoverSharedDependencies, type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {build, createBuilder} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
@@ -151,6 +151,8 @@ export async function buildStaticFiles(
       const faviconBasePath = `${basePath.replace(/\/+$/, '')}/static`
       await writeFavicons(faviconBasePath, staticPath)
     }
+
+    viteConfig = await discoverSharedDependencies(viteConfig)
 
     buildDebug('Bundling federation environment')
     const builder = await createBuilder(viteConfig)

@@ -18,6 +18,10 @@ const mockResolveEntries = vi.hoisted(() => vi.fn())
 const mockCopyDir = vi.hoisted(() => vi.fn())
 const mockWriteFavicons = vi.hoisted(() => vi.fn())
 
+vi.mock('@sanity/workbench-cli/build', () => ({
+  discoverSharedDependencies: async (config: InlineConfig) => config,
+}))
+
 vi.mock('vite', () => ({
   build: mockBuild,
   createBuilder: mockCreateBuilder,
