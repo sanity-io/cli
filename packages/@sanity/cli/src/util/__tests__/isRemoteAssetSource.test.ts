@@ -1,12 +1,15 @@
 import {describe, expect, test} from 'vitest'
 
-import {isIngestableUrl} from '../isIngestableUrl.js'
+import {isRemoteAssetSource} from '../isRemoteAssetSource.js'
 
-describe('#isIngestableUrl', () => {
+describe('#isRemoteAssetSource', () => {
+  // `http:` is remote but not ingestable: the protocol is rejected by
+  // `getIngestUrlError` instead, so the user gets a URL error rather than a
+  // missing-directory one.
   test.each(['https://example.com/hero.png', 'http://example.com/hero.png'])(
-    'treats %s as a URL',
+    'treats %s as remote',
     (source) => {
-      expect(isIngestableUrl(source)).toBe(true)
+      expect(isRemoteAssetSource(source)).toBe(true)
     },
   )
 
@@ -18,7 +21,7 @@ describe('#isIngestableUrl', () => {
     ['a directory named like a host', 'example.com'],
     ['an empty string', ''],
   ])('treats %s as a local path', (_label, source) => {
-    expect(isIngestableUrl(source)).toBe(false)
+    expect(isRemoteAssetSource(source)).toBe(false)
   })
 
   // These parse as URLs whose protocol is the drive letter, so a parseability
@@ -27,7 +30,7 @@ describe('#isIngestableUrl', () => {
     ['a backslash Windows path', String.raw`C:\media\hero.png`],
     ['a forward-slash Windows path', 'd:/media'],
   ])('treats %s as a local path', (_label, source) => {
-    expect(isIngestableUrl(source)).toBe(false)
+    expect(isRemoteAssetSource(source)).toBe(false)
   })
 
   test.each([
@@ -35,6 +38,6 @@ describe('#isIngestableUrl', () => {
     ['ftp:', 'ftp://example.com/hero.png'],
     ['data:', 'data:image/png;base64,iVBORw0KGgo='],
   ])('rejects the unsupported protocol %s', (_label, source) => {
-    expect(isIngestableUrl(source)).toBe(false)
+    expect(isRemoteAssetSource(source)).toBe(false)
   })
 })

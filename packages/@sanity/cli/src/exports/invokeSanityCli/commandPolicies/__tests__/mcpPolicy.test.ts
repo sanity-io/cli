@@ -16,8 +16,13 @@ describe('mcpPolicy media:import', () => {
     expect(mcpPolicy['media:import']?.kind).toBe('conditional')
   })
 
-  test('allows an http(s) URL source', () => {
+  test('allows an https URL source', () => {
     expect(validate('media:import', {args: {source: 'https://example.com/hero.png'}})).toBe(true)
+  })
+
+  // The policy only decides whether the command reads from the host. An http
+  // URL does not, so it passes here and the command rejects the protocol.
+  test('allows an http URL source, which the command rejects on its own', () => {
     expect(validate('media:import', {args: {source: 'http://example.com/hero.png'}})).toBe(true)
   })
 

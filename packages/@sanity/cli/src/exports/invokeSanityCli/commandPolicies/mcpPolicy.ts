@@ -1,4 +1,4 @@
-import {isIngestableUrl} from '../../../util/isIngestableUrl.js'
+import {isRemoteAssetSource} from '../../../util/isRemoteAssetSource.js'
 import {
   allow,
   type CommandPolicySet,
@@ -208,7 +208,7 @@ export const mcpPolicy: CommandPolicySet = {
   // than advertised as usable surface.
   'media:import': conditionalPolicy({
     deniedFlags: ['replace-aspects'],
-    validate: ({args}) => typeof args.source === 'string' && isIngestableUrl(args.source),
+    validate: ({args}) => typeof args.source === 'string' && isRemoteAssetSource(args.source),
   }),
 
   // Creates migration source files in the local project.

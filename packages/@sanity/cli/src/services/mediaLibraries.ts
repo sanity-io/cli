@@ -7,13 +7,16 @@ import {
   type SanityDocument,
 } from '@sanity/types'
 
-import {URL_INGEST_TIMEOUT_MS} from './assets.js'
+import {ASSET_UPLOAD_REQUEST_TAG_PREFIX, URL_INGEST_TIMEOUT_MS} from './assets.js'
 
 export const MEDIA_LIBRARY_API_VERSION = 'v2025-02-19'
 
-async function getMediaLibraryClient() {
+async function getMediaLibraryClient(options: {requestTagPrefix?: string} = {}) {
+  const {requestTagPrefix} = options
+
   return getGlobalCliClient({
     apiVersion: MEDIA_LIBRARY_API_VERSION,
+    ...(requestTagPrefix ? {requestTagPrefix} : {}),
     requireUser: true,
   })
 }
@@ -168,7 +171,9 @@ export async function ingestMediaLibraryAssetFromUrl({
 }: IngestMediaLibraryAssetFromUrlOptions): Promise<MediaLibraryAsset> {
   signal?.throwIfAborted()
 
-  const client = await getMediaLibraryClient()
+  const client = await getMediaLibraryClient({
+    requestTagPrefix: ASSET_UPLOAD_REQUEST_TAG_PREFIX,
+  })
 
   return client.request<MediaLibraryAsset>({
     body: {
@@ -178,7 +183,7 @@ export async function ingestMediaLibraryAssetFromUrl({
     },
     method: 'POST',
     signal,
-    tag: 'asset.ingest.from-url',
+    tag: 'asset.upload.from-url',
     timeout: URL_INGEST_TIMEOUT_MS,
     url: `/media-libraries/${mediaLibraryId}/from-url`,
   })

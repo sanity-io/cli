@@ -103,13 +103,14 @@ describe('#ingestMediaLibraryAssetFromUrl', () => {
 
     expect(mockGetGlobalCliClient).toHaveBeenCalledWith({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
+      requestTagPrefix: 'sanity.cli.assets.upload',
       requireUser: true,
     })
     expect(mockClient.request).toHaveBeenCalledWith({
       body: {url: 'https://example.com/hero.png'},
       method: 'POST',
       signal: undefined,
-      tag: 'asset.ingest.from-url',
+      tag: 'asset.upload.from-url',
       timeout: 370_000,
       url: '/media-libraries/test-library-id/from-url',
     })

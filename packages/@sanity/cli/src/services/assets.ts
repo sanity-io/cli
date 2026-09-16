@@ -6,6 +6,8 @@ import {filter, lastValueFrom, map, Observable, race} from 'rxjs'
 
 export const ASSETS_API_VERSION = 'v2024-06-24'
 
+export const ASSET_UPLOAD_REQUEST_TAG_PREFIX = 'sanity.cli.assets.upload'
+
 /**
  * Content Lake allows itself 300 seconds to fetch the source URL and a further
  * budget to persist the asset, so this waits far longer than an ordinary API
@@ -49,7 +51,7 @@ export async function uploadAsset({
     apiVersion: ASSETS_API_VERSION,
     dataset,
     projectId,
-    requestTagPrefix: 'sanity.cli.assets.upload',
+    requestTagPrefix: ASSET_UPLOAD_REQUEST_TAG_PREFIX,
     requireUser: true,
   })
   signal?.throwIfAborted()
@@ -127,7 +129,7 @@ export async function ingestAssetFromUrl({
     apiVersion: ASSETS_API_VERSION,
     dataset,
     projectId,
-    requestTagPrefix: 'sanity.cli.assets.upload',
+    requestTagPrefix: ASSET_UPLOAD_REQUEST_TAG_PREFIX,
     requireUser: true,
   })
   signal?.throwIfAborted()

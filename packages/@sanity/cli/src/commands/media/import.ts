@@ -16,7 +16,7 @@ import {promptForProject} from '../../prompts/promptForProject.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
 import {getAssetFilenameError, getIngestUrlError} from '../../util/assetSourceValidation.js'
 import {getAssetUploadErrorMessage} from '../../util/assetUploadErrors.js'
-import {isIngestableUrl} from '../../util/isIngestableUrl.js'
+import {isRemoteAssetSource} from '../../util/isRemoteAssetSource.js'
 import {parseAspectFlags} from '../../util/parseAspectFlags.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
@@ -52,7 +52,7 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
   static override args = {
     source: Args.string({
       description:
-        'Directory, archive, or asset URL to import from. An http(s) URL imports one asset that Sanity fetches itself',
+        'Directory, archive, or asset URL to import from. An https URL imports one asset that Sanity fetches itself',
       required: true,
     }),
   }
@@ -93,13 +93,13 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
     const {args, flags} = await this.parse(MediaImportCommand)
     const {source} = args
     const replaceAspects = flags['replace-aspects']
-    const isUrlSource = isIngestableUrl(source)
+    const isUrlSource = isRemoteAssetSource(source)
 
     const aspects = this.resolveAspects({aspectFlags: flags.aspect, isUrlSource})
 
     if (!isUrlSource && flags.filename !== undefined) {
       this.error(
-        'The --filename flag only applies when importing from a URL. Directory and archive imports keep each asset\u2019s own filename.',
+        'The --filename flag only applies when importing from a URL. Directory and archive imports keep each asset’s own filename.',
         {exit: exitCodes.USAGE_ERROR},
       )
     }

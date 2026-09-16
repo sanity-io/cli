@@ -380,6 +380,21 @@ describe('#media:import', () => {
       expect(mockIngestFromUrl).not.toHaveBeenCalled()
     })
 
+    // An http URL is a URL source rather than a path, so it must fail on the
+    // protocol instead of reaching the directory pipeline as a missing path.
+    test('rejects an http source URL before any request', async () => {
+      const {error} = await testCommand(
+        MediaImportCommand,
+        ['http://example.com/hero.png', '--media-library-id', 'test-media-library'],
+        {mocks: defaultMocks},
+      )
+
+      expect(error?.message).toContain('must use https')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(mockIngestFromUrl).not.toHaveBeenCalled()
+      expect(mocks.importer).not.toHaveBeenCalled()
+    })
+
     test('rejects a --filename holding a path before any request', async () => {
       const {error} = await testCommand(
         MediaImportCommand,
