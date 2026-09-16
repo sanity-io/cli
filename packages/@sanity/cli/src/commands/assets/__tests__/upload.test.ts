@@ -372,7 +372,8 @@ Check the asset requirements and current technical limits, then try again: https
   })
 
   test.each([
-    ['a local path', 'file:///srv/media/hero.png', 'must use http or https'],
+    ['a local path', 'file:///srv/media/hero.png', 'must use https'],
+    ['an http URL', 'http://example.com/hero.png', 'must use https'],
     ['credentials in the URL', 'https://user:pass@example.com/hero.png', 'username or password'],
     ['an unparseable URL', 'not a URL', 'is not a valid URL'],
   ])('rejects %s before requesting the ingest', async (_label, url, expected) => {

@@ -5,7 +5,6 @@ import {getAssetFilenameError, getIngestUrlError} from '../assetSourceValidation
 describe('#getIngestUrlError', () => {
   test.each([
     ['a plain https URL', 'https://example.com/hero.png'],
-    ['a plain http URL', 'http://example.com/hero.png'],
     ['a presigned URL', 'https://example.com/hero.png?signature=secret&expires=1800000000'],
     ['a URL at the length limit', `https://example.com/${'a'.repeat(2028)}`],
   ])('accepts %s', (_label, url) => {
@@ -13,20 +12,21 @@ describe('#getIngestUrlError', () => {
   })
 
   test.each([
+    ['http:', 'http://example.com/hero.png'],
     ['file:', 'file:///srv/media/hero.png'],
     ['ftp:', 'ftp://example.com/hero.png'],
     ['data:', 'data:image/png;base64,iVBORw0KGgo='],
   ])('rejects the unsupported protocol %s', (label, url) => {
     const error = getIngestUrlError(url)
 
-    expect(error).toContain('must use http or https')
+    expect(error).toContain('must use https')
     expect(error).toContain(label)
   })
 
   // A Windows path parses as a URL whose protocol is its drive letter, so it
   // reaches the protocol check rather than failing to parse.
   test('rejects a Windows path by its drive-letter protocol', () => {
-    expect(getIngestUrlError(String.raw`C:\media\hero.png`)).toContain('must use http or https')
+    expect(getIngestUrlError(String.raw`C:\media\hero.png`)).toContain('must use https')
   })
 
   test.each([

@@ -4,9 +4,9 @@ const MAX_FILENAME_LENGTH = 255
 /**
  * Check a URL that Sanity will fetch an asset from.
  *
- * Sanity fetches the source itself, over the public internet and without
- * credentials, so a URL it cannot act on is worth rejecting here rather than
- * spending a request to have it come back as an opaque server error.
+ * Sanity fetches the source itself, over https and without credentials, so a
+ * URL it cannot act on is worth rejecting here rather than spending a request
+ * to have it come back as an opaque server error.
  *
  * Embedded credentials are rejected rather than stripped: they would travel to
  * Sanity and be recorded wherever the request is, and a presigned URL is the
@@ -27,8 +27,8 @@ export function getIngestUrlError(url: string): string | undefined {
 
   const {password, protocol, username} = new URL(url)
 
-  if (protocol !== 'http:' && protocol !== 'https:') {
-    return `The asset URL must use http or https, not "${protocol}". Sanity fetches the asset over the public internet.`
+  if (protocol !== 'https:') {
+    return `The asset URL must use https, not "${protocol}". Sanity fetches the asset over the public internet.`
   }
 
   if (username || password) {

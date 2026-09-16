@@ -39,7 +39,7 @@ const flags = {
   }),
   'from-url': Flags.string({
     description:
-      'URL for Sanity to fetch the asset from, instead of uploading a local file. Must be reachable from the public internet without authentication',
+      'https URL for Sanity to fetch the asset from, instead of uploading a local file. Must be reachable from the public internet without authentication',
     exactlyOne: ['file', 'from-url'],
     helpValue: '<url>',
   }),
