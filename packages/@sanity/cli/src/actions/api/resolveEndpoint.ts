@@ -81,7 +81,7 @@ export function resolveEndpoint(options: ResolveEndpointOptions): ResolvedEndpoi
   // An API version embedded in the path (eg `v2021-06-07/projects`) is peeled
   // off and re-applied as the version segment of the final URL.
   let embeddedVersion: string | undefined
-  if (segments[0] === '{apiVersion}') {
+  if (segments[0] === '{apiVersion}' || segments[0] === '{apiV}') {
     segments.shift()
   } else if (segments.length > 0 && API_VERSION_SEGMENT_RE.test(segments[0])) {
     embeddedVersion = segments.shift()

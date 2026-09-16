@@ -13,26 +13,28 @@ const base = {
 }
 
 describe('toWireInterface', () => {
-  test.each(['app', 'panel', 'asset_source', 'tile'] as const)(
-    'renames a %s view surface to type',
-    (surface) => {
-      const result = toWireInterface({...base, metadata: null, surface} as DevServerInterface)
+  test.each([
+    ['window', 'app'],
+    ['panel', 'panel'],
+    ['asset_source', 'asset_source'],
+    ['tile', 'tile'],
+  ] as const)('maps a %s view surface to the %s type', (surface, type) => {
+    const result = toWireInterface({...base, metadata: null, surface} as DevServerInterface)
 
-      expect(result).toMatchObject({name: 'feed', type: surface})
-      expect(result).not.toHaveProperty('surface')
-    },
-  )
+    expect(result).toMatchObject({name: 'feed', type})
+    expect(result).not.toHaveProperty('surface')
+  })
 
   test('carries the rest of the interface across untouched', () => {
-    const metadata = {dock: {group: 'dock.system', order: 2}}
+    const metadata = {dock: {group: 'system', order: 2}}
     const result = toWireInterface({...base, metadata, surface: 'panel'} as DevServerInterface)
 
-    expect(result).toEqual({...base, metadata, type: 'panel'})
+    expect(result).toStrictEqual({...base, metadata, type: 'panel'})
   })
 
   test('passes a worker through unchanged (already keyed on type)', () => {
     const worker = {...base, metadata: null, type: 'worker'} as DevServerInterface
 
-    expect(toWireInterface(worker)).toEqual(worker)
+    expect(toWireInterface(worker)).toStrictEqual(worker)
   })
 })

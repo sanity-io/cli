@@ -1,6 +1,10 @@
-import DOMPurify from 'isomorphic-dompurify'
+import createDOMPurify from 'dompurify'
+import {JSDOM} from 'jsdom'
 
 import {config} from './purifyConfig.js'
+
+const {window} = new JSDOM('<!DOCTYPE html>')
+const DOMPurify = createDOMPurify(window)
 
 /**
  * Sanitize icon markup against the manifest allowlist (see {@link config}).

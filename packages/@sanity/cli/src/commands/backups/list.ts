@@ -1,5 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {formatDateTime, parseDateOnly} from '@sanity/cli-core/dates'
 import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
@@ -7,7 +8,6 @@ import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
-import {formatDateTime, parseDateOnly} from '../../util/dates.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 

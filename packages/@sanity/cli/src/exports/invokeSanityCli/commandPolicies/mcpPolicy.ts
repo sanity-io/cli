@@ -4,7 +4,7 @@ import {
   conditionalDenyFlags,
   conditionalPolicy,
   deny,
-} from './policy.js'
+} from '@sanity/cli-core/commandPolicy'
 
 function apiValidator({
   args,
@@ -48,10 +48,14 @@ function apiValidator({
  * a usage error, but cannot cause local filesystem access. Destructive remote
  * operations are allowed and do not by themselves make a command unsafe.
  *
- * Every manifest command must have exactly one policy here:
+ * Every command this package contributes must have exactly one policy here:
  * - allow: every valid invocation is safe
  * - conditional: safety depends on parsed arguments or flags
  * - deny: no invocation is safe
+ *
+ * Commands contributed by plugins are not listed here. Each plugin declares
+ * policies for its own commands (see `PluginInvocationPolicies` in
+ * `@sanity/cli-core/commandPolicy`).
  */
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful
@@ -79,6 +83,25 @@ export const mcpPolicy: CommandPolicySet = {
 
   // Reads and rewrites local source code.
   codemod: deny,
+
+  // --watch polls a job with no deadline; a stuck job would hang the MCP tool
+  // call indefinitely. Non-watch invocations are single remote requests.
+  'context:build': conditionalDenyFlags('watch'),
+  'context:create': allow,
+  'context:delete': allow,
+  'context:get': allow,
+  // --file reads the import payload from the local filesystem; text, URL and
+  // dataset imports are remote-only.
+  'context:imports:create': conditionalDenyFlags('file'),
+  'context:imports:delete': allow,
+  'context:imports:download': allow,
+  'context:imports:get': allow,
+  'context:imports:list': allow,
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:jobs:get': conditionalDenyFlags('watch'),
+  'context:list': allow,
+  'context:refresh': allow,
+  'context:update': allow,
 
   'cors:add': allow,
   'cors:delete': allow,

@@ -107,7 +107,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     vi.clearAllMocks()
   })
 
-  test('scaffolds a studio sanity.cli.ts branded with unstable_defineApp', async () => {
+  test('scaffolds a studio sanity.cli.ts branded with defineApplication', async () => {
     await bootstrapLocalTemplate({
       output: makeOutput(),
       outputPath: tmp,
@@ -127,7 +127,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
-    expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
+    expect(cliConfig).toContain(`import {defineApplication, defineCliConfig} from 'sanity/cli'`)
     expect(cliConfig).toContain(`title: 'My Studio'`)
     // `slug` derives from the entered project name, slugified
     expect(cliConfig).toContain(`slug: 'my-studio'`)
@@ -137,7 +137,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(cliConfig).not.toContain('entry:')
   })
 
-  test('scaffolds an app sanity.cli.ts branded with unstable_defineApp, keeping the entry', async () => {
+  test('scaffolds an app sanity.cli.ts branded with defineApplication, keeping the entry', async () => {
     await bootstrapLocalTemplate({
       output: makeOutput(),
       outputPath: tmp,
@@ -157,7 +157,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(spinnerSucceed).toHaveBeenCalledTimes(3)
 
     const cliConfig = await readFile(path.join(tmp, 'sanity.cli.ts'), 'utf8')
-    expect(cliConfig).toContain(`import {defineCliConfig, unstable_defineApp} from 'sanity/cli'`)
+    expect(cliConfig).toContain(`import {defineApplication, defineCliConfig} from 'sanity/cli'`)
     expect(cliConfig).toContain(`title: 'My App'`)
     // App init derives `slug` from the output directory, same as package.json's name
     const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))

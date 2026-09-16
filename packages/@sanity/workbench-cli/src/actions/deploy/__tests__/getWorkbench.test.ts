@@ -53,15 +53,15 @@ describe('getWorkbench', () => {
 describe('buildViewDeploymentPayload', () => {
   test('includes every declared window view', () => {
     const views = [
-      {name: 'main', src: './src/Main.tsx', surface: 'app' as const, title: 'Main'},
-      {name: 'settings', src: './src/Settings.tsx', surface: 'app' as const, title: 'Settings'},
+      {name: 'main', src: './src/Main.tsx', surface: 'window' as const, title: 'Main'},
+      {name: 'settings', src: './src/Settings.tsx', surface: 'window' as const, title: 'Settings'},
     ]
 
     expect(workbench({views}).buildViewDeploymentPayload('app-id')).toEqual({
       applicationId: 'app-id',
       views: [
-        {name: 'main', src: './src/Main.tsx', title: 'Main', type: 'app'},
-        {name: 'settings', src: './src/Settings.tsx', title: 'Settings', type: 'app'},
+        {name: 'main', src: './src/Main.tsx', title: 'Main', type: 'window'},
+        {name: 'settings', src: './src/Settings.tsx', title: 'Settings', type: 'window'},
       ],
     })
   })

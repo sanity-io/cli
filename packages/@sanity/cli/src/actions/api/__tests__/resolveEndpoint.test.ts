@@ -154,8 +154,8 @@ describe('resolveEndpoint', () => {
     expect(resolved).toMatchObject({apiVersion: 'v2024-01-01', path: 'projects'})
   })
 
-  test('strips a leading {apiVersion} placeholder', () => {
-    const resolved = resolveEndpoint({endpoint: '{apiVersion}/projects', routes})
+  test.each(['{apiVersion}', '{apiV}'])('strips a leading %s placeholder', (placeholder) => {
+    const resolved = resolveEndpoint({endpoint: `${placeholder}/projects`, routes})
     expect(resolved).toMatchObject({apiVersion: 'v2021-06-07', path: 'projects'})
   })
 
@@ -311,5 +311,6 @@ describe('resolveEndpoint', () => {
     expect(() => resolveEndpoint({endpoint: '/', routes})).toThrow(/empty/)
     expect(() => resolveEndpoint({endpoint: 'v2025-02-19', routes})).toThrow(/empty/)
     expect(() => resolveEndpoint({endpoint: '{apiVersion}', routes})).toThrow(/empty/)
+    expect(() => resolveEndpoint({endpoint: '{apiV}', routes})).toThrow(/empty/)
   })
 })

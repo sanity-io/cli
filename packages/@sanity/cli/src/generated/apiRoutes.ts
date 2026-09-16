@@ -21,10 +21,12 @@ export const apiRoutes: ApiRouteEntry[] = [
       'access/{resourceType}/{resourceId}/invites',
       'access/{resourceType}/{resourceId}/invites/token/{inviteToken}',
       'access/{resourceType}/{resourceId}/invites/token/{inviteToken}/accept',
+      'access/{resourceType}/{resourceId}/invites/token/{inviteToken}/eligibility',
       'access/{resourceType}/{resourceId}/invites/{inviteId}',
       'access/{resourceType}/{resourceId}/permissions',
       'access/{resourceType}/{resourceId}/permissions/{permissionName}',
       'access/{resourceType}/{resourceId}/requests',
+      'access/{resourceType}/{resourceId}/requests/state',
       'access/{resourceType}/{resourceId}/requests/{requestId}/accept',
       'access/{resourceType}/{resourceId}/requests/{requestId}/decline',
       'access/{resourceType}/{resourceId}/robots',
@@ -87,8 +89,8 @@ export const apiRoutes: ApiRouteEntry[] = [
       'deploy',
       'deploy/quickstart',
       'installations',
+      'installations/catalog',
       'installations/defaults',
-      'installations/managed',
       'installations/{installationId}',
       'installations/{installationId}/access',
       'installations/{installationId}/configs',
@@ -126,8 +128,8 @@ export const apiRoutes: ApiRouteEntry[] = [
       'deploy',
       'deploy/quickstart',
       'installations',
+      'installations/catalog',
       'installations/defaults',
-      'installations/managed',
       'installations/{installationId}',
       'installations/{installationId}/access',
       'installations/{installationId}/configs',
@@ -211,7 +213,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'embeddings-index/{dataset}/{indexName}'
     ],
     slug: 'embeddings-index',
-    title: 'Embeddings Index API reference'
+    title: 'Embeddings Index API reference (deprecated)'
   },
   {
     defaultApiVersion: 'v2021-03-25',
@@ -221,6 +223,20 @@ export const apiRoutes: ApiRouteEntry[] = [
     ],
     slug: 'export',
     title: 'Export API reference'
+  },
+  {
+    host: 'global',
+    pathPatterns: [
+      'functions',
+      'functions/{functionId}',
+      'functions/{functionId}/envvars',
+      'functions/{functionId}/envvars/{envVarKey}',
+      'functions/{functionId}/invoke',
+      'functions/{functionId}/logs',
+      'functions/{functionId}/logs/stream'
+    ],
+    slug: 'functions-api',
+    title: 'Functions API reference'
   },
   {
     defaultApiVersion: 'v2025-02-19',
@@ -265,6 +281,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2025-02-19',
     host: 'global',
     pathPatterns: [
+      'media-libraries/{libraryId}/from-url',
       'media-libraries/{libraryId}/mutate',
       'media-libraries/{libraryId}/query',
       'media-libraries/{libraryId}/references/documents/{assetId}/to',
@@ -286,6 +303,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2025-02-19',
     host: 'project',
     pathPatterns: [
+      'media-libraries/{libraryId}/from-url',
       'media-libraries/{libraryId}/mutate',
       'media-libraries/{libraryId}/query',
       'media-libraries/{libraryId}/references/documents/{assetId}/to',

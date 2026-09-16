@@ -107,7 +107,7 @@ const globalStyles = `
 `
 
 /**
- * @hidden
+ * @internal
  * @beta
  */
 export interface DefaultDocumentProps {
@@ -151,11 +151,6 @@ export function DefaultDocument(props: DefaultDocumentProps): React.JSX.Element 
       </head>
       <body>
         <div id="sanity" />
-        {/* Note: disable lint rule as brett depends on this specific ordering */}
-        {/* eslint-disable-next-line perfectionist/sort-jsx-props */}
-        <script type="application/json" id="sanity-resource-bindings">
-          []
-        </script>
         <script src={entryPath} type="module" />
         <NoJavascript />
       </body>

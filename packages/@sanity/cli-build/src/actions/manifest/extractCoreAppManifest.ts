@@ -32,8 +32,8 @@ export function resolveTitleUpdate(
 const sanitizeIconPath = new URL('sanitizeIcon.js', import.meta.url).href
 
 /**
- * Lazy-load {@link sanitizeIconFn} so `isomorphic-dompurify` (and its jsdom
- * dependency) stays out of the CLI's eager import graph. The studio manifest
+ * Lazy-load {@link sanitizeIconFn} so DOMPurify and its jsdom environment stay
+ * out of the CLI's eager import graph. The studio manifest
  * resolver lazy-loads its icon machinery for the same reason; this path runs in
  * the main process (not the manifest worker), so only an app deploy that
  * actually has an icon pays the cost.

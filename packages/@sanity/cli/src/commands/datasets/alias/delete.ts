@@ -1,6 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
@@ -37,10 +38,11 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
       description: 'Project ID to delete dataset alias from',
       semantics: 'override',
     }),
-    force: Flags.boolean({
-      description: 'Skip confirmation prompt and delete immediately',
-      required: false,
-    }),
+    force: requiredWhenUnattended(
+      Flags.boolean({
+        description: 'Skip confirmation prompt and delete immediately',
+      }),
+    ),
   }
 
   static override hiddenAliases: string[] = ['dataset:alias:delete']
@@ -79,11 +81,6 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
       if (force) {
         this.warn(`'--force' used: skipping confirmation, deleting alias "${displayName}"`)
       } else {
-        if (this.isUnattended()) {
-          this.error('Dataset alias deletion requires confirmation. Re-run with `--force`.', {
-            exit: exitCodes.USAGE_ERROR,
-          })
-        }
         await this.confirmDeletion(apiName, existingAlias.datasetName)
       }
 

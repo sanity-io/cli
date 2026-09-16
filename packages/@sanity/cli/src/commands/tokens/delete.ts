@@ -1,5 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
@@ -44,11 +45,12 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       description: 'Project ID to delete token from',
       semantics: 'override',
     }),
-    yes: Flags.boolean({
-      char: 'y',
-      description: 'Skip confirmation prompt (unattended mode)',
-      required: false,
-    }),
+    yes: requiredWhenUnattended(
+      Flags.boolean({
+        char: 'y',
+        description: 'Skip confirmation prompt (unattended mode)',
+      }),
+    ),
   }
 
   static override hiddenAliases: string[] = ['token:delete']
@@ -68,10 +70,6 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       if (!givenTokenId) {
         errors.push('Token ID is required. Pass it as the `<tokenId>` argument.')
       }
-      if (!skipConfirmation) {
-        errors.push('Deletion requires confirmation. Pass `--yes` to delete the token.')
-      }
-
       if (errors.length > 0) {
         this.error(formatCliErrorMessages(errors), {
           exit: exitCodes.USAGE_ERROR,

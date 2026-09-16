@@ -17,8 +17,8 @@ interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
 }
 
 /**
- * Executes a worker file with tsx registered. This means you can import other
- * typescript with fairly rich syntax, and still have that only apply to the worker
+ * Executes a worker file with TypeScript support. This means you can import other
+ * TypeScript with fairly rich syntax, and still have that only apply to the worker
  * thread instead of the full parent process. The worker should emit a message when
  * complete using `parentPort`. Once it has received a single message will resolve the
  * returned promise with that message. If you are expecting multiple messages, you will

@@ -45,6 +45,10 @@ export async function runCli(
     NO_UPDATE_NOTIFIER: '1',
     NODE_ENV: 'production',
     NODE_NO_WARNINGS: '1',
+    // Skip the advisory lookup and the funding notice; both add registry round trips
+    // to every npm install the CLI runs, and neither is under test.
+    npm_config_audit: 'false',
+    npm_config_fund: 'false',
     // Temp dirs are outside the workspace, so pnpm won't see the
     // minimumReleaseAgeExclude list from pnpm-workspace.yaml.
     // Disable the check entirely for E2E tests.

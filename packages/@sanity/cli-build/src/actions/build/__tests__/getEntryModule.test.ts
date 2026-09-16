@@ -63,4 +63,34 @@ describe('getEntryModule', () => {
     expect(output).not.toContain('createRoot')
     expect(output).toContain('This application has no app view.')
   })
+
+  test('omits the resource-bindings import when not a Blueprints build', () => {
+    const studio = getEntryModule({
+      reactStrictMode: undefined,
+      relativeConfigLocation: './sanity.config',
+    })
+    const app = getEntryModule({
+      entry: './src/App',
+      isApp: true,
+      reactStrictMode: undefined,
+      relativeConfigLocation: null,
+    })
+
+    expect(studio).not.toContain('sanity-resource-bindings')
+    expect(app).not.toContain('sanity-resource-bindings')
+  })
+
+  test('imports the resource-bindings module first on a Blueprints build', () => {
+    const output = getEntryModule({
+      isBlueprints: true,
+      reactStrictMode: undefined,
+      relativeConfigLocation: './sanity.config',
+    })
+
+    expect(output).toContain("import './sanity-resource-bindings.js'")
+    // It must precede the app imports so bindings evaluate first.
+    expect(output.indexOf('sanity-resource-bindings.js')).toBeLessThan(
+      output.indexOf('renderStudio'),
+    )
+  })
 })

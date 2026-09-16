@@ -1,6 +1,12 @@
 import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {formatDateTime, formatDuration, formatTimeAgo, parseDateOnly} from '../dates.js'
+import {
+  formatDateTime,
+  formatDuration,
+  formatElapsed,
+  formatTimeAgo,
+  parseDateOnly,
+} from '../dates.js'
 
 const SECOND = 1000
 const MINUTE = 60 * SECOND
@@ -36,6 +42,20 @@ describe('formatDateTime', () => {
   test('returns the input unchanged when it cannot be parsed', () => {
     expect(formatDateTime('not a date')).toBe('not a date')
     expect(formatDateTime('')).toBe('')
+  })
+
+  test('accepts epoch milliseconds', () => {
+    expect(formatDateTime(Date.parse('2024-01-15T10:30:00Z'))).toBe('2024-01-15 10:30:00')
+  })
+
+  test('accepts a Date', () => {
+    expect(formatDateTime(new Date('2024-01-15T10:30:00Z'))).toBe('2024-01-15 10:30:00')
+  })
+
+  test('returns an empty string for an invalid Date or a non-finite number', () => {
+    expect(formatDateTime(new Date('nope'))).toBe('')
+    expect(formatDateTime(Number.NaN)).toBe('')
+    expect(formatDateTime(Number.POSITIVE_INFINITY)).toBe('')
   })
 })
 
@@ -89,6 +109,52 @@ describe('formatDuration', () => {
   test('returns an empty string for a non-finite duration', () => {
     expect(formatDuration(Number.NaN)).toBe('')
     expect(formatDuration(Number.POSITIVE_INFINITY)).toBe('')
+  })
+})
+
+describe('formatElapsed', () => {
+  test.each([
+    [0, '0ms'],
+    [450, '450ms'],
+    [999, '999ms'],
+    [SECOND, '1s'],
+    [5 * SECOND, '5s'],
+    [59 * SECOND + 999, '59s'],
+    [MINUTE, '1m 0s'],
+    [MINUTE + 5 * SECOND, '1m 5s'],
+    [90 * SECOND, '1m 30s'],
+    [59 * MINUTE + 59 * SECOND, '59m 59s'],
+    [HOUR, '1h 0m'],
+    [HOUR + MINUTE, '1h 1m'],
+    [2 * HOUR + 5 * MINUTE, '2h 5m'],
+    [23 * HOUR + 59 * MINUTE, '23h 59m'],
+    [DAY, '1d 0h'],
+    [3 * DAY + 7 * HOUR, '3d 7h'],
+    [10 * DAY, '10d 0h'],
+  ])('formats %ims as "%s"', (ms, expected) => {
+    expect(formatElapsed(ms)).toBe(expected)
+  })
+
+  test('truncates rather than rounds once past a second', () => {
+    expect(formatElapsed(5 * SECOND + 900)).toBe('5s')
+    expect(formatElapsed(MINUTE + 59 * SECOND + 900)).toBe('1m 59s')
+  })
+
+  test('rounds fractional milliseconds before choosing a unit', () => {
+    expect(formatElapsed(450.4)).toBe('450ms')
+    expect(formatElapsed(450.6)).toBe('451ms')
+    expect(formatElapsed(999.4)).toBe('999ms')
+    expect(formatElapsed(999.6)).toBe('1s')
+    expect(formatElapsed(59 * SECOND + 999.6)).toBe('1m 0s')
+  })
+
+  test('ignores the direction of the elapsed time', () => {
+    expect(formatElapsed(-90 * SECOND)).toBe('1m 30s')
+  })
+
+  test('returns an empty string for a non-finite elapsed time', () => {
+    expect(formatElapsed(Number.NaN)).toBe('')
+    expect(formatElapsed(Number.POSITIVE_INFINITY)).toBe('')
   })
 })
 

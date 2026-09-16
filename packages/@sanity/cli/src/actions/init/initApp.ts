@@ -5,6 +5,7 @@ import {logSymbols} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
+import {getInstallCommand} from '../../util/packageManager/installPackages.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {InitError} from './initError.js'
 import {getPostInitMCPPrompt} from './initHelpers.js'
@@ -55,7 +56,7 @@ export async function initApp({
     throw new InitError(`Template "${templateName}" not found`, 1)
   }
 
-  await scaffoldAndInstall({
+  const {pkgManager} = await scaffoldAndInstall({
     datasetName,
     defaults,
     displayName: '',
@@ -81,6 +82,9 @@ export async function initApp({
     `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your custom app has been scaffolded.`,
   )
   if (!isCurrentDir) output.log(goToProjectDir)
+  if (!options.install) {
+    output.log(`\nRun ${styleText('cyan', getInstallCommand(pkgManager))} to install dependencies.`)
+  }
 
   if (projectId && datasetName) {
     output.log(

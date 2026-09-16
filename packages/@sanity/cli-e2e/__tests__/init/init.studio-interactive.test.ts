@@ -59,6 +59,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
         'pnpm',
         '--no-mcp',
         '--no-git',
+        '--no-install',
       ],
       interactive: true,
     })
@@ -76,6 +77,8 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     expect(output).not.toMatch(/Select.*package manager/i)
   })
 
+  // The next three keep a real install: they either drive the package manager
+  // prompt, assert on install artifacts, or wait on install progress output.
   test('walks through template, TypeScript, and package manager prompts', async () => {
     const session = await runCli({
       args: [

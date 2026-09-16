@@ -18,7 +18,7 @@ import {promptForTypeScript} from '../../prompts/init/promptForTypescript.js'
 import {createCorsOrigin, listCorsOrigins} from '../../services/cors.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {getPeerDependencies} from '../../util/packageManager/getPeerDependencies.js'
-import {installNewPackages} from '../../util/packageManager/installPackages.js'
+import {getAddCommand, installNewPackages} from '../../util/packageManager/installPackages.js'
 import {
   getPartialEnvWithNpmPath,
   type PackageManager,
@@ -43,6 +43,8 @@ import {
 import {type InitOptions, type VersionedFramework} from './types.js'
 
 const debug = subdebug('init')
+
+const NEXT_SANITY_PACKAGE = 'next-sanity@13'
 
 async function writeOrOverwrite(
   filePath: string,
@@ -151,8 +153,15 @@ export async function initNextJs({
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
   workDir: string
 }): Promise<void> {
-  const {nextjsAppendEnv, nextjsEmbedStudio, packageManager, template, typescript, unattended} =
-    options
+  const {
+    install,
+    nextjsAppendEnv,
+    nextjsEmbedStudio,
+    packageManager,
+    template,
+    typescript,
+    unattended,
+  } = options
   let useTypeScript = flagOrDefault(typescript, true)
   if (shouldPrompt(unattended, typescript)) {
     useTypeScript = await promptForTypeScript()
@@ -293,46 +302,56 @@ export async function initNextJs({
   if (templateToUse === 'blog') {
     packages.push('@sanity/icons@5')
   }
-  await installNewPackages(
-    {
-      packageManager: chosen,
-      packages,
-    },
-    {
-      output,
-      workDir,
-    },
-  )
 
-  // will refactor this later
-  const execOptions: Options = {
-    cwd: workDir,
-    encoding: 'utf8',
-    env: getPartialEnvWithNpmPath(workDir),
-    stdio: 'inherit',
-  }
+  if (install) {
+    await installNewPackages(
+      {
+        packageManager: chosen,
+        packages,
+      },
+      {
+        output,
+        workDir,
+      },
+    )
 
-  switch (chosen) {
-    case 'npm': {
-      await execa('npm', ['install', 'next-sanity@13'], execOptions)
-      break
+    // will refactor this later
+    const execOptions: Options = {
+      cwd: workDir,
+      encoding: 'utf8',
+      env: getPartialEnvWithNpmPath(workDir),
+      stdio: 'inherit',
     }
-    case 'pnpm': {
-      await execa('pnpm', ['install', 'next-sanity@13'], execOptions)
-      break
+
+    switch (chosen) {
+      case 'npm': {
+        await execa('npm', ['install', NEXT_SANITY_PACKAGE], execOptions)
+        break
+      }
+      case 'pnpm': {
+        await execa('pnpm', ['install', NEXT_SANITY_PACKAGE], execOptions)
+        break
+      }
+      case 'yarn': {
+        const peerDeps = await getPeerDependencies(NEXT_SANITY_PACKAGE, workDir)
+        await installNewPackages(
+          {packageManager: 'yarn', packages: [NEXT_SANITY_PACKAGE, ...peerDeps]},
+          {output, workDir},
+        )
+        break
+      }
+      default: {
+        // bun and manual - do nothing or handle differently
+        break
+      }
     }
-    case 'yarn': {
-      const peerDeps = await getPeerDependencies('next-sanity@13', workDir)
-      await installNewPackages(
-        {packageManager: 'yarn', packages: ['next-sanity@13', ...peerDeps]},
-        {output, workDir},
-      )
-      break
-    }
-    default: {
-      // bun and manual - do nothing or handle differently
-      break
-    }
+  } else {
+    // Unlike the studio templates, none of this is declared in a scaffolded
+    // package.json - the packages only land by way of the package manager - so
+    // name them rather than pointing at a bare install.
+    output.log(
+      `Skipped dependency install. Run ${getAddCommand(chosen, [...packages, NEXT_SANITY_PACKAGE])} to add them.`,
+    )
   }
 
   output.log(

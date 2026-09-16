@@ -3,7 +3,12 @@ import {spinner} from '@sanity/cli-core/ux'
 import {execa, type Result} from 'execa'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {installDeclaredPackages, installNewPackages} from '../installPackages.js'
+import {
+  getAddCommand,
+  getInstallCommand,
+  installDeclaredPackages,
+  installNewPackages,
+} from '../installPackages.js'
 import {getPartialEnvWithNpmPath} from '../packageManagerChoice.js'
 
 // Mock external dependencies
@@ -49,6 +54,31 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockGetPartialEnvWithNpmPath.mockReturnValue({PATH: '/mock/path'})
   mockSpinner.mockReturnValue(mockSpinnerInstance as never)
+})
+
+describe('getInstallCommand', () => {
+  test.each([
+    ['bun', 'bun install'],
+    ['npm', 'npm install'],
+    ['pnpm', 'pnpm install'],
+    ['yarn', 'yarn install'],
+    // `manual` has no command of its own, so it renders as npm
+    ['manual', 'npm install'],
+  ] as const)('renders %s as "%s"', (packageManager, expected) => {
+    expect(getInstallCommand(packageManager)).toBe(expected)
+  })
+})
+
+describe('getAddCommand', () => {
+  test.each([
+    ['bun', 'bun add sanity@5 next-sanity@13'],
+    ['npm', 'npm install --save sanity@5 next-sanity@13'],
+    ['pnpm', 'pnpm add --save-prod sanity@5 next-sanity@13'],
+    ['yarn', 'yarn add sanity@5 next-sanity@13'],
+    ['manual', 'npm install --save sanity@5 next-sanity@13'],
+  ] as const)('renders %s as "%s"', (packageManager, expected) => {
+    expect(getAddCommand(packageManager, ['sanity@5', 'next-sanity@13'])).toBe(expected)
+  })
 })
 
 describe('installDeclaredPackages', () => {

@@ -1,4 +1,4 @@
-import {type Config} from 'isomorphic-dompurify'
+import {type Config} from 'dompurify'
 
 /**
  * This file maintains our sanitization configuration for DOMPurify.

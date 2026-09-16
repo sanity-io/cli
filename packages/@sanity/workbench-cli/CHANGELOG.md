@@ -1,5 +1,130 @@
 # @sanity/workbench-cli
 
+## 2.5.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.5.0...workbench-cli-v2.5.1)
+
+_2026-09-14_
+
+### Bug Fixes
+
+- **workbench-cli:** key the module identity context by `React.createContext` so the SDK resolves the same context ([#1878](https://github.com/sanity-io/cli/pull/1878)) ([2497267](https://github.com/sanity-io/cli/commit/24972671db3e6f99512a26b048fdbdc44643775b))
+- **workbench-cli:** reference `React.createElement` in the generated studio entry so the studio renders instead of throwing `createElement is not defined` ([#1880](https://github.com/sanity-io/cli/pull/1880)) ([9d4f10c](https://github.com/sanity-io/cli/commit/9d4f10ccfad4fc92d12486e7d0885a3ae8c0be59))
+
+## 2.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.3...workbench-cli-v2.5.0)
+
+_2026-09-11_
+
+### Features
+
+- **workbench-cli:** provide module identity context from renderOptions.moduleId ([#1862](https://github.com/sanity-io/cli/pull/1862)) ([2d15481](https://github.com/sanity-io/cli/commit/2d1548145226222516d201b69fb00179c4ba17d9))
+
+## 2.4.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.2...workbench-cli-v2.4.3)
+
+_2026-09-10_
+
+### Bug Fixes
+
+- **workbench:** complete local application metdata ([#1850](https://github.com/sanity-io/cli/pull/1850)) ([67f31e3](https://github.com/sanity-io/cli/commit/67f31e3227c5cb118ccc452986d3950254b7b754))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.7.0
+
+## 2.4.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.1...workbench-cli-v2.4.2)
+
+_2026-09-03_
+
+### Bug Fixes
+
+- **workbench:** resolve singleton installation by application name ([#1847](https://github.com/sanity-io/cli/pull/1847)) ([60c4b2e](https://github.com/sanity-io/cli/commit/60c4b2ecb8237d879b0db7ef489e5c193687b702))
+
+## 2.4.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.0...workbench-cli-v2.4.1)
+
+_2026-09-03_
+
+### Bug Fixes
+
+- **deploy:** send the configured app slug on redeploy ([#1841](https://github.com/sanity-io/cli/pull/1841)) ([379c185](https://github.com/sanity-io/cli/commit/379c1855517edc5067efc9562922a20b54c50e83))
+
+## 2.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.3.0...workbench-cli-v2.4.0)
+
+_2026-09-03_
+
+### Features
+
+- bake resource bindings into a statically-imported module instead of an index.html script tag ([#1762](https://github.com/sanity-io/cli/pull/1762)) ([6189dda](https://github.com/sanity-io/cli/commit/6189dda8828fde06edd12a66e2cde3b2e739a32a))
+
+  Resource bindings now ride in a dedicated `sanity-resource-bindings.js` module emitted at the bundle root and imported before app code, so both standalone studios and federated apps resolve them the same way. The index.html script-tag placeholder has been removed.
+
+### Bug Fixes
+
+- scaffold workbench configurations using the stable `defineApplication` export. ([#1823](https://github.com/sanity-io/cli/pull/1823)) ([47dba3c](https://github.com/sanity-io/cli/commit/47dba3c810c8edf3cf0eea0c8b1966ad2b49d4f4))
+- replace `tar-fs` with `tar` for archive packing and extraction ([#1796](https://github.com/sanity-io/cli/pull/1796)) ([d2b3576](https://github.com/sanity-io/cli/commit/d2b357638176c2c936ee3ddafd386d5617605d9f))
+- **workbench-cli:** map window surfaces to app interfaces ([#1832](https://github.com/sanity-io/cli/pull/1832)) ([803dfda](https://github.com/sanity-io/cli/commit/803dfda33e3987f25c34165fdfcad534f930ad16))
+- **cli:** remove dock prefix from view groups ([#1834](https://github.com/sanity-io/cli/pull/1834)) ([1f3adf8](https://github.com/sanity-io/cli/commit/1f3adf82c2a842bfbb2507d4e12b36d54ccf27b6))
+- only emit the resource-bindings module for Blueprints builds ([#1821](https://github.com/sanity-io/cli/pull/1821)) ([e975887](https://github.com/sanity-io/cli/commit/e9758875ee28cfa7b65b676e9aee5e917fdd8eb8))
+
+  The `sanity-resource-bindings.js` module is now gated behind an `isBlueprints` flag (default off), which `@sanity/runtime-cli` sets when it builds a studio or app for a Blueprint. A normal `sanity build`, `dev`, or `preview` no longer emits or imports it.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.6.1
+
+## 2.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.4...workbench-cli-v2.3.0)
+
+_2026-09-01_
+
+### Features
+
+- **workbench-cli:** rename `surface: app` to `surface: window` ([#1797](https://github.com/sanity-io/cli/pull/1797)) ([fa3ac12](https://github.com/sanity-io/cli/commit/fa3ac120851a68c691628ed0e5c322f71e62975b))
+- serve a standalone entry point for all apps and studios ([#1815](https://github.com/sanity-io/cli/pull/1815)) ([ddfcdd1](https://github.com/sanity-io/cli/commit/ddfcdd185635ee189567161e79885cd35126fec8))
+
+### Bug Fixes
+
+- **deps:** update dependency oxfmt to ^0.65.0 ([#1808](https://github.com/sanity-io/cli/pull/1808)) ([5023d64](https://github.com/sanity-io/cli/commit/5023d64065a812aa3447cb015985ba947f478679))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.6.0
+
+## 2.2.4
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.3...workbench-cli-v2.2.4)
+
+_2026-09-01_
+
+### Bug Fixes
+
+- **deploy:** forward singleton flag during app creation ([#1778](https://github.com/sanity-io/cli/pull/1778)) ([d16ca8b](https://github.com/sanity-io/cli/commit/d16ca8bceb0f67dd4896b0ad8174f40a8d21a3b4))
+- **deps:** update dependency @module-federation/vite to v1.20.8 ([#1779](https://github.com/sanity-io/cli/pull/1779)) ([874e181](https://github.com/sanity-io/cli/commit/874e181029da828e7a30306974684d1c5268e40d))
+- **deps:** update dependency @module-federation/runtime to v2.9.0 ([#1781](https://github.com/sanity-io/cli/pull/1781)) ([7318927](https://github.com/sanity-io/cli/commit/7318927db2ad52d483ed0eb20f258eaccd6c1455))
+- **deps:** update dependency @module-federation/vite to v1.21.0 ([#1782](https://github.com/sanity-io/cli/pull/1782)) ([b20496b](https://github.com/sanity-io/cli/commit/b20496b3f899b1894a740692f19f00536714d7f8))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.1
+
 ## 2.2.3
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.2.2...workbench-cli-v2.2.3)

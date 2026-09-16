@@ -1,9 +1,56 @@
-import {describe, expect, test, vi} from 'vitest'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {runWithCliExecutionContext} from '../../executionContext.js'
 import {spinner, spinnerPromise} from '../spinner.js'
 
+const {oraMock, oraPromiseMock} = vi.hoisted(() => ({
+  oraMock: vi.fn(),
+  oraPromiseMock: vi.fn(),
+}))
+
+vi.mock('ora', () => ({
+  default: oraMock,
+  oraPromise: oraPromiseMock,
+}))
+
 describe('spinner', () => {
+  beforeEach(() => {
+    oraMock.mockClear()
+    oraPromiseMock.mockClear()
+  })
+
+  test('defaults discardStdin to false so Ctrl+C keeps working', () => {
+    spinner('Working')
+    expect(oraMock).toHaveBeenCalledWith({discardStdin: false, text: 'Working'})
+
+    spinner({text: 'Working'})
+    expect(oraMock).toHaveBeenCalledWith({discardStdin: false, text: 'Working'})
+
+    spinner()
+    expect(oraMock).toHaveBeenCalledWith({discardStdin: false})
+  })
+
+  test('lets an explicit discardStdin option win', () => {
+    spinner({discardStdin: true, text: 'Working'})
+    expect(oraMock).toHaveBeenCalledWith({discardStdin: true, text: 'Working'})
+  })
+
+  test('applies the discardStdin default to spinnerPromise', async () => {
+    oraPromiseMock.mockResolvedValue(42)
+
+    await expect(spinnerPromise(Promise.resolve(42), 'Working')).resolves.toBe(42)
+    expect(oraPromiseMock).toHaveBeenCalledWith(expect.any(Promise), {
+      discardStdin: false,
+      text: 'Working',
+    })
+
+    await spinnerPromise(Promise.resolve(42), {discardStdin: true, text: 'Working'})
+    expect(oraPromiseMock).toHaveBeenLastCalledWith(expect.any(Promise), {
+      discardStdin: true,
+      text: 'Working',
+    })
+  })
+
   test('is silent and chainable under an execution context', () => {
     const write = vi.spyOn(process.stderr, 'write')
 

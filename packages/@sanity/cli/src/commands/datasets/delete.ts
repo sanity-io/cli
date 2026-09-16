@@ -2,6 +2,7 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {input, logSymbols} from '@sanity/cli-core/ux'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
@@ -38,10 +39,11 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
       description: 'Project ID to delete dataset from',
       semantics: 'override',
     }),
-    force: Flags.boolean({
-      description: 'Do not prompt for delete confirmation - forcefully delete',
-      required: false,
-    }),
+    force: requiredWhenUnattended(
+      Flags.boolean({
+        description: 'Do not prompt for delete confirmation - forcefully delete',
+      }),
+    ),
   }
 
   static override hiddenAliases: string[] = ['dataset:delete']
@@ -67,11 +69,6 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
     if (force) {
       this.warn(`'--force' used: skipping confirmation, deleting dataset "${datasetName}"`)
     } else {
-      if (this.isUnattended()) {
-        this.error('Dataset deletion requires confirmation. Re-run with `--force`.', {
-          exit: exitCodes.USAGE_ERROR,
-        })
-      }
       try {
         const project = await getProjectById(projectId)
         this.log(

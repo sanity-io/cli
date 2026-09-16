@@ -1,5 +1,61 @@
 # Changelog
 
+## 17.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v16.0.1...cli-test-v17.0.0)
+
+_2026-09-10_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.7.0
+
+## 16.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v16.0.0...cli-test-v16.0.1)
+
+_2026-09-03_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.6.1
+
+## 16.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v15.1.0...cli-test-v16.0.0)
+
+_2026-09-01_
+
+### Bug Fixes
+
+- **deps:** update dependency esbuild to ^0.28.2 ([#1804](https://github.com/sanity-io/cli/pull/1804)) ([ab363ec](https://github.com/sanity-io/cli/commit/ab363eca8b0f853dd77a34c8677290ecbe5ae7b4))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.6.0
+
+## 15.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v15.0.0...cli-test-v15.1.0)
+
+_2026-09-01_
+
+### Features
+
+- extract build manifest logic from deployment ([#1777](https://github.com/sanity-io/cli/pull/1777)) ([f7bff14](https://github.com/sanity-io/cli/commit/f7bff14097322a59e814996b7d8962d4678ab216))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.5.1
+
 ## 15.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v14.0.0...cli-test-v15.0.0)

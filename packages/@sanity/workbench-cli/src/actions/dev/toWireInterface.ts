@@ -19,7 +19,9 @@ type WorkerInterface = Extract<DevServerInterface, {type: unknown}>
  * @internal
  */
 export type WorkbenchWireInterface =
-  | (Omit<ViewInterface, 'surface'> & {type: ViewInterface['surface']})
+  | (Omit<ViewInterface, 'surface'> & {
+      type: 'app' | Exclude<ViewInterface['surface'], 'window'>
+    })
   | WorkerInterface
 
 /**
@@ -31,7 +33,7 @@ export type WorkbenchWireInterface =
 export function toWireInterface(iface: DevServerInterface): WorkbenchWireInterface {
   if ('surface' in iface) {
     const {surface, ...rest} = iface
-    return {...rest, type: surface}
+    return {...rest, type: surface === 'window' ? 'app' : surface}
   }
   return iface
 }

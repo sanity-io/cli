@@ -4,6 +4,7 @@ import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {deployConfig, resolveInstallationId, summarizeConfig} from '../deployConfig.js'
+import {anInstallation} from './fixtures/installations.js'
 
 const mockGetGlobalCliClient = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())
@@ -15,7 +16,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 
 // The tarball content is irrelevant here — stub a readable so no build output
 // has to exist on disk.
-vi.mock('tar-fs', () => ({pack: () => Readable.from(['remote'])}))
+vi.mock('tar', () => ({c: () => Readable.from(['remote'])}))
 
 const output = {error: vi.fn(), log: vi.fn(), warn: vi.fn()} as unknown as Output
 
@@ -37,8 +38,8 @@ describe('resolveInstallationId', () => {
 
   test('resolves the org media-library installation in one unpaginated request', async () => {
     stubBrett([
-      {application: {slug: 'some-studio'}, id: 'inst_studio'},
-      {application: {slug: 'media-library'}, id: 'inst_ml'},
+      anInstallation({id: 'inst_studio', name: 'some-studio'}),
+      anInstallation({id: 'inst_ml', name: 'media-library'}),
     ])
 
     const id = await resolveInstallationId({appType: 'media-library', organizationId: 'org-1'})
@@ -53,7 +54,7 @@ describe('resolveInstallationId', () => {
   })
 
   test('returns undefined when the org has no media-library installation', async () => {
-    stubBrett([{application: {slug: 'dashboard'}, id: 'inst_a'}])
+    stubBrett([anInstallation({id: 'inst_a', name: 'dashboard'})])
     expect(
       await resolveInstallationId({appType: 'media-library', organizationId: 'org-1'}),
     ).toBeUndefined()

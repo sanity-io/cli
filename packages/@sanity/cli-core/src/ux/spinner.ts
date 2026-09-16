@@ -99,15 +99,24 @@ function silentSpinner(options?: Options | string): Ora {
   return instance as unknown as Ora
 }
 
+// Ora's default `discardStdin: true` puts stdin in raw mode, which stops the
+// kernel from turning Ctrl+C into SIGINT (and ora's userland re-signal
+// fallback never fires on a non-flowing stdin), hanging the process. Keep it
+// off by default; explicit caller options still win.
+function normalize<T extends Options>(options?: string | T): T {
+  const resolved = typeof options === 'string' ? ({text: options} as T) : (options ?? ({} as T))
+  return {discardStdin: false, ...resolved}
+}
+
 export function spinner(options?: Options | string): Ora {
-  return getCliExecutionContext() ? silentSpinner(options) : ora(options)
+  return getCliExecutionContext() ? silentSpinner(options) : ora(normalize(options))
 }
 
 export function spinnerPromise<T>(
   action: ((instance: Ora) => PromiseLike<T>) | PromiseLike<T>,
   options?: PromiseOptions<T> | string,
 ): Promise<T> {
-  if (!getCliExecutionContext()) return oraPromise(action, options)
+  if (!getCliExecutionContext()) return oraPromise(action, normalize(options))
   return Promise.resolve(typeof action === 'function' ? action(silentSpinner(options)) : action)
 }
 

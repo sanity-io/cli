@@ -37,6 +37,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
           '--nextjs-add-config-files',
           '--package-manager',
           'pnpm',
+          '--no-install',
         ],
         cwd: nextjsDir,
       })
@@ -64,6 +65,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
           '--nextjs-embed-studio',
           '--package-manager',
           'pnpm',
+          '--no-install',
         ],
         cwd: nextjsDir,
       })
@@ -86,6 +88,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
           '--nextjs-append-env',
           '--package-manager',
           'pnpm',
+          '--no-install',
         ],
         cwd: nextjsDir,
       })
@@ -112,6 +115,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
           'pnpm',
           '--no-mcp',
           '--no-git',
+          '--no-install',
         ],
         cwd: nextjsDir,
         interactive: true,
@@ -156,6 +160,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
           'pnpm',
           '--no-mcp',
           '--no-git',
+          '--no-install',
         ],
         cwd: nextjsDir,
         interactive: true,

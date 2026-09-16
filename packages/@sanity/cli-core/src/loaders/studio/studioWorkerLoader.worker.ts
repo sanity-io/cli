@@ -1,9 +1,14 @@
+import {fileURLToPath, pathToFileURL} from 'node:url'
 import {isMainThread, parentPort} from 'node:worker_threads'
 
-import {createServer, type InlineConfig, loadEnv, mergeConfig} from 'vite'
-import {ViteNodeRunner} from 'vite-node/client'
-import {ViteNodeServer} from 'vite-node/server'
-import {installSourcemapsSupport} from 'vite-node/source-map'
+import {
+  createServer,
+  createServerModuleRunner,
+  type InlineConfig,
+  isRunnableDevEnvironment,
+  loadEnv,
+  mergeConfig,
+} from 'vite'
 
 import {subdebug} from '../../_exports/debug.js'
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
@@ -12,6 +17,7 @@ import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js' // TODO: this imports jsdom!!! Unpacked Size (module + dependencies): 26 MB
 import {isRecord} from '../../util/isRecord.js'
+import {StudioModuleEvaluator} from './studioModuleEvaluator.js'
 import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
 
 if (isMainThread) {
@@ -51,7 +57,7 @@ try {
 /**
  * Fetches and caches modules from HTTP/HTTPS URLs.
  * Vite's SSR transform treats `https://` imports as external and bypasses the plugin
- * resolve pipeline entirely, so we intercept them at the ViteNodeRunner level instead.
+ * resolve pipeline entirely, so we intercept them at the module runner level instead.
  */
 const httpModuleCache = new Map<string, string>()
 async function fetchHttpModule(url: string): Promise<{code: string}> {
@@ -168,47 +174,57 @@ try {
     process.env[key] ??= env[key]
   }
 
-  // Now we're providing the glue that ensures node-specific loading and execution works.
-  const node = new ViteNodeServer(server)
+  const ssrEnvironment = server.environments.ssr
+  if (!isRunnableDevEnvironment(ssrEnvironment)) {
+    throw new Error('Expected SSR environment to be a runnable dev environment')
+  }
 
-  // Should make it easier to debug any crashes in the imported code…
-  installSourcemapsSupport({
-    getSourceMap: (source) => node.getSourceMap(source),
+  await ssrEnvironment.init()
+
+  // Override fetchModule to support https:// imports and resolve relative imports from
+  // remote modules (e.g. esm.sh re-exports with absolute paths).
+  const defaultFetchModule = ssrEnvironment.fetchModule.bind(ssrEnvironment)
+  ssrEnvironment.fetchModule = async (id, importer, options) => {
+    if (importer && isHttpsUrl(importer) && !isHttpsUrl(id)) {
+      id = new URL(id, importer).href
+    }
+    if (isHttpsUrl(id)) {
+      const {code: rawCode} = await fetchHttpModule(id)
+      const result = await server.ssrTransform(rawCode, null, id)
+      return {
+        code: result?.code || rawCode,
+        file: null,
+        id,
+        invalidate: false,
+        url: id,
+      }
+    }
+
+    // Module Runner's fetchModule skips Vite resolve for `file://` URLs, so TypeScript
+    // extension rewriting (`.js` → `.ts`/`.tsx`) never runs. vite-node always resolved
+    // through `resolveId` first; restore that for absolute file imports (e.g. lazy
+    // `doImport(new URL('iconResolver.js', import.meta.url))` in tests/source).
+    // Keep the result as `file://` — on Windows, bare `C:/...` paths are treated as
+    // package imports by Module Runner's fetchModule and fail to load.
+    if (id.startsWith('file://')) {
+      const resolved = await ssrEnvironment.pluginContainer.resolveId(
+        fileURLToPath(id),
+        importer ?? undefined,
+      )
+      if (resolved?.id && !resolved.id.startsWith('\0')) {
+        id = pathToFileURL(resolved.id).href
+      }
+    }
+
+    return defaultFetchModule(id, importer, options)
+  }
+
+  const runner = createServerModuleRunner(ssrEnvironment, {
+    evaluator: new StudioModuleEvaluator(),
+    hmr: false,
   })
 
-  const runner = new ViteNodeRunner({
-    base: server.config.base,
-    async fetchModule(id) {
-      // Vite's SSR transform externalizes https:// imports, so Node's ESM loader
-      // would reject them. We fetch the module over HTTP and run it through Vite's
-      // SSR transform to rewrite ESM export/import syntax to the __vite_ssr_*
-      // format that ViteNodeRunner expects.
-      if (isHttpsUrl(id)) {
-        const {code: rawCode} = await fetchHttpModule(id)
-        const result = await server.ssrTransform(rawCode, null, id)
-        return {code: result?.code || rawCode}
-      }
-      return node.fetchModule(id)
-    },
-    resolveId(id, importer) {
-      // Prevent vite-node from trying to resolve HTTP URLs through Node's resolver
-      if (isHttpsUrl(id)) return {id}
-      // Resolve any import from an HTTP-fetched module against the remote origin
-      // (e.g. esm.sh returns `export * from '/pkg@1.0/es2022/pkg.mjs'`)
-      if (importer && isHttpsUrl(importer)) {
-        return {id: new URL(id, importer).href}
-      }
-      return node.resolveId(id, importer)
-    },
-    root: server.config.root,
-  })
-
-  // Copied from `vite-node` - it appears that this applies the `define` config from
-  // vite, but it also takes a surprisingly long time to execute. Not clear at this
-  // point why this is, so we should investigate whether it's necessary or not.
-  await runner.executeId('/@vite/env')
-
-  await runner.executeId(workerScriptPath)
+  await runner.import(workerScriptPath)
 } catch (error) {
   // Long-lived workers keep the original behavior: the error surfaces as a
   // Worker 'error' event.

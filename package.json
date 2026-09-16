@@ -33,6 +33,7 @@
     "dev": "turbo run dev",
     "docs:upload": "pnpm --filter=@repo/upload-docs run update",
     "format": "oxfmt",
+    "inspect:install-size": "node scripts/inspect-install-size.mjs",
     "lint:fix": "turbo run lint -- --fix",
     "pre:enter": "changeset pre enter",
     "pre:exit": "changeset pre exit",
@@ -61,9 +62,11 @@
     "@commitlint/types": "^20.4.0",
     "@eslint/compat": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
+    "@types/node": "catalog:",
     "@vercel/detect-agent": "^1.2.3",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
+    "execa": "catalog:",
     "husky": "^9.1.7",
     "knip": "^6.27.0",
     "lint-staged": "^16.4.0",
@@ -76,15 +79,5 @@
   "engines": {
     "node": "^22.18.0 || >=24.11.0"
   },
-  "packageManager": "pnpm@10.34.4",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "esbuild",
-      "node-pty"
-    ],
-    "overrides": {
-      "@sanity/cli": "workspace:*"
-    }
-  }
+  "packageManager": "pnpm@11.25.0"
 }

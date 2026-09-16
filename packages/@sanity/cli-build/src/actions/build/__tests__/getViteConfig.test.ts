@@ -2,6 +2,7 @@ import {join} from 'node:path'
 
 import * as configMocks from '@sanity/cli-test/mocks/cli-core/config'
 import {convertToSystemPath} from '@sanity/cli-test/paths'
+import {Features} from 'lightningcss'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -31,6 +32,12 @@ vi.mock('@sanity/cli-core/telemetry', () => ({
 }))
 
 vi.mock('@sanity/workbench-cli/build', () => ({
+  resourceBindingsChunkFileName: (name: string) =>
+    name === 'sanity-resource-bindings' ? 'sanity-resource-bindings.js' : undefined,
+  resourceBindingsCodeSplittingGroup: {
+    name: 'sanity-resource-bindings',
+    test: /sanity-resource-bindings/,
+  },
   workbenchOptimizeDeps: mockWorkbenchOptimizeDeps,
   workbenchVitePlugins: mockWorkbenchVitePlugins,
 }))
@@ -134,6 +141,11 @@ describe('#getViteConfig', () => {
       },
       cacheDir: `${SANITY_CACHE_DIR}/vite`,
       configFile: false,
+      css: {
+        lightningcss: {
+          exclude: Features.LightDark,
+        },
+      },
       envPrefix: 'SANITY_STUDIO_',
       logLevel: 'info',
       mode: 'development',
@@ -223,6 +235,72 @@ describe('#getViteConfig', () => {
     })
 
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
+  })
+
+  test.each(['development', 'production'] as const)(
+    'disables Lightning CSS light-dark polyfill in %s so Studio theme is not OS-driven',
+    async (mode) => {
+      const config = await getViteConfig({
+        cwd: mockTestCwd,
+        entries: mockEntries,
+        getEnvironmentVariables,
+        minify: mode === 'production',
+        mode,
+        reactCompiler: undefined,
+      })
+
+      expect(config.css).toEqual({
+        lightningcss: {
+          exclude: Features.LightDark,
+        },
+      })
+    },
+  )
+
+  test('omits the resource-bindings chunk when not a Blueprints build', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      minify: true,
+      mode: 'production' as const,
+      outputDir: mockCustomOutput,
+      reactCompiler: undefined,
+      sourceMap: false,
+    })
+
+    // Without autoUpdates or isBlueprints there is no bespoke output config, so
+    // Rolldown never forces the bindings module into its own chunk.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const output = (config.build?.rolldownOptions as any)?.output
+    expect(output?.codeSplitting).toBeUndefined()
+    expect(output?.chunkFileNames).toBeUndefined()
+  })
+
+  test('forces the resource-bindings chunk on a Blueprints build', async () => {
+    const config = await getViteConfig({
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isBlueprints: true,
+      minify: true,
+      mode: 'production' as const,
+      outputDir: mockCustomOutput,
+      reactCompiler: undefined,
+      sourceMap: false,
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const output = (config.build?.rolldownOptions as any)?.output
+    expect(output?.codeSplitting?.groups).toEqual([
+      {name: 'sanity-resource-bindings', test: /sanity-resource-bindings/},
+    ])
+    // The chunkFileNames fn keeps the bindings chunk unhashed at the root and
+    // defers to the hashed default for everything else.
+    expect(output?.chunkFileNames({name: 'sanity-resource-bindings'})).toBe(
+      'sanity-resource-bindings.js',
+    )
+    expect(output?.chunkFileNames({name: 'vendor'})).toBe('static/[name]-[hash].js')
   })
 
   test('should create production config without minification', async () => {

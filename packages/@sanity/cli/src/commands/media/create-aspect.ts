@@ -4,6 +4,7 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {input} from '@sanity/cli-core/ux'
 import {createPublishedId} from '@sanity/id-utils'
 import camelCase from 'lodash-es/camelCase.js'
@@ -25,7 +26,7 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
 
   static override flags = {
     name: Flags.string({description: 'Aspect name. Defaults to the title in camel case'}),
-    title: Flags.string({description: 'Aspect title'}),
+    title: requiredWhenUnattended(Flags.string({description: 'Aspect title'})),
   }
 
   public async run(): Promise<void> {
@@ -35,13 +36,7 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
       this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: exitCodes.RUNTIME_ERROR})
     }
 
-    const title =
-      this.flags.title ??
-      (this.isUnattended()
-        ? this.error('Aspect title is required. Pass it with `--title <title>`.', {
-            exit: exitCodes.USAGE_ERROR,
-          })
-        : await input({message: 'Title'}))
+    const title = this.flags.title ?? (await input({message: 'Title'}))
 
     const defaultName = createPublishedId(camelCase(title))
     const name =

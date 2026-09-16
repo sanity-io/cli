@@ -130,7 +130,7 @@ describe('#media:create-aspect', () => {
       mocks: {...defaultMocks, isInteractive: false},
     })
 
-    expect(error?.message).toContain('--title <title>')
+    expect(error?.message).toContain('Missing required flag title')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(mockInput).not.toHaveBeenCalled()
     expect(mockWriteFile).not.toHaveBeenCalled()

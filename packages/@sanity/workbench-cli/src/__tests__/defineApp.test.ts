@@ -93,7 +93,7 @@ describe('view declaration helpers', () => {
     expect(defineWindowView({name: 'app', src: './src/App.tsx', title: 'App'})).toEqual({
       name: 'app',
       src: './src/App.tsx',
-      surface: 'app',
+      surface: 'window',
       title: 'App',
     })
     expect(definePanelView({name: 'feed', src: './src/Feed.tsx', title: 'Feed'})).toEqual({
@@ -125,7 +125,7 @@ describe('view declaration helpers', () => {
       name: 'app',
       src: './src/App.tsx',
       // @ts-expect-error `surface` is added by the helper.
-      surface: 'app',
+      surface: 'window',
       title: 'App',
     })
     definePanelView({
@@ -146,20 +146,20 @@ describe('view declaration helpers', () => {
   test('preserve panel and window placement metadata', () => {
     expect(
       defineWindowView({
-        dock: {group: 'dock.applications', order: 10},
+        dock: {group: 'applications', order: 10},
         name: 'app',
         src: './src/App.tsx',
         title: 'App',
       }),
-    ).toMatchObject({dock: {group: 'dock.applications', order: 10}, surface: 'app'})
+    ).toMatchObject({dock: {group: 'applications', order: 10}, surface: 'window'})
     expect(
       definePanelView({
-        dock: {group: 'dock.user', order: 20},
+        dock: {group: 'user', order: 20},
         name: 'feed',
         src: './src/Feed.tsx',
         title: 'Feed',
       }),
-    ).toMatchObject({dock: {group: 'dock.user', order: 20}, surface: 'panel'})
+    ).toMatchObject({dock: {group: 'user', order: 20}, surface: 'panel'})
   })
 })
 
@@ -249,8 +249,8 @@ describe('DefineAppInputSchema (build-time validation)', () => {
   })
 
   test('accepts dock defaults, rejecting an unknown group', () => {
-    const parsed = DefineAppInputSchema.parse(validInput({dock: {group: 'dock.system', order: 20}}))
-    expect(parsed.dock).toEqual({group: 'dock.system', order: 20})
+    const parsed = DefineAppInputSchema.parse(validInput({dock: {group: 'system', order: 20}}))
+    expect(parsed.dock).toEqual({group: 'system', order: 20})
     expect(DefineAppInputSchema.safeParse(validInput({dock: {}})).success).toBe(true)
     expect(DefineAppInputSchema.safeParse(validInput({dock: {group: 'nope'}})).success).toBe(false)
   })
@@ -285,7 +285,7 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(parsed.views?.[0]).toEqual({
       name: 'app',
       src: './src/App.tsx',
-      surface: 'app',
+      surface: 'window',
       title: 'App',
     })
   })
@@ -385,7 +385,9 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     const result = DefineAppInputSchema.safeParse(
       validInput({
         entry: './src/App.tsx',
-        views: [{name: 'drop-desk', src: './src/Settings.tsx', surface: 'app', title: 'Settings'}],
+        views: [
+          {name: 'drop-desk', src: './src/Settings.tsx', surface: 'window', title: 'Settings'},
+        ],
       }),
     )
 

@@ -1,5 +1,92 @@
 # Changelog
 
+## 6.3.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.0...cli-build-v6.3.1)
+
+_2026-09-10_
+
+### Bug Fixes
+
+- **cli-build:** disable lightningcss light-dark polyfill ([#1868](https://github.com/sanity-io/cli/pull/1868)) ([d81302e](https://github.com/sanity-io/cli/commit/d81302ed9abc5dbaf287250ba6bb400eebff96ce))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.3
+    - @sanity/cli-core bumped to 3.7.0
+
+## 6.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.2.0...cli-build-v6.3.0)
+
+_2026-09-03_
+
+### Features
+
+- bake resource bindings into a statically-imported module instead of an index.html script tag ([#1762](https://github.com/sanity-io/cli/pull/1762)) ([6189dda](https://github.com/sanity-io/cli/commit/6189dda8828fde06edd12a66e2cde3b2e739a32a))
+
+  Resource bindings now ride in a dedicated `sanity-resource-bindings.js` module emitted at the bundle root and imported before app code, so both standalone studios and federated apps resolve them the same way. The index.html script-tag placeholder has been removed.
+
+### Bug Fixes
+
+- **cli:** remove dock prefix from view groups ([#1834](https://github.com/sanity-io/cli/pull/1834)) ([1f3adf8](https://github.com/sanity-io/cli/commit/1f3adf82c2a842bfbb2507d4e12b36d54ccf27b6))
+- **cli-build:** remove isomorphic-dompurify in favor of inline JSDOM wrapper ([#1830](https://github.com/sanity-io/cli/pull/1830)) ([d1c8007](https://github.com/sanity-io/cli/commit/d1c8007945746ce36ea2847bfd06e51f2cee29f6))
+- only emit the resource-bindings module for Blueprints builds ([#1821](https://github.com/sanity-io/cli/pull/1821)) ([e975887](https://github.com/sanity-io/cli/commit/e9758875ee28cfa7b65b676e9aee5e917fdd8eb8))
+
+  The `sanity-resource-bindings.js` module is now gated behind an `isBlueprints` flag (default off), which `@sanity/runtime-cli` sets when it builds a studio or app for a Blueprint. A normal `sanity build`, `dev`, or `preview` no longer emits or imports it.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.0
+    - @sanity/cli-core bumped to 3.6.1
+
+## 6.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.1.0...cli-build-v6.2.0)
+
+_2026-09-01_
+
+### Features
+
+- serve a standalone entry point for all apps and studios ([#1815](https://github.com/sanity-io/cli/pull/1815)) ([ddfcdd1](https://github.com/sanity-io/cli/commit/ddfcdd185635ee189567161e79885cd35126fec8))
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1801](https://github.com/sanity-io/cli/pull/1801)) ([d315241](https://github.com/sanity-io/cli/commit/d315241affc6405ce03abb99a509a0250f36c8c2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.3.0
+    - @sanity/cli-core bumped to 3.6.0
+
+## 6.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.2...cli-build-v6.1.0)
+
+_2026-09-01_
+
+### Features
+
+- extract build manifest logic from deployment ([#1777](https://github.com/sanity-io/cli/pull/1777)) ([f7bff14](https://github.com/sanity-io/cli/commit/f7bff14097322a59e814996b7d8962d4678ab216))
+
+### Bug Fixes
+
+- **deps:** update dependency isomorphic-dompurify to v3 ([#1794](https://github.com/sanity-io/cli/pull/1794)) ([7dbd9c0](https://github.com/sanity-io/cli/commit/7dbd9c050278d0fe9e2a9b4954896495c4e4b5bf))
+- **deps:** update dependency cjs-module-lexer to ^2.2.1 ([#1803](https://github.com/sanity-io/cli/pull/1803)) ([0427131](https://github.com/sanity-io/cli/commit/0427131bfc665633f0137fe79c16d69a74fdd318))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.2.4
+    - @sanity/cli-core bumped to 3.5.1
+
 ## 6.0.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.0.1...cli-build-v6.0.2)

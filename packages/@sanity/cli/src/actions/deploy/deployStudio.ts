@@ -17,7 +17,7 @@ import {
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
-import {pack} from 'tar-fs'
+import {c as createTar} from 'tar'
 
 import {createDeployment, type UserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
@@ -228,6 +228,7 @@ async function runStudioDeployment(
         onDeployed: () => {
           rollbackApp = undefined
         },
+        slug: workbench.slug,
         sourceDir,
         title: appTitle,
         version,
@@ -393,7 +394,7 @@ async function shipStudioDeployment({
 
   let tarball: Gzip | undefined
   if (!isExternal) {
-    tarball = pack(dirname(sourceDir), {entries: [basename(sourceDir)]}).pipe(createGzip())
+    tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
   }
 
   const spin = spinner(isExternal ? 'Registering studio' : 'Deploying to sanity.studio').start()

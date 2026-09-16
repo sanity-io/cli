@@ -6,7 +6,6 @@ import {CLIError} from '@oclif/core/errors'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {
-  configDefinition,
   readConfig,
   runTypegenGenerate,
   runTypegenWatcher,
@@ -17,6 +16,7 @@ import {
 import omit from 'lodash-es/omit.js'
 import once from 'lodash-es/once.js'
 
+import {parseTypegenConfig} from '../../actions/typegen/parseTypegenConfig.js'
 import {createTypegenProgressRenderer} from '../../actions/typegen/renderTypegenProgress.js'
 
 const description = `Sanity TypeGen
@@ -122,7 +122,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         )
 
         return {
-          config: configDefinition.parse(config.typegen || {}),
+          config: parseTypegenConfig(config.typegen || {}),
           path: rootDir.path,
           type: 'cli',
           workDir,
@@ -149,7 +149,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       spin.succeed(`Config loaded from sanity.cli.ts`)
 
       return {
-        config: configDefinition.parse(config.typegen || {}),
+        config: parseTypegenConfig(config.typegen || {}),
         path: rootDir.path,
         type: 'cli',
         workDir,

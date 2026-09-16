@@ -18,17 +18,17 @@ export interface ConfigSnapshot {
 interface InstallationListItem {
   id: string
 
-  application?: {slug?: string}
+  application?: {name?: string}
 }
 
 async function getClient() {
   return getGlobalCliClient({apiVersion: APP_WORKBENCH_API_VERSION, requireUser: true})
 }
 
-/** The org's active singleton installation, matched on its slug. */
+/** The org's active singleton installation, matched on its application name. */
 export async function resolveSingletonInstallationId(
   organizationId: string,
-  slug: string,
+  appType: string,
 ): Promise<string | undefined> {
   const client = await getClient()
   // `limit=none` returns every installation in one response, no pagination.
@@ -36,7 +36,7 @@ export async function resolveSingletonInstallationId(
     query: {limit: 'none', organizationId},
     url: '/installations',
   })
-  return data.find((item) => item.application?.slug === slug)?.id
+  return data.find((item) => item.application?.name === appType)?.id
 }
 
 /** Upload a config snapshot to the installation as a multipart tarball. */

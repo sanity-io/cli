@@ -35,6 +35,8 @@ interface StaticBuildOptions {
   entry?: string
   exposes?: WorkbenchExposes
   isApp?: boolean
+  /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
+  isBlueprints?: boolean
   /** Workbench app (opted in via `defineApplication`) — drives the federation build. */
   isWorkbenchApp?: boolean
   minify?: boolean
@@ -63,6 +65,7 @@ export async function buildStaticFiles(
     entry,
     exposes,
     isApp,
+    isBlueprints,
     isWorkbenchApp,
     minify = true,
     outputDir,
@@ -80,22 +83,23 @@ export async function buildStaticFiles(
    * runtime generation, static file copies, and favicons.
    */
   if (isWorkbenchApp) {
-    // A workbench remote can also serve itself standalone. When
-    // `SANITY_INTERNAL_IS_WORKBENCH_REMOTE` is set, emit an SPA (index.html +
-    // bootstrap + favicons) into the same `dist` as the federation output via a
-    // dedicated `client` environment (see plugin-sanity-environment). Skipped for
-    // a dock-only app (no `./App` to mount), matching `exposesApp` in plugin.ts.
-    const emitSpa = process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true' && !(isApp && !entry)
+    // Every federated app and studio also serves itself standalone: emit an SPA
+    // (index.html + bootstrap + favicons) into the same `dist` as the federation
+    // output via a dedicated `client` environment (see plugin-sanity-environment).
+    // Skipped for a dock-only app (no `./App` to mount), matching `exposesApp` in
+    // plugin.ts.
+    const emitSpa = !(isApp && !entry)
 
     let entries: Awaited<ReturnType<typeof resolveEntries>>
     if (emitSpa) {
-      buildDebug('Writing Sanity runtime files (workbench remote SPA)')
+      buildDebug('Writing Sanity runtime files (standalone SPA)')
       ;({entries} = await writeSanityRuntime({
         appTitle,
         basePath,
         cwd,
         entry,
         isApp,
+        isBlueprints,
         isWorkbenchApp,
         reactStrictMode: false,
         watch: false,
@@ -113,6 +117,7 @@ export async function buildStaticFiles(
       exposes,
       getEnvironmentVariables,
       isApp,
+      isBlueprints,
       isWorkbenchApp,
       minify,
       mode,
@@ -162,6 +167,7 @@ export async function buildStaticFiles(
     cwd,
     entry,
     isApp,
+    isBlueprints,
     isWorkbenchApp,
     reactStrictMode: false,
     watch: false,
@@ -181,6 +187,7 @@ export async function buildStaticFiles(
     entries,
     getEnvironmentVariables,
     isApp,
+    isBlueprints,
     isWorkbenchApp,
     minify,
     mode,

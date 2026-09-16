@@ -1,27 +1,10 @@
 import {describe, expect, test} from 'vitest'
 
-import {type DevServerConfig, type DevServerInterface} from '../deriveConfigs.js'
+import {type DevServerConfig} from '../deriveConfigs.js'
 import {createExposesTracker, exposesSetId, trackExposesSet} from '../exposesSetId.js'
 import {type DevServerManifest} from '../registry.js'
+import {panel, worker} from './devTestHelpers.js'
 
-const panel = (name: string, src = `./src/${name}.tsx`): DevServerInterface => ({
-  id: `test-app-panel-${name}`,
-  metadata: null,
-  moduleId: `views/${name}`,
-  name,
-  src,
-  surface: 'panel',
-  title: name,
-})
-const worker = (name: string, src = `./src/${name}.ts`): DevServerInterface => ({
-  id: `test-app-worker-${name}`,
-  metadata: null,
-  moduleId: `services/${name}`,
-  name,
-  src,
-  title: name,
-  type: 'worker',
-})
 const mlConfig = (fields: DevServerConfig['fields']): DevServerConfig => ({
   appType: 'media-library',
   fields,

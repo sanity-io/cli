@@ -115,7 +115,7 @@ function normalizePathSegments(path: string): {segments: string[]; version?: str
   const segments = pathPart.split('/').filter((segment) => segment !== '')
   let version: string | undefined
 
-  if (segments[0] === '{apiVersion}') {
+  if (segments[0] === '{apiVersion}' || segments[0] === '{apiV}') {
     segments.shift()
   } else if (segments.length > 0 && API_VERSION_SEGMENT_RE.test(segments[0])) {
     version = segments.shift()

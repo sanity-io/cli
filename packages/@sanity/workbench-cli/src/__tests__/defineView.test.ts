@@ -62,22 +62,22 @@ describe('surface typing', () => {
   })
 
   test('passes a window component the local app record as props', () => {
-    const view = unstable_defineView('app', (props) => {
+    const view = unstable_defineView('window', (props) => {
       expectTypeOf(props).toEqualTypeOf<WindowViewProps>()
       expectTypeOf(props.view).toEqualTypeOf<{
         name: string
         src: string
-        surface: 'app'
+        surface: 'window'
         title: string
       }>()
       return null
     })
 
-    expectTypeOf(view).toEqualTypeOf<DefinedView<'app'>>()
+    expectTypeOf(view).toEqualTypeOf<DefinedView<'window'>>()
   })
 
   test('returns a window component by reference', () => {
-    expect(unstable_defineView('app', app).components).toBe(app)
+    expect(unstable_defineView('window', app).components).toBe(app)
   })
 })
 

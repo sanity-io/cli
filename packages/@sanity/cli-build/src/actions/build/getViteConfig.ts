@@ -6,11 +6,14 @@ import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {isStaging} from '@sanity/cli-core/util'
 import {
+  resourceBindingsChunkFileName,
+  resourceBindingsCodeSplittingGroup,
   type WorkbenchExposes,
   workbenchOptimizeDeps,
   workbenchVitePlugins,
 } from '@sanity/workbench-cli/build'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
+import {Features} from 'lightningcss'
 import {
   type ConfigEnv,
   esmExternalRequirePlugin,
@@ -81,6 +84,13 @@ interface ViteOptions {
   isApp?: boolean
 
   /**
+   * Blueprints build (invoked via `@sanity/runtime-cli`). When set, the
+   * resource-bindings module is forced into its own unhashed chunk at the bundle
+   * root; otherwise no such chunk is produced.
+   */
+  isBlueprints?: boolean
+
+  /**
    * Whether this is a workbench app (opted in via `defineApplication`). Drives
    * the module-federation build.
    */
@@ -132,6 +142,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     entries,
     exposes,
     isApp,
+    isBlueprints,
     isWorkbenchApp,
     minify,
     mode,
@@ -181,6 +192,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     // does not conflict with any potential local vite projects
     cacheDir: `${SANITY_CACHE_DIR}/vite`,
     configFile: false,
+    // Leave native `light-dark()` alone. Lightning CSS's polyfill
+    // (`--lightningcss-light`/`--lightningcss-dark` + prefers-color-scheme)
+    // ignores Studio theme / `color-scheme`. See lightningcss#873.
+    css: {
+      lightningcss: {
+        exclude: Features.LightDark,
+      },
+    },
     define: {
       __SANITY_BUILD_TIMESTAMP__: JSON.stringify(Date.now()),
       __SANITY_STAGING__: isStaging(),
@@ -210,7 +229,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ...(isWorkbenchApp
         ? [
             ...sharedPlugins,
-            await workbenchVitePlugins({appId: workbenchAppId, cwd, entries, exposes, isApp}),
+            await workbenchVitePlugins({
+              appId: workbenchAppId,
+              cwd,
+              entries,
+              exposes,
+              isApp,
+              isBlueprints,
+            }),
             {
               ...sanityBuildEntries({basePath, bridge: false, cwd, isApp}),
               applyToEnvironment: (env) => env.name === 'client',
@@ -319,19 +345,41 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
           ...autoUpdates?.vendor.entries,
         },
         onwarn: onRolldownWarn,
+        ...(isBlueprints || autoUpdates
+          ? {
+              output: {
+                ...(isBlueprints
+                  ? {
+                      // Blueprints only: keep the resource-bindings module in its
+                      // own unhashed chunk at the bundle root so Brett can rewrite
+                      // it at deploy. The chunk sizing lives on the group itself
+                      // (see `resourceBindingsCodeSplittingGroup`), so it only
+                      // affects the bindings module and not automatic chunking.
+                      chunkFileNames: (chunk) =>
+                        resourceBindingsChunkFileName(chunk.name) ?? 'static/[name]-[hash].js',
+                      codeSplitting: {
+                        groups: [resourceBindingsCodeSplittingGroup],
+                      },
+                    }
+                  : {}),
+                ...(autoUpdates
+                  ? {
+                      entryFileNames: (chunk) =>
+                        vendorChunkNames!.has(chunk.name)
+                          ? `${VENDOR_DIR}/[name]-[hash].mjs`
+                          : 'static/[name]-[hash].js',
+                      exports: 'named',
+                    }
+                  : {}),
+              },
+            }
+          : {}),
         ...(autoUpdates
           ? {
               // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
               // the vendor named-exports plugin can edit chunks without a JS
               // dependency.
               experimental: {nativeMagicString: true},
-              output: {
-                entryFileNames: (chunk) =>
-                  vendorChunkNames!.has(chunk.name)
-                    ? `${VENDOR_DIR}/[name]-[hash].mjs`
-                    : 'static/[name]-[hash].js',
-                exports: 'named',
-              },
               // App-style builds default to `preserveEntrySignatures: false`, which
               // treeshakes the exports off entry chunks. Vendor chunks are loaded by
               // the browser via the import map, so their exports must survive (e.g.

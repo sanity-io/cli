@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "3.5.0",
+  "version": "3.7.0",
   "description": "Sanity CLI core package",
   "keywords": [
     "cli",
@@ -41,6 +41,10 @@
       "source": "./src/_exports/browser.ts",
       "default": "./dist/_exports/browser.js"
     },
+    "./commandPolicy": {
+      "source": "./src/_exports/commandPolicy.ts",
+      "default": "./dist/_exports/commandPolicy.js"
+    },
     "./config": {
       "source": "./src/_exports/config.ts",
       "default": "./dist/_exports/config.js"
@@ -48,6 +52,10 @@
     "./debug": {
       "source": "./src/_exports/debug.ts",
       "default": "./dist/_exports/debug.js"
+    },
+    "./dates": {
+      "source": "./src/_exports/dates.ts",
+      "default": "./dist/_exports/dates.js"
     },
     "./errors": {
       "source": "./src/_exports/errors.ts",
@@ -138,9 +146,7 @@
     "obug": "catalog:",
     "ora": "catalog:",
     "rxjs": "catalog:",
-    "tsx": "catalog:",
     "vite": "catalog:",
-    "vite-node": "catalog:",
     "wrap-ansi": "^9.0.2",
     "zod": "catalog:"
   },

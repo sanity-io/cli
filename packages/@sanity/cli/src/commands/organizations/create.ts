@@ -2,6 +2,7 @@ import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {validateOrganizationName} from '../../actions/organizations/validateOrganizationName.js'
@@ -34,10 +35,11 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
       description: 'Default role assigned to new members',
       required: false,
     }),
-    name: Flags.string({
-      description: 'Organization name',
-      required: false,
-    }),
+    name: requiredWhenUnattended(
+      Flags.string({
+        description: 'Organization name',
+      }),
+    ),
   } satisfies FlagInput
 
   static override hiddenAliases = organizationAliases('create')
@@ -52,11 +54,6 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
 
     let name: string
     if (nameFlag === undefined) {
-      if (this.isUnattended()) {
-        this.error('Organization name is required. Provide it with the --name flag.', {
-          exit: exitCodes.RUNTIME_ERROR,
-        })
-      }
       name = await promptForOrganizationName()
     } else {
       const trimmedName = nameFlag.trim()

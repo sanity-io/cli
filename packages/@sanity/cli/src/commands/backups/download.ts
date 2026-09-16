@@ -7,6 +7,7 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {boxen, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import pMap from 'p-map'
@@ -25,7 +26,6 @@ import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {type BackupItem, listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
-import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {humanFileSize} from '../../util/humanFileSize.js'
 import {isPathDirName} from '../../util/isPathDirName.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -79,9 +79,11 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
       description: 'Project ID to download backup from',
       semantics: 'override',
     }),
-    'backup-id': Flags.string({
-      description: 'The backup ID to download',
-    }),
+    'backup-id': requiredWhenUnattended(
+      Flags.string({
+        description: 'The backup ID to download',
+      }),
+    ),
     concurrency: Flags.integer({
       default: DEFAULT_DOWNLOAD_CONCURRENCY,
       description: `Concurrent number of backup item downloads (max: ${MAX_DOWNLOAD_CONCURRENCY})`,
@@ -98,22 +100,13 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
   static override hiddenAliases: string[] = ['backup:download']
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(DownloadBackupCommand)
+    const {args} = await this.parse(DownloadBackupCommand)
     let {dataset} = args
 
-    if (this.isUnattended()) {
-      const errors: string[] = []
-
-      if (!dataset) {
-        errors.push('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.')
-      }
-      if (!flags['backup-id']) {
-        errors.push('Backup ID is required in unattended mode. Pass it with `--backup-id <id>`.')
-      }
-
-      if (errors.length > 0) {
-        this.error(formatCliErrorMessages(errors), {exit: exitCodes.USAGE_ERROR})
-      }
+    if (this.isUnattended() && !dataset) {
+      this.error('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
 
     const projectId = await this.getProjectId({

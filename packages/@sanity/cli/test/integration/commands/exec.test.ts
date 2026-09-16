@@ -1,5 +1,5 @@
 import {type SpawnOptions} from 'node:child_process'
-import {copyFile, mkdir, rm} from 'node:fs/promises'
+import {copyFile, mkdir, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
@@ -100,7 +100,12 @@ describe('#exec', {timeout: 15 * 1000}, () => {
     })
 
     test.skipIf(isWindowsNode24OrUp)('executes script successfully', async (t) => {
-      const {error, stderr, stdout} = await testCommand(ExecCommand, [scriptPath])
+      const {error, stderr, stdout} = await testCommand(ExecCommand, [
+        scriptPath,
+        '--',
+        '--dry-run',
+        'positional-argument',
+      ])
       // output stdout and stderr to help diagnose the failure
       t.onTestFailed(() => {
         // eslint-disable-next-line no-console
@@ -115,6 +120,35 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       const data = JSON.parse(stdout.trim())
       expect(data.success).toBe(true)
       expect(data.env.SANITY_BASE_PATH).toBe(exampleDir)
+      expect(data.argv).toEqual([process.argv[0], scriptPath, '--dry-run', 'positional-argument'])
+    })
+
+    test.skipIf(isWindowsNode24OrUp)('resolves TypeScript path aliases', async (t) => {
+      await mkdir(join(exampleDir, 'test-alias'))
+      await writeFile(
+        join(exampleDir, 'test-alias', 'value.ts'),
+        "export const value = 'resolved'\n",
+      )
+      await writeFile(
+        join(exampleDir, 'tsconfig.json'),
+        JSON.stringify({compilerOptions: {baseUrl: '.', paths: {'@test/*': ['./test-alias/*']}}}),
+      )
+      await writeFile(
+        scriptPath,
+        "import {value} from '@test/value'\n\nconsole.log(JSON.stringify({value}))\n",
+      )
+
+      const {error, stderr, stdout} = await testCommand(ExecCommand, [scriptPath])
+      t.onTestFailed(() => {
+        // eslint-disable-next-line no-console
+        console.log(stdout)
+        // eslint-disable-next-line no-console
+        console.warn(stderr)
+      })
+
+      if (error) throw error
+
+      expect(JSON.parse(stdout.trim())).toEqual({value: 'resolved'})
     })
 
     test.skipIf(!TEST_TOKEN)('executes script with --with-user-token flag', async (t) => {

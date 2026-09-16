@@ -124,10 +124,13 @@ export async function startDevServerRegistration(
     id,
     interfaces,
     name,
+    organizationId: workbenchApp?.organizationId,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     reference,
+    slug: workbenchApp?.slug,
     type: isApp ? 'coreApp' : 'studio',
+    visibility: workbenchApp ? (workbenchApp.visibility ?? 'default') : undefined,
     workDir,
   })
 

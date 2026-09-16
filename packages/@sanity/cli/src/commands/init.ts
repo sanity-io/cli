@@ -94,6 +94,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       default: undefined,
       description: 'Import template sample dataset',
     }),
+    install: Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Install dependencies after scaffolding',
+      exclusive: ['bare'],
+    }),
     mcp: Flags.boolean({
       allowNo: true,
       default: true,
@@ -204,7 +210,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     'unstable--workbench': Flags.boolean({
       allowNo: true,
       default: undefined,
-      description: 'Opt into workbench: scaffolds the CLI config with unstable_defineApp',
+      description: 'Opt into workbench: scaffolds the CLI config with defineApplication',
       // Internal-only while workbench is unstable — keep it out of help/docs
       hidden: true,
     }),

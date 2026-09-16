@@ -139,6 +139,22 @@ describe('distillApiRoutes', () => {
     expect(routes[0].defaultApiVersion).toBeUndefined()
   })
 
+  test('strips the {apiV} version placeholder used by the Functions API', () => {
+    const routes = distillApiRoutes([
+      {
+        document: {
+          paths: {'/{apiV}/functions': {}},
+          servers: [{url: 'https://api.sanity.io'}],
+        },
+        slug: 'functions-api',
+        title: 'Functions API',
+      },
+    ])
+
+    expect(routes[0]).toMatchObject({pathPatterns: ['functions']})
+    expect(routes[0].defaultApiVersion).toBeUndefined()
+  })
+
   test('emits one entry per host for dual-host specs', () => {
     const routes = distillApiRoutes([
       {

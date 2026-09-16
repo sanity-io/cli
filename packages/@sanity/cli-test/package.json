@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-test",
-  "version": "15.0.0",
+  "version": "17.0.0",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
     "cli",
@@ -130,7 +130,7 @@
     "@sanity/cli-core": "workspace:*",
     "@swc/core": "catalog:",
     "ansis": "^4.2.0",
-    "esbuild": "^0.28.1",
+    "esbuild": "^0.28.2",
     "get-it": "catalog:",
     "nock": "catalog:",
     "tinyglobby": "catalog:"

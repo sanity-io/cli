@@ -109,10 +109,7 @@ describe('#invite', () => {
         isInteractive: false,
       },
     })
-    expect(missingBoth.error?.message).toBe(
-      'Email address is required. Pass it as the `<email>` argument.\n' +
-        'Error: User role is required. Pass it with `--role <role>`.',
-    )
+    expect(missingBoth.error?.message).toContain('Missing required flag role')
     expect(missingBoth.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 
     const missingEmail = await testCommand(UsersInviteCommand, ['--role', 'developer'], {
@@ -124,7 +121,7 @@ describe('#invite', () => {
     const missingRole = await testCommand(UsersInviteCommand, ['test@example.com'], {
       mocks: {...defaultMocks, isInteractive: false},
     })
-    expect(missingRole.error?.message).toContain('--role <role>')
+    expect(missingRole.error?.message).toContain('Missing required flag role')
     expect(missingRole.error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     expect(input).not.toHaveBeenCalled()
     expect(select).not.toHaveBeenCalled()

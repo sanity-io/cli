@@ -226,6 +226,19 @@ The three test types exist on a continuum: from fastest/cheapest/most-coupled-to
 - Run `pnpm test:coverage` to get a per-file test coverage report printed to your terminal. This command accepts one or path parameters to test files in order to more granularly report test coverage.
 - Just because a test achieves 100% code coverage does not, by itself, mean the test is good. 100% code coverage means every logical branch of a unit was exercised - but _what is asserted on_ in the test is just as important as what code is exercised. Spend some time to reason through what kinds of assertions achieve the goals of the test.
 
+### The Flip Check (Merge Bar for Boundary Tests)
+
+A boundary test guards an external contract: an external API shape, a wire/type mapping between two systems, or a persisted manifest. These tests exist to catch drift when the contract changes. But a test can pass while protecting nothing — if its mock simply mirrors the source under test, flipping the very field the test claims to guard leaves every assertion green. Every recent escaped regression in this repo shared this property (`slug`→`name`, `surface`→`window`/`app`, metadata threading): the field could be changed in the source and no test went red.
+
+Before merging any boundary test, apply the flip check — it takes about 30 seconds:
+
+1. Pick the field or branch the test is supposed to protect.
+2. Flip it in the **source under test** (rename a field, swap a mapped value, drop a threaded parameter).
+3. Run the module's tests.
+4. Confirm **at least one test goes red**. Then revert the flip.
+
+If nothing goes red, the test is decorative — it transcribes the source instead of asserting an outcome. Fix it by asserting on the observable output (the concrete value the boundary emits) or by testing against a real fixture rather than a stub copied from the code. A mock that restates the source cannot fail on the thing it exists to protect.
+
 ### Writing Tests
 
 This section describes how to write unit and integration tests, which apply to all packages in this repository. Guidance on how to write E2E tests is covered in more detail in the `packages/@sanity/cli-e2e` package documentation.

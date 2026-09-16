@@ -4,6 +4,7 @@ import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
 import prettyMs from 'pretty-ms'
@@ -50,9 +51,11 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
       default: 8,
       description: 'Concurrent number of asset downloads',
     }),
-    'media-library-id': Flags.string({
-      description: 'The id of the target media library',
-    }),
+    'media-library-id': requiredWhenUnattended(
+      Flags.string({
+        description: 'The id of the target media library',
+      }),
+    ),
     'no-compress': Flags.boolean({
       default: false,
       description: 'Skips compressing tarball entries (still generates a gzip file)',
@@ -94,11 +97,6 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
 
     let mediaLibraryId = flags['media-library-id']
     if (!mediaLibraryId) {
-      if (this.isUnattended()) {
-        this.error('Media library ID is required. Pass it with `--media-library-id <id>`.', {
-          exit: exitCodes.USAGE_ERROR,
-        })
-      }
       try {
         mediaLibraryId = await promptForMediaLibrary({mediaLibraries})
       } catch (error) {

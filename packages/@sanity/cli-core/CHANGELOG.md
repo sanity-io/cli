@@ -1,5 +1,46 @@
 # Changelog
 
+## 3.7.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.6.1...cli-core-v3.7.0)
+
+_2026-09-10_
+
+### Features
+
+- **cli-core:** accept numbers and Dates in `formatDateTime`, add `formatElapsed` for precise durations ([#1848](https://github.com/sanity-io/cli/pull/1848)) ([48fa623](https://github.com/sanity-io/cli/commit/48fa623dd56cf82bdb4bb3d5c76161face016715))
+
+## 3.6.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.6.0...cli-core-v3.6.1)
+
+_2026-09-03_
+
+### Bug Fixes
+
+- **cli:** remove dock prefix from view groups ([#1834](https://github.com/sanity-io/cli/pull/1834)) ([1f3adf8](https://github.com/sanity-io/cli/commit/1f3adf82c2a842bfbb2507d4e12b36d54ccf27b6))
+- **cli-core:** use Jiti for CLI config loading instead of tsx ([#1793](https://github.com/sanity-io/cli/pull/1793)) ([5664c73](https://github.com/sanity-io/cli/commit/5664c731f95acf6ea65c13aeea2676a1fca51c22))
+
+## 3.6.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.5.1...cli-core-v3.6.0)
+
+_2026-09-01_
+
+### Features
+
+- **cli-core:** export date and time parse/format utilities ([#1790](https://github.com/sanity-io/cli/pull/1790)) ([0f93a40](https://github.com/sanity-io/cli/commit/0f93a4085a5a17f33be6713a7a665d67ec75cf5e))
+
+## 3.5.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.5.0...cli-core-v3.5.1)
+
+_2026-09-01_
+
+### Bug Fixes
+
+- **cli-core:** disable ora stdin discarding so ctrl+c interrupts spinners ([#1784](https://github.com/sanity-io/cli/pull/1784)) ([56726e1](https://github.com/sanity-io/cli/commit/56726e1567077424b00043b88e7c50c51a510b57))
+
 ## 3.5.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.4.0...cli-core-v3.5.0)
