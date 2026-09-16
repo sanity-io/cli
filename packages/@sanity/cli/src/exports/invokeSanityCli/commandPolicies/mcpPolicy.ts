@@ -4,7 +4,7 @@ import {
   conditionalDenyFlags,
   conditionalPolicy,
   deny,
-} from './policy.js'
+} from '@sanity/cli-core/commandPolicy'
 
 function apiValidator({
   args,
@@ -48,10 +48,14 @@ function apiValidator({
  * a usage error, but cannot cause local filesystem access. Destructive remote
  * operations are allowed and do not by themselves make a command unsafe.
  *
- * Every manifest command must have exactly one policy here:
+ * Every command this package contributes must have exactly one policy here:
  * - allow: every valid invocation is safe
  * - conditional: safety depends on parsed arguments or flags
  * - deny: no invocation is safe
+ *
+ * Commands contributed by plugins are not listed here. Each plugin declares
+ * policies for its own commands (see `PluginInvocationPolicies` in
+ * `@sanity/cli-core/commandPolicy`).
  */
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful

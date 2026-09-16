@@ -41,6 +41,10 @@
       "source": "./src/_exports/browser.ts",
       "default": "./dist/_exports/browser.js"
     },
+    "./commandPolicy": {
+      "source": "./src/_exports/commandPolicy.ts",
+      "default": "./dist/_exports/commandPolicy.js"
+    },
     "./config": {
       "source": "./src/_exports/config.ts",
       "default": "./dist/_exports/config.js"
