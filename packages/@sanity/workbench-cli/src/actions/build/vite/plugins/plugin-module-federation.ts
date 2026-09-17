@@ -8,6 +8,7 @@ type ManifestAssets = Record<'css' | 'js', {async: string[]; sync: string[]}>
 
 interface FederationPluginApi {
   create: (sharing?: FederationSharing) => PluginOption
+  hasAdditionalExposes: boolean
   inputs: string[]
   isolateStyles: boolean
 }
@@ -39,6 +40,7 @@ export function sanityModuleFederation(
   // Discovery replaces this plugin set as a group; callers need no knowledge of upstream plugin names.
   const api: FederationPluginApi = {
     create: (sharing) => sanityModuleFederation(options, sharing),
+    hasAdditionalExposes: Object.keys(exposes ?? {}).some((expose) => expose !== './App'),
     inputs: Object.values(exposes ?? {}).flatMap((expose) =>
       typeof expose === 'string' ? expose : expose.import,
     ),

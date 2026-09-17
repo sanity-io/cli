@@ -1,14 +1,13 @@
 import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {createBuilder, type InlineConfig, type Plugin, type PluginOption} from 'vite'
+import {createBuilder, createLogger, type InlineConfig, type Plugin, type PluginOption} from 'vite'
 
 import {FEDERATION_DIR_NAME} from './constants.js'
 import {getFederationApi} from './plugins/plugin-module-federation.js'
 import {
   aliasMayRewriteSharedImport,
   createFederationSharing,
-  type FederationSharing,
   findSharedDependencyName,
   type ResolvedDependency,
 } from './shared-dependencies.js'
@@ -30,10 +29,11 @@ export async function buildFederatedApp(
     return
   }
 
-  const discovery = createSharedDependencyDiscovery({
-    environmentName: reuseStandaloneBuild ? 'client' : FEDERATION_DIR_NAME,
-    inputs: reuseStandaloneBuild ? federation.inputs : [],
-  })
+  // Loading remote-only exposes in the SPA can emit worker bundles even when their imports are unused.
+  reuseStandaloneBuild &&= !federation.hasAdditionalExposes
+  const discovery = createSharedDependencyDiscovery(
+    reuseStandaloneBuild ? 'client' : FEDERATION_DIR_NAME,
+  )
   const localPlugins = plugins.filter((plugin) => plugin.api?.sanityFederation !== federation)
 
   if (reuseStandaloneBuild) {
@@ -49,7 +49,8 @@ export async function buildFederatedApp(
   const firstFederationPlugin = plugins.find(
     (plugin) => plugin.api?.sanityFederation === federation,
   )
-  const replacement = federation.create(discovery.getSharing())
+  const sharing = discovery.getSharing()
+  const replacement = federation.create('disabledReason' in sharing ? undefined : sharing)
   const builder = await createBuilder({
     ...config,
     plugins: plugins.flatMap((plugin): PluginOption[] => {
@@ -57,6 +58,12 @@ export async function buildFederatedApp(
       return plugin.api?.sanityFederation === federation ? [] : [plugin]
     }),
   })
+  if ('disabledReason' in sharing) {
+    // CLI builds silence Vite's progress output; keep the reason for disabled sharing visible.
+    createLogger('warn', {customLogger: builder.config.customLogger}).warn(
+      `Dependency sharing disabled: ${sharing.disabledReason}. Dependencies will be bundled locally.`,
+    )
+  }
   await (reuseStandaloneBuild
     ? builder.build(builder.environments[FEDERATION_DIR_NAME])
     : builder.buildApp())
@@ -132,20 +139,13 @@ async function resolvePlugins(options: PluginOption[]): Promise<Plugin[]> {
     : (plugins as Plugin[])
 }
 
-function createSharedDependencyDiscovery({
-  environmentName,
-  inputs,
-}: {
-  environmentName: string
-  inputs: string[]
-}): {
-  getSharing: () => FederationSharing | undefined
+function createSharedDependencyDiscovery(environmentName: string): {
+  getSharing: () => ReturnType<typeof createFederationSharing>
   plugin: Plugin
 } {
   const dependencies: ResolvedDependency[] = []
   const packageCache = new Map<string, Promise<ResolvedDependency | undefined>>()
-  let unsafe = false
-  let inputsLoaded = false
+  let disabledReason: string | undefined
 
   async function findSharedPackage(id: string): Promise<ResolvedDependency | undefined> {
     let directory = path.dirname(id)
@@ -158,7 +158,7 @@ function createSharedDependencyDiscovery({
 
       if (!manifest.name || findSharedDependencyName(manifest.name) !== manifest.name) return
       if (!manifest.version) {
-        unsafe = true
+        disabledReason ??= `${manifest.name} has no version in its package.json`
         return
       }
       return {name: manifest.name, root: directory, version: manifest.version}
@@ -181,18 +181,14 @@ function createSharedDependencyDiscovery({
     apply: 'build',
     applyToEnvironment: (environment) => environment.name === environmentName,
     configResolved(config) {
-      unsafe ||=
-        !config.isProduction ||
-        config.resolve.alias.some(({find}) => aliasMayRewriteSharedImport(find))
+      if (!config.isProduction) disabledReason ??= 'This is not a production build'
+      const alias = config.resolve.alias.find(({find}) => aliasMayRewriteSharedImport(find))
+      if (alias)
+        disabledReason ??= `The Vite alias ${String(alias.find)} may rewrite a shared dependency import`
     },
     enforce: 'pre',
     // Relative imports can reach a second installed copy without a bare package import.
     async moduleParsed(module) {
-      if (module.isEntry && !inputsLoaded) {
-        inputsLoaded = true
-        // Inspect remote-only imports without emitting their entries in the standalone bundle.
-        await Promise.all(inputs.map((id) => this.load({id, resolveDependencies: true})))
-      }
       const dependency = await packageForModule(module.id)
       if (dependency) dependencies.push(dependency)
     },
@@ -203,19 +199,22 @@ function createSharedDependencyDiscovery({
 
       const resolved = await this.resolve(source, importer, {...options, skipSelf: true})
       if (!resolved || resolved.external) {
-        unsafe = true
+        disabledReason ??= resolved?.external
+          ? `${source} is external to the build`
+          : `${source} could not be resolved`
         return resolved
       }
 
       const dependency = await packageForModule(resolved.id)
-      if (!dependency || dependency.name !== dependencyName) unsafe = true
-      else dependencies.push({...dependency, specifier: source})
+      if (!dependency || dependency.name !== dependencyName) {
+        disabledReason ??= `${source} does not resolve to an installed ${dependencyName} package`
+      } else dependencies.push({...dependency, specifier: source})
       return resolved
     },
   }
 
   return {
-    getSharing: () => (unsafe ? undefined : createFederationSharing(dependencies)),
+    getSharing: () => (disabledReason ? {disabledReason} : createFederationSharing(dependencies)),
     plugin,
   }
 }

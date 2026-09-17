@@ -22,6 +22,9 @@ const sharedDependencies: readonly SharedDependency[] = [
   {name: 'styled-components', optional: true, scope: false},
 ]
 
+// Vite injects these aliases for its own modules; neither can redirect a shared package import.
+const viteInternalAliases = new Set([/^\/?@vite\/client/.source, /^\/?@vite\/env/.source])
+
 export interface ResolvedDependency {
   name: string
   root: string
@@ -46,9 +49,9 @@ export function findSharedDependencyName(specifier: string): string | undefined 
 
 export function createFederationSharing(
   dependencies: ResolvedDependency[],
-): FederationSharing | undefined {
+): FederationSharing | {disabledReason: string} {
   const versions = resolveCompatibleVersions(dependencies)
-  if (!versions) return undefined
+  if (!(versions instanceof Map)) return versions
 
   // React and its renderer must agree; styled-components selects its own exact version in this pool.
   const shareScope =
@@ -74,16 +77,18 @@ export function aliasMayRewriteSharedImport(find: RegExp | string): boolean {
     )
   }
 
-  // Only an anchored, literal namespace proves that a regex cannot intercept a shared subpath.
-  // Alternation or an optional slash could also match imports outside that namespace.
-  const namespace = find.source.match(/^\^(?:\\\/\?)?([@\w-]+)(?:\\\/|\/)(?![?*{])/u)?.[1]
-  if (!namespace || find.source.includes('|') || find.ignoreCase || find.multiline) return true
+  if (find.ignoreCase || find.multiline) return true
+  if (viteInternalAliases.has(find.source)) return false
+
+  // Only accept a literal prefix like /^@app\//; more complex regexes may also match shared imports.
+  const namespace = find.source.match(/^\^([@\w-]+)\\\/$/u)?.[1]
+  if (!namespace) return true
   return sharedDependencies.some(({name}) => name === namespace || name.startsWith(`${namespace}/`))
 }
 
 function resolveCompatibleVersions(
   dependencies: ResolvedDependency[],
-): Map<string, string> | undefined {
+): Map<string, string> | {disabledReason: string} {
   const versions = new Map<string, string>()
   for (const {name, optional} of sharedDependencies) {
     const copies = dependencies.filter((dependency) => dependency.name === name)
@@ -91,27 +96,30 @@ function resolveCompatibleVersions(
       versions.set(name, 'none')
       continue
     }
-    const version = getSingleInstalledVersion(copies)
-    if (!version) return undefined
+    if (copies.length === 0) return {disabledReason: `No installed copy of ${name} was found`}
+    const {root, version} = copies[0]
+    if (copies.some((copy) => copy.root !== root || copy.version !== version)) {
+      return {disabledReason: `Multiple installed copies of ${name} were found`}
+    }
+    // pnpm patch hashes identify different package code under the same version, so patched copies stay local.
+    if (root.includes('patch_hash=')) return {disabledReason: `${name} has a local pnpm patch`}
+    // Semver ignores build metadata, so only its unchanged canonical form is safe to share.
+    if (validSemver(version) !== version) {
+      return {disabledReason: `${name} has an unsupported version: ${JSON.stringify(version)}`}
+    }
     versions.set(name, version)
   }
 
   // Sharing the renderer without its React import would split hook and context identity.
-  if (!dependencies.some(({name, specifier}) => name === 'react' && specifier === 'react'))
-    return undefined
-  if (versions.get('react') !== versions.get('react-dom')) return undefined
+  if (!dependencies.some(({name, specifier}) => name === 'react' && specifier === 'react')) {
+    return {disabledReason: 'The react import could not be resolved to a shared provider'}
+  }
+  if (versions.get('react') !== versions.get('react-dom')) {
+    return {
+      disabledReason: `React (${versions.get('react')}) and React DOM (${versions.get('react-dom')}) versions differ`,
+    }
+  }
   return versions
-}
-
-function getSingleInstalledVersion(copies: ResolvedDependency[]): string | undefined {
-  if (copies.length === 0) return undefined
-  const {root, version} = copies[0]
-  if (copies.some((copy) => copy.root !== root || copy.version !== version)) return undefined
-  // pnpm patch hashes identify different package code under the same version, so patched copies stay local.
-  if (root.includes('patch_hash=')) return undefined
-  // Semver ignores build metadata, so only its unchanged canonical form is safe to share.
-  if (validSemver(version) !== version) return undefined
-  return version
 }
 
 function createSharedEntries(

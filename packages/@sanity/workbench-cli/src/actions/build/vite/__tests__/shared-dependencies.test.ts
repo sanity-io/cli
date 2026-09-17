@@ -24,12 +24,14 @@ describe('shared dependency policy', () => {
     (name) => {
       expect(
         createFederationSharing(dependencies().filter((entry) => entry.name !== name)),
-      ).toBeUndefined()
+      ).toEqual({disabledReason: `No installed copy of ${name} was found`})
     },
   )
 
   test.each(['19.2.0+patched', '19.2.0-01'])('keeps uncertain version %s local', (version) => {
-    expect(createFederationSharing(dependencies(version))).toBeUndefined()
+    expect(createFederationSharing(dependencies(version))).toEqual({
+      disabledReason: `react has an unsupported version: ${JSON.stringify(version)}`,
+    })
   })
 
   test('keeps mismatched React and React DOM versions local', () => {
@@ -39,13 +41,13 @@ describe('shared dependency policy', () => {
           entry.name === 'react-dom' ? {...entry, version: '19.2.1'} : entry,
         ),
       ),
-    ).toBeUndefined()
+    ).toEqual({disabledReason: 'React (19.2.0) and React DOM (19.2.1) versions differ'})
   })
 
   test('keeps the renderer local when the React root import was intercepted', () => {
     expect(
       createFederationSharing(dependencies().filter(({specifier}) => specifier !== 'react')),
-    ).toBeUndefined()
+    ).toEqual({disabledReason: 'The react import could not be resolved to a shared provider'})
   })
 
   test('keeps patched packages local', () => {
@@ -53,7 +55,7 @@ describe('shared dependency policy', () => {
       createFederationSharing(
         dependencies().map((entry) => ({...entry, root: `${entry.root}_patch_hash=abc`})),
       ),
-    ).toBeUndefined()
+    ).toEqual({disabledReason: 'react has a local pnpm patch'})
   })
 })
 
