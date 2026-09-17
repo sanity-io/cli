@@ -967,6 +967,7 @@ describe('#deploy app', () => {
       `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
     )
     expect(stdout).toContain(`deployment: {\n  appId: '${newAppId}',`)
+    expect(stdout).not.toContain('omit --create')
     expect(mockInput).toHaveBeenCalledWith({
       message: 'Enter a title for your application:',
       validate: expect.any(Function),

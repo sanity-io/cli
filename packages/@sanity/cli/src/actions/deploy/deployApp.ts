@@ -349,6 +349,7 @@ async function runAppDeployment(
       applicationId: application.id,
       cliConfig,
       created: appCreated,
+      createRequested: flags.create,
       organizationId: application.organizationId,
       output,
       title: application.title,
@@ -500,6 +501,7 @@ export function logAppDeployed({
   applicationId,
   cliConfig,
   created,
+  createRequested = false,
   organizationId,
   output,
   title,
@@ -508,6 +510,7 @@ export function logAppDeployed({
   applicationId: string
   cliConfig: DeployAppOptions['cliConfig']
   created: boolean
+  createRequested?: boolean
   organizationId: string
   output: DeployAppOptions['output']
   title: string | null
@@ -524,7 +527,9 @@ export function logAppDeployed({
     output.log(
       styleText(
         'yellow',
-        '\nSave `deployment.appId` and omit --create on later deploys to update this application.',
+        createRequested
+          ? '\nSave `deployment.appId` and omit --create on later deploys to update this application.'
+          : '\nSave `deployment.appId` to update this application on later deploys.',
       ),
     )
   }
