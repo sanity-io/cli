@@ -12,7 +12,6 @@
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
-    "@module-federation/runtime": "2.9.0",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli": "workspace:*",
     "@sanity/cli-build": "workspace:*",

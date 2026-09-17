@@ -1,10 +1,9 @@
 import {cp, readFile, realpath, rm, symlink, writeFile} from 'node:fs/promises'
 import path from 'node:path'
-import {fileURLToPath} from 'node:url'
 import {promisify} from 'node:util'
 
 import {testFixture} from '@sanity/cli-test'
-import {build, normalizePath, preview} from 'vite'
+import {build, preview} from 'vite'
 
 import {runCli} from './runCli.js'
 
@@ -108,16 +107,15 @@ async function overrideDependencyVersions(
 
 export async function buildHost(apps: BuiltApp[]) {
   const remotes = apps.map(({name, url}) => ({
-    entry: new URL('mf-manifest.json', url).href,
+    entry: url,
     name,
   }))
   const hostEntry = path.join(apps[0].root, 'host.js')
-  const runtime = normalizePath(fileURLToPath(import.meta.resolve('@module-federation/runtime')))
   await writeFile(
     hostEntry,
     `
-import {createInstance} from ${JSON.stringify(runtime)}
-const host = createInstance({name: 'sharing-host', shareStrategy: 'loaded-first', remotes: ${JSON.stringify(remotes)}})
+import {createRemoteInstance} from '@sanity/sdk-react/dashboard'
+const host = createRemoteInstance({name: 'sharing-host', remotes: ${JSON.stringify(remotes)}})
 const unmounts = new Map()
 export async function mount(name, color) {
   const {render} = await host.loadRemote(name + '/App')
@@ -127,14 +125,19 @@ export async function mount(name, color) {
   unmounts.set(name, render(element, {id: name, color}))
 }
 export function unmount(name) { unmounts.get(name)() }
-export function preload(name) { return host.preloadRemote([{nameOrAlias: name, resourceCategory: 'all'}]) }
+export function preload(name) { return host.preloadRemote(name) }
 `,
   )
   await build({
     build: {
       emptyOutDir: false,
-      lib: {entry: hostEntry, fileName: () => 'host.js', formats: ['es']},
       outDir: path.join(apps[0].root, 'dist'),
+      rolldownOptions: {
+        input: hostEntry,
+        output: {entryFileNames: 'host.js'},
+        // The tests import host.js directly, so its exports must survive tree-shaking.
+        preserveEntrySignatures: 'strict',
+      },
     },
     configFile: false,
     logLevel: 'silent',
