@@ -30,7 +30,6 @@ jobs:
               - 'packages/@sanity/cli-core/**'
               - 'packages/@sanity/cli-e2e/**'
               - 'packages/@sanity/cli-test/**'
-              - 'packages/@sanity/workbench-cli/**'
               - 'packages/create-sanity/**'
               - 'fixtures/**'
               - 'pnpm-lock.yaml'
@@ -73,9 +72,6 @@ jobs:
 
       - name: Build CLI
         run: pnpm build:cli
-
-      - name: Install browser for federation tests
-        run: pnpm --filter @sanity/cli-e2e exec playwright install --with-deps chromium --only-shell
 
       - name: Run E2E tests
         env:

@@ -199,7 +199,7 @@ describe('buildStaticFiles', () => {
   })
 
   describe('isWorkbenchapp=false', () => {
-    test('should run a vite build, write favicons and return chunk stats', async () => {
+    test.each([false, true])('builds normally (isApp: %s)', async (isApp) => {
       const basePath = '/' // this is OS-agnostic, even on windows :shrug:
       const staticOutputPath = path.join(outputDir, 'static')
       const faviconBasePath = '/static'
@@ -220,6 +220,7 @@ describe('buildStaticFiles', () => {
       const {chunks} = await buildStaticFiles({
         basePath,
         cwd,
+        isApp,
         isWorkbenchApp: false,
         outputDir,
         schemaExtraction: {enabled: true},
@@ -228,6 +229,7 @@ describe('buildStaticFiles', () => {
       expect(mockCopyDir).toHaveBeenCalledWith(path.join(cwd, 'static'), staticOutputPath)
       expect(mockWriteFavicons).toHaveBeenCalledWith(faviconBasePath, staticOutputPath)
       expect(mockBuild).toHaveBeenCalledWith(defaultViteConfig)
+      expect(mockBuildApp).not.toHaveBeenCalled()
       // Should ignore non-chunk types
       expect(chunks).toHaveLength(1)
       expect(chunks[0].name).toEqual('chonkiboi')

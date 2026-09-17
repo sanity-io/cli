@@ -15,7 +15,6 @@ export const DEFAULT_FIXTURES: Record<FixtureName, FixtureOptions> = {
   'basic-app': {},
   'basic-functions': {},
   'basic-studio': {},
-  'federated-app': {},
   'federated-studio': {},
   'graphql-studio': {},
   'multi-workspace-studio': {},
@@ -33,7 +32,6 @@ export type FixtureName =
   | 'basic-app'
   | 'basic-functions'
   | 'basic-studio'
-  | 'federated-app'
   | 'federated-studio'
   | 'graphql-studio'
   | 'multi-workspace-studio'
