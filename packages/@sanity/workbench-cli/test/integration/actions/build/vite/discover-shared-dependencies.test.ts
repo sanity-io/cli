@@ -15,7 +15,10 @@ type Manifest = {
 }
 
 const roots: string[] = []
-const fixture = path.resolve(import.meta.dirname, '../../../../../../../../fixtures/federated-app')
+const fixture = path.resolve(
+  import.meta.dirname,
+  '../../../../../../../../fixtures/federated-studio',
+)
 
 beforeAll(() => {
   vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
@@ -40,7 +43,7 @@ async function buildApp({
   remoteOnlyExposes?: boolean
   reuseStandaloneBuild?: boolean
 } = {}) {
-  const root = await testFixture('federated-app', {useSystemTmp: true})
+  const root = await testFixture('federated-studio', {useSystemTmp: true})
   roots.push(root)
   await mkdir(path.join(root, 'node_modules'), {recursive: true})
   for (const dependency of ['react', 'react-dom', 'styled-components']) {
@@ -52,12 +55,14 @@ async function buildApp({
       'junction',
     )
   }
-  if (remoteOnlyExposes) {
-    await writeFile(
-      path.join(root, 'App.tsx'),
-      'export default function App() { return <div>Hello</div> }',
-    )
-  }
+  await writeFile(
+    path.join(root, 'App.tsx'),
+    remoteOnlyExposes
+      ? 'export default function App() { return <div>Hello</div> }'
+      : `import styled from 'styled-components'
+const Box = styled.div\`color: red;\`
+export default function App() { return <Box>Hello</Box> }`,
+  )
   await writeFile(
     path.join(root, 'View.tsx'),
     remoteOnlyExposes

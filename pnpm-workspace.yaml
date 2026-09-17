@@ -83,7 +83,6 @@ catalog:
   # Type Definitions
   '@types/node': ^22.20.0
   '@types/jsdom': ^28.0.3
-  playwright: 1.62.0
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
