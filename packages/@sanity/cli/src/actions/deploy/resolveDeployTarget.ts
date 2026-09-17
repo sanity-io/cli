@@ -135,9 +135,10 @@ export async function resolveStudioDeployTarget(options: {
  */
 export async function resolveAppDeployTarget(options: {
   appId: string | undefined
+  create?: boolean
   organizationId: string | undefined
 }): Promise<AppDeployTargetResolution<UserApplicationResolved>> {
-  const {appId, organizationId} = options
+  const {appId, create, organizationId} = options
 
   if (appId) {
     const application = await getUserApplication({appId, isSdkApp: true})
@@ -153,6 +154,10 @@ export async function resolveAppDeployTarget(options: {
 
   if (!organizationId) {
     return {message: 'app.organizationId is missing', type: 'blocked'}
+  }
+
+  if (create) {
+    return {type: 'would-create'}
   }
 
   const existing = await getUserApplications({appType: 'coreApp', organizationId})

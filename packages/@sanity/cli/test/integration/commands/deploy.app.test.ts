@@ -123,6 +123,196 @@ describe('#deploy app', () => {
     expect(error?.oclif?.exit).toBe(2)
   })
 
+  test.each([
+    {existingCount: 0, useConfigTitle: false},
+    {existingCount: 1, useConfigTitle: true},
+    {existingCount: 3, useConfigTitle: false},
+  ])(
+    '--create deploys a new app without prompts with $existingCount existing apps',
+    async ({existingCount, useConfigTitle}) => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+      const application = {
+        appHost: 'new-app-host',
+        createdAt: '2026-01-01T00:00:00Z',
+        id: 'new-app-id',
+        organizationId,
+        projectId: null,
+        title: 'New App',
+        type: 'coreApp',
+        updatedAt: '2026-01-01T00:00:00Z',
+        urlType: 'internal',
+      }
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {appType: 'coreApp', organizationId},
+        uri: '/user-applications',
+      })
+        .optionally()
+        .reply(
+          200,
+          Array.from({length: existingCount}, (_, index) => ({
+            ...application,
+            appHost: `existing-${index}`,
+            id: `existing-${index}`,
+          })),
+        )
+      const create = mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'coreApp', organizationId},
+        uri: '/user-applications',
+      }).reply(200, (_uri, body) => {
+        expect(body).toEqual({
+          appHost: expect.stringMatching(/^[a-z][a-z0-9]{11}$/),
+          title: 'New App',
+          type: 'coreApp',
+          urlType: 'internal',
+        })
+        return application
+      })
+      const deploy = mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/new-app-id/deployments',
+      }).reply(201, {id: 'deployment-id'}, {location: 'https://new-app-host.sanity.app/'})
+
+      const args = ['--create', '--json']
+      if (!useConfigTitle) args.push('--title', '  New App  ')
+      const {error, stderr, stdout} = await testCommand(DeployCommand, args, {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {app: {organizationId, ...(useConfigTitle ? {title: '  New App  '} : {})}},
+          isInteractive: false,
+        },
+      })
+
+      if (error) throw error
+      expect(JSON.parse(stdout)).toMatchObject({
+        action: 'create',
+        application: {id: 'new-app-id', title: 'New App'},
+        deployed: true,
+        url: `https://www.sanity.io/@${organizationId}/application/new-app-id`,
+      })
+      expect(create.isDone()).toBe(true)
+      expect(deploy.isDone()).toBe(true)
+      expect(stderr).toContain('Save `deployment.appId` and omit --create')
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockConfirm).not.toHaveBeenCalled()
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/new-app-id',
+      }).reply(200, application)
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/new-app-id/deployments',
+      }).reply(201, {id: 'second-deployment'}, {location: 'https://new-app-host.sanity.app/'})
+
+      const redeploy = await testCommand(DeployCommand, ['--yes', '--json'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {app: {organizationId}, deployment: {appId: 'new-app-id'}},
+          isInteractive: false,
+        },
+      })
+      if (redeploy.error) throw redeploy.error
+      expect(JSON.parse(redeploy.stdout)).toMatchObject({
+        action: 'update',
+        application: {id: 'new-app-id'},
+        deployed: true,
+      })
+    },
+  )
+
+  test('previews --create in JSON without creating an app or uploading a deployment', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+    // No HTTP mocks: any attempt to create or upload fails the dry run.
+    const {error, stdout} = await testCommand(
+      DeployCommand,
+      ['--create', '--title', 'New App', '--dry-run', '--json'],
+      {
+        config: {root: cwd},
+        mocks: {cliConfig: {app: {organizationId}}, isInteractive: false},
+      },
+    )
+
+    if (error) throw error
+    expect(JSON.parse(stdout)).toMatchObject({
+      action: 'create',
+      application: null,
+      canDeploy: true,
+      errors: {},
+      payload: {appId: null},
+    })
+    expect(mockSelect).not.toHaveBeenCalled()
+    expect(mockInput).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    {dryRun: false, title: undefined},
+    {dryRun: false, title: ''},
+    {dryRun: false, title: '   '},
+    {dryRun: true, title: undefined},
+    {dryRun: true, title: ''},
+    {dryRun: true, title: '   '},
+  ])(
+    'rejects --create without a nonblank title (dryRun=$dryRun, title="$title")',
+    async ({dryRun, title}) => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+      const args = ['--create', '--yes', '--json']
+      if (dryRun) args.push('--dry-run')
+      if (title !== undefined) args.push('--title', title)
+
+      const {error, stdout} = await testCommand(DeployCommand, args, {
+        config: {root: cwd},
+        mocks: {cliConfig: {app: {organizationId, title: '   '}}, isInteractive: false},
+      })
+
+      expect(error?.oclif?.exit).toBe(2)
+      const result = JSON.parse(stdout)
+      if (dryRun) {
+        expect(result.canDeploy).toBe(false)
+        expect(Object.values(result.errors).join(' ')).toContain('Pass `--title')
+      } else {
+        expect(result.deployed).toBe(false)
+        expect(result.error.message).toContain('Pass `--title')
+      }
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+    },
+  )
+
+  test('a title alone does not choose creation over the organization’s existing apps', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp', organizationId},
+      uri: '/user-applications',
+    }).reply(200, [{id: 'existing-app', title: 'Existing App'}])
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--title', 'New App', '--json'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app: {organizationId}}, isInteractive: false},
+    })
+
+    expect(error?.oclif?.exit).toBe(2)
+    expect(JSON.parse(stdout)).toMatchObject({
+      deployed: false,
+      error: {message: expect.stringContaining('sanity deploy --create --title')},
+    })
+    expect(mockSelect).not.toHaveBeenCalled()
+  })
+
   test("should prompt to confirm deleting source directory if it's not empty", async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd

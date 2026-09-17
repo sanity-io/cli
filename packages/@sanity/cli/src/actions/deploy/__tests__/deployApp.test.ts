@@ -44,7 +44,7 @@ describe('logAppDeployed', () => {
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('/@org-1/application/app-1'))
   })
 
-  test('creating without an appId warns that a redeploy creates another application', () => {
+  test('creating without an appId explains how to update the same application on redeploy', () => {
     const output = mockOutput()
 
     logAppDeployed({
@@ -61,7 +61,7 @@ describe('logAppDeployed', () => {
       .mock.calls.map((call) => call[0])
       .join('\n')
     expect(logged).toContain('Created a new application.')
-    expect(logged).toContain('creates another new application')
+    expect(logged).toContain('Save `deployment.appId` and omit --create on later deploys')
     expect(logged).toContain("appId: 'app-2'")
   })
 })

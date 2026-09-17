@@ -12,6 +12,13 @@ const mockDeployApp = vi.hoisted(() => vi.fn())
 const mockDeployStudio = vi.hoisted(() => vi.fn())
 const mockDetermineIsApp = vi.hoisted(() => vi.fn())
 const mockDirIsEmptyOrNonExistent = vi.hoisted(() => vi.fn())
+const mockGetWorkbench = vi.hoisted(() => vi.fn())
+const mockResolveWorkbenchConfig = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/workbench-cli/deploy', () => ({
+  getWorkbench: mockGetWorkbench,
+  resolveWorkbenchConfig: mockResolveWorkbenchConfig,
+}))
 
 vi.mock('../../actions/deploy/deployApp.js', () => ({deployApp: mockDeployApp}))
 vi.mock('../../actions/deploy/deployStudio.js', () => ({deployStudio: mockDeployStudio}))
@@ -32,6 +39,8 @@ describe('#deploy', () => {
     mocks.SanityCmdIsUnattended.mockReturnValue(true)
     mockDetermineIsApp.mockReturnValue(false)
     mockDirIsEmptyOrNonExistent.mockResolvedValue(true)
+    mockGetWorkbench.mockReturnValue(null)
+    mockResolveWorkbenchConfig.mockReturnValue(null)
   })
   afterEach(() => vi.clearAllMocks())
 
@@ -67,4 +76,55 @@ describe('#deploy', () => {
       expect.objectContaining({flags: expect.objectContaining({yes: true})}),
     )
   })
+
+  test('passes an explicit creation request to app deployment', async () => {
+    mockDetermineIsApp.mockReturnValue(true)
+    await DeployCommand.run(['--create', '--title', 'My App'])
+
+    expect(mockDeployApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        flags: expect.objectContaining({create: true, title: 'My App', yes: true}),
+      }),
+    )
+  })
+
+  test('rejects --create for a studio before deployment', async () => {
+    await DeployCommand.run(['--create'])
+    expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+      expect.stringContaining('For a studio, use --url'),
+    )
+
+    expect(mockDeployStudio).not.toHaveBeenCalled()
+  })
+
+  test.each([{deployment: {appId: 'existing-app'}}, {app: {id: 'legacy-app'}}])(
+    'rejects --create with an app ID in %j',
+    async (cliConfig) => {
+      mockDetermineIsApp.mockReturnValue(true)
+      mocks.SanityCmdGetCliConfig.mockResolvedValue(cliConfig)
+
+      await DeployCommand.run(['--create'])
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringContaining('Omit --create to deploy to that app'),
+      )
+
+      expect(mockDeployApp).not.toHaveBeenCalled()
+    },
+  )
+
+  test.each(['workbench', 'media library'])(
+    'rejects --create for a %s configuration',
+    async (kind) => {
+      mockDetermineIsApp.mockReturnValue(true)
+      if (kind === 'workbench') mockGetWorkbench.mockReturnValue({})
+      else mockResolveWorkbenchConfig.mockReturnValue({})
+
+      await DeployCommand.run(['--create'])
+      expect(mocks.SanityCmdOutputError).toHaveBeenCalledWith(
+        expect.stringContaining('Omit --create and run sanity deploy'),
+      )
+
+      expect(mockDeployApp).not.toHaveBeenCalled()
+    },
+  )
 })

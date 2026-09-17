@@ -379,12 +379,18 @@ async function resolveAppApplication(
   const title = flags.title?.trim() || cliConfig.app?.title?.trim() || undefined
 
   if (dryRun) {
-    await checkAppTarget(reporter, {appId: getAppId(cliConfig), organizationId, title})
+    await checkAppTarget(reporter, {
+      appId: getAppId(cliConfig),
+      create: flags.create,
+      organizationId,
+      title,
+    })
     return {application: null, created: false}
   }
 
   let application = await findUserApplication({
     cliConfig,
+    create: flags.create,
     organizationId,
     output,
     title,
@@ -518,7 +524,7 @@ export function logAppDeployed({
     output.log(
       styleText(
         'yellow',
-        '\nDeploying again without `deployment.appId` creates another new application.',
+        '\nSave `deployment.appId` and omit --create on later deploys to update this application.',
       ),
     )
   }

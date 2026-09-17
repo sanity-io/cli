@@ -113,7 +113,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
   })
 
   test('auto-detects package manager from existing lockfile', async () => {
-    writeFileSync(`${tmp.path}/pnpm-lock.yaml`, 'lockfileVersion: 5.4\n')
+    writeFileSync(`${tmp.path}/pnpm-lock.yaml`, "lockfileVersion: '9.0'\n")
 
     const session = await runCli({
       args: [

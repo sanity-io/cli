@@ -1,6 +1,7 @@
 import {getApplication, listApplications} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {getUserApplication, getUserApplications} from '../../../services/userApplications.js'
 import {
   resolveAppDeployTarget,
   resolveStudioDeployTarget,
@@ -17,12 +18,15 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
 const mockGetApplication = vi.mocked(getApplication)
 const mockListApplications = vi.mocked(listApplications)
 
-beforeEach(() => vi.clearAllMocks())
+vi.mock('../../../services/userApplications.js', () => ({
+  getUserApplication: vi.fn(),
+  getUserApplications: vi.fn(),
+}))
 
-// These cases all short-circuit before any user-application lookup — they cover
-// the host/URL validation and the missing-config guards, no API access needed.
-// The verdicts that do hit the API (found / would-create / needs-input) are
-// exercised end-to-end by the deploy integration tests.
+const mockGetUserApplication = vi.mocked(getUserApplication)
+const mockGetUserApplications = vi.mocked(getUserApplications)
+
+beforeEach(() => vi.clearAllMocks())
 
 const studioBase = {
   appId: undefined,
@@ -132,6 +136,51 @@ describe('resolveAppDeployTarget', () => {
 
     expect(result).toEqual({message: 'app.organizationId is missing', type: 'blocked'})
   })
+
+  test('explicit creation skips selecting from the organization’s apps', async () => {
+    const result = await resolveAppDeployTarget({
+      appId: undefined,
+      create: true,
+      organizationId: 'org-1',
+    })
+
+    expect(result).toEqual({type: 'would-create'})
+    expect(mockGetUserApplication).not.toHaveBeenCalled()
+    expect(mockGetUserApplications).not.toHaveBeenCalled()
+  })
+
+  test('explicit creation still requires an organization', async () => {
+    const result = await resolveAppDeployTarget({
+      appId: undefined,
+      create: true,
+      organizationId: undefined,
+    })
+
+    expect(result).toEqual({message: 'app.organizationId is missing', type: 'blocked'})
+    expect(mockGetUserApplications).not.toHaveBeenCalled()
+  })
+
+  test.each([0, 1, 3])(
+    'without --create, %i existing apps determine whether to prompt',
+    async (count) => {
+      const existing = Array.from({length: count}, (_, index) => ({
+        appHost: `host-${index}`,
+        createdAt: '2026-01-01',
+        id: `app-${index}`,
+        organizationId: 'org-1',
+        projectId: null,
+        title: `App ${index}`,
+        type: 'coreApp' as const,
+        updatedAt: '2026-01-01',
+        urlType: 'internal' as const,
+      }))
+      mockGetUserApplications.mockResolvedValue(existing)
+
+      const result = await resolveAppDeployTarget({appId: undefined, organizationId: 'org-1'})
+
+      expect(result).toEqual(count ? {existing, type: 'needs-input'} : {type: 'would-create'})
+    },
+  )
 })
 
 describe('resolveWorkbenchApp', () => {

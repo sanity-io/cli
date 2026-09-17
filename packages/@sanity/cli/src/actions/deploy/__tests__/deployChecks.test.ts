@@ -241,7 +241,18 @@ describe('checkAppTarget', () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
     const reporter = createCollectingReporter<DeployCheck>()
 
-    await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1', title: 'My App'})
+    await checkAppTarget(reporter, {
+      appId: undefined,
+      create: true,
+      organizationId: 'org-1',
+      title: 'My App',
+    })
+
+    expect(mockResolveApp).toHaveBeenCalledWith({
+      appId: undefined,
+      create: true,
+      organizationId: 'org-1',
+    })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Would create a new application "My App"')
@@ -266,6 +277,7 @@ describe('checkAppTarget', () => {
 
     expect(reporter.results[0]).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
     expect(reporter.results[0]?.message).toContain('2 existing applications to choose from')
+    expect(reporter.results[0]?.solution).toContain('sanity deploy --create --title')
   })
 
   test('invalid → fail check', async () => {

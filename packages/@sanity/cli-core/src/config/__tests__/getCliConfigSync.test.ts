@@ -2,9 +2,15 @@ import {mkdtempSync, rmSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
+import {createJiti} from 'jiti'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getCliConfigSync} from '../cli/getCliConfigSync'
+
+vi.mock('jiti', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('jiti')>()
+  return {...actual, createJiti: vi.fn(actual.createJiti)}
+})
 
 // Mock node:fs
 vi.mock('node:fs', async () => {
@@ -40,6 +46,29 @@ describe('getCliConfigSync', () => {
     vi.mocked(existsSync).mockReturnValue(true)
 
     expect(() => getCliConfigSync(mockRootPath)).toThrow('Multiple CLI config files found')
+  })
+
+  test('rejects a misplaced studioHost with instructions for fixing the config', async () => {
+    const {existsSync} = await import('node:fs')
+    vi.mocked(existsSync).mockImplementation((path) => path.toString().endsWith('.ts'))
+    vi.mocked(createJiti).mockReturnValueOnce((() => ({
+      default: {deployment: {studioHost: 'my-studio'}},
+    })) as unknown as ReturnType<typeof createJiti>)
+
+    expect(() => getCliConfigSync(mockRootPath)).toThrow(
+      'deployment.studioHost is not supported. Move studioHost to the top level',
+    )
+  })
+
+  test('accepts a top-level studioHost alongside deployment settings', async () => {
+    const {existsSync} = await import('node:fs')
+    vi.mocked(existsSync).mockImplementation((path) => path.toString().endsWith('.ts'))
+    const config = {deployment: {autoUpdates: true}, studioHost: 'my-studio'}
+    vi.mocked(createJiti).mockReturnValueOnce((() => ({default: config})) as unknown as ReturnType<
+      typeof createJiti
+    >)
+
+    expect(getCliConfigSync(mockRootPath)).toEqual(config)
   })
 
   test('routes a branded app through the workbench loader', async () => {
