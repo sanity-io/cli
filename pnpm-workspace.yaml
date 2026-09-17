@@ -25,11 +25,11 @@ catalog:
   groq-js: ^2.0.0
 
   # Sanity
-  sanity: ^6.12.0
-  '@sanity/vision': ^6.12.0
-  '@sanity/types': ^6.12.0
-  '@sanity/schema': ^6.12.0
-  '@sanity/client': ^8.5.0
+  sanity: ^6.15.0
+  '@sanity/vision': ^6.15.0
+  '@sanity/types': ^6.15.0
+  '@sanity/schema': ^6.15.0
+  '@sanity/client': ^8.6.2
   '@sanity/codegen': ^8.1.0
   '@sanity/telemetry': ^1.1.0
 
@@ -37,7 +37,7 @@ catalog:
   babel-plugin-react-compiler: ^1.0.0
   oxc-transform-react: ^0.147.0
   typescript: ^6.0.3
-  vite: ^8.2.2
+  vite: ^8.3.0
   '@vitejs/plugin-react': ^6.1.1
   tsx: ^4.23.12
 

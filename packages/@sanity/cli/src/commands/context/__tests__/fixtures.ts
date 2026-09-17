@@ -4,6 +4,7 @@ export const knowledgeBase: Context.KnowledgeBase = {
   activeJobId: null,
   buildStageState: null,
   createdAt: '2026-08-01T00:00:00.000Z',
+  createdBy: null,
   description: 'Product docs and troubleshooting guides',
   hasDatasetSource: false,
   hasPendingChanges: false,
