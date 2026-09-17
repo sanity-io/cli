@@ -256,7 +256,7 @@ FLAGS
   --file=<path>               Path to the local file to upload
   --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename when using
                               --file
-  --from-url=<url>            URL for Sanity to fetch the asset from, instead of uploading a local file. Must be
+  --from-url=<url>            https URL for Sanity to fetch the asset from, instead of uploading a local file. Must be
                               reachable from the public internet without authentication
   --type=<option>             [default: image] Asset type to create
                               <options: image|file>
@@ -3316,15 +3316,20 @@ Import a set of assets to the target media library.
 
 ```
 USAGE
-  $ sanity media import SOURCE [-p <id>] [--media-library-id <value>] [--replace-aspects]
+  $ sanity media import SOURCE [-p <id>] [--aspect <key=value>...] [--filename <filename>] [--media-library-id
+    <value>] [--replace-aspects]
 
 ARGUMENTS
-  SOURCE  Image file or folder to import from
+  SOURCE  Directory, archive, or asset URL to import from. An https URL imports one asset that Sanity fetches itself
 
 FLAGS
+  --aspect=<key=value>...     Aspect value to set on the imported asset, as key=value. Repeatable. Only applies when the
+                              source is a URL - directory and archive imports read aspects from their data.ndjson
+  --filename=<filename>       Original filename to store on the asset. Only applies when the source is a URL. Defaults
+                              to a name derived from the URL
   --media-library-id=<value>  The id of the target media library
   --replace-aspects           Replace existing aspect data. All versions will be replaced (e.g. published and draft
-                              aspect data)
+                              aspect data). Only applies to directory and archive imports
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to import media to (overrides CLI configuration)
@@ -3344,6 +3349,14 @@ EXAMPLES
   Import all assets from the "products" directory and replace aspects
 
     $ sanity media import products --replace-aspects
+
+  Have Sanity fetch a single asset from a public URL
+
+    $ sanity media import https://example.com/hero.png
+
+  Fetch an asset from a URL and set aspect data on it
+
+    $ sanity media import https://example.com/hero.png --aspect department=Brand
 ```
 
 ## `sanity migrations create [TITLE]`
