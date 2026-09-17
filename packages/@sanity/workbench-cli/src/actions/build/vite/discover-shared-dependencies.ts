@@ -16,32 +16,86 @@ import {
 // They cannot match packages we share, so they do not make discovery unsafe.
 const VITE_INTERNAL_ALIAS_PATTERNS = new Set([/^\/?@vite\/client/.source, /^\/?@vite\/env/.source])
 
-export async function discoverSharedDependencies(config: InlineConfig): Promise<InlineConfig> {
+export async function buildFederatedApp(
+  config: InlineConfig,
+  {
+    reuseStandaloneBuild = false,
+  }: {
+    // Only the unmodified CLI config guarantees matching resolution in both environments.
+    reuseStandaloneBuild?: boolean
+  } = {},
+): Promise<void> {
   const plugins = await resolvePlugins(config.plugins ?? [])
   const federation = getFederationApi(plugins)
-  if (!federation) return config
+  if (!federation) {
+    const builder = await createBuilder(config)
+    await builder.buildApp()
+    return
+  }
 
-  const discovery = createSharedDependencyDiscovery()
+  const discovery = createSharedDependencyDiscovery({
+    environmentName: reuseStandaloneBuild ? 'client' : FEDERATION_DIR_NAME,
+    inputs: reuseStandaloneBuild ? federation.inputs : [],
+  })
+  const localPlugins = plugins.filter((plugin) => plugin.api?.sanityFederation !== federation)
+
+  if (reuseStandaloneBuild) {
+    const standalone = await createBuilder({
+      ...config,
+      plugins: [...localPlugins, discovery.plugin],
+    })
+    await standalone.build(standalone.environments.client)
+  } else {
+    await scanDependencies(config, localPlugins, discovery.plugin, federation.inputs)
+  }
+
+  const firstFederationPlugin = plugins.find(
+    (plugin) => plugin.api?.sanityFederation === federation,
+  )
+  const replacement = federation.create(discovery.getSharing())
+  const builder = await createBuilder({
+    ...config,
+    plugins: plugins.flatMap((plugin): PluginOption[] => {
+      if (plugin === firstFederationPlugin) return [replacement]
+      return plugin.api?.sanityFederation === federation ? [] : [plugin]
+    }),
+  })
+  await (reuseStandaloneBuild
+    ? builder.build(builder.environments[FEDERATION_DIR_NAME])
+    : builder.buildApp())
+}
+
+async function scanDependencies(
+  config: InlineConfig,
+  plugins: Plugin[],
+  discovery: Plugin,
+  inputs: string[],
+): Promise<void> {
+  const discoveryComplete = new Error('Shared dependency discovery complete')
   const scanner = await createBuilder({
     ...config,
+    // The intentional stop below looks like a failed build to Vite; real errors are rethrown.
+    logLevel: 'silent',
     plugins: [
-      ...plugins
-        .filter((plugin) => plugin.api?.sanityFederation !== federation)
-        .map((plugin): Plugin => ({
-          ...plugin,
-          // The scan needs import hooks, while output hooks would emit or upload a second build.
-          augmentChunkHash: undefined,
-          buildEnd: undefined,
-          closeBundle: undefined,
-          generateBundle: undefined,
-          outputOptions: undefined,
-          renderChunk: undefined,
-          renderError: undefined,
-          renderStart: undefined,
-          writeBundle: undefined,
-        })),
-      discovery.plugin,
+      ...plugins.map((plugin): Plugin => ({
+        ...plugin,
+        // The scan needs import hooks, while output hooks would emit or upload a second build.
+        augmentChunkHash: undefined,
+        buildEnd: undefined,
+        closeBundle: undefined,
+        generateBundle: undefined,
+        outputOptions: undefined,
+        renderChunk: undefined,
+        renderError: undefined,
+        renderStart: undefined,
+        writeBundle: undefined,
+      })),
+      discovery,
       {
+        buildEnd(error) {
+          // Vite has no scan-only build API; stop after the graph, before generating unused chunks.
+          if (!error) throw discoveryComplete
+        },
         config: () => ({
           environments: {
             [FEDERATION_DIR_NAME]: {
@@ -49,9 +103,7 @@ export async function discoverSharedDependencies(config: InlineConfig): Promise<
                 minify: false,
                 sourcemap: false,
                 write: false,
-                ...(federation.inputs.length > 0
-                  ? {rolldownOptions: {input: federation.inputs}}
-                  : {}),
+                ...(inputs.length > 0 ? {rolldownOptions: {input: inputs}} : {}),
               },
             },
           },
@@ -61,18 +113,14 @@ export async function discoverSharedDependencies(config: InlineConfig): Promise<
       },
     ],
   })
-  await scanner.build(scanner.environments[FEDERATION_DIR_NAME])
-
-  const firstFederationPlugin = plugins.find(
-    (plugin) => plugin.api?.sanityFederation === federation,
-  )
-  const replacement = federation.create(discovery.getSharing())
-  return {
-    ...config,
-    plugins: plugins.flatMap((plugin): PluginOption[] => {
-      if (plugin === firstFederationPlugin) return [replacement]
-      return plugin.api?.sanityFederation === federation ? [] : [plugin]
-    }),
+  try {
+    await scanner.build(scanner.environments[FEDERATION_DIR_NAME])
+  } catch (error) {
+    // Rolldown groups hook errors; only suppress our marker when no other hook failed.
+    const errors = error instanceof Error && 'errors' in error ? error.errors : [error]
+    if (!Array.isArray(errors) || errors.length !== 1 || errors[0] !== discoveryComplete) {
+      throw error
+    }
   }
 }
 
@@ -86,13 +134,20 @@ async function resolvePlugins(options: PluginOption[]): Promise<Plugin[]> {
     : (plugins as Plugin[])
 }
 
-function createSharedDependencyDiscovery(): {
+function createSharedDependencyDiscovery({
+  environmentName,
+  inputs,
+}: {
+  environmentName: string
+  inputs: string[]
+}): {
   getSharing: () => FederationSharing | undefined
   plugin: Plugin
 } {
   const dependencies: ResolvedDependency[] = []
   const packageCache = new Map<string, Promise<ResolvedDependency | undefined>>()
   let unsafe = false
+  let inputsLoaded = false
 
   async function findSharedPackage(id: string): Promise<ResolvedDependency | undefined> {
     let directory = path.dirname(id)
@@ -126,7 +181,7 @@ function createSharedDependencyDiscovery(): {
 
   const plugin: Plugin = {
     apply: 'build',
-    applyToEnvironment: (environment) => environment.name === FEDERATION_DIR_NAME,
+    applyToEnvironment: (environment) => environment.name === environmentName,
     configResolved(config) {
       unsafe ||=
         !config.isProduction ||
@@ -135,6 +190,11 @@ function createSharedDependencyDiscovery(): {
     enforce: 'pre',
     // Relative imports can reach a second installed copy without a bare package import.
     async moduleParsed(module) {
+      if (module.isEntry && !inputsLoaded) {
+        inputsLoaded = true
+        // Inspect remote-only imports without emitting their entries in the standalone bundle.
+        await Promise.all(inputs.map((id) => this.load({id, resolveDependencies: true})))
+      }
       const dependency = await packageForModule(module.id)
       if (dependency) dependencies.push(dependency)
     },
