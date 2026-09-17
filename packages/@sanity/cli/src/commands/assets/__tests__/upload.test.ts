@@ -8,6 +8,11 @@ import {AssetFileError} from '../../../actions/assets/assetFileError.js'
 import {parseArguments} from '../../../util/parseArguments.js'
 import {UploadAssetCommand} from '../upload.js'
 
+const mockUploadAssetBatch = vi.hoisted(() => vi.fn())
+vi.mock('../../../actions/assets/uploadAssetBatch.js', () => ({
+  uploadAssetBatch: mockUploadAssetBatch,
+}))
+
 const mockUploadAssetWithProgress = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../actions/assets/uploadAssetWithProgress.js', () => ({
@@ -270,10 +275,96 @@ Check the asset requirements and current technical limits, then try again: https
     expect(error?.message).not.toContain('sanity login')
   })
 
-  test('requires --file', async () => {
+  test('requires --file or --manifest', async () => {
     const {error} = await testCommand(UploadAssetCommand, [], {mocks: defaultMocks})
 
-    expect(error?.message).toContain('Missing required flag file')
+    expect(error?.message).toContain('file')
+    expect(error?.message).toContain('manifest')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
+})
+
+test('prints only JSONL batch results and exits nonzero for failures', async () => {
+  const results = [
+    {key: 'one', status: 'uploaded'},
+    {error: {code: 'UPLOAD_FAILED', message: 'Could not upload'}, key: 'two', status: 'failed'},
+  ]
+  mockUploadAssetBatch.mockImplementation(async ({onResult}) => {
+    for (const result of results) onResult(result)
+    return false
+  })
+  const {error, stdout} = await testCommand(
+    UploadAssetCommand,
+    ['--manifest', './assets.json', '--output', 'jsonl', '--resume'],
+    {mocks: defaultMocks},
+  )
+  expect(
+    stdout
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line)),
+  ).toEqual(results)
+  expect(error?.oclif?.exit).toBe(exitCodes.RUNTIME_ERROR)
+})
+
+test.each([
+  ['--file', 'a', '--manifest', 'b'],
+  ['--file', 'a', '--resume'],
+  ['--file', 'a', '--output', 'jsonl'],
+  ['--manifest', 'b', '--state', 'state.json'],
+  ['--manifest', 'b', '--concurrency', '0'],
+])('rejects incompatible batch flags %j', async (...args) => {
+  const {error} = await testCommand(UploadAssetCommand, args, {mocks: defaultMocks})
+  expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+})
+
+test('prints readable batch statuses and returns normally on success', async () => {
+  mockUploadAssetBatch.mockImplementation(async ({onResult}) => {
+    onResult({key: 'hero', status: 'validated'})
+    return true
+  })
+  const {error, stdout} = await testCommand(
+    UploadAssetCommand,
+    ['--manifest', './assets.json', '--dry-run'],
+    {mocks: defaultMocks},
+  )
+  if (error) throw error
+  expect(stdout).toBe('hero: validated\n')
+})
+
+test('reports manifest errors without starting a single-file upload', async () => {
+  mockUploadAssetBatch.mockRejectedValue(
+    new Error('Cannot read manifest. Use a readable JSON file.'),
+  )
+  const {error} = await testCommand(UploadAssetCommand, ['--manifest', './assets.json'], {
+    mocks: defaultMocks,
+  })
+  expect(error?.message).toContain('Cannot read manifest')
+  expect(error?.oclif?.exit).toBe(exitCodes.RUNTIME_ERROR)
+})
+
+test('redacts manifest and state paths from telemetry', () => {
+  expect(
+    parseArguments(
+      [
+        'node',
+        'sanity',
+        'assets',
+        'upload',
+        '--manifest=/private/assets.json',
+        '--state=/private/state.json',
+        '--resume',
+      ],
+      UploadAssetCommand.telemetry,
+    ).extraArguments,
+  ).toEqual(['--manifest', '--state', '--resume'])
+})
+
+test('rejects a batch-level asset type', async () => {
+  const {error} = await testCommand(
+    UploadAssetCommand,
+    ['--manifest', './assets.json', '--type', 'file'],
+    {mocks: defaultMocks},
+  )
+  expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
 })
