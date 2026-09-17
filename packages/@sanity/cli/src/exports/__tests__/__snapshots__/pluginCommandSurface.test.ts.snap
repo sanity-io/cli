@@ -328,6 +328,9 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "tag",
     ],
     "workflows:list": [
+      "assignment-role",
+      "assignment-state",
+      "assignment-user",
       "definition",
       "document",
       "failed",
