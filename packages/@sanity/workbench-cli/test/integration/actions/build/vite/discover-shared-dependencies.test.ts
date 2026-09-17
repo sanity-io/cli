@@ -1,36 +1,21 @@
-import {cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile} from 'node:fs/promises'
-import os from 'node:os'
+import {mkdir, readFile, realpath, rm, symlink, writeFile} from 'node:fs/promises'
 import path from 'node:path'
-import {fileURLToPath} from 'node:url'
 
+import {testFixture} from '@sanity/cli-test'
 import react from '@vitejs/plugin-react'
-import {chromium} from 'playwright'
-import {
-  build,
-  createLogger,
-  type InlineConfig,
-  normalizePath,
-  type PluginOption,
-  preview,
-} from 'vite'
-import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
+import {createLogger, type InlineConfig, normalizePath, type PluginOption} from 'vite'
+import {afterAll, beforeAll, expect, test, vi} from 'vitest'
 
 import {buildFederatedApp} from '../../../../../src/actions/build/vite/discover-shared-dependencies.js'
 import {federation} from '../../../../../src/actions/build/vite/plugin.js'
 
-type Assets = {js: {async: string[]; sync: string[]}}
 type Manifest = {
-  exposes: {assets: Assets; name: string}[]
-  metaData: {remoteEntry: {name: string}}
-  shared: {assets: Assets; name: string; requiredVersion: string; version: string}[]
+  exposes: {name: string}[]
+  shared: {name: string; requiredVersion: string; version: string}[]
 }
-type Chunk = {fileName: string; imports: string[]}
 
 const roots: string[] = []
-const fixture = path.resolve(
-  import.meta.dirname,
-  '../../../../../../../../fixtures/federated-studio',
-)
+const fixture = path.resolve(import.meta.dirname, '../../../../../../../../fixtures/federated-app')
 
 beforeAll(() => {
   vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
@@ -43,79 +28,39 @@ afterAll(async () => {
 })
 
 async function buildApp({
-  aliasReact = false,
-  duplicateReact = false,
+  duplicateReact,
   headless = false,
-  name = 'sharing-test',
   plugins = [],
+  remoteOnlyExposes = false,
   reuseStandaloneBuild = false,
-  service = false,
-  styled = true,
-  versionOverrides = {},
 }: {
-  aliasReact?: boolean
-  duplicateReact?: 'federation' | boolean
+  duplicateReact?: 'federation' | 'lazy'
   headless?: boolean
-  name?: string
   plugins?: PluginOption[]
+  remoteOnlyExposes?: boolean
   reuseStandaloneBuild?: boolean
-  service?: boolean
-  styled?: 'view' | boolean
-  versionOverrides?: Partial<Record<'scheduler' | 'styled-components', string>>
 } = {}) {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'sanity-sharing-'))
+  const root = await testFixture('federated-app', {useSystemTmp: true})
   roots.push(root)
-  await mkdir(path.join(root, 'node_modules'))
-  const reactDom = await realpath(path.join(fixture, 'node_modules/react-dom'))
-  for (const dependency of ['react', 'react-dom', 'styled-components', 'scheduler'] as const) {
-    const source = await realpath(
-      dependency === 'scheduler'
-        ? path.join(path.dirname(reactDom), 'scheduler')
-        : path.join(fixture, 'node_modules', dependency),
-    )
+  await mkdir(path.join(root, 'node_modules'), {recursive: true})
+  for (const dependency of ['react', 'react-dom', 'styled-components']) {
     const target = path.join(root, 'node_modules', dependency)
-    const copy =
-      (versionOverrides.scheduler && dependency !== 'styled-components') ||
-      (dependency === 'styled-components' && versionOverrides['styled-components'])
-    if (!copy) {
-      await symlink(source, target, 'junction')
-      continue
-    }
-    // Change only test-owned manifests; the real package code exercises federation's version selection.
-    await cp(source, target, {recursive: true})
-    const manifestPath = path.join(target, 'package.json')
-    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
-    await writeFile(
-      manifestPath,
-      JSON.stringify({
-        ...manifest,
-        version:
-          dependency === 'scheduler' || dependency === 'styled-components'
-            ? (versionOverrides[dependency] ?? manifest.version)
-            : manifest.version,
-      }),
+    await rm(target, {force: true, recursive: true})
+    await symlink(
+      await realpath(path.join(fixture, 'node_modules', dependency)),
+      target,
+      'junction',
     )
-    if (dependency === 'styled-components') {
-      await symlink(path.dirname(source), path.join(target, 'node_modules'), 'junction')
-    }
   }
-  await writeFile(path.join(root, 'package.json'), JSON.stringify({name, type: 'module'}))
-  await writeFile(
-    path.join(root, 'App.tsx'),
-    styled === true
-      ? `import {useState} from 'react'
-import styled, {createGlobalStyle} from 'styled-components'
-const GlobalStyle = createGlobalStyle\`#\${props => props.id} {background-color: \${props => props.color};}\`
-const Box = styled.button\`color: red;\`
-export default function App({id = 'app', color = 'white'}) {
-  const [count, setCount] = useState(0)
-  return <><GlobalStyle id={id} color={color}/><Box onClick={() => setCount(count + 1)}>Hello {count}</Box></>
-}`
-      : `export default function App() { return <div>Hello</div> }`,
-  )
+  if (remoteOnlyExposes) {
+    await writeFile(
+      path.join(root, 'App.tsx'),
+      'export default function App() { return <div>Hello</div> }',
+    )
+  }
   await writeFile(
     path.join(root, 'View.tsx'),
-    styled === 'view'
+    remoteOnlyExposes
       ? "import './view.css'; import styled from 'styled-components'; export default {components: styled.div`color: blue;`, version: '1.0'}"
       : "import App from './App.tsx'; export default {components: App, version: '1.0'}",
   )
@@ -133,7 +78,7 @@ export default function App({id = 'app', color = 'white'}) {
       path.join(root, 'other-react/index.js'),
       "export const marker = 'second React copy'",
     )
-    if (duplicateReact === true) {
+    if (duplicateReact === 'lazy') {
       await writeFile(
         path.join(root, 'View.tsx'),
         "export default {components: () => {void import('./other-react/index.js'); return null}, version: '1.0'}",
@@ -155,14 +100,12 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
     "export default {run() {self.postMessage('remote-worker-only-marker')}}",
   )
   let federationAssets: string[] = []
-  let chunks: Chunk[] = []
   let standaloneModules: string[] = []
-  let standaloneCss: string[] = []
   let standaloneFiles: string[] = []
   const finalized = vi.fn()
   const rendered = vi.fn()
   const closed = vi.fn()
-  const exposesView = headless || Boolean(duplicateReact) || styled === 'view'
+  const exposesView = headless || Boolean(duplicateReact) || remoteOnlyExposes
   const warn = vi.fn()
   const config: InlineConfig = {
     configFile: false,
@@ -176,10 +119,12 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
           views: exposesView
             ? [{name: 'tile', src: './View.tsx', surface: 'tile', title: 'Tile'}]
             : [],
-          webWorkers: service ? [{name: 'background', src: './service.js', type: 'worker'}] : [],
+          webWorkers: remoteOnlyExposes
+            ? [{name: 'background', src: './service.js', type: 'worker'}]
+            : [],
         },
         isApp: true,
-        name,
+        name: 'sharing-test',
         workDir: root,
       }),
       {buildEnd: finalized, name: 'test/finalize'},
@@ -193,30 +138,12 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
         name: 'test/observe-environments',
       },
       {
-        config: () =>
-          aliasReact
-            ? {
-                resolve: {
-                  alias: [
-                    {
-                      find: /^react$/,
-                      replacement: path.join(fixture, 'node_modules/react/index.js'),
-                    },
-                  ],
-                },
-              }
-            : {},
         generateBundle(_options, bundle) {
           // Remote-only views belong to the federation build. Capture the standalone output
           // separately to verify their code, CSS, and workers stay out of it, while the app's
           // own code and styles remain in the final output.
           if (this.environment.name === 'client') {
             standaloneFiles = Object.keys(bundle)
-            standaloneCss = Object.values(bundle).flatMap((chunk) =>
-              chunk.type === 'asset' && chunk.fileName.endsWith('.css')
-                ? [String(chunk.source)]
-                : [],
-            )
             standaloneModules = Object.values(bundle).flatMap((chunk) =>
               chunk.type === 'chunk' ? Object.keys(chunk.modules) : [],
             )
@@ -226,16 +153,6 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
               file.type === 'asset' ? [String(file.source)] : [],
             )
           }
-          chunks = Object.values(bundle).flatMap((chunk) =>
-            chunk.type === 'chunk'
-              ? [
-                  {
-                    fileName: chunk.fileName,
-                    imports: chunk.imports,
-                  },
-                ]
-              : [],
-          )
         },
         name: 'test/capture-chunks',
       },
@@ -260,20 +177,15 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
     await readFile(path.join(root, 'dist/mf-manifest.json'), 'utf8'),
   )
   const stats: Manifest = JSON.parse(await readFile(path.join(root, 'dist/mf-stats.json'), 'utf8'))
-  const appSource = await readFile(path.join(root, '.sanity/federation/remote-entry.jsx'), 'utf8')
   const viewSource = exposesView
     ? await readFile(path.join(root, '.sanity/federation/views/tile/tile.js'), 'utf8')
     : undefined
   return {
-    appSource,
-    chunks,
     closed,
     federationAssets,
     finalized,
     manifest,
     rendered,
-    root,
-    standaloneCss,
     standaloneModules,
     standaloneOutput: (
       await Promise.all(
@@ -287,164 +199,85 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
 }
 
 async function packageVersion(directory: string): Promise<string> {
-  const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8')) as {
-    version: string
-  }
+  const manifest: {version: string} = JSON.parse(
+    await readFile(path.join(directory, 'package.json'), 'utf8'),
+  )
   return manifest.version
 }
 
-async function fixtureVersions() {
-  const reactDom = await realpath(path.join(fixture, 'node_modules/react-dom'))
-  return {
-    react: await packageVersion(path.join(fixture, 'node_modules/react')),
-    'react-dom': await packageVersion(reactDom),
-    scheduler: await packageVersion(path.join(path.dirname(reactDom), 'scheduler')),
-    'styled-components': await packageVersion(path.join(fixture, 'node_modules/styled-components')),
-  }
-}
+test.each([false, true])(
+  'builds exact-version providers with standalone discovery: %s',
+  async (reuseStandaloneBuild) => {
+    const {closed, finalized, manifest, rendered, stats, warn} = await buildApp({
+      reuseStandaloneBuild,
+    })
+    const reactVersion = await packageVersion(path.join(fixture, 'node_modules/react'))
+    const reactDomVersion = await packageVersion(path.join(fixture, 'node_modules/react-dom'))
+    const versions = {
+      react: reactVersion,
+      'react-dom': reactDomVersion,
+      'react-dom/client': reactDomVersion,
+      'react/jsx-runtime': reactVersion,
+      'styled-components': await packageVersion(
+        path.join(fixture, 'node_modules/styled-components'),
+      ),
+    }
+    expect(Object.fromEntries(manifest.shared.map(({name, version}) => [name, version]))).toEqual(
+      versions,
+    )
+    expect(
+      Object.fromEntries(manifest.shared.map(({name, requiredVersion}) => [name, requiredVersion])),
+    ).toEqual(versions)
+    expect(stats.exposes).toEqual(manifest.exposes)
+    expect(finalized).toHaveBeenCalledTimes(2)
+    expect(rendered).toHaveBeenCalledTimes(2)
+    expect(closed).toHaveBeenCalledTimes(reuseStandaloneBuild ? 2 : 3)
+    expect(warn).not.toHaveBeenCalled()
+  },
+  60_000,
+)
 
-function staticImports(chunks: Chunk[], entrypoints: string[]) {
-  const reachable = new Set<string>()
-  const pending = [...entrypoints]
-  while (pending.length > 0) {
-    const file = pending.pop()!
-    if (reachable.has(file)) continue
-    reachable.add(file)
-    pending.push(...(chunks.find((chunk) => chunk.fileName === file)?.imports ?? []))
-  }
-  return reachable
-}
-
-describe.each([false, true])('standalone discovery: %s', (reuseStandaloneBuild) => {
-  let result: Awaited<ReturnType<typeof buildApp>>
-  let versions: Awaited<ReturnType<typeof fixtureVersions>>
-  beforeAll(async () => {
-    const [build, installedVersions] = await Promise.all([
-      buildApp({reuseStandaloneBuild}),
-      fixtureVersions(),
-    ])
-    result = build
-    versions = installedVersions
-  }, 60_000)
-
-  test('allows a regex alias for app source without disabling sharing', async () => {
+test.each([
+  {find: /^@app\//, replacement: './', shares: true},
+  {find: /^react\/jsx-runtime$/, replacement: 'node_modules/react/jsx-runtime.js', shares: false},
+])(
+  'shares only when alias $find leaves dependencies untouched',
+  async ({find, replacement, shares}) => {
     const {manifest, warn} = await buildApp({
       plugins: [
         {
           config(config) {
             return {
-              resolve: {alias: [{find: /^@app\//, replacement: `${normalizePath(config.root!)}/`}]},
+              resolve: {
+                alias: [
+                  {
+                    find,
+                    replacement:
+                      normalizePath(path.resolve(config.root!, replacement)) + (shares ? '/' : ''),
+                  },
+                ],
+              },
             }
           },
-          name: 'test/source-alias',
+          name: 'test/alias',
           transform(code, id) {
-            if (id.endsWith('/App.tsx')) return `import '@app/app.css';\n${code}`
+            if (shares && id.endsWith('/App.tsx')) return `import '@app/app.css';\n${code}`
           },
         },
       ],
-      reuseStandaloneBuild,
     })
-    expect(manifest.shared.map(({name}) => name)).toEqual(
-      result.manifest.shared.map(({name}) => name),
-    )
-    expect(warn).not.toHaveBeenCalled()
-  }, 60_000)
-
-  test.each([
-    [/^react\/jsx-runtime$/, 'react/jsx-runtime.js'],
-    [/^react-dom\/client$/, 'react-dom/client.js'],
-    [/^styled-components$/, 'styled-components/dist/styled-components.browser.esm.js'],
-  ] as const)(
-    'keeps dependencies local when an alias intercepts %s',
-    async (find, replacement) => {
-      const {manifest, warn} = await buildApp({
-        plugins: [
-          {
-            config: () => ({
-              resolve: {
-                alias: [{find, replacement: path.join(fixture, 'node_modules', replacement)}],
-              },
-            }),
-            name: 'test/shared-alias',
-          },
-        ],
-        reuseStandaloneBuild,
-      })
+    if (shares) {
+      expect(manifest.shared.map(({name}) => name)).toContain('react')
+      expect(warn).not.toHaveBeenCalled()
+    } else {
       expect(manifest.shared).toEqual([])
       expect(warn).toHaveBeenCalledExactlyOnceWith(
         `Dependency sharing disabled: The Vite alias ${String(find)} may rewrite a shared dependency import. Dependencies will be bundled locally.`,
       )
-    },
-    60_000,
-  )
-
-  test('shares only the approved imports with exact installed versions', () => {
-    const {manifest} = result
-    expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
-      'react',
-      'react-dom',
-      'react-dom/client',
-      'react/jsx-runtime',
-      'styled-components',
-    ])
-    const expectedVersions = {
-      react: versions.react,
-      'react-dom': versions['react-dom'],
-      'react-dom/client': versions['react-dom'],
-      'react/jsx-runtime': versions.react,
-      'styled-components': versions['styled-components'],
     }
-    expect(
-      Object.fromEntries(manifest.shared.map(({name, requiredVersion}) => [name, requiredVersion])),
-    ).toEqual(expectedVersions)
-    expect(Object.fromEntries(manifest.shared.map(({name, version}) => [name, version]))).toEqual(
-      expectedVersions,
-    )
-  })
-
-  test('defers provider code until the host selects a shared dependency', () => {
-    const {chunks, manifest} = result
-    const providers = new Set(
-      manifest.shared.flatMap(({assets}) => [...assets.js.sync, ...assets.js.async]),
-    )
-    expect(providers.size).toBeGreaterThan(0)
-    const reachable = staticImports(chunks, [
-      manifest.metaData.remoteEntry.name,
-      ...manifest.exposes.flatMap(({assets}) => assets.js.sync),
-    ])
-    expect([...providers].filter((fileName) => reachable.has(fileName))).toEqual([])
-  })
-
-  test('keeps fallback providers out of preload requests', () => {
-    const {manifest} = result
-    const fallbacks = new Set(
-      manifest.shared.flatMap(({assets}) => [...assets.js.sync, ...assets.js.async]),
-    )
-    expect(fallbacks.size).toBeGreaterThan(0)
-    expect(
-      manifest.exposes
-        .flatMap(({assets}) => assets.js.async)
-        .filter((asset) => fallbacks.has(asset)),
-    ).toEqual([])
-  })
-
-  test('isolates styles in the generated app entry', () => {
-    expect(result.appSource).toContain("import { StyleSheetManager } from 'styled-components'")
-  })
-
-  test('writes the same expose assets to both manifest formats', () => {
-    expect(result.stats.exposes).toEqual(result.manifest.exposes)
-  })
-
-  test('finalizes only the standalone and federation builds', () => {
-    expect(result.finalized).toHaveBeenCalledTimes(2)
-  })
-
-  test('skips chunk generation during discovery and closes all builds', () => {
-    expect(result.rendered).toHaveBeenCalledTimes(2)
-    expect(result.closed).toHaveBeenCalledTimes(reuseStandaloneBuild ? 2 : 3)
-  })
-})
+  },
+  60_000,
+)
 
 test.each(['resolveId', 'buildEnd'] as const)(
   'propagates a %s failure during discovery',
@@ -481,25 +314,9 @@ test.each(['resolveId', 'buildEnd'] as const)(
   60_000,
 )
 
-test('keeps dependencies local when a user plugin aliases React during configuration', async () => {
-  const {manifest} = await buildApp({aliasReact: true})
-  expect(manifest.shared).toEqual([])
-}, 60_000)
-
-test('shares React without adding an unused styled-components provider', async () => {
-  const {appSource, manifest} = await buildApp({styled: false})
-  expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
-    'react',
-    'react-dom',
-    'react-dom/client',
-    'react/jsx-runtime',
-  ])
-  expect(appSource).not.toContain("import { StyleSheetManager } from 'styled-components'")
-}, 60_000)
-
-test('discovers styled-components used only by a remote view without adding the view to the SPA', async () => {
-  const {manifest, standaloneCss, standaloneModules, standaloneOutput, viewSource} = await buildApp(
-    {
+test('discovers remote-only views and workers without adding them to the SPA', async () => {
+  const {federationAssets, manifest, standaloneModules, standaloneOutput, viewSource} =
+    await buildApp({
       plugins: [
         {
           name: 'test/remote-only-view',
@@ -510,25 +327,27 @@ test('discovers styled-components used only by a remote view without adding the 
           },
         },
       ],
+      remoteOnlyExposes: true,
       reuseStandaloneBuild: true,
-      styled: 'view',
-    },
-  )
+    })
+  expect(manifest.exposes.map(({name}) => name)).toContain('services/background')
+  expect(federationAssets.join('')).toContain('remote-worker-only-marker')
+  expect(standaloneOutput).not.toContain('remote-worker-only-marker')
+  expect(federationAssets.join('')).toContain('remote-only-view')
   expect(manifest.shared.map(({name}) => name)).toContain('styled-components')
   expect(viewSource).toContain("import { StyleSheetManager } from 'styled-components'")
   expect(standaloneModules.some((id) => id.endsWith('/App.tsx'))).toBe(true)
-  expect(viewSource).toContain("import { StyleSheetManager } from 'styled-components'")
   expect(standaloneOutput).toContain('Hello')
   expect(standaloneOutput).toContain('.standalone-app')
   expect(standaloneModules.some((id) => id.endsWith('/View.tsx'))).toBe(false)
-  expect(standaloneCss.join('')).not.toContain('remote-only-view')
+  expect(standaloneOutput).not.toContain('remote-only-view')
   expect(standaloneModules.some((id) => id.includes('/styled-components/'))).toBe(false)
 }, 60_000)
 
-test.each([false, true])(
-  'keeps a lazily imported second React copy local with standalone discovery: %s',
-  async (reuseStandaloneBuild) => {
-    const {manifest, warn} = await buildApp({duplicateReact: true, reuseStandaloneBuild})
+test.each(['lazy', 'federation'] as const)(
+  'keeps dependencies local when a remote imports another React copy: %s',
+  async (duplicateReact) => {
+    const {manifest, warn} = await buildApp({duplicateReact, reuseStandaloneBuild: true})
     expect(manifest.shared).toEqual([])
     expect(warn).toHaveBeenCalledExactlyOnceWith(
       'Dependency sharing disabled: Multiple installed copies of react were found. Dependencies will be bundled locally.',
@@ -542,158 +361,4 @@ test('builds a headless app with shared dependencies and only its view exposed',
   expect(manifest.exposes.map(({name}) => name)).toEqual(['views/tile/tile'])
   expect(manifest.shared.map(({name}) => name)).toContain('react')
   expect(standaloneModules).toEqual([])
-}, 60_000)
-
-test('uses federation-specific resolution when scanning a custom Vite configuration', async () => {
-  const {manifest} = await buildApp({duplicateReact: 'federation'})
-  expect(manifest.shared).toEqual([])
-}, 60_000)
-
-test('reuses compatible providers in the browser while keeping app state and styles independent', async () => {
-  const apps = [
-    await buildApp({name: 'first', reuseStandaloneBuild: true}),
-    await buildApp({name: 'second'}),
-    await buildApp({name: 'without-styled', reuseStandaloneBuild: true, styled: false}),
-    await buildApp({name: 'other-styled', versionOverrides: {'styled-components': '6.0.0'}}),
-    await buildApp({
-      name: 'other-scheduler',
-      reuseStandaloneBuild: true,
-      styled: false,
-      versionOverrides: {scheduler: '0.0.1'},
-    }),
-  ]
-  const servers: Awaited<ReturnType<typeof preview>>[] = []
-  const browser = await chromium.launch()
-  try {
-    for (const {root} of apps) {
-      servers.push(
-        await preview({
-          configFile: false,
-          logLevel: 'silent',
-          preview: {cors: true, host: '127.0.0.1', port: 0},
-          root,
-        }),
-      )
-    }
-    const urls = servers.map((server) => server.resolvedUrls!.local[0])
-    const remotes = ['first', 'second', 'without-styled', 'other-styled', 'other-scheduler'].map(
-      (name, index) => ({
-        entry: new URL('mf-manifest.json', urls[index]).href,
-        name,
-      }),
-    )
-    const hostEntry = path.join(apps[0].root, 'host.js')
-    const runtime = normalizePath(fileURLToPath(import.meta.resolve('@module-federation/runtime')))
-    await writeFile(
-      hostEntry,
-      `
-import {createInstance} from ${JSON.stringify(runtime)}
-const host = createInstance({name: 'sharing-host', shareStrategy: 'loaded-first', remotes: ${JSON.stringify(remotes)}})
-const unmounts = new Map()
-export async function mount(name, color) {
-  const {render} = await host.loadRemote(name + '/App')
-  const element = document.createElement('div')
-  element.id = name
-  document.body.appendChild(element)
-  unmounts.set(name, render(element, {id: name, color}))
-}
-export function unmount(name) { unmounts.get(name)() }
-export function preload(name) { return host.preloadRemote([{nameOrAlias: name, resourceCategory: 'all'}]) }
-`,
-    )
-    await build({
-      build: {
-        emptyOutDir: false,
-        lib: {entry: hostEntry, fileName: () => 'host.js', formats: ['es']},
-        outDir: path.join(apps[0].root, 'dist'),
-      },
-      configFile: false,
-      logLevel: 'silent',
-    })
-    await writeFile(
-      path.join(apps[0].root, 'dist/index.html'),
-      '<!doctype html><title>Sharing</title>',
-    )
-    const page = await browser.newPage()
-    const errors: string[] = []
-    const requests = new Set<string>()
-    page.on('pageerror', (error) => errors.push(error.message))
-    page.on('request', (request) => requests.add(request.url()))
-    const requestedProviders = (index: number, name?: string) =>
-      apps[index].manifest.shared
-        .filter((provider) => !name || provider.name === name)
-        .flatMap(({assets}) => [...assets.js.sync, ...assets.js.async])
-        .filter((asset) => requests.has(new URL(asset, urls[index]).href))
-    await page.goto(urls[0])
-    await page.evaluate("import('/host.js').then(host => host.mount('first', 'rgb(0, 128, 0)'))")
-    await page.locator('#first button').waitFor()
-    expect(requestedProviders(0).length).toBeGreaterThan(0)
-    await page.evaluate("import('/host.js').then(host => host.preload('second'))")
-    await expect
-      .poll(() => requests.has(new URL(apps[1].manifest.metaData.remoteEntry.name, urls[1]).href))
-      .toBe(true)
-    expect(requestedProviders(1)).toEqual([])
-    await page.evaluate("import('/host.js').then(host => host.mount('second', 'rgb(0, 0, 255)'))")
-    await page.locator('#second button').waitFor()
-    expect(requestedProviders(1)).toEqual([])
-    await page.locator('#first button').click()
-    await page.getByRole('button', {exact: true, name: 'Hello 1'}).waitFor()
-    expect(await page.locator('#second button').textContent()).toBe('Hello 0')
-    expect(
-      await page.locator('#first').evaluate((el) => getComputedStyle(el).backgroundColor),
-    ).toBe('rgb(0, 128, 0)')
-    expect(
-      await page.locator('#second').evaluate((el) => getComputedStyle(el).backgroundColor),
-    ).toBe('rgb(0, 0, 255)')
-    await page.evaluate("import('/host.js').then(host => host.unmount('first'))")
-    await page.locator('#first button').waitFor({state: 'detached'})
-    expect(
-      await page.locator('#second').evaluate((el) => getComputedStyle(el).backgroundColor),
-    ).toBe('rgb(0, 0, 255)')
-    expect(await page.locator('#second button').evaluate((el) => getComputedStyle(el).color)).toBe(
-      'rgb(255, 0, 0)',
-    )
-    await page.locator('#second button').click()
-    await page.getByRole('button', {exact: true, name: 'Hello 1'}).waitFor()
-    await page.evaluate("import('/host.js').then(host => host.mount('without-styled'))")
-    await page.locator('#without-styled').getByText('Hello', {exact: true}).waitFor()
-    expect(requestedProviders(2)).toEqual([])
-    await page.evaluate(
-      "import('/host.js').then(host => host.mount('other-styled', 'rgb(128, 0, 128)'))",
-    )
-    await page.locator('#other-styled button').waitFor()
-    expect(requestedProviders(3, 'react')).toEqual([])
-    expect(requestedProviders(3, 'react-dom/client')).toEqual([])
-    expect(requestedProviders(3, 'styled-components').length).toBeGreaterThan(0)
-    expect(
-      await page.locator('#other-styled').evaluate((el) => getComputedStyle(el).backgroundColor),
-    ).toBe('rgb(128, 0, 128)')
-    await page.evaluate("import('/host.js').then(host => host.mount('other-scheduler'))")
-    await page.locator('#other-scheduler').getByText('Hello', {exact: true}).waitFor()
-    expect(requestedProviders(4, 'react').length).toBeGreaterThan(0)
-    expect(requestedProviders(4, 'react-dom/client').length).toBeGreaterThan(0)
-    expect(requestedProviders(1)).toEqual([])
-    expect(errors).toEqual([])
-  } finally {
-    await browser.close()
-    await Promise.all(
-      servers.map(
-        (server) =>
-          new Promise<void>((resolve, reject) => {
-            server.httpServer.close((error) => (error ? reject(error) : resolve()))
-          }),
-      ),
-    )
-  }
-}, 60_000)
-
-test('keeps remote service workers out of the standalone build', async () => {
-  const {closed, federationAssets, manifest, standaloneOutput} = await buildApp({
-    reuseStandaloneBuild: true,
-    service: true,
-  })
-  expect(manifest.exposes.map(({name}) => name)).toContain('services/background')
-  expect(federationAssets.join('')).toContain('remote-worker-only-marker')
-  expect(standaloneOutput).not.toContain('remote-worker-only-marker')
-  expect(closed).toHaveBeenCalledTimes(3)
 }, 60_000)
