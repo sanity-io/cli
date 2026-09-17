@@ -19,6 +19,24 @@ A React application built with the Sanity App SDK (`@sanity/sdk-react`). It is n
 
 Environment variables prefixed with `SANITY_APP_` are bundled into the app.
 
+## Deploying without prompts
+
+For the standard App SDK config, create the app explicitly on the first deploy:
+
+```bash
+npm run deploy -- --create --title "My App" --yes --json
+```
+
+If `app` uses `defineApplication`, omit `--create`; that deployment flow already creates the app on its first run.
+
+For the standard config, `--create` works even when the organization already has other apps. `app.title` in `sanity.cli.ts` can supply the title instead of `--title`. Add `--dry-run` to preview the deployment without creating or uploading anything.
+
+Save `application.id` from the JSON response as `deployment.appId` in `sanity.cli.ts`. For later deploys, omit `--create` and run `npm run deploy -- --yes --json`. `--create` rejects a config that already has an app ID.
+
+Agent terminals may disable interactive prompts even with a PTY (`TERM=dumb`). Use these flags rather than changing terminal settings or calling the applications API directly. Run `npm run deploy -- --help` to check which flags the installed CLI supports.
+
+This app is not a Studio. For a Studio's first hosted deployment, use `sanity deploy --url <hostname> --yes`; `studioHost`, if used in config, belongs at the top level, not inside `deployment`.
+
 ## Working with the App SDK
 
 If the Sanity MCP server is available, call its `get_sanity_rules` tool with the `app-sdk` rule before writing SDK code. That rule is the maintained guide and supersedes the notes below.

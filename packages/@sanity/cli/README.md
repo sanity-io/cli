@@ -2008,8 +2008,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--dry-run] [--external | --source-maps | --minify | --build]
-    [-j] [--schema-required] [--title <value>] [--url <value>] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--create | --external | --url <value>] [--dry-run]
+    [-j] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -2019,13 +2019,15 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Build the studio before deploying (use --no-build to deploy existing `dist/` output)
+      --create             Create a new App SDK app, even if the organization has other apps. Requires no configured app
+                           ID and a title (--title or app.title) when running without prompts
       --dry-run            Report what would be deployed without uploading or creating anything
       --external           Register an externally hosted studio
       --[no-]minify        Minify built JavaScript (use --no-minify to skip for faster builds)
       --schema-required    Fail if schema deployment fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
-      --title=<value>      Title for a newly created application or studio. For apps it also skips the interactive title
-                           prompt, enabling unattended creation
+      --title=<value>      Title for a newly created application or studio. For apps, use --create to select creation
+                           when the organization already has apps
       --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
                            hostname (e.g. "my-studio" or "my-studio.sanity.studio")
       --verbose            Enable verbose logging
@@ -2049,6 +2051,19 @@ EXAMPLES
   Register an externally hosted studio (studioHost contains full URL)
 
     $ sanity deploy --external
+
+  Create and deploy an App SDK app without prompts. Save application.id as deployment.appId, then omit --create on
+  later deploys
+
+    $ sanity deploy --create --title "My App" --yes --json
+
+  Preview a new App SDK deployment without creating or uploading anything
+
+    $ sanity deploy --create --title "My App" --dry-run --json
+
+  Deploy a studio without prompts using its hostname
+
+    $ sanity deploy --url my-studio --yes
 ```
 
 ## `sanity dev`
