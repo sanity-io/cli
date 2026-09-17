@@ -27,6 +27,12 @@ const baseConfig = {
       // Used for CLI
       ignoreDependencies: ['sanity'],
     },
+    'fixtures/federated-app': {
+      entry: ['App.tsx'],
+      // The CLI reads the installed SDK version during builds.
+      ignoreDependencies: ['@sanity/sdk-react'],
+      project: [],
+    },
     'fixtures/media-library': {
       // Config `src` files are referenced by string path in `sanity.cli.ts`, not
       // imported — list them so knip sees them as used.
