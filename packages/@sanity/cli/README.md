@@ -2532,8 +2532,8 @@ DESCRIPTION
 
   Open the emulator in your browser to interactively test your functions with the payload editor.
 
-  Optionally, set the host and port with the --host and --port flags. Port 8974 is reserved for the emulator's
-  live-reload WebSocket server. Function timeout can be configured with the --timeout flag.
+  Optionally, set the host and port with the --host and --port flags. The live-reload WebSocket server shares this host
+  and port. Function timeout can be configured with the --timeout flag.
 
   To invoke a function with the CLI, use 'functions test'.
 
@@ -4644,18 +4644,25 @@ List workflow instances in the configured dataset (in-flight by default).
 ```
 USAGE
   $ sanity workflows list [--tag <value>] [--include-completed] [--failed] [--definition <value>] [--document
-    <value>] [--limit <value>] [--json]
+    <value>] [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...]
+    [--limit <value>] [--json]
 
 FLAGS
-  --definition=<value>  Only instances of this workflow definition (its `name`; the instance's `definition` field).
-  --document=<value>    Only instances that reference this document (resource-qualified GDR URI, e.g.
-                        "dataset:proj:ds:article-1").
-  --failed              Only instances with at least one failed activity.
-  --include-completed   Include completed/aborted instances (default: in-flight only).
-  --json                Emit structured JSON instead of rendered output.
-  --limit=<value>       [default: 50] Maximum rows to return.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
+  --assignment-role=<value>...    A literal project role held by --assignment-user. Repeat for multiple roles.
+  --assignment-state=<option>...  Assignment state to include: unrouted, routed (offered through a supplied role), or
+                                  held. Repeat for multiple states.
+                                  <options: unrouted|routed|held>
+  --assignment-user=<value>       Account-global user id used for viewer-scoped assignment filtering and counts.
+  --definition=<value>            Only instances of this workflow definition (its `name`; the instance's `definition`
+                                  field).
+  --document=<value>              Only instances that reference this document (resource-qualified GDR URI, e.g.
+                                  "dataset:proj:ds:article-1").
+  --failed                        Only instances with at least one failed activity.
+  --include-completed             Include completed/aborted instances (default: in-flight only).
+  --json                          Emit structured JSON instead of rendered output.
+  --limit=<value>                 [default: 50] Maximum rows to return.
+  --tag=<value>                   Workflow environment tag (e.g. prod, test) — an optional query filter that also
+                                  narrows which resources are searched; omit to span them all.
 
 DESCRIPTION
   List workflow instances in the configured dataset (in-flight by default).
@@ -4668,6 +4675,8 @@ EXAMPLES
   $ sanity workflows list --definition productLaunch
 
   $ sanity workflows list --document dataset:proj:ds:article-1
+
+  $ sanity workflows list --assignment-user gAda --assignment-role legal --assignment-state routed
 
   $ sanity workflows list --tag prod
 
