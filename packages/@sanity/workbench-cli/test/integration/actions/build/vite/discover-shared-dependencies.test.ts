@@ -3,10 +3,10 @@ import os from 'node:os'
 import path from 'node:path'
 
 import react from '@vitejs/plugin-react'
-import {createBuilder} from 'vite'
+import {type InlineConfig, type PluginOption} from 'vite'
 import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {discoverSharedDependencies} from '../../../../../src/actions/build/vite/discover-shared-dependencies.js'
+import {buildFederatedApp} from '../../../../../src/actions/build/vite/discover-shared-dependencies.js'
 import {federation} from '../../../../../src/actions/build/vite/plugin.js'
 
 type Assets = {js: {async: string[]; sync: string[]}}
@@ -33,7 +33,19 @@ afterAll(async () => {
   await Promise.all(roots.map((root) => rm(root, {force: true, recursive: true})))
 })
 
-async function buildApp({aliasReact = false, styled = true} = {}) {
+async function buildApp({
+  aliasReact = false,
+  duplicateReact = false,
+  plugins = [],
+  reuseStandaloneBuild = false,
+  styled = true,
+}: {
+  aliasReact?: boolean
+  duplicateReact?: boolean
+  plugins?: PluginOption[]
+  reuseStandaloneBuild?: boolean
+  styled?: 'view' | boolean
+} = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sanity-sharing-'))
   roots.push(root)
   await mkdir(path.join(root, 'node_modules'))
@@ -50,7 +62,7 @@ async function buildApp({aliasReact = false, styled = true} = {}) {
   )
   await writeFile(
     path.join(root, 'App.tsx'),
-    styled
+    styled === true
       ? `import styled from 'styled-components'
 const Box = styled.div\`color: red;\`
 export default function App() { return <Box>Hello</Box> }`
@@ -58,13 +70,38 @@ export default function App() { return <Box>Hello</Box> }`
   )
   await writeFile(
     path.join(root, 'View.tsx'),
-    "import App from './App.tsx'; export default {components: App, version: '1.0'}",
+    styled === 'view'
+      ? "import './view.css'; import styled from 'styled-components'; export default {components: styled.div`color: blue;`, version: '1.0'}"
+      : "import App from './App.tsx'; export default {components: App, version: '1.0'}",
   )
+  await writeFile(path.join(root, 'view.css'), '.remote-only-view {color: fuchsia}')
+  if (duplicateReact) {
+    await mkdir(path.join(root, 'other-react'))
+    await writeFile(
+      path.join(root, 'other-react/package.json'),
+      JSON.stringify({
+        name: 'react',
+        version: await packageVersion(path.join(root, 'node_modules/react')),
+      }),
+    )
+    await writeFile(
+      path.join(root, 'other-react/index.js'),
+      "export const marker = 'second React copy'",
+    )
+    await writeFile(
+      path.join(root, 'View.tsx'),
+      "export default {components: () => {void import('./other-react/index.js'); return null}, version: '1.0'}",
+    )
+  }
   await mkdir(path.join(root, '.sanity/runtime'), {recursive: true})
   await writeFile(path.join(root, '.sanity/runtime/app.js'), "import '../../App.tsx'")
   let chunks: Chunk[] = []
+  let standaloneModules: string[] = []
+  let standaloneCss: string[] = []
   const finalized = vi.fn()
-  const config = await discoverSharedDependencies({
+  const rendered = vi.fn()
+  const closed = vi.fn()
+  const config: InlineConfig = {
     configFile: false,
     logLevel: 'silent',
     plugins: [
@@ -77,6 +114,15 @@ export default function App() { return <Box>Hello</Box> }`
         workDir: root,
       }),
       {buildEnd: finalized, name: 'test/finalize'},
+      {
+        // Environment plugins are created after discovery strips the original output hooks.
+        applyToEnvironment: () => ({
+          closeBundle: closed,
+          name: 'test/observe-output',
+          renderStart: rendered,
+        }),
+        name: 'test/observe-environments',
+      },
       {
         config: () =>
           aliasReact
@@ -92,6 +138,16 @@ export default function App() { return <Box>Hello</Box> }`
               }
             : {},
         generateBundle(_options, bundle) {
+          if (this.environment.name === 'client') {
+            standaloneCss = Object.values(bundle).flatMap((chunk) =>
+              chunk.type === 'asset' && chunk.fileName.endsWith('.css')
+                ? [String(chunk.source)]
+                : [],
+            )
+            standaloneModules = Object.values(bundle).flatMap((chunk) =>
+              chunk.type === 'chunk' ? Object.keys(chunk.modules) : [],
+            )
+          }
           chunks = Object.values(bundle).flatMap((chunk) =>
             chunk.type === 'chunk'
               ? [
@@ -105,11 +161,11 @@ export default function App() { return <Box>Hello</Box> }`
         },
         name: 'test/capture-chunks',
       },
+      ...plugins,
     ],
     root,
-  })
-  const builder = await createBuilder(config)
-  await builder.buildApp()
+  }
+  await buildFederatedApp(config, {reuseStandaloneBuild})
   const manifest: Manifest = JSON.parse(
     await readFile(path.join(root, 'dist/mf-manifest.json'), 'utf8'),
   )
@@ -119,7 +175,18 @@ export default function App() { return <Box>Hello</Box> }`
     path.join(root, '.sanity/federation/views/tile/tile.js'),
     'utf8',
   )
-  return {appSource, chunks, finalized, manifest, stats, viewSource}
+  return {
+    appSource,
+    chunks,
+    closed,
+    finalized,
+    manifest,
+    rendered,
+    standaloneCss,
+    standaloneModules,
+    stats,
+    viewSource,
+  }
 }
 
 async function packageVersion(directory: string): Promise<string> {
@@ -151,11 +218,14 @@ function staticImports(chunks: Chunk[], entrypoints: string[]) {
   return reachable
 }
 
-describe('a production app using React and styled-components', () => {
+describe.each([false, true])('standalone discovery: %s', (reuseStandaloneBuild) => {
   let result: Awaited<ReturnType<typeof buildApp>>
   let versions: Awaited<ReturnType<typeof fixtureVersions>>
   beforeAll(async () => {
-    const [build, installedVersions] = await Promise.all([buildApp(), fixtureVersions()])
+    const [build, installedVersions] = await Promise.all([
+      buildApp({reuseStandaloneBuild}),
+      fixtureVersions(),
+    ])
     result = build
     versions = installedVersions
   }, 60_000)
@@ -222,7 +292,34 @@ describe('a production app using React and styled-components', () => {
   test('finalizes only the standalone and federation builds', () => {
     expect(result.finalized).toHaveBeenCalledTimes(2)
   })
+
+  test('skips chunk generation during discovery and closes all builds', () => {
+    expect(result.rendered).toHaveBeenCalledTimes(2)
+    expect(result.closed).toHaveBeenCalledTimes(reuseStandaloneBuild ? 2 : 3)
+  })
 })
+
+test.each(['resolveId', 'buildEnd'] as const)(
+  'propagates a %s failure during discovery',
+  async (hook) => {
+    const fail = vi.fn(() => {
+      throw new Error('Dependency discovery failed in a user plugin')
+    })
+    await expect(
+      buildApp({
+        plugins: [
+          {
+            applyToEnvironment: () => ({[hook]: fail, name: 'test/failing-hook'}),
+            name: 'test/failing-environment',
+          },
+        ],
+      }),
+    ).rejects.toThrow('Dependency discovery failed in a user plugin')
+    expect(fail).toHaveBeenCalled()
+    if (hook === 'buildEnd') expect(fail).toHaveBeenCalledTimes(1)
+  },
+  60_000,
+)
 
 test('keeps dependencies local when a user plugin aliases React during configuration', async () => {
   const {manifest} = await buildApp({aliasReact: true})
@@ -240,3 +337,24 @@ test('shares React without adding an unused styled-components provider', async (
   expect(appSource).not.toContain("import { StyleSheetManager } from 'styled-components'")
   expect(viewSource).not.toContain("import { StyleSheetManager } from 'styled-components'")
 }, 60_000)
+
+test('discovers styled-components used only by a remote view without adding the view to the SPA', async () => {
+  const {manifest, standaloneCss, standaloneModules, viewSource} = await buildApp({
+    reuseStandaloneBuild: true,
+    styled: 'view',
+  })
+  expect(manifest.shared.map(({name}) => name)).toContain('styled-components')
+  expect(viewSource).toContain("import { StyleSheetManager } from 'styled-components'")
+  expect(standaloneModules.some((id) => id.endsWith('/View.tsx'))).toBe(false)
+  expect(standaloneCss.join('')).not.toContain('remote-only-view')
+  expect(standaloneModules.some((id) => id.includes('/styled-components/'))).toBe(false)
+}, 60_000)
+
+test.each([false, true])(
+  'keeps a lazily imported second React copy local with standalone discovery: %s',
+  async (reuseStandaloneBuild) => {
+    const {manifest} = await buildApp({duplicateReact: true, reuseStandaloneBuild})
+    expect(manifest.shared).toEqual([])
+  },
+  60_000,
+)
