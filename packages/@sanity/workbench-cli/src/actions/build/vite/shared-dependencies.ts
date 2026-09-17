@@ -7,17 +7,19 @@ interface SharedDependency {
 
   // Optional packages do not disable sharing when an app does not use them.
   optional?: boolean
+  // `false` selects this package's exact version without splitting the React compatibility group.
+  scope?: false
   // `false` checks compatibility without publishing the package as a provider.
   share?: false
 }
 
-// Add approved packages here; every version contributes to the compatibility scope.
+// Add approved packages here; versions contribute to the scope unless explicitly excluded.
 const sharedDependencies: readonly SharedDependency[] = [
   {name: 'react'},
   {name: 'react-dom'},
   // React DOM owns scheduler's mutable queue, so only its version joins the scope.
   {name: 'scheduler', share: false},
-  {name: 'styled-components', optional: true},
+  {name: 'styled-components', optional: true, scope: false},
 ]
 
 export interface ResolvedDependency {
@@ -48,15 +50,35 @@ export function createFederationSharing(
   const versions = resolveCompatibleVersions(dependencies)
   if (!versions) return undefined
 
-  // The scope includes every exact version so only apps with the same dependency set can share.
+  // React and its renderer must agree; styled-components selects its own exact version in this pool.
   const shareScope =
-    'sanity-' + sharedDependencies.map(({name}) => `${name}-${versions.get(name)}`).join('-')
+    'sanity-' +
+    sharedDependencies
+      .filter(({scope}) => scope !== false)
+      .map(({name}) => `${name}-${versions.get(name)}`)
+      .join('-')
   return {
     shared: createSharedEntries(dependencies, shareScope),
-    shareScope,
+    // The array form makes Module Federation use named pools instead of the host's default pool.
+    shareScope: [shareScope],
     // Prefer a compatible provider that another app already loaded before downloading a local copy.
     shareStrategy: 'loaded-first',
   }
+}
+
+export function aliasMayRewriteSharedImport(find: RegExp | string): boolean {
+  if (typeof find === 'string') {
+    return (
+      Boolean(findSharedDependencyName(find)) ||
+      sharedDependencies.some(({name}) => name.startsWith(`${find}/`))
+    )
+  }
+
+  // Only an anchored, literal namespace proves that a regex cannot intercept a shared subpath.
+  // Alternation or an optional slash could also match imports outside that namespace.
+  const namespace = find.source.match(/^\^(?:\\\/\?)?([@\w-]+)(?:\\\/|\/)(?![?*{])/u)?.[1]
+  if (!namespace || find.source.includes('|') || find.ignoreCase || find.multiline) return true
+  return sharedDependencies.some(({name}) => name === namespace || name.startsWith(`${namespace}/`))
 }
 
 function resolveCompatibleVersions(

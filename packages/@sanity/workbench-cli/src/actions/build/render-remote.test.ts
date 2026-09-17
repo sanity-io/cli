@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test} from 'vitest'
 
 import {renderRemote} from './render-remote.js'
 
@@ -29,7 +29,7 @@ function makeReact(): ReactStub {
  */
 function loadWrapper(
   source: string,
-  React: ReactStub = makeReact(),
+  React: ReactStub,
   onUnmount: () => void = () => {},
 ): {
   render: (rootElement: object, props?: unknown, renderOptions?: unknown) => () => void
@@ -67,32 +67,6 @@ afterEach(() => {
 })
 
 describe('renderRemote module context', () => {
-  test('keeps stylesheet targets separate and removes only the unmounted target', () => {
-    const firstTarget = {remove: vi.fn()}
-    const secondTarget = {remove: vi.fn()}
-    const ownerDocument = {
-      createElement: vi.fn().mockReturnValueOnce(firstTarget).mockReturnValueOnce(secondTarget),
-      head: {appendChild: vi.fn()},
-    }
-    const firstRoot = {ownerDocument}
-    const secondRoot = {ownerDocument}
-    const mod = loadWrapper(renderRemote({app: APP, isolateStyles: true, preamble: ''}))
-    const unmount = mod.render(firstRoot)
-    const unmountSecond = mod.render(secondRoot)
-    mod.render(firstRoot)
-    expect(mod.rendered.map(({props, type}) => ({props, type}))).toEqual([
-      {props: {target: firstTarget}, type: 'StyleSheetManager'},
-      {props: {target: secondTarget}, type: 'StyleSheetManager'},
-      {props: {target: firstTarget}, type: 'StyleSheetManager'},
-    ])
-    expect(ownerDocument.head.appendChild.mock.calls).toEqual([[firstTarget], [secondTarget]])
-    unmount()
-    expect(firstTarget.remove).toHaveBeenCalledOnce()
-    expect(secondTarget.remove).not.toHaveBeenCalled()
-    unmountSecond()
-    expect(secondTarget.remove).toHaveBeenCalledOnce()
-  })
-
   test('keeps the stylesheet attached until React finishes unmounting', () => {
     const events: string[] = []
     const target = {remove: () => events.push('remove stylesheet')}

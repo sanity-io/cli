@@ -93,6 +93,7 @@
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
+    "playwright": "catalog:",
     "publint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

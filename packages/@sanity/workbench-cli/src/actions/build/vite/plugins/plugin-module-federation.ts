@@ -33,6 +33,8 @@ export function sanityModuleFederation(
   sharing?: FederationSharing,
 ): PluginOption {
   const {exposes, name} = options
+  // Development keeps styled-components local. Sharing it across production apps requires
+  // a stylesheet per mounted root so their global rules don't overwrite each other.
   const isolateStyles = Boolean(sharing && 'styled-components' in sharing.shared)
   // Discovery replaces this plugin set as a group; callers need no knowledge of upstream plugin names.
   const api: FederationPluginApi = {
