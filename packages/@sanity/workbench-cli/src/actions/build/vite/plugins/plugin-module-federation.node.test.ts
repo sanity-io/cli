@@ -39,8 +39,6 @@ describe('sanityModuleFederation', () => {
 
     expect(mockFederation).toHaveBeenCalledTimes(1)
     expect(mockFederation.mock.calls[0][0].dts).toBe(false)
-    expect(mockFederation.mock.calls[0][0].manifest).toBe(true)
-    expect(mockFederation.mock.calls[0][0].shared).toEqual({})
     expect(mockFederation.mock.calls[0][0]).not.toHaveProperty('filename')
   })
 

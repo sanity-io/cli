@@ -5,7 +5,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStaticFiles} from '../buildStaticFiles.js'
 
-const mockBuildFederatedApp = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const mockBuildApp = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const mockBuild = vi.hoisted(() =>
   vi.fn().mockResolvedValue({output: [{modules: {}, name: 'test', type: 'chunk'}]}),
 )
@@ -18,7 +18,7 @@ const mockCopyDir = vi.hoisted(() => vi.fn())
 const mockWriteFavicons = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/workbench-cli/build', () => ({
-  buildFederatedApp: mockBuildFederatedApp,
+  buildFederatedApp: mockBuildApp,
 }))
 
 vi.mock('vite', () => ({
@@ -97,9 +97,9 @@ describe('buildStaticFiles', () => {
 
       // Config passed to buildFederatedApp must contain the user plugin — otherwise
       // transforms like vanilla-extract never run on `.css.ts` files.
-      const builderConfig = mockBuildFederatedApp.mock.calls[0][0]
+      const builderConfig = mockBuildApp.mock.calls[0][0]
       expect(builderConfig.plugins).toContainEqual(userPlugin)
-      expect(mockBuildFederatedApp).toHaveBeenCalledWith(builderConfig, {
+      expect(mockBuildApp).toHaveBeenCalledWith(builderConfig, {
         reuseStandaloneBuild: false,
       })
 
@@ -107,7 +107,7 @@ describe('buildStaticFiles', () => {
       // Studio-specific entry the federation environment does not use.
       expect(mockFinalizeViteConfig).not.toHaveBeenCalled()
 
-      expect(mockBuildFederatedApp).toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalled()
     })
 
     test('never runs the legacy single-environment vite build', async () => {
@@ -120,7 +120,7 @@ describe('buildStaticFiles', () => {
 
       // The federation builder owns its environments; the legacy build bypasses sharing.
       expect(mockBuild).not.toHaveBeenCalled()
-      expect(mockBuildFederatedApp).toHaveBeenCalledWith(defaultViteConfig, {
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
         reuseStandaloneBuild: true,
       })
     })
@@ -163,7 +163,7 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).toHaveBeenCalledWith('/static', path.join(outputDir, 'static'))
       // The SPA path resolves entries via writeSanityRuntime, not resolveEntries.
       expect(mockResolveEntries).not.toHaveBeenCalled()
-      expect(mockBuildFederatedApp).toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalled()
     })
 
     test('emits the SPA for a federated studio (no entry)', async () => {
@@ -176,7 +176,7 @@ describe('buildStaticFiles', () => {
 
       expect(mockWriteSanityRuntime).toHaveBeenCalled()
       expect(mockWriteFavicons).toHaveBeenCalled()
-      expect(mockBuildFederatedApp).toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalled()
     })
 
     test('skips the SPA for a dock-only app (isApp with no entry)', async () => {
@@ -192,7 +192,7 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).not.toHaveBeenCalled()
       expect(mockCopyDir).not.toHaveBeenCalled()
       expect(mockResolveEntries).toHaveBeenCalled()
-      expect(mockBuildFederatedApp).toHaveBeenCalledWith(defaultViteConfig, {
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
         reuseStandaloneBuild: false,
       })
     })

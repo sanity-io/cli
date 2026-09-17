@@ -213,6 +213,9 @@ jobs:
           restore-keys: |
             vitest-cache-integration-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-
 
+      - name: Install browser for federation integration tests
+        run: pnpm --filter @sanity/workbench-cli exec playwright install --with-deps chromium --only-shell
+
       - name: Integration Test on ${{ matrix.os }}
         shell: bash
         run: pnpm test:integration --test-timeout=60000 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}

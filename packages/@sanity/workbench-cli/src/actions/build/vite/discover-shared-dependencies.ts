@@ -6,15 +6,12 @@ import {createBuilder, type InlineConfig, type Plugin, type PluginOption} from '
 import {FEDERATION_DIR_NAME} from './constants.js'
 import {getFederationApi} from './plugins/plugin-module-federation.js'
 import {
+  aliasMayRewriteSharedImport,
   createFederationSharing,
   type FederationSharing,
   findSharedDependencyName,
   type ResolvedDependency,
 } from './shared-dependencies.js'
-
-// Vite adds these regex aliases for its virtual client modules.
-// They cannot match packages we share, so they do not make discovery unsafe.
-const VITE_INTERNAL_ALIAS_PATTERNS = new Set([/^\/?@vite\/client/.source, /^\/?@vite\/env/.source])
 
 export async function buildFederatedApp(
   config: InlineConfig,
@@ -74,7 +71,8 @@ async function scanDependencies(
   const discoveryComplete = new Error('Shared dependency discovery complete')
   const scanner = await createBuilder({
     ...config,
-    // The intentional stop below looks like a failed build to Vite; real errors are rethrown.
+    // Vite would log our intentional stop as a build failure, so silence its logger during the scan.
+    // The catch below ignores only that stop signal and rethrows real errors for the CLI to report.
     logLevel: 'silent',
     plugins: [
       ...plugins.map((plugin): Plugin => ({
@@ -234,13 +232,4 @@ async function readPackageManifest(
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
   }
-}
-
-function aliasMayRewriteSharedImport(find: RegExp | string): boolean {
-  if (typeof find === 'string') {
-    return Boolean(findSharedDependencyName(find))
-  }
-
-  // Any other regex could rewrite a shared package or subpath, so we stop sharing.
-  return !VITE_INTERNAL_ALIAS_PATTERNS.has(find.source)
 }
