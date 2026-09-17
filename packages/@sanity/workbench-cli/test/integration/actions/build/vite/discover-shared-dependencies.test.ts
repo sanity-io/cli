@@ -5,7 +5,14 @@ import {fileURLToPath} from 'node:url'
 
 import react from '@vitejs/plugin-react'
 import {chromium} from 'playwright'
-import {build, type InlineConfig, normalizePath, type PluginOption, preview} from 'vite'
+import {
+  build,
+  createLogger,
+  type InlineConfig,
+  normalizePath,
+  type PluginOption,
+  preview,
+} from 'vite'
 import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {buildFederatedApp} from '../../../../../src/actions/build/vite/discover-shared-dependencies.js'
@@ -42,6 +49,7 @@ async function buildApp({
   name = 'sharing-test',
   plugins = [],
   reuseStandaloneBuild = false,
+  service = false,
   styled = true,
   versionOverrides = {},
 }: {
@@ -51,6 +59,7 @@ async function buildApp({
   name?: string
   plugins?: PluginOption[]
   reuseStandaloneBuild?: boolean
+  service?: boolean
   styled?: 'view' | boolean
   versionOverrides?: Partial<Record<'scheduler' | 'styled-components', string>>
 } = {}) {
@@ -141,6 +150,11 @@ import App from '../../App.tsx'
 import '../../app.css'
 createRoot(document.getElementById('root')).render(createElement(App))`,
   )
+  await writeFile(
+    path.join(root, 'service.js'),
+    "export default {run() {self.postMessage('remote-worker-only-marker')}}",
+  )
+  let federationAssets: string[] = []
   let chunks: Chunk[] = []
   let standaloneModules: string[] = []
   let standaloneCss: string[] = []
@@ -148,14 +162,22 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
   const finalized = vi.fn()
   const rendered = vi.fn()
   const closed = vi.fn()
+  const exposesView = headless || Boolean(duplicateReact) || styled === 'view'
+  const warn = vi.fn()
   const config: InlineConfig = {
     configFile: false,
+    customLogger: {...createLogger('silent'), warn},
     logLevel: 'silent',
     plugins: [
       react(),
       federation({
         appEntry: headless ? undefined : '../../App.tsx',
-        exposes: {views: [{name: 'tile', src: './View.tsx', surface: 'tile', title: 'Tile'}]},
+        exposes: {
+          views: exposesView
+            ? [{name: 'tile', src: './View.tsx', surface: 'tile', title: 'Tile'}]
+            : [],
+          webWorkers: service ? [{name: 'background', src: './service.js', type: 'worker'}] : [],
+        },
         isApp: true,
         name,
         workDir: root,
@@ -185,9 +207,9 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
               }
             : {},
         generateBundle(_options, bundle) {
-          // Discovery also loads views that only Workbench exposes. Capture the standalone
-          // bundle separately so tests can verify those views and their CSS stay out of it,
-          // while the app's own code and styles remain in the final output.
+          // Remote-only views belong to the federation build. Capture the standalone output
+          // separately to verify their code, CSS, and workers stay out of it, while the app's
+          // own code and styles remain in the final output.
           if (this.environment.name === 'client') {
             standaloneFiles = Object.keys(bundle)
             standaloneCss = Object.values(bundle).flatMap((chunk) =>
@@ -197,6 +219,11 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
             )
             standaloneModules = Object.values(bundle).flatMap((chunk) =>
               chunk.type === 'chunk' ? Object.keys(chunk.modules) : [],
+            )
+          }
+          if (this.environment.name === 'federation') {
+            federationAssets = Object.values(bundle).flatMap((file) =>
+              file.type === 'asset' ? [String(file.source)] : [],
             )
           }
           chunks = Object.values(bundle).flatMap((chunk) =>
@@ -234,14 +261,14 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
   )
   const stats: Manifest = JSON.parse(await readFile(path.join(root, 'dist/mf-stats.json'), 'utf8'))
   const appSource = await readFile(path.join(root, '.sanity/federation/remote-entry.jsx'), 'utf8')
-  const viewSource = await readFile(
-    path.join(root, '.sanity/federation/views/tile/tile.js'),
-    'utf8',
-  )
+  const viewSource = exposesView
+    ? await readFile(path.join(root, '.sanity/federation/views/tile/tile.js'), 'utf8')
+    : undefined
   return {
     appSource,
     chunks,
     closed,
+    federationAssets,
     finalized,
     manifest,
     rendered,
@@ -255,6 +282,7 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
     ).join('\n'),
     stats,
     viewSource,
+    warn,
   }
 }
 
@@ -300,7 +328,7 @@ describe.each([false, true])('standalone discovery: %s', (reuseStandaloneBuild) 
   }, 60_000)
 
   test('allows a regex alias for app source without disabling sharing', async () => {
-    const {manifest} = await buildApp({
+    const {manifest, warn} = await buildApp({
       plugins: [
         {
           config(config) {
@@ -319,6 +347,7 @@ describe.each([false, true])('standalone discovery: %s', (reuseStandaloneBuild) 
     expect(manifest.shared.map(({name}) => name)).toEqual(
       result.manifest.shared.map(({name}) => name),
     )
+    expect(warn).not.toHaveBeenCalled()
   }, 60_000)
 
   test.each([
@@ -328,7 +357,7 @@ describe.each([false, true])('standalone discovery: %s', (reuseStandaloneBuild) 
   ] as const)(
     'keeps dependencies local when an alias intercepts %s',
     async (find, replacement) => {
-      const {manifest} = await buildApp({
+      const {manifest, warn} = await buildApp({
         plugins: [
           {
             config: () => ({
@@ -342,6 +371,9 @@ describe.each([false, true])('standalone discovery: %s', (reuseStandaloneBuild) 
         reuseStandaloneBuild,
       })
       expect(manifest.shared).toEqual([])
+      expect(warn).toHaveBeenCalledExactlyOnceWith(
+        `Dependency sharing disabled: The Vite alias ${String(find)} may rewrite a shared dependency import. Dependencies will be bundled locally.`,
+      )
     },
     60_000,
   )
@@ -396,9 +428,8 @@ describe.each([false, true])('standalone discovery: %s', (reuseStandaloneBuild) 
     ).toEqual([])
   })
 
-  test('isolates styles in both generated app and view entries', () => {
+  test('isolates styles in the generated app entry', () => {
     expect(result.appSource).toContain("import { StyleSheetManager } from 'styled-components'")
-    expect(result.viewSource).toContain("import { StyleSheetManager } from 'styled-components'")
   })
 
   test('writes the same expose assets to both manifest formats', () => {
@@ -456,7 +487,7 @@ test('keeps dependencies local when a user plugin aliases React during configura
 }, 60_000)
 
 test('shares React without adding an unused styled-components provider', async () => {
-  const {appSource, manifest, viewSource} = await buildApp({styled: false})
+  const {appSource, manifest} = await buildApp({styled: false})
   expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
     'react',
     'react-dom',
@@ -464,12 +495,21 @@ test('shares React without adding an unused styled-components provider', async (
     'react/jsx-runtime',
   ])
   expect(appSource).not.toContain("import { StyleSheetManager } from 'styled-components'")
-  expect(viewSource).not.toContain("import { StyleSheetManager } from 'styled-components'")
 }, 60_000)
 
 test('discovers styled-components used only by a remote view without adding the view to the SPA', async () => {
   const {manifest, standaloneCss, standaloneModules, standaloneOutput, viewSource} = await buildApp(
     {
+      plugins: [
+        {
+          name: 'test/remote-only-view',
+          transform(_code, id) {
+            if (id.endsWith('/View.tsx') && this.environment.name === 'client') {
+              throw new Error('Remote-only views must not pass through the SPA build')
+            }
+          },
+        },
+      ],
       reuseStandaloneBuild: true,
       styled: 'view',
     },
@@ -477,6 +517,7 @@ test('discovers styled-components used only by a remote view without adding the 
   expect(manifest.shared.map(({name}) => name)).toContain('styled-components')
   expect(viewSource).toContain("import { StyleSheetManager } from 'styled-components'")
   expect(standaloneModules.some((id) => id.endsWith('/App.tsx'))).toBe(true)
+  expect(viewSource).toContain("import { StyleSheetManager } from 'styled-components'")
   expect(standaloneOutput).toContain('Hello')
   expect(standaloneOutput).toContain('.standalone-app')
   expect(standaloneModules.some((id) => id.endsWith('/View.tsx'))).toBe(false)
@@ -487,8 +528,11 @@ test('discovers styled-components used only by a remote view without adding the 
 test.each([false, true])(
   'keeps a lazily imported second React copy local with standalone discovery: %s',
   async (reuseStandaloneBuild) => {
-    const {manifest} = await buildApp({duplicateReact: true, reuseStandaloneBuild})
+    const {manifest, warn} = await buildApp({duplicateReact: true, reuseStandaloneBuild})
     expect(manifest.shared).toEqual([])
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      'Dependency sharing disabled: Multiple installed copies of react were found. Dependencies will be bundled locally.',
+    )
   },
   60_000,
 )
@@ -641,4 +685,15 @@ export function preload(name) { return host.preloadRemote([{nameOrAlias: name, r
       ),
     )
   }
+}, 60_000)
+
+test('keeps remote service workers out of the standalone build', async () => {
+  const {closed, federationAssets, manifest, standaloneOutput} = await buildApp({
+    reuseStandaloneBuild: true,
+    service: true,
+  })
+  expect(manifest.exposes.map(({name}) => name)).toContain('services/background')
+  expect(federationAssets.join('')).toContain('remote-worker-only-marker')
+  expect(standaloneOutput).not.toContain('remote-worker-only-marker')
+  expect(closed).toHaveBeenCalledTimes(3)
 }, 60_000)
