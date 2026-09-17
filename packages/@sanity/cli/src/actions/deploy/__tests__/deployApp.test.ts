@@ -44,26 +44,31 @@ describe('logAppDeployed', () => {
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('/@org-1/application/app-1'))
   })
 
-  test('creating without an appId explains how to update the same application on redeploy', () => {
-    const output = mockOutput()
+  test.each([false, true])(
+    'creating with createRequested=%s explains how to redeploy',
+    (createRequested) => {
+      const output = mockOutput()
 
-    logAppDeployed({
-      applicationId: 'app-2',
-      cliConfig: {app: {organizationId: 'org-1'}} as CliConfig,
-      created: true,
-      organizationId: 'org-1',
-      output,
-      title: 'New App',
-    })
+      logAppDeployed({
+        applicationId: 'app-2',
+        cliConfig: {app: {organizationId: 'org-1'}} as CliConfig,
+        created: true,
+        createRequested,
+        organizationId: 'org-1',
+        output,
+        title: 'New App',
+      })
 
-    const logged = vi
-      .mocked(output.log)
-      .mock.calls.map((call) => call[0])
-      .join('\n')
-    expect(logged).toContain('Created a new application.')
-    expect(logged).toContain('Save `deployment.appId` and omit --create on later deploys')
-    expect(logged).toContain("appId: 'app-2'")
-  })
+      const logged = vi
+        .mocked(output.log)
+        .mock.calls.map((call) => call[0])
+        .join('\n')
+      expect(logged).toContain('Created a new application.')
+      expect(logged).toContain('Save `deployment.appId`')
+      expect(logged.includes('omit --create')).toBe(createRequested)
+      expect(logged).toContain("appId: 'app-2'")
+    },
+  )
 })
 
 describe('syncApplicationMetadata', () => {

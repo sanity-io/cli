@@ -67,8 +67,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
     }),
     create: Flags.boolean({
-      description:
-        'Create a new App SDK app, even if the organization has other apps. Requires no configured app ID and a title (--title or app.title) when running without prompts',
+      description: 'Create a new App SDK app, even if the organization has other apps',
       exclusive: ['external', 'url'],
     }),
     'dry-run': Flags.boolean({

@@ -2019,8 +2019,7 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Build the studio before deploying (use --no-build to deploy existing `dist/` output)
-      --create             Create a new App SDK app, even if the organization has other apps. Requires no configured app
-                           ID and a title (--title or app.title) when running without prompts
+      --create             Create a new App SDK app, even if the organization has other apps
       --dry-run            Report what would be deployed without uploading or creating anything
       --external           Register an externally hosted studio
       --[no-]minify        Minify built JavaScript (use --no-minify to skip for faster builds)
