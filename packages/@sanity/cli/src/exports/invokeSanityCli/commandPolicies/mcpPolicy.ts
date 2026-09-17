@@ -6,6 +6,8 @@ import {
   deny,
 } from '@sanity/cli-core/commandPolicy'
 
+import {isRemoteAssetSource} from '../../../util/isRemoteAssetSource.js'
+
 function apiValidator({
   args,
   flags,
@@ -200,8 +202,15 @@ export const mcpPolicy: CommandPolicySet = {
   'media:deploy-aspect': deny,
   // Writes media assets to the local filesystem.
   'media:export': deny,
-  // Reads media assets from the local filesystem.
-  'media:import': deny,
+  // A directory or archive source reads media assets from the local
+  // filesystem. A URL source does not: Sanity fetches the asset itself, so the
+  // only local input is the URL. `--replace-aspects` is meaningless for a URL
+  // source (the command rejects the combination), so it is hidden here rather
+  // than advertised as usable surface.
+  'media:import': conditionalPolicy({
+    deniedFlags: ['replace-aspects'],
+    validate: ({args}) => typeof args.source === 'string' && isRemoteAssetSource(args.source),
+  }),
 
   // Creates migration source files in the local project.
   'migrations:create': deny,
