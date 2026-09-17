@@ -1,4 +1,3 @@
-import {isRemoteAssetSource} from '../../../util/isRemoteAssetSource.js'
 import {
   allow,
   type CommandPolicySet,
@@ -6,6 +5,8 @@ import {
   conditionalPolicy,
   deny,
 } from '@sanity/cli-core/commandPolicy'
+
+import {isRemoteAssetSource} from '../../../util/isRemoteAssetSource.js'
 
 function apiValidator({
   args,
