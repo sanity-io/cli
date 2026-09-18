@@ -1,5 +1,42 @@
 # Change Log
 
+## 8.12.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.11.0...cli-v8.12.0)
+
+_2026-09-18_
+
+### Features
+
+- **deploy:** support explicit unattended app creation ([#1901](https://github.com/sanity-io/cli/pull/1901)) ([95e8624](https://github.com/sanity-io/cli/commit/95e8624e443aefc6cbeacbb11b12421b9ab803fd))
+- let plugins declare which of their commands are safe for programmatic invocation ([#1825](https://github.com/sanity-io/cli/pull/1825)) ([6b7de5d](https://github.com/sanity-io/cli/commit/6b7de5d44104c4a7d3a631db803f672fc1e959a7))
+
+  Commands contributed by oclif plugins were unreachable from programmatic callers such as the MCP server, because the policy table only covered `@sanity/cli`'s own commands and only `SanityCommand` subclasses can run inside the CLI execution context. A plugin can now declare policies for the commands it contributes by pointing at a policy module from its package.json:
+
+  ```json
+  { "sanity": { "invocationPolicies": "./dist/invocationPolicies.js" } }
+  ```
+
+  The module exports an `invocationPolicies` table built from the new `@sanity/cli-core/commandPolicy` contract. Declaring a policy is a request, not a grant: entries for commands the plugin does not contribute are ignored, a plugin cannot take over a command the CLI already governs, and a command that does not extend `SanityCommand` is refused regardless of its policy. Plugins that declare nothing stay denied, so this changes no existing behaviour.
+
+- expose --from-url flag for upload assets ([#1866](https://github.com/sanity-io/cli/pull/1866)) ([6d4a5f7](https://github.com/sanity-io/cli/commit/6d4a5f74c74f868112d4e1b3e86d2ba9fc8dd5d3))
+- media library url ingest ([#1875](https://github.com/sanity-io/cli/pull/1875)) ([ac3a20c](https://github.com/sanity-io/cli/commit/ac3a20cd49b90d0abcdfed0f8dc8d472bbf3e783))
+
+### Bug Fixes
+
+- **deploy:** clarify app creation guidance ([#1903](https://github.com/sanity-io/cli/pull/1903)) ([938d869](https://github.com/sanity-io/cli/commit/938d869d8aaf410dba563b7ad458251bc6b115a4))
+- **cli:** always use an OS-assigned free port for the local auth server to avoid conflicting with local IPv6 servers running on 4321 ([#1883](https://github.com/sanity-io/cli/pull/1883)) ([8dd3fa6](https://github.com/sanity-io/cli/commit/8dd3fa6bd68a545fcc720422f987b3c5383fcf3b))
+- remove 'hidden' attribute for the workflows command ([#1894](https://github.com/sanity-io/cli/pull/1894)) ([0370c76](https://github.com/sanity-io/cli/commit/0370c76e89ee7ea6d505d54d2e41236d578ab151))
+- **deps:** update sanity-tooling ([#1895](https://github.com/sanity-io/cli/pull/1895)) ([471c65f](https://github.com/sanity-io/cli/commit/471c65fe65b6f13b4d0ce70bf500c5f3fcd8d56b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.0
+    - @sanity/cli-build bumped to 6.4.0
+    - @sanity/workbench-cli bumped to 2.5.2
+
 ## 8.11.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.10.0...cli-v8.11.0)
