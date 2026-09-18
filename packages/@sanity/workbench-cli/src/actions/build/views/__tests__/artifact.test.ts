@@ -56,6 +56,7 @@ describe('viewArtifacts', () => {
       // Modifications to this file are automatically discarded
       import * as React from 'react'
       import { createRoot } from 'react-dom/client'
+      const StyleSheetManager = undefined
       import view from "../../src/feed.tsx"
 
       const App = typeof view.components === 'function' ? view.components : view.components["title"]
@@ -73,6 +74,8 @@ describe('viewArtifacts', () => {
       if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, React.createContext(undefined))
       const ModuleContext = moduleSlot.get(React.createContext)
       const rootMap = new Map()
+      // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
+      const styleTargets = new Map()
       const renderArgs = new Map()
 
       function mount(rootElement, args) {
@@ -80,8 +83,15 @@ describe('viewArtifacts', () => {
         if (!root) {
           root = createRoot(rootElement)
           rootMap.set(rootElement, root)
+          if (StyleSheetManager) {
+            const target = rootElement.ownerDocument.createElement('sanity-styles')
+            // React can replace the mount node's contents; keep its stylesheet outside that node.
+            rootElement.ownerDocument.head.appendChild(target)
+            styleTargets.set(rootElement, target)
+          }
         }
-        const element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+        let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+        if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement) }, element)
         root.render(args?.renderOptions?.reactStrictMode ? React.createElement(React.StrictMode, null, element) : element)
       }
 
@@ -94,6 +104,9 @@ describe('viewArtifacts', () => {
           rootMap.delete(rootElement)
           renderArgs.delete(rootElement)
           root?.unmount()
+          // Unmount first so effect cleanup can still reach this root's stylesheet.
+          styleTargets.get(rootElement)?.remove()
+          styleTargets.delete(rootElement)
         }
       }
 

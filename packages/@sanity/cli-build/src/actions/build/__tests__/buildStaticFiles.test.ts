@@ -6,7 +6,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {buildStaticFiles} from '../buildStaticFiles.js'
 
 const mockBuildApp = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
-const mockCreateBuilder = vi.hoisted(() => vi.fn().mockResolvedValue({buildApp: mockBuildApp}))
 const mockBuild = vi.hoisted(() =>
   vi.fn().mockResolvedValue({output: [{modules: {}, name: 'test', type: 'chunk'}]}),
 )
@@ -18,9 +17,12 @@ const mockResolveEntries = vi.hoisted(() => vi.fn())
 const mockCopyDir = vi.hoisted(() => vi.fn())
 const mockWriteFavicons = vi.hoisted(() => vi.fn())
 
+vi.mock('@sanity/workbench-cli/build', () => ({
+  buildFederatedApp: mockBuildApp,
+}))
+
 vi.mock('vite', () => ({
   build: mockBuild,
-  createBuilder: mockCreateBuilder,
 }))
 
 vi.mock('../../../util/copyDir.js', () => ({
@@ -93,10 +95,13 @@ describe('buildStaticFiles', () => {
         userVite,
       )
 
-      // Config passed to createBuilder must contain the user plugin — otherwise
+      // Config passed to buildFederatedApp must contain the user plugin — otherwise
       // transforms like vanilla-extract never run on `.css.ts` files.
-      const builderConfig = mockCreateBuilder.mock.calls[0][0]
+      const builderConfig = mockBuildApp.mock.calls[0][0]
       expect(builderConfig.plugins).toContainEqual(userPlugin)
+      expect(mockBuildApp).toHaveBeenCalledWith(builderConfig, {
+        reuseStandaloneBuild: false,
+      })
 
       // Federation builds must not call finalizeViteConfig; it forces a
       // Studio-specific entry the federation environment does not use.
@@ -113,8 +118,11 @@ describe('buildStaticFiles', () => {
         outputDir,
       })
 
-      // Federation builds go through createBuilder/buildApp, never vite.build.
+      // The federation builder owns its environments; the legacy build bypasses sharing.
       expect(mockBuild).not.toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
+        reuseStandaloneBuild: true,
+      })
     })
 
     test('threads schemaExtraction through so a federated studio still extracts its schema', async () => {
@@ -184,12 +192,14 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).not.toHaveBeenCalled()
       expect(mockCopyDir).not.toHaveBeenCalled()
       expect(mockResolveEntries).toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
+        reuseStandaloneBuild: false,
+      })
     })
   })
 
   describe('isWorkbenchapp=false', () => {
-    test('should run a vite build, write favicons and return chunk stats', async () => {
+    test.each([false, true])('builds normally (isApp: %s)', async (isApp) => {
       const basePath = '/' // this is OS-agnostic, even on windows :shrug:
       const staticOutputPath = path.join(outputDir, 'static')
       const faviconBasePath = '/static'
@@ -210,6 +220,7 @@ describe('buildStaticFiles', () => {
       const {chunks} = await buildStaticFiles({
         basePath,
         cwd,
+        isApp,
         isWorkbenchApp: false,
         outputDir,
         schemaExtraction: {enabled: true},
@@ -218,6 +229,7 @@ describe('buildStaticFiles', () => {
       expect(mockCopyDir).toHaveBeenCalledWith(path.join(cwd, 'static'), staticOutputPath)
       expect(mockWriteFavicons).toHaveBeenCalledWith(faviconBasePath, staticOutputPath)
       expect(mockBuild).toHaveBeenCalledWith(defaultViteConfig)
+      expect(mockBuildApp).not.toHaveBeenCalled()
       // Should ignore non-chunk types
       expect(chunks).toHaveLength(1)
       expect(chunks[0].name).toEqual('chonkiboi')
