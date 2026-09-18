@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.8.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.7.0...cli-core-v3.8.0)
+
+_2026-09-18_
+
+### Features
+
+- let plugins declare which of their commands are safe for programmatic invocation ([#1825](https://github.com/sanity-io/cli/pull/1825)) ([6b7de5d](https://github.com/sanity-io/cli/commit/6b7de5d44104c4a7d3a631db803f672fc1e959a7))
+
+  Commands contributed by oclif plugins were unreachable from programmatic callers such as the MCP server, because the policy table only covered `@sanity/cli`'s own commands and only `SanityCommand` subclasses can run inside the CLI execution context. A plugin can now declare policies for the commands it contributes by pointing at a policy module from its package.json:
+
+  ```json
+  { "sanity": { "invocationPolicies": "./dist/invocationPolicies.js" } }
+  ```
+
+  The module exports an `invocationPolicies` table built from the new `@sanity/cli-core/commandPolicy` contract. Declaring a policy is a request, not a grant: entries for commands the plugin does not contribute are ignored, a plugin cannot take over a command the CLI already governs, and a command that does not extend `SanityCommand` is refused regardless of its policy. Plugins that declare nothing stay denied, so this changes no existing behaviour.
+
+### Bug Fixes
+
+- **deploy:** support explicit unattended app creation ([#1901](https://github.com/sanity-io/cli/pull/1901)) ([95e8624](https://github.com/sanity-io/cli/commit/95e8624e443aefc6cbeacbb11b12421b9ab803fd))
+
 ## 3.7.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.6.1...cli-core-v3.7.0)

@@ -1,5 +1,26 @@
 # Changelog
 
+## 6.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.1...cli-build-v6.4.0)
+
+_2026-09-18_
+
+### Features
+
+- media library url ingest ([#1875](https://github.com/sanity-io/cli/pull/1875)) ([ac3a20c](https://github.com/sanity-io/cli/commit/ac3a20cd49b90d0abcdfed0f8dc8d472bbf3e783))
+
+### Bug Fixes
+
+- **deps:** update dependency @sanity/ui to v4 ([#1816](https://github.com/sanity-io/cli/pull/1816)) ([1085c60](https://github.com/sanity-io/cli/commit/1085c60292174964dc883cb0f0fb783246498a2e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.0
+    - @sanity/workbench-cli bumped to 2.5.2
+
 ## 6.3.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.0...cli-build-v6.3.1)
