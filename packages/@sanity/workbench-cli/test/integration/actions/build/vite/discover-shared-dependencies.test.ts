@@ -39,6 +39,27 @@ const tileView: WorkbenchExposes = {
   views: [{name: 'tile', src: './View.tsx', surface: 'tile', title: 'Tile'}],
 }
 const roots: string[] = []
+const SANITY_UI_VERSION = '4.2.1'
+
+type Write = (file: string, contents: string) => Promise<void>
+
+// A resolvable stand-in for @sanity/ui: subpath exports plus a stylesheet, which the policy
+// treats differently from module subpaths.
+async function writePackage(write: Write, directory: string, version: string) {
+  const root = `${directory}/@sanity/ui`
+  await write(
+    `${root}/package.json`,
+    JSON.stringify({
+      exports: {'.': './index.js', './styles.css': './styles.css', './theme': './theme.js'},
+      name: '@sanity/ui',
+      type: 'module',
+      version,
+    }),
+  )
+  await write(`${root}/index.js`, `export const Card = 'sanity-ui-card@${version}'`)
+  await write(`${root}/theme.js`, "export const theme = 'sanity-ui-theme'")
+  await write(`${root}/styles.css`, '.sanity-ui-styles {color: teal}')
+}
 
 beforeAll(() => {
   vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
@@ -69,11 +90,15 @@ async function createApp() {
     await writeFile(path.join(root, file), contents)
   }
 
+  await writePackage(write, 'node_modules', SANITY_UI_VERSION)
   await write(
     'App.tsx',
-    `import styled from 'styled-components'
+    `import {Card} from '@sanity/ui'
+import {theme} from '@sanity/ui/theme'
+import '@sanity/ui/styles.css'
+import styled from 'styled-components'
 const Box = styled.div\`color: red;\`
-export default function App() { return <Box>Hello</Box> }`,
+export default function App() { return <Box>Hello {Card} {theme}</Box> }`,
   )
   await write('app.css', '.standalone-app {color: green}')
   await write(
@@ -196,22 +221,6 @@ async function fixtureVersion(name: string): Promise<string> {
   return manifest.version
 }
 
-async function writeSanityUi(app: App, directory: string, version: string) {
-  const root = `${directory}/@sanity/ui`
-  await app.write(
-    `${root}/package.json`,
-    JSON.stringify({
-      exports: {'.': './index.js', './styles.css': './styles.css', './theme': './theme.js'},
-      name: '@sanity/ui',
-      type: 'module',
-      version,
-    }),
-  )
-  await app.write(`${root}/index.js`, "export const Card = 'sanity-ui-card'")
-  await app.write(`${root}/theme.js`, "export const theme = 'sanity-ui-theme'")
-  await app.write(`${root}/styles.css`, '.sanity-ui-styles {color: teal}')
-}
-
 async function writeSecondReactCopy(app: App) {
   await app.write(
     'other-react/package.json',
@@ -237,6 +246,9 @@ describe.each([false, true])(
         fixtureVersion('styled-components'),
       ])
       const versions = {
+        // `@sanity/ui/styles.css` is absent: a stylesheet ships through the expose's CSS assets.
+        '@sanity/ui': SANITY_UI_VERSION,
+        '@sanity/ui/theme': SANITY_UI_VERSION,
         react,
         'react-dom': reactDom,
         'react-dom/client': reactDom,
@@ -257,6 +269,10 @@ describe.each([false, true])(
 
     test('writes the same exposes to the manifest and the stats', () => {
       expect(build.stats.exposes).toEqual(build.manifest.exposes)
+    })
+
+    test('bundles the shared package stylesheet into the build', () => {
+      expect(build.federationAssets).toContain('.sanity-ui-styles')
     })
 
     test('stops discovery before it renders chunks', () => {
@@ -546,92 +562,76 @@ test('shares dependencies in a headless app that exposes only its view', async (
   expect(standaloneModules).toEqual([])
 }, 60_000)
 
-describe('an app that imports @sanity/ui', () => {
-  let build: Awaited<ReturnType<App['build']>>
+// `sanity` depends on `@sanity/ui` and `ui5: npm:@sanity/ui@5` at once, so pnpm installs a
+// second copy under its alias and every studio graph holds two. Reproduced here as the alias
+// directory, because only a package.json name marks it as the same package.
+test('keeps @sanity/ui local when an alias installs a second copy', async () => {
+  const app = await createApp()
+  await writePackage(app.write, 'node_modules/ui5/node_modules', '5.0.0-alpha.10')
+  await app.write(
+    'node_modules/ui5/package.json',
+    JSON.stringify({main: './index.js', name: 'ui5', type: 'module', version: '5.0.0-alpha.10'}),
+  )
+  await app.write('node_modules/ui5/index.js', "export {Card} from '@sanity/ui'")
+  await app.write(
+    'View.tsx',
+    `import App from './App.tsx'
+import {Card} from 'ui5'
+export default {components: () => App({extra: Card}), version: '1.0'}`,
+  )
+  const {manifest, warn} = await app.build({exposes: tileView})
 
-  beforeAll(async () => {
+  expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
+    'react',
+    'react-dom',
+    'react-dom/client',
+    'react/jsx-runtime',
+    'styled-components',
+  ])
+  expect(warn).not.toHaveBeenCalled()
+}, 60_000)
+
+// A fallback provider imports the bare specifier from a virtual module at the project root.
+// Publishing one for a transitive copy either fails the Rolldown build, when the root cannot
+// resolve the specifier at all, or serves a different version than the manifest advertises.
+test.each([
+  {rootVersion: undefined, scenario: 'cannot resolve the specifier'},
+  {rootVersion: '5.0.0', scenario: 'resolves the specifier to another version'},
+])(
+  'builds without a provider when the project root $scenario',
+  async ({rootVersion}) => {
     const app = await createApp()
-    await writeSanityUi(app, 'node_modules', '4.2.1')
+    await rm(path.join(app.root, 'node_modules/@sanity/ui'), {force: true, recursive: true})
+    if (rootVersion) await writePackage(app.write, 'node_modules', rootVersion)
+    await writePackage(app.write, 'node_modules/vendor/node_modules', SANITY_UI_VERSION)
+    await app.write(
+      'node_modules/vendor/package.json',
+      JSON.stringify({main: './index.js', name: 'vendor', type: 'module', version: '1.0.0'}),
+    )
+    await app.write('node_modules/vendor/index.js', "export {Card} from '@sanity/ui'")
+    // A direct `@sanity/ui` import would put both copies in the graph and let the policy's
+    // two-copies rule demote the package before the root-resolution check is reached.
     await app.write(
       'App.tsx',
-      `import {Card} from '@sanity/ui'
-import {theme} from '@sanity/ui/theme'
-import '@sanity/ui/styles.css'
+      `import {Card} from 'vendor'
 import styled from 'styled-components'
 const Box = styled.div\`color: red;\`
-export default function App() { return <Box>{Card}{theme}</Box> }`,
+export default function App() { return <Box>{Card}</Box> }`,
     )
     await app.write(
       'View.tsx',
       "import App from './App.tsx'; export default {components: App, version: '1.0'}",
     )
-    build = await app.build({exposes: tileView})
-  }, 60_000)
+    const {manifest, warn} = await app.build({exposes: tileView})
 
-  test('shares the package and its module subpaths', () => {
-    expect(build.manifest.shared.map(({name}) => name)).toEqual(
-      expect.arrayContaining(['@sanity/ui', '@sanity/ui/theme', 'react']),
-    )
-    expect(
-      Object.fromEntries(build.manifest.shared.map(({name, version}) => [name, version])),
-    ).toMatchObject({'@sanity/ui': '4.2.1', '@sanity/ui/theme': '4.2.1'})
-    expect(build.warn).not.toHaveBeenCalled()
-  })
-
-  test('bundles the stylesheet instead of sharing it', () => {
-    expect(build.manifest.shared.map(({name}) => name)).not.toContain('@sanity/ui/styles.css')
-    expect(build.federationAssets).toContain('.sanity-ui-styles')
-  })
-})
-
-test('keeps @sanity/ui local when a second copy is installed, and shares the rest', async () => {
-  const app = await createApp()
-  await writeSanityUi(app, 'node_modules', '4.2.1')
-  await writeSanityUi(app, 'node_modules/second/node_modules', '5.0.0')
-  await app.write(
-    'App.tsx',
-    `import {Card} from '@sanity/ui'
-import {Card as Other} from 'second/node_modules/@sanity/ui/index.js'
-import styled from 'styled-components'
-const Box = styled.div\`color: red;\`
-export default function App() { return <Box>{Card}{Other}</Box> }`,
-  )
-  await app.write(
-    'View.tsx',
-    "import App from './App.tsx'; export default {components: App, version: '1.0'}",
-  )
-  const {manifest, warn} = await app.build({exposes: tileView})
-
-  expect(manifest.shared.map(({name}) => name)).toContain('react')
-  expect(manifest.shared.map(({name}) => name)).not.toContain('@sanity/ui')
-  expect(warn).not.toHaveBeenCalled()
-}, 60_000)
-
-// A fallback provider imports the bare specifier from a virtual module at the project root,
-// so publishing one for a transitive copy fails the Rolldown build outright.
-test('builds without a provider for a copy the project root cannot resolve', async () => {
-  const app = await createApp()
-  await writeSanityUi(app, 'node_modules/vendor/node_modules', '4.2.1')
-  await app.write(
-    'node_modules/vendor/package.json',
-    JSON.stringify({main: './index.js', name: 'vendor', type: 'module', version: '1.0.0'}),
-  )
-  await app.write('node_modules/vendor/index.js', "export {Card} from '@sanity/ui'")
-  await app.write(
-    'App.tsx',
-    `import {Card} from 'vendor'
-import styled from 'styled-components'
-const Box = styled.div\`color: red;\`
-export default function App() { return <Box>{Card}</Box> }`,
-  )
-  await app.write(
-    'View.tsx',
-    "import App from './App.tsx'; export default {components: App, version: '1.0'}",
-  )
-  const {manifest, viewSource, warn} = await app.build({exposes: tileView})
-
-  expect(manifest.shared.map(({name}) => name)).toContain('react')
-  expect(manifest.shared.map(({name}) => name)).not.toContain('@sanity/ui')
-  expect(viewSource).toBeDefined()
-  expect(warn).not.toHaveBeenCalled()
-}, 60_000)
+    expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react/jsx-runtime',
+      'styled-components',
+    ])
+    expect(warn).not.toHaveBeenCalled()
+  },
+  60_000,
+)

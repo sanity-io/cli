@@ -34,6 +34,13 @@ function sharing(resolved: ResolvedDependency[]): FederationSharing {
   return result
 }
 
+const REACT_ONLY = ['react', 'react-dom/client', 'react/jsx-runtime']
+const WITHOUT_SANITY_UI = [...REACT_ONLY, 'styled-components']
+
+function providerNames(resolved: ResolvedDependency[]): string[] {
+  return Object.keys(sharing(resolved).shared).toSorted()
+}
+
 function provider(version: string) {
   return {
     eager: false,
@@ -99,15 +106,15 @@ describe('shared dependency policy', () => {
 
   // `sanity` ships `ui5: npm:@sanity/ui@5` alongside `@sanity/ui@4`, so every studio
   // has two copies; dropping that one package must not cost the app its React share scope.
-  test.each(['styled-components', '@sanity/ui'])(
-    'keeps the rest of the share scope shared when %s has two copies',
-    (name) => {
-      const resolved = [...dependencies(), {name, root: `/second/${name}`, version: '9.9.9'}]
-      expect(Object.keys(sharing(resolved).shared).some((key) => key.startsWith(name))).toBe(false)
-      expect(sharing(resolved).shared).toHaveProperty('react')
-      expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
-    },
-  )
+  test.each([
+    // Dropping styled-components takes @sanity/ui with it; see the `requires` rule below.
+    {name: 'styled-components', survivors: REACT_ONLY},
+    {name: '@sanity/ui', survivors: WITHOUT_SANITY_UI},
+  ])('keeps the rest of the share scope shared when $name has two copies', ({name, survivors}) => {
+    const resolved = [...dependencies(), {name, root: `/second/${name}`, version: '9.9.9'}]
+    expect(providerNames(resolved)).toEqual(survivors)
+    expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
+  })
 
   // @sanity/ui delivers its theme through styled-components' own context, so a consumed copy
   // would hand the app a theme its local styled-components cannot read.
@@ -121,8 +128,7 @@ describe('shared dependency policy', () => {
       resolved: [...dependencies(), {name: 'styled-components', root: '/second', version: '7.0.0'}],
     },
   ])('keeps @sanity/ui local when styled-components $reason', ({resolved}) => {
-    expect(sharing(resolved).shared).not.toHaveProperty('@sanity/ui')
-    expect(sharing(resolved).shared).toHaveProperty('react')
+    expect(providerNames(resolved)).toEqual(REACT_ONLY)
   })
 
   test.each([
@@ -132,8 +138,17 @@ describe('shared dependency policy', () => {
     const resolved = dependencies().map((entry) =>
       entry.name === '@sanity/ui' ? {...entry, ...patch} : entry,
     )
-    expect(sharing(resolved).shared).not.toHaveProperty('@sanity/ui')
-    expect(sharing(resolved).shared).toHaveProperty('react')
+    expect(providerNames(resolved)).toEqual(WITHOUT_SANITY_UI)
+  })
+
+  // Discovery reports a copy without a specifier when the project root cannot provide it.
+  test('publishes no provider for a copy that was never imported by name', () => {
+    const resolved = [
+      ...dependencies().filter(({name}) => name !== '@sanity/ui'),
+      {name: '@sanity/ui', root: '/ui', version: '4.2.1'},
+    ]
+    expect(providerNames(resolved)).toEqual(WITHOUT_SANITY_UI)
+    expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
   })
 
   test.each(['react', 'react-dom', 'scheduler'])(
@@ -203,11 +218,16 @@ test.each([
   {name: 'react', specifier: 'react/jsx-runtime'},
   {name: '@sanity/ui', specifier: '@sanity/ui'},
   {name: '@sanity/ui', specifier: '@sanity/ui/theme'},
-  // A stylesheet ships through the expose's own CSS assets; a share scope can only serve modules.
-  {name: undefined, specifier: '@sanity/ui/styles.css'},
-  {name: undefined, specifier: 'react-dom/client.js'},
-  {name: undefined, specifier: 'reactive'},
-  {name: undefined, specifier: '@sanity/uid'},
-])('shares $specifier as $name', ({name, specifier}) => {
+])('resolves $specifier to the shared package $name', ({name, specifier}) => {
   expect(findSharedDependencyName(specifier)).toBe(name)
+})
+
+test.each([
+  // A stylesheet ships through the expose's own CSS assets; a share scope can only serve modules.
+  '@sanity/ui/styles.css',
+  'react-dom/client.js',
+  'reactive',
+  '@sanity/uid',
+])('does not share %s', (specifier) => {
+  expect(findSharedDependencyName(specifier)).toBeUndefined()
 })
