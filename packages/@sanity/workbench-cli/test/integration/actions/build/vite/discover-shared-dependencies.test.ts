@@ -196,6 +196,22 @@ async function fixtureVersion(name: string): Promise<string> {
   return manifest.version
 }
 
+async function writeSanityUi(app: App, directory: string, version: string) {
+  const root = `${directory}/@sanity/ui`
+  await app.write(
+    `${root}/package.json`,
+    JSON.stringify({
+      exports: {'.': './index.js', './styles.css': './styles.css', './theme': './theme.js'},
+      name: '@sanity/ui',
+      type: 'module',
+      version,
+    }),
+  )
+  await app.write(`${root}/index.js`, "export const Card = 'sanity-ui-card'")
+  await app.write(`${root}/theme.js`, "export const theme = 'sanity-ui-theme'")
+  await app.write(`${root}/styles.css`, '.sanity-ui-styles {color: teal}')
+}
+
 async function writeSecondReactCopy(app: App) {
   await app.write(
     'other-react/package.json',
@@ -528,4 +544,94 @@ test('shares dependencies in a headless app that exposes only its view', async (
   expect(manifest.exposes.map(({name}) => name)).toEqual(['views/tile/tile'])
   expect(manifest.shared.map(({name}) => name)).toContain('react')
   expect(standaloneModules).toEqual([])
+}, 60_000)
+
+describe('an app that imports @sanity/ui', () => {
+  let build: Awaited<ReturnType<App['build']>>
+
+  beforeAll(async () => {
+    const app = await createApp()
+    await writeSanityUi(app, 'node_modules', '4.2.1')
+    await app.write(
+      'App.tsx',
+      `import {Card} from '@sanity/ui'
+import {theme} from '@sanity/ui/theme'
+import '@sanity/ui/styles.css'
+import styled from 'styled-components'
+const Box = styled.div\`color: red;\`
+export default function App() { return <Box>{Card}{theme}</Box> }`,
+    )
+    await app.write(
+      'View.tsx',
+      "import App from './App.tsx'; export default {components: App, version: '1.0'}",
+    )
+    build = await app.build({exposes: tileView})
+  }, 60_000)
+
+  test('shares the package and its module subpaths', () => {
+    expect(build.manifest.shared.map(({name}) => name)).toEqual(
+      expect.arrayContaining(['@sanity/ui', '@sanity/ui/theme', 'react']),
+    )
+    expect(
+      Object.fromEntries(build.manifest.shared.map(({name, version}) => [name, version])),
+    ).toMatchObject({'@sanity/ui': '4.2.1', '@sanity/ui/theme': '4.2.1'})
+    expect(build.warn).not.toHaveBeenCalled()
+  })
+
+  test('bundles the stylesheet instead of sharing it', () => {
+    expect(build.manifest.shared.map(({name}) => name)).not.toContain('@sanity/ui/styles.css')
+    expect(build.federationAssets).toContain('.sanity-ui-styles')
+  })
+})
+
+test('keeps @sanity/ui local when a second copy is installed, and shares the rest', async () => {
+  const app = await createApp()
+  await writeSanityUi(app, 'node_modules', '4.2.1')
+  await writeSanityUi(app, 'node_modules/second/node_modules', '5.0.0')
+  await app.write(
+    'App.tsx',
+    `import {Card} from '@sanity/ui'
+import {Card as Other} from 'second/node_modules/@sanity/ui/index.js'
+import styled from 'styled-components'
+const Box = styled.div\`color: red;\`
+export default function App() { return <Box>{Card}{Other}</Box> }`,
+  )
+  await app.write(
+    'View.tsx',
+    "import App from './App.tsx'; export default {components: App, version: '1.0'}",
+  )
+  const {manifest, warn} = await app.build({exposes: tileView})
+
+  expect(manifest.shared.map(({name}) => name)).toContain('react')
+  expect(manifest.shared.map(({name}) => name)).not.toContain('@sanity/ui')
+  expect(warn).not.toHaveBeenCalled()
+}, 60_000)
+
+// A fallback provider imports the bare specifier from a virtual module at the project root,
+// so publishing one for a transitive copy fails the Rolldown build outright.
+test('builds without a provider for a copy the project root cannot resolve', async () => {
+  const app = await createApp()
+  await writeSanityUi(app, 'node_modules/vendor/node_modules', '4.2.1')
+  await app.write(
+    'node_modules/vendor/package.json',
+    JSON.stringify({main: './index.js', name: 'vendor', type: 'module', version: '1.0.0'}),
+  )
+  await app.write('node_modules/vendor/index.js', "export {Card} from '@sanity/ui'")
+  await app.write(
+    'App.tsx',
+    `import {Card} from 'vendor'
+import styled from 'styled-components'
+const Box = styled.div\`color: red;\`
+export default function App() { return <Box>{Card}</Box> }`,
+  )
+  await app.write(
+    'View.tsx',
+    "import App from './App.tsx'; export default {components: App, version: '1.0'}",
+  )
+  const {manifest, viewSource, warn} = await app.build({exposes: tileView})
+
+  expect(manifest.shared.map(({name}) => name)).toContain('react')
+  expect(manifest.shared.map(({name}) => name)).not.toContain('@sanity/ui')
+  expect(viewSource).toBeDefined()
+  expect(warn).not.toHaveBeenCalled()
 }, 60_000)

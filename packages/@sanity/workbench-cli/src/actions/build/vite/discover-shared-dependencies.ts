@@ -150,6 +150,7 @@ function createSharedDependencyDiscovery(environmentName: string): {
 } {
   const dependencies: ResolvedDependency[] = []
   const packageCache = new Map<string, Promise<ResolvedDependency | undefined>>()
+  const rootResolutions = new Map<string, Promise<ResolvedDependency | undefined>>()
   let disabledReason: string | undefined
 
   async function findSharedPackage(id: string): Promise<ResolvedDependency | undefined> {
@@ -213,7 +214,20 @@ function createSharedDependencyDiscovery(environmentName: string): {
       const dependency = await packageForModule(resolved.id)
       if (!dependency || dependency.name !== dependencyName) {
         disabledReason ??= `${source} does not resolve to an installed ${dependencyName} package`
-      } else dependencies.push({...dependency, specifier: source})
+        return resolved
+      }
+
+      let fromRoot = rootResolutions.get(source)
+      if (!fromRoot) {
+        fromRoot = this.resolve(source, undefined, {skipSelf: true}).then((rootResolved) =>
+          rootResolved && !rootResolved.external ? packageForModule(rootResolved.id) : undefined,
+        )
+        rootResolutions.set(source, fromRoot)
+      }
+      // Fallback providers import the bare specifier from a virtual module, so a copy the project
+      // root does not resolve to would fail the build; count it without publishing a provider.
+      const providable = (await fromRoot)?.root === dependency.root
+      dependencies.push(providable ? {...dependency, specifier: source} : dependency)
       return resolved
     },
   }
