@@ -118,7 +118,6 @@ export function createDevOptions(
     cliConfig: {} as CliConfig,
     httpHost: 'localhost',
     httpPort: 3333,
-    mode: 'development',
     output: createMockOutput(),
     reactStrictMode: false,
     workDir: '/tmp/sanity-project',
