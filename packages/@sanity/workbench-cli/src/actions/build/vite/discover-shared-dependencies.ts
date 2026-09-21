@@ -224,9 +224,13 @@ function createSharedDependencyDiscovery(environmentName: string): {
         )
         rootResolutions.set(source, fromRoot)
       }
-      // Fallback providers import the bare specifier from a virtual module, so a copy the project
-      // root does not resolve to would fail the build; count it without publishing a provider.
-      const providable = (await fromRoot)?.root === dependency.root
+      // Fallback providers import the bare specifier from a virtual module, so a specifier the
+      // project root cannot resolve would fail the build; count it without publishing a provider.
+      // Compared by name and version because the two resolutions can spell the same directory
+      // differently (Windows short paths, symlinked installs).
+      const rootPackage = await fromRoot
+      const providable =
+        rootPackage?.name === dependency.name && rootPackage.version === dependency.version
       dependencies.push(providable ? {...dependency, specifier: source} : dependency)
       return resolved
     },
