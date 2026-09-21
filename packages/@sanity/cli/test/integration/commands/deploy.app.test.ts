@@ -594,7 +594,7 @@ describe('#deploy app', () => {
     const result = JSON.parse(stdout)
     expect(result.deployed).toBe(true)
     expect(result.action).toBe('create')
-    expect(result.url).toBe(`https://${organizationId}.sanity.run/application/app_new`)
+    expect(result.url).toBe(`https://${organizationId}.sanity.run/applications/app_new`)
     expect(result.payload).toMatchObject({appId: null, slug: 'drop-desk-host', type: 'coreApp'})
     expect(result.application).toMatchObject({id: 'app_new', slug: 'drop-desk-host'})
   })

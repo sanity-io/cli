@@ -259,10 +259,10 @@ describe('getWorkbenchUrl / getApplicationUrl', () => {
   test('builds production URLs on sanity.run', () => {
     expect(getWorkbenchUrl('org-1')).toBe('https://org-1.sanity.run')
     expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'coreApp'})).toBe(
-      'https://org-1.sanity.run/application/app-1',
+      'https://org-1.sanity.run/applications/app-1',
     )
     expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'studio'})).toBe(
-      'https://org-1.sanity.run/studio/app-1',
+      'https://org-1.sanity.run/studios/app-1',
     )
   })
 
@@ -270,7 +270,7 @@ describe('getWorkbenchUrl / getApplicationUrl', () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
     expect(getWorkbenchUrl('org-1')).toBe('https://org-1.run.sanity.work')
     expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'coreApp'})).toBe(
-      'https://org-1.run.sanity.work/application/app-1',
+      'https://org-1.run.sanity.work/applications/app-1',
     )
   })
 })
