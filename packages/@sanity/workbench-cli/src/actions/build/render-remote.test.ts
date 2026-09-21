@@ -30,6 +30,7 @@ function makeReact(): ReactStub {
 function loadWrapper(
   source: string,
   React: ReactStub,
+  onUnmount: () => void = () => {},
 ): {
   render: (rootElement: object, props?: unknown, renderOptions?: unknown) => () => void
   rendered: Element[]
@@ -37,11 +38,15 @@ function loadWrapper(
   const rendered: Element[] = []
   const createRoot = (): Root => ({
     render: (element) => rendered.push(element),
-    unmount: () => {},
+    unmount: onUnmount,
   })
   const body = source
     .replace(/^import \* as React from 'react'$/m, 'const React = deps.React')
     .replace(/^import \{ createRoot \} from 'react-dom\/client'$/m, 'const {createRoot} = deps')
+    .replace(
+      /^import \{ StyleSheetManager \} from 'styled-components'$/m,
+      "const StyleSheetManager = 'StyleSheetManager'",
+    )
     // `export`/`import.meta` are illegal in a Function body; drop them so the
     // ESM template runs as a plain module scope. `render` is still captured via
     // the returned reference below.
@@ -62,6 +67,19 @@ afterEach(() => {
 })
 
 describe('renderRemote module context', () => {
+  test('keeps the stylesheet attached until React finishes unmounting', () => {
+    const events: string[] = []
+    const target = {remove: () => events.push('remove stylesheet')}
+    const root = {ownerDocument: {createElement: () => target, head: {appendChild: () => {}}}}
+    const mod = loadWrapper(
+      renderRemote({app: APP, isolateStyles: true, preamble: ''}),
+      makeReact(),
+      () => events.push('unmount React'),
+    )
+    mod.render(root)()
+    expect(events).toEqual(['unmount React', 'remove stylesheet'])
+  })
+
   test('sources ModuleContext from the symbol-keyed WeakMap<createContext, Context>', () => {
     const React = makeReact()
     loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
