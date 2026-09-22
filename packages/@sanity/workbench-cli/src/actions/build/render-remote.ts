@@ -11,7 +11,11 @@
  * the shared HMR snippet.
  *
  * The render contract is
- * `render(rootElement, props, renderOptions?: {reactStrictMode?: boolean; moduleId?: string})`.
+ * `render(rootElement, props, renderOptions?: {reactStrictMode?: boolean; moduleId?: string; rootOptions?: import('react-dom/client').RootOptions})`.
+ * `rootOptions` (React's `createRoot` options — `onUncaughtError`, `onCaughtError`,
+ * `onRecoverableError`, `identifierPrefix`) is forwarded verbatim to `createRoot`
+ * and only applies when the root is first created (reused roots in `rootMap` keep
+ * the options they were created with).
  * `moduleId` is the host's canonical federation module id (e.g. `favorites/App`,
  * `favorites/views/list/panel`, `favorites/workers/sync`). It is provided to
  * `App` through a `React.Context<string | undefined>` keyed per React copy (by
@@ -88,7 +92,7 @@ const renderArgs = new Map()
 function mount(rootElement, args) {
   let root = rootMap.get(rootElement)
   if (!root) {
-    root = createRoot(rootElement)
+    root = createRoot(rootElement, args?.renderOptions?.rootOptions)
     rootMap.set(rootElement, root)
     if (StyleSheetManager) {
       const target = rootElement.ownerDocument.createElement('sanity-styles')

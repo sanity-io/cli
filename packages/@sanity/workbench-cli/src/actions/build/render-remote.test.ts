@@ -32,14 +32,19 @@ function loadWrapper(
   React: ReactStub,
   onUnmount: () => void = () => {},
 ): {
+  createRootCalls: unknown[]
   render: (rootElement: object, props?: unknown, renderOptions?: unknown) => () => void
   rendered: Element[]
 } {
   const rendered: Element[] = []
-  const createRoot = (): Root => ({
-    render: (element) => rendered.push(element),
-    unmount: onUnmount,
-  })
+  const createRootCalls: unknown[] = []
+  const createRoot = (_rootElement: unknown, options?: unknown): Root => {
+    createRootCalls.push(options)
+    return {
+      render: (element) => rendered.push(element),
+      unmount: onUnmount,
+    }
+  }
   const body = source
     .replace(/^import \* as React from 'react'$/m, 'const React = deps.React')
     .replace(/^import \{ createRoot \} from 'react-dom\/client'$/m, 'const {createRoot} = deps')
@@ -56,7 +61,7 @@ function loadWrapper(
   const mod = factory({createRoot, React}) as {
     render: (rootElement: object, props?: unknown, renderOptions?: unknown) => () => void
   }
-  return {rendered, ...mod}
+  return {createRootCalls, rendered, ...mod}
 }
 
 const APP = `() => 'app'`
@@ -150,6 +155,23 @@ describe('renderRemote module context', () => {
     const [provider] = mod.rendered
     expect(provider.type).toBe('Provider')
     expect((provider.props as {value: unknown}).value).toBeUndefined()
+  })
+
+  test('forwards renderOptions.rootOptions to createRoot, only on root creation', () => {
+    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), makeReact())
+
+    // First render on a fresh element: rootOptions reach createRoot as the 2nd arg.
+    const first = {}
+    mod.render(first, {}, {rootOptions: {identifierPrefix: 'x'}})
+    expect(mod.createRootCalls).toEqual([{identifierPrefix: 'x'}])
+
+    // No rootOptions: createRoot's 2nd arg is undefined.
+    mod.render({}, {})
+    expect(mod.createRootCalls).toEqual([{identifierPrefix: 'x'}, undefined])
+
+    // Re-rendering the same element reuses the root, so createRoot is not called again.
+    mod.render(first, {}, {rootOptions: {identifierPrefix: 'y'}})
+    expect(mod.createRootCalls).toEqual([{identifierPrefix: 'x'}, undefined])
   })
 
   test('the generated wrapper never imports the SDK', () => {

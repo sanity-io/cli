@@ -56,7 +56,7 @@ describe('renderRemote', () => {
       function mount(rootElement, args) {
         let root = rootMap.get(rootElement)
         if (!root) {
-          root = createRoot(rootElement)
+          root = createRoot(rootElement, args?.renderOptions?.rootOptions)
           rootMap.set(rootElement, root)
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
@@ -129,7 +129,7 @@ describe('renderRemote', () => {
       function mount(rootElement, args) {
         let root = rootMap.get(rootElement)
         if (!root) {
-          root = createRoot(rootElement)
+          root = createRoot(rootElement, args?.renderOptions?.rootOptions)
           rootMap.set(rootElement, root)
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
