@@ -1,5 +1,23 @@
 # @sanity/workbench-cli
 
+## 2.6.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.5.2...workbench-cli-v2.6.0)
+
+_2026-09-22_
+
+### Features
+
+- **workbench-cli:** forward renderOptions.rootOptions to createRoot ([#1910](https://github.com/sanity-io/cli/pull/1910)) ([601ded1](https://github.com/sanity-io/cli/commit/601ded1c57d5173a329e578e77aaa510a7825f12))
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.22.1 ([#1907](https://github.com/sanity-io/cli/pull/1907)) ([9ac2c75](https://github.com/sanity-io/cli/commit/9ac2c752d97d4e3a59c9a30ca6455bbc47177464))
+- **workbench-cli:** let `sanity start` use the workbench remote override ([#1908](https://github.com/sanity-io/cli/pull/1908)) ([f15ca8a](https://github.com/sanity-io/cli/commit/f15ca8abb61add4329ecd1b2e9b125ac0bc2040d))
+- **deps:** update dependency @module-federation/vite to v1.22.0 ([#1892](https://github.com/sanity-io/cli/pull/1892)) ([fc1f318](https://github.com/sanity-io/cli/commit/fc1f318b2f7b4639e839a610d961fcbbdf51ac66))
+- **workbench-cli:** share compatible dependencies ([#1885](https://github.com/sanity-io/cli/pull/1885)) ([73392e6](https://github.com/sanity-io/cli/commit/73392e660a936f126df836e7fa6c0cf9613f1538))
+- **workbench-cli:** update workbench URLs ([#1909](https://github.com/sanity-io/cli/pull/1909)) ([c6290b7](https://github.com/sanity-io/cli/commit/c6290b75b8aed3d4524c419e63d762769f45c90a))
+
 ## 2.5.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.5.1...workbench-cli-v2.5.2)
