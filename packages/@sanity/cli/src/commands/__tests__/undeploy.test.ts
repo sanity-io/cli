@@ -667,7 +667,7 @@ describe('#undeploy', () => {
     expect(payload.undeployed).toBe(true)
     expect(payload.deletes).toBe('application')
     expect(payload.payload).toMatchObject({appId: 'wb-app-1'})
-    expect(payload.url).toBe('https://org-1.sanity.run/application/wb-app-1')
+    expect(payload.url).toBe('https://org-1.sanity.run/applications/wb-app-1')
     expect(payload.application).toMatchObject({id: 'wb-app-1', slug: 'my-app-x1'})
   })
 

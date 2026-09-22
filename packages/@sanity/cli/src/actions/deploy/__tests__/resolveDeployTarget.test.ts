@@ -234,7 +234,7 @@ describe('resolveWorkbenchApp', () => {
         slug: 'agent',
         title: 'Agent',
         type: 'coreApp',
-        url: 'https://org-1.sanity.run/application/app-1',
+        url: 'https://org-1.sanity.run/applications/app-1',
       },
       type: 'slug-taken',
     })
