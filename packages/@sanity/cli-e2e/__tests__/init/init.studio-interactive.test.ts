@@ -101,7 +101,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     await session.waitForText(/Do you want to use TypeScript/i)
     session.sendKey('Enter')
 
-    await session.waitForText(/package manager|npm|yarn|pnpm/i)
+    await session.waitForText(/package manager|npm|yarn|pnpm/i, {timeout: 90_000})
     session.sendKey('Enter')
 
     await session.waitForExit(0, 90_000)

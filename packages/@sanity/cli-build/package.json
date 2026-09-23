@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-build",
-  "version": "6.4.0",
+  "version": "6.4.1",
   "description": "Internal Sanity package for building studios and apps",
   "keywords": [
     "cli",
@@ -83,7 +83,7 @@
     "picomatch": "^4.0.4",
     "react": "^19.2.7",
     "react-is": "^19.2.7",
-    "semver": "^7.8.1",
+    "semver": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
   },
@@ -104,7 +104,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/react-is": "^19.2.0",
-    "@types/semver": "^7.7.1",
+    "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",

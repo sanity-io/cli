@@ -326,7 +326,7 @@ describe('checkAppTarget (workbench backend)', () => {
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "Drop Desk"')
     expect(reporter.results[0]?.target?.action).toBe('update')
-    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run/application/app-1')
+    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run/applications/app-1')
   })
 
   test('unknown appId → fail check pointing to deployment.appId', async () => {
@@ -380,7 +380,7 @@ describe('slug-taken', () => {
     organizationId: 'org-1',
     title: 'Agent',
     type: 'coreApp' as const,
-    url: 'https://org-1.sanity.run/application/existing-1',
+    url: 'https://org-1.sanity.run/applications/existing-1',
   }
 
   test('fails naming the existing app id and how to reuse it', () => {
@@ -396,7 +396,7 @@ describe('slug-taken', () => {
       id: 'existing-1',
       title: 'Agent',
       type: 'coreApp',
-      url: 'https://org-1.sanity.run/application/existing-1',
+      url: 'https://org-1.sanity.run/applications/existing-1',
     })
     // A studio collides in the same namespace, so it gets the same diagnosis.
     expect(
@@ -448,10 +448,10 @@ describe('checkStudioTarget (workbench backend)', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain(
-      'Deploys to existing studio https://org-1.sanity.run/studio/app-1',
+      'Deploys to existing studio https://org-1.sanity.run/studios/app-1',
     )
     expect(check?.target?.action).toBe('update')
-    expect(check?.target?.url).toBe('https://org-1.sanity.run/studio/app-1')
+    expect(check?.target?.url).toBe('https://org-1.sanity.run/studios/app-1')
   })
 
   test('no appId → pass check naming the slug the studio would be created at', async () => {

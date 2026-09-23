@@ -67,6 +67,8 @@ catalog:
   tinyglobby: ^0.2.17
   lodash-es: ^4.18.1
   '@types/lodash-es': ^4.17.12
+  semver: ^7.8.1
+  '@types/semver': ^7.7.1
   yaml: ^2.9.0
   form-data: ^4.0.5
   tar: ^7.5.18
@@ -101,6 +103,7 @@ minimumReleaseAgeExclude:
   - '@oxfmt/*'
   - 'vite'
   - '@vitejs/*'
+  - '@module-federation/vite'
   # Vite's bundler; same trust domain and release cadence as vite itself.
   # Needed so vite's `rolldown: ~x.y.z` range can pick up fresh patch fixes.
   # `@rolldown/*` covers the per-platform native binding packages released in
@@ -129,6 +132,9 @@ minimumReleaseAgeExclude:
   - '@sentry/replay@10.73.0'
   - i18next@26.4.1
   - react-i18next@17.0.13
+  # Clean lockfile re-resolve (2026-09-23): only matching version was too new for
+  # minimumReleaseAge (published 2026-09-20T17:43Z; 72h cutoff not yet reached).
+  - react-error-boundary@6.1.6
 allowBuilds:
   '@swc/core': true
   esbuild: true

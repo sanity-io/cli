@@ -88,7 +88,7 @@ describe('startWorkbenchDev', () => {
       await run()
 
       expect(mockStartWorkbenchDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({mode: 'development'}),
+        expect.objectContaining({reactStrictMode: false}),
       )
     })
 

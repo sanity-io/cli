@@ -1,5 +1,21 @@
 # Changelog
 
+## 6.4.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.0...cli-build-v6.4.1)
+
+_2026-09-22_
+
+### Bug Fixes
+
+- **workbench-cli:** share compatible dependencies ([#1885](https://github.com/sanity-io/cli/pull/1885)) ([73392e6](https://github.com/sanity-io/cli/commit/73392e660a936f126df836e7fa6c0cf9613f1538))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.6.0
+
 ## 6.4.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.1...cli-build-v6.4.0)
