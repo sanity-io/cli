@@ -1,0 +1,430 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
+[
+  {
+    "commandId": "context:build",
+    "description": "Build a knowledge base from its imported content",
+    "flagKinds": {
+      "cancel": "boolean",
+    },
+    "forceJson": false,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "cancel": {
+          "description": "Cancel the running build instead of starting one",
+          "type": "boolean",
+        },
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+      ],
+      "type": "object",
+    },
+    "name": "context_build",
+    "positionalArguments": [
+      "knowledgeBaseId",
+    ],
+    "readOnly": false,
+    "title": "Context Build",
+  },
+  {
+    "commandId": "context:create",
+    "description": "Create a knowledge base",
+    "flagKinds": {
+      "description": "value",
+      "organization": "value",
+      "title": "value",
+    },
+    "forceJson": false,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "Knowledge base description",
+          "type": "string",
+        },
+        "organization": {
+          "description": "Organization to create the knowledge base in",
+          "type": "string",
+        },
+        "title": {
+          "description": "Knowledge base title",
+          "type": "string",
+        },
+      },
+      "required": [
+        "organization",
+        "description",
+        "title",
+      ],
+      "type": "object",
+    },
+    "name": "context_create",
+    "positionalArguments": [],
+    "readOnly": false,
+    "title": "Context Create",
+  },
+  {
+    "commandId": "context:delete",
+    "description": "Delete a knowledge base and its generated content",
+    "flagKinds": {
+      "yes": "boolean",
+    },
+    "forceJson": false,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+        "yes": {
+          "description": "Skip confirmation prompt (unattended mode)",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+        "yes",
+      ],
+      "type": "object",
+    },
+    "name": "context_delete",
+    "positionalArguments": [
+      "knowledgeBaseId",
+    ],
+    "readOnly": false,
+    "title": "Context Delete",
+  },
+  {
+    "commandId": "context:get",
+    "description": "Get details of a knowledge base",
+    "flagKinds": {},
+    "forceJson": true,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+      ],
+      "type": "object",
+    },
+    "name": "context_get",
+    "positionalArguments": [
+      "knowledgeBaseId",
+    ],
+    "readOnly": true,
+    "title": "Context Get",
+  },
+  {
+    "commandId": "context:imports:create",
+    "description": "Import content into a knowledge base",
+    "flagKinds": {
+      "content-type": "value",
+      "query": "value",
+      "sanity-dataset": "value",
+      "sanity-project": "value",
+      "text": "value",
+      "title": "value",
+      "url": "value",
+    },
+    "forceJson": false,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "content-type": {
+          "description": "MIME type for text imports: text/markdown or text/plain. Omit for url and query imports.",
+          "type": "string",
+        },
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+        "query": {
+          "description": "GROQ query binding a Sanity dataset as a source (requires --sanity-project and --sanity-dataset; provide exactly one content source)",
+          "type": "string",
+        },
+        "sanity-dataset": {
+          "description": "Sanity dataset for a dataset import",
+          "type": "string",
+        },
+        "sanity-project": {
+          "description": "Sanity project ID for a dataset import",
+          "type": "string",
+        },
+        "text": {
+          "description": "Inline text content to import (requires --title; provide exactly one content source)",
+          "type": "string",
+        },
+        "title": {
+          "description": "Title for an inline text import",
+          "type": "string",
+        },
+        "url": {
+          "description": "Website URL to crawl (provide exactly one content source)",
+          "type": "string",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+      ],
+      "type": "object",
+    },
+    "name": "context_imports_create",
+    "positionalArguments": [
+      "knowledgeBaseId",
+    ],
+    "readOnly": false,
+    "title": "Context Imports Create",
+  },
+  {
+    "commandId": "context:imports:delete",
+    "description": "Delete an import from a knowledge base",
+    "flagKinds": {
+      "yes": "boolean",
+    },
+    "forceJson": false,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "importId": {
+          "description": "Import ID",
+          "minLength": 1,
+          "type": "string",
+        },
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+        "yes": {
+          "description": "Skip confirmation prompt (unattended mode)",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+        "importId",
+        "yes",
+      ],
+      "type": "object",
+    },
+    "name": "context_imports_delete",
+    "positionalArguments": [
+      "knowledgeBaseId",
+      "importId",
+    ],
+    "readOnly": false,
+    "title": "Context Imports Delete",
+  },
+  {
+    "commandId": "context:imports:get",
+    "description": "Get details of an import",
+    "flagKinds": {},
+    "forceJson": true,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "importId": {
+          "description": "Import ID",
+          "minLength": 1,
+          "type": "string",
+        },
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+        "importId",
+      ],
+      "type": "object",
+    },
+    "name": "context_imports_get",
+    "positionalArguments": [
+      "knowledgeBaseId",
+      "importId",
+    ],
+    "readOnly": true,
+    "title": "Context Imports Get",
+  },
+  {
+    "commandId": "context:imports:list",
+    "description": "List imports for a knowledge base",
+    "flagKinds": {},
+    "forceJson": true,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+      ],
+      "type": "object",
+    },
+    "name": "context_imports_list",
+    "positionalArguments": [
+      "knowledgeBaseId",
+    ],
+    "readOnly": true,
+    "title": "Context Imports List",
+  },
+  {
+    "commandId": "context:jobs:get",
+    "description": "Get the status of a knowledge base job",
+    "flagKinds": {},
+    "forceJson": true,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "jobId": {
+          "description": "Job ID, as returned by build, refresh and imports create",
+          "minLength": 1,
+          "type": "string",
+        },
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+        "jobId",
+      ],
+      "type": "object",
+    },
+    "name": "context_jobs_get",
+    "positionalArguments": [
+      "knowledgeBaseId",
+      "jobId",
+    ],
+    "readOnly": true,
+    "title": "Context Jobs Get",
+  },
+  {
+    "commandId": "context:list",
+    "description": "List knowledge bases in an organization",
+    "flagKinds": {
+      "organization": "value",
+    },
+    "forceJson": true,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "organization": {
+          "description": "Organization to list knowledge bases for",
+          "type": "string",
+        },
+      },
+      "required": [
+        "organization",
+      ],
+      "type": "object",
+    },
+    "name": "context_list",
+    "positionalArguments": [],
+    "readOnly": true,
+    "title": "Context List",
+  },
+  {
+    "commandId": "context:refresh",
+    "description": "Refresh a knowledge base: re-check sources and apply what changed",
+    "flagKinds": {},
+    "forceJson": false,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+      ],
+      "type": "object",
+    },
+    "name": "context_refresh",
+    "positionalArguments": [
+      "knowledgeBaseId",
+    ],
+    "readOnly": false,
+    "title": "Context Refresh",
+  },
+  {
+    "commandId": "context:update",
+    "description": "Update a knowledge base",
+    "flagKinds": {
+      "description": "value",
+      "refresh-enabled": "booleanAllowNo",
+      "refresh-frequency": "value",
+      "title": "value",
+    },
+    "forceJson": false,
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "New knowledge base description",
+          "type": "string",
+        },
+        "knowledgeBaseId": {
+          "description": "Knowledge base ID",
+          "minLength": 1,
+          "type": "string",
+        },
+        "refresh-enabled": {
+          "description": "Enable scheduled refresh (--no-refresh-enabled to disable)",
+          "type": "boolean",
+        },
+        "refresh-frequency": {
+          "description": "How often scheduled refresh runs",
+          "enum": [
+            "weekly",
+            "monthly",
+          ],
+          "type": "string",
+        },
+        "title": {
+          "description": "New knowledge base title",
+          "type": "string",
+        },
+      },
+      "required": [
+        "knowledgeBaseId",
+      ],
+      "type": "object",
+    },
+    "name": "context_update",
+    "positionalArguments": [
+      "knowledgeBaseId",
+    ],
+    "readOnly": false,
+    "title": "Context Update",
+  },
+]
+`;

@@ -57,6 +57,13 @@ export abstract class SanityCommand<T extends typeof Command>
   extends Command
   implements SanityCommandInterface
 {
+  /**
+   * MCP-surface overrides for the command itself, the command-level
+   * counterpart of `mcpOverrides` from `@sanity/cli-core/flags`. Omitted
+   * fields inherit from the command.
+   */
+  static mcpOverrides?: {description?: string}
+
   protected args!: Args<T>
   protected flags!: Flags<T>
 

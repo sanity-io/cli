@@ -18,7 +18,7 @@ export class GetJobCommand extends SanityCommand<typeof GetJobCommand> {
     }),
     // eslint-disable-next-line perfectionist/sort-objects -- positional order: knowledge base first
     jobId: Args.string({
-      description: 'Job ID',
+      description: 'Job ID, as returned by build, refresh and imports create',
       required: true,
     }),
   }

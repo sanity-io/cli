@@ -5,6 +5,7 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {mcpOverrides} from '@sanity/cli-core/flags'
 import {spinner} from '@sanity/cli-core/ux'
 import {type Context, isHttpError} from '@sanity/client'
 
@@ -34,19 +35,26 @@ const FILE_CONTENT_TYPES: Record<string, string> = {
 }
 
 const flags = {
-  'content-type': Flags.string({
-    description:
-      'Content type of the import (--text: text/markdown or text/plain; --file: any MIME type, inferred from the file extension when omitted)',
-    helpValue: '<mime>',
-    parse: async (input: string) => {
-      const trimmed = input.trim()
-      if (trimmed === '') {
-        throw new Error('`--content-type` cannot be empty if provided')
-      }
-      return trimmed
+  'content-type': mcpOverrides(
+    Flags.string({
+      description:
+        'Content type of the import (--text: text/markdown or text/plain; --file: any MIME type, inferred from the file extension when omitted)',
+      helpValue: '<mime>',
+      parse: async (input: string) => {
+        const trimmed = input.trim()
+        if (trimmed === '') {
+          throw new Error('`--content-type` cannot be empty if provided')
+        }
+        return trimmed
+      },
+      required: false,
+    }),
+    // --file is policy-denied for MCP invocations, so its behavior is not documented there.
+    {
+      description:
+        'MIME type for text imports: text/markdown or text/plain. Omit for url and query imports.',
     },
-    required: false,
-  }),
+  ),
   file: Flags.string({
     description: 'Path to a local file to import',
     exclusive: ['text', 'url', 'query'],
@@ -54,7 +62,8 @@ const flags = {
     required: false,
   }),
   query: Flags.string({
-    description: 'GROQ query binding a Sanity dataset as a source',
+    description:
+      'GROQ query binding a Sanity dataset as a source (requires --sanity-project and --sanity-dataset; provide exactly one content source)',
     exclusive: ['text', 'url', 'file'],
     required: false,
   }),
@@ -71,7 +80,8 @@ const flags = {
     required: false,
   }),
   text: Flags.string({
-    description: 'Inline text content to import (requires --title)',
+    description:
+      'Inline text content to import (requires --title; provide exactly one content source)',
     exclusive: ['file', 'url', 'query'],
     required: false,
   }),
@@ -81,7 +91,7 @@ const flags = {
     required: false,
   }),
   url: Flags.string({
-    description: 'Website URL to crawl',
+    description: 'Website URL to crawl (provide exactly one content source)',
     exclusive: ['text', 'file', 'query'],
     helpValue: '<url>',
     required: false,

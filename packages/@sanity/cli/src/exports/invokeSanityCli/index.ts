@@ -22,9 +22,9 @@
  * (or `help`) renders root help listing the invokable topics, and a subject
  * (`cors --help`, `cors list --help`) renders topic or command help.
  */
-import {fileURLToPath} from 'node:url'
+import {stripVTControlCharacters} from 'node:util'
 
-import {Command, Config, Parser, settings} from '@oclif/core'
+import {type Command, type Config, Parser, settings} from '@oclif/core'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {exitCodes} from '@sanity/cli-core'
 import {
@@ -34,32 +34,30 @@ import {
   isConditionalInvocationPolicy,
 } from '@sanity/cli-core/commandPolicy'
 import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
-import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {type FetchFunction} from 'get-it'
 import {parseArgsStringToArgv} from 'string-argv'
 
 import {resolveTopicAliasInArgv} from '../../topicAliases.js'
 import {resolveCommandPolicies} from './commandPolicies/index.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
+import {
+  cachedCliCommandConfig,
+  type InvokableCommand,
+  supportsIsolatedExecution,
+} from './invokableCommands.js'
+import {mcpToolCommands} from './mcpToolCommands.js'
 import {prettyPrintError} from './prettyPrintError.js'
 
-type InvokableCommand = Pick<SanityCommand<typeof Command>, 'runInExecutionContext'>
+const mcpToolCommandSet = new Set(mcpToolCommands)
 
-/**
- * Whether a command can run in isolation, which in practice means it extends
- * `SanityCommand`: only that base class routes output, token resolution,
- * interactivity, and project discovery through the CLI execution context.
- *
- * This is a capability check, not a policy check. A plugin can declare a
- * policy for a command that still extends oclif's `Command` directly, and
- * such a command must not run here — the policy says the invocation is safe,
- * but nothing would hold it to the isolation guarantees that assessment
- * assumes.
- */
-function supportsIsolatedExecution(CommandClass: Command.Class): boolean {
-  const prototype = CommandClass.prototype as Partial<InvokableCommand> | undefined
-  return typeof prototype?.runInExecutionContext === 'function'
-}
+export {
+  getMcpToolDefinitions,
+  type GetMcpToolDefinitionsOptions,
+  type McpToolDefinition,
+  type McpToolInputSchema,
+  mcpToolInputToArgv,
+} from './getMcpToolDefinitions.js'
+export {mcpToolCommands} from './mcpToolCommands.js'
 
 /**
  * Instantiate a policy-approved command for isolated execution.
@@ -78,22 +76,6 @@ function instantiateCommand(
   const ConcreteCommand = CommandClass as unknown as new (argv: string[], config: Config) => Command
   return new ConcreteCommand(argv, config) as unknown as InvokableCommand
 }
-
-/**
- * Load the oclif `Config` for this package, needed to resolve, load, and run
- * commands. Loading it once and reusing it across invocations avoids
- * re-reading the command manifest per call. It only reads this package's own
- * installed files — process-lifetime initialization, not per-invocation host
- * state — so it happens outside any execution context.
- *
- * `userPlugins: false` keeps this surface to the plugins this package ships
- * with. oclif otherwise loads whatever `<dataDir>/package.json` lists.
- */
-function loadCliCommandConfig(): Promise<Config> {
-  return Config.load({root: fileURLToPath(import.meta.url), userPlugins: false})
-}
-
-let cachedConfig: Promise<Config> | undefined
 
 function unknownCommandResult(argv: string[], policySet: CommandPolicySet): InvokeSanityCliResult {
   const available = Object.entries(policySet)
@@ -140,12 +122,29 @@ export interface InvokeSanityCliOptions {
   config?: Config
 
   /**
+   * Removes {@link mcpToolCommands} from this invocation's surface and its
+   * help. Set by freeform callers (like run_sanity_cli) so commands with
+   * dedicated tools aren't offered twice. The dedicated tools themselves
+   * execute those commands through this same function, so only the caller
+   * knows whether to exclude.
+   */
+  excludeMcpToolCommands?: boolean
+
+  /**
    * Optional fetch implementation for API requests made by this invocation.
    * Scoped to this call via the CLI execution context; defaults to the CLI's
    * own transport. The execution context's transport hygiene (such as
    * stripping the embedding process's lineage header) is applied on top.
    */
   fetch?: FetchFunction
+
+  /**
+   * By default a help flag anywhere in the arguments renders help and exits
+   * 0, like a terminal would. Pass `false` when argv is built from tool
+   * input: every token is then just an argument, so a value spelled "--help"
+   * cannot turn the call into a help render.
+   */
+  helpRequests?: boolean
 
   /**
    * Sanity deployment environment for this invocation. Scoped to this call
@@ -200,9 +199,11 @@ export async function invokeSanityCli(
   // every command load, and may register ts-node process-wide.
   settings.enableAutoTranspile = false
 
-  const resolvedConfig = options.config ?? (await (cachedConfig ??= loadCliCommandConfig()))
+  const resolvedConfig = options.config ?? (await cachedCliCommandConfig())
   const output: string[] = []
-  const sink = (line: string) => output.push(line)
+  // ANSI styling belongs to terminal rendering; programmatic callers (and the
+  // agents behind them) get plain text.
+  const sink = (line: string) => output.push(stripVTControlCharacters(line))
   const {fetch, sanityEnv, token} = options
 
   // Establish the isolation boundary before rendering help, loading command
@@ -214,13 +215,21 @@ export async function invokeSanityCli(
 }
 
 async function invokeSanityCliInContext(
-  {args, source}: InvokeSanityCliOptions,
+  {args, excludeMcpToolCommands, helpRequests, source}: InvokeSanityCliOptions,
   resolvedConfig: Config,
   output: string[],
 ): Promise<InvokeSanityCliResult> {
   // Combines this package's own policies with those each plugin declares for
   // the commands it contributes. Resolved once per config, not per call.
-  const policySet = await resolveCommandPolicies(resolvedConfig, source)
+  const resolvedPolicySet = await resolveCommandPolicies(resolvedConfig, source)
+
+  // Removing entries (rather than marking them denied) keeps excluded
+  // commands out of rendered help and command listings too.
+  const policySet = excludeMcpToolCommands
+    ? Object.fromEntries(
+        Object.entries(resolvedPolicySet).filter(([id]) => !mcpToolCommandSet.has(id)),
+      )
+    : resolvedPolicySet
 
   // Pre-split argv arrays are taken verbatim; only string input goes through
   // shell-style tokenization and quote normalization.
@@ -237,7 +246,7 @@ async function invokeSanityCliInContext(
   // response (identical to a truly unknown command, so hosts can't probe the
   // full CLI surface through help), and a help request never executes a
   // command.
-  if (isHelpRequest(argv, resolvedConfig)) {
+  if (helpRequests !== false && isHelpRequest(argv, resolvedConfig)) {
     try {
       // Drop a leading `help` so the rest is the subject, mirroring how
       // oclif's dispatch consumes the token before the help command sees argv
@@ -330,7 +339,7 @@ async function invokeSanityCliInContext(
     }
 
     const message = prettyPrintError(err) || String(err)
-    if (message) output.push(message)
+    if (message) output.push(stripVTControlCharacters(message))
     return {
       commandId,
       exitCode: typeof exit === 'number' ? exit : exitCodes.RUNTIME_ERROR,

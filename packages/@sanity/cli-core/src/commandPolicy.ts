@@ -38,12 +38,14 @@ const InvocationPolicySchema = z.function({
 const CommandPolicyConditionalSchema = z.object({
   deniedFlags: z.array(z.string()),
   kind: z.literal('conditional'),
+  readOnly: z.optional(z.boolean()),
   validate: InvocationPolicySchema,
 })
 
 const CommandPolicySchema = z.union([
   z.object({
     kind: z.enum(['allow', 'deny']),
+    readOnly: z.optional(z.boolean()),
     validate: InvocationPolicySchema,
   }),
   CommandPolicyConditionalSchema,
@@ -86,6 +88,15 @@ export type PluginInvocationPolicies = Partial<Record<InvocationSource, CommandP
 
 /** Every valid invocation of the command is safe. */
 export const allow: CommandPolicy = {kind: 'allow', validate: () => true}
+
+/**
+ * Marks a policy's command as read-only: it never mutates anything, so tool
+ * surfaces may advertise it as safe to call without confirmation. Anything
+ * unmarked is treated as potentially destructive.
+ */
+export function readOnly<T extends CommandPolicy>(policy: T): T {
+  return {...policy, readOnly: true}
+}
 
 /** No invocation of the command is safe. Behaves like an unknown command. */
 export const deny: CommandPolicy = {kind: 'deny', validate: () => false}

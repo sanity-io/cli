@@ -2,6 +2,7 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
@@ -31,11 +32,13 @@ export class DeleteKnowledgeBaseCommand extends SanityCommand<typeof DeleteKnowl
   ]
 
   static override flags = {
-    yes: Flags.boolean({
-      char: 'y',
-      default: false,
-      description: 'Skip confirmation prompt (unattended mode)',
-    }),
+    yes: requiredWhenUnattended(
+      Flags.boolean({
+        char: 'y',
+        default: false,
+        description: 'Skip confirmation prompt (unattended mode)',
+      }),
+    ),
   } satisfies FlagInput
 
   public async run(): Promise<void> {
