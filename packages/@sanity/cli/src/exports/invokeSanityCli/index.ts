@@ -24,7 +24,7 @@
  */
 import {stripVTControlCharacters} from 'node:util'
 
-import {type Command, type Config, Parser, settings} from '@oclif/core'
+import {type Command, type Config, Flags, Parser, settings} from '@oclif/core'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {exitCodes} from '@sanity/cli-core'
 import {
@@ -169,6 +169,13 @@ export interface InvokeSanityCliResult {
    * exposed by the selected policy (for example, `datasets:create`).
    */
   commandId?: string
+
+  /**
+   * The command's return value, when it returned one. JSON-capable commands
+   * return their data; MCP hosts use this for structured tool results
+   * instead of parsing `output`.
+   */
+  data?: unknown
 }
 
 /**
@@ -287,11 +294,18 @@ async function invokeSanityCliInContext(
   // conditional policies are evaluated against typed args/flags, not tokens.
   let invocation: {args: Record<string, unknown>; flags: Record<string, unknown>}
   try {
+    // Parser.parse reads only `flags` — the baseFlags/json aggregation that
+    // Command.parse would do (oclif's aggregateFlags) has to happen here, or
+    // --json is rejected as a nonexistent flag.
     const parsed = await Parser.parse(commandArgv, {
       args: CommandClass.args,
-      baseFlags: CommandClass.baseFlags,
-      enableJsonFlag: CommandClass.enableJsonFlag,
-      flags: CommandClass.flags,
+      flags: {
+        ...CommandClass.baseFlags,
+        ...(CommandClass.enableJsonFlag
+          ? {json: Flags.boolean({description: 'Format output as json.', helpGroup: 'GLOBAL'})}
+          : {}),
+        ...CommandClass.flags,
+      },
       strict: CommandClass.strict,
     })
     invocation = {
@@ -328,8 +342,13 @@ async function invokeSanityCliInContext(
 
   try {
     const command = instantiateCommand(CommandClass, commandArgv, resolvedConfig)
-    await command.runInExecutionContext()
-    return {commandId, exitCode: exitCodes.SUCCESS, output: output.join('\n')}
+    const data: unknown = await command.runInExecutionContext()
+    return {
+      commandId,
+      ...(data !== undefined && {data}),
+      exitCode: exitCodes.SUCCESS,
+      output: output.join('\n'),
+    }
   } catch (err) {
     const exit = err.oclif?.exit
 

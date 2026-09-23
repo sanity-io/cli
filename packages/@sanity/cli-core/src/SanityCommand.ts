@@ -132,12 +132,10 @@ export abstract class SanityCommand<T extends typeof Command>
     reportCliTraceError(err)
 
     // oclif's base `catch` sets `process.exitCode` as a side effect
-    // we do not want to write to the host's own exit status.
+    // we do not want to write to the host's own exit status. Rethrowing
+    // (json mode included) keeps the error an exit code for the programmatic
+    // caller instead of turning it into successful stdout.
     if (getCliExecutionContext()) {
-      if (this.jsonEnabled()) {
-        this.logJson(this.toErrorJson(err))
-        return
-      }
       throw err
     }
 
@@ -286,6 +284,21 @@ export abstract class SanityCommand<T extends typeof Command>
   }
 
   /**
+   * Like oclif's, minus the `SANITY_CONTENT_TYPE` env check for programmatic
+   * invocations: the host process's environment must not flip output modes,
+   * only the invocation's own `--json` can. Terminal use keeps the env opt-in.
+   */
+  public override jsonEnabled(): boolean {
+    if (!getCliExecutionContext()) return super.jsonEnabled()
+    if (!this.ctor.enableJsonFlag) return false
+    const passThroughIndex = this.argv.indexOf('--')
+    const jsonIndex = this.argv.indexOf('--json')
+    return passThroughIndex === -1
+      ? jsonIndex !== -1
+      : jsonIndex !== -1 && jsonIndex < passThroughIndex
+  }
+
+  /**
    * Write to stdout — or, when running under an execution context (e.g. from
    * an MCP server), to the context's `stdout` sink. Mirrors oclif's `log`
    * semantics: suppressed when `--json` is enabled, printf-style formatting.
@@ -367,6 +380,15 @@ export abstract class SanityCommand<T extends typeof Command>
       throw new Error('runInExecutionContext requires a CLI execution context')
     }
     return this._run<TResult>()
+  }
+
+  /**
+   * Machine consumers get a stable error shape; oclif's default leaks
+   * internals like `oclif: {exit}` into the payload.
+   */
+  public override toErrorJson(err: unknown): unknown {
+    const error = err as {message?: string; name?: string}
+    return {error: {message: error.message ?? String(err), name: error.name ?? 'Error'}}
   }
 
   /**
