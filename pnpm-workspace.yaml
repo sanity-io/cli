@@ -1,3 +1,4 @@
+autoDedupe: true
 linkWorkspacePackages: true
 overrides:
   '@sanity/cli': 'workspace:*'
