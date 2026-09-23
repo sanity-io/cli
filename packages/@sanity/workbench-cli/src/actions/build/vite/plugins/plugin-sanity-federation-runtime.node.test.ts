@@ -36,6 +36,7 @@ type Element = {children: unknown[]; props: Record<string, unknown>; type: unkno
 function evaluateEntry(source: string) {
   const rendered: Element[] = []
   const React = {
+    Activity: 'Activity',
     createContext: () => ({Provider: 'Provider'}),
     createElement: (type: unknown, props: Record<string, unknown>, ...children: unknown[]) =>
       ({children, props, type}) satisfies Element,
@@ -55,9 +56,20 @@ function evaluateEntry(source: string) {
     .replaceAll(/^export /gm, '')
     .replaceAll('import.meta.hot', 'undefined')
   const mod = new Function('deps', `${body}\nreturn {render}`)(deps) as {
-    render: (rootElement: object, props?: unknown, renderOptions?: unknown) => () => void
+    render: (
+      rootElement: object,
+      props?: unknown,
+      renderOptions?: unknown,
+    ) => {dispose: () => void; setLifecycle: (state: string) => void}
   }
   return {rendered, ...mod}
+}
+
+/** Walk the wrapper chain (Activity, StrictMode, ...) down to the ModuleContext.Provider. */
+function providerOf(element: Element): Element {
+  let node = element
+  while (node && node.type !== 'Provider') node = (node.children as Element[])[0]
+  return node
 }
 
 test('the studio entry renders Studio with the config and forwarded props', () => {
@@ -68,7 +80,7 @@ test('the studio entry renders Studio with the config and forwarded props', () =
   // after the template switched to `import * as React`; it threw here.
   mod.render({}, {scheme: 'dark'}, {moduleId: 'studio/App'})
 
-  const [provider] = mod.rendered
+  const provider = providerOf(mod.rendered[0])
   expect(provider.props.value).toBe('studio/App')
   const [app] = provider.children as Element[]
   expect(app.props).toEqual({scheme: 'dark'})
@@ -84,7 +96,39 @@ test('the app entry renders the imported App with forwarded props', () => {
 
   mod.render({}, {greeting: 'hi'})
 
-  const [provider] = mod.rendered
+  const provider = providerOf(mod.rendered[0])
   const [app] = provider.children as Element[]
   expect(app.props).toEqual({greeting: 'hi'})
+})
+
+test('an SDK app entry render() returns a lifecycle controller', () => {
+  const entry = emitEntry({appEntry: '/app/src/App.tsx', isApp: true})
+  const mod = evaluateEntry(entry.replace(/^import App from .*$/m, 'const App = () => "app"'))
+
+  const controller = mod.render({})
+  expect(typeof controller.setLifecycle).toBe('function')
+  expect(typeof controller.dispose).toBe('function')
+  expect(entry).toContain(`import App from "/app/src/App.tsx"`)
+})
+
+test('a studio entry render() returns a lifecycle controller', () => {
+  const entry = emitEntry({isApp: false, studioConfigPath: '/studio/sanity.config.ts'})
+  const mod = evaluateEntry(entry)
+
+  const controller = mod.render({})
+  expect(typeof controller.setLifecycle).toBe('function')
+  expect(typeof controller.dispose).toBe('function')
+})
+
+test('a studio entry renders behind an HMR boundary', () => {
+  const entry = emitEntry({isApp: false, studioConfigPath: '/studio/sanity.config.ts'})
+
+  expect(entry).toContain('import.meta.hot')
+})
+
+test('a headless app exposes no `./App`, so it carries no controller', () => {
+  const entry = emitEntry({isApp: true})
+
+  expect(entry).not.toContain('setLifecycle')
+  expect(entry).toContain('This application has no app view')
 })

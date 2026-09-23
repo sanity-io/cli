@@ -33,6 +33,12 @@ catalog:
   '@sanity/codegen': ^8.1.0
   '@sanity/telemetry': ^1.1.0
 
+  # React
+  react: ^19.2.7
+  react-dom: ^19.2.7
+  '@types/react': ^19.2.17
+  '@types/react-dom': ^19.2.3
+
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
   oxc-transform-react: ^0.147.0
