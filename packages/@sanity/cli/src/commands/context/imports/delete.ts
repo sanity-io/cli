@@ -25,6 +25,8 @@ export class DeleteImportCommand extends SanityCommand<typeof DeleteImportComman
 
   static override description = 'Delete an import from a knowledge base'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 import-def456',
@@ -46,7 +48,7 @@ export class DeleteImportCommand extends SanityCommand<typeof DeleteImportComman
     ),
   } satisfies FlagInput
 
-  public async run(): Promise<void> {
+  public async run(): Promise<{deleted: boolean; importId: string; knowledgeBaseId: string}> {
     const {importId, knowledgeBaseId} = this.args
     const {yes: skipConfirmation} = this.flags
 
@@ -71,6 +73,7 @@ export class DeleteImportCommand extends SanityCommand<typeof DeleteImportComman
     try {
       await deleteImport(knowledgeBaseId, importId)
       this.log('Import deleted')
+      return {deleted: true, importId, knowledgeBaseId}
     } catch (error) {
       deleteImportDebug('Error deleting import', error)
       if (isHttpError(error) && error.statusCode === 404) {

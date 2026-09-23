@@ -2,7 +2,7 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {isHttpError} from '@sanity/client'
+import {type Context, isHttpError} from '@sanity/client'
 
 import {watchJob} from '../../../actions/context/watchJob.js'
 import {formatKeyValue} from '../../../actions/debug/output.js'
@@ -25,6 +25,8 @@ export class GetJobCommand extends SanityCommand<typeof GetJobCommand> {
 
   static override description = 'Get the status of a knowledge base job'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 job-def456',
@@ -37,19 +39,15 @@ export class GetJobCommand extends SanityCommand<typeof GetJobCommand> {
   ]
 
   static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output the job in JSON format',
-    }),
     watch: Flags.boolean({
       default: false,
       description: 'Poll until the job reaches a terminal state',
     }),
   } satisfies FlagInput
 
-  public async run(): Promise<void> {
+  public async run(): Promise<Context.Job> {
     const {jobId, knowledgeBaseId} = this.args
-    const {json, watch} = this.flags
+    const {watch} = this.flags
 
     let job
     try {
@@ -68,21 +66,18 @@ export class GetJobCommand extends SanityCommand<typeof GetJobCommand> {
       })
     }
 
-    if (json) {
-      this.log(JSON.stringify(job, null, 2))
-    } else {
-      const padTo = 9 // "Completed" is the longest key
-      this.log(formatKeyValue('ID', job.id, {padTo}))
-      this.log(formatKeyValue('Status', job.status, {padTo}))
-      this.log(formatKeyValue('Started', job.startedAt ?? '-', {padTo}))
-      this.log(formatKeyValue('Completed', job.completedAt ?? '-', {padTo}))
-      this.log(formatKeyValue('Error', job.error ?? '-', {padTo}))
-    }
+    const padTo = 9 // "Completed" is the longest key
+    this.log(formatKeyValue('ID', job.id, {padTo}))
+    this.log(formatKeyValue('Status', job.status, {padTo}))
+    this.log(formatKeyValue('Started', job.startedAt ?? '-', {padTo}))
+    this.log(formatKeyValue('Completed', job.completedAt ?? '-', {padTo}))
+    this.log(formatKeyValue('Error', job.error ?? '-', {padTo}))
 
     if (watch && job.status !== 'succeeded') {
       this.error(`Job ${job.status}${job.error ? `: ${job.error}` : ''}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
+    return job
   }
 }

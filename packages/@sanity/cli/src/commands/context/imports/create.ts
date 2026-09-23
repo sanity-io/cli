@@ -108,6 +108,8 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
 
   static override description = 'Import content into a knowledge base'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command:
@@ -135,19 +137,17 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
     redact: ['text', 'file', 'url', 'title', 'query'],
   })
 
-  public async run(): Promise<void> {
+  public async run(): Promise<{jobId: string; knowledgeBaseId: string}> {
     const {knowledgeBaseId} = this.args
 
     const params = await this.buildImportParams()
 
-    const spin = spinner('Creating import').start()
+    const spin = this.jsonEnabled() ? undefined : spinner('Creating import').start()
+    let accepted: Context.JobAccepted
     try {
-      const {jobId} = await createImport(knowledgeBaseId, params)
-      spin.succeed('Import created')
-      this.log(formatKeyValue('Job ID', jobId))
-      this.log(`Track it with: sanity context jobs get ${knowledgeBaseId} ${jobId}`)
+      accepted = await createImport(knowledgeBaseId, params)
     } catch (error) {
-      spin.fail()
+      spin?.fail()
       createImportDebug('Error creating import', error)
       if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Knowledge base "${knowledgeBaseId}" not found`, {
@@ -158,6 +158,10 @@ export class CreateImportCommand extends SanityCommand<typeof CreateImportComman
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
+    spin?.succeed('Import created')
+    this.log(formatKeyValue('Job ID', accepted.jobId))
+    this.log(`Track it with: sanity context jobs get ${knowledgeBaseId} ${accepted.jobId}`)
+    return {...accepted, knowledgeBaseId}
   }
 
   private async buildFileImportParams(filePath: string): Promise<Context.CreateFileImportParams> {

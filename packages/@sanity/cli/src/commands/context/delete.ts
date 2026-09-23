@@ -20,6 +20,8 @@ export class DeleteKnowledgeBaseCommand extends SanityCommand<typeof DeleteKnowl
 
   static override description = 'Delete a knowledge base and its generated content'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123',
@@ -41,7 +43,7 @@ export class DeleteKnowledgeBaseCommand extends SanityCommand<typeof DeleteKnowl
     ),
   } satisfies FlagInput
 
-  public async run(): Promise<void> {
+  public async run(): Promise<{deleted: boolean; knowledgeBaseId: string}> {
     const {knowledgeBaseId} = this.args
     const {yes: skipConfirmation} = this.flags
 
@@ -66,6 +68,7 @@ export class DeleteKnowledgeBaseCommand extends SanityCommand<typeof DeleteKnowl
     try {
       await deleteKnowledgeBase(knowledgeBaseId)
       this.log('Knowledge base deleted')
+      return {deleted: true, knowledgeBaseId}
     } catch (error) {
       deleteContextDebug('Error deleting knowledge base', error)
       if (isHttpError(error) && error.statusCode === 404) {

@@ -1,8 +1,7 @@
-import {Args, Flags} from '@oclif/core'
-import {type FlagInput} from '@oclif/core/interfaces'
+import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {isHttpError} from '@sanity/client'
+import {type Context, isHttpError} from '@sanity/client'
 
 import {formatKeyValue} from '../../../actions/debug/output.js'
 import {downloadImport} from '../../../services/context.js'
@@ -25,6 +24,8 @@ export class DownloadImportCommand extends SanityCommand<typeof DownloadImportCo
   static override description =
     'Get a short-lived signed URL for the original uploaded bytes of a file import'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 import-def456',
@@ -32,16 +33,8 @@ export class DownloadImportCommand extends SanityCommand<typeof DownloadImportCo
     },
   ]
 
-  static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output the download URL in JSON format',
-    }),
-  } satisfies FlagInput
-
-  public async run(): Promise<void> {
+  public async run(): Promise<Context.ImportDownloadResponse> {
     const {importId, knowledgeBaseId} = this.args
-    const {json} = this.flags
 
     let download
     try {
@@ -58,13 +51,9 @@ export class DownloadImportCommand extends SanityCommand<typeof DownloadImportCo
       })
     }
 
-    if (json) {
-      this.log(JSON.stringify(download, null, 2))
-      return
-    }
-
     const padTo = 7 // "Expires" is the longest key
     this.log(formatKeyValue('URL', download.url, {padTo}))
     this.log(formatKeyValue('Expires', download.expiresAt, {padTo}))
+    return download
   }
 }

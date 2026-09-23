@@ -1,8 +1,7 @@
-import {Args, Flags} from '@oclif/core'
-import {type FlagInput} from '@oclif/core/interfaces'
+import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {isHttpError} from '@sanity/client'
+import {type Context, isHttpError} from '@sanity/client'
 
 import {formatKeyValue} from '../../actions/debug/output.js'
 import {getKnowledgeBase} from '../../services/context.js'
@@ -19,6 +18,8 @@ export class GetKnowledgeBaseCommand extends SanityCommand<typeof GetKnowledgeBa
 
   static override description = 'Get details of a knowledge base'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123',
@@ -30,16 +31,8 @@ export class GetKnowledgeBaseCommand extends SanityCommand<typeof GetKnowledgeBa
     },
   ]
 
-  static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output the knowledge base in JSON format',
-    }),
-  } satisfies FlagInput
-
-  public async run(): Promise<void> {
+  public async run(): Promise<Context.KnowledgeBase> {
     const {knowledgeBaseId} = this.args
-    const {json} = this.flags
 
     let knowledgeBase
     try {
@@ -54,11 +47,6 @@ export class GetKnowledgeBaseCommand extends SanityCommand<typeof GetKnowledgeBa
       this.error(`Failed to get knowledge base: ${getErrorMessage(error)}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
-    }
-
-    if (json) {
-      this.log(JSON.stringify(knowledgeBase, null, 2))
-      return
     }
 
     const pending = knowledgeBase.pendingChanges
@@ -89,5 +77,6 @@ export class GetKnowledgeBaseCommand extends SanityCommand<typeof GetKnowledgeBa
     this.log(formatKeyValue('Instructions', knowledgeBase.instructionCount, {padTo}))
     this.log(formatKeyValue('Created', knowledgeBase.createdAt, {padTo}))
     this.log(formatKeyValue('Updated', knowledgeBase.updatedAt, {padTo}))
+    return knowledgeBase
   }
 }

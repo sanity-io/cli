@@ -108,11 +108,22 @@ describe('getMcpToolDefinitions', () => {
   })
 
   test('commands without JSON output do not claim it', () => {
-    const contextRefresh = definition('context_refresh')
+    // Every context command has enableJsonFlag today, so pin the
+    // forceJson=false argv shape with a synthetic definition.
+    const freeform: McpToolDefinition = {
+      commandId: 'demo:cmd',
+      description: '',
+      flagKinds: {},
+      forceJson: false,
+      inputSchema: {additionalProperties: false, properties: {}, type: 'object'},
+      name: 'demo_cmd',
+      positionalArguments: ['knowledgeBaseId'],
+      readOnly: false,
+      title: 'Demo Cmd',
+    }
 
-    expect(contextRefresh.forceJson).toBe(false)
-    expect(mcpToolInputToArgv(contextRefresh, {knowledgeBaseId: 'kb-abc123'})).toEqual([
-      'context:refresh',
+    expect(mcpToolInputToArgv(freeform, {knowledgeBaseId: 'kb-abc123'})).toEqual([
+      'demo:cmd',
       '--',
       'kb-abc123',
     ])
@@ -136,6 +147,7 @@ describe('getMcpToolDefinitions', () => {
 
     expect(argv).toEqual([
       'context:update',
+      '--json',
       '--no-refresh-enabled',
       '--title',
       'New title',
@@ -149,7 +161,7 @@ describe('getMcpToolDefinitions', () => {
     // instead of cancelling one.
     expect(
       mcpToolInputToArgv(definition('context_build'), {cancel: true, knowledgeBaseId: '--'}),
-    ).toEqual(['context:build', '--cancel', '--', '--'])
+    ).toEqual(['context:build', '--json', '--cancel', '--', '--'])
 
     // The parser binds a flag-spelled value to the positional: the invocation
     // gets past parsing to the (disabled) network call.
@@ -205,7 +217,7 @@ describe('getMcpToolDefinitions', () => {
         cancel: false,
         knowledgeBaseId: 'kb-abc123',
       }),
-    ).toEqual(['context:build', '--', 'kb-abc123'])
+    ).toEqual(['context:build', '--json', '--', 'kb-abc123'])
   })
 
   test('throws when a positional is supplied after a missing one', () => {

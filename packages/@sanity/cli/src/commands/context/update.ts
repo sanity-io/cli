@@ -49,6 +49,8 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
   // generated MCP tool schema, so the description carries it.
   static override description = 'Update a knowledge base (provide at least one field to change)'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 --title "New title"',
@@ -69,7 +71,7 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
 
   static telemetry = defineCommandTelemetry(flags, {redact: ['title', 'description']})
 
-  public async run(): Promise<void> {
+  public async run(): Promise<Context.KnowledgeBase> {
     const {knowledgeBaseId} = this.args
     const {
       description,
@@ -100,13 +102,12 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
       params.refreshFrequency = refreshFrequency
     }
 
-    const spin = spinner('Updating knowledge base').start()
+    const spin = this.jsonEnabled() ? undefined : spinner('Updating knowledge base').start()
+    let knowledgeBase: Context.KnowledgeBase
     try {
-      await updateKnowledgeBase(knowledgeBaseId, params)
-      spin.succeed()
-      this.log('Knowledge base updated')
+      knowledgeBase = await updateKnowledgeBase(knowledgeBaseId, params)
     } catch (error) {
-      spin.fail()
+      spin?.fail()
       updateContextDebug('Error updating knowledge base', error)
       if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Knowledge base "${knowledgeBaseId}" not found`, {
@@ -117,5 +118,8 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
+    spin?.succeed()
+    this.log('Knowledge base updated')
+    return knowledgeBase
   }
 }
