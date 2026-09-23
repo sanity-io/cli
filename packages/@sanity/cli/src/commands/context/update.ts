@@ -45,7 +45,9 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
     }),
   }
 
-  static override description = 'Update a knowledge base'
+  // The atLeastOne relationship doesn't survive into the manifest or the
+  // generated MCP tool schema, so the description carries it.
+  static override description = 'Update a knowledge base (provide at least one field to change)'
 
   static override examples = [
     {

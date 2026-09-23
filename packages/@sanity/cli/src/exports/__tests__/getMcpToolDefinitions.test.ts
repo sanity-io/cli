@@ -1,6 +1,7 @@
 import {fileURLToPath} from 'node:url'
 
-import {Config} from '@oclif/core'
+import {Config, Flags} from '@oclif/core'
+import {mcpOverrides, requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {beforeAll, describe, expect, test} from 'vitest'
 
 import {
@@ -282,6 +283,73 @@ describe('getMcpToolDefinitions', () => {
     expect(result.commandId).toBe('context:get')
     expect(result.exitCode).toBe(1) // reached execution, no help render
     expect(result.output).not.toContain('USAGE')
+  })
+
+  test.each([
+    ['context:get', 'context:get'],
+    ['context:list', 'context:get'],
+  ])('throws when the command list contains "%s" twice among [%s, …]', async (dupe, other) => {
+    await expect(getMcpToolDefinitions({commands: [dupe, other, dupe], config})).rejects.toThrow(
+      `Cannot expose "${dupe}" as an MCP tool twice`,
+    )
+  })
+
+  test('an explicit mcpOverrides required beats the unattended marker, and denial beats both', async () => {
+    const fakeCommand = {
+      args: {},
+      flags: {
+        // Marked required-when-unattended, explicitly overridden to optional.
+        optional: {name: 'optional', type: 'option'},
+        // Policy-denied below; the override must not resurrect it.
+        watch: {name: 'watch', type: 'boolean'},
+      },
+      id: 'context:build',
+      load: async () =>
+        class {
+          static flags = {
+            optional: mcpOverrides(requiredWhenUnattended(Flags.string()), {required: false}),
+            watch: mcpOverrides(Flags.boolean(), {required: true}),
+          }
+          runInExecutionContext() {}
+        },
+    }
+    const fakeConfig = {
+      findCommand: () => fakeCommand,
+      pjson: {name: '@sanity/cli'},
+      plugins: new Map(),
+    } as never
+
+    const [tool] = await getMcpToolDefinitions({commands: ['context:build'], config: fakeConfig})
+
+    expect(tool.inputSchema.required).toBeUndefined()
+    expect(tool.inputSchema.properties.watch).toBeUndefined()
+    expect(tool.inputSchema.properties.optional).toBeDefined()
+  })
+
+  test('flag and input names from Object.prototype behave like any other name', () => {
+    const definition: McpToolDefinition = {
+      commandId: 'demo:cmd',
+      description: '',
+      flagKinds: {toString: 'value' as const},
+      forceJson: false,
+      inputSchema: {additionalProperties: false, properties: {}, type: 'object'},
+      name: 'demo_cmd',
+      positionalArguments: [],
+      readOnly: false,
+      title: 'Demo Cmd',
+    }
+
+    // Absent input must not resolve to Object.prototype.toString.
+    expect(mcpToolInputToArgv(definition, {})).toEqual(['demo:cmd'])
+    expect(mcpToolInputToArgv(definition, {toString: 'x'})).toEqual(['demo:cmd', '--toString', 'x'])
+  })
+
+  test('rejects non-boolean values for boolean flags instead of dropping them', () => {
+    // A dropped flag never reaches the parser, so {cancel: "true"} would
+    // otherwise START a build instead of cancelling one.
+    expect(() =>
+      mcpToolInputToArgv(definition('context_build'), {cancel: 'true', knowledgeBaseId: 'kb-1'}),
+    ).toThrow('Flag "cancel" expects a boolean, got string')
   })
 
   test('a command can override its tool description via static mcpOverrides', async () => {

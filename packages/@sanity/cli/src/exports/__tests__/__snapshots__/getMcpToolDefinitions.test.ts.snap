@@ -377,7 +377,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
   },
   {
     "commandId": "context:update",
-    "description": "Update a knowledge base",
+    "description": "Update a knowledge base (provide at least one field to change)",
     "flagKinds": {
       "description": "value",
       "refresh-enabled": "booleanAllowNo",

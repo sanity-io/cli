@@ -127,8 +127,14 @@ export async function getMcpToolDefinitions(
   const config = options.config ?? (await cachedCliCommandConfig())
   const policySet = await resolveCommandPolicies(config, 'mcp')
 
+  const commands = options.commands ?? mcpToolCommands
+  const duplicate = commands.find((id, index) => commands.indexOf(id) !== index)
+  if (duplicate) {
+    throw new Error(`Cannot expose "${duplicate}" as an MCP tool twice: tool names must be unique`)
+  }
+
   return Promise.all(
-    (options.commands ?? mcpToolCommands).map(async (commandId) => {
+    commands.map(async (commandId) => {
       const command = config.findCommand(commandId)
       if (!command) {
         throw new Error(`Cannot expose "${commandId}" as an MCP tool: no such command`)
@@ -156,7 +162,9 @@ function toToolDefinition(
   policy: CommandPolicy,
   CommandClass: Command.Class,
 ): McpToolDefinition {
-  const properties: Record<string, McpToolInputProperty> = {}
+  // Null prototype: a flag or arg named like an Object member (`toString`,
+  // `__proto__`) must behave like any other name.
+  const properties: Record<string, McpToolInputProperty> = Object.create(null)
   const required: string[] = []
 
   const positionalArguments: string[] = []
@@ -197,12 +205,22 @@ function toToolDefinition(
   const flagKinds: Record<string, McpToolFlagKind> = {}
   let forceJson = command.enableJsonFlag === true
   for (const flag of Object.values(command.flags)) {
-    if (flag.hidden || deniedFlags.has(flag.name)) continue
+    if (flag.hidden) {
+      // A hidden flag can't be advertised, and a required one would then
+      // fail every call at parse.
+      if (flag.required) {
+        throw new Error(
+          `Cannot expose "${command.id}" as an MCP tool: hidden required flags are not supported`,
+        )
+      }
+      continue
+    }
+    if (deniedFlags.has(flag.name)) continue
     if (flag.type === 'boolean' && flag.name === 'json') {
       forceJson = true
       continue
     }
-    if (properties[flag.name]) {
+    if (Object.hasOwn(properties, flag.name)) {
       throw new Error(`Command "${command.id}" has an argument and a flag both named ${flag.name}`)
     }
     const overrides = mcpFlagOverrides(loadedFlags[flag.name])
@@ -241,11 +259,8 @@ function toToolDefinition(
 function toProperty(flag: Command.Flag.Cached, mcpDescription?: string): McpToolInputProperty {
   const summary = mcpDescription ?? flag.summary ?? flag.description
   // Without stated defaults a caller can't know what omitting a flag means.
-  // A boolean's false default is what omission means anyway.
-  const hasDefault =
-    typeof flag.default === 'boolean'
-      ? flag.default === true
-      : ['number', 'string'].includes(typeof flag.default)
+  // (oclif never caches boolean defaults, so only these types occur.)
+  const hasDefault = ['number', 'string'].includes(typeof flag.default)
   const description = [summary, hasDefault && `(default: ${flag.default})`]
     .filter(Boolean)
     .join(' ')
@@ -284,12 +299,17 @@ export function mcpToolInputToArgv(
   if (definition.forceJson) argv.push('--json')
 
   for (const [name, kind] of Object.entries(definition.flagKinds)) {
-    const value = input[name]
+    const value = Object.hasOwn(input, name) ? input[name] : undefined
     if (value === undefined) continue
 
     if (kind === 'boolean' || kind === 'booleanAllowNo') {
+      // Coercing here would silently DROP e.g. the string "true", and a
+      // dropped flag never reaches the parser to be rejected.
+      if (typeof value !== 'boolean') {
+        throw new TypeError(`Flag "${name}" expects a boolean, got ${typeof value}`)
+      }
       if (value === true) argv.push(`--${name}`)
-      else if (value === false && kind === 'booleanAllowNo') argv.push(`--no-${name}`)
+      else if (kind === 'booleanAllowNo') argv.push(`--no-${name}`)
     } else if (kind === 'multiple') {
       for (const item of Array.isArray(value) ? value : [value]) {
         argv.push(`--${name}`, String(item))
@@ -304,7 +324,10 @@ export function mcpToolInputToArgv(
   const positionals: string[] = []
   let missingPositional: string | undefined
   for (const name of definition.positionalArguments) {
-    if (input[name] === undefined) {
+    // Own-property reads: an absent input named `toString` must not resolve
+    // to Object.prototype's.
+    const raw = Object.hasOwn(input, name) ? input[name] : undefined
+    if (raw === undefined) {
       missingPositional ??= name
       continue
     }
@@ -313,7 +336,7 @@ export function mcpToolInputToArgv(
         `Cannot pass "${name}" without "${missingPositional}": positional arguments fill in order`,
       )
     }
-    const value = String(input[name])
+    const value = String(raw)
     if (value === '') {
       throw new Error(`Positional argument "${name}" cannot be empty`)
     }
