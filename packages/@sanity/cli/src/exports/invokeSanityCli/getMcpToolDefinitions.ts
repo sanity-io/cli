@@ -162,11 +162,55 @@ function toToolDefinition(
   policy: CommandPolicy,
   CommandClass: Command.Class,
 ): McpToolDefinition {
-  // Null prototype: a flag or arg named like an Object member (`toString`,
+  // Positional arguments and flags share one schema (and its `required`
+  // list), so both collectors write into the same accumulators. Null
+  // prototype: a flag or arg named like an Object member (`toString`,
   // `__proto__`) must behave like any other name.
   const properties: Record<string, McpToolInputProperty> = Object.create(null)
   const required: string[] = []
 
+  const positionalArguments = collectArguments(command, properties, required)
+  const {flagKinds, forceJson} = collectFlags(command, policy, CommandClass, properties, required)
+
+  return {
+    commandId: command.id,
+    description:
+      (CommandClass as {mcpOverrides?: {description?: string}}).mcpOverrides?.description ??
+      command.description ??
+      command.summary ??
+      '',
+    flagKinds,
+    forceJson,
+    inputSchema: {
+      additionalProperties: false,
+      properties,
+      ...(required.length > 0 && {required}),
+      type: 'object',
+    },
+    name: command.id.replaceAll(':', '_'),
+    positionalArguments,
+    readOnly: policy.readOnly === true,
+    title: toTitle(command.id),
+  }
+}
+
+/** `context:imports:list` → `Context Imports List`. */
+function toTitle(commandId: string): string {
+  return commandId
+    .split(':')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+/**
+ * Add the command's positional arguments to the schema accumulators and
+ * return their names in declaration order.
+ */
+function collectArguments(
+  command: Command.Loadable,
+  properties: Record<string, McpToolInputProperty>,
+  required: string[],
+): string[] {
   const positionalArguments: string[] = []
   for (const arg of Object.values(command.args)) {
     // The parser fills positionals by declaration order including hidden ones,
@@ -187,7 +231,20 @@ function toToolDefinition(
     }
     if (arg.required) required.push(arg.name)
   }
+  return positionalArguments
+}
 
+/**
+ * Add the command's advertisable flags to the schema accumulators and return
+ * how each maps back to argv, plus whether invocations force `--json`.
+ */
+function collectFlags(
+  command: Command.Loadable,
+  policy: CommandPolicy,
+  CommandClass: Command.Class,
+  properties: Record<string, McpToolInputProperty>,
+  required: string[],
+): {flagKinds: Record<string, McpToolFlagKind>; forceJson: boolean} {
   // Same rule as the policy-scoped help renderer: never advertise surface the
   // policy would refuse.
   const deniedFlags = new Set(isConditionalInvocationPolicy(policy) ? policy.deniedFlags : [])
@@ -230,30 +287,7 @@ function toToolDefinition(
       required.push(flag.name)
     }
   }
-
-  return {
-    commandId: command.id,
-    description:
-      (CommandClass as {mcpOverrides?: {description?: string}}).mcpOverrides?.description ??
-      command.description ??
-      command.summary ??
-      '',
-    flagKinds,
-    forceJson,
-    inputSchema: {
-      additionalProperties: false,
-      properties,
-      ...(required.length > 0 && {required}),
-      type: 'object',
-    },
-    name: command.id.replaceAll(':', '_'),
-    positionalArguments,
-    readOnly: policy.readOnly === true,
-    title: command.id
-      .split(':')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' '),
-  }
+  return {flagKinds, forceJson}
 }
 
 function toProperty(flag: Command.Flag.Cached, mcpDescription?: string): McpToolInputProperty {
