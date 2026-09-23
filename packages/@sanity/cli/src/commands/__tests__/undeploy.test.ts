@@ -777,4 +777,190 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Your project has not been assigned an app ID or a studio hostname')
     expect(stdout).toContain('Nothing to undeploy')
   })
+
+  describe('with an app ID argument', () => {
+    test('undeploys the given studio unattended with --yes', async () => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        uri: '/projects/test/user-applications/arg-id',
+      }).reply(200, {appHost: 'arg-host', id: 'arg-id'})
+
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        method: 'delete',
+        query: {appType: 'studio'},
+        uri: '/user-applications/arg-id',
+      }).reply(200)
+
+      const {error, stderr, stdout} = await testCommand(UndeployCommand, ['arg-id', '--yes'], {
+        mocks: {
+          cliConfig: {api: {projectId: 'test'}},
+          isInteractive: false,
+          token: 'test-token',
+        },
+      })
+
+      expect(error).toBeUndefined()
+      expect(confirm).not.toHaveBeenCalled()
+      expect(stdout).toContain('Studio undeploy scheduled')
+      expect(stderr).not.toContain('instead of')
+    })
+
+    test('undeploys the given application when none is configured', async () => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/arg-id',
+      }).reply(200, {id: 'arg-id', title: 'Arg App'})
+
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        method: 'delete',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/arg-id',
+      }).reply(200)
+
+      const {stdout} = await testCommand(UndeployCommand, ['arg-id', '--yes'], {
+        mocks: {
+          cliConfig: {app: {}},
+          isInteractive: false,
+          token: 'test-token',
+        },
+      })
+
+      expect(stdout).toContain('Application undeploy scheduled')
+    })
+
+    test('prefers the argument over deployment.appId and warns', async () => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/arg-id',
+      }).reply(200, {id: 'arg-id'})
+
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        method: 'delete',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/arg-id',
+      }).reply(200)
+
+      const {stderr, stdout} = await testCommand(UndeployCommand, ['arg-id', '--yes'], {
+        mocks: {
+          cliConfig: {app: {}, deployment: {appId: 'config-id'}},
+          token: 'test-token',
+        },
+      })
+
+      expect(stderr).toMatch(/Using app ID "arg-id" instead of[\s›]+"config-id"/)
+      expect(stdout).toContain('Application undeploy scheduled')
+    })
+
+    test('prefers the argument over the deprecated app.id and warns', async () => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/arg-id',
+      }).reply(404)
+
+      const {stderr, stdout} = await testCommand(UndeployCommand, ['arg-id', '--yes'], {
+        mocks: {
+          cliConfig: {app: {id: 'old-id'}},
+          token: 'test-token',
+        },
+      })
+
+      expect(stderr).toContain('Using app ID "arg-id" instead of "old-id"')
+      expect(stdout).toContain('Nothing to undeploy')
+    })
+
+    test('does not warn when the argument matches deployment.appId', async () => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        uri: '/projects/test/user-applications/same-id',
+      }).reply(404)
+
+      const {stderr} = await testCommand(UndeployCommand, ['same-id', '--yes'], {
+        mocks: {
+          cliConfig: {api: {projectId: 'test'}, deployment: {appId: 'same-id'}},
+          token: 'test-token',
+        },
+      })
+
+      expect(stderr).not.toContain('instead of')
+    })
+
+    test('prefers the argument over studioHost and warns', async () => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        uri: '/projects/test/user-applications/arg-id',
+      }).reply(200, {appHost: 'arg-host', id: 'arg-id'})
+
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        method: 'delete',
+        query: {appType: 'studio'},
+        uri: '/user-applications/arg-id',
+      }).reply(200)
+
+      const {stderr, stdout} = await testCommand(UndeployCommand, ['arg-id', '--json', '--yes'], {
+        mocks: {
+          cliConfig: {api: {projectId: 'test'}, studioHost: 'my-host'},
+          token: 'test-token',
+        },
+      })
+
+      expect(stderr).toMatch(/Using app ID "arg-id" instead of[\s›]+studio host "my-host"/)
+      // The warning stays off stdout, so the JSON payload still parses
+      const payload = JSON.parse(stdout)
+      expect(payload.undeployed).toBe(true)
+      expect(payload.url).toBe('https://arg-host.sanity.studio')
+    })
+
+    test('undeploys the given workbench application', async () => {
+      mockApi({
+        apiVersion: 'vX',
+        uri: '/applications/arg-id',
+      }).reply(200, {
+        id: 'arg-id',
+        organizationId: 'org-1',
+        slug: 'my-app-x1',
+        title: 'My App',
+        type: 'coreApp',
+      })
+
+      const {stdout} = await testCommand(UndeployCommand, ['arg-id', '--dry-run'], {
+        mocks: {
+          cliConfig: {
+            app: defineApplication({
+              entry: './src/App.tsx',
+              organizationId: 'org-1',
+              slug: 'my-app-x1',
+              title: 'My App',
+            }),
+          },
+          token: 'test-token',
+        },
+      })
+
+      expect(stdout).toContain('Undeploys application "My App" (arg-id)')
+    })
+
+    test('rejects an app ID for a config undeploy', async () => {
+      const {error} = await testCommand(UndeployCommand, ['arg-id', '--yes'], {
+        mocks: {
+          cliConfig: {
+            app: unstable_defineMediaLibrary({
+              fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
+              organizationId: 'org-1',
+            }),
+          },
+          token: 'test-token',
+        },
+      })
+
+      expect(error?.message).toContain('An app ID cannot be used to undeploy a config')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    })
+  })
 })
