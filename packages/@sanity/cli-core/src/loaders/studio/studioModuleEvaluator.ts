@@ -57,11 +57,6 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
     code: string,
     module: Readonly<EvaluatedModuleNode>,
   ): Promise<void> {
-    // Every inlined module gets the CommonJS bindings, like vite-node did. Detecting
-    // CommonJS from the source text is not reliable (minified UMD wrappers, bracket
-    // notation and `Object.defineProperty(exports, …)` all evade it), and the extra
-    // bindings are inert in SSR-transformed ESM, which only ever references
-    // `__vite_ssr_*` names.
     return this.runCommonJsModule(context, code, module)
   }
 
@@ -86,14 +81,8 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
       },
       getPrototypeOf: () => Object.prototype,
       set: (_, property, value) => {
-        // The `cjsExports !== value` check has to gate the whole branch: the CommonJS
-        // interop footer `module.exports.__esModule = true; module.exports.default =
-        // module.exports` points `default` at the exports object itself, and assigning
-        // that would replace a real function default with the exports proxy. Falling
-        // through to the generic path leaves the existing `default` untouched.
+        // Keep the module default when CommonJS aliases it back to `module.exports`.
         if (property === 'default' && cjsExports !== value) {
-          // Modules that assign an object to `default` (`exports.default = api`) should
-          // keep their named exports; `exportAll` forwards them onto the namespace.
           exportAll(exports, value)
           exports.default = value
           return true
@@ -140,13 +129,11 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
       normalizedCode = normalizedCode.replace(/^#!.*/, (line) => ' '.repeat(line.length))
     }
 
-    // Use AsyncFunction (same as ESModulesEvaluator) so the shared `startOffset`
-    // ModuleRunner applies to inlined sourcemaps matches this wrapper's padding.
     const AsyncFunction = async function () {}.constructor as new (
       ...args: string[]
     ) => (...args: unknown[]) => Promise<unknown>
     const parameterNames = Object.keys(cjsContext)
-    const runner = new AsyncFunction(...parameterNames, `"use strict";\n${normalizedCode}`)
+    const runner = new AsyncFunction(...parameterNames, `"use strict";{\n${normalizedCode}\n}`)
     await runner(...parameterNames.map((name) => cjsContext[name]))
   }
 }

@@ -17,10 +17,6 @@ import {StudioModuleEvaluator} from '../studioModuleEvaluator.js'
 
 const MODULE_PATH = fileURLToPath(import.meta.url)
 
-/**
- * Evaluates `code` the way `ModuleRunner` does and returns the resulting module
- * namespace, so the assertions below see exactly what an importing module would.
- */
 async function evaluate(code: string): Promise<Record<string, any>> {
   const exports: Record<string, any> = Object.create(null)
   const context = {
@@ -48,12 +44,71 @@ async function evaluate(code: string): Promise<Record<string, any>> {
 }
 
 describe('StudioModuleEvaluator', () => {
+  test.each(['const', 'let', 'var'])(
+    'allows %s declarations to shadow CommonJS bindings',
+    async (declaration) => {
+      const namespace = await evaluate(
+        `${declaration} exports = 'local exports';\n` +
+          `${declaration} module = 'local module';\n` +
+          `${declaration} require = 'local require';\n` +
+          `${declaration} __filename = 'local filename';\n` +
+          `${declaration} __dirname = 'local dirname';\n` +
+          `__vite_ssr_exportName__('bindings', () => [exports, module, require, __filename, __dirname]);\n`,
+      )
+
+      expect(namespace.bindings).toEqual([
+        'local exports',
+        'local module',
+        'local require',
+        'local filename',
+        'local dirname',
+      ])
+      expect(namespace.default).toBeUndefined()
+    },
+  )
+
+  test('preserves strict mode and waits for top-level await', async () => {
+    const namespace = await evaluate(
+      `const value = await Promise.resolve('awaited');\n` +
+        `__vite_ssr_exportName__('value', () => value);\n` +
+        `__vite_ssr_exportName__('topLevelThis', () => this);\n` +
+        `__vite_ssr_exportName__('functionThis', () => (function () { return this })());\n`,
+    )
+
+    expect(namespace.value).toBe('awaited')
+    expect(namespace.topLevelThis).toBeUndefined()
+    expect(namespace.functionThis).toBeUndefined()
+  })
+
+  test('provides CommonJS bindings from the enclosing scope', async () => {
+    const namespace = await evaluate(
+      `const path = require('node:path');\n` +
+        `module.exports = {filename: __filename, dirname: __dirname, basename: path.basename(__filename)};\n`,
+    )
+
+    expect(namespace.default).toEqual({
+      basename: 'studioModuleEvaluator.test.ts',
+      dirname: dirname(MODULE_PATH),
+      filename: MODULE_PATH,
+    })
+  })
+
+  test('preserves CommonJS bindings when var declarations redeclare them', async () => {
+    const namespace = await evaluate(
+      `var exports, module, require, __filename, __dirname;\n` +
+        `exports.filename = __filename;\n` +
+        `exports.dirname = __dirname;\n` +
+        `module.exports.basename = require('node:path').basename(__filename);\n`,
+    )
+
+    expect(namespace.default).toEqual({
+      basename: 'studioModuleEvaluator.test.ts',
+      dirname: dirname(MODULE_PATH),
+      filename: MODULE_PATH,
+    })
+  })
+
   test('gives minified UMD modules a callable default export', async () => {
-    // A minified UMD wrapper mentions `exports` and `module` only through
-    // `typeof` checks and single-letter parameters, so it cannot be recognized
-    // as CommonJS from its source text. Without the CommonJS bindings it takes
-    // its browser-global branch and exports nothing, and the importing module
-    // ends up calling `undefined`.
     const namespace = await evaluate(
       `!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):` +
         `"function"==typeof define&&define.amd?define(["exports"],t):` +
@@ -123,9 +178,6 @@ describe('StudioModuleEvaluator', () => {
   })
 
   test('keeps the function default when a module points `default` back at `module.exports`', async () => {
-    // The CommonJS interop footer that every `@babel/runtime` helper ends with
-    // assigns the exports object to its own `default`, which must not replace the
-    // function the module already exported.
     const namespace = await evaluate(
       `"use strict";\n` +
         `function impl(x) {return "impl:" + x}\n` +
@@ -136,7 +188,6 @@ describe('StudioModuleEvaluator', () => {
 
     expect(namespace.default).toBeTypeOf('function')
     expect(namespace.default('value')).toBe('impl:value')
-    // A `default` that resolves back to itself is the self-referential exports object.
     expect(namespace.default.default).not.toBe(namespace.default)
   })
 
