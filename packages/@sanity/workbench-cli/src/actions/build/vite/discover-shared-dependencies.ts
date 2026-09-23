@@ -4,6 +4,7 @@ import path from 'node:path'
 import {createBuilder, createLogger, type InlineConfig, type Plugin, type PluginOption} from 'vite'
 
 import {FEDERATION_DIR_NAME} from './constants.js'
+import {getFederationHostApi} from './plugins/plugin-federation-host.js'
 import {getFederationApi} from './plugins/plugin-module-federation.js'
 import {
   aliasMayRewriteSharedImport,
@@ -50,7 +51,10 @@ export async function buildFederatedApp(
     (plugin) => plugin.api?.sanityFederation === federation,
   )
   const sharing = discovery.getSharing()
-  const replacement = federation.create('disabledReason' in sharing ? undefined : sharing)
+  const enabledSharing = 'disabledReason' in sharing ? undefined : sharing
+  const host = getFederationHostApi(plugins)
+  host?.provide(enabledSharing)
+  const replacement = federation.create(enabledSharing)
   const builder = await createBuilder({
     ...config,
     plugins: plugins.flatMap((plugin): PluginOption[] => {
@@ -64,7 +68,8 @@ export async function buildFederatedApp(
       `Dependency sharing disabled: ${sharing.disabledReason}. Dependencies will be bundled locally.`,
     )
   }
-  await (reuseStandaloneBuild
+  // A reused standalone build served the host module before discovery settled its providers.
+  await (reuseStandaloneBuild && !host?.requested
     ? builder.build(builder.environments[FEDERATION_DIR_NAME])
     : builder.buildApp())
 }
