@@ -1,5 +1,22 @@
 # @sanity/workbench-cli
 
+## 2.7.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.6.0...workbench-cli-v2.7.0)
+
+_2026-09-23_
+
+### Features
+
+- **workbench-cli:** pause hidden federated apps through the render harness ([#1912](https://github.com/sanity-io/cli/pull/1912)) ([520651b](https://github.com/sanity-io/cli/commit/520651b8a6e22bb09f677dee90fbce131c964499))
+
+  The generated remote entry now wraps the app's tree in the remote's own React
+  `<Activity>` and exposes a lifecycle controller, so the workbench can pause a
+  federated app instead of just hiding it. `render()` now returns
+  `{dispose, setLifecycle}` instead of a disposer function — breaking for any host
+  that calls the return value directly — and the remote must bundle React ≥19.2
+  for `<Activity>`.
+
 ## 2.6.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.5.2...workbench-cli-v2.6.0)
