@@ -4,30 +4,34 @@ import {type ModuleFederationOptions} from '@module-federation/vite'
 import {valid as validSemver} from 'semver'
 
 interface SharedDependency {
-  // Package name used for import matching and in the share scope.
+  // Package name used for import matching and in share scope names.
   name: string
 
-  // Optional packages do not disable sharing when an app does not use them.
-  optional?: boolean
-  // Share this package only alongside the named one, which has to be listed before it.
-  requires?: string
-  // `false` selects this package's exact version without splitting the React compatibility group.
-  scope?: false
+  // Consumers only take this package from an app sharing the same version of the named package,
+  // which has to be listed before it.
+  pinnedTo?: string
   // `false` checks compatibility without publishing the package as a provider.
   share?: false
 }
 
-// Add approved packages here; versions contribute to the scope unless explicitly excluded.
-const sharedDependencies: readonly SharedDependency[] = [
+// React and its renderer must agree, so every share scope is named after these exact versions and a
+// problem with any of them keeps all dependencies local.
+const reactDependencies: readonly SharedDependency[] = [
   {name: 'react'},
   {name: 'react-dom'},
-  // React DOM owns scheduler's mutable queue, so only its version joins the scope.
+  // React DOM owns scheduler's mutable queue, so only its version joins the share scope name.
   {name: 'scheduler', share: false},
-  {name: 'styled-components', optional: true, scope: false},
-  // A consumed @sanity/ui carries the provider's styled-components, and its ThemeProvider writes
-  // the theme into that instance's context, where a local styled-components cannot read it.
-  {name: '@sanity/ui', optional: true, requires: 'styled-components', scope: false},
 ]
+
+// Each of these is shared at its exact version when it can be, and otherwise stays local alone.
+const optionalDependencies: readonly SharedDependency[] = [
+  {name: 'styled-components'},
+  // @sanity/ui's ThemeProvider writes the theme into its own styled-components' context, where
+  // an app's `styled` components only read it when both come from the same copy.
+  {name: '@sanity/ui', pinnedTo: 'styled-components'},
+]
+
+const sharedDependencies = [...reactDependencies, ...optionalDependencies]
 
 // Vite injects these aliases for its own modules; neither can redirect a shared package import.
 const viteInternalAliases = new Set([/^\/?@vite\/client/.source, /^\/?@vite\/env/.source])
@@ -65,17 +69,19 @@ export function createFederationSharing(
   const versions = resolveCompatibleVersions(dependencies)
   if (!(versions instanceof Map)) return versions
 
-  // React and its renderer must agree; styled-components and @sanity/ui select their own exact version in this share scope.
-  const shareScope =
-    'sanity-' +
-    sharedDependencies
-      .filter(({scope}) => scope !== false)
-      .map(({name}) => `${name}-${versions.get(name)}`)
-      .join('-')
+  const reactShareScope = `sanity-${reactDependencies.map(({name}) => `${name}-${versions.get(name)}`).join('-')}`
+  const shareScopes = new Map<string, string>()
+  for (const {name, pinnedTo, share} of sharedDependencies) {
+    if (share === false || !versions.has(name)) continue
+    shareScopes.set(name, pinnedTo ? `${reactShareScope}-${pinnedTo}-${versions.get(pinnedTo)}` : reactShareScope)
+  }
+  const shared = createSharedEntries(dependencies, shareScopes)
   return {
-    shared: createSharedEntries(dependencies, shareScope, versions),
+    shared,
     // The array form makes Module Federation use named shareScopes instead of the host's default share scope.
-    shareScope: [shareScope],
+    shareScope: [
+      ...new Set([reactShareScope, ...Object.values(shared).map(({shareScope}) => shareScope)]),
+    ],
     // Prefer a compatible provider that another app already loaded before downloading a local copy.
     shareStrategy: 'loaded-first',
   }
@@ -101,23 +107,18 @@ export function aliasMayRewriteSharedImport(find: RegExp | string): boolean {
 function resolveCompatibleVersions(
   dependencies: ResolvedDependency[],
 ): Map<string, string> | {disabledReason: string} {
+  const copiesOf = (name: string) => dependencies.filter((dependency) => dependency.name === name)
   const versions = new Map<string, string>()
-  for (const {name, optional, requires, scope} of sharedDependencies) {
-    const copies = dependencies.filter((dependency) => dependency.name === name)
-    if (copies.length === 0) {
-      if (optional) continue
-      return {disabledReason: `No installed copy of ${name} was found`}
-    }
-    const unshareable =
-      requires && !versions.has(requires)
-        ? `${name} can only be shared alongside ${requires}`
-        : findUnshareableReason(name, copies)
-    if (unshareable) {
-      // A package outside the scope name leaves the share scope on its own; one that defines it takes the share scope with it.
-      if (scope === false) continue
-      return {disabledReason: unshareable}
-    }
+  for (const {name} of reactDependencies) {
+    const copies = copiesOf(name)
+    const disabledReason = findUnshareableReason(name, copies)
+    if (disabledReason) return {disabledReason}
     versions.set(name, copies[0].version)
+  }
+  for (const {name, pinnedTo} of optionalDependencies) {
+    const copies = copiesOf(name)
+    if (pinnedTo && !versions.has(pinnedTo)) continue
+    if (!findUnshareableReason(name, copies)) versions.set(name, copies[0].version)
   }
 
   // Sharing the renderer without its React import would split hook and context identity.
@@ -133,6 +134,7 @@ function resolveCompatibleVersions(
 }
 
 function findUnshareableReason(name: string, copies: ResolvedDependency[]): string | undefined {
+  if (copies.length === 0) return `No installed copy of ${name} was found`
   const {root, version} = copies[0]
   if (copies.some((copy) => copy.root !== root || copy.version !== version)) {
     return `Multiple installed copies of ${name} were found`
@@ -148,21 +150,16 @@ function findUnshareableReason(name: string, copies: ResolvedDependency[]): stri
 
 function createSharedEntries(
   dependencies: ResolvedDependency[],
-  shareScope: string,
-  versions: Map<string, string>,
+  shareScopes: Map<string, string>,
 ): Record<string, SharedEntry> {
   const entries: Record<string, SharedEntry> = {}
-  const providers = new Set(
-    sharedDependencies
-      .filter(({name, share}) => share !== false && versions.has(name))
-      .map(({name}) => name),
-  )
   for (const {name, specifier, version} of dependencies) {
-    if (!specifier || !providers.has(name)) continue
+    const shareScope = shareScopes.get(name)
+    if (!specifier || !shareScope) continue
     entries[specifier] = {
       eager: false,
       requiredVersion: version,
-      // @module-federation/vite defaults providers to "default" unless each entry repeats this scope.
+      // @module-federation/vite defaults providers to "default" unless each entry names its share scope.
       shareScope,
       singleton: false,
       strictVersion: true,

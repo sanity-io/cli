@@ -1,7 +1,14 @@
 import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {createBuilder, createLogger, type InlineConfig, type Plugin, type PluginOption} from 'vite'
+import {
+  createBuilder,
+  createLogger,
+  type InlineConfig,
+  type Plugin,
+  type PluginOption,
+  type Rollup,
+} from 'vite'
 
 import {FEDERATION_DIR_NAME} from './constants.js'
 import {getFederationHostApi} from './plugins/plugin-federation-host.js'
@@ -217,23 +224,32 @@ function createSharedDependencyDiscovery(environmentName: string): {
         return resolved
       }
 
-      let fromRoot = rootResolutions.get(source)
-      if (!fromRoot) {
-        fromRoot = this.resolve(source, undefined, {skipSelf: true}).then((rootResolved) =>
-          rootResolved && !rootResolved.external ? packageForModule(rootResolved.id) : undefined,
-        )
-        rootResolutions.set(source, fromRoot)
-      }
-      // Fallback providers import the bare specifier from a virtual module, so a specifier the
-      // project root cannot resolve would fail the build; count it without publishing a provider.
-      // Compared by name and version because the two resolutions can spell the same directory
-      // differently (Windows short paths, symlinked installs).
-      const rootPackage = await fromRoot
+      // Fallback providers import the bare specifier from the project root, so a copy the root
+      // resolves differently still counts for the policy but gets no provider.
+      const rootPackage = await resolveFromRoot(this, source)
       const providable =
         rootPackage?.name === dependency.name && rootPackage.version === dependency.version
       dependencies.push(providable ? {...dependency, specifier: source} : dependency)
       return resolved
     },
+  }
+
+  // Callers compare the result by name and version: the same directory can be spelled
+  // differently per resolution (Windows short paths, symlinked installs).
+  function resolveFromRoot(
+    context: Rollup.PluginContext,
+    source: string,
+  ): Promise<ResolvedDependency | undefined> {
+    let pending = rootResolutions.get(source)
+    if (!pending) {
+      pending = context
+        .resolve(source, undefined, {skipSelf: true})
+        .then((resolved) =>
+          resolved && !resolved.external ? packageForModule(resolved.id) : undefined,
+        )
+      rootResolutions.set(source, pending)
+    }
+    return pending
   }
 
   return {

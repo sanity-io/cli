@@ -271,6 +271,19 @@ describe.each([false, true])(
       expect(build.stats.exposes).toEqual(build.manifest.exposes)
     })
 
+    // Pins that @module-federation/vite honors each entry's share scope rather than the container's first.
+    test('registers @sanity/ui in a share scope pinned to the styled-components version', async () => {
+      const {react, ...share scopes} = build.shareScopes
+      expect(share scopes).toEqual({
+        '@sanity/ui': `${react}-styled-components-${await fixtureVersion('styled-components')}`,
+        '@sanity/ui/theme': `${react}-styled-components-${await fixtureVersion('styled-components')}`,
+        'react-dom': react,
+        'react-dom/client': react,
+        'react/jsx-runtime': react,
+        'styled-components': react,
+      })
+    })
+
     test('bundles the shared package stylesheet into the build', () => {
       expect(build.federationAssets).toContain('.sanity-ui-styles')
     })
@@ -518,11 +531,12 @@ describe.each([false, true])(
       const app = await createApp()
       await app.write(
         'App.tsx',
-        `import styled from 'styled-components'
+        `import {Card} from '@sanity/ui'
+import styled from 'styled-components'
 import {shared} from '${FEDERATION_HOST_ID}'
 const Box = styled.div\`color: red;\`
 globalThis.federationHost = shared
-export default function App() { return <Box>Hello</Box> }`,
+export default function App() { return <Box>{Card}</Box> }`,
       )
       build = await app.build({reuseStandaloneBuild})
     }, 60_000)

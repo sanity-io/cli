@@ -9,8 +9,9 @@ import {
 } from '../shared-dependencies.js'
 
 const REACT_SHARE_SCOPE = 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0'
+const SANITY_UI_SHARE_SCOPE = `${REACT_SHARE_SCOPE}-styled-components-6.1.19`
 
-function dependencies(reactVersion = '19.2.0') {
+function dependencies(reactVersion = '19.2.0'): ResolvedDependency[] {
   return [
     {name: 'react', root: '/react', specifier: 'react', version: reactVersion},
     {name: 'react', root: '/react', specifier: 'react/jsx-runtime', version: reactVersion},
@@ -28,42 +29,60 @@ function dependencies(reactVersion = '19.2.0') {
   ]
 }
 
+function withPackage(name: string, patch: Partial<ResolvedDependency>): ResolvedDependency[] {
+  return dependencies().map((entry) => (entry.name === name ? {...entry, ...patch} : entry))
+}
+
+function withoutPackage(name: string): ResolvedDependency[] {
+  return dependencies().filter((entry) => entry.name !== name)
+}
+
 function sharing(resolved: ResolvedDependency[]): FederationSharing {
   const result = createFederationSharing(resolved)
   if ('disabledReason' in result) throw new Error(`sharing disabled: ${result.disabledReason}`)
   return result
 }
 
-const REACT_ONLY = ['react', 'react-dom/client', 'react/jsx-runtime']
-const WITHOUT_SANITY_UI = [...REACT_ONLY, 'styled-components']
-
-function providerNames(resolved: ResolvedDependency[]): string[] {
-  return Object.keys(sharing(resolved).shared).toSorted()
+// Maps each published specifier to its share scope, so one assertion shows what is shared and with whom.
+function shareScopes(resolved: ResolvedDependency[]): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(sharing(resolved).shared).map(([specifier, {shareScope}]) => [
+      specifier,
+      shareScope,
+    ]),
+  )
 }
 
-function provider(version: string) {
+function provider(version: string, shareScope: string) {
   return {
     eager: false,
     requiredVersion: version,
-    shareScope: REACT_SHARE_SCOPE,
+    shareScope,
     singleton: false,
     strictVersion: true,
     version,
   }
 }
 
+const REACT_ONLY = {
+  react: REACT_SHARE_SCOPE,
+  'react-dom/client': REACT_SHARE_SCOPE,
+  'react/jsx-runtime': REACT_SHARE_SCOPE,
+}
+const WITHOUT_SANITY_UI = {...REACT_ONLY, 'styled-components': REACT_SHARE_SCOPE}
+
 describe('shared dependency policy', () => {
   test('publishes each imported specifier at its exact installed version', () => {
     expect(sharing(dependencies())).toEqual({
       shared: {
-        '@sanity/ui': provider('4.2.1'),
-        '@sanity/ui/theme': provider('4.2.1'),
-        react: provider('19.2.0'),
-        'react-dom/client': provider('19.2.0'),
-        'react/jsx-runtime': provider('19.2.0'),
-        'styled-components': provider('6.1.19'),
+        '@sanity/ui': provider('4.2.1', SANITY_UI_SHARE_SCOPE),
+        '@sanity/ui/theme': provider('4.2.1', SANITY_UI_SHARE_SCOPE),
+        react: provider('19.2.0', REACT_SHARE_SCOPE),
+        'react-dom/client': provider('19.2.0', REACT_SHARE_SCOPE),
+        'react/jsx-runtime': provider('19.2.0', REACT_SHARE_SCOPE),
+        'styled-components': provider('6.1.19', REACT_SHARE_SCOPE),
       },
-      shareScope: [REACT_SHARE_SCOPE],
+      shareScope: [REACT_SHARE_SCOPE, SANITY_UI_SHARE_SCOPE],
       shareStrategy: 'loaded-first',
     })
   })
@@ -79,84 +98,61 @@ describe('shared dependency policy', () => {
     ])
   })
 
-  test.each(['6.1.19', '6.0.0'])(
-    'reuses the same React share scope with styled-components %s',
-    (version) => {
-      const resolved = dependencies().map((entry) =>
-        entry.name === 'styled-components' ? {...entry, version} : entry,
-      )
-      expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
-    },
-  )
+  // A consumer takes @sanity/ui together with the provider's styled-components, so the theme
+  // only reaches the consumer's own `styled` components when both apps agree on its version.
+  test('apps on different styled-components versions share React but keep their own @sanity/ui', () => {
+    const home = shareScopes(dependencies())
+    const favorites = shareScopes(withPackage('styled-components', {version: '6.5.2'}))
+    expect(favorites.react).toBe(home.react)
+    expect(favorites['styled-components']).toBe(home['styled-components'])
+    expect(favorites['@sanity/ui']).not.toBe(home['@sanity/ui'])
+    expect(favorites['@sanity/ui']).toBe(`${REACT_SHARE_SCOPE}-styled-components-6.5.2`)
+  })
 
-  test.each(['4.2.1', '5.0.0'])('reuses the same React share scope with @sanity/ui %s', (version) => {
-    const resolved = dependencies().map((entry) =>
-      entry.name === '@sanity/ui' ? {...entry, version} : entry,
-    )
+  test('apps on different @sanity/ui versions share one share scope and match versions at runtime', () => {
+    expect(shareScopes(withPackage('@sanity/ui', {version: '5.0.0'}))).toEqual(shareScopes(dependencies()))
+  })
+
+  test('shares the React share scope alone when only React is installed', () => {
+    const resolved = withoutPackage('styled-components').filter(({name}) => name !== '@sanity/ui')
+    expect(shareScopes(resolved)).toEqual(REACT_ONLY)
     expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
   })
 
-  test.each(['styled-components', '@sanity/ui'])(
-    'reuses the same React share scope without %s',
-    (name) => {
-      const resolved = dependencies().filter((entry) => entry.name !== name)
-      expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
-    },
-  )
-
-  // `sanity` ships `ui5: npm:@sanity/ui@5` alongside `@sanity/ui@4`, so every studio
-  // has two copies; dropping that one package must not cost the app its React share scope.
   test.each([
-    // Dropping styled-components takes @sanity/ui with it; see the `requires` rule below.
-    {name: 'styled-components', survivors: REACT_ONLY},
-    {name: '@sanity/ui', survivors: WITHOUT_SANITY_UI},
-  ])('keeps the rest of the share scope shared when $name has two copies', ({name, survivors}) => {
-    const resolved = [...dependencies(), {name, root: `/second/${name}`, version: '9.9.9'}]
-    expect(providerNames(resolved)).toEqual(survivors)
-    expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
-  })
-
-  // @sanity/ui delivers its theme through styled-components' own context, so a consumed copy
-  // would hand the app a theme its local styled-components cannot read.
-  test.each([
-    {
-      reason: 'is not installed',
-      resolved: dependencies().filter(({name}) => name !== 'styled-components'),
-    },
+    {reason: 'is not installed', resolved: withoutPackage('styled-components')},
     {
       reason: 'has two copies',
       resolved: [...dependencies(), {name: 'styled-components', root: '/second', version: '7.0.0'}],
     },
   ])('keeps @sanity/ui local when styled-components $reason', ({resolved}) => {
-    expect(providerNames(resolved)).toEqual(REACT_ONLY)
+    expect(shareScopes(resolved)).toEqual(REACT_ONLY)
   })
 
-  test.each([
-    {name: 'a local pnpm patch', patch: {root: '/ui_patch_hash=abc'}},
-    {name: 'an unsupported version', patch: {version: '4.2.1+build'}},
-  ])('keeps the rest of the share scope shared when @sanity/ui has $name', ({patch}) => {
-    const resolved = dependencies().map((entry) =>
-      entry.name === '@sanity/ui' ? {...entry, ...patch} : entry,
-    )
-    expect(providerNames(resolved)).toEqual(WITHOUT_SANITY_UI)
+  // `sanity` ships `ui5: npm:@sanity/ui@5` alongside `@sanity/ui@4`, so every studio has two
+  // copies; an optional package that cannot be shared must not cost the app its React share scope.
+  test('keeps only @sanity/ui local when it has two copies', () => {
+    const resolved = [...dependencies(), {name: '@sanity/ui', root: '/ui5', version: '5.0.0'}]
+    expect(shareScopes(resolved)).toEqual(WITHOUT_SANITY_UI)
+    expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
   })
 
   // Discovery reports a copy without a specifier when the project root cannot provide it.
-  test('publishes no provider for a copy that was never imported by name', () => {
+  test('publishes no provider or share scope for a copy that was never imported by name', () => {
     const resolved = [
-      ...dependencies().filter(({name}) => name !== '@sanity/ui'),
+      ...withoutPackage('@sanity/ui'),
       {name: '@sanity/ui', root: '/ui', version: '4.2.1'},
     ]
-    expect(providerNames(resolved)).toEqual(WITHOUT_SANITY_UI)
+    expect(shareScopes(resolved)).toEqual(WITHOUT_SANITY_UI)
     expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
   })
 
   test.each(['react', 'react-dom', 'scheduler'])(
     'keeps an incomplete %s peer group local',
     (name) => {
-      expect(
-        createFederationSharing(dependencies().filter((entry) => entry.name !== name)),
-      ).toEqual({disabledReason: `No installed copy of ${name} was found`})
+      expect(createFederationSharing(withoutPackage(name))).toEqual({
+        disabledReason: `No installed copy of ${name} was found`,
+      })
     },
   )
 
@@ -167,13 +163,9 @@ describe('shared dependency policy', () => {
   })
 
   test('keeps mismatched React and React DOM versions local', () => {
-    expect(
-      createFederationSharing(
-        dependencies().map((entry) =>
-          entry.name === 'react-dom' ? {...entry, version: '19.2.1'} : entry,
-        ),
-      ),
-    ).toEqual({disabledReason: 'React (19.2.0) and React DOM (19.2.1) versions differ'})
+    expect(createFederationSharing(withPackage('react-dom', {version: '19.2.1'}))).toEqual({
+      disabledReason: 'React (19.2.0) and React DOM (19.2.1) versions differ',
+    })
   })
 
   test('keeps the renderer local when the React root import was intercepted', () => {
