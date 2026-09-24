@@ -273,15 +273,16 @@ describe.each([false, true])(
     })
 
     // Pins that @module-federation/vite honors each entry's share scope rather than the container's first.
-    test('registers @sanity/ui in a share scope pinned to the styled-components version', async () => {
-      const {react, ...others} = build.shareScopes
+    test('registers @sanity/ui in a share scope named after its styled-components peer version', async () => {
+      const {react: reactShareScope, ...others} = build.shareScopes
+      const sanityUiShareScope = `${reactShareScope}-styled-components-${await fixtureVersion('styled-components')}`
       expect(others).toEqual({
-        '@sanity/ui': `${react}-styled-components-${await fixtureVersion('styled-components')}`,
-        '@sanity/ui/theme': `${react}-styled-components-${await fixtureVersion('styled-components')}`,
-        'react-dom': react,
-        'react-dom/client': react,
-        'react/jsx-runtime': react,
-        'styled-components': react,
+        '@sanity/ui': sanityUiShareScope,
+        '@sanity/ui/theme': sanityUiShareScope,
+        'react-dom': reactShareScope,
+        'react-dom/client': reactShareScope,
+        'react/jsx-runtime': reactShareScope,
+        'styled-components': reactShareScope,
       })
     })
 
@@ -501,10 +502,13 @@ test('keeps dependencies local when only the federation build reaches a second R
   )
 }, 60_000)
 
-test('shares React in an app without styled-components installed', async () => {
+test('shares only React in an app without styled-components, keeping its @sanity/ui peer local', async () => {
   const app = await createApp()
   await rm(path.join(app.root, 'node_modules/styled-components'), {force: true, recursive: true})
-  await app.write('App.tsx', 'export default function App() { return <div>Hello</div> }')
+  await app.write(
+    'App.tsx',
+    "import {Card} from '@sanity/ui'\nexport default function App() { return <div>{Card}</div> }",
+  )
   await app.write(
     'View.tsx',
     "import App from './App.tsx'; export default {components: App, version: '1.0'}",
@@ -551,7 +555,9 @@ export default function App() { return <Box>{Card}</Box> }`,
         {shareScope: build.shareScopes[name], version},
       ])
       expect(Object.fromEntries(providers)).toEqual(Object.fromEntries(expected))
-      // The React share scope and @sanity/ui's share scope pinned to styled-components
+      expect(Object.fromEntries(providers)).toHaveProperty('react')
+      expect(build.warn).not.toHaveBeenCalled()
+      // The React share scope and @sanity/ui's, named after its styled-components peer
       expect(new Set(Object.values(build.shareScopes)).size).toBe(2)
       for (const shareScope of new Set(Object.values(build.shareScopes))) {
         expect(build.standaloneOutput).toContain(shareScope)

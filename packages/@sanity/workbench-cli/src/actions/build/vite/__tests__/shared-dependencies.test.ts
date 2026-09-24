@@ -10,7 +10,7 @@ import {
 
 const REACT_SHARE_SCOPE = 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0'
 const SANITY_UI_SHARE_SCOPE = `${REACT_SHARE_SCOPE}-styled-components-6.1.19`
-// @sanity/ui 4 peers on styled-components, which pins its share scope to the styled-components version.
+// @sanity/ui 4 peers on styled-components, so its share scope is named after the styled-components version.
 const UI_PEERS = ['react', 'react-dom', 'styled-components']
 
 function dependencies(reactVersion = '19.2.0'): ResolvedDependency[] {
@@ -108,7 +108,7 @@ describe('shared dependency policy', () => {
 
   // A consumer takes @sanity/ui together with the provider's styled-components, so the theme
   // only reaches the consumer's own `styled` components when both apps agree on its version.
-  test('names the @sanity/ui share scope after the styled-components version and keeps the React share scope', () => {
+  test('names the @sanity/ui share scope after its styled-components peer', () => {
     const pinned = `${REACT_SHARE_SCOPE}-styled-components-6.5.2`
     expect(shareScopes(withPackage('styled-components', {version: '6.5.2'}))).toEqual({
       ...WITHOUT_SANITY_UI,
@@ -185,7 +185,7 @@ describe('shared dependency policy', () => {
   })
 
   test.each(['react', 'react-dom', 'scheduler'])(
-    'keeps an incomplete %s peer group local',
+    'keeps everything local when React dependency %s is not installed',
     (name) => {
       expect(createFederationSharing(withoutPackage(name))).toEqual({
         disabledReason: `No installed copy of ${name} was found`,
