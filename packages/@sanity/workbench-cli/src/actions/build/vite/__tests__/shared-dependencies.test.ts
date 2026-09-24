@@ -7,7 +7,7 @@ import {
   type ResolvedDependency,
 } from '../shared-dependencies.js'
 
-const REACT_POOL = 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0'
+const REACT_SHARE_SCOPE = 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0'
 
 function dependencies(reactVersion = '19.2.0') {
   return [
@@ -35,7 +35,7 @@ function provider(version: string) {
   return {
     eager: false,
     requiredVersion: version,
-    shareScope: REACT_POOL,
+    shareScope: REACT_SHARE_SCOPE,
     singleton: false,
     strictVersion: true,
     version,
@@ -51,7 +51,7 @@ describe('shared dependency policy', () => {
         'react/jsx-runtime': provider('19.2.0'),
         'styled-components': provider('6.1.19'),
       },
-      shareScope: [REACT_POOL],
+      shareScope: [REACT_SHARE_SCOPE],
       shareStrategy: 'loaded-first',
     })
   })
@@ -66,18 +66,18 @@ describe('shared dependency policy', () => {
   })
 
   test.each(['6.1.19', '6.0.0'])(
-    'reuses the same React pool with styled-components %s',
+    'reuses the same React share scope with styled-components %s',
     (version) => {
       const resolved = dependencies().map((entry) =>
         entry.name === 'styled-components' ? {...entry, version} : entry,
       )
-      expect(sharing(resolved).shareScope).toEqual([REACT_POOL])
+      expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
     },
   )
 
-  test('reuses the same React pool without styled-components', () => {
+  test('reuses the same React share scope without styled-components', () => {
     const resolved = dependencies().filter(({name}) => name !== 'styled-components')
-    expect(sharing(resolved).shareScope).toEqual([REACT_POOL])
+    expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
   })
 
   test.each(['react', 'react-dom', 'scheduler'])(

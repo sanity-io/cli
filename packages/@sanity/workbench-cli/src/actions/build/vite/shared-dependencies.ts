@@ -54,7 +54,7 @@ export function createFederationSharing(
   const versions = resolveCompatibleVersions(dependencies)
   if (!(versions instanceof Map)) return versions
 
-  // React and its renderer must agree; styled-components selects its own exact version in this pool.
+  // React and its renderer must agree; styled-components selects its own exact version in this share scope.
   const shareScope =
     'sanity-' +
     sharedDependencies
@@ -63,7 +63,7 @@ export function createFederationSharing(
       .join('-')
   return {
     shared: createSharedEntries(dependencies, shareScope),
-    // The array form makes Module Federation use named pools instead of the host's default pool.
+    // The array form makes Module Federation use named share scopes instead of the host's default share scope.
     shareScope: [shareScope],
     // Prefer a compatible provider that another app already loaded before downloading a local copy.
     shareStrategy: 'loaded-first',

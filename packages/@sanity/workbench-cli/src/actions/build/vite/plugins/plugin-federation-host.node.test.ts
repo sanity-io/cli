@@ -9,7 +9,7 @@ import {
   sanityFederationHost,
 } from './plugin-federation-host.js'
 
-const POOL = 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0'
+const SHARE_SCOPE = 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0'
 const HOST_REACT = {copy: 'the host React'}
 
 const sharing: FederationSharing = {
@@ -17,13 +17,13 @@ const sharing: FederationSharing = {
     react: {
       eager: false,
       requiredVersion: '19.2.0',
-      shareScope: POOL,
+      shareScope: SHARE_SCOPE,
       singleton: false,
       strictVersion: true,
       version: '19.2.0',
     },
   },
-  shareScope: [POOL],
+  shareScope: [SHARE_SCOPE],
   shareStrategy: 'loaded-first',
 }
 
@@ -39,7 +39,7 @@ function setUpHost(sharing: FederationSharing | undefined) {
   return {host, load}
 }
 
-test('an app joining the host pool takes the host copy instead of fetching its own', async () => {
+test('an app joining the host share scope takes the host copy instead of fetching its own', async () => {
   const shared = evaluateHostModule(setUpHost(sharing).load('client'), {react: HOST_REACT})
   const host = createInstance({name: 'shell', remotes: [], shared, shareStrategy: 'loaded-first'})
   const app = createInstance({
@@ -50,14 +50,14 @@ test('an app joining the host pool takes the host copy instead of fetching its o
         get: () => {
           throw new Error('the app fetched its own React')
         },
-        scope: [POOL],
+        scope: [SHARE_SCOPE],
         shareConfig: {requiredVersion: '19.2.0', singleton: false, strictVersion: true},
         version: '19.2.0',
       },
     },
     shareStrategy: 'loaded-first',
   })
-  app.initShareScopeMap(POOL, host.shareScopeMap[POOL])
+  app.initShareScopeMap(SHARE_SCOPE, host.shareScopeMap[SHARE_SCOPE])
 
   const factory = await app.loadShare('react')
   expect(factory && factory()).toBe(HOST_REACT)

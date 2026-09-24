@@ -19,15 +19,15 @@ type Manifest = {
 
 type App = Awaited<ReturnType<typeof createApp>>
 
-// Reads the pool each shared package registers into from the emitted share map.
-function findSharedPools(chunks: string[]): Record<string, string> {
+// Reads the share scope each shared package registers into from Module Federation's emitted code.
+function findShareScopes(chunks: string[]): Record<string, string> {
   const quoted = String.raw`["'\`]([^"'\`]+)["'\`]`
   const entry = new RegExp(
     String.raw`name:\s*${quoted},\s*version:\s*${quoted},\s*scope:\s*\[\s*${quoted}`,
     'g',
   )
   return Object.fromEntries(
-    chunks.flatMap((code) => [...code.matchAll(entry)].map(([, name, , pool]) => [name, pool])),
+    chunks.flatMap((code) => [...code.matchAll(entry)].map(([, name, , scope]) => [name, scope])),
   )
 }
 
@@ -98,7 +98,7 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
   } = {}) {
     let federationAssets: string[] = []
     const hostModules: Record<string, string> = {}
-    let sharedPools: Record<string, string> = {}
+    let shareScopes: Record<string, string> = {}
     let standaloneModules: string[] = []
     let standaloneFiles: string[] = []
     const closed = vi.fn()
@@ -143,7 +143,7 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
               federationAssets = Object.values(bundle).flatMap((file) =>
                 file.type === 'asset' ? [String(file.source)] : [],
               )
-              sharedPools = findSharedPools(
+              shareScopes = findShareScopes(
                 Object.values(bundle).flatMap((file) => (file.type === 'chunk' ? [file.code] : [])),
               )
             }
@@ -166,7 +166,7 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
       hooks: {closed, finalized, rendered},
       hostModules,
       manifest: await readJson<Manifest>(path.join(root, 'dist/mf-manifest.json')),
-      sharedPools,
+      shareScopes,
       standaloneModules,
       standaloneOutput: (
         await Promise.all(
@@ -478,7 +478,7 @@ test('shares React in an app without styled-components installed', async () => {
 // The workbench shell loads federated apps from a standalone build, which never initializes
 // a federation container of its own.
 describe.each([false, true])(
-  'a standalone host importing the share map, standalone build reused before discovery: %s',
+  'a standalone host importing its shared dependencies, standalone build reused before discovery: %s',
   (reuseStandaloneBuild) => {
     let build: Awaited<ReturnType<App['build']>>
 
@@ -495,17 +495,19 @@ export default function App() { return <Box>Hello</Box> }`,
       build = await app.build({reuseStandaloneBuild})
     }, 60_000)
 
-    test('hands its apps its own copies in the pools of its federation build', () => {
+    test('hands its apps its own copies in the share scopes of its federation build', () => {
       const providers = Object.entries(evaluateHostModule(build.hostModules.client)).map(
-        ([name, provider]) => [name, {pool: provider.scope[0], version: provider.version}],
+        ([name, provider]) => [name, {shareScope: provider.scope[0], version: provider.version}],
       )
-      const pools = build.manifest.shared.map(({name, version}) => [
+      const expected = build.manifest.shared.map(({name, version}) => [
         name,
-        {pool: build.sharedPools[name], version},
+        {shareScope: build.shareScopes[name], version},
       ])
-      expect(Object.fromEntries(providers)).toEqual(Object.fromEntries(pools))
-      for (const pool of new Set(Object.values(build.sharedPools))) {
-        expect(build.standaloneOutput).toContain(pool)
+      expect(Object.fromEntries(providers)).toEqual(Object.fromEntries(expected))
+      expect(Object.fromEntries(providers)).toHaveProperty('react')
+      expect(build.warn).not.toHaveBeenCalled()
+      for (const shareScope of new Set(Object.values(build.shareScopes))) {
+        expect(build.standaloneOutput).toContain(shareScope)
       }
     })
 
