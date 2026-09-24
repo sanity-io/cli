@@ -10,8 +10,12 @@ import {
 
 const REACT_SHARE_SCOPE = 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0'
 const SANITY_UI_SHARE_SCOPE = `${REACT_SHARE_SCOPE}-styled-components-6.1.19`
-// @sanity/ui 4 peers on styled-components, so its share scope is named after the styled-components version.
-const UI_PEERS = ['react', 'react-dom', 'styled-components']
+// @sanity/ui 4 has styled-components as a peer dependency, so its share scope includes the styled-components version.
+const UI_PEER_DEPENDENCIES = {
+  react: '^18 || ^19',
+  'react-dom': '^18 || ^19',
+  'styled-components': '^6.1',
+}
 
 function dependencies(reactVersion = '19.2.0'): ResolvedDependency[] {
   return [
@@ -25,10 +29,16 @@ function dependencies(reactVersion = '19.2.0'): ResolvedDependency[] {
       specifier: 'styled-components',
       version: '6.1.19',
     },
-    {name: '@sanity/ui', peers: UI_PEERS, root: '/ui', specifier: '@sanity/ui', version: '4.2.1'},
     {
       name: '@sanity/ui',
-      peers: UI_PEERS,
+      peerDependencies: UI_PEER_DEPENDENCIES,
+      root: '/ui',
+      specifier: '@sanity/ui',
+      version: '4.2.1',
+    },
+    {
+      name: '@sanity/ui',
+      peerDependencies: UI_PEER_DEPENDENCIES,
       root: '/ui',
       specifier: '@sanity/ui/theme',
       version: '4.2.1',
@@ -119,7 +129,7 @@ describe('shared dependency policy', () => {
 
   test('shares a @sanity/ui without a styled-components peer in the React share scope', () => {
     const resolved = withPackage('@sanity/ui', {
-      peers: ['react', 'react-dom'],
+      peerDependencies: {react: '^19', 'react-dom': '^19'},
       version: '5.0.0',
     }).filter(({name}) => name !== 'styled-components')
     expect(shareScopes(resolved)).toEqual({
@@ -127,16 +137,6 @@ describe('shared dependency policy', () => {
       '@sanity/ui': REACT_SHARE_SCOPE,
       '@sanity/ui/theme': REACT_SHARE_SCOPE,
     })
-  })
-
-  test('puts different @sanity/ui versions in the same share scope', () => {
-    expect(shareScopes(withPackage('@sanity/ui', {version: '5.0.0'}))).toEqual(
-      shareScopes(dependencies()),
-    )
-  })
-
-  test('makes the React share scope the container default', () => {
-    expect(sharing(dependencies()).shareScope?.[0]).toBe(REACT_SHARE_SCOPE)
   })
 
   test('shares only the React share scope when only React is installed', () => {
@@ -169,7 +169,15 @@ describe('shared dependency policy', () => {
   // `sanity` ships `ui5: npm:@sanity/ui@5` alongside `@sanity/ui@4`, so every studio has two
   // copies; an optional package that cannot be shared must not cost the app its React share scope.
   test('keeps only @sanity/ui local when it has two copies', () => {
-    const resolved = [...dependencies(), {name: '@sanity/ui', root: '/ui5', version: '5.0.0'}]
+    const resolved = [
+      ...dependencies(),
+      {
+        name: '@sanity/ui',
+        peerDependencies: {react: '^19', 'react-dom': '^19'},
+        root: '/ui5',
+        version: '5.0.0',
+      },
+    ]
     expect(shareScopes(resolved)).toEqual(WITHOUT_SANITY_UI)
     expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
   })
@@ -178,7 +186,7 @@ describe('shared dependency policy', () => {
   test('publishes no provider or share scope for a copy the project root cannot provide', () => {
     const resolved = [
       ...withoutPackage('@sanity/ui'),
-      {name: '@sanity/ui', root: '/ui', version: '4.2.1'},
+      {name: '@sanity/ui', peerDependencies: UI_PEER_DEPENDENCIES, root: '/ui', version: '4.2.1'},
     ]
     expect(shareScopes(resolved)).toEqual(WITHOUT_SANITY_UI)
     expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])

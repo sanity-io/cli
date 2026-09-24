@@ -166,8 +166,12 @@ function createSharedDependencyDiscovery(environmentName: string): {
         disabledReason ??= `${manifest.name} has no version in its package.json`
         return
       }
-      const peers = Object.keys(manifest.peerDependencies ?? {})
-      return {name: manifest.name, peers, root: directory, version: manifest.version}
+      return {
+        name: manifest.name,
+        peerDependencies: manifest.peerDependencies,
+        root: directory,
+        version: manifest.version,
+      }
     }
   }
 
@@ -217,8 +221,8 @@ function createSharedDependencyDiscovery(environmentName: string): {
         return resolved
       }
 
-      // Fallback providers import the bare specifier from the project root. Name and version identify
-      // the copy, since one directory can be spelled differently per resolution (Windows short paths).
+      // The fallback provider imports `source` from the project root, so only publish it when the root
+      // resolves the same name and version. Directories can't be compared: Windows spells some two ways.
       const root = await this.resolve(source, undefined, {skipSelf: true})
       const rootPackage = root && !root.external ? await packageForModule(root.id) : undefined
       const providable =

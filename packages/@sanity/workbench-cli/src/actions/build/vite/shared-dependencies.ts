@@ -4,24 +4,22 @@ import {type ModuleFederationOptions} from '@module-federation/vite'
 import {valid as validSemver} from 'semver'
 
 interface SharedDependency {
-  // Package name used for import matching and in share scope names.
   name: string
 
-  // `false` checks compatibility without publishing the package as a provider.
+  // `false` means the version must match, but the package is not shared.
   share?: false
 }
 
-// React and its renderer must agree, so every share scope is named after these exact versions,
-// and a problem with any of them keeps all dependencies local.
+// If any of these can't be shared, nothing is shared.
 const reactDependencies: readonly SharedDependency[] = [
   {name: 'react'},
   {name: 'react-dom'},
-  // React DOM owns scheduler's mutable queue, so only its version joins the share scope name.
+  // react-dom keeps its task queue in scheduler, so scheduler is bundled with react-dom.
   {name: 'scheduler', share: false},
 ]
 
-// Each of these is shared at its exact version when it can be, and otherwise stays local alone.
-// A package comes after the shared packages it peers on.
+// If one of these can't be shared, only that package stays in the app bundle.
+// List a package after the packages from this list it has as peer dependencies.
 const optionalDependencies: readonly SharedDependency[] = [
   {name: 'styled-components'},
   {name: '@sanity/ui'},
@@ -29,7 +27,7 @@ const optionalDependencies: readonly SharedDependency[] = [
 
 const sharedDependencies = [...reactDependencies, ...optionalDependencies]
 
-// Vite injects these aliases for its own modules; neither can redirect a shared package import.
+// Vite adds these aliases for its own client modules. They never match a shared package.
 const viteInternalAliases = new Set([/^\/?@vite\/client/.source, /^\/?@vite\/env/.source])
 
 export interface ResolvedDependency {
@@ -37,8 +35,8 @@ export interface ResolvedDependency {
   root: string
   version: string
 
-  // Peer dependencies from its package.json.
-  peers?: string[]
+  peerDependencies?: Record<string, string>
+  // Set when the project root resolves the same copy, so the fallback provider can import it.
   specifier?: string
 }
 
@@ -57,35 +55,9 @@ export function findSharedDependencyName(specifier: string): string | undefined 
     ({name}) => specifier === name || specifier.startsWith(`${name}/`),
   )
   if (!entry) return undefined
-  // A subpath with a file extension (`@sanity/ui/styles.css`) is an asset the share scope cannot serve.
+
+  // Share scopes only serve JavaScript modules. Files like `@sanity/ui/styles.css` stay in the app.
   return specifier !== entry.name && path.extname(specifier) ? undefined : entry.name
-}
-
-export function createFederationSharing(
-  dependencies: ResolvedDependency[],
-): FederationSharing | {disabledReason: string} {
-  const versions = resolveCompatibleVersions(dependencies)
-  if (!(versions instanceof Map)) return versions
-
-  const reactVersions = reactDependencies.map(({name}) => `${name}-${versions.get(name)}`)
-  const reactShareScope = `sanity-${reactVersions.join('-')}`
-  const shareScopes = new Map<string, string>()
-  for (const {name, share} of sharedDependencies) {
-    if (share === false || !versions.has(name)) continue
-    const peers = sharedPeers(dependencies, name).map((peer) => `-${peer}-${versions.get(peer)}`)
-    shareScopes.set(name, reactShareScope + peers.join(''))
-  }
-  const shared = createSharedEntries(dependencies, shareScopes)
-  return {
-    shared,
-    // The array form makes Module Federation use these named share scopes instead of the host's
-    // default; it treats the first as the container's default, so the React share scope leads.
-    shareScope: [
-      ...new Set([reactShareScope, ...Object.values(shared).map(({shareScope}) => shareScope)]),
-    ],
-    // Prefer a compatible provider that another app already loaded before downloading a local copy.
-    shareStrategy: 'loaded-first',
-  }
 }
 
 export function aliasMayRewriteSharedImport(find: RegExp | string): boolean {
@@ -99,30 +71,45 @@ export function aliasMayRewriteSharedImport(find: RegExp | string): boolean {
   if (find.ignoreCase || find.multiline) return true
   if (viteInternalAliases.has(find.source)) return false
 
-  // Only accept a literal prefix like /^@app\//; more complex regexes may also match shared imports.
+  // Only a literal prefix like /^@app\// is known to be safe. Any other regex might match a shared import.
   const namespace = find.source.match(/^\^([@\w-]+)\\\/$/u)?.[1]
   if (!namespace) return true
   return sharedDependencies.some(({name}) => name === namespace || name.startsWith(`${namespace}/`))
 }
 
-function resolveCompatibleVersions(
+export function createFederationSharing(
+  dependencies: ResolvedDependency[],
+): FederationSharing | {disabledReason: string} {
+  const shareScopes = assignShareScopes(dependencies)
+  if ('disabledReason' in shareScopes) return shareScopes
+
+  const shared = createSharedEntries(dependencies, shareScopes)
+  return {
+    shared,
+    // Module Federation uses the first share scope as the container default.
+    shareScope: [...new Set([shared.react, ...Object.values(shared)].map((e) => e.shareScope))],
+    // Use a copy that another app already loaded before downloading this app's copy.
+    shareStrategy: 'loaded-first',
+  }
+}
+
+// Returns the share scope for every shared package. Apps only exchange a package when they use the
+// same share scope, so the name contains the exact versions that must match:
+// - React share scope: the react, react-dom and scheduler versions
+// - Optional package: the React share scope plus the version of each shared peer dependency
+function assignShareScopes(
   dependencies: ResolvedDependency[],
 ): Map<string, string> | {disabledReason: string} {
   const copiesOf = (name: string) => dependencies.filter((dependency) => dependency.name === name)
   const versions = new Map<string, string>()
+
   for (const {name} of reactDependencies) {
     const copies = copiesOf(name)
     const disabledReason = findUnshareableReason(name, copies)
     if (disabledReason) return {disabledReason}
     versions.set(name, copies[0].version)
   }
-  for (const {name} of optionalDependencies) {
-    const copies = copiesOf(name)
-    if (sharedPeers(dependencies, name).some((peer) => !versions.has(peer))) continue
-    if (!findUnshareableReason(name, copies)) versions.set(name, copies[0].version)
-  }
-
-  // Sharing the renderer without its React import would split hook and context identity.
+  // Sharing react-dom while the app bundles its own react would give the app two Reacts.
   if (!dependencies.some(({name, specifier}) => name === 'react' && specifier === 'react')) {
     return {disabledReason: 'The react import could not be resolved to a shared provider'}
   }
@@ -131,27 +118,41 @@ function resolveCompatibleVersions(
       disabledReason: `React (${versions.get('react')}) and React DOM (${versions.get('react-dom')}) versions differ`,
     }
   }
-  return versions
-}
 
-// A consumed package resolves its peers from the app that provided it, so it's only exchanged
-// between apps that share the same versions of those peers.
-function sharedPeers(dependencies: ResolvedDependency[], name: string): string[] {
-  const peers = dependencies.find((dependency) => dependency.name === name)?.peers ?? []
-  return optionalDependencies
-    .map((dependency) => dependency.name)
-    .filter((candidate) => peers.includes(candidate))
+  const reactShareScope = `sanity-${reactDependencies.map(({name}) => `${name}-${versions.get(name)}`).join('-')}`
+  const shareScopes = new Map<string, string>()
+  for (const {name, share} of reactDependencies) {
+    if (share !== false) shareScopes.set(name, reactShareScope)
+  }
+
+  for (const {name} of optionalDependencies) {
+    const copies = copiesOf(name)
+    if (findUnshareableReason(name, copies)) continue
+
+    // The app that loads a shared package also supplies its peer dependencies. When a peer
+    // dependency stays in each app's bundle, the package can't be shared either.
+    const peerDependencies = optionalDependencies
+      .map((dependency) => dependency.name)
+      .filter((peer) => peer in (copies[0].peerDependencies ?? {}))
+    if (peerDependencies.some((peer) => !shareScopes.has(peer))) continue
+
+    versions.set(name, copies[0].version)
+    const peerVersions = peerDependencies.map((peer) => `-${peer}-${versions.get(peer)}`)
+    shareScopes.set(name, reactShareScope + peerVersions.join(''))
+  }
+  return shareScopes
 }
 
 function findUnshareableReason(name: string, copies: ResolvedDependency[]): string | undefined {
   if (copies.length === 0) return `No installed copy of ${name} was found`
+
   const {root, version} = copies[0]
   if (copies.some((copy) => copy.root !== root || copy.version !== version)) {
     return `Multiple installed copies of ${name} were found`
   }
-  // pnpm patch hashes identify different package code under the same version, so patched copies stay local.
+  // A pnpm patch changes the code without changing the version.
   if (root.includes('patch_hash=')) return `${name} has a local pnpm patch`
-  // Semver ignores build metadata, so only its unchanged canonical form is safe to share.
+  // Semver ignores build metadata (`1.0.0+local`), so two different builds would look compatible.
   if (validSemver(version) !== version) {
     return `${name} has an unsupported version: ${JSON.stringify(version)}`
   }
@@ -166,17 +167,18 @@ function createSharedEntries(
   for (const {name, specifier, version} of dependencies) {
     const shareScope = shareScopes.get(name)
     if (!specifier || !shareScope) continue
+
     entries[specifier] = {
       eager: false,
       requiredVersion: version,
-      // @module-federation/vite defaults providers to "default" unless each entry names its share scope.
+      // Without a share scope on the entry, @module-federation/vite puts the provider in "default".
       shareScope,
       singleton: false,
       strictVersion: true,
       version,
     }
   }
-  // Vite resolves imports concurrently, so sort providers to keep generated chunks reproducible.
+  // Vite resolves imports in parallel. Sorting keeps the generated chunks the same across builds.
   return Object.fromEntries(
     Object.entries(entries).toSorted(([left], [right]) => left.localeCompare(right)),
   )
