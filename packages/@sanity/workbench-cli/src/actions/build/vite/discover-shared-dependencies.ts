@@ -166,7 +166,8 @@ function createSharedDependencyDiscovery(environmentName: string): {
         disabledReason ??= `${manifest.name} has no version in its package.json`
         return
       }
-      return {name: manifest.name, root: directory, version: manifest.version}
+      const peers = Object.keys(manifest.peerDependencies ?? {})
+      return {name: manifest.name, peers, root: directory, version: manifest.version}
     }
   }
 
@@ -233,14 +234,17 @@ function createSharedDependencyDiscovery(environmentName: string): {
   }
 }
 
-async function readPackageManifest(
-  directory: string,
-): Promise<{name?: string; version?: string} | undefined> {
+interface PackageManifest {
+  name?: string
+  peerDependencies?: Record<string, string>
+  version?: string
+}
+
+async function readPackageManifest(directory: string): Promise<PackageManifest | undefined> {
   try {
-    return JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8')) as {
-      name?: string
-      version?: string
-    }
+    return JSON.parse(
+      await readFile(path.join(directory, 'package.json'), 'utf8'),
+    ) as PackageManifest
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error

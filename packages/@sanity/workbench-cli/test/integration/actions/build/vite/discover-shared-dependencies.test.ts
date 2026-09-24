@@ -43,8 +43,8 @@ const SANITY_UI_VERSION = '4.99.0'
 
 type Write = (file: string, contents: string) => Promise<void>
 
-// A resolvable stand-in for @sanity/ui: subpath exports plus a stylesheet, which the policy
-// treats differently from module subpaths.
+// A resolvable stand-in for @sanity/ui: subpath exports, a stylesheet (which the policy treats
+// differently from module subpaths) and its styled-components peer.
 async function writePackage(write: Write, directory: string, version: string) {
   const root = `${directory}/@sanity/ui`
   await write(
@@ -52,6 +52,7 @@ async function writePackage(write: Write, directory: string, version: string) {
     JSON.stringify({
       exports: {'.': './index.js', './styles.css': './styles.css', './theme': './theme.js'},
       name: '@sanity/ui',
+      peerDependencies: {'styled-components': '^6.1.0'},
       type: 'module',
       version,
     }),
@@ -273,8 +274,8 @@ describe.each([false, true])(
 
     // Pins that @module-federation/vite honors each entry's share scope rather than the container's first.
     test('registers @sanity/ui in a share scope pinned to the styled-components version', async () => {
-      const {react, ...share scopes} = build.shareScopes
-      expect(share scopes).toEqual({
+      const {react, ...others} = build.shareScopes
+      expect(others).toEqual({
         '@sanity/ui': `${react}-styled-components-${await fixtureVersion('styled-components')}`,
         '@sanity/ui/theme': `${react}-styled-components-${await fixtureVersion('styled-components')}`,
         'react-dom': react,

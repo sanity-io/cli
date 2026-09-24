@@ -10,6 +10,8 @@ import {
 
 const REACT_SHARE_SCOPE = 'sanity-react-19.2.0-react-dom-19.2.0-scheduler-0.27.0'
 const SANITY_UI_SHARE_SCOPE = `${REACT_SHARE_SCOPE}-styled-components-6.1.19`
+// @sanity/ui 4 peers on styled-components, which pins its share scope to the styled-components version.
+const UI_PEERS = ['react', 'react-dom', 'styled-components']
 
 function dependencies(reactVersion = '19.2.0'): ResolvedDependency[] {
   return [
@@ -23,8 +25,14 @@ function dependencies(reactVersion = '19.2.0'): ResolvedDependency[] {
       specifier: 'styled-components',
       version: '6.1.19',
     },
-    {name: '@sanity/ui', root: '/ui', specifier: '@sanity/ui', version: '4.2.1'},
-    {name: '@sanity/ui', root: '/ui', specifier: '@sanity/ui/theme', version: '4.2.1'},
+    {name: '@sanity/ui', peers: UI_PEERS, root: '/ui', specifier: '@sanity/ui', version: '4.2.1'},
+    {
+      name: '@sanity/ui',
+      peers: UI_PEERS,
+      root: '/ui',
+      specifier: '@sanity/ui/theme',
+      version: '4.2.1',
+    },
     {name: '@sanity/sdk', root: '/sdk', specifier: '@sanity/sdk', version: '3.0.0'},
   ]
 }
@@ -109,15 +117,29 @@ describe('shared dependency policy', () => {
     })
   })
 
-  test('puts different @sanity/ui versions in the same share scope', () => {
-    expect(shareScopes(withPackage('@sanity/ui', {version: '5.0.0'}))).toEqual(shareScopes(dependencies()))
+  test('shares a @sanity/ui without a styled-components peer in the React share scope', () => {
+    const resolved = withPackage('@sanity/ui', {
+      peers: ['react', 'react-dom'],
+      version: '5.0.0',
+    }).filter(({name}) => name !== 'styled-components')
+    expect(shareScopes(resolved)).toEqual({
+      ...REACT_ONLY,
+      '@sanity/ui': REACT_SHARE_SCOPE,
+      '@sanity/ui/theme': REACT_SHARE_SCOPE,
+    })
   })
 
-  test('names the React share scope as the container default share scope', () => {
+  test('puts different @sanity/ui versions in the same share scope', () => {
+    expect(shareScopes(withPackage('@sanity/ui', {version: '5.0.0'}))).toEqual(
+      shareScopes(dependencies()),
+    )
+  })
+
+  test('makes the React share scope the container default', () => {
     expect(sharing(dependencies()).shareScope?.[0]).toBe(REACT_SHARE_SCOPE)
   })
 
-  test('shares the React share scope alone when only React is installed', () => {
+  test('shares only the React share scope when only React is installed', () => {
     const resolved = withoutPackage('styled-components').filter(({name}) => name !== '@sanity/ui')
     expect(shareScopes(resolved)).toEqual(REACT_ONLY)
     expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])

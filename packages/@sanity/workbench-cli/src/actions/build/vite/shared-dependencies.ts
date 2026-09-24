@@ -7,15 +7,12 @@ interface SharedDependency {
   // Package name used for import matching and in share scope names.
   name: string
 
-  // Consumers only take this package from an app sharing the same version of the named package,
-  // which has to be listed before it.
-  pinnedTo?: string
   // `false` checks compatibility without publishing the package as a provider.
   share?: false
 }
 
-// React and its renderer must agree, so every share scope is named after these exact versions and a
-// problem with any of them keeps all dependencies local.
+// React and its renderer must agree, so every share scope is named after these exact versions,
+// and a problem with any of them keeps all dependencies local.
 const reactDependencies: readonly SharedDependency[] = [
   {name: 'react'},
   {name: 'react-dom'},
@@ -24,11 +21,10 @@ const reactDependencies: readonly SharedDependency[] = [
 ]
 
 // Each of these is shared at its exact version when it can be, and otherwise stays local alone.
+// A package comes after the shared packages it peers on.
 const optionalDependencies: readonly SharedDependency[] = [
   {name: 'styled-components'},
-  // @sanity/ui's ThemeProvider writes the theme into its own styled-components' context, where
-  // an app's `styled` components only read it when both come from the same copy.
-  {name: '@sanity/ui', pinnedTo: 'styled-components'},
+  {name: '@sanity/ui'},
 ]
 
 const sharedDependencies = [...reactDependencies, ...optionalDependencies]
@@ -41,6 +37,8 @@ export interface ResolvedDependency {
   root: string
   version: string
 
+  // Peer dependencies from its package.json.
+  peers?: string[]
   specifier?: string
 }
 
@@ -72,15 +70,16 @@ export function createFederationSharing(
   const reactVersions = reactDependencies.map(({name}) => `${name}-${versions.get(name)}`)
   const reactShareScope = `sanity-${reactVersions.join('-')}`
   const shareScopes = new Map<string, string>()
-  for (const {name, pinnedTo, share} of sharedDependencies) {
+  for (const {name, share} of sharedDependencies) {
     if (share === false || !versions.has(name)) continue
-    shareScopes.set(name, pinnedTo ? `${reactShareScope}-${pinnedTo}-${versions.get(pinnedTo)}` : reactShareScope)
+    const peers = sharedPeers(dependencies, name).map((peer) => `-${peer}-${versions.get(peer)}`)
+    shareScopes.set(name, reactShareScope + peers.join(''))
   }
   const shared = createSharedEntries(dependencies, shareScopes)
   return {
     shared,
-    // The array form makes Module Federation use named shareScopes instead of the host's default share scope;
-    // it treats the first as the container's default, so the React share scope leads.
+    // The array form makes Module Federation use these named share scopes instead of the host's
+    // default; it treats the first as the container's default, so the React share scope leads.
     shareScope: [
       ...new Set([reactShareScope, ...Object.values(shared).map(({shareScope}) => shareScope)]),
     ],
@@ -117,9 +116,9 @@ function resolveCompatibleVersions(
     if (disabledReason) return {disabledReason}
     versions.set(name, copies[0].version)
   }
-  for (const {name, pinnedTo} of optionalDependencies) {
+  for (const {name} of optionalDependencies) {
     const copies = copiesOf(name)
-    if (pinnedTo && !versions.has(pinnedTo)) continue
+    if (sharedPeers(dependencies, name).some((peer) => !versions.has(peer))) continue
     if (!findUnshareableReason(name, copies)) versions.set(name, copies[0].version)
   }
 
@@ -133,6 +132,15 @@ function resolveCompatibleVersions(
     }
   }
   return versions
+}
+
+// A consumed package resolves its peers from the app that provided it, so it's only exchanged
+// between apps that share the same versions of those peers.
+function sharedPeers(dependencies: ResolvedDependency[], name: string): string[] {
+  const peers = dependencies.find((dependency) => dependency.name === name)?.peers ?? []
+  return optionalDependencies
+    .map((dependency) => dependency.name)
+    .filter((candidate) => peers.includes(candidate))
 }
 
 function findUnshareableReason(name: string, copies: ResolvedDependency[]): string | undefined {
