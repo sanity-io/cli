@@ -92,6 +92,7 @@ catalog:
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
+  - '@module-federation/*'
   - '@portabletext/*'
   - '@sanity/*'
   - '@types/*'
