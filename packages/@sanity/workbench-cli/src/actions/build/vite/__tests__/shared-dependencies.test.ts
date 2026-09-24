@@ -100,17 +100,21 @@ describe('shared dependency policy', () => {
 
   // A consumer takes @sanity/ui together with the provider's styled-components, so the theme
   // only reaches the consumer's own `styled` components when both apps agree on its version.
-  test('apps on different styled-components versions share React but keep their own @sanity/ui', () => {
-    const home = shareScopes(dependencies())
-    const favorites = shareScopes(withPackage('styled-components', {version: '6.5.2'}))
-    expect(favorites.react).toBe(home.react)
-    expect(favorites['styled-components']).toBe(home['styled-components'])
-    expect(favorites['@sanity/ui']).not.toBe(home['@sanity/ui'])
-    expect(favorites['@sanity/ui']).toBe(`${REACT_SHARE_SCOPE}-styled-components-6.5.2`)
+  test('names the @sanity/ui share scope after the styled-components version and keeps the React share scope', () => {
+    const pinned = `${REACT_SHARE_SCOPE}-styled-components-6.5.2`
+    expect(shareScopes(withPackage('styled-components', {version: '6.5.2'}))).toEqual({
+      ...WITHOUT_SANITY_UI,
+      '@sanity/ui': pinned,
+      '@sanity/ui/theme': pinned,
+    })
   })
 
-  test('apps on different @sanity/ui versions share one share scope and match versions at runtime', () => {
+  test('puts different @sanity/ui versions in the same share scope', () => {
     expect(shareScopes(withPackage('@sanity/ui', {version: '5.0.0'}))).toEqual(shareScopes(dependencies()))
+  })
+
+  test('names the React share scope as the container default share scope', () => {
+    expect(sharing(dependencies()).shareScope?.[0]).toBe(REACT_SHARE_SCOPE)
   })
 
   test('shares the React share scope alone when only React is installed', () => {
@@ -125,9 +129,20 @@ describe('shared dependency policy', () => {
       reason: 'has two copies',
       resolved: [...dependencies(), {name: 'styled-components', root: '/second', version: '7.0.0'}],
     },
-  ])('keeps @sanity/ui local when styled-components $reason', ({resolved}) => {
-    expect(shareScopes(resolved)).toEqual(REACT_ONLY)
-  })
+    {
+      reason: 'has a local pnpm patch',
+      resolved: withPackage('styled-components', {root: '/styled_patch_hash=abc'}),
+    },
+    {
+      reason: 'has build metadata in its version',
+      resolved: withPackage('styled-components', {version: '6.1.19+local'}),
+    },
+  ])(
+    'keeps styled-components and @sanity/ui local when styled-components $reason',
+    ({resolved}) => {
+      expect(shareScopes(resolved)).toEqual(REACT_ONLY)
+    },
+  )
 
   // `sanity` ships `ui5: npm:@sanity/ui@5` alongside `@sanity/ui@4`, so every studio has two
   // copies; an optional package that cannot be shared must not cost the app its React share scope.
@@ -138,7 +153,7 @@ describe('shared dependency policy', () => {
   })
 
   // Discovery reports a copy without a specifier when the project root cannot provide it.
-  test('publishes no provider or share scope for a copy that was never imported by name', () => {
+  test('publishes no provider or share scope for a copy the project root cannot provide', () => {
     const resolved = [
       ...withoutPackage('@sanity/ui'),
       {name: '@sanity/ui', root: '/ui', version: '4.2.1'},

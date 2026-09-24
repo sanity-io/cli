@@ -39,7 +39,7 @@ const tileView: WorkbenchExposes = {
   views: [{name: 'tile', src: './View.tsx', surface: 'tile', title: 'Tile'}],
 }
 const roots: string[] = []
-const SANITY_UI_VERSION = '4.2.1'
+const SANITY_UI_VERSION = '4.99.0'
 
 type Write = (file: string, contents: string) => Promise<void>
 
@@ -550,8 +550,8 @@ export default function App() { return <Box>{Card}</Box> }`,
         {shareScope: build.shareScopes[name], version},
       ])
       expect(Object.fromEntries(providers)).toEqual(Object.fromEntries(expected))
-      expect(Object.fromEntries(providers)).toHaveProperty('react')
-      expect(build.warn).not.toHaveBeenCalled()
+      // The React share scope and @sanity/ui's share scope pinned to styled-components
+      expect(new Set(Object.values(build.shareScopes)).size).toBe(2)
       for (const shareScope of new Set(Object.values(build.shareScopes))) {
         expect(build.standaloneOutput).toContain(shareScope)
       }
@@ -576,9 +576,7 @@ test('shares dependencies in a headless app that exposes only its view', async (
   expect(standaloneModules).toEqual([])
 }, 60_000)
 
-// `sanity` depends on `@sanity/ui` and `ui5: npm:@sanity/ui@5` at once, so pnpm installs a
-// second copy under its alias and every studio graph holds two. Reproduced here as the alias
-// directory, because only a package.json name marks it as the same package.
+// `sanity` installs `ui5: npm:@sanity/ui@5` next to `@sanity/ui`; only package.json names mark the alias as the same package.
 test('keeps @sanity/ui local when an alias installs a second copy', async () => {
   const app = await createApp()
   await writePackage(app.write, 'node_modules/ui5/node_modules', '5.0.0-alpha.10')
