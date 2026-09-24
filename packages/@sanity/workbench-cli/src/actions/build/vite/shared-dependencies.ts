@@ -34,12 +34,13 @@ export interface ResolvedDependency {
 }
 
 type SharedEntries = Exclude<ModuleFederationOptions['shared'], string[] | undefined>
+type SharedEntry = Extract<SharedEntries[string], object> & {shareScope: string}
 
 export interface FederationSharing extends Pick<
   ModuleFederationOptions,
   'shareScope' | 'shareStrategy'
 > {
-  shared: SharedEntries
+  shared: Record<string, SharedEntry>
 }
 
 export function findSharedDependencyName(specifier: string): string | undefined {
@@ -125,8 +126,8 @@ function resolveCompatibleVersions(
 function createSharedEntries(
   dependencies: ResolvedDependency[],
   shareScope: string,
-): SharedEntries {
-  const entries: SharedEntries = {}
+): Record<string, SharedEntry> {
+  const entries: Record<string, SharedEntry> = {}
   const providers = new Set(
     sharedDependencies.filter(({share}) => share !== false).map(({name}) => name),
   )

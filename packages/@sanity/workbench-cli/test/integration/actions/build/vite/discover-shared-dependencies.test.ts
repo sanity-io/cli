@@ -6,8 +6,10 @@ import react from '@vitejs/plugin-react'
 import {createLogger, type InlineConfig, normalizePath, type PluginOption} from 'vite'
 import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
 
+import {evaluateHostModule} from '../../../../../src/actions/build/vite/__tests__/federationHostTestHelpers.js'
 import {buildFederatedApp} from '../../../../../src/actions/build/vite/discover-shared-dependencies.js'
 import {federation} from '../../../../../src/actions/build/vite/plugin.js'
+import {FEDERATION_HOST_ID} from '../../../../../src/actions/build/vite/plugins/plugin-federation-host.js'
 import {type WorkbenchExposes} from '../../../../../src/resolveWorkbenchApp.js'
 
 type Manifest = {
@@ -16,6 +18,18 @@ type Manifest = {
 }
 
 type App = Awaited<ReturnType<typeof createApp>>
+
+// Reads the pool each shared package registers into from the emitted share map.
+function findSharedPools(chunks: string[]): Record<string, string> {
+  const quoted = String.raw`["'\`]([^"'\`]+)["'\`]`
+  const entry = new RegExp(
+    String.raw`name:\s*${quoted},\s*version:\s*${quoted},\s*scope:\s*\[\s*${quoted}`,
+    'g',
+  )
+  return Object.fromEntries(
+    chunks.flatMap((code) => [...code.matchAll(entry)].map(([, name, , pool]) => [name, pool])),
+  )
+}
 
 const fixture = path.resolve(
   import.meta.dirname,
@@ -83,6 +97,8 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
     reuseStandaloneBuild?: boolean
   } = {}) {
     let federationAssets: string[] = []
+    const hostModules: Record<string, string> = {}
+    let sharedPools: Record<string, string> = {}
     let standaloneModules: string[] = []
     let standaloneFiles: string[] = []
     const closed = vi.fn()
@@ -127,9 +143,18 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
               federationAssets = Object.values(bundle).flatMap((file) =>
                 file.type === 'asset' ? [String(file.source)] : [],
               )
+              sharedPools = findSharedPools(
+                Object.values(bundle).flatMap((file) => (file.type === 'chunk' ? [file.code] : [])),
+              )
             }
           },
           name: 'test/capture-chunks',
+        },
+        {
+          name: 'test/capture-federation-host',
+          transform(code, id) {
+            if (id === `\0${FEDERATION_HOST_ID}`) hostModules[this.environment.name] = code
+          },
         },
         ...plugins,
       ],
@@ -139,7 +164,9 @@ createRoot(document.getElementById('root')).render(createElement(App))`,
     return {
       federationAssets: federationAssets.join(''),
       hooks: {closed, finalized, rendered},
+      hostModules,
       manifest: await readJson<Manifest>(path.join(root, 'dist/mf-manifest.json')),
+      sharedPools,
       standaloneModules,
       standaloneOutput: (
         await Promise.all(
@@ -447,6 +474,46 @@ test('shares React in an app without styled-components installed', async () => {
   expect(viewSource).not.toContain('styled-components')
   expect(warn).not.toHaveBeenCalled()
 }, 60_000)
+
+// The workbench shell loads federated apps from a standalone build, which never initializes
+// a federation container of its own.
+describe.each([false, true])(
+  'a standalone host importing the share map, standalone build reused before discovery: %s',
+  (reuseStandaloneBuild) => {
+    let build: Awaited<ReturnType<App['build']>>
+
+    beforeAll(async () => {
+      const app = await createApp()
+      await app.write(
+        'App.tsx',
+        `import styled from 'styled-components'
+import {shared} from '${FEDERATION_HOST_ID}'
+const Box = styled.div\`color: red;\`
+globalThis.federationHost = shared
+export default function App() { return <Box>Hello</Box> }`,
+      )
+      build = await app.build({reuseStandaloneBuild})
+    }, 60_000)
+
+    test('hands its apps its own copies in the pools of its federation build', () => {
+      const providers = Object.entries(evaluateHostModule(build.hostModules.client)).map(
+        ([name, provider]) => [name, {pool: provider.scope[0], version: provider.version}],
+      )
+      const pools = build.manifest.shared.map(({name, version}) => [
+        name,
+        {pool: build.sharedPools[name], version},
+      ])
+      expect(Object.fromEntries(providers)).toEqual(Object.fromEntries(pools))
+      for (const pool of new Set(Object.values(build.sharedPools))) {
+        expect(build.standaloneOutput).toContain(pool)
+      }
+    })
+
+    test('leaves its federation build to share through the container', () => {
+      expect(evaluateHostModule(build.hostModules.federation)).toEqual({})
+    })
+  },
+)
 
 test('shares dependencies in a headless app that exposes only its view', async () => {
   const app = await createApp()
