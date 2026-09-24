@@ -179,6 +179,16 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Backups API reference'
   },
   {
+    defaultApiVersion: 'v1',
+    host: 'global',
+    pathPatterns: [
+      'projects/{project_id}/datasets/{dataset_name}/assets/{asset_id}/purges',
+      'projects/{project_id}/datasets/{dataset_name}/purges'
+    ],
+    slug: 'cdn-cache-purge',
+    title: 'CDN Cache Purge API Reference'
+  },
+  {
     defaultApiVersion: 'vX',
     host: 'global',
     pathPatterns: [
