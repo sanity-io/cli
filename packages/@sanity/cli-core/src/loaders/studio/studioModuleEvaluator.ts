@@ -10,15 +10,6 @@ import {
   ssrModuleExportsKey,
 } from 'vite/module-runner'
 
-function isCommonJsCode(code: string): boolean {
-  return (
-    /\bmodule\.exports\b/.test(code) ||
-    /\bexports\.[a-zA-Z_$]/.test(code) ||
-    /(?:^|[;\n])\s*exports\s=/.test(code) ||
-    /(?:^|\n|\s)require\s*\(/.test(code)
-  )
-}
-
 function isPrimitive(value: unknown): boolean {
   return !value || (typeof value !== 'object' && typeof value !== 'function')
 }
@@ -66,10 +57,6 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
     code: string,
     module: Readonly<EvaluatedModuleNode>,
   ): Promise<void> {
-    if (!isCommonJsCode(code)) {
-      return (this.esmEvaluator as ModuleEvaluator).runInlinedModule(context, code, module)
-    }
-
     return this.runCommonJsModule(context, code, module)
   }
 
@@ -94,7 +81,9 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
       },
       getPrototypeOf: () => Object.prototype,
       set: (_, property, value) => {
-        if (property === 'default') {
+        // Keep the module default when CommonJS aliases it back to `module.exports`.
+        if (property === 'default' && cjsExports !== value) {
+          exportAll(exports, value)
           exports.default = value
           return true
         }
@@ -105,7 +94,7 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
           defineExport(exports, String(property), () => {})
           return true
         }
-        if (!isPrimitive(exports.default) && typeof exports.default === 'object') {
+        if (!isPrimitive(exports.default)) {
           ;(exports.default as Record<string, unknown>)[String(property)] = value
         }
         if (property !== 'default') {
@@ -140,13 +129,11 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
       normalizedCode = normalizedCode.replace(/^#!.*/, (line) => ' '.repeat(line.length))
     }
 
-    // Use AsyncFunction (same as ESModulesEvaluator) so the shared `startOffset`
-    // ModuleRunner applies to inlined sourcemaps matches this wrapper's padding.
     const AsyncFunction = async function () {}.constructor as new (
       ...args: string[]
     ) => (...args: unknown[]) => Promise<unknown>
     const parameterNames = Object.keys(cjsContext)
-    const runner = new AsyncFunction(...parameterNames, `"use strict";\n${normalizedCode}`)
+    const runner = new AsyncFunction(...parameterNames, `"use strict";{\n${normalizedCode}\n}`)
     await runner(...parameterNames.map((name) => cjsContext[name]))
   }
 }
