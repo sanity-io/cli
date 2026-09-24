@@ -69,7 +69,8 @@ export function createFederationSharing(
   const versions = resolveCompatibleVersions(dependencies)
   if (!(versions instanceof Map)) return versions
 
-  const reactShareScope = `sanity-${reactDependencies.map(({name}) => `${name}-${versions.get(name)}`).join('-')}`
+  const reactVersions = reactDependencies.map(({name}) => `${name}-${versions.get(name)}`)
+  const reactShareScope = `sanity-${reactVersions.join('-')}`
   const shareScopes = new Map<string, string>()
   for (const {name, pinnedTo, share} of sharedDependencies) {
     if (share === false || !versions.has(name)) continue
@@ -78,7 +79,8 @@ export function createFederationSharing(
   const shared = createSharedEntries(dependencies, shareScopes)
   return {
     shared,
-    // The array form makes Module Federation use named shareScopes instead of the host's default share scope.
+    // The array form makes Module Federation use named shareScopes instead of the host's default share scope;
+    // it treats the first as the container's default, so the React share scope leads.
     shareScope: [
       ...new Set([reactShareScope, ...Object.values(shared).map(({shareScope}) => shareScope)]),
     ],

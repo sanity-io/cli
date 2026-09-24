@@ -1,14 +1,7 @@
 import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {
-  createBuilder,
-  createLogger,
-  type InlineConfig,
-  type Plugin,
-  type PluginOption,
-  type Rollup,
-} from 'vite'
+import {createBuilder, createLogger, type InlineConfig, type Plugin, type PluginOption} from 'vite'
 
 import {FEDERATION_DIR_NAME} from './constants.js'
 import {getFederationHostApi} from './plugins/plugin-federation-host.js'
@@ -157,7 +150,6 @@ function createSharedDependencyDiscovery(environmentName: string): {
 } {
   const dependencies: ResolvedDependency[] = []
   const packageCache = new Map<string, Promise<ResolvedDependency | undefined>>()
-  const rootResolutions = new Map<string, Promise<ResolvedDependency | undefined>>()
   let disabledReason: string | undefined
 
   async function findSharedPackage(id: string): Promise<ResolvedDependency | undefined> {
@@ -224,32 +216,15 @@ function createSharedDependencyDiscovery(environmentName: string): {
         return resolved
       }
 
-      // Fallback providers import the bare specifier from the project root, so a copy the root
-      // resolves differently still counts for the policy but gets no provider.
-      const rootPackage = await resolveFromRoot(this, source)
+      // Fallback providers import the bare specifier from the project root. Name and version identify
+      // the copy, since one directory can be spelled differently per resolution (Windows short paths).
+      const root = await this.resolve(source, undefined, {skipSelf: true})
+      const rootPackage = root && !root.external ? await packageForModule(root.id) : undefined
       const providable =
         rootPackage?.name === dependency.name && rootPackage.version === dependency.version
       dependencies.push(providable ? {...dependency, specifier: source} : dependency)
       return resolved
     },
-  }
-
-  // Callers compare the result by name and version: the same directory can be spelled
-  // differently per resolution (Windows short paths, symlinked installs).
-  function resolveFromRoot(
-    context: Rollup.PluginContext,
-    source: string,
-  ): Promise<ResolvedDependency | undefined> {
-    let pending = rootResolutions.get(source)
-    if (!pending) {
-      pending = context
-        .resolve(source, undefined, {skipSelf: true})
-        .then((resolved) =>
-          resolved && !resolved.external ? packageForModule(resolved.id) : undefined,
-        )
-      rootResolutions.set(source, pending)
-    }
-    return pending
   }
 
   return {
