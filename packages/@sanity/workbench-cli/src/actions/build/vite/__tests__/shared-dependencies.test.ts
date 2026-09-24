@@ -43,6 +43,8 @@ function dependencies(reactVersion = '19.2.0'): ResolvedDependency[] {
       specifier: '@sanity/ui/theme',
       version: '4.2.1',
     },
+    {name: '@sanity/client', root: '/client', specifier: '@sanity/client', version: '8.6.2'},
+    {name: 'groq-js', root: '/groq', specifier: 'groq-js', version: '2.0.0'},
     {name: '@sanity/sdk', root: '/sdk', specifier: '@sanity/sdk', version: '3.0.0'},
   ]
 }
@@ -51,8 +53,8 @@ function withPackage(name: string, patch: Partial<ResolvedDependency>): Resolved
   return dependencies().map((entry) => (entry.name === name ? {...entry, ...patch} : entry))
 }
 
-function withoutPackage(name: string): ResolvedDependency[] {
-  return dependencies().filter((entry) => entry.name !== name)
+function withoutPackage(...names: string[]): ResolvedDependency[] {
+  return dependencies().filter((entry) => !names.includes(entry.name))
 }
 
 function sharing(resolved: ResolvedDependency[]): FederationSharing {
@@ -87,14 +89,22 @@ const REACT_ONLY = {
   'react-dom/client': REACT_SHARE_SCOPE,
   'react/jsx-runtime': REACT_SHARE_SCOPE,
 }
-const WITHOUT_SANITY_UI = {...REACT_ONLY, 'styled-components': REACT_SHARE_SCOPE}
+// @sanity/ui has styled-components as a peer dependency, so it stays local along with it.
+const WITHOUT_STYLED_COMPONENTS = {
+  ...REACT_ONLY,
+  '@sanity/client': REACT_SHARE_SCOPE,
+  'groq-js': REACT_SHARE_SCOPE,
+}
+const WITHOUT_SANITY_UI = {...WITHOUT_STYLED_COMPONENTS, 'styled-components': REACT_SHARE_SCOPE}
 
 describe('shared dependency policy', () => {
   test('publishes each imported specifier at its exact installed version', () => {
     expect(sharing(dependencies())).toEqual({
       shared: {
+        '@sanity/client': provider('8.6.2', REACT_SHARE_SCOPE),
         '@sanity/ui': provider('4.2.1', SANITY_UI_SHARE_SCOPE),
         '@sanity/ui/theme': provider('4.2.1', SANITY_UI_SHARE_SCOPE),
+        'groq-js': provider('2.0.0', REACT_SHARE_SCOPE),
         react: provider('19.2.0', REACT_SHARE_SCOPE),
         'react-dom/client': provider('19.2.0', REACT_SHARE_SCOPE),
         'react/jsx-runtime': provider('19.2.0', REACT_SHARE_SCOPE),
@@ -107,8 +117,10 @@ describe('shared dependency policy', () => {
 
   test('orders providers so repeated builds emit the same chunks', () => {
     expect(Object.keys(sharing(dependencies().toReversed()).shared)).toEqual([
+      '@sanity/client',
       '@sanity/ui',
       '@sanity/ui/theme',
+      'groq-js',
       'react',
       'react-dom/client',
       'react/jsx-runtime',
@@ -133,14 +145,14 @@ describe('shared dependency policy', () => {
       version: '5.0.0',
     }).filter(({name}) => name !== 'styled-components')
     expect(shareScopes(resolved)).toEqual({
-      ...REACT_ONLY,
+      ...WITHOUT_STYLED_COMPONENTS,
       '@sanity/ui': REACT_SHARE_SCOPE,
       '@sanity/ui/theme': REACT_SHARE_SCOPE,
     })
   })
 
   test('shares only the React share scope when only React is installed', () => {
-    const resolved = withoutPackage('styled-components').filter(({name}) => name !== '@sanity/ui')
+    const resolved = withoutPackage('styled-components', '@sanity/ui', '@sanity/client', 'groq-js')
     expect(shareScopes(resolved)).toEqual(REACT_ONLY)
     expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
   })
@@ -162,7 +174,7 @@ describe('shared dependency policy', () => {
   ])(
     'keeps styled-components and @sanity/ui local when styled-components $reason',
     ({resolved}) => {
-      expect(shareScopes(resolved)).toEqual(REACT_ONLY)
+      expect(shareScopes(resolved)).toEqual(WITHOUT_STYLED_COMPONENTS)
     },
   )
 
@@ -182,14 +194,19 @@ describe('shared dependency policy', () => {
     expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
   })
 
-  // Discovery reports a copy without a specifier when the project root cannot provide it.
-  test('publishes no provider or share scope for a copy the project root cannot provide', () => {
+  // Discovery reports a copy without a specifier when the project root resolves another version.
+  test('publishes no provider or share scope when the project root resolves another version', () => {
     const resolved = [
       ...withoutPackage('@sanity/ui'),
       {name: '@sanity/ui', peerDependencies: UI_PEER_DEPENDENCIES, root: '/ui', version: '4.2.1'},
     ]
     expect(shareScopes(resolved)).toEqual(WITHOUT_SANITY_UI)
     expect(sharing(resolved).shareScope).toEqual([REACT_SHARE_SCOPE])
+  })
+
+  test("uses the resolved file as the provider's import", () => {
+    const resolved = withPackage('groq-js', {import: '/groq/dist/index.js'})
+    expect(sharing(resolved).shared['groq-js'].import).toBe('/groq/dist/index.js')
   })
 
   test.each(['react', 'react-dom', 'scheduler'])(
@@ -255,6 +272,7 @@ test.each([
   {name: 'react', specifier: 'react/jsx-runtime'},
   {name: '@sanity/ui', specifier: '@sanity/ui'},
   {name: '@sanity/ui', specifier: '@sanity/ui/theme'},
+  {name: '@sanity/client', specifier: '@sanity/client/csm'},
 ])('resolves $specifier to the shared package $name', ({name, specifier}) => {
   expect(findSharedDependencyName(specifier)).toBe(name)
 })

@@ -23,6 +23,9 @@ const reactDependencies: readonly SharedDependency[] = [
 const optionalDependencies: readonly SharedDependency[] = [
   {name: 'styled-components'},
   {name: '@sanity/ui'},
+  // @sanity/sdk keeps module-level stores and stays in each app. These dependencies of it keep no state.
+  {name: '@sanity/client'},
+  {name: 'groq-js'},
 ]
 
 const sharedDependencies = [...reactDependencies, ...optionalDependencies]
@@ -35,13 +38,16 @@ export interface ResolvedDependency {
   root: string
   version: string
 
+  // Set when the project root can't resolve the package. Module Federation's own lookup would follow
+  // pnpm's NODE_PATH, which Rolldown ignores, and emit an import that fails to build.
+  import?: string
   peerDependencies?: Record<string, string>
-  // Set when the project root resolves the same copy, so the fallback provider can import it.
+  // Set when the fallback provider can import the package, from the project root or from `import`.
   specifier?: string
 }
 
 type SharedEntries = Exclude<ModuleFederationOptions['shared'], string[] | undefined>
-type SharedEntry = Extract<SharedEntries[string], object> & {shareScope: string}
+type SharedEntry = Extract<SharedEntries[string], object> & {import?: string; shareScope: string}
 
 export interface FederationSharing extends Pick<
   ModuleFederationOptions,
@@ -164,12 +170,13 @@ function createSharedEntries(
   shareScopes: Map<string, string>,
 ): Record<string, SharedEntry> {
   const entries: Record<string, SharedEntry> = {}
-  for (const {name, specifier, version} of dependencies) {
+  for (const {import: file, name, specifier, version} of dependencies) {
     const shareScope = shareScopes.get(name)
     if (!specifier || !shareScope) continue
 
     entries[specifier] = {
       eager: false,
+      import: file,
       requiredVersion: version,
       // Without a share scope on the entry, @module-federation/vite puts the provider in "default".
       shareScope,

@@ -610,47 +610,59 @@ export default {components: () => App({extra: Card}), version: '1.0'}`,
   expect(warn).not.toHaveBeenCalled()
 }, 60_000)
 
-// A fallback provider imports the bare specifier from a virtual module at the project root.
-// Publishing one for a transitive copy either fails the Rolldown build, when the root cannot
-// resolve the specifier at all, or serves a different version than the manifest advertises.
-test.each([
-  {rootVersion: undefined, scenario: 'cannot resolve the specifier'},
-  {rootVersion: '5.0.0', scenario: 'resolves the specifier to another version'},
-])(
-  'builds without a provider when the project root $scenario',
-  async ({rootVersion}) => {
-    const app = await createApp()
-    await rm(path.join(app.root, 'node_modules/@sanity/ui'), {force: true, recursive: true})
-    if (rootVersion) await writePackage(app.write, 'node_modules', rootVersion)
-    await writePackage(app.write, 'node_modules/vendor/node_modules', SANITY_UI_VERSION)
-    await app.write(
-      'node_modules/vendor/package.json',
-      JSON.stringify({main: './index.js', name: 'vendor', type: 'module', version: '1.0.0'}),
-    )
-    await app.write('node_modules/vendor/index.js', "export {Card} from '@sanity/ui'")
-    // A direct `@sanity/ui` import would put both copies in the graph and let the policy's
-    // two-copies rule demote the package before the root-resolution check is reached.
-    await app.write(
-      'App.tsx',
-      `import {Card} from 'vendor'
+const REACT_AND_STYLED_PROVIDERS = [
+  'react',
+  'react-dom',
+  'react-dom/client',
+  'react/jsx-runtime',
+  'styled-components',
+]
+
+// Builds an app that reaches `@sanity/ui` only through `vendor`, so the policy sees a single copy.
+// pnpm's bin shim sets NODE_PATH, which lets Module Federation see hoisted copies Rolldown can't.
+async function buildWithTransitiveSanityUi({rootVersion}: {rootVersion?: string} = {}) {
+  const app = await createApp()
+  await rm(path.join(app.root, 'node_modules/@sanity/ui'), {force: true, recursive: true})
+  if (rootVersion) await writePackage(app.write, 'node_modules', rootVersion)
+  await writePackage(app.write, 'node_modules/vendor/node_modules', SANITY_UI_VERSION)
+  await app.write(
+    'node_modules/vendor/package.json',
+    JSON.stringify({main: './index.js', name: 'vendor', type: 'module', version: '1.0.0'}),
+  )
+  await app.write('node_modules/vendor/index.js', "export {Card} from '@sanity/ui'")
+  await app.write(
+    'App.tsx',
+    `import {Card} from 'vendor'
 import styled from 'styled-components'
+import {shared} from '${FEDERATION_HOST_ID}'
+globalThis.federationHost = shared
 const Box = styled.div\`color: red;\`
 export default function App() { return <Box>{Card}</Box> }`,
-    )
-    await app.write(
-      'View.tsx',
-      "import App from './App.tsx'; export default {components: App, version: '1.0'}",
-    )
-    const {manifest, warn} = await app.build({exposes: tileView})
+  )
+  await app.write(
+    'View.tsx',
+    "import App from './App.tsx'; export default {components: App, version: '1.0'}",
+  )
+  return app.build({exposes: tileView})
+}
 
-    expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
-      'react',
-      'react-dom',
-      'react-dom/client',
-      'react/jsx-runtime',
-      'styled-components',
-    ])
-    expect(warn).not.toHaveBeenCalled()
-  },
-  60_000,
-)
+test('shares a transitive copy the project root cannot resolve from its resolved file', async () => {
+  const {hostModules, manifest, warn} = await buildWithTransitiveSanityUi()
+
+  expect(manifest.shared.map(({name}) => name).toSorted()).toEqual([
+    '@sanity/ui',
+    ...REACT_AND_STYLED_PROVIDERS,
+  ])
+  expect(manifest.shared.find(({name}) => name === '@sanity/ui')?.version).toBe(SANITY_UI_VERSION)
+  // Importing the bare specifier would fail the standalone build, as the root can't resolve it.
+  expect(hostModules.client).toContain('/node_modules/vendor/node_modules/@sanity/ui/index.js')
+  expect(warn).not.toHaveBeenCalled()
+}, 60_000)
+
+test('publishes no provider when the project root resolves another version of a transitive copy', async () => {
+  const {hostModules, manifest, warn} = await buildWithTransitiveSanityUi({rootVersion: '5.0.0'})
+
+  expect(manifest.shared.map(({name}) => name).toSorted()).toEqual(REACT_AND_STYLED_PROVIDERS)
+  expect(evaluateHostModule(hostModules.client)).not.toHaveProperty('@sanity/ui')
+  expect(warn).not.toHaveBeenCalled()
+}, 60_000)

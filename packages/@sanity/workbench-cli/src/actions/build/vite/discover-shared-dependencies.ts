@@ -221,13 +221,20 @@ function createSharedDependencyDiscovery(environmentName: string): {
         return resolved
       }
 
-      // The fallback provider imports `source` from the project root, so only publish it when the root
-      // resolves the same name and version. Directories can't be compared: Windows spells some two ways.
+      // The fallback provider imports `source` from the project root. Compare name and version,
+      // because directories can't be compared: Windows spells some two ways.
+      // - root resolves the same version -> import the bare specifier
+      // - root resolves another version -> no provider
+      // - root can't resolve it -> import the file this app resolved
       const root = await this.resolve(source, undefined, {skipSelf: true})
       const rootPackage = root && !root.external ? await packageForModule(root.id) : undefined
-      const providable =
-        rootPackage?.name === dependency.name && rootPackage.version === dependency.version
-      dependencies.push(providable ? {...dependency, specifier: source} : dependency)
+      if (rootPackage?.name === dependency.name && rootPackage.version === dependency.version) {
+        dependencies.push({...dependency, specifier: source})
+      } else if (rootPackage) {
+        dependencies.push(dependency)
+      } else {
+        dependencies.push({...dependency, import: resolved.id, specifier: source})
+      }
       return resolved
     },
   }

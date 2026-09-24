@@ -63,6 +63,15 @@ test('an app joining the host share scope takes the host copy instead of fetchin
   expect(factory && factory()).toBe(HOST_REACT)
 })
 
+test("imports a transitive provider's fallback from the resolved file", () => {
+  const resolvedGroq = {copy: 'the resolved groq-js'}
+  const entry = {...sharing.shared.react, import: '/groq/dist/index.js', version: '2.0.0'}
+  const {load} = setUpHost({...sharing, shared: {'groq-js': entry}})
+
+  const shared = evaluateHostModule(load('client'), {'/groq/dist/index.js': resolvedGroq})
+  expect(shared['groq-js'].lib()).toBe(resolvedGroq)
+})
+
 test.each([
   [
     'hands the standalone build its providers once sharing has settled',

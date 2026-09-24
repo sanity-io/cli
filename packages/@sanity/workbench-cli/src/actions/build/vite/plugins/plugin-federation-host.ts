@@ -34,7 +34,8 @@ export function sanityFederationHost(): Plugin {
 function federationHostModule(sharing: FederationSharing | undefined): string {
   const entries = Object.entries(sharing?.shared ?? {})
   const imports = entries.map(
-    ([specifier], index) => `import * as m${index} from ${JSON.stringify(specifier)}\n`,
+    ([specifier, entry], index) =>
+      `import * as m${index} from ${JSON.stringify(entry.import ?? specifier)}\n`,
   )
   const providers = entries.map(([specifier, entry], index) => {
     const {requiredVersion, shareScope, singleton, strictVersion, version} = entry
