@@ -18,6 +18,7 @@
  * ```
  */
 import {type Command, type Config, type Interfaces} from '@oclif/core'
+import {type SanityCommand} from '@sanity/cli-core'
 import {type CommandPolicy, isConditionalInvocationPolicy} from '@sanity/cli-core/commandPolicy'
 import {mcpFlagOverrides, resolveUnattendedFlagRequirements} from '@sanity/cli-core/flags'
 
@@ -175,7 +176,9 @@ function toToolDefinition(
   return {
     commandId: command.id,
     description:
-      (CommandClass as {mcpOverrides?: {description?: string}}).mcpOverrides?.description ??
+      // The static's shape is declared once, on SanityCommand.
+      (CommandClass as {mcpOverrides?: (typeof SanityCommand)['mcpOverrides']}).mcpOverrides
+        ?.description ??
       command.description ??
       command.summary ??
       '',
@@ -259,7 +262,9 @@ function collectFlags(
   // every call omitting them fails at execution.
   const unattendedFlags = resolveUnattendedFlagRequirements(loadedFlags, true)
 
-  const flagKinds: Record<string, McpToolFlagKind> = {}
+  // Null prototype for the same reason as `properties`: a flag named
+  // `__proto__` must record its kind, not silently no-op on the accessor.
+  const flagKinds: Record<string, McpToolFlagKind> = Object.create(null)
   let forceJson = command.enableJsonFlag === true
   for (const flag of Object.values(command.flags)) {
     if (flag.hidden) {

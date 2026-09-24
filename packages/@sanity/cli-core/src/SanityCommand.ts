@@ -387,8 +387,8 @@ export abstract class SanityCommand<T extends typeof Command>
    * internals like `oclif: {exit}` into the payload.
    */
   public override toErrorJson(err: unknown): unknown {
-    const error = err as {message?: string; name?: string}
-    return {error: {message: error.message ?? String(err), name: error.name ?? 'Error'}}
+    const error = err as {message?: string; name?: string} | null | undefined
+    return {error: {message: error?.message ?? String(err), name: error?.name ?? 'Error'}}
   }
 
   /**

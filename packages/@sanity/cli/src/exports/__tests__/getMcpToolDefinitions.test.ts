@@ -329,7 +329,7 @@ describe('getMcpToolDefinitions', () => {
       findCommand: () => fakeCommand,
       pjson: {name: '@sanity/cli'},
       plugins: new Map(),
-    } as never
+    } as unknown as Config
 
     const [tool] = await getMcpToolDefinitions({commands: ['context:build'], config: fakeConfig})
 
@@ -380,7 +380,7 @@ describe('getMcpToolDefinitions', () => {
       findCommand: () => fakeCommand,
       pjson: {name: '@sanity/cli'},
       plugins: new Map(),
-    } as never
+    } as unknown as Config
 
     const [tool] = await getMcpToolDefinitions({commands: ['context:get'], config: fakeConfig})
     expect(tool.description).toBe('Agent-facing copy')
@@ -404,7 +404,7 @@ describe('getMcpToolDefinitions', () => {
       findCommand: () => hiddenArgCommand,
       pjson: {name: '@sanity/cli'},
       plugins: new Map(),
-    } as never
+    } as unknown as Config
 
     await expect(
       getMcpToolDefinitions({commands: ['context:get'], config: fakeConfig}),
