@@ -6,8 +6,9 @@ export const FEDERATION_HOST_ID = 'virtual:sanity/federation-host'
 const RESOLVED_ID = `\0${FEDERATION_HOST_ID}`
 
 export interface FederationHostApi {
-  provide: (sharing: FederationSharing | undefined) => void
-  readonly requested: boolean
+  requested: boolean
+
+  sharing?: FederationSharing
 }
 
 export function getFederationHostApi(plugins: readonly Plugin[]): FederationHostApi | undefined {
@@ -17,29 +18,20 @@ export function getFederationHostApi(plugins: readonly Plugin[]): FederationHost
 // Hands the standalone build's own copies of shared dependencies to the apps it loads: its SPA
 // never initializes a federation container, so each app would otherwise download a second copy.
 export function sanityFederationHost(): Plugin {
-  let sharing: FederationSharing | undefined
-  let requested = false
-  const api: FederationHostApi = {
-    provide: (next) => {
-      sharing = next
-    },
-    get requested() {
-      return requested
-    },
-  }
+  const api: FederationHostApi = {requested: false}
   return {
     api: {sanityFederationHost: api},
     load(id) {
       if (id !== RESOLVED_ID) return
-      requested = true
-      return federationHostModule(this.environment.name === 'client' ? sharing : undefined)
+      api.requested = true
+      return federationHostModule(this.environment.name === 'client' ? api.sharing : undefined)
     },
     name: 'sanity/federation-host',
     resolveId: (id) => (id === FEDERATION_HOST_ID ? RESOLVED_ID : undefined),
   }
 }
 
-export function federationHostModule(sharing: FederationSharing | undefined): string {
+function federationHostModule(sharing: FederationSharing | undefined): string {
   const entries = Object.entries(sharing?.shared ?? {})
   const imports = entries.map(
     ([specifier], index) => `import * as m${index} from ${JSON.stringify(specifier)}\n`,

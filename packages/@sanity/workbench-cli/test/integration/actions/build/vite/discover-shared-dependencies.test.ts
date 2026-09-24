@@ -497,7 +497,7 @@ export default function App() { return <Box>Hello</Box> }`,
 
     test('hands its apps its own copies in the pools of its federation build', () => {
       const providers = Object.entries(evaluateHostModule(build.hostModules.client)).map(
-        ([name, provider]) => [name, {pool: provider.scope?.[0], version: provider.version}],
+        ([name, provider]) => [name, {pool: provider.scope[0], version: provider.version}],
       )
       const pools = build.manifest.shared.map(({name, version}) => [
         name,

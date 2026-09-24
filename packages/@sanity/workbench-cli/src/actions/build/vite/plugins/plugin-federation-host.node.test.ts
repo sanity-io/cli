@@ -1,12 +1,10 @@
 import {createInstance} from '@module-federation/runtime'
-import {type Plugin} from 'vite'
 import {expect, test} from 'vitest'
 
 import {evaluateHostModule} from '../__tests__/federationHostTestHelpers.js'
 import {type FederationSharing} from '../shared-dependencies.js'
 import {
   FEDERATION_HOST_ID,
-  federationHostModule,
   getFederationHostApi,
   sanityFederationHost,
 } from './plugin-federation-host.js'
@@ -29,14 +27,20 @@ const sharing: FederationSharing = {
   shareStrategy: 'loaded-first',
 }
 
-function load(plugin: Plugin, environment: string): string {
+function setUpHost(sharing: FederationSharing | undefined) {
+  const plugin = sanityFederationHost()
+  const host = getFederationHostApi([plugin])
+  if (!host) throw new Error('the plugin exposes no host api')
+  host.sharing = sharing
   const resolveId = plugin.resolveId as (id: string) => string
   const loadHook = plugin.load as (this: {environment: {name: string}}, id: string) => string
-  return loadHook.call({environment: {name: environment}}, resolveId(FEDERATION_HOST_ID))
+  const load = (environment: string) =>
+    loadHook.call({environment: {name: environment}}, resolveId(FEDERATION_HOST_ID))
+  return {host, load}
 }
 
 test('an app joining the host pool takes the host copy instead of fetching its own', async () => {
-  const shared = evaluateHostModule(federationHostModule(sharing), {react: HOST_REACT})
+  const shared = evaluateHostModule(setUpHost(sharing).load('client'), {react: HOST_REACT})
   const host = createInstance({name: 'shell', remotes: [], shared, shareStrategy: 'loaded-first'})
   const app = createInstance({
     name: 'app',
@@ -74,11 +78,9 @@ test.each([
   ],
   ['hands out an empty map in development and when sharing is disabled', 'client', undefined, []],
 ] as const)('%s', (_name, environment, provided, expected) => {
-  const plugin = sanityFederationHost()
-  const host = getFederationHostApi([plugin])
-  host?.provide(provided)
+  const {host, load} = setUpHost(provided)
 
-  expect(host?.requested).toBe(false)
-  expect(Object.keys(evaluateHostModule(load(plugin, environment)))).toEqual(expected)
-  expect(host?.requested).toBe(true)
+  expect(host.requested).toBe(false)
+  expect(Object.keys(evaluateHostModule(load(environment)))).toEqual(expected)
+  expect(host.requested).toBe(true)
 })

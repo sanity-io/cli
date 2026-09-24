@@ -53,7 +53,7 @@ export async function buildFederatedApp(
   const sharing = discovery.getSharing()
   const enabledSharing = 'disabledReason' in sharing ? undefined : sharing
   const host = getFederationHostApi(plugins)
-  host?.provide(enabledSharing)
+  if (host) host.sharing = enabledSharing
   const replacement = federation.create(enabledSharing)
   const builder = await createBuilder({
     ...config,
