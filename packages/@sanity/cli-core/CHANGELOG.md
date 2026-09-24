@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.8.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.0...cli-core-v3.8.1)
+
+_2026-09-24_
+
+### Bug Fixes
+
+- **cli-core:** restore CommonJS interop for studio dependency graphs, so minified UMD modules, `exports.default = obj` modules, and modules ending in the `module.exports.default = module.exports` interop footer (which every `@babel/runtime` helper uses) import correctly again ([#1864](https://github.com/sanity-io/cli/pull/1864)) ([3f16e1b](https://github.com/sanity-io/cli/commit/3f16e1b1e34d8925edbe16d4b478a76f3e234566))
+
 ## 3.8.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.7.0...cli-core-v3.8.0)

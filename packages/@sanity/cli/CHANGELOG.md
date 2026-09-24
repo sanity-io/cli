@@ -1,5 +1,22 @@
 # Change Log
 
+## 8.13.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.12.0...cli-v8.13.0)
+
+_2026-09-24_
+
+### Features
+
+- **cli:** accept an app id argument for sanity undeploy ([#1916](https://github.com/sanity-io/cli/pull/1916)) ([56dd76b](https://github.com/sanity-io/cli/commit/56dd76b8f9139e991846c7fa0353b750dd654f08))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.8.0
+    - @sanity/cli-core bumped to 3.8.1
+
 ## 8.12.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.11.0...cli-v8.12.0)
