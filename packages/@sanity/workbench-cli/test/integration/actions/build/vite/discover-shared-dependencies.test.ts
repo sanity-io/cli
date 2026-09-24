@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 import {createLogger, type InlineConfig, normalizePath, type PluginOption} from 'vite'
 import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
 
+import {evaluateHostModule} from '../../../../../src/actions/build/vite/__tests__/federationHostTestHelpers.js'
 import {buildFederatedApp} from '../../../../../src/actions/build/vite/discover-shared-dependencies.js'
 import {federation} from '../../../../../src/actions/build/vite/plugin.js'
 import {FEDERATION_HOST_ID} from '../../../../../src/actions/build/vite/plugins/plugin-federation-host.js'
@@ -27,16 +28,6 @@ function findSharedPools(chunks: string[]): Record<string, string> {
   )
   return Object.fromEntries(
     chunks.flatMap((code) => [...code.matchAll(entry)].map(([, name, , pool]) => [name, pool])),
-  )
-}
-
-// Reads each provider the host module generates, in the shape the manifest and pools use.
-function findHostProviders(code = ''): Record<string, {pool: string; version: string}> {
-  return Object.fromEntries(
-    [...code.matchAll(/^ {2}("[^"]+"): \{\.\.\.(\{.*\}), lib/gm)].map(([, name, options]) => {
-      const {scope, version} = JSON.parse(options) as {scope: string[]; version: string}
-      return [JSON.parse(name) as string, {pool: scope[0], version}]
-    }),
   )
 }
 
@@ -487,7 +478,7 @@ test('shares React in an app without styled-components installed', async () => {
 // The workbench shell loads federated apps from a standalone build, which never initializes
 // a federation container of its own.
 describe.each([false, true])(
-  'a standalone host reusing the standalone output: %s',
+  'a standalone host importing the share map, standalone build reused before discovery: %s',
   (reuseStandaloneBuild) => {
     let build: Awaited<ReturnType<App['build']>>
 
@@ -505,16 +496,21 @@ export default function App() { return <Box>Hello</Box> }`,
     }, 60_000)
 
     test('hands its apps its own copies in the pools of its federation build', () => {
+      const providers = Object.entries(evaluateHostModule(build.hostModules.client)).map(
+        ([name, provider]) => [name, {pool: provider.scope?.[0], version: provider.version}],
+      )
       const pools = build.manifest.shared.map(({name, version}) => [
         name,
         {pool: build.sharedPools[name], version},
       ])
-      expect(findHostProviders(build.hostModules.client)).toEqual(Object.fromEntries(pools))
-      expect(build.standaloneOutput).toContain(build.sharedPools.react)
+      expect(Object.fromEntries(providers)).toEqual(Object.fromEntries(pools))
+      for (const pool of new Set(Object.values(build.sharedPools))) {
+        expect(build.standaloneOutput).toContain(pool)
+      }
     })
 
     test('leaves its federation build to share through the container', () => {
-      expect(build.hostModules.federation).toBe('export const shared = {\n}\n')
+      expect(evaluateHostModule(build.hostModules.federation)).toEqual({})
     })
   },
 )
