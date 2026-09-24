@@ -135,7 +135,7 @@ Code for sanity cli
 - [`sanity tokens list`](#sanity-tokens-list)
 - [`sanity tokens rotate`](#sanity-tokens-rotate)
 - [`sanity typegen generate`](#sanity-typegen-generate)
-- [`sanity undeploy`](#sanity-undeploy)
+- [`sanity undeploy [APPID]`](#sanity-undeploy-appid)
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
@@ -4276,13 +4276,16 @@ EXAMPLES
     $ sanity typegen generate
 ```
 
-## `sanity undeploy`
+## `sanity undeploy [APPID]`
 
 Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ sanity undeploy [--dry-run] [-j] [-y]
+  $ sanity undeploy [APPID] [--dry-run] [-j] [-y]
+
+ARGUMENTS
+  [APPID]  ID of the application to undeploy. Overrides `deployment.appId` in sanity.cli.ts
 
 FLAGS
   -j, --json     Output the result as JSON
@@ -4296,6 +4299,10 @@ EXAMPLES
   Undeploy the studio or application after confirming
 
     $ sanity undeploy
+
+  Undeploy the studio or application with the given ID
+
+    $ sanity undeploy abc123
 
   Report what would be undeployed without deleting anything
 
