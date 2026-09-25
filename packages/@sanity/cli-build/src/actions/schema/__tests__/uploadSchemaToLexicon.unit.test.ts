@@ -1,4 +1,5 @@
 import {resolveLocalPackage} from '@sanity/cli-core'
+import {spinner, spinnerSucceed, spinnerText} from '@sanity/cli-test/mocks/cli-core/ux'
 import {type Workspace} from 'sanity'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -9,6 +10,9 @@ const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockUploadSchema = vi.fn()
 const mockGenerateStudioManifest = vi.fn()
 const mockWithConfig = vi.fn()
+const mockGetUrl = vi.fn(() => 'https://proj-123.api.sanity.io/v2025-03-01/')
+
+vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -51,7 +55,7 @@ describe('uploadSchemaToLexicon', () => {
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('descriptor-123')
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
@@ -86,7 +90,7 @@ describe('uploadSchemaToLexicon', () => {
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValueOnce('descriptor-1').mockResolvedValueOnce('descriptor-2')
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
@@ -137,7 +141,7 @@ describe('uploadSchemaToLexicon', () => {
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('')
 
     await expect(
@@ -155,7 +159,7 @@ describe('uploadSchemaToLexicon', () => {
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
     mockUploadSchema.mockRejectedValue(new Error('Network error'))
 
     await expect(
@@ -165,6 +169,65 @@ describe('uploadSchemaToLexicon', () => {
         workspaces: [createWorkspace()],
       }),
     ).rejects.toThrow('Failed to upload schema for workspace')
+  })
+
+  test('upload network failure names workspace, host and transport cause', async () => {
+    mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
+    mockResolveLocalPackage.mockResolvedValue({
+      generateStudioManifest: mockGenerateStudioManifest,
+      uploadSchema: mockUploadSchema,
+    })
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
+    const timeoutError = new Error('Connect Timeout Error')
+    timeoutError.name = 'ConnectTimeoutError'
+    Object.assign(timeoutError, {code: 'UND_ERR_CONNECT_TIMEOUT'})
+    const fetchError = new TypeError('fetch failed', {cause: timeoutError})
+    mockUploadSchema.mockRejectedValue(fetchError)
+
+    const promise = uploadSchemaToLexicon({
+      projectId: 'proj-123',
+      workDir: '/tmp/test',
+      workspaces: [createWorkspace()],
+    })
+
+    await expect(promise).rejects.toThrow(
+      'Failed to upload schema for workspace "default" (project "proj-123", dataset "production") ' +
+        'to https://proj-123.api.sanity.io/v2025-03-01: fetch failed ' +
+        '(caused by ConnectTimeoutError [UND_ERR_CONNECT_TIMEOUT]: Connect Timeout Error)',
+    )
+    // The original error must stay attached so cause-aware renderers can walk it
+    const error = await promise.catch((err: unknown) => err)
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).cause).toBe(fetchError)
+    // The failure is reported under the upload phase, with the full detail
+    const spin = vi.mocked(spinner).mock.results[0]?.value
+    expect(spin.fail).toHaveBeenCalledWith(expect.stringContaining('UND_ERR_CONNECT_TIMEOUT'))
+  })
+
+  test('spinner names the upload phase before the manifest generation phase', async () => {
+    mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
+    mockResolveLocalPackage.mockResolvedValue({
+      generateStudioManifest: mockGenerateStudioManifest,
+      uploadSchema: mockUploadSchema,
+    })
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
+    mockUploadSchema.mockResolvedValue('descriptor-123')
+    mockGenerateStudioManifest.mockResolvedValue({
+      buildId: '"123"',
+      bundleVersion: '3.0.0',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      workspaces: [],
+    })
+
+    await uploadSchemaToLexicon({
+      projectId: 'proj-123',
+      workDir: '/tmp/test',
+      workspaces: [createWorkspace()],
+    })
+
+    expect(spinner).toHaveBeenCalledWith('Uploading workspace schemas')
+    expect(spinnerText).toHaveBeenCalledWith('Generating studio manifest')
+    expect(spinnerSucceed).toHaveBeenCalledWith('Generated studio manifest')
   })
 
   test('no sanity version throws', async () => {
@@ -189,7 +252,7 @@ describe('uploadSchemaToLexicon', () => {
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
     } as unknown)
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('descriptor-123')
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
@@ -213,7 +276,7 @@ describe('uploadSchemaToLexicon', () => {
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('descriptor-123')
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
@@ -255,7 +318,7 @@ describe('uploadSchemaToLexicon', () => {
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
+    mockWithConfig.mockReturnValue({getUrl: mockGetUrl, withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('descriptor-123')
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
