@@ -151,6 +151,29 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       expect(JSON.parse(stdout.trim())).toEqual({value: 'resolved'})
     })
 
+    test.skipIf(isWindowsNode24OrUp)(
+      'allows dynamic import after top-level evaluation in a floating-promise script',
+      async (t) => {
+        await copyFile(join(fixtureDir, 'exec-floating-promise-script.ts'), scriptPath)
+
+        const {error, stderr, stdout} = await testCommand(ExecCommand, [scriptPath])
+        // output stdout and stderr to help diagnose the failure
+        t.onTestFailed(() => {
+          // eslint-disable-next-line no-console
+          console.log(stdout)
+          // eslint-disable-next-line no-console
+          console.warn(stderr)
+        })
+
+        if (error) throw error
+
+        // Parse the JSON output
+        const data = JSON.parse(stdout.trim())
+        expect(data.success).toBe(true)
+        expect(data.hasGetCliClient).toBe(true)
+      },
+    )
+
     test.skipIf(!TEST_TOKEN)('executes script with --with-user-token flag', async (t) => {
       if (!TEST_TOKEN) return // TypeScript guard
 
