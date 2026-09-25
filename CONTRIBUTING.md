@@ -540,20 +540,9 @@ this.output.log(table.render()) // allows for unit testing table contents via mo
 
 ### JSON Output (`--json`)
 
-Commands with machine-readable output declare `static override enableJsonFlag = true` and **return** their data from `run()` — never `this.log(JSON.stringify(...))`. oclif prints the return value when `--json` is passed and suppresses `this.log` output; without the flag, human rendering runs as normal and the return value is ignored. Guard spinners with `this.jsonEnabled() ? undefined : spinner(...)`.
+Commands with machine-readable output declare `static override enableJsonFlag = true` and **return** their data from `run()` — never `this.log(JSON.stringify(...))`. oclif prints the return value when `--json` is passed and suppresses `this.log` output; without the flag, human rendering runs as normal. Guard spinners with `this.jsonEnabled() ? undefined : spinner(...)`.
 
-The returned value is a public contract (terminal `--json` and the MCP tools' `structuredContent` are the same shape), so:
-
-- **Always return an object, never a bare array.** List results go under a key naming the items: `return {knowledgeBases}`, `return {imports}` — MCP requires structured results to be objects, and a keyed array leaves room to add fields (counts, cursors) without a breaking change.
-- **Return the API response verbatim, augmented — never a subset.** Writes add back the identifiers the caller supplied (`{...accepted, knowledgeBaseId}`) so the response alone is enough for a follow-up call.
-
-```typescript
-public async run(): Promise<{knowledgeBases: Context.KnowledgeBase[]}> {
-  const knowledgeBases = await listKnowledgeBases(organizationId)
-  this.log(renderTable(knowledgeBases)) // human output; auto-suppressed under --json
-  return {knowledgeBases}
-}
-```
+The return value is a public contract (terminal `--json` and the MCP tools' `structuredContent` share it): return keyed objects, never bare arrays (`return {imports}` — `SanityCommand`'s `run()` signature rejects arrays at compile time), and return the API response augmented with the caller's identifiers, never a subset.
 
 ### Debug Logging
 

@@ -370,6 +370,16 @@ export abstract class SanityCommand<T extends typeof Command>
   }
 
   /**
+   * Narrowed from oclif's `Promise<any>`: a JSON-mode return value is a
+   * public contract (terminal `--json` output and the MCP tools'
+   * `structuredContent` are the same shape), and MCP requires structured
+   * results to be JSON objects. Return keyed arrays (`{imports}`), never
+   * bare ones — the compiler enforces it here. See CONTRIBUTING.md,
+   * "JSON Output".
+   */
+  public abstract run(): Promise<(object & {length?: never}) | void>
+
+  /**
    * Execute an already-constructed command without oclif's static runner:
    * `Command.run()` performs a full `Config.load()` — filesystem reads, env
    * consultation, and a process-global config cache write — on every call,
