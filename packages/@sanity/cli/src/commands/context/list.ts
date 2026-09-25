@@ -1,7 +1,7 @@
-import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {type Context} from '@sanity/client'
 
 import {
   MissingOrganizationError,
@@ -15,6 +15,8 @@ const listContextDebug = subdebug('context:list')
 
 export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledgeBasesCommand> {
   static override description = 'List knowledge bases in an organization'
+
+  static override enableJsonFlag = true
 
   static override examples = [
     {
@@ -36,14 +38,10 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
       description: 'Organization to list knowledge bases for',
       semantics: 'override',
     }),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output knowledge bases in JSON format',
-    }),
   } satisfies FlagInput
 
-  public async run(): Promise<void> {
-    const {json, organization} = this.flags
+  public async run(): Promise<{knowledgeBases: Context.KnowledgeBase[]}> {
+    const {organization} = this.flags
 
     let organizationId: string
     try {
@@ -72,14 +70,9 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
       })
     }
 
-    if (json) {
-      this.log(JSON.stringify(knowledgeBases, null, 2))
-      return
-    }
-
     if (knowledgeBases.length === 0) {
       this.log('No knowledge bases found')
-      return
+      return {knowledgeBases}
     }
 
     const table = new Table({
@@ -97,5 +90,6 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
     }
 
     this.log(table.render())
+    return {knowledgeBases}
   }
 }

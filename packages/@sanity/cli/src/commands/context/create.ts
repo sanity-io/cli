@@ -4,6 +4,7 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {input, spinner} from '@sanity/cli-core/ux'
+import {type Context} from '@sanity/client'
 
 import {
   MissingOrganizationError,
@@ -36,6 +37,8 @@ const flags = {
 export class CreateKnowledgeBaseCommand extends SanityCommand<typeof CreateKnowledgeBaseCommand> {
   static override description = 'Create a knowledge base'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
@@ -52,7 +55,7 @@ export class CreateKnowledgeBaseCommand extends SanityCommand<typeof CreateKnowl
 
   static telemetry = defineCommandTelemetry(flags, {redact: ['title', 'description']})
 
-  public async run(): Promise<void> {
+  public async run(): Promise<Context.KnowledgeBase> {
     const {description: descriptionFlag, organization, title: titleFlag} = this.flags
 
     if (titleFlag !== undefined && titleFlag.trim() === '') {
@@ -83,21 +86,23 @@ export class CreateKnowledgeBaseCommand extends SanityCommand<typeof CreateKnowl
     const description =
       descriptionFlag?.trim() || (await promptForText('Knowledge base description:'))
 
-    const spin = spinner('Creating knowledge base').start()
+    const spin = this.jsonEnabled() ? undefined : spinner('Creating knowledge base').start()
+    let knowledgeBase: Context.KnowledgeBase
     try {
-      const knowledgeBase = await createKnowledgeBase({description, organizationId, title})
-      spin.succeed('Knowledge base created')
-      const padTo = 12 // "Organization" is the longest key
-      this.log(formatKeyValue('ID', knowledgeBase.publicId, {padTo}))
-      this.log(formatKeyValue('Title', knowledgeBase.title, {padTo}))
-      this.log(formatKeyValue('Organization', knowledgeBase.organizationId, {padTo}))
+      knowledgeBase = await createKnowledgeBase({description, organizationId, title})
     } catch (error) {
-      spin.fail()
+      spin?.fail()
       createContextDebug('Error creating knowledge base', error)
       this.error(`Failed to create knowledge base: ${getErrorMessage(error)}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
+    spin?.succeed('Knowledge base created')
+    const padTo = 12 // "Organization" is the longest key
+    this.log(formatKeyValue('ID', knowledgeBase.publicId, {padTo}))
+    this.log(formatKeyValue('Title', knowledgeBase.title, {padTo}))
+    this.log(formatKeyValue('Organization', knowledgeBase.organizationId, {padTo}))
+    return knowledgeBase
   }
 }
 

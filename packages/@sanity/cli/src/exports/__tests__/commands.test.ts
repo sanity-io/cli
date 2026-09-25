@@ -207,6 +207,10 @@ describe('invokeSanityCli', () => {
       expect(result.output).toContain('Administrator')
       expect(result.output).toContain('user2')
       expect(result.output).toContain('2023-01-02')
+      // Real table output through the real sink: programmatic callers must
+      // never receive ANSI styling. Both test harnesses are otherwise blind
+      // to this (cli-test strips ANSI by default; Mellon mocks the invoker).
+      expect(result.output).not.toContain('\u001B')
       expect(stdout).not.toHaveBeenCalled()
     } finally {
       stdout.mockRestore()

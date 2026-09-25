@@ -1,4 +1,5 @@
 import {Flags} from '@oclif/core'
+import {mcpOverrides} from '@sanity/cli-core/flags'
 
 /**
  * Controls how the flag relates to CLI configuration:
@@ -71,23 +72,26 @@ export function getProjectIdFlag(options: SharedFlagOptions) {
 export function getOrganizationFlag(options: SharedFlagOptions) {
   const {description: baseDescription, helpGroup, semantics, ...rest} = options
   const isOverride = semantics === 'override'
-  const description =
-    (baseDescription ?? 'Organization ID to use') + (isOverride ? OVERRIDE_SUFFIX : '')
+  const description = baseDescription ?? 'Organization ID to use'
 
   return {
-    organization: Flags.string({
-      description,
-      helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
-      helpValue: '<id>',
-      ...rest,
-      parse: async (input: string) => {
-        const trimmed = input.trim()
-        if (trimmed === '') {
-          throw new Error('`--organization` cannot be empty if provided')
-        }
-        return trimmed
-      },
-    }),
+    organization: mcpOverrides(
+      Flags.string({
+        description: isOverride ? description + OVERRIDE_SUFFIX : description,
+        helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
+        helpValue: '<id>',
+        ...rest,
+        parse: async (input: string) => {
+          const trimmed = input.trim()
+          if (trimmed === '') {
+            throw new Error('`--organization` cannot be empty if provided')
+          }
+          return trimmed
+        },
+      }),
+      // MCP invocations have no CLI configuration: plain copy, must be passed.
+      {description, required: true},
+    ),
   }
 }
 
