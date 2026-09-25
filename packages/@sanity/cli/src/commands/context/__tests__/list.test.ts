@@ -76,7 +76,7 @@ describe('context list', () => {
     ])
 
     if (error) throw error
-    expect(JSON.parse(stdout)).toEqual([knowledgeBase])
+    expect(JSON.parse(stdout)).toEqual({knowledgeBases: [knowledgeBase]})
   })
 
   test('prints empty state when there are no knowledge bases', async () => {

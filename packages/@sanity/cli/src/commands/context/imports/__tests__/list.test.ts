@@ -56,7 +56,7 @@ describe('context imports list', () => {
     const {error, stdout} = await testCommand(ListImportsCommand, ['kb-abc123', '--json'])
 
     if (error) throw error
-    expect(JSON.parse(stdout)).toEqual([importItem])
+    expect(JSON.parse(stdout)).toEqual({imports: [importItem]})
   })
 
   test('prints empty state when there are no imports', async () => {

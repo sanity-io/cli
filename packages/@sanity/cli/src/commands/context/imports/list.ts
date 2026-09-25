@@ -31,7 +31,7 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
     },
   ]
 
-  public async run(): Promise<Context.Import[]> {
+  public async run(): Promise<{imports: Context.Import[]}> {
     const {knowledgeBaseId} = this.args
 
     let imports
@@ -51,7 +51,7 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
 
     if (imports.length === 0) {
       this.log('No imports found')
-      return imports
+      return {imports}
     }
 
     const table = new Table({
@@ -77,6 +77,6 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
     }
 
     this.log(table.render())
-    return imports
+    return {imports}
   }
 }

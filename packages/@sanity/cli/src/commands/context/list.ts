@@ -40,7 +40,7 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
     }),
   } satisfies FlagInput
 
-  public async run(): Promise<Context.KnowledgeBase[]> {
+  public async run(): Promise<{knowledgeBases: Context.KnowledgeBase[]}> {
     const {organization} = this.flags
 
     let organizationId: string
@@ -72,7 +72,7 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
 
     if (knowledgeBases.length === 0) {
       this.log('No knowledge bases found')
-      return knowledgeBases
+      return {knowledgeBases}
     }
 
     const table = new Table({
@@ -90,6 +90,6 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
     }
 
     this.log(table.render())
-    return knowledgeBases
+    return {knowledgeBases}
   }
 }
