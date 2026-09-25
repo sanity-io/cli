@@ -1,5 +1,25 @@
 # @sanity/workbench-cli
 
+## 2.8.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.7.0...workbench-cli-v2.8.0)
+
+_2026-09-24_
+
+### Features
+
+- **workbench-cli:** share shell dependencies with federated apps ([#1917](https://github.com/sanity-io/cli/pull/1917)) ([33db2b8](https://github.com/sanity-io/cli/commit/33db2b808e2b7371f360f063a2450caa31f34fb8))
+
+### Bug Fixes
+
+- **workbench-cli:** build workbench apps into the requested output directory instead of always `dist`, so `sanity blueprints deploy` and `sanity build <outputDir>` ship the app's JavaScript, `index.html` and `mf-manifest.json` ([#1923](https://github.com/sanity-io/cli/pull/1923)) ([65f617f](https://github.com/sanity-io/cli/commit/65f617f6d0b8af5aa160877db6150b366801cb47))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.1
+
 ## 2.7.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.6.0...workbench-cli-v2.7.0)
