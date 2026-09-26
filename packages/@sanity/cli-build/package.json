@@ -103,7 +103,7 @@
     "@types/picomatch": "^4.0.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@types/react-is": "^19.2.0",
+    "@types/react-is": "^19.3.0",
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
@@ -112,7 +112,7 @@
     "oxc-transform-react": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
-    "styled-components": "^6.4.3",
+    "styled-components": "^6.5.3",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
