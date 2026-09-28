@@ -22,12 +22,6 @@ const HMR_REMOUNT = `if (import.meta.hot) {
 
 /**
  * - `app`: omit when the preamble imports `App` itself (the SDK-app entry).
- * - `userImports`: import statements for the user's own modules (the studio
- *   config, the app's `App`). They are emitted before `react` and
- *   `react-dom/client`: ESM evaluates static imports in source order, and
- *   react-dom reads `__REACT_DEVTOOLS_GLOBAL_HOOK__` once at module init, so a
- *   side-effect import at the top of a user module only runs first when that
- *   module is requested first.
  * - `version`: lets the host check view/service contract compatibility.
  */
 export function renderRemote({
@@ -35,14 +29,12 @@ export function renderRemote({
   hmr = false,
   isolateStyles = false,
   preamble,
-  userImports,
   version,
 }: {
   app?: string
   hmr?: boolean
   isolateStyles?: boolean
   preamble: string
-  userImports?: string
   version?: string
 }): string {
   // Keep apps without styled-components buildable; the unused branch is removed from their bundle.
@@ -53,7 +45,7 @@ export function renderRemote({
   return `\
 // This file is auto-generated on 'sanity build' / 'sanity dev'
 // Modifications to this file are automatically discarded
-${userImports ? `${userImports}\n` : ''}import * as React from 'react'
+import * as React from 'react'
 import { createRoot } from 'react-dom/client'
 ${stylesheetImport}
 ${preamble}

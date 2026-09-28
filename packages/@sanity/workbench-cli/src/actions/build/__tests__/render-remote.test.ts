@@ -114,19 +114,17 @@ describe('renderRemote', () => {
     `)
   })
 
-  // The studio/app entry: the user module imports `App` directly, so no `App`
-  // binding, no `version` export, and no HMR boundary are emitted. The user
-  // import lands ahead of `react` / `react-dom/client`.
+  // The studio/app entry: the preamble imports `App` directly, so no `App`
+  // binding, no `version` export, and no HMR boundary are emitted.
   test('assembles a minimal module — no App binding, version, or HMR', () => {
-    const source = renderRemote({preamble: '', userImports: 'import App from "./app.js"'})
+    const source = renderRemote({preamble: 'import App from "./app.js"'})
     expect(source).toMatchInlineSnapshot(`
       "// This file is auto-generated on 'sanity build' / 'sanity dev'
       // Modifications to this file are automatically discarded
-      import App from "./app.js"
       import * as React from 'react'
       import { createRoot } from 'react-dom/client'
       const StyleSheetManager = undefined
-
+      import App from "./app.js"
 
       // The SDK reads this slot via getDashboardModuleContext(), so its symbol, key and
       // value are a contract. Keyed by createContext, not the React namespace: Vite dev
