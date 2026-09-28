@@ -11,6 +11,8 @@
  * network, no vite) and asserts the exact payload the workbench receives over
  * its HMR channel — "given this app, the workbench gets this".
  */
+import {setImmediate} from 'node:timers/promises'
+
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -250,12 +252,14 @@ describe('dev orchestration chain', () => {
     await remote.close()
   })
 
-  test('given a shell that is still starting, the next `sanity dev` reports the port it binds', async () => {
+  test('given a shell that is still starting, the next `sanity dev` reports the port the shell ends up binding', async () => {
     const starting = acquireWorkbenchLock({host: 'localhost', port: 3333})!
 
     const next = startWorkbenchDevServer(
       createDevOptions({cliConfig: workbenchCliConfig(), httpPort: 3333}),
     )
+    // The next `sanity dev` must read the lock before the shell is listening.
+    await setImmediate()
     // 3333 was taken, so the starting shell bound the next port.
     starting.updatePort(3334)
 

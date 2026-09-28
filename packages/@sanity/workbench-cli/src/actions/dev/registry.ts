@@ -8,7 +8,6 @@ import {
   writeFileSync,
 } from 'node:fs'
 import {join} from 'node:path'
-import {setTimeout as sleep} from 'node:timers/promises'
 
 import {
   coreAppManifestSchema,
@@ -420,13 +419,22 @@ const LOCK_READY_POLL_MS = 50
 export async function waitForWorkbenchLock(): Promise<
   z.infer<typeof workbenchLockSchema> | undefined
 > {
+  const lockPath = join(getRegistryDir(), 'workbench.lock')
   const deadline = Date.now() + LOCK_READY_TIMEOUT_MS
   let lock = readWorkbenchLock()
+  // Polls skip `readWorkbenchLock`: its liveness check spawns `ps`/PowerShell, and
+  // it prunes the empty file `updatePort` leaves mid-write.
   while (lock?.ready === false && Date.now() < deadline) {
-    await sleep(LOCK_READY_POLL_MS)
-    lock = readWorkbenchLock()
+    await new Promise((resolve) => setTimeout(resolve, LOCK_READY_POLL_MS))
+    let contents: string
+    try {
+      contents = readFileSync(lockPath, 'utf8')
+    } catch {
+      break
+    }
+    lock = parseLockContents(contents) ?? lock
   }
-  return lock
+  return readWorkbenchLock()
 }
 
 function parseLockContents(contents: string): z.infer<typeof workbenchLockSchema> | undefined {
