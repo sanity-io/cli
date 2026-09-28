@@ -8,6 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import {join} from 'node:path'
+import {setTimeout as sleep} from 'node:timers/promises'
 
 import {
   coreAppManifestSchema,
@@ -372,6 +373,9 @@ const workbenchLockSchema = z.object({
   host: z.string(),
   pid: z.number(),
   port: z.number(),
+  // False until the holder's shell is listening on `port`. Absent in locks
+  // written by older CLIs, which count as ready.
+  ready: z.optional(z.boolean()),
   startedAt: z.string(),
   version: z.literal(REGISTRY_VERSION),
 })
@@ -404,6 +408,25 @@ export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undef
 
   pruneWorkbenchLock(lockPath)
   return undefined
+}
+
+const LOCK_READY_TIMEOUT_MS = 10_000
+const LOCK_READY_POLL_MS = 50
+
+/**
+ * Read the workbench lock once its holder's shell is listening, so the port is
+ * the bound one. Returns the lock as-is after {@link LOCK_READY_TIMEOUT_MS}.
+ */
+export async function waitForWorkbenchLock(): Promise<
+  z.infer<typeof workbenchLockSchema> | undefined
+> {
+  const deadline = Date.now() + LOCK_READY_TIMEOUT_MS
+  let lock = readWorkbenchLock()
+  while (lock?.ready === false && Date.now() < deadline) {
+    await sleep(LOCK_READY_POLL_MS)
+    lock = readWorkbenchLock()
+  }
+  return lock
 }
 
 function parseLockContents(contents: string): z.infer<typeof workbenchLockSchema> | undefined {
@@ -457,6 +480,7 @@ export function acquireWorkbenchLock(
     host: info.host,
     pid: process.pid,
     port: info.port,
+    ready: false,
     startedAt,
     version: REGISTRY_VERSION,
   }
@@ -491,7 +515,7 @@ export function acquireWorkbenchLock(
         }
       },
       updatePort(port: number) {
-        writeFileSync(lockPath, JSON.stringify({...lockData, port}))
+        writeFileSync(lockPath, JSON.stringify({...lockData, port, ready: true}))
       },
     }
   } catch (err: unknown) {

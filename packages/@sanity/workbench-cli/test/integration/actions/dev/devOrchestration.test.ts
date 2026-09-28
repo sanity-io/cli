@@ -21,6 +21,7 @@ import {
   workbenchApp,
   workbenchCliConfig,
 } from '../../../../src/actions/dev/__tests__/devTestHelpers.js'
+import {acquireWorkbenchLock} from '../../../../src/actions/dev/registry.js'
 import {startDevServerRegistration} from '../../../../src/actions/dev/startDevServerRegistration.js'
 import {startWorkbenchDev} from '../../../../src/actions/dev/startWorkbenchDev.js'
 import {
@@ -247,5 +248,20 @@ describe('dev orchestration chain', () => {
 
     await shell.close()
     await remote.close()
+  })
+
+  test('given a shell that is still starting, the next `sanity dev` reports the port it binds', async () => {
+    const starting = acquireWorkbenchLock({host: 'localhost', port: 3333})!
+
+    const next = startWorkbenchDevServer(
+      createDevOptions({cliConfig: workbenchCliConfig(), httpPort: 3333}),
+    )
+    // 3333 was taken, so the starting shell bound the next port.
+    starting.updatePort(3334)
+
+    await expect(next).resolves.toMatchObject({workbenchAvailable: true, workbenchPort: 3334})
+    expect(mockCreateServer).not.toHaveBeenCalled()
+
+    starting.release()
   })
 })

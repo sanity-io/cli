@@ -9,6 +9,7 @@ import {
   readWorkbenchLock,
   registerDevServer,
   runRegistryExitCleanupForTesting,
+  waitForWorkbenchLock,
   watchRegistry,
 } from '../registry.js'
 import {FakeFsWatcher} from './devTestHelpers.js'
@@ -283,11 +284,13 @@ describe('acquireWorkbenchLock', () => {
     expect(acquireWorkbenchLock({host: 'localhost', port: 3333})).toBeDefined()
   })
 
-  test('updatePort rewrites the port in the lock file', () => {
+  test('updatePort records the bound port and marks the lock ready', () => {
     const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})
+    expect(readJson(lockPath()).ready).toBe(false)
+
     lock!.updatePort(3334)
 
-    expect(readJson(lockPath()).port).toBe(3334)
+    expect(readJson(lockPath())).toMatchObject({port: 3334, ready: true})
   })
 
   test('reclaims a stale lock left by a dead process', () => {
@@ -339,6 +342,32 @@ describe('readWorkbenchLock', () => {
 
     expect(readWorkbenchLock()).toBeUndefined()
     expect(fsMock.module.existsSync(lockPath())).toBe(false)
+  })
+})
+
+describe('waitForWorkbenchLock', () => {
+  test('resolves immediately for a lock without the ready flag', async () => {
+    fsMock.files.set(
+      lockPath(),
+      JSON.stringify({
+        host: 'localhost',
+        pid: process.pid,
+        port: 3333,
+        startedAt: OS_START.toISOString(),
+        version: 2,
+      }),
+    )
+
+    await expect(waitForWorkbenchLock()).resolves.toMatchObject({port: 3333})
+  })
+
+  test('returns the lock as-is when the holder never marks it ready', async () => {
+    acquireWorkbenchLock({host: 'localhost', port: 3333})
+
+    const pending = waitForWorkbenchLock()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await expect(pending).resolves.toMatchObject({port: 3333, ready: false})
   })
 })
 
