@@ -47,6 +47,7 @@ describe('devAction', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   describe('plain (non-workbench) projects', () => {
@@ -137,6 +138,19 @@ describe('devAction', () => {
 
       expect(mockStartWorkbenchDev).toHaveBeenCalled()
       expect(mockStartStudioDevServer).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('workbench remote', () => {
+    // devAction no longer special-cases the remote: every workbench app routes to
+    // startWorkbenchDev, which runs the remote (it can't render itself) as a plain
+    // server internally.
+    test('still routes to startWorkbenchDev with the remote flag set', async () => {
+      vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
+
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
+
+      expect(mockStartWorkbenchDev).toHaveBeenCalled()
     })
   })
 })

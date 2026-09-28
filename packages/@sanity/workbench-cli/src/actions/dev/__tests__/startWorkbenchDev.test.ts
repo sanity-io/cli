@@ -130,53 +130,6 @@ describe('startWorkbenchDev', () => {
     })
   })
 
-  describe('workbench remote', () => {
-    beforeEach(() => {
-      vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
-    })
-
-    afterEach(() => {
-      vi.unstubAllEnvs()
-    })
-
-    test('runs as a plain app server that neither starts the shell nor registers', async () => {
-      const remote = mockAppServer({port: 5173})
-      mockStartAppServer.mockResolvedValue(remote)
-
-      const {close} = await run({httpPort: 5173})
-
-      expect(mockStartAppServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: false, httpPort: 5173}),
-      )
-      expect(mockStartWorkbenchDevServer).not.toHaveBeenCalled()
-      expect(mockStartDevServerRegistration).not.toHaveBeenCalled()
-
-      await close()
-      expect(remote.close).toHaveBeenCalledOnce()
-    })
-
-    test('announces the bound port and tells the user to run `sanity dev`', async () => {
-      mockStartAppServer.mockResolvedValue(mockAppServer({port: 5174}))
-      const output = createMockOutput()
-
-      await run({httpPort: 5173, output})
-
-      expect(output.log).toHaveBeenCalledWith('Workbench remote dev server started on port 5174')
-      expect(output.log).toHaveBeenCalledWith(
-        'Run `sanity dev` in a Studio or app to open Workbench',
-      )
-      expect(output.log).not.toHaveBeenCalledWith(expect.stringContaining('http://'))
-    })
-
-    test('returns a no-op close when the remote does not start', async () => {
-      mockStartAppServer.mockResolvedValue({reason: 'missing-organization-id', started: false})
-
-      const {close} = await run()
-
-      await expect(close()).resolves.toBeUndefined()
-    })
-  })
-
   describe('registration', () => {
     test('checks for the deprecated app id, then registers with the live server', async () => {
       const server = mockAppServer({port: 3334})

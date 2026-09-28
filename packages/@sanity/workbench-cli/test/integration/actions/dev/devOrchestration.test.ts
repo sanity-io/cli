@@ -1,12 +1,11 @@
 /**
  * Composed, in-process integration test of the dev orchestration chain:
- * `startDevServerRegistration` → registry → `attachViteDevServerBridge`
+ * `startDevServerRegistration` → registry → `startWorkbenchRemoteCoordinator`
  * (`toApplicationsPayload`). The isolated unit tests each mock their
  * collaborators, so the *seams* between them go unguarded — and the seams are
  * where the escaped regressions lived: the `surface` → `type` wire mapping and
  * the `organizationId` / `slug` / `visibility` metadata threaded from
- * registration through to the applications payload, and the workbench remote
- * holding `workbench.lock` so the next `sanity dev` never started the shell.
+ * registration through to the applications payload.
  *
  * This wires the real units together against an in-memory `node:fs` (no disk, no
  * network, no vite) and asserts the exact payload the workbench receives over
@@ -25,8 +24,8 @@ import {
 import {startDevServerRegistration} from '../../../../src/actions/dev/startDevServerRegistration.js'
 import {startWorkbenchDev} from '../../../../src/actions/dev/startWorkbenchDev.js'
 import {
-  attachViteDevServerBridge,
   startWorkbenchDevServer,
+  startWorkbenchRemoteCoordinator,
 } from '../../../../src/actions/dev/startWorkbenchDevServer.js'
 import {unstable_defineMediaLibrary} from '../../../../src/defineApp.js'
 
@@ -61,8 +60,6 @@ vi.mock('../../../../src/actions/dev/startDevManifestWatcher.js', () => ({
   startDevManifestWatcher: mockStartDevManifestWatcher,
 }))
 
-// The shell's Vite server and generated runtime root sit outside the lock →
-// shell seam; only whether the shell comes up, and on which port, matters here.
 const mockCreateServer = vi.hoisted(() => vi.fn())
 vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
@@ -86,13 +83,13 @@ function register(overrides: Partial<Parameters<typeof startDevServerRegistratio
 }
 
 /**
- * Bridge the registry into a fresh mock workbench server and return the payload
+ * Attach the workbench coordinator to a fresh mock server and return the payload
  * it replies with when the page asks for the local applications — the exact
  * object the workbench receives over the HMR channel.
  */
 function workbenchReceives() {
   const server = createMockViteServer({port: 3333})
-  const detachBridge = attachViteDevServerBridge(server as never)
+  const coordinator = startWorkbenchRemoteCoordinator({server})
 
   const onGetLocalApplications = server.ws.on.mock.calls.find(
     ([event]) => event === 'sanity:workbench:get-local-applications',
@@ -102,14 +99,14 @@ function workbenchReceives() {
   onGetLocalApplications({}, client)
 
   const [, payload] = client.send.mock.calls[0]
-  return {detachBridge, payload}
+  return {coordinator, payload}
 }
 
 describe('dev orchestration chain', () => {
   beforeEach(() => {
     fsMock.reset()
-    // `watchRegistry` calls `fs.watch`; hand it a fake so `detachBridge()` has a
-    // real watcher to close.
+    // `watchRegistry` calls `fs.watch`; hand it a fake so `coordinator.close()`
+    // has a real watcher to close.
     fsMock.module.watch.mockImplementation((_dir: string, listener: FakeFsWatcher['handler']) => {
       const watcher = new FakeFsWatcher()
       watcher.handler = listener
@@ -138,7 +135,7 @@ describe('dev orchestration chain', () => {
       isApp: true,
     })
 
-    const {detachBridge, payload} = workbenchReceives()
+    const {coordinator, payload} = workbenchReceives()
 
     expect(payload).toEqual({
       applications: [
@@ -183,7 +180,7 @@ describe('dev orchestration chain', () => {
     })
 
     await registration.close()
-    detachBridge()
+    await coordinator.close()
   })
 
   test('given a media-library config, the workbench receives it in the configs channel', async () => {
@@ -196,7 +193,7 @@ describe('dev orchestration chain', () => {
       } as never,
     })
 
-    const {detachBridge, payload} = workbenchReceives()
+    const {coordinator, payload} = workbenchReceives()
 
     // A config-only server is filtered out of `applications`; only its config is
     // published — nested under `config` (the flat→nested wire transform) with a
@@ -216,7 +213,7 @@ describe('dev orchestration chain', () => {
     })
 
     await registration.close()
-    detachBridge()
+    await coordinator.close()
   })
 
   test('given a running workbench remote, the next `sanity dev` starts the shell on its own port', async () => {

@@ -81,7 +81,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
  * rebuilt remote — full-reload to drop the stale remote-entry; otherwise
  * rebroadcast for a soft reconcile. Returns a detach fn.
  */
-export function attachViteDevServerBridge(server: ViteDevServer): () => void {
+function attachViteDevServerBridge(server: ViteDevServer): () => void {
   server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
     client.send(
       'sanity:workbench:local-applications',
@@ -99,6 +99,21 @@ export function attachViteDevServerBridge(server: ViteDevServer): () => void {
   })
 
   return () => registryWatcher.close()
+}
+
+/**
+ * Bridge the registry into the workbench remote's HMR channel. The remote never
+ * claims the workbench lock: a held lock tells the next `sanity dev` a shell is
+ * running, and the remote only renders inside that shell.
+ */
+export function startWorkbenchRemoteCoordinator(options: {server: ViteDevServer}): {
+  close: () => Promise<void>
+} {
+  const detachBridge = attachViteDevServerBridge(options.server)
+
+  return {
+    close: async () => detachBridge(),
+  }
 }
 
 interface WorkbenchDevServerResult {
