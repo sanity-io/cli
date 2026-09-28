@@ -15,15 +15,17 @@ import {getFederationApi} from './plugin-module-federation.js'
 const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 
 // The studio wraps `Studio` with the user's config; HMR re-renders through the
-// new module so a config edit takes effect. The `%RESOURCE_BINDINGS_IMPORT%`
-// placeholder is filled in per-build (Blueprints only — see below).
+// new module so a config edit takes effect. The config is imported before
+// `react` / `react-dom/client` (see `renderRemote`). The
+// `%RESOURCE_BINDINGS_IMPORT%` placeholder is filled in per-build (Blueprints
+// only — see below) and stays ahead of the config.
 const studioEntry = (isolateStyles: boolean) =>
   renderRemote({
     app: `(props) => React.createElement(Studio, { config, ...props })`,
     hmr: true,
     isolateStyles,
-    preamble: `%RESOURCE_BINDINGS_IMPORT%import { Studio } from 'sanity'
-import config from %STUDIO_CONFIG%`,
+    preamble: `import { Studio } from 'sanity'`,
+    userImports: `%RESOURCE_BINDINGS_IMPORT%import config from %STUDIO_CONFIG%`,
   })
 
 // An SDK app's default export is the component; it Fast-Refreshes through its
@@ -31,7 +33,8 @@ import config from %STUDIO_CONFIG%`,
 const appEntry = (isolateStyles: boolean) =>
   renderRemote({
     isolateStyles,
-    preamble: `%RESOURCE_BINDINGS_IMPORT%import App from %APP_ENTRY%`,
+    preamble: '',
+    userImports: `%RESOURCE_BINDINGS_IMPORT%import App from %APP_ENTRY%`,
   })
 
 // A branded app that declares no `entry` (e.g. a dock-only panel/worker app)

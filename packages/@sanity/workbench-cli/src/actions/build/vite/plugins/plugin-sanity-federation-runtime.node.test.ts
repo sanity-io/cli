@@ -126,6 +126,41 @@ test('a studio entry renders behind an HMR boundary', () => {
   expect(entry).toContain('import.meta.hot')
 })
 
+// react-dom reads the DevTools hook once at module init; a side-effect import at
+// the top of the user module only runs first if that module is imported first.
+test('a studio entry imports the config before react and react-dom', () => {
+  const entry = emitEntry({isApp: false, studioConfigPath: '/studio/sanity.config.ts'})
+  const configImport = entry.indexOf('import config from "/studio/sanity.config.ts"')
+
+  expect(configImport).toBeGreaterThanOrEqual(0)
+  expect(configImport).toBeLessThan(entry.indexOf("import * as React from 'react'"))
+  expect(configImport).toBeLessThan(entry.indexOf("import { createRoot } from 'react-dom/client'"))
+  expect(configImport).toBeLessThan(entry.indexOf("import { Studio } from 'sanity'"))
+})
+
+test('an app entry imports App before react and react-dom', () => {
+  const entry = emitEntry({appEntry: '/app/src/App.tsx', isApp: true})
+  const appImport = entry.indexOf('import App from "/app/src/App.tsx"')
+
+  expect(appImport).toBeGreaterThanOrEqual(0)
+  expect(appImport).toBeLessThan(entry.indexOf("import * as React from 'react'"))
+  expect(appImport).toBeLessThan(entry.indexOf("import { createRoot } from 'react-dom/client'"))
+})
+
+test('a Blueprints studio entry imports resource bindings, then the config, then react', () => {
+  const entry = emitEntry({
+    isApp: false,
+    isBlueprints: true,
+    studioConfigPath: '/studio/sanity.config.ts',
+  })
+  const bindingsImport = entry.indexOf("import './sanity-resource-bindings.js'")
+  const configImport = entry.indexOf('import config from "/studio/sanity.config.ts"')
+
+  expect(bindingsImport).toBeGreaterThanOrEqual(0)
+  expect(bindingsImport).toBeLessThan(configImport)
+  expect(configImport).toBeLessThan(entry.indexOf("import * as React from 'react'"))
+})
+
 test('a headless app exposes no `./App`, so it carries no controller', () => {
   const entry = emitEntry({isApp: true})
 
