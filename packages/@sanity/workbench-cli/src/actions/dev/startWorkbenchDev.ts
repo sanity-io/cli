@@ -6,10 +6,7 @@ import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestrati
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
-import {
-  startWorkbenchDevServer,
-  startWorkbenchRemoteCoordinator,
-} from './startWorkbenchDevServer.js'
+import {startWorkbenchDevServer} from './startWorkbenchDevServer.js'
 
 export interface StartWorkbenchDevOptions {
   /** Directory for the workbench Vite server's dependency cache. */
@@ -64,24 +61,17 @@ export async function startWorkbenchDev(
     workDir,
   } = options
 
-  // The remote can't render itself, so it runs as a plain app server (not the
-  // shell) that still claims the lock and bridges the registry, so app
-  // `sanity dev`s register into it.
+  // The remote only renders inside the shell a Studio or app `sanity dev`
+  // starts, so it must leave the workbench lock free for that shell.
   if (process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true') {
-    const remote = await startAppServer({announceUrl: true, cliConfig, httpPort})
+    const remote = await startAppServer({announceUrl: false, cliConfig, httpPort})
     if (!remote.started) return {close: async () => {}}
 
     const addr = remote.server.httpServer?.address()
-    const port =
-      (typeof addr === 'object' && addr ? addr.port : remote.server.config.server.port) ?? httpPort
-    const coordinator = startWorkbenchRemoteCoordinator({httpHost, port, server: remote.server})
-
-    return {
-      close: async () => {
-        await coordinator.close()
-        await remote.close()
-      },
-    }
+    const port = typeof addr === 'object' && addr ? addr.port : remote.server.config.server.port
+    output.log(`Workbench remote dev server started on port ${port}`)
+    output.log('Run `sanity dev` in a Studio or app to open Workbench')
+    return {close: remote.close}
   }
 
   // Unwound in reverse on any failure or on close(): the watcher stops before
