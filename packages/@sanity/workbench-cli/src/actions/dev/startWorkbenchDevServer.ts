@@ -13,7 +13,7 @@ import {
   type DevServerManifest,
   getRegisteredServers,
   isConfigOnlyServer,
-  readWorkbenchLock,
+  waitForWorkbenchLock,
   watchRegistry,
 } from './registry.js'
 import {toWireInterface} from './toWireInterface.js'
@@ -161,7 +161,7 @@ export async function startWorkbenchDevServer(
   // multiple `sanity dev` processes start simultaneously (e.g. via turbo).
   const workbenchLock = acquireWorkbenchLock({host: httpHost || 'localhost', port: workbenchPort})
   if (!workbenchLock) {
-    const existing = readWorkbenchLock()
+    const existing = await waitForWorkbenchLock()
     devDebug(
       'Workbench already running at pid %d on port %d, skipping',
       existing?.pid,

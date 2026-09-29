@@ -9,6 +9,7 @@ import {
   readWorkbenchLock,
   registerDevServer,
   runRegistryExitCleanupForTesting,
+  waitForWorkbenchLock,
   watchRegistry,
 } from '../registry.js'
 import {FakeFsWatcher} from './devTestHelpers.js'
@@ -262,10 +263,11 @@ describe('acquireWorkbenchLock', () => {
     const lock = acquireWorkbenchLock({host: '0.0.0.0', port: 4000})
 
     expect(lock).toBeDefined()
-    expect(readJson(lockPath())).toMatchObject({
+    expect(readJson(lockPath())).toEqual({
       host: '0.0.0.0',
       pid: process.pid,
       port: 4000,
+      ready: false,
       startedAt: OS_START.toISOString(),
       version: 2,
     })
@@ -283,11 +285,19 @@ describe('acquireWorkbenchLock', () => {
     expect(acquireWorkbenchLock({host: 'localhost', port: 3333})).toBeDefined()
   })
 
-  test('updatePort rewrites the port in the lock file', () => {
+  test('updatePort records the bound port and marks the lock ready', () => {
     const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})
+
     lock!.updatePort(3334)
 
-    expect(readJson(lockPath()).port).toBe(3334)
+    expect(readJson(lockPath())).toEqual({
+      host: 'localhost',
+      pid: process.pid,
+      port: 3334,
+      ready: true,
+      startedAt: OS_START.toISOString(),
+      version: 2,
+    })
   })
 
   test('reclaims a stale lock left by a dead process', () => {
@@ -339,6 +349,74 @@ describe('readWorkbenchLock', () => {
 
     expect(readWorkbenchLock()).toBeUndefined()
     expect(fsMock.module.existsSync(lockPath())).toBe(false)
+  })
+})
+
+describe('waitForWorkbenchLock', () => {
+  test('waits until the holder records the port its shell bound', async () => {
+    const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})!
+    let settled = false
+    const pending = waitForWorkbenchLock().finally(() => (settled = true))
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(settled).toBe(false)
+
+    lock.updatePort(3334)
+    await vi.advanceTimersByTimeAsync(50)
+
+    await expect(pending).resolves.toMatchObject({port: 3334, ready: true})
+  })
+
+  test('keeps the lock when a poll reads it mid-write', async () => {
+    const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})!
+    const pending = waitForWorkbenchLock()
+
+    // `updatePort` truncates the file before writing it.
+    fsMock.files.set(lockPath(), '')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(fsMock.module.existsSync(lockPath())).toBe(true)
+
+    lock.updatePort(3334)
+    await vi.advanceTimersByTimeAsync(50)
+
+    await expect(pending).resolves.toMatchObject({port: 3334})
+  })
+
+  test('stops waiting when the holder releases the lock', async () => {
+    const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})!
+    const pending = waitForWorkbenchLock()
+
+    lock.release()
+    await vi.advanceTimersByTimeAsync(50)
+
+    await expect(pending).resolves.toBeUndefined()
+  })
+
+  test('treats a lock written by an older CLI (no ready flag) as ready', async () => {
+    fsMock.files.set(
+      lockPath(),
+      JSON.stringify({
+        host: 'localhost',
+        pid: process.pid,
+        port: 3333,
+        startedAt: OS_START.toISOString(),
+        version: 2,
+      }),
+    )
+
+    const pending = waitForWorkbenchLock()
+
+    expect(vi.getTimerCount()).toBe(0)
+    await expect(pending).resolves.toMatchObject({port: 3333})
+  })
+
+  test('returns the lock as-is when the holder never marks it ready', async () => {
+    acquireWorkbenchLock({host: 'localhost', port: 3333})
+    const pending = waitForWorkbenchLock()
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await expect(pending).resolves.toMatchObject({port: 3333, ready: false})
   })
 })
 
