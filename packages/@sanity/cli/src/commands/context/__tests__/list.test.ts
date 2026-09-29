@@ -91,19 +91,6 @@ describe('context list', () => {
     expect(stdout).toContain('No knowledge bases found')
   })
 
-  test('falls back to the CLI config organization', async () => {
-    mockList.mockResolvedValue({data: [], nextCursor: null})
-
-    const {error} = await testCommand(ListKnowledgeBasesCommand, [], {
-      mocks: {cliConfig: {app: {organizationId: 'org-from-config'}}},
-    })
-
-    if (error) throw error
-    expect(mockList).toHaveBeenCalledWith(
-      expect.objectContaining({organizationId: 'org-from-config'}),
-    )
-  })
-
   test('prompts for organization when interactive', async () => {
     mockRequest.mockResolvedValue([{id: 'org-abc123', name: 'Acme', slug: null}])
     mockSelect.mockResolvedValue('org-abc123')

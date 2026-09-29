@@ -1,5 +1,5 @@
 import {Flags} from '@oclif/core'
-import {mcpOverrides} from '@sanity/cli-core/flags'
+import {fromCliConfig} from '@sanity/cli-core/flags'
 
 /**
  * Controls how the flag relates to CLI configuration:
@@ -75,23 +75,22 @@ export function getOrganizationFlag(options: SharedFlagOptions) {
   const description = baseDescription ?? 'Organization ID to use'
 
   return {
-    organization: mcpOverrides(
-      Flags.string({
-        description: isOverride ? description + OVERRIDE_SUFFIX : description,
-        helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
-        helpValue: '<id>',
-        ...rest,
-        parse: async (input: string) => {
-          const trimmed = input.trim()
-          if (trimmed === '') {
-            throw new Error('`--organization` cannot be empty if provided')
-          }
-          return trimmed
-        },
-      }),
-      // MCP invocations have no CLI configuration: plain copy, must be passed.
-      {description, required: true},
-    ),
+    organization: Flags.string({
+      description,
+      helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
+      helpValue: '<id>',
+      // Terminal help shows the resolved value as `[default: …]`; MCP schemas
+      // require the flag since programmatic runs never read local config.
+      ...(isOverride ? fromCliConfig((config) => config.app?.organizationId) : {}),
+      ...rest,
+      parse: async (input: string) => {
+        const trimmed = input.trim()
+        if (trimmed === '') {
+          throw new Error('`--organization` cannot be empty if provided')
+        }
+        return trimmed
+      },
+    }),
   }
 }
 

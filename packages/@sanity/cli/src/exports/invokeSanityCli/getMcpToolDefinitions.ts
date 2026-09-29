@@ -20,7 +20,11 @@
 import {type Command, type Config, type Interfaces} from '@oclif/core'
 import {type SanityCommand} from '@sanity/cli-core'
 import {type CommandPolicy, isConditionalInvocationPolicy} from '@sanity/cli-core/commandPolicy'
-import {mcpFlagOverrides, resolveUnattendedFlagRequirements} from '@sanity/cli-core/flags'
+import {
+  isFromCliConfig,
+  mcpFlagOverrides,
+  resolveUnattendedFlagRequirements,
+} from '@sanity/cli-core/flags'
 
 import {resolveCommandPolicies} from './commandPolicies/index.js'
 import {cachedCliCommandConfig, supportsIsolatedExecution} from './invokableCommands.js'
@@ -288,7 +292,13 @@ function collectFlags(
     const overrides = mcpFlagOverrides(loadedFlags[flag.name])
     properties[flag.name] = toProperty(flag, overrides?.description)
     flagKinds[flag.name] = toFlagKind(flag)
-    if (overrides?.required ?? (flag.required || unattendedFlags[flag.name]?.required)) {
+    // fromCliConfig flags default from local config, which programmatic
+    // invocations never read: the schema must demand the value instead.
+    if (
+      flag.required ||
+      unattendedFlags[flag.name]?.required ||
+      isFromCliConfig(loadedFlags[flag.name])
+    ) {
       required.push(flag.name)
     }
   }

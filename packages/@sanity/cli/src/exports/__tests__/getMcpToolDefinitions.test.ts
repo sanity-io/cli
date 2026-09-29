@@ -1,7 +1,7 @@
 import {fileURLToPath} from 'node:url'
 
 import {Config, Flags} from '@oclif/core'
-import {mcpOverrides, requiredWhenUnattended} from '@sanity/cli-core/flags'
+import {fromCliConfig, requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {beforeAll, describe, expect, test} from 'vitest'
 
 import {
@@ -58,7 +58,7 @@ describe('getMcpToolDefinitions', () => {
       definition('context_imports_create').inputSchema.properties['content-type'].description,
     ).not.toContain('--file')
 
-    // Required override: the CLI resolves the org from config, MCP cannot.
+    // fromCliConfig: the CLI resolves the org from config, MCP cannot.
     expect(required).toContain('organization')
     expect(definition('context_create').inputSchema.required).toContain('organization')
   })
@@ -306,21 +306,21 @@ describe('getMcpToolDefinitions', () => {
     )
   })
 
-  test('an explicit mcpOverrides required beats the unattended marker, and denial beats both', async () => {
+  test('config-defaulted flags become schema-required, and denial beats every marker', async () => {
     const fakeCommand = {
       args: {},
       flags: {
-        // Marked required-when-unattended, explicitly overridden to optional.
-        optional: {name: 'optional', type: 'option'},
-        // Policy-denied below; the override must not resurrect it.
+        // Defaults from sanity.cli.ts in a terminal: remote callers must pass it.
+        organization: {name: 'organization', type: 'option'},
+        // Policy-denied below; its unattended marker must not resurrect it.
         watch: {name: 'watch', type: 'boolean'},
       },
       id: 'context:build',
       load: async () =>
         class {
           static flags = {
-            optional: mcpOverrides(requiredWhenUnattended(Flags.string()), {required: false}),
-            watch: mcpOverrides(Flags.boolean(), {required: true}),
+            organization: Flags.string({...fromCliConfig(() => undefined)}),
+            watch: requiredWhenUnattended(Flags.boolean()),
           }
           runInExecutionContext() {}
         },
@@ -333,9 +333,9 @@ describe('getMcpToolDefinitions', () => {
 
     const [tool] = await getMcpToolDefinitions({commands: ['context:build'], config: fakeConfig})
 
-    expect(tool.inputSchema.required).toBeUndefined()
+    expect(tool.inputSchema.required).toEqual(['organization'])
     expect(tool.inputSchema.properties.watch).toBeUndefined()
-    expect(tool.inputSchema.properties.optional).toBeDefined()
+    expect(tool.inputSchema.properties.organization).toBeDefined()
   })
 
   test('flag and input names from Object.prototype behave like any other name', () => {

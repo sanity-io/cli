@@ -46,7 +46,6 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
     let organizationId: string
     try {
       organizationId = await resolveOrganizationId({
-        configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
         flagOrganizationId: organization,
         unattended: this.isUnattended(),
       })
