@@ -372,8 +372,6 @@ const workbenchLockSchema = z.object({
   host: z.string(),
   pid: z.number(),
   port: z.number(),
-  // False until the holder's shell is listening on `port`. Absent in locks
-  // written by older CLIs, which count as ready.
   ready: z.optional(z.boolean()),
   startedAt: z.string(),
   version: z.literal(REGISTRY_VERSION),
@@ -384,28 +382,22 @@ const workbenchLockSchema = z.object({
  * process is still alive. Prunes stale locks from crashed processes.
  */
 export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undefined {
-  const lockPath = join(getRegistryDir(), 'workbench.lock')
-
-  let contents: string
-  try {
-    contents = readFileSync(lockPath, 'utf8')
-  } catch {
-    // File doesn't exist — nothing to prune, nothing to return
-    return undefined
-  }
+  const file = readLockFile()
+  // File doesn't exist — nothing to prune, nothing to return
+  if (!file) return undefined
 
   // Past this point the file exists. Anything that isn't a live, valid lock
   // (unparsable JSON, schema mismatch, dead/reused PID) is stale and must be
   // pruned — otherwise the next `acquireWorkbenchLock` call is blocked by
   // EEXIST forever and `sanity dev` silently no-ops the workbench server.
-  const data = parseLockContents(contents)
+  const {data} = file
   devDebug('Read workbench lock: %o', data)
   if (data && isOurProcess(data.pid, data.startedAt)) {
     devDebug('Workbench process is alive at pid %d on port %d', data.pid, data.port)
     return data
   }
 
-  pruneWorkbenchLock(lockPath)
+  pruneWorkbenchLock(getLockPath())
   return undefined
 }
 
@@ -419,30 +411,44 @@ const LOCK_READY_POLL_MS = 50
 export async function waitForWorkbenchLock(): Promise<
   z.infer<typeof workbenchLockSchema> | undefined
 > {
-  const lockPath = join(getRegistryDir(), 'workbench.lock')
   const deadline = Date.now() + LOCK_READY_TIMEOUT_MS
   let lock = readWorkbenchLock()
-  // Polls skip `readWorkbenchLock`: its liveness check spawns `ps`/PowerShell, and
-  // it prunes the empty file `updatePort` leaves mid-write.
+  // Read the raw file here: `readWorkbenchLock` spawns `ps`/PowerShell per call
+  // and deletes a lock it catches half-written by `updatePort`.
   while (lock?.ready === false && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, LOCK_READY_POLL_MS))
-    let contents: string
-    try {
-      contents = readFileSync(lockPath, 'utf8')
-    } catch {
-      break
-    }
-    lock = parseLockContents(contents) ?? lock
+    const file = readLockFile()
+    if (!file) break
+    lock = file.data ?? lock
+  }
+  if (lock?.ready === false && Date.now() >= deadline) {
+    devDebug(
+      'Workbench lock not ready after %d ms, using port %d',
+      LOCK_READY_TIMEOUT_MS,
+      lock.port,
+    )
   }
   return readWorkbenchLock()
 }
 
-function parseLockContents(contents: string): z.infer<typeof workbenchLockSchema> | undefined {
+const getLockPath = () => join(getRegistryDir(), 'workbench.lock')
+
+/**
+ * Read the lock file with no liveness check and no pruning. `undefined` when
+ * there is no file; `data` is `undefined` when its contents don't parse.
+ */
+function readLockFile(): {data: z.infer<typeof workbenchLockSchema> | undefined} | undefined {
+  let contents: string
   try {
-    const {data, success} = workbenchLockSchema.safeParse(JSON.parse(contents))
-    return success ? data : undefined
+    contents = readFileSync(getLockPath(), 'utf8')
   } catch {
     return undefined
+  }
+  try {
+    const {data, success} = workbenchLockSchema.safeParse(JSON.parse(contents))
+    return {data: success ? data : undefined}
+  } catch {
+    return {data: undefined}
   }
 }
 
@@ -482,7 +488,7 @@ export function acquireWorkbenchLock(
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
 
-  const lockPath = join(registryDir, 'workbench.lock')
+  const lockPath = getLockPath()
   const startedAt = ownStartedAt()
   const lockData = {
     host: info.host,
@@ -504,12 +510,8 @@ export function acquireWorkbenchLock(
     // it after our own release must not be clobbered.
     const detachExitCleanup = unlinkOnProcessExit(lockPath, () => {
       if (released) return false
-      try {
-        const disk = parseLockContents(readFileSync(lockPath, 'utf8'))
-        return disk?.pid === process.pid && disk.startedAt === startedAt
-      } catch {
-        return false
-      }
+      const disk = readLockFile()?.data
+      return disk?.pid === process.pid && disk.startedAt === startedAt
     })
 
     return {
