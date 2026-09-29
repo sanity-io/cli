@@ -20,7 +20,7 @@ pnpm bench:cold-start --base main
 pnpm bench:cold-start --base main --json
 ```
 
-The first run fills a local npm mirror from npmjs.org and takes several minutes. Later runs reuse it. Each timed run takes 20–60 seconds, and the default is 3 runs per variant and entry point. Refs you compare against are built once in a temporary worktree and cached by commit.
+The first run fills a local npm mirror from npmjs.org and takes several minutes. Later runs reuse it. A measurement takes about 95 seconds with the default of 1 run per entry point. Use `--runs 3` to confirm a result before keeping it. Refs you compare against are built once in a temporary worktree and cached by commit.
 
 Only one measurement runs at a time per machine. A second one waits for the lock, because parallel runs would share CPU and bandwidth and distort each other's timings.
 
@@ -56,7 +56,7 @@ Only the CLI's startup can be gamed by printing early, for example a `console.lo
 ## How the environment is controlled
 
 - **Local registry.** Verdaccio mirrors npmjs.org. Once a package's metadata has been fetched it is kept for ten years, so repeated runs resolve the same dependency versions and the score only moves when the code does. Delete the mirror with `--fresh-registry`.
-- **Simulated network.** A TCP proxy in front of the registry adds bandwidth limits and latency shared across all of npm's connections (`bench.config.json` → `network`). Without it, downloads over localhost would be nearly free, and downloading is most of what users wait for.
+- **Calculated download time.** Runs go over localhost at full speed. The proxy in front of the registry counts bytes and requests, and the score adds the time those would take on the reference network (`bench.config.json` → `network`): bytes at its bandwidth, plus one round trip per request spread over npm's 15 parallel connections. This part of the score doesn't vary between runs.
 - **Releases, not prereleases.** Each variant is published under a patch number far above anything real, e.g. `@sanity/cli-core@3.8.1000000123`. Third-party ranges such as `@sanity/runtime-cli`'s `^3.7.0` pick up the bench build, and npm dedupes exactly as it would for a real release.
 - **One variant visible at a time.** An HTTP filter in front of the registry hides the other variant's versions and makes the active variant `latest`. That's why the commands can be exactly what users type.
 - **`sanity` stays pinned.** `sanity` lives in a separate repo. The pinned version (`sanityVersion`) is repacked with its `@sanity/cli` dependency pointing at the build under test. Bump it by hand, deliberately.

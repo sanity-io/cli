@@ -27,12 +27,14 @@ function run(overrides: Partial<RunResult> = {}): RunResult {
     firstOutputMs: 20_000,
     firstScreen: 'Warning\nFetching providers',
     markerMs: 20_020,
+    modeledDownloadMs: 0,
     run: 0,
     tree: null,
     variant: 'base',
     wireBytesDown: 1000,
     wireBytesUp: 10,
     wireConnections: 4,
+    wireRequests: 8,
     ...overrides,
   }
 }

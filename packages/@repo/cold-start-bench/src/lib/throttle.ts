@@ -44,6 +44,23 @@ interface ThrottleStats {
   connections: number
 }
 
+/**
+ * How long downloading takes on the reference network: every byte at the
+ * profile's bandwidth, plus one round trip per request spread over npm's
+ * parallel connections (`maxsockets`, 15 by default in npm 11).
+ */
+export function modelDownloadMs(options: {
+  bytesDown: number
+  profile: NetworkProfile
+  requests: number
+}): number {
+  const {bytesDown, profile, requests} = options
+  const PARALLEL_CONNECTIONS = 15
+  const transfer = (bytesDown * 8) / (profile.downMbps * 1000)
+  const latency = (requests * profile.rttMs) / PARALLEL_CONNECTIONS
+  return Math.round(transfer + latency)
+}
+
 export interface ThrottleProxy {
   close(): Promise<void>
   port: number

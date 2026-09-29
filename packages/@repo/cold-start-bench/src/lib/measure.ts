@@ -85,7 +85,10 @@ export async function measureRun(options: {
   registryUrl: string
   scanTree: boolean
   timeoutMs: number
-}): Promise<Omit<RunResult, 'run' | 'variant' | 'wireBytesDown' | 'wireBytesUp' | 'wireConnections'>> {
+}): Promise<Omit<
+    RunResult,
+    'modeledDownloadMs' | 'run' | 'variant' | 'wireBytesDown' | 'wireBytesUp' | 'wireConnections' | 'wireRequests'
+  >> {
   const {dir, entry, marker, registryUrl, scanTree, timeoutMs} = options
   await rm(dir, {force: true, recursive: true})
   const project = join(dir, 'project')

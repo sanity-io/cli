@@ -1,7 +1,7 @@
 {
   "sanityVersion": "6.17.0",
   "marker": "Fetching providers",
-  "runs": 3,
+  "runs": 1,
   "timeoutMs": 300000,
   "network": {
     "downMbps": 50,

@@ -21,7 +21,7 @@ import {ensureSpawnHelperExecutable, measureRun} from './lib/measure.ts'
 import {type PackedVariant, packRef, packWorkingTree} from './lib/pack.ts'
 import {npmEnv, publish, seed, startRegistry, wrapSanity} from './lib/registry.ts'
 import {type BenchResults, buildReport} from './lib/report.ts'
-import {startThrottleProxy} from './lib/throttle.ts'
+import {modelDownloadMs, startThrottleProxy} from './lib/throttle.ts'
 import {diffTrees, type TreeDiff} from './lib/tree.ts'
 
 const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -104,7 +104,6 @@ async function main(): Promise<number> {
     }
 
     await ensureSpawnHelperExecutable()
-    proxy.setThrottled(true)
 
     const runs: RunResult[] = []
     const names = Object.keys(variants)
@@ -117,6 +116,7 @@ async function main(): Promise<number> {
         for (const variant of order) {
           filter.setActive(active[variant])
           proxy.resetStats()
+          filter.resetRequestCount()
           const result = await measureRun({
             dir: join(runDir, `${variant}-${entry}-${run}`),
             entry,
@@ -126,18 +126,26 @@ async function main(): Promise<number> {
             timeoutMs: config.timeoutMs,
           })
           const wire = proxy.resetStats()
+          const requests = filter.resetRequestCount()
+          const modeledDownloadMs = modelDownloadMs({
+            bytesDown: wire.bytesDown,
+            profile: config.network,
+            requests,
+          })
           runs.push({
             ...result,
+            modeledDownloadMs,
             run,
             variant,
             wireBytesDown: wire.bytesDown,
             wireBytesUp: wire.bytesUp,
             wireConnections: wire.connections,
+            wireRequests: requests,
           })
           const took =
             result.firstOutputMs === null
               ? `no output (${result.end})`
-              : `${(result.firstOutputMs / 1000).toFixed(2)}s`
+              : `${((result.firstOutputMs + modeledDownloadMs) / 1000).toFixed(2)}s`
           log(`Run ${run + 1}/${config.runs} ${entry} ${variant}: ${took}`)
         }
       }

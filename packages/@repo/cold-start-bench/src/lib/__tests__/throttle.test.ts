@@ -2,7 +2,7 @@ import {createConnection, createServer, type Server} from 'node:net'
 
 import {afterEach, describe, expect, test} from 'vitest'
 
-import {type Link, scheduleChunk, startThrottleProxy, type ThrottleProxy} from '../throttle.ts'
+import {type Link, modelDownloadMs, scheduleChunk, startThrottleProxy, type ThrottleProxy} from '../throttle.ts'
 
 describe('scheduleChunk', () => {
   const base = {mbps: 8, oneWayMs: 20, previousDelivery: 0}
@@ -174,5 +174,14 @@ describe('startThrottleProxy', () => {
     expect(echoed.length).toBe(50_000)
     // Throttled, this would take over a second
     expect(elapsed).toBeLessThan(400)
+  })
+})
+
+describe('modelDownloadMs', () => {
+  test('bandwidth plus round trips spread over 15 connections', () => {
+    // 50 Mbit/s: 1 MB takes 160 ms; 150 requests × 40 ms / 15 = 400 ms
+    expect(
+      modelDownloadMs({bytesDown: 1_000_000, profile: {downMbps: 50, rttMs: 40, upMbps: 10}, requests: 150}),
+    ).toBe(560)
   })
 })

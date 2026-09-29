@@ -77,7 +77,7 @@ export function buildReport(results: BenchResults): string {
   }
   lines.push(
     '',
-    'Weighted median time from typing the command to the CLI’s first output, with an empty npm cache over a simulated network. Lower is better.',
+    'Weighted median time from typing the command to the CLI’s first output, with an empty npm cache: measured locally, plus the calculated download time on the reference network. Lower is better.',
     '',
   )
 

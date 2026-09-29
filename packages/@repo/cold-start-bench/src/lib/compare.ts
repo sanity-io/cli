@@ -10,6 +10,8 @@ export interface RunResult {
   /** Visible output from the CLI's first line up to the marker */
   firstScreen: string
   markerMs: number | null
+  /** Download time on the reference network, calculated from bytes and requests */
+  modeledDownloadMs: number
   run: number
   /** Only kept for the first run of each entry point; the tree doesn't change between runs */
   tree: InstalledTree | null
@@ -17,6 +19,7 @@ export interface RunResult {
   wireBytesDown: number
   wireBytesUp: number
   wireConnections: number
+  wireRequests: number
 
   /** Visible output of a run that didn't reach the marker */
   output?: string
@@ -38,7 +41,12 @@ export function summarizeEntry(runs: readonly RunResult[]): EntrySummary {
   const tree = runs.find((r) => r.tree)?.tree ?? null
   return {
     failedRuns: runs.length - complete.length,
-    firstOutput: complete.length > 0 ? summarize(complete.map((r) => r.firstOutputMs!)) : null,
+    // Measured over localhost, where downloading is nearly free, plus the
+    // calculated download time on the reference network
+    firstOutput:
+      complete.length > 0
+        ? summarize(complete.map((r) => r.firstOutputMs! + r.modeledDownloadMs))
+        : null,
     firstScreen: complete[0]?.firstScreen ?? '',
     markerGap:
       complete.length > 0 ? summarize(complete.map((r) => r.markerMs! - r.firstOutputMs!)) : null,
