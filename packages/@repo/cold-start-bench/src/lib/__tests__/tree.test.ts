@@ -4,7 +4,7 @@ import {dirname, join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
-import {diffTrees, type InstalledTree, scanInstalledTree} from '../tree.ts'
+import {largestPackages, scanInstalledTree} from '../tree.ts'
 
 let root: string
 
@@ -49,28 +49,13 @@ describe('scanInstalledTree', () => {
   })
 })
 
-function tree(packages: Record<string, number>): InstalledTree {
-  return {bytes: 0, packageCount: 0, packages}
-}
-
-describe('diffTrees', () => {
-  test('lists added and removed packages largest first', () => {
-    const base = tree({'a@1.0.0': 10, 'b@1.0.0': 5, 'same@1.0.0': 1})
-    const head = tree({'a@2.0.0': 12, 'c@1.0.0': 30, 'd@1.0.0': 30, 'same@1.0.0': 1})
-    expect(diffTrees(base, head)).toEqual({
-      added: [
-        {bytes: 30, id: 'c@1.0.0'},
-        {bytes: 30, id: 'd@1.0.0'},
-        {bytes: 12, id: 'a@2.0.0'},
-      ],
-      removed: [
-        {bytes: 10, id: 'a@1.0.0'},
-        {bytes: 5, id: 'b@1.0.0'},
-      ],
-    })
-  })
-
-  test('respects the limit', () => {
-    expect(diffTrees(tree({}), tree({a: 1, b: 2}), 1).added).toEqual([{bytes: 2, id: 'b'}])
+describe('largestPackages', () => {
+  test('lists the largest packages first', () => {
+    const tree = {bytes: 0, packageCount: 0, packages: {'a@1': 10, 'b@1': 30, 'c@1': 30, 'd@1': 1}}
+    expect(largestPackages(tree, 3)).toEqual([
+      {bytes: 30, id: 'b@1'},
+      {bytes: 30, id: 'c@1'},
+      {bytes: 10, id: 'a@1'},
+    ])
   })
 })

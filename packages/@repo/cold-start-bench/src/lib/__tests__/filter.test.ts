@@ -188,13 +188,16 @@ describe('startVersionFilter', () => {
     expect(missing.body.toString()).toBe('nope')
   })
 
-  test('counts requests, cached ones included', async () => {
-    await start((_, res) => res.end('{"name":"x"}'))
-    await get('/x', {accept: ABBREVIATED})
-    await get('/x', {accept: ABBREVIATED})
+  test('counts requests and response bytes, cached ones included', async () => {
+    await start((req, res) => res.end(req.url?.includes('/-/') ? 'tarball' : '{"name":"x"}'))
+    const first = await get('/x', {accept: ABBREVIATED})
+    const second = await get('/x', {accept: ABBREVIATED})
     await get('/x/-/x-1.0.0.tgz')
-    expect(filter.resetRequestCount()).toBe(3)
-    expect(filter.resetRequestCount()).toBe(0)
+    expect(filter.resetStats()).toEqual({
+      bytes: first.body.length + second.body.length + 'tarball'.length,
+      requests: 3,
+    })
+    expect(filter.resetStats()).toEqual({bytes: 0, requests: 0})
   })
 
   test('forwards request bodies', async () => {

@@ -7,9 +7,6 @@ import {dirname, join} from 'node:path'
 
 import {execa, type ResultPromise} from 'execa'
 
-import {benchVersion, isBenchVersion, rewriteManifest} from './manifest.ts'
-import {type PackedPackage} from './pack.ts'
-import {repackTarball} from './tarball.ts'
 
 /**
  * Verdaccio config for a local mirror of npm.
@@ -130,41 +127,6 @@ export async function publish(file: string, env: Record<string, string>): Promis
   // Content-addressed versions: an existing version is the same package
   if (/EPUBLISHCONFLICT|cannot publish over|this package is already present/i.test(result.stderr)) return
   throw new Error(`npm publish ${file} failed:\n${result.stderr}`)
-}
-
-/**
- * Takes the published `sanity` package and points its CLI dependencies at the
- * bench versions, so `npx sanity init` runs the CLI under test inside the
- * `sanity` package users actually get.
- */
-export async function wrapSanity(options: {
-  cli: readonly PackedPackage[]
-  env: Record<string, string>
-  id: string
-  outDir: string
-  sanityVersion: string
-}): Promise<PackedPackage> {
-  const {cli, env, id, outDir, sanityVersion} = options
-  const dir = await mkdtemp(join(tmpdir(), 'cold-start-sanity-'))
-  try {
-    const {stdout} = await execa('npm', ['pack', `sanity@${sanityVersion}`, '--json'], {
-      cwd: dir,
-      env: {...env, npm_config_cache: join(dir, '.npm')},
-    })
-    const [{filename}] = JSON.parse(stdout) as {filename: string}[]
-    const version = benchVersion(sanityVersion, id)
-    const versions = new Map(cli.map((p) => [p.name, p.version]))
-    const file = join(outDir, `sanity-${version}.tgz`)
-    const manifest = await repackTarball(join(dir, filename), file, (m) =>
-      rewriteManifest(m, version, versions),
-    )
-    if (!Object.values(manifest.dependencies ?? {}).some((range) => isBenchVersion(range))) {
-      throw new Error(`sanity@${sanityVersion} has no dependency on the packed CLI packages`)
-    }
-    return {file, name: 'sanity', version}
-  } finally {
-    await rm(dir, {force: true, recursive: true})
-  }
 }
 
 /**

@@ -72,8 +72,8 @@ export function packumentName(url: string): string | null {
 export interface VersionFilter {
   close(): Promise<void>
   port: number
-  /** Returns the number of requests since the last call and zeroes it */
-  resetRequestCount(): number
+  /** Returns response bytes and request count since the last call, and zeroes them */
+  resetStats(): {bytes: number; requests: number}
   /** Package name → version to present as `latest`; other bench versions are hidden */
   setActive(versions: ReadonlyMap<string, string>): void
 }
@@ -102,11 +102,12 @@ export async function startVersionFilter(targetPort: number): Promise<VersionFil
   let active: ReadonlyMap<string, string> = new Map()
   const agent = new Agent({keepAlive: true})
   const cache = new Map<string, CachedPackument>()
-  let requests = 0
+  let stats = {bytes: 0, requests: 0}
 
   function send(req: IncomingMessage, res: ServerResponse, doc: CachedPackument) {
     const gzip = /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))
     const body = gzip ? doc.gzip : doc.json
+    stats.bytes += body.length
     res.writeHead(200, {
       'content-length': body.length,
       'content-type': doc.type,
@@ -116,7 +117,7 @@ export async function startVersionFilter(targetPort: number): Promise<VersionFil
   }
 
   const server = createServer((req, res) => {
-    requests++
+    stats.requests++
     const name = req.method === 'GET' && req.url ? packumentName(req.url) : null
     const headers: IncomingHttpHeaders = {...req.headers}
     let key: string | undefined
@@ -138,6 +139,7 @@ export async function startVersionFilter(targetPort: number): Promise<VersionFil
       (response) => {
         if (!key || response.statusCode !== 200) {
           res.writeHead(response.statusCode ?? 502, response.headers)
+          response.on('data', (chunk: Buffer) => (stats.bytes += chunk.length))
           response.pipe(res)
           return
         }
@@ -177,10 +179,10 @@ export async function startVersionFilter(targetPort: number): Promise<VersionFil
         server.close(() => resolve())
       }),
     port: address.port,
-    resetRequestCount() {
-      const count = requests
-      requests = 0
-      return count
+    resetStats() {
+      const current = stats
+      stats = {bytes: 0, requests: 0}
+      return current
     },
     setActive(versions) {
       active = versions

@@ -65,26 +65,10 @@ export async function scanInstalledTree(nodeModules: string): Promise<InstalledT
   return tree
 }
 
-interface PackageChange {
-  bytes: number
-  id: string
-}
-
-export interface TreeDiff {
-  added: PackageChange[]
-  removed: PackageChange[]
-}
-
-/**
- * Packages only in `head` (added) or only in `base` (removed), largest first.
- * A version bump shows as one removal and one addition.
- */
-export function diffTrees(base: InstalledTree, head: InstalledTree, limit = 10): TreeDiff {
-  const only = (a: InstalledTree, b: InstalledTree) =>
-    Object.entries(a.packages)
-      .filter(([id]) => !(id in b.packages))
-      .map(([id, bytes]) => ({bytes, id}))
-      .toSorted((x, y) => y.bytes - x.bytes || x.id.localeCompare(y.id))
-      .slice(0, limit)
-  return {added: only(head, base), removed: only(base, head)}
+/** The largest installed packages, the obvious places to look for savings */
+export function largestPackages(tree: InstalledTree, limit = 10): {bytes: number; id: string}[] {
+  return Object.entries(tree.packages)
+    .map(([id, bytes]) => ({bytes, id}))
+    .toSorted((a, b) => b.bytes - a.bytes || a.id.localeCompare(b.id))
+    .slice(0, limit)
 }

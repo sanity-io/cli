@@ -5,15 +5,27 @@ import {dirname, join} from 'node:path'
 
 import * as pty from 'node-pty'
 
-import {type RunResult} from './compare.ts'
-import {type EntryPoint} from './config.ts'
 import {analyzeOutput, type OutputChunk, visibleText} from './output.ts'
-import {scanInstalledTree} from './tree.ts'
+import {type InstalledTree, scanInstalledTree} from './tree.ts'
+
+export const ENTRY_POINTS = ['npx-sanity-init', 'npm-create-sanity'] as const
+export type EntryPoint = (typeof ENTRY_POINTS)[number]
+
+export interface MeasuredRun {
+  /** How the run ended: the marker appeared, the process exited first, or it timed out */
+  end: 'exited' | 'marker' | 'timeout'
+  firstOutputMs: number | null
+  markerMs: number | null
+  tree: InstalledTree | null
+
+  /** What the user saw, kept for runs that went wrong */
+  output?: string
+}
 
 /**
  * The command a new user types. `--yes` answers npm's "Need to install the
  * following packages" prompt, so a human's reaction time isn't measured.
- * `latest` resolves to the variant under test; see `filter.ts`.
+ * `latest` resolves to the build under test; see `registry.ts`.
  */
 export function entryCommand(entry: EntryPoint): [string, string[]] {
   switch (entry) {
@@ -85,10 +97,7 @@ export async function measureRun(options: {
   registryUrl: string
   scanTree: boolean
   timeoutMs: number
-}): Promise<Omit<
-    RunResult,
-    'modeledDownloadMs' | 'run' | 'variant' | 'wireBytesDown' | 'wireBytesUp' | 'wireConnections' | 'wireRequests'
-  >> {
+}): Promise<MeasuredRun> {
   const {dir, entry, marker, registryUrl, scanTree, timeoutMs} = options
   await rm(dir, {force: true, recursive: true})
   const project = join(dir, 'project')
@@ -110,7 +119,7 @@ export async function measureRun(options: {
     }),
   )
 
-  const end = await new Promise<RunResult['end']>((resolve) => {
+  const end = await new Promise<MeasuredRun['end']>((resolve) => {
     const timer = setTimeout(() => resolve('timeout'), timeoutMs)
     child.onData((data) => {
       chunks.push({at: performance.now() - started, data})
@@ -144,10 +153,7 @@ export async function measureRun(options: {
 
   return {
     end,
-    entry,
     firstOutputMs: timeline.firstOutputAt === null ? null : Math.round(timeline.firstOutputAt),
-    firstScreen: timeline.firstScreen,
-    // What the user saw, for runs that went wrong
     ...(end === 'marker' ? {} : {output: visibleText(chunks).slice(-4000)}),
     markerMs: timeline.markerAt === null ? null : Math.round(timeline.markerAt),
     tree,
