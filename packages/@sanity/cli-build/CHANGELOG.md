@@ -1,5 +1,15 @@
 # Changelog
 
+## 6.4.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.1...cli-build-v6.4.2)
+
+_2026-09-28_
+
+### Bug Fixes
+
+- The generated studio entry now imports your `sanity.config` before `sanity`, and the app entry imports your app before `react-dom/client`. A side-effect import at the top of that file, such as `import 'react-devtools-cdt-mcp/register'` or any other tool that must install a global hook before React loads, runs before React initializes during `sanity dev`. A production `sanity build` can still evaluate shared dependency chunks before that code, so the same order is not guaranteed in the built bundle. ([#1925](https://github.com/sanity-io/cli/pull/1925)) ([bc61791](https://github.com/sanity-io/cli/commit/bc6179121f478f74b756d75e79b68e027dd06193))
+
 ## 6.4.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.0...cli-build-v6.4.1)
