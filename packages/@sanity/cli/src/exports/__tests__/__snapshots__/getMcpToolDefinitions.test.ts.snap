@@ -8,6 +8,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "flagKinds": {
       "cancel": "boolean",
     },
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -42,6 +43,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
       "organization": "value",
       "title": "value",
     },
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -77,6 +79,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "flagKinds": {
       "yes": "boolean",
     },
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -108,6 +111,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "commandId": "context:get",
     "description": "Get details of a knowledge base",
     "flagKinds": {},
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -134,19 +138,24 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "commandId": "context:imports:create",
     "description": "Import content into a knowledge base",
     "flagKinds": {
-      "content-type": "value",
+      "contentType": "value",
       "query": "value",
-      "sanity-dataset": "value",
-      "sanity-project": "value",
+      "sanityDataset": "value",
+      "sanityProject": "value",
       "text": "value",
       "title": "value",
       "url": "value",
+    },
+    "flagNames": {
+      "contentType": "content-type",
+      "sanityDataset": "sanity-dataset",
+      "sanityProject": "sanity-project",
     },
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
-        "content-type": {
+        "contentType": {
           "description": "MIME type for text imports: text/markdown or text/plain. Omit for url and query imports.",
           "type": "string",
         },
@@ -159,11 +168,11 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
           "description": "GROQ query binding a Sanity dataset as a source (requires --sanity-project and --sanity-dataset; provide exactly one content source)",
           "type": "string",
         },
-        "sanity-dataset": {
+        "sanityDataset": {
           "description": "Sanity dataset for a dataset import",
           "type": "string",
         },
-        "sanity-project": {
+        "sanityProject": {
           "description": "Sanity project ID for a dataset import",
           "type": "string",
         },
@@ -198,6 +207,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "flagKinds": {
       "yes": "boolean",
     },
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -236,6 +246,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "commandId": "context:imports:get",
     "description": "Get details of an import",
     "flagKinds": {},
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -269,6 +280,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "commandId": "context:imports:list",
     "description": "List imports for a knowledge base",
     "flagKinds": {},
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -295,6 +307,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "commandId": "context:jobs:get",
     "description": "Get the status of a knowledge base job",
     "flagKinds": {},
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -330,6 +343,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "flagKinds": {
       "organization": "value",
     },
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -353,6 +367,7 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "commandId": "context:refresh",
     "description": "Refresh a knowledge base: re-check sources and apply what changed",
     "flagKinds": {},
+    "flagNames": {},
     "forceJson": true,
     "inputSchema": {
       "additionalProperties": false,
@@ -380,9 +395,13 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
     "description": "Update a knowledge base (provide at least one field to change)",
     "flagKinds": {
       "description": "value",
-      "refresh-enabled": "booleanAllowNo",
-      "refresh-frequency": "value",
+      "refreshEnabled": "booleanAllowNo",
+      "refreshFrequency": "value",
       "title": "value",
+    },
+    "flagNames": {
+      "refreshEnabled": "refresh-enabled",
+      "refreshFrequency": "refresh-frequency",
     },
     "forceJson": true,
     "inputSchema": {
@@ -397,11 +416,11 @@ exports[`getMcpToolDefinitions > the generated Context v1 tool surface 1`] = `
           "minLength": 1,
           "type": "string",
         },
-        "refresh-enabled": {
+        "refreshEnabled": {
           "description": "Enable scheduled refresh (--no-refresh-enabled to disable)",
           "type": "boolean",
         },
-        "refresh-frequency": {
+        "refreshFrequency": {
           "description": "How often scheduled refresh runs",
           "enum": [
             "weekly",

@@ -55,7 +55,7 @@ describe('getMcpToolDefinitions', () => {
     expect(properties.organization.description).toBe('Organization to list knowledge bases for')
     expect(properties.organization.description).not.toContain('overrides CLI configuration')
     expect(
-      definition('context_imports_create').inputSchema.properties['content-type'].description,
+      definition('context_imports_create').inputSchema.properties.contentType.description,
     ).not.toContain('--file')
 
     // fromCliConfig: the CLI resolves the org from config, MCP cannot.
@@ -114,6 +114,7 @@ describe('getMcpToolDefinitions', () => {
       commandId: 'demo:cmd',
       description: '',
       flagKinds: {},
+      flagNames: {},
       forceJson: false,
       inputSchema: {additionalProperties: false, properties: {}, type: 'object'},
       name: 'demo_cmd',
@@ -141,7 +142,7 @@ describe('getMcpToolDefinitions', () => {
   test('builds argv from tool input, including --no- for negated booleans', () => {
     const argv = mcpToolInputToArgv(definition('context_update'), {
       knowledgeBaseId: 'kb-abc123',
-      'refresh-enabled': false,
+      refreshEnabled: false,
       title: 'New title',
     })
 
@@ -182,6 +183,7 @@ describe('getMcpToolDefinitions', () => {
       commandId: 'demo:cmd',
       description: '',
       flagKinds: {tag: 'multiple'},
+      flagNames: {},
       forceJson: false,
       inputSchema: {additionalProperties: false, properties: {}, type: 'object'},
       name: 'demo_cmd',
@@ -218,6 +220,61 @@ describe('getMcpToolDefinitions', () => {
         knowledgeBaseId: 'kb-abc123',
       }),
     ).toEqual(['context:build', '--json', '--', 'kb-abc123'])
+  })
+
+  test('kebab-case flags are exposed camelCase and translate back to argv', () => {
+    const create = definition('context_imports_create')
+
+    expect(create.inputSchema.properties.contentType).toBeDefined()
+    expect(create.inputSchema.properties['content-type']).toBeUndefined()
+    expect(create.flagNames.contentType).toBe('content-type')
+    // Single-word flags need no mapping entry.
+    expect(Object.keys(create.flagNames)).not.toContain('text')
+
+    expect(
+      mcpToolInputToArgv(create, {
+        contentType: 'text/plain',
+        knowledgeBaseId: 'kb-abc123',
+        text: 'hello',
+        title: 'Note',
+      }),
+    ).toEqual([
+      'context:imports:create',
+      '--json',
+      '--content-type',
+      'text/plain',
+      '--text',
+      'hello',
+      '--title',
+      'Note',
+      '--',
+      'kb-abc123',
+    ])
+  })
+
+  test('throws when two flags collapse into one camelCase name', async () => {
+    const fakeCommand = {
+      args: {},
+      flags: {
+        'foo-bar': {name: 'foo-bar', type: 'option'},
+        fooBar: {name: 'fooBar', type: 'option'},
+      },
+      id: 'context:build',
+      load: async () =>
+        class {
+          static flags = {'foo-bar': Flags.string(), fooBar: Flags.string()}
+          runInExecutionContext() {}
+        },
+    }
+    const fakeConfig = {
+      findCommand: () => fakeCommand,
+      pjson: {name: '@sanity/cli'},
+      plugins: new Map(),
+    } as unknown as Config
+
+    await expect(
+      getMcpToolDefinitions({commands: ['context:build'], config: fakeConfig}),
+    ).rejects.toThrow('exposes two inputs named fooBar')
   })
 
   test('throws when a positional is supplied after a missing one', () => {
@@ -343,6 +400,7 @@ describe('getMcpToolDefinitions', () => {
       commandId: 'demo:cmd',
       description: '',
       flagKinds: {toString: 'value' as const},
+      flagNames: {},
       forceJson: false,
       inputSchema: {additionalProperties: false, properties: {}, type: 'object'},
       name: 'demo_cmd',

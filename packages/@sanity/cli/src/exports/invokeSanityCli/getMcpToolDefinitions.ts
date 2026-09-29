@@ -77,6 +77,13 @@ export interface McpToolDefinition {
   flagKinds: Record<string, McpToolFlagKind>
 
   /**
+   * CLI flag name per schema property where the two differ: kebab-case flags
+   * are exposed camelCase (`content-type` → `contentType`), matching the
+   * positional-argument naming.
+   */
+  flagNames: Record<string, string>
+
+  /**
    * Whether invocations append `--json`: the flag is omitted from the schema
    * and forced on instead, so callers always get structured output where it exists.
    */
@@ -175,7 +182,13 @@ function toToolDefinition(
   const required: string[] = []
 
   const positionalArguments = collectArguments(command, properties, required)
-  const {flagKinds, forceJson} = collectFlags(command, policy, CommandClass, properties, required)
+  const {flagKinds, flagNames, forceJson} = collectFlags(
+    command,
+    policy,
+    CommandClass,
+    properties,
+    required,
+  )
 
   return {
     commandId: command.id,
@@ -187,6 +200,7 @@ function toToolDefinition(
       command.summary ??
       '',
     flagKinds,
+    flagNames,
     forceJson,
     inputSchema: {
       additionalProperties: false,
@@ -241,6 +255,11 @@ function collectArguments(
   return positionalArguments
 }
 
+/** `content-type` → `contentType`, aligning flag names with positional names. */
+function toSchemaName(flagName: string): string {
+  return flagName.replaceAll(/-([a-z0-9])/g, (_, char: string) => char.toUpperCase())
+}
+
 /**
  * Add the command's advertisable flags to the schema accumulators and return
  * how each maps back to argv, plus whether invocations force `--json`.
@@ -251,7 +270,11 @@ function collectFlags(
   CommandClass: Command.Class,
   properties: Record<string, McpToolInputProperty>,
   required: string[],
-): {flagKinds: Record<string, McpToolFlagKind>; forceJson: boolean} {
+): {
+  flagKinds: Record<string, McpToolFlagKind>
+  flagNames: Record<string, string>
+  forceJson: boolean
+} {
   // Same rule as the policy-scoped help renderer: never advertise surface the
   // policy would refuse.
   const deniedFlags = new Set(isConditionalInvocationPolicy(policy) ? policy.deniedFlags : [])
@@ -269,6 +292,7 @@ function collectFlags(
   // Null prototype for the same reason as `properties`: a flag named
   // `__proto__` must record its kind, not silently no-op on the accessor.
   const flagKinds: Record<string, McpToolFlagKind> = Object.create(null)
+  const flagNames: Record<string, string> = Object.create(null)
   let forceJson = command.enableJsonFlag === true
   for (const flag of Object.values(command.flags)) {
     if (flag.hidden) {
@@ -286,12 +310,16 @@ function collectFlags(
       forceJson = true
       continue
     }
-    if (Object.hasOwn(properties, flag.name)) {
-      throw new Error(`Command "${command.id}" has an argument and a flag both named ${flag.name}`)
+    const schemaName = toSchemaName(flag.name)
+    if (Object.hasOwn(properties, schemaName)) {
+      // Arguments and flags share the schema namespace, and two kebab-case
+      // spellings can collapse into one camelCase name.
+      throw new Error(`Command "${command.id}" exposes two inputs named ${schemaName}`)
     }
     const overrides = mcpFlagOverrides(loadedFlags[flag.name])
-    properties[flag.name] = toProperty(flag, overrides?.description)
-    flagKinds[flag.name] = toFlagKind(flag)
+    properties[schemaName] = toProperty(flag, overrides?.description)
+    flagKinds[schemaName] = toFlagKind(flag)
+    if (schemaName !== flag.name) flagNames[schemaName] = flag.name
     // fromCliConfig flags default from local config, which programmatic
     // invocations never read: the schema must demand the value instead.
     if (
@@ -299,10 +327,10 @@ function collectFlags(
       unattendedFlags[flag.name]?.required ||
       isFromCliConfig(loadedFlags[flag.name])
     ) {
-      required.push(flag.name)
+      required.push(schemaName)
     }
   }
-  return {flagKinds, forceJson}
+  return {flagKinds, flagNames, forceJson}
 }
 
 function toProperty(flag: Command.Flag.Cached, mcpDescription?: string): McpToolInputProperty {
@@ -350,6 +378,8 @@ export function mcpToolInputToArgv(
   for (const [name, kind] of Object.entries(definition.flagKinds)) {
     const value = Object.hasOwn(input, name) ? input[name] : undefined
     if (value === undefined) continue
+    // Schema names are camelCase; the CLI flag may be kebab-case.
+    const flag = Object.hasOwn(definition.flagNames, name) ? definition.flagNames[name] : name
 
     if (kind === 'boolean' || kind === 'booleanAllowNo') {
       // Coercing here would silently DROP e.g. the string "true", and a
@@ -357,14 +387,14 @@ export function mcpToolInputToArgv(
       if (typeof value !== 'boolean') {
         throw new TypeError(`Flag "${name}" expects a boolean, got ${typeof value}`)
       }
-      if (value === true) argv.push(`--${name}`)
-      else if (kind === 'booleanAllowNo') argv.push(`--no-${name}`)
+      if (value === true) argv.push(`--${flag}`)
+      else if (kind === 'booleanAllowNo') argv.push(`--no-${flag}`)
     } else if (kind === 'multiple') {
       for (const item of Array.isArray(value) ? value : [value]) {
-        argv.push(`--${name}`, String(item))
+        argv.push(`--${flag}`, String(item))
       }
     } else {
-      argv.push(`--${name}`, String(value))
+      argv.push(`--${flag}`, String(value))
     }
   }
 
