@@ -20,6 +20,7 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build build:types",
+    "bench:cold-start": "node packages/@repo/cold-start-bench/src/bench.ts",
     "build:cli": "turbo run build build:types --filter=./packages/**",
     "changeset": "changeset",
     "check": "npm run check:format && npm run check:lint && npm run check:types && npm run check:deps",

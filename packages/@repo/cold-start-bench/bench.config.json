@@ -1,0 +1,22 @@
+{
+  "sanityVersion": "6.17.0",
+  "marker": "Fetching providers",
+  "runs": 3,
+  "timeoutMs": 300000,
+  "network": {
+    "downMbps": 50,
+    "upMbps": 10,
+    "rttMs": 40
+  },
+  "entries": {
+    "npx-sanity-init": {"weight": 0.5},
+    "npm-create-sanity": {"weight": 0.5}
+  },
+  "thresholds": {
+    "packageCountIncrease": 0,
+    "wireBytesIncreasePercent": 1,
+    "timeRegressionMinMs": 1000,
+    "timeRegressionSpreads": 3,
+    "markerGapIncreaseMs": 250
+  }
+}

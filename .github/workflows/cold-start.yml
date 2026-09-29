@@ -1,0 +1,84 @@
+name: Cold Start
+
+# How long a new user waits, with an empty npm cache, for the first output of
+# `npx sanity init` and `npm create sanity`. See packages/@repo/cold-start-bench.
+on:
+  pull_request:
+    paths:
+      - 'packages/@sanity/cli/**'
+      - 'packages/@sanity/cli-build/**'
+      - 'packages/@sanity/cli-core/**'
+      - 'packages/@sanity/workbench-cli/**'
+      - 'packages/create-sanity/**'
+      - 'packages/@repo/cold-start-bench/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/cold-start.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cold-start:
+    # Report-only until the noise between runs has been measured on CI
+    continue-on-error: true
+    timeout-minutes: 90
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: 24
+
+      # The registry keeps every package's metadata once fetched, so restoring it
+      # keeps dependency resolution the same from one PR to the next
+      - name: Restore registry storage
+        uses: actions/cache@v5
+        with:
+          path: node_modules/.cache/cold-start-bench/registry
+          key: cold-start-registry-${{ hashFiles('packages/@repo/cold-start-bench/bench.config.json') }}-${{ github.run_id }}
+          restore-keys: |
+            cold-start-registry-${{ hashFiles('packages/@repo/cold-start-bench/bench.config.json') }}-
+
+      - name: Measure
+        run: pnpm bench:cold-start --base origin/${{ github.base_ref }} --out cold-start-results
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cold-start-results
+          path: cold-start-results
+          if-no-files-found: ignore
+
+      - name: Comment on PR
+        if: always() && hashFiles('cold-start-results/report.md') != ''
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs')
+            const body = fs.readFileSync('cold-start-results/report.md', 'utf8')
+            const marker = '<!-- cold-start-bench -->'
+            const {owner, repo} = context.repo
+            const issue_number = context.issue.number
+            const comments = await github.paginate(github.rest.issues.listComments, {owner, repo, issue_number})
+            const existing = comments.find((comment) => comment.body?.includes(marker))
+            if (existing) {
+              await github.rest.issues.updateComment({owner, repo, comment_id: existing.id, body})
+            } else {
+              await github.rest.issues.createComment({owner, repo, issue_number, body})
+            }

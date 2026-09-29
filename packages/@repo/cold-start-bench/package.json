@@ -1,0 +1,29 @@
+{
+  "name": "@repo/cold-start-bench",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Measures how long a new user waits for the first output of `sanity init` with a cold npm cache",
+  "type": "module",
+  "scripts": {
+    "bench": "node src/bench.ts",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "execa": "catalog:",
+    "node-pty": "catalog:",
+    "tar": "catalog:",
+    "verdaccio": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  }
+}

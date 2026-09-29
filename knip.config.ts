@@ -50,6 +50,9 @@ const baseConfig = {
       entry: ['src/defines.ts'],
       project,
     },
+    'packages/@repo/cold-start-bench': {
+      project,
+    },
     'packages/@repo/coverage-delta': {
       project,
     },
