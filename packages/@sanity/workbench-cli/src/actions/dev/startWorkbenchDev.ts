@@ -65,16 +65,12 @@ export async function startWorkbenchDev(
   } = options
 
   // The remote can't render itself, so it runs as a plain app server (not the
-  // shell) that still claims the lock and bridges the registry, so app
-  // `sanity dev`s register into it.
+  // shell) that still bridges the registry.
   if (process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true') {
     const remote = await startAppServer({announceUrl: true, cliConfig, httpPort})
     if (!remote.started) return {close: async () => {}}
 
-    const addr = remote.server.httpServer?.address()
-    const port =
-      (typeof addr === 'object' && addr ? addr.port : remote.server.config.server.port) ?? httpPort
-    const coordinator = startWorkbenchRemoteCoordinator({httpHost, port, server: remote.server})
+    const coordinator = startWorkbenchRemoteCoordinator({server: remote.server})
 
     return {
       close: async () => {

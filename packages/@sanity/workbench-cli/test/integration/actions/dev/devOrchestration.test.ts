@@ -14,6 +14,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
+  createDevOptions,
   createMockOutput,
   createMockViteServer,
   FakeFsWatcher,
@@ -21,7 +22,11 @@ import {
   workbenchCliConfig,
 } from '../../../../src/actions/dev/__tests__/devTestHelpers.js'
 import {startDevServerRegistration} from '../../../../src/actions/dev/startDevServerRegistration.js'
-import {startWorkbenchRemoteCoordinator} from '../../../../src/actions/dev/startWorkbenchDevServer.js'
+import {startWorkbenchDev} from '../../../../src/actions/dev/startWorkbenchDev.js'
+import {
+  startWorkbenchDevServer,
+  startWorkbenchRemoteCoordinator,
+} from '../../../../src/actions/dev/startWorkbenchDevServer.js'
 import {unstable_defineMediaLibrary} from '../../../../src/defineApp.js'
 
 // A fresh in-memory `node:fs` for this file (see fsMock.ts): the real
@@ -55,6 +60,13 @@ vi.mock('../../../../src/actions/dev/startDevManifestWatcher.js', () => ({
   startDevManifestWatcher: mockStartDevManifestWatcher,
 }))
 
+const mockCreateServer = vi.hoisted(() => vi.fn())
+vi.mock('vite', () => ({createServer: mockCreateServer}))
+vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
+vi.mock('../../../../src/actions/dev/writeWorkbenchRuntime.js', () => ({
+  writeWorkbenchRuntime: vi.fn().mockResolvedValue('/tmp/sanity-project/.sanity/workbench'),
+}))
+
 const DATA_DIR = '/tmp/sanity-data'
 
 /** Register a dev server the way `sanity dev` does, with sensible defaults. */
@@ -77,7 +89,7 @@ function register(overrides: Partial<Parameters<typeof startDevServerRegistratio
  */
 function workbenchReceives() {
   const server = createMockViteServer({port: 3333})
-  const coordinator = startWorkbenchRemoteCoordinator({httpHost: 'localhost', port: 3333, server})
+  const coordinator = startWorkbenchRemoteCoordinator({server})
 
   const onGetLocalApplications = server.ws.on.mock.calls.find(
     ([event]) => event === 'sanity:workbench:get-local-applications',
@@ -106,6 +118,7 @@ describe('dev orchestration chain', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('given an SDK app, the workbench receives the composed applications payload', async () => {
@@ -201,5 +214,38 @@ describe('dev orchestration chain', () => {
 
     await registration.close()
     await coordinator.close()
+  })
+
+  test('given a running workbench remote, the next `sanity dev` starts the shell on its own port', async () => {
+    vi.stubEnv('SANITY_INTERNAL_IS_WORKBENCH_REMOTE', 'true')
+    const remote = await startWorkbenchDev({
+      cacheDir: '/tmp/sanity-project/.sanity/vite',
+      checkForDeprecatedAppId: vi.fn(),
+      cliConfig: workbenchCliConfig(),
+      extractManifest: vi.fn(),
+      httpHost: 'localhost',
+      httpPort: 5173,
+      isApp: true,
+      output: createMockOutput(),
+      reactStrictMode: false,
+      startAppServer: vi.fn().mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: createMockViteServer({port: 5173}),
+        started: true,
+      }),
+      workDir: '/tmp/workbench-remote',
+    })
+    vi.unstubAllEnvs()
+    mockCreateServer.mockResolvedValue(createMockViteServer({port: 3334}))
+
+    const shell = await startWorkbenchDevServer(
+      createDevOptions({cliConfig: workbenchCliConfig(), httpPort: 3334}),
+    )
+
+    expect(mockCreateServer).toHaveBeenCalledOnce()
+    expect(shell).toMatchObject({workbenchAvailable: true, workbenchPort: 3334})
+
+    await shell.close()
+    await remote.close()
   })
 })

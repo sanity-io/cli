@@ -102,35 +102,17 @@ function attachViteDevServerBridge(server: ViteDevServer): () => void {
 }
 
 /**
- * Make the workbench remote act as the machine's workbench: claim the singleton
- * lock so app `sanity dev`s register into it instead of each starting their own,
- * and bridge the registry so the remote shows the local apps. No-op lock if one
- * is already held.
+ * Bridge the registry into the workbench remote's HMR channel. The remote never
+ * claims the workbench lock: a held lock tells the next `sanity dev` a shell is
+ * running, and the remote only renders inside that shell.
  */
-export function startWorkbenchRemoteCoordinator(options: {
-  httpHost: string | undefined
-  port: number
-  server: ViteDevServer
-}): {close: () => Promise<void>} {
-  const {httpHost, port, server} = options
-
-  const lock = acquireWorkbenchLock({host: httpHost || 'localhost', port})
-  if (!lock) {
-    const existing = readWorkbenchLock()
-    devDebug(
-      'Workbench lock already held by pid %d on port %d; bridging the registry without claiming it',
-      existing?.pid,
-      existing?.port,
-    )
-  }
-
-  const detachBridge = attachViteDevServerBridge(server)
+export function startWorkbenchRemoteCoordinator(options: {server: ViteDevServer}): {
+  close: () => Promise<void>
+} {
+  const detachBridge = attachViteDevServerBridge(options.server)
 
   return {
-    close: async () => {
-      detachBridge()
-      lock?.release()
-    },
+    close: async () => detachBridge(),
   }
 }
 
