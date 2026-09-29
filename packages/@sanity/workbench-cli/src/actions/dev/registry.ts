@@ -444,12 +444,14 @@ function readLockFile(): {data: z.infer<typeof workbenchLockSchema> | undefined}
   } catch {
     return undefined
   }
+  let json: unknown
   try {
-    const {data, success} = workbenchLockSchema.safeParse(JSON.parse(contents))
-    return {data: success ? data : undefined}
+    json = JSON.parse(contents)
   } catch {
     return {data: undefined}
   }
+  const {data, success} = workbenchLockSchema.safeParse(json)
+  return {data: success ? data : undefined}
 }
 
 function pruneWorkbenchLock(lockPath: string): void {
