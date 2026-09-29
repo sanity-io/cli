@@ -1,5 +1,3 @@
-import {getBrowserStubs} from './stubs.js' // TODO: this imports jsdom!!! Unpacked Size (module + dependencies): 26 MB
-
 /**
  * Sets up browser globals (window, document, etc.) in the global scope.
  *
@@ -21,6 +19,10 @@ export async function setupBrowserStubs(): Promise<() => void> {
   // decided what to inject — including a small set of keys (e.g.
   // `localStorage`/`sessionStorage`/`Storage`) that we want to take from JSDOM
   // even if Node provides them, so realm identity stays consistent.
+  // Imported lazily: `stubs.js` pulls in JSDOM (~600 modules), and this module
+  // is reachable from the `@sanity/cli-core` barrel that every command loads.
+  // eslint-disable-next-line no-restricted-syntax -- static relative import, not a user file path
+  const {getBrowserStubs} = await import('./stubs.js')
   const stubs = getBrowserStubs()
   const mockedGlobalThis: Record<string, unknown> = globalThis
   const stubbedKeys: string[] = []

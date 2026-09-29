@@ -1,4 +1,5 @@
-import {getUserConfig, isCi} from '@sanity/cli-core'
+import {getUserConfig} from '@sanity/cli-core/config'
+import {isCi} from '@sanity/cli-core/util'
 import {testFixture, testHook} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -32,10 +33,18 @@ vi.mock('node:child_process', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core', async () => ({
-  ...(await vi.importActual('@sanity/cli-core')),
+vi.mock('@sanity/cli-core/config', async () => ({
+  ...(await vi.importActual('@sanity/cli-core/config')),
   getUserConfig: mockGetUserConfig,
+}))
+
+vi.mock('@sanity/cli-core/util', async () => ({
+  ...(await vi.importActual('@sanity/cli-core/util')),
   isCi: vi.fn(),
+}))
+
+vi.mock('@sanity/cli-core/debug', async () => ({
+  ...(await vi.importActual('@sanity/cli-core/debug')),
   subdebug: vi.fn(() => mockDebug),
 }))
 

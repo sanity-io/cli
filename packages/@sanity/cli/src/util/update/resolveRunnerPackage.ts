@@ -1,7 +1,7 @@
 import {readFile, realpath} from 'node:fs/promises'
 import {dirname, resolve} from 'node:path'
 
-import {subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core/debug'
 
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 
