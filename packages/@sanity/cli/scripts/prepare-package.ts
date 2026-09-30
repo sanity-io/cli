@@ -1,12 +1,16 @@
 import {existsSync} from 'node:fs'
 import {cp, mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
-import {join} from 'node:path'
+import {join, relative} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 import {execa} from 'execa'
 
+import {bundlePackage} from './package-bundle.js'
+import {pruneDeclarations} from './package-declarations.js'
 import {type Manifest, prepareDependencies, type ToolchainPackage} from './package-dependencies.js'
+import {findBundleEntries} from './package-entries.js'
+import {consolidateLicenses} from './package-licenses.js'
 import {prepareToolchain} from './package-toolchain.js'
 import {prepareTypeDependencies} from './package-types.js'
 import {prepareWorkflowHooks} from './package-workflow-hooks.js'
@@ -107,6 +111,33 @@ try {
     "#!/usr/bin/env node\nimport '../dist/entry/run.js'\n",
     {mode: 0o755},
   )
+
+  const {dynamic, manifestReaders, unresolved} = await bundlePackage(output, {
+    entries: await findBundleEntries(output),
+    external: [
+      'sanity',
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.optionalDependencies ?? {}),
+      ...Object.keys(manifest.peerDependencies ?? {}),
+    ],
+    // Command tools are loaded from their cache through adapters in place.
+    preserve: [...toolchains.keys()].map((path) => join('dist', relative(stage, path))),
+  })
+  if (dynamic.length > 0) {
+    // eslint-disable-next-line no-console
+    console.warn(`Packages kept unbundled for runtime module loading:\n  ${dynamic.join('\n  ')}`)
+  }
+  if (unresolved.length > 0) {
+    // eslint-disable-next-line no-console
+    console.warn(`Optional modules left to runtime resolution:\n  ${unresolved.join('\n  ')}`)
+  }
+  await pruneDeclarations(
+    output,
+    ['index', '_internal', 'runtime', 'invokeSanityCli/index'].map(
+      (name) => `dist/exports/${name}.d.ts`,
+    ),
+  )
+  await consolidateLicenses(output, manifestReaders)
 } finally {
   await rm(scratch, {force: true, recursive: true})
 }

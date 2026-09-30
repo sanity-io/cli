@@ -1,8 +1,8 @@
 import {getUserConfig, subdebug} from '@sanity/cli-core'
-import {getLatestVersion} from 'get-latest-version'
 
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 import {promiseRaceWithTimeout} from '../promiseRaceWithTimeout.js'
+import {fetchLatestVersion} from './fetchLatestVersion.js'
 import {resolveUpdateTarget} from './resolveUpdateTarget.js'
 
 const debug = subdebug('updateChecker')
@@ -29,7 +29,7 @@ export async function fetchUpdateInfo(
 
   let latestVersion: string | null | undefined
   try {
-    latestVersion = await promiseRaceWithTimeout(getLatestVersion(packageName), FETCH_TIMEOUT)
+    latestVersion = await promiseRaceWithTimeout(fetchLatestVersion(packageName), FETCH_TIMEOUT)
   } catch (err) {
     debug(
       'Worker: failed to fetch latest version of %s from npm: %s',
