@@ -56,7 +56,9 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "directory": "packaged",
+    "linkDirectory": false
   },
   "scripts": {
     "prebuild": "pnpm run generate:api-routes",
@@ -69,7 +71,8 @@
     "lint": "eslint .",
     "manifest:generate": "oclif manifest",
     "manifest:remove": "rimraf oclif.manifest.json",
-    "prepack": "pnpm run manifest:generate",
+    "prepack": "pnpm run manifest:generate && pnpm run package:prepare",
+    "package:prepare": "tsx scripts/prepare-package.ts",
     "postpack": "rimraf oclif.manifest.json",
     "publint": "publint",
     "readme": "oclif readme --tsconfig-path tsconfig.lib.json --no-source-links",
@@ -106,8 +109,11 @@
     "@sanity/workflow-cli": "0.32.0",
     "@sanity/workflow-engine": "0.32.0",
     "@vercel/frameworks": "3.29.0",
+    "@voidzero-dev/vite-task-client": "^0.2.0",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",
+    "detect-libc": "^2.1.2",
+    "dotenv-expand": "^13.0.0",
     "eventsource": "^5.1.1",
     "execa": "catalog:",
     "form-data": "catalog:",
@@ -166,6 +172,8 @@
     "@types/which": "^3.0.4",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
+    "cjs-module-lexer": "^2.2.1",
+    "esbuild": "^0.28.2",
     "eslint": "catalog:",
     "get-it": "catalog:",
     "jsdom": "catalog:",

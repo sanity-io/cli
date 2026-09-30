@@ -110,6 +110,16 @@ pnpm test                  # Run all tests
 pnpm changeset             # Add a changeset (if your change affects published packages)
 ```
 
+### Cold-start packaging
+
+`pnpm bench:cold-start --runs 3` benchmarks the working tree through an isolated registry on this computer. It measures both `npx sanity init` and `npm create sanity`, including a network cost model and the time to the authentication provider prompt. See [the benchmark documentation](packages/@repo/cold-start-bench/README.md) for scoring details.
+
+The CLI's `prepack` step prepares `packages/@sanity/cli/packaged`. Portable dependencies live in its private `dist/node_modules` tree, with licenses, runtime assets, and declarations retained. CommonJS compaction must preserve the exports Node discovers from source syntax. Workspace development continues to use the original dependency graph.
+
+Build, schema, TypeGen, dataset transfer, migration, function development, and workflow dependencies are installed when first needed. This requires npm registry access on first use, including when importing a command for help. Exact direct versions are cached under `$XDG_CACHE_HOME/sanity/cli-toolchains`, or `~/.cache/sanity/cli-toolchains` when that variable is unset. Subsequent invocations reuse the cache. Failed installations do not create a ready cache; incomplete caches report the directory to remove before retrying.
+
+When changing packaging, verify a copied package outside this checkout: the synchronous public API, CLI help, command imports, a local build, and a TypeScript config consumer. Symlinks into this checkout can hide missing runtime or declaration dependencies.
+
 ---
 
 ## Code Standards

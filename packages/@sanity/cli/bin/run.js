@@ -1,5 +1,9 @@
 #!/usr/bin/env node
+import {fileURLToPath} from 'node:url'
+
 import {execute, settings} from '@oclif/core'
+
+import {getPluginAdditions} from '../dist/util/pluginAdditions.js'
 
 var err = '\u001B[31m\u001B[1mERROR:\u001B[22m\u001B[39m '
 var nodeVersionParts = process.version.replace(/^v/i, '').split('.').map(Number)
@@ -23,4 +27,4 @@ if (!isSupportedNodeVersion(majorVersion, minorVersion)) {
 
 settings.enableAutoTranspile = false
 
-await execute({dir: import.meta.url})
+await execute({loadOptions: {root: fileURLToPath(import.meta.url), ...getPluginAdditions()}})

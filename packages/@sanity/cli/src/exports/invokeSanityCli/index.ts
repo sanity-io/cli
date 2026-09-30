@@ -39,6 +39,7 @@ import {type FetchFunction} from 'get-it'
 import {parseArgsStringToArgv} from 'string-argv'
 
 import {resolveTopicAliasInArgv} from '../../topicAliases.js'
+import {getPluginAdditions} from '../../util/pluginAdditions.js'
 import {resolveCommandPolicies} from './commandPolicies/index.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
 import {prettyPrintError} from './prettyPrintError.js'
@@ -90,7 +91,11 @@ function instantiateCommand(
  * with. oclif otherwise loads whatever `<dataDir>/package.json` lists.
  */
 function loadCliCommandConfig(): Promise<Config> {
-  return Config.load({root: fileURLToPath(import.meta.url), userPlugins: false})
+  return Config.load({
+    root: fileURLToPath(import.meta.url),
+    userPlugins: false,
+    ...getPluginAdditions(),
+  })
 }
 
 let cachedConfig: Promise<Config> | undefined
