@@ -2,12 +2,10 @@ import {stat} from 'node:fs/promises'
 import {dirname} from 'node:path'
 import {isMainThread} from 'node:worker_threads'
 
-import {firstValueFrom, of} from 'rxjs'
 import {type Workspace} from 'sanity'
 
 import {subdebug} from '../../_exports/debug.js'
 import {doImport} from '../../util/doImport.js'
-import {getEmptyAuth} from '../../util/getEmptyAuth.js'
 import {resolveLocalPackage} from '../../util/resolveLocalPackage.js'
 import {findStudioConfigPath} from '../util/findStudioConfigPath.js'
 import {isStudioConfig} from './isStudioConfig.js'
@@ -57,6 +55,14 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
     ? config
     : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
 
+  // Imported lazily: rxjs and `@sanity/client` are only needed here, but this
+  // module is reachable from the `@sanity/cli-core` barrel that every command loads.
+  const [{firstValueFrom, of}, {getEmptyAuth}] = await Promise.all([
+    // eslint-disable-next-line no-restricted-syntax -- package import, not a file path
+    import('rxjs'),
+    // eslint-disable-next-line no-restricted-syntax -- static relative import, not a user file path
+    import('../../util/getEmptyAuth.js'),
+  ])
   const emptyAuth = {state: of(getEmptyAuth())}
 
   const unauthedWorkspaces = rawWorkspaces.map((workspace) => ({
