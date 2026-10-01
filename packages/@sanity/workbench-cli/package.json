@@ -99,6 +99,7 @@
     "publint": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "styled-components": "^6.4.3",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

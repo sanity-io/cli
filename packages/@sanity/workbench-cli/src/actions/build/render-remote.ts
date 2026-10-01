@@ -58,8 +58,15 @@ if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, Re
 const ModuleContext = moduleSlot.get(React.createContext)
 const rootMap = new Map()
 // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
-const styleTargets = new Map()
+const styleSheets = new Map()
 const renderArgs = new Map()
+// styled-components hashes stylis plugin names into class names. A uniquely named no-op gives each
+// root classes of its own, so no other root's sheet (or the host's) can re-declare and override them.
+const styleRootCount = Symbol.for('sanity.os.styleRoot')
+function styleRootPlugin() {
+  globalThis[styleRootCount] = (globalThis[styleRootCount] ?? 0) + 1
+  return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[styleRootCount] })
+}
 
 function mount(rootElement, args) {
   let root = rootMap.get(rootElement)
@@ -70,11 +77,11 @@ function mount(rootElement, args) {
       const target = rootElement.ownerDocument.createElement('sanity-styles')
       // React can replace the mount node's contents; keep its stylesheet outside that node.
       rootElement.ownerDocument.head.appendChild(target)
-      styleTargets.set(rootElement, target)
+      styleSheets.set(rootElement, { target, stylisPlugins: [styleRootPlugin()] })
     }
   }
   let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
-  if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement) }, element)
+  if (StyleSheetManager) element = React.createElement(StyleSheetManager, styleSheets.get(rootElement), element)
   // The host's React can't pause this root, so the host pauses the app through this Activity.
   // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
   element = React.createElement(React.Activity, { mode: args.lifecycle === 'background' ? 'hidden' : 'visible' }, element)
@@ -95,8 +102,8 @@ export function render(rootElement, props, renderOptions) {
       rootMap.delete(rootElement)
       root?.unmount()
       // Unmount first so effect cleanup can still reach this root's stylesheet.
-      styleTargets.get(rootElement)?.remove()
-      styleTargets.delete(rootElement)
+      styleSheets.get(rootElement)?.target.remove()
+      styleSheets.delete(rootElement)
     },
     setLifecycle(state) {
       const current = renderArgs.get(rootElement)
