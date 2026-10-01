@@ -69,8 +69,6 @@ describe('renderRemote', () => {
           rootMap.set(rootElement, root)
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
-            // Class names are hashes; this names the module a rule comes from in DevTools.
-            if (args?.renderOptions?.moduleId) target.setAttribute('data-module-id', args.renderOptions.moduleId)
             // React can replace the mount node's contents; keep its stylesheet outside that node.
             rootElement.ownerDocument.head.appendChild(target)
             styleTargets.set(rootElement, target)
@@ -168,8 +166,6 @@ describe('renderRemote', () => {
           rootMap.set(rootElement, root)
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
-            // Class names are hashes; this names the module a rule comes from in DevTools.
-            if (args?.renderOptions?.moduleId) target.setAttribute('data-module-id', args.renderOptions.moduleId)
             // React can replace the mount node's contents; keep its stylesheet outside that node.
             rootElement.ownerDocument.head.appendChild(target)
             styleTargets.set(rootElement, target)

@@ -150,18 +150,6 @@ describe('renderRemote module context', () => {
     expect(rerendered.stylisPlugins).toBe(mounted.stylisPlugins)
   })
 
-  test("labels the root's sheet with its moduleId", () => {
-    const attributes = new Map<string, string>()
-    const target = {setAttribute: (name: string, value: string) => attributes.set(name, value)}
-    loadIsolated().render(
-      rootElement(target),
-      {},
-      {moduleId: 'v27rvqtlp3lmdvcln6ey3lro/views/home/tile'},
-    )
-
-    expect(attributes.get('data-module-id')).toBe('v27rvqtlp3lmdvcln6ey3lro/views/home/tile')
-  })
-
   test('sources ModuleContext from the symbol-keyed WeakMap<createContext, Context>', () => {
     const React = makeReact()
     loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
