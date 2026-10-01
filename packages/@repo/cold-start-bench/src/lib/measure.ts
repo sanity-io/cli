@@ -27,13 +27,16 @@ export interface MeasuredRun {
  * following packages" prompt, so a human's reaction time isn't measured.
  * `latest` resolves to the build under test; see `registry.ts`.
  */
-export function entryCommand(entry: EntryPoint): [string, string[]] {
+export function entryCommand(entry: EntryPoint, args: string[] = []): [string, string[]] {
   switch (entry) {
     case 'npm-create-sanity': {
-      return ['npm', ['create', '--yes', 'sanity@latest']]
+      return [
+        'npm',
+        ['create', '--yes', 'sanity@latest', ...(args.length > 0 ? ['--', ...args] : [])],
+      ]
     }
     case 'npx-sanity-init': {
-      return ['npx', ['--yes', 'sanity@latest', 'init']]
+      return ['npx', ['--yes', 'sanity@latest', 'init', ...args]]
     }
   }
 }
@@ -93,6 +96,7 @@ async function findNpxTree(cacheDir: string): Promise<string | null> {
 export async function measureRun(options: {
   dir: string
   entry: EntryPoint
+  env?: Record<string, string>
   marker: RegExp
   registryUrl: string
   scanTree: boolean
@@ -104,12 +108,18 @@ export async function measureRun(options: {
   await mkdir(project, {recursive: true})
   await mkdir(join(dir, 'home'), {recursive: true})
 
-  const env = cleanEnv({dir, registryUrl})
+  const env = {...cleanEnv({dir, registryUrl}), ...options.env}
   const [command, args] = entryCommand(entry)
   const chunks: OutputChunk[] = []
 
   const started = performance.now()
-  const child = pty.spawn(command, args, {cols: 100, cwd: project, env, name: 'xterm-256color', rows: 40})
+  const child = pty.spawn(command, args, {
+    cols: 100,
+    cwd: project,
+    env,
+    name: 'xterm-256color',
+    rows: 40,
+  })
 
   let exited = false
   const exit = new Promise<void>((resolve) =>

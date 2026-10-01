@@ -39,6 +39,15 @@ describe('toVisibleChars', () => {
 })
 
 describe('analyzeOutput', () => {
+  test('waits for the entire prompt across chunks and lines', () => {
+    const prompt = /Please log in[\s\S]*❯[\s\S]*SSO/
+    const chunks = [
+      {at: 1, data: 'Fetching providers\n'},
+      {at: 100, data: '? Please log in\n❯ Google\n  GitHub\n  S'},
+    ]
+    expect(analyzeOutput(chunks, prompt).markerAt).toBeNull()
+    expect(analyzeOutput([...chunks, {at: 200, data: 'SO'}], prompt).markerAt).toBe(200)
+  })
   test('skips the npm spinner and npm warnings', () => {
     const timeline = analyzeOutput(
       [

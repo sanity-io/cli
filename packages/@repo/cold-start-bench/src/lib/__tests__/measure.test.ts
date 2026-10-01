@@ -8,18 +8,22 @@ import {afterEach, beforeAll, beforeEach, describe, expect, test} from 'vitest'
 import {cleanEnv, ensureSpawnHelperExecutable, entryCommand, measureRun} from '../measure.ts'
 
 describe('entryCommand', () => {
-  test('npx sanity init', () => {
-    expect(entryCommand('npx-sanity-init')).toEqual([
-      'npx',
-      ['--yes', 'sanity@latest', 'init'],
+  test('forwards setup flags through npm create’s argument separator', () => {
+    expect(entryCommand('npm-create-sanity', ['--yes', '--project', 'bench123'])).toEqual([
+      'npm',
+      ['create', '--yes', 'sanity@latest', '--', '--yes', '--project', 'bench123'],
     ])
+    expect(entryCommand('npx-sanity-init', ['--yes'])).toEqual([
+      'npx',
+      ['--yes', 'sanity@latest', 'init', '--yes'],
+    ])
+  })
+  test('npx sanity init', () => {
+    expect(entryCommand('npx-sanity-init')).toEqual(['npx', ['--yes', 'sanity@latest', 'init']])
   })
 
   test('npm create sanity', () => {
-    expect(entryCommand('npm-create-sanity')).toEqual([
-      'npm',
-      ['create', '--yes', 'sanity@latest'],
-    ])
+    expect(entryCommand('npm-create-sanity')).toEqual(['npm', ['create', '--yes', 'sanity@latest']])
   })
 })
 

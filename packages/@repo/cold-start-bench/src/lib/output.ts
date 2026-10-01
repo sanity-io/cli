@@ -18,8 +18,10 @@ export interface OutputTimeline {
 
 // CSI (`ESC [ … final`), OSC (`ESC ] … BEL|ST`) and two-byte escapes such as
 // `ESC 7` (save cursor)
-// eslint-disable-next-line no-control-regex
-const ANSI_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]|\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)|\u001B[0-~]/y
+
+const ANSI_PATTERN =
+  // eslint-disable-next-line no-control-regex
+  /\u001B\[[0-?]*[ -/]*[@-~]|\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)|\u001B[0-~]/y
 
 // npm draws its install spinner with braille characters
 const SPINNER_PATTERN = /[⠀-⣿]/
@@ -108,12 +110,11 @@ export function analyzeOutput(chunks: readonly OutputChunk[], marker: RegExp): O
     }
 
     screen.push(text.trimEnd())
-    const match = marker.exec(text)
-    if (match) {
-      markerAt = line[match.index].at
-      break
-    }
+    if (marker.test(screen.join('\n'))) break
   }
+
+  const match = marker.exec(chars.map((c) => c.char).join(''))
+  if (match?.[0]) markerAt = chars[match.index + match[0].length - 1].at
 
   return {firstOutputAt, firstScreen: screen.join('\n').trim(), markerAt}
 }

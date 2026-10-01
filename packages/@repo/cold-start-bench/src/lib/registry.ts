@@ -7,7 +7,6 @@ import {dirname, join} from 'node:path'
 
 import {execa, type ResultPromise} from 'execa'
 
-
 /**
  * Verdaccio config for a local mirror of npm.
  *
@@ -48,7 +47,9 @@ async function freePort(): Promise<number> {
     server.listen(0, '127.0.0.1', () => {
       const address = server.address()
       server.close(() =>
-        address && typeof address !== 'string' ? resolve(address.port) : reject(new Error('no port')),
+        address && typeof address !== 'string'
+          ? resolve(address.port)
+          : reject(new Error('no port')),
       )
     })
   })
@@ -85,10 +86,14 @@ export async function startRegistry(stateDir: string): Promise<Registry> {
   const port = await freePort()
   const url = `http://127.0.0.1:${port}/`
   const log = createWriteStream(join(dir, 'verdaccio.log'), {flags: 'a'})
-  const child = execa(process.execPath, [bin, '--config', configPath, '--listen', `127.0.0.1:${port}`], {
-    reject: false,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
+  const child = execa(
+    process.execPath,
+    [bin, '--config', configPath, '--listen', `127.0.0.1:${port}`],
+    {
+      reject: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  )
   child.stdout?.pipe(log)
   child.stderr?.pipe(log)
 
@@ -111,6 +116,7 @@ export async function npmEnv(registryUrl: string, dir: string): Promise<Record<s
   await writeFile(userconfig, `${host}:_authToken=cold-start-bench\n`)
   return {
     npm_config_audit: 'false',
+    npm_config_cache: join(dir, 'registry-npm-cache'),
     npm_config_fund: 'false',
     npm_config_registry: registryUrl,
     npm_config_update_notifier: 'false',
@@ -125,7 +131,8 @@ export async function publish(file: string, env: Record<string, string>): Promis
   })
   if (result.exitCode === 0) return
   // Content-addressed versions: an existing version is the same package
-  if (/EPUBLISHCONFLICT|cannot publish over|this package is already present/i.test(result.stderr)) return
+  if (/EPUBLISHCONFLICT|cannot publish over|this package is already present/i.test(result.stderr))
+    return
   throw new Error(`npm publish ${file} failed:\n${result.stderr}`)
 }
 

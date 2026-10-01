@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {median, modelDownloadMs, type ScoredRun, scoreEntry, scoreRuns} from '../score.ts'
+import {median, modelDownloadMs, type ScoredRun, scoreEntry} from '../score.ts'
 
 function run(overrides: Partial<ScoredRun> = {}): ScoredRun {
   return {
@@ -32,47 +32,43 @@ describe('median', () => {
 describe('scoreEntry', () => {
   test('wait is measured time plus modeled download', () => {
     const tree = {bytes: 500, packageCount: 2, packages: {'a@1': 400, 'b@1': 100}}
-    expect(scoreEntry([run({tree}), run({firstOutputMs: 12_000, markerMs: 12_030}), run()])).toEqual({
+    expect(
+      scoreEntry([run({tree}), run({firstOutputMs: 12_000, markerMs: 12_030}), run()]),
+    ).toEqual({
       bytesDownloaded: 1_000_000,
       largestPackages: [
         {bytes: 400, id: 'a@1'},
         {bytes: 100, id: 'b@1'},
       ],
       markerGapMs: 20,
+      modeledUsableInteractionMs: 10_580,
       packages: 2,
       packagesBytes: 500,
       problems: [],
-      waitMs: 10_560,
+      usableInteractionMs: 10_020,
     })
   })
 
   test('flags runs that never reached the marker', () => {
     const result = scoreEntry([run(), run({end: 'timeout', markerMs: null})])
     expect(result.problems).toEqual(['1 of 2 runs never reached the marker'])
-    expect(result.waitMs).toBe(10_560)
+    expect(result.modeledUsableInteractionMs).toBe(10_580)
   })
 
-  test('flags output printed long before the CLI is ready', () => {
-    expect(scoreEntry([run({markerMs: 10_500})]).problems).toEqual([
-      'first output came 500ms before the CLI was ready (max 250ms)',
-    ])
+  test('scores readiness even when an early banner precedes it', () => {
+    expect(scoreEntry([run({firstOutputMs: 1, markerMs: 10_500})])).toMatchObject({
+      markerGapMs: 10_499,
+      modeledUsableInteractionMs: 11_060,
+      problems: [],
+    })
   })
 
   test('has no wait without a complete run', () => {
-    expect(scoreEntry([])).toMatchObject({bytesDownloaded: 0, markerGapMs: null, packages: null, waitMs: null})
-  })
-})
-
-describe('scoreRuns', () => {
-  test('averages both entry points', () => {
-    const result = scoreRuns([run(), run({entry: 'npm-create-sanity', firstOutputMs: 20_000, markerMs: 20_020})])
-    expect(result.score).toBe(15_560)
-    expect(result.passed).toBe(true)
-  })
-
-  test('has no score when an entry point failed', () => {
-    const result = scoreRuns([run()])
-    expect(result.score).toBeNull()
-    expect(result.passed).toBe(false)
+    expect(scoreEntry([])).toMatchObject({
+      bytesDownloaded: 0,
+      markerGapMs: null,
+      modeledUsableInteractionMs: null,
+      packages: null,
+    })
   })
 })

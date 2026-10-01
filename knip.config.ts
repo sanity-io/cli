@@ -51,6 +51,8 @@ const baseConfig = {
       project,
     },
     'packages/@repo/cold-start-bench': {
+      // Creates an ephemeral certificate for the benchmark's local API fixture.
+      ignoreBinaries: ['openssl'],
       project,
     },
     'packages/@repo/coverage-delta': {

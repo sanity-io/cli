@@ -2,12 +2,13 @@
   "name": "@repo/cold-start-bench",
   "version": "0.0.0",
   "private": true,
-  "description": "Measures how long a new user waits for the first output of `sanity init` with a cold npm cache",
+  "description": "Measures cold startup, project generation, and Studio readiness",
   "type": "module",
   "scripts": {
     "bench": "node src/bench.ts",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:types": "tsc --noEmit"
   },
   "dependencies": {
     "execa": "catalog:",
