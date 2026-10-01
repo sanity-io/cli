@@ -1,0 +1,11 @@
+{
+  "extends": "@repo/tsconfig/base.json",
+  "include": ["./src", "./test"],
+  "compilerOptions": {
+    // The bundle includes a few dependency-free modules from `@sanity/cli`
+    "rootDir": "..",
+    "paths": {
+      "@sanity/workbench-cli/init": ["./node_modules/@sanity/workbench-cli/src/_exports/init.ts"]
+    }
+  }
+}

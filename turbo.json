@@ -28,6 +28,18 @@
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/fixtures/**", "$TURBO_ROOT$/pnpm-workspace.yaml"],
       "outputs": ["dist/**", "fixtures/**"]
     },
+    "create-sanity#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/@sanity/cli/package.json",
+        "$TURBO_ROOT$/packages/@sanity/cli/templates/**",
+        "$TURBO_ROOT$/packages/@sanity/cli/src/actions/init/**",
+        "$TURBO_ROOT$/packages/@sanity/cli/src/util/packageManager/preferredPm.ts",
+        "$TURBO_ROOT$/packages/@sanity/cli/src/util/toForwardSlashes.ts"
+      ],
+      "outputs": ["dist/**"]
+    },
     "build:types": {
       "dependsOn": ["^build", "^build:types", "build"],
       "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/*.test.ts"],

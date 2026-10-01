@@ -1,30 +1,12 @@
 #!/usr/bin/env node
-import {spawn} from 'node:child_process'
-import {readFile} from 'node:fs/promises'
-import {dirname, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
-
-const args = process.argv.slice(2)
-
-let cliBin
-try {
-  const cliPkgDir = fileURLToPath(import.meta.resolve('@sanity/cli/package.json'))
-  const cliDir = dirname(cliPkgDir)
-
-  // Read the package.json file and extract the bin path
-  const pJson = await readFile(cliPkgDir, 'utf8')
-  const pkgJson = JSON.parse(pJson)
-  const binPath = pkgJson.bin?.['sanity']
-  if (!binPath) {
-    throw new Error('Failed to resolve `@sanity/cli` package')
-  }
-
-  cliBin = resolve(cliDir, binPath)
-} catch (err) {
-  throw new Error('Failed to resolve `@sanity/cli` package', {cause: err})
+const [major, minor] = process.versions.node.split('.').map(Number)
+if (major < 22 || (major === 22 && minor < 12)) {
+  // eslint-disable-next-line no-console
+  console.error(
+    `\u001B[31m\u001B[1mERROR:\u001B[22m\u001B[39m Node.js version >=22.12 required. You are running ${process.version}\n`,
+  )
+  process.exit(1)
 }
 
-const proc = spawn('node', [cliBin, 'init', ...args, '--from-create'], {stdio: 'inherit'})
-proc.on('exit', (code) => {
-  process.exitCode = code
-})
+const {main} = await import('./dist/index.js')
+process.exitCode = await main(process.argv.slice(2))

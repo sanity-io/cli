@@ -1,9 +1,10 @@
-// eslint-disable-next-line import-x/no-extraneous-dependencies
 import {defineConfig} from 'vitest/config'
 
 export default defineConfig({
   test: {
-    include: ['test.js'],
+    environment: 'node',
+    include: ['test/**/*.test.ts'],
+    name: 'create-sanity/unit',
     setupFiles: ['../../test/vitest/setup.ts'],
   },
 })

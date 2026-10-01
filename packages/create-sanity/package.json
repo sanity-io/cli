@@ -23,19 +23,33 @@
   },
   "bin": "./index.js",
   "files": [
-    "index.js"
+    "index.js",
+    "dist",
+    "!dist/meta.json"
   ],
   "type": "module",
   "scripts": {
+    "build": "node build.mjs",
+    "check:types": "tsc --noEmit",
+    "lint": "eslint .",
     "publint": "publint",
-    "test": "vitest"
-  },
-  "dependencies": {
-    "@sanity/cli": "workspace:*"
+    "test": "vitest run"
   },
   "devDependencies": {
+    "@eslint/compat": "catalog:",
+    "@inquirer/prompts": "^8.5.2",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@sanity/workbench-cli": "workspace:*",
+    "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
+    "esbuild": "^0.28.2",
+    "eslint": "catalog:",
+    "lodash-es": "catalog:",
+    "log-symbols": "^7.0.1",
+    "ora": "catalog:",
     "publint": "catalog:",
+    "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {
