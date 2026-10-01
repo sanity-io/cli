@@ -96,7 +96,6 @@ function loadWrapper(
 
 const APP = `() => 'app'`
 
-/** A mount node whose document creates `target` as the wrapper's stylesheet element. */
 const rootElement = (target: object = {}) => ({
   ownerDocument: {createElement: () => target, head: {appendChild: () => {}}},
 })

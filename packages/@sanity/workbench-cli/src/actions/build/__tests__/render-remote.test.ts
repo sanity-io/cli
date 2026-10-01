@@ -56,7 +56,7 @@ describe('renderRemote', () => {
       const stylisPluginCount = Symbol.for('sanity.os.stylisPluginCount')
 
       // Identical CSS gets an identical class in every sheet, so a later sheet overrides earlier rules.
-      // styled-components hashes plugin names into class names: a uniquely named no-op isolates a root.
+      // StyleSheetManager hashes stylis plugin names into class names: a uniquely named no-op isolates a root.
       function uniqueStylisPlugin() {
         globalThis[stylisPluginCount] = (globalThis[stylisPluginCount] ?? 0) + 1
         return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
@@ -153,7 +153,7 @@ describe('renderRemote', () => {
       const stylisPluginCount = Symbol.for('sanity.os.stylisPluginCount')
 
       // Identical CSS gets an identical class in every sheet, so a later sheet overrides earlier rules.
-      // styled-components hashes plugin names into class names: a uniquely named no-op isolates a root.
+      // StyleSheetManager hashes stylis plugin names into class names: a uniquely named no-op isolates a root.
       function uniqueStylisPlugin() {
         globalThis[stylisPluginCount] = (globalThis[stylisPluginCount] ?? 0) + 1
         return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
