@@ -58,14 +58,17 @@ if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, Re
 const ModuleContext = moduleSlot.get(React.createContext)
 const rootMap = new Map()
 // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
-const styleSheets = new Map()
+const styleTargets = new Map()
+const stylisPlugins = new Map()
 const renderArgs = new Map()
-// styled-components hashes stylis plugin names into class names. A uniquely named no-op gives each
-// root classes of its own, so no other root's sheet (or the host's) can re-declare and override them.
-const styleRootCount = Symbol.for('sanity.os.styleRoot')
-function styleRootPlugin() {
-  globalThis[styleRootCount] = (globalThis[styleRootCount] ?? 0) + 1
-  return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[styleRootCount] })
+// On globalThis: every module embeds its own copy of this harness, and names must be page-unique.
+const stylisPluginCount = Symbol.for('sanity.os.stylisPluginCount')
+
+// Identical CSS gets an identical class in every sheet, so a later sheet overrides earlier rules.
+// styled-components hashes plugin names into class names: a uniquely named no-op isolates a root.
+function uniqueStylisPlugin() {
+  globalThis[stylisPluginCount] = (globalThis[stylisPluginCount] ?? 0) + 1
+  return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
 }
 
 function mount(rootElement, args) {
@@ -75,13 +78,16 @@ function mount(rootElement, args) {
     rootMap.set(rootElement, root)
     if (StyleSheetManager) {
       const target = rootElement.ownerDocument.createElement('sanity-styles')
+      // Class names are hashes; this names the module a rule comes from in DevTools.
+      if (args?.renderOptions?.moduleId) target.setAttribute('data-module-id', args.renderOptions.moduleId)
       // React can replace the mount node's contents; keep its stylesheet outside that node.
       rootElement.ownerDocument.head.appendChild(target)
-      styleSheets.set(rootElement, { target, stylisPlugins: [styleRootPlugin()] })
+      styleTargets.set(rootElement, target)
+      stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
     }
   }
   let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
-  if (StyleSheetManager) element = React.createElement(StyleSheetManager, styleSheets.get(rootElement), element)
+  if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
   // The host's React can't pause this root, so the host pauses the app through this Activity.
   // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
   element = React.createElement(React.Activity, { mode: args.lifecycle === 'background' ? 'hidden' : 'visible' }, element)
@@ -102,8 +108,9 @@ export function render(rootElement, props, renderOptions) {
       rootMap.delete(rootElement)
       root?.unmount()
       // Unmount first so effect cleanup can still reach this root's stylesheet.
-      styleSheets.get(rootElement)?.target.remove()
-      styleSheets.delete(rootElement)
+      styleTargets.get(rootElement)?.remove()
+      styleTargets.delete(rootElement)
+      stylisPlugins.delete(rootElement)
     },
     setLifecycle(state) {
       const current = renderArgs.get(rootElement)

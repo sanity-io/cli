@@ -3,6 +3,7 @@ import {afterEach, describe, expect, test} from 'vitest'
 import {renderRemote} from './render-remote.js'
 
 const MODULE_SLOT = Symbol.for('sanity.os.module')
+const STYLIS_PLUGIN_COUNT = Symbol.for('sanity.os.stylisPluginCount')
 
 /** A minimal stand-in for a React module: only the members the wrapper touches. */
 type Ctx = {_default: unknown; Provider: 'Provider'}
@@ -29,6 +30,13 @@ function providerOf(element: Element): Element {
   let node = element
   while (node && node.type !== 'Provider') node = (node.children as Element[])[0]
   return node
+}
+
+/** Walk the wrapper chain down to the StyleSheetManager and read its props. */
+function styleSheetManagerPropsOf(element: Element) {
+  let node = element
+  while (node && node.type !== 'StyleSheetManager') node = (node.children as Element[])[0]
+  return node.props as {stylisPlugins: {name: string}[]; target: unknown}
 }
 
 /** A Vite `import.meta.hot` stub that captures the `accept` callback for a test to fire. */
@@ -88,9 +96,18 @@ function loadWrapper(
 
 const APP = `() => 'app'`
 
+/** A mount node whose document creates `target` as the wrapper's stylesheet element. */
+const rootElement = (target: object = {}) => ({
+  ownerDocument: {createElement: () => target, head: {appendChild: () => {}}},
+})
+
+const loadIsolated = () =>
+  loadWrapper(renderRemote({app: APP, isolateStyles: true, preamble: ''}), makeReact())
+
 afterEach(() => {
   // Each test owns the slot; drop it so a fresh WeakMap is created next run.
   delete (globalThis as Record<symbol, unknown>)[MODULE_SLOT]
+  delete (globalThis as Record<symbol, unknown>)[STYLIS_PLUGIN_COUNT]
 })
 
 describe('renderRemote module context', () => {
@@ -107,6 +124,42 @@ describe('renderRemote module context', () => {
     )
     mod.render(root).dispose()
     expect(events).toEqual(['unmount React', 'remove stylesheet'])
+  })
+
+  test('gives every root, across modules, a uniquely named stylis plugin', () => {
+    const first = loadIsolated()
+    const second = loadIsolated()
+    first.render(rootElement())
+    first.render(rootElement())
+    second.render(rootElement())
+
+    const names = [...first.rendered, ...second.rendered].map(
+      (element) => styleSheetManagerPropsOf(element).stylisPlugins[0].name,
+    )
+    expect(new Set(names).size).toBe(3)
+  })
+
+  test('re-renders a root with the same sheet and plugins, so its stylis instance survives', () => {
+    const target = {}
+    const mod = loadIsolated()
+    mod.render(rootElement(target)).setLifecycle('background')
+
+    const [mounted, rerendered] = mod.rendered.map((element) => styleSheetManagerPropsOf(element))
+    expect(mounted).toEqual({stylisPlugins: [expect.any(Function)], target})
+    expect(rerendered.target).toBe(target)
+    expect(rerendered.stylisPlugins).toBe(mounted.stylisPlugins)
+  })
+
+  test("labels the root's sheet with its moduleId", () => {
+    const attributes = new Map<string, string>()
+    const target = {setAttribute: (name: string, value: string) => attributes.set(name, value)}
+    loadIsolated().render(
+      rootElement(target),
+      {},
+      {moduleId: 'v27rvqtlp3lmdvcln6ey3lro/views/home/tile'},
+    )
+
+    expect(attributes.get('data-module-id')).toBe('v27rvqtlp3lmdvcln6ey3lro/views/home/tile')
   })
 
   test('sources ModuleContext from the symbol-keyed WeakMap<createContext, Context>', () => {
