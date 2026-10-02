@@ -1,5 +1,52 @@
 # Changelog
 
+## 6.4.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.1...cli-build-v6.4.2)
+
+_2026-09-28_
+
+### Bug Fixes
+
+- The generated studio entry now imports your `sanity.config` before `sanity`, and the app entry imports your app before `react-dom/client`. A side-effect import at the top of that file, such as `import 'react-devtools-cdt-mcp/register'` or any other tool that must install a global hook before React loads, runs before React initializes during `sanity dev`. A production `sanity build` can still evaluate shared dependency chunks before that code, so the same order is not guaranteed in the built bundle. ([#1925](https://github.com/sanity-io/cli/pull/1925)) ([bc61791](https://github.com/sanity-io/cli/commit/bc6179121f478f74b756d75e79b68e027dd06193))
+
+## 6.4.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.0...cli-build-v6.4.1)
+
+_2026-09-22_
+
+### Bug Fixes
+
+- **workbench-cli:** share compatible dependencies ([#1885](https://github.com/sanity-io/cli/pull/1885)) ([73392e6](https://github.com/sanity-io/cli/commit/73392e660a936f126df836e7fa6c0cf9613f1538))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.6.0
+
+## 6.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.1...cli-build-v6.4.0)
+
+_2026-09-18_
+
+### Features
+
+- media library url ingest ([#1875](https://github.com/sanity-io/cli/pull/1875)) ([ac3a20c](https://github.com/sanity-io/cli/commit/ac3a20cd49b90d0abcdfed0f8dc8d472bbf3e783))
+
+### Bug Fixes
+
+- **deps:** update dependency @sanity/ui to v4 ([#1816](https://github.com/sanity-io/cli/pull/1816)) ([1085c60](https://github.com/sanity-io/cli/commit/1085c60292174964dc883cb0f0fb783246498a2e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.0
+    - @sanity/workbench-cli bumped to 2.5.2
+
 ## 6.3.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.0...cli-build-v6.3.1)

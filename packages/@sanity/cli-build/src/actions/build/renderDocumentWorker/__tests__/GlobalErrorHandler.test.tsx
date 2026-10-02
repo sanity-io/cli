@@ -1,111 +1,97 @@
-import {type DOMWindow, JSDOM, VirtualConsole} from 'jsdom'
-import {describe, expect, test} from 'vitest'
+// @vitest-environment jsdom
+import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {GlobalErrorHandler} from '../components/GlobalErrorHandler.js'
 
-function getErrorHandlerScript(): string {
-  const element = GlobalErrorHandler()
-  const props = element.props as {dangerouslySetInnerHTML: {__html: string}}
-  return props.dangerouslySetInnerHTML.__html
-}
-
-interface TestWindow {
-  jsdomErrors: Error[]
-  window: DOMWindow
-}
-
-function setupWindow(): TestWindow {
-  // Keep the script's own `console.error` calls out of the test output, and collect any
-  // exceptions jsdom reports from inside the script (e.g. thrown from a timer callback).
-  const jsdomErrors: Error[] = []
-  const virtualConsole = new VirtualConsole()
-  virtualConsole.on('jsdomError', (error) => {
-    jsdomErrors.push(error)
-  })
-
-  const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
-    runScripts: 'outside-only',
-    virtualConsole,
-  })
-  dom.window.eval(getErrorHandlerScript())
-
-  return {jsdomErrors, window: dom.window}
-}
-
-async function waitForOverlay(window: DOMWindow): Promise<HTMLElement> {
-  const deadline = Date.now() + 2000
-  while (Date.now() < deadline) {
-    const overlay = window.document.querySelector<HTMLElement>('#__sanityError')
-    if (overlay) return overlay
-    await new Promise((resolve) => setTimeout(resolve, 5))
-  }
-  throw new Error('Error overlay was not rendered')
-}
-
 describe('GlobalErrorHandler', () => {
-  test('renders the message and stack of a regular Error', async () => {
-    const {jsdomErrors, window} = setupWindow()
-    const error = new window.Error('Something broke')
+  beforeAll(() => {
+    const script = GlobalErrorHandler().props.dangerouslySetInnerHTML.__html
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']})
+    globalThis.eval(script)
+  })
 
-    window.dispatchEvent(
-      new window.ErrorEvent('error', {
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  test('shows the overlay for an uncaught error', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    globalThis.dispatchEvent(new ErrorEvent('error', {error: new Error('Boom'), message: 'Boom'}))
+    vi.runAllTimers()
+
+    expect(document.querySelector('#__sanityError')?.textContent).toContain('Uncaught error: Boom')
+  })
+
+  test('ignores browser error events that carry no error object', () => {
+    // Chromium fires these for a ResizeObserver loop, and for cross-origin "Script error."
+    globalThis.dispatchEvent(
+      new ErrorEvent('error', {
+        error: null,
+        message: 'ResizeObserver loop completed with undelivered notifications.',
+      }),
+    )
+
+    expect(() => vi.runAllTimers()).not.toThrow()
+    expect(document.querySelector('#__sanityError')).toBeNull()
+  })
+
+  test('renders the message, source location and stack of a regular Error', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    globalThis.dispatchEvent(
+      new ErrorEvent('error', {
         colno: 7,
-        error,
+        error: new Error('Something broke'),
         filename: 'https://example.com/static/app.js',
         lineno: 42,
         message: 'Uncaught Error: Something broke',
       }),
     )
+    vi.runAllTimers()
 
-    const overlay = await waitForOverlay(window)
-    expect(overlay.textContent).toContain('Uncaught error: Something broke')
-    expect(overlay.textContent).toContain('https://example.com/static/app.js:42:7')
-    expect(overlay.querySelector('pre')?.textContent).toContain('Error: Something broke')
-    expect(jsdomErrors).toEqual([])
+    const overlay = document.querySelector('#__sanityError')
+    expect(overlay?.textContent).toContain('Uncaught error: Something broke')
+    expect(overlay?.textContent).toContain('https://example.com/static/app.js:42:7')
+    expect(overlay?.querySelector('pre')?.textContent).toContain('Error: Something broke')
   })
 
-  test('renders the browser message when the error object is null (cross-origin script error)', async () => {
-    const {jsdomErrors, window} = setupWindow()
+  test('renders the browser message when a string is thrown', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    // Browsers pass `error: null` (and a generic message) for errors thrown by cross-origin
-    // scripts without CORS headers.
-    window.dispatchEvent(
-      new window.ErrorEvent('error', {
-        colno: 0,
-        error: null,
-        filename: '',
-        lineno: 0,
-        message: 'Script error.',
-      }),
+    // A thrown string reaches the handler as the error, but has no message or stack of its own.
+    globalThis.dispatchEvent(new ErrorEvent('error', {error: 'boom', message: 'Uncaught boom'}))
+    vi.runAllTimers()
+
+    const overlay = document.querySelector('#__sanityError')
+    expect(overlay?.textContent).toContain('Uncaught error: Uncaught boom')
+    expect(overlay?.textContent).not.toContain('undefined')
+    expect(overlay?.querySelector('pre')?.textContent).toBe('')
+  })
+
+  test('renders the browser message when a non-Error object is thrown', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    globalThis.dispatchEvent(
+      new ErrorEvent('error', {error: {code: 'E_BOOM'}, message: 'Uncaught [object Object]'}),
     )
+    vi.runAllTimers()
 
-    const overlay = await waitForOverlay(window)
-    expect(overlay.textContent).toContain('Uncaught error: Script error.')
-    // The overlay must not crash on `error.message` and then render its own TypeError.
-    expect(overlay.textContent).not.toMatch(/null is not an object|Cannot read propert/)
-    expect(overlay.textContent).not.toContain('undefined')
-    expect(jsdomErrors).toEqual([])
+    const overlay = document.querySelector('#__sanityError')
+    expect(overlay?.textContent).toContain('Uncaught error: Uncaught [object Object]')
+    expect(overlay?.textContent).not.toContain('undefined')
+    expect(overlay?.querySelector('pre')?.textContent).toBe('')
   })
 
-  test('renders the browser message when window.onerror receives a null error', async () => {
-    const {jsdomErrors, window} = setupWindow()
+  test('falls back to a generic message when a non-Error throw has no browser message', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    // `window.onerror` receives the message as its first argument, not an ErrorEvent.
-    window.onerror?.call(window, 'Script error.', '', 0, 0, null as unknown as Error)
+    globalThis.dispatchEvent(new ErrorEvent('error', {error: {}, message: ''}))
+    vi.runAllTimers()
 
-    const overlay = await waitForOverlay(window)
-    expect(overlay.textContent).toContain('Uncaught error: Script error.')
-    expect(overlay.textContent).not.toMatch(/null is not an object|Cannot read propert/)
-    expect(jsdomErrors).toEqual([])
-  })
-
-  test('falls back to a generic message when neither error nor message is available', async () => {
-    const {jsdomErrors, window} = setupWindow()
-
-    window.dispatchEvent(new window.ErrorEvent('error', {error: null, message: ''}))
-
-    const overlay = await waitForOverlay(window)
-    expect(overlay.textContent).toContain('Uncaught error: Unknown error')
-    expect(jsdomErrors).toEqual([])
+    const overlay = document.querySelector('#__sanityError')
+    expect(overlay?.textContent).toContain('Uncaught error: Unknown error')
+    expect(overlay?.textContent).not.toContain('undefined')
   })
 })

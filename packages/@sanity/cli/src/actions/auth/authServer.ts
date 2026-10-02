@@ -7,23 +7,20 @@ import {getTokenDetails} from '../../services/auth.js'
 import {type TokenDetails} from './types.js'
 
 const debug = subdebug('auth')
-const defaultCallbackPort = 4321
+const defaultCallbackPort = 0
 const callbackEndpoint = '/callback'
 
 /**
  * Get the port to first attempt binding the auth callback server to.
  *
  * The auth backend accepts any `http://localhost:<port>` origin for token
- * callbacks, but we prefer a predictable port: it is friendlier for users who
- * need to allow or forward the port (e.g. logging in from a remote machine over
- * an SSH tunnel). If the preferred port is taken, we fall back to an
- * OS-assigned ephemeral port.
+ * callbacks, so by default we let the OS assign an available ephemeral port.
  *
  * The `SANITY_CLI_CALLBACK_PORT` environment variable overrides the preferred
  * port (`0` for an OS-assigned port). The override exists primarily for tests,
  * where OS-assigned ports prevent collisions between tests running in parallel.
  *
- * @returns Port number to attempt first
+ * @returns Port number to attempt first (`0` for an OS-assigned port)
  * @internal
  */
 function getPreferredCallbackPort(): number {
@@ -60,7 +57,7 @@ const platformNames: Record<string, string | undefined> = {
  * do a request to the `/auth/fetch` endpoint with to get the actual auth token,
  * invalidating the SID in the process.
  *
- * If we fail to bind to the preferred port, we retry with an OS-assigned port.
+ * If an explicitly configured port is busy, we retry with an OS-assigned port.
  *
  * @param providerUrl - The URL of the login provider
  * @returns Resolves with HTTP server instance, a login URL to send user to, and a `token` promise
@@ -142,7 +139,7 @@ export function startServerForTokenCallback(
 
     server.on('error', function onCallbackServerError(err) {
       // The auth backend accepts any localhost port in the callback origin, so if
-      // the preferred port is busy we fall back to an OS-assigned ephemeral port.
+      // an explicitly configured port is busy we fall back to an OS-assigned ephemeral port.
       // Port 0 cannot itself be "in use" - an EADDRINUSE there means something is
       // genuinely wrong, so only fall back once.
       if ('code' in err && err.code === 'EADDRINUSE' && callbackPort !== 0) {

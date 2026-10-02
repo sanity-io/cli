@@ -35,6 +35,7 @@ describe('findUserApplication', () => {
 
     const result = await findUserApplication({
       ...baseOptions,
+      create: true,
       output,
       title: 'My App',
       unattended: true,
@@ -42,6 +43,11 @@ describe('findUserApplication', () => {
 
     expect(result).toBeNull()
     expect(output.error).not.toHaveBeenCalled()
+    expect(mockResolveApp).toHaveBeenCalledWith({
+      appId: undefined,
+      create: true,
+      organizationId: 'org-1',
+    })
   })
 
   test('should exit instead of creating when unattended without a title', async () => {
@@ -51,6 +57,18 @@ describe('findUserApplication', () => {
     await findUserApplication({...baseOptions, output, unattended: true})
 
     expect(output.error).toHaveBeenCalled()
+  })
+
+  test('does not infer creation from a title when the organization already has apps', async () => {
+    mockResolveApp.mockResolvedValue({existing: [], type: 'needs-input'})
+    const output = mockOutput()
+
+    await findUserApplication({...baseOptions, output, title: 'New App', unattended: true})
+
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('sanity deploy --create --title'),
+      {exit: 2},
+    )
   })
 })
 

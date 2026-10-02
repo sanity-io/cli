@@ -15,7 +15,7 @@ const mockCreateServer = vi.hoisted(() => vi.fn())
 const mockWriteWorkbenchRuntime = vi.hoisted(() => vi.fn())
 const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
-const mockReadWorkbenchLock = vi.hoisted(() => vi.fn())
+const mockWaitForWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockWatchRegistry = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({createServer: mockCreateServer}))
@@ -29,7 +29,7 @@ vi.mock('../registry.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../registry.js')>()),
   acquireWorkbenchLock: mockAcquireWorkbenchLock,
   getRegisteredServers: mockGetRegisteredServers,
-  readWorkbenchLock: mockReadWorkbenchLock,
+  waitForWorkbenchLock: mockWaitForWorkbenchLock,
   watchRegistry: mockWatchRegistry,
 }))
 
@@ -38,7 +38,7 @@ describe('startWorkbenchDevServer', () => {
     mockWriteWorkbenchRuntime.mockResolvedValue('/tmp/sanity-project/.sanity/workbench')
     mockAcquireWorkbenchLock.mockReturnValue({release: vi.fn(), updatePort: vi.fn()})
     mockGetRegisteredServers.mockReturnValue([])
-    mockReadWorkbenchLock.mockReturnValue(undefined)
+    mockWaitForWorkbenchLock.mockResolvedValue(undefined)
     mockWatchRegistry.mockReturnValue({close: vi.fn()})
   })
 
@@ -128,29 +128,14 @@ describe('startWorkbenchDevServer', () => {
       expect(config.resolve.alias).toHaveProperty('@sanity/workbench-cli/_internal_render')
     })
 
-    test('development mode forwards the SANITY_INTERNAL_WORKBENCH_REMOTE_URL override', async () => {
+    test('forwards the SANITY_INTERNAL_WORKBENCH_REMOTE_URL override', async () => {
       mockCreateServer.mockResolvedValue(createMockViteServer())
       vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'http://localhost:5173/mf-manifest.json')
 
-      await startWorkbenchDevServer(
-        createDevOptions({cliConfig: federationConfig, mode: 'development'}),
-      )
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
-        expect.objectContaining({remoteUrl: expect.stringContaining('localhost:5173')}),
-      )
-    })
-
-    test('preview mode drops the dev override so the deployed workbench UI is used', async () => {
-      mockCreateServer.mockResolvedValue(createMockViteServer())
-      vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'http://localhost:5173/mf-manifest.json')
-
-      await startWorkbenchDevServer(
-        createDevOptions({cliConfig: federationConfig, mode: 'preview'}),
-      )
-
-      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
-        expect.objectContaining({remoteUrl: undefined}),
+        expect.objectContaining({remoteUrl: 'http://localhost:5173/mf-manifest.json'}),
       )
     })
 
@@ -399,7 +384,7 @@ describe('startWorkbenchDevServer', () => {
 
     test('skips starting server when lock is held by another process', async () => {
       mockAcquireWorkbenchLock.mockReturnValue(undefined)
-      mockReadWorkbenchLock.mockReturnValue({host: '0.0.0.0', pid: 12_345, port: 4000})
+      mockWaitForWorkbenchLock.mockResolvedValue({host: '0.0.0.0', pid: 12_345, port: 4000})
 
       const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
@@ -412,7 +397,7 @@ describe('startWorkbenchDevServer', () => {
 
     test('falls back to configured host/port when lock is held but lock file unreadable', async () => {
       mockAcquireWorkbenchLock.mockReturnValue(undefined)
-      mockReadWorkbenchLock.mockReturnValue(undefined)
+      mockWaitForWorkbenchLock.mockResolvedValue(undefined)
 
       const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 

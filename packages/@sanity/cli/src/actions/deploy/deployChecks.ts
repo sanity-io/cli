@@ -215,7 +215,8 @@ export function describeAppTarget(
       return {
         exitCode: exitCodes.USAGE_ERROR,
         message: `No \`deployment.appId\` configured (${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} to choose from)`,
-        solution: 'Add `deployment.appId` to sanity.cli.ts',
+        solution:
+          'Set `deployment.appId` in sanity.cli.ts to deploy to an existing app, or run `sanity deploy --create --title "<name>" --yes` to create a new one',
         status: 'fail',
       }
     }
@@ -290,15 +291,16 @@ export async function checkAppTarget(
   options:
     | {
         appId: string | undefined
-        isWorkbenchApp: true
-        organizationId?: string
-        slug?: string
+        create?: boolean
+        isWorkbenchApp?: false
+        organizationId: string | undefined
         title?: string
       }
     | {
         appId: string | undefined
-        isWorkbenchApp?: false
-        organizationId: string | undefined
+        isWorkbenchApp: true
+        organizationId?: string
+        slug?: string
         title?: string
       },
 ): Promise<DeployCheck | null> {
@@ -317,15 +319,18 @@ export async function checkAppTarget(
     })
   }
 
-  const {appId, organizationId} = options
+  const {appId, create, organizationId} = options
   return runStep(reporter, {
     debug: deployDebug,
     formatError: (err) => describeAppTargetError(err, organizationId),
     name: 'target',
     work: async () => {
-      const check = describeAppTarget(await resolveAppDeployTarget({appId, organizationId}), {
-        title,
-      })
+      const check = describeAppTarget(
+        await resolveAppDeployTarget({appId, create, organizationId}),
+        {
+          title,
+        },
+      )
       reporter.report(check)
       return check
     },

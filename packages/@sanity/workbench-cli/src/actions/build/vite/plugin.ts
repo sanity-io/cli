@@ -7,6 +7,7 @@ import {type PluginOption} from 'vite'
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {artifactExposes, workbenchArtifacts} from '../artifact.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './constants.js'
+import {sanityFederationHost} from './plugins/plugin-federation-host.js'
 import {type FederationOptions, sanityModuleFederation} from './plugins/plugin-module-federation.js'
 import {sanityEnvironmentPlugin} from './plugins/plugin-sanity-environment.js'
 import {sanityExtensionArtifacts} from './plugins/plugin-sanity-extension-artifacts.js'
@@ -123,5 +124,6 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     sanityFederationRuntime(runtimeOptions),
     sanityExtensionArtifacts({artifacts}),
     sanityModuleFederation({exposes: federationExposes, name}),
+    sanityFederationHost(),
   ]
 }

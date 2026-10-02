@@ -41,9 +41,13 @@ describe('sanityEnvironmentPlugin', () => {
     })
 
     // emptyOutDir must be false on BOTH so neither build wipes the other's
-    // output from the shared `dist`.
+    // output from the shared output dir.
     expect(config.environments.federation.build.emptyOutDir).toBe(false)
     expect(config.environments.client.build.emptyOutDir).toBe(false)
+    // Neither may pin its own outDir: both must inherit the top-level
+    // `build.outDir`, or a custom output dir (e.g. Blueprints) gets no bundle.
+    expect(config.environments.federation.build.outDir).toBeUndefined()
+    expect(config.environments.client.build.outDir).toBeUndefined()
     expect(config.environments.client.build.assetsDir).toBe('static')
     expect(config.environments.client.build.rolldownOptions.input).toEqual({sanity: clientInput})
 

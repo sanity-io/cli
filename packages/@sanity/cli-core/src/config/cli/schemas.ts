@@ -36,6 +36,12 @@ export const cliConfigSchema = z.object({
     z.object({
       appId: z.optional(z.string()),
       autoUpdates: z.optional(z.boolean()),
+      studioHost: z.optional(
+        z.never({
+          error:
+            'deployment.studioHost is not supported. Move studioHost to the top level of sanity.cli.ts, or pass --url <hostname> to sanity deploy.',
+        }),
+      ),
     }),
   ),
 

@@ -11,6 +11,8 @@ import {viewArtifacts} from './views/artifact.js'
 interface ArtifactContext {
   /** Import specifier for an app `src` file, relative to this artifact. */
   resolveImport: (src: string) => string
+
+  isolateStyles?: boolean
 }
 
 /**

@@ -122,7 +122,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
       services: [],
       title: 'My App',
       type: 'coreApp',
-      url: 'https://org-1.sanity.run/application/wb-app-1',
+      url: 'https://org-1.sanity.run/applications/wb-app-1',
       views: [{name: 'insights', surface: 'panel', title: 'Insights'}],
     })
   })
@@ -144,7 +144,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     }).resolveTarget()
 
     expect(resolution.type === 'found' && resolution.target.url).toBe(
-      'https://org-1.sanity.run/studio/wb-studio-1',
+      'https://org-1.sanity.run/studios/wb-studio-1',
     )
   })
 

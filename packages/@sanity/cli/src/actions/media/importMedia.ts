@@ -9,7 +9,6 @@ import {styleText} from 'node:util'
 
 import {spinner} from '@sanity/cli-core/ux'
 import {type SanityClient} from '@sanity/client'
-import {type FileAsset, type ImageAsset, type SanityDocument} from '@sanity/types'
 import gunzipMaybe from 'gunzip-maybe'
 // @ts-expect-error `peek-stream` module currently untyped
 import peek from 'peek-stream'
@@ -31,23 +30,15 @@ import {
 import {x as extractTar} from 'tar'
 import {glob} from 'tinyglobby'
 
+import {type MediaLibraryAsset} from '../../services/mediaLibraries.js'
 import {isTar} from '../../util/isTar.js'
 import {buildNdjsonIndex} from './buildNdjsonIndex.js'
 import {importMediaDebug} from './importMediaDebug.js'
 
 const DEFAULT_CONCURRENCY = 6
 
-interface MediaLibraryUploadResult {
-  asset: SanityDocument & {
-    _type: 'sanity.asset'
-    aspects: unknown
-    assetType: FileAsset['_type'] | ImageAsset['_type']
-  }
-  assetInstance: FileAsset | ImageAsset
-}
-
 interface MediaLibraryUploadResponse {
-  body: MediaLibraryUploadResult
+  body: MediaLibraryAsset
   type: 'response'
 }
 
@@ -388,7 +379,7 @@ function uploadAsset({
         tap(() => importMediaDebug(`[Asset ${asset}] Finished uploading new asset`)),
         // TODO: The `client.assets.upload` method should return `MediaLibraryUploadResponse` when operating on Media Library resources. When that occurs, this type assertion can be removed.
         map((response) => (response as unknown as MediaLibraryUploadResponse).body),
-        map<MediaLibraryUploadResult, ResolvedAsset>((result) => ({
+        map<MediaLibraryAsset, ResolvedAsset>((result) => ({
           assetIds: [result.asset._id],
           isExistingAsset: false,
           originalFilename: asset,

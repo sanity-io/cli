@@ -1,0 +1,14 @@
+{
+  "name": "@sanity-test/fixture-plugin-broken",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plugin that points at a policy module which cannot be loaded",
+  "type": "module",
+  "oclif": {
+    "commands": "./commands",
+    "topicSeparator": " "
+  },
+  "sanity": {
+    "invocationPolicies": "./does-not-exist.js"
+  }
+}

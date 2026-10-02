@@ -135,7 +135,7 @@ Code for sanity cli
 - [`sanity tokens list`](#sanity-tokens-list)
 - [`sanity tokens rotate`](#sanity-tokens-rotate)
 - [`sanity typegen generate`](#sanity-typegen-generate)
-- [`sanity undeploy`](#sanity-undeploy)
+- [`sanity undeploy [APPID]`](#sanity-undeploy-appid)
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
@@ -244,17 +244,20 @@ EXAMPLES
 
 ## `sanity assets upload`
 
-Upload one local image or file to a Sanity dataset and print the asset document as JSON
+Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
 
 ```
 USAGE
-  $ sanity assets upload --file <path> [-p <id>] [-d <name>] [--content-type <mime-type>] [--filename <filename>]
-    [--type image|file]
+  $ sanity assets upload [-p <id>] [-d <name>] [--content-type <mime-type>] [--file <path>] [--filename <filename>]
+    [--from-url <url>] [--type image|file]
 
 FLAGS
-  --content-type=<mime-type>  MIME type of the asset, such as image/png or application/pdf
-  --file=<path>               (required) Path to the local file to upload
-  --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename
+  --content-type=<mime-type>  MIME type of the asset, such as image/png or application/pdf. Only applies to --file
+  --file=<path>               Path to the local file to upload
+  --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename when using
+                              --file
+  --from-url=<url>            https URL for Sanity to fetch the asset from, instead of uploading a local file. Must be
+                              reachable from the public internet without authentication
   --type=<option>             [default: image] Asset type to create
                               <options: image|file>
 
@@ -263,7 +266,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to upload the asset to (overrides CLI configuration)
 
 DESCRIPTION
-  Upload one local image or file to a Sanity dataset and print the asset document as JSON
+  Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
 
 EXAMPLES
   Upload an image using the configured project
@@ -274,6 +277,10 @@ EXAMPLES
 
     $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 \
       --dataset production
+
+  Have Sanity fetch an image from a public URL
+
+    $ sanity assets upload --from-url 'https://example.com/hero.png' --type image --dataset production
 ```
 
 ## `sanity backups disable [DATASET]`
@@ -2001,8 +2008,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--dry-run] [--external | --source-maps | --minify | --build]
-    [-j] [--schema-required] [--title <value>] [--url <value>] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--create | --external | --url <value>] [--dry-run]
+    [-j] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -2012,13 +2019,14 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Build the studio before deploying (use --no-build to deploy existing `dist/` output)
+      --create             Create a new App SDK app, even if the organization has other apps
       --dry-run            Report what would be deployed without uploading or creating anything
       --external           Register an externally hosted studio
       --[no-]minify        Minify built JavaScript (use --no-minify to skip for faster builds)
       --schema-required    Fail if schema deployment fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
-      --title=<value>      Title for a newly created application or studio. For apps it also skips the interactive title
-                           prompt, enabling unattended creation
+      --title=<value>      Title for a newly created application or studio. For apps, use --create to select creation
+                           when the organization already has apps
       --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
                            hostname (e.g. "my-studio" or "my-studio.sanity.studio")
       --verbose            Enable verbose logging
@@ -2042,6 +2050,19 @@ EXAMPLES
   Register an externally hosted studio (studioHost contains full URL)
 
     $ sanity deploy --external
+
+  Create and deploy an App SDK app without prompts. Save application.id as deployment.appId, then omit --create on
+  later deploys
+
+    $ sanity deploy --create --title "My App" --yes --json
+
+  Preview a new App SDK deployment without creating or uploading anything
+
+    $ sanity deploy --create --title "My App" --dry-run --json
+
+  Deploy a studio without prompts using its hostname
+
+    $ sanity deploy --url my-studio --yes
 ```
 
 ## `sanity dev`
@@ -2511,8 +2532,8 @@ DESCRIPTION
 
   Open the emulator in your browser to interactively test your functions with the payload editor.
 
-  Optionally, set the host and port with the --host and --port flags. Port 8974 is reserved for the emulator's
-  live-reload WebSocket server. Function timeout can be configured with the --timeout flag.
+  Optionally, set the host and port with the --host and --port flags. The live-reload WebSocket server shares this host
+  and port. Function timeout can be configured with the --timeout flag.
 
   To invoke a function with the CLI, use 'functions test'.
 
@@ -3309,15 +3330,20 @@ Import a set of assets to the target media library.
 
 ```
 USAGE
-  $ sanity media import SOURCE [-p <id>] [--media-library-id <value>] [--replace-aspects]
+  $ sanity media import SOURCE [-p <id>] [--aspect <key=value>...] [--filename <filename>] [--media-library-id
+    <value>] [--replace-aspects]
 
 ARGUMENTS
-  SOURCE  Image file or folder to import from
+  SOURCE  Directory, archive, or asset URL to import from. An https URL imports one asset that Sanity fetches itself
 
 FLAGS
+  --aspect=<key=value>...     Aspect value to set on the imported asset, as key=value. Repeatable. Only applies when the
+                              source is a URL - directory and archive imports read aspects from their data.ndjson
+  --filename=<filename>       Original filename to store on the asset. Only applies when the source is a URL. Defaults
+                              to a name derived from the URL
   --media-library-id=<value>  The id of the target media library
   --replace-aspects           Replace existing aspect data. All versions will be replaced (e.g. published and draft
-                              aspect data)
+                              aspect data). Only applies to directory and archive imports
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to import media to (overrides CLI configuration)
@@ -3337,6 +3363,14 @@ EXAMPLES
   Import all assets from the "products" directory and replace aspects
 
     $ sanity media import products --replace-aspects
+
+  Have Sanity fetch a single asset from a public URL
+
+    $ sanity media import https://example.com/hero.png
+
+  Fetch an asset from a URL and set aspect data on it
+
+    $ sanity media import https://example.com/hero.png --aspect department=Brand
 ```
 
 ## `sanity migrations create [TITLE]`
@@ -4242,13 +4276,16 @@ EXAMPLES
     $ sanity typegen generate
 ```
 
-## `sanity undeploy`
+## `sanity undeploy [APPID]`
 
 Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ sanity undeploy [--dry-run] [-j] [-y]
+  $ sanity undeploy [APPID] [--dry-run] [-j] [-y]
+
+ARGUMENTS
+  [APPID]  ID of the application to undeploy. Overrides `deployment.appId` in sanity.cli.ts
 
 FLAGS
   -j, --json     Output the result as JSON
@@ -4262,6 +4299,10 @@ EXAMPLES
   Undeploy the studio or application after confirming
 
     $ sanity undeploy
+
+  Undeploy the studio or application with the given ID
+
+    $ sanity undeploy abc123
 
   Report what would be undeployed without deleting anything
 
@@ -4610,18 +4651,25 @@ List workflow instances in the configured dataset (in-flight by default).
 ```
 USAGE
   $ sanity workflows list [--tag <value>] [--include-completed] [--failed] [--definition <value>] [--document
-    <value>] [--limit <value>] [--json]
+    <value>] [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...]
+    [--limit <value>] [--json]
 
 FLAGS
-  --definition=<value>  Only instances of this workflow definition (its `name`; the instance's `definition` field).
-  --document=<value>    Only instances that reference this document (resource-qualified GDR URI, e.g.
-                        "dataset:proj:ds:article-1").
-  --failed              Only instances with at least one failed activity.
-  --include-completed   Include completed/aborted instances (default: in-flight only).
-  --json                Emit structured JSON instead of rendered output.
-  --limit=<value>       [default: 50] Maximum rows to return.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
+  --assignment-role=<value>...    A literal project role held by --assignment-user. Repeat for multiple roles.
+  --assignment-state=<option>...  Assignment state to include: unrouted, routed (offered through a supplied role), or
+                                  held. Repeat for multiple states.
+                                  <options: unrouted|routed|held>
+  --assignment-user=<value>       Account-global user id used for viewer-scoped assignment filtering and counts.
+  --definition=<value>            Only instances of this workflow definition (its `name`; the instance's `definition`
+                                  field).
+  --document=<value>              Only instances that reference this document (resource-qualified GDR URI, e.g.
+                                  "dataset:proj:ds:article-1").
+  --failed                        Only instances with at least one failed activity.
+  --include-completed             Include completed/aborted instances (default: in-flight only).
+  --json                          Emit structured JSON instead of rendered output.
+  --limit=<value>                 [default: 50] Maximum rows to return.
+  --tag=<value>                   Workflow environment tag (e.g. prod, test) — an optional query filter that also
+                                  narrows which resources are searched; omit to span them all.
 
 DESCRIPTION
   List workflow instances in the configured dataset (in-flight by default).
@@ -4634,6 +4682,8 @@ EXAMPLES
   $ sanity workflows list --definition productLaunch
 
   $ sanity workflows list --document dataset:proj:ds:article-1
+
+  $ sanity workflows list --assignment-user gAda --assignment-role legal --assignment-state routed
 
   $ sanity workflows list --tag prod
 

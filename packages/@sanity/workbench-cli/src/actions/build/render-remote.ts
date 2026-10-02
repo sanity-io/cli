@@ -1,95 +1,122 @@
 /**
- * Every entry the federation build generates — the studio/app remote entries
- * and the per-view-component artifacts — is the same thing: a *render-contract
- * module* that owns its own React, renders into a host node via
- * `render(rootElement, props, renderOptions)`, and returns a disposer.
- *
- * They differ only in *what* they render. So each module binds an `App` to that
- * (the SDK app, a `Studio` with config, a view component) and the render body —
- * identical everywhere — just renders `App`. {@link renderRemote} assembles a
- * module from a `preamble` (its imports), the `app` expression, and, optionally,
- * the shared HMR snippet.
- *
- * The render contract is
- * `render(rootElement, props, renderOptions?: {reactStrictMode?: boolean; moduleId?: string})`.
- * `moduleId` is the host's canonical federation module id (e.g. `favorites/App`,
- * `favorites/views/list/panel`, `favorites/workers/sync`). It is provided to
- * `App` through a `React.Context<string | undefined>` keyed per React copy on a
- * global slot (`Symbol.for('sanity.os.module')`), which the SDK reads via
- * `getDashboardModuleContext()`.
+ * Every generated entry (studio, SDK app, view artifacts) shares one render body
+ * so the host can drive them all the same way; only the `App` they bind differs.
+ * The workbench host depends on `render`'s signature and return shape, so change
+ * them together.
  */
 
-/**
- * Hot-reload: on an update, re-render every live root through the new module —
- * so whatever it now binds `App` to (a recompiled component, a new studio
- * config) takes effect without a full page reload. Stripped from prod builds.
- */
+// Re-renders through the new module so edits apply without a page reload. The
+// new module mounts in the foreground, so reapply the host's lifecycle. The host
+// still holds this module's controller, so it forwards to the new one.
 const HMR_REMOUNT = `if (import.meta.hot) {
   import.meta.hot.accept((next) => {
     if (!next) return
     for (const [rootElement, args] of renderArgs) {
       rootMap.get(rootElement)?.unmount()
       rootMap.delete(rootElement)
-      next.render(rootElement, args.props, args.renderOptions)
+      args.next = next.render(rootElement, args.props, args.renderOptions)
+      args.next.setLifecycle(args.lifecycle)
     }
   })
 }`
 
 /**
- * Assemble a render-contract module: its `preamble` (imports), the `App` it
- * renders, the render body, and — when `hmr` — the shared HMR snippet.
- *
- * - `app` is the expression bound to `App`; omit it when the preamble imports an
- *   `App` directly (the SDK-app entry).
- * - `version` is an expression the host reads to check contract compatibility;
- *   omit it when the module carries no version (the studio/app entries).
+ * - `app`: omit when the preamble imports `App` itself (the SDK-app entry).
+ * - `version`: lets the host check view/service contract compatibility.
  */
 export function renderRemote({
   app,
   hmr = false,
+  isolateStyles = false,
   preamble,
   version,
 }: {
   app?: string
   hmr?: boolean
+  isolateStyles?: boolean
   preamble: string
   version?: string
 }): string {
+  // Keep apps without styled-components buildable; the unused branch is removed from their bundle.
+  const stylesheetImport = isolateStyles
+    ? "import { StyleSheetManager } from 'styled-components'"
+    : 'const StyleSheetManager = undefined'
+
   return `\
 // This file is auto-generated on 'sanity build' / 'sanity dev'
 // Modifications to this file are automatically discarded
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
+${stylesheetImport}
 ${preamble}
 ${app ? `\nconst App = ${app}\n` : ''}${version ? `\nexport const version = ${version}\n` : ''}
-// Module identity (the federation module id) is provided to App through a React
-// context keyed per React copy on a global slot. The SDK reads this same slot
-// via getDashboardModuleContext(), so the symbol and value type are a contract.
+// The SDK reads this slot via getDashboardModuleContext(), so its symbol, key and
+// value are a contract. Keyed by createContext, not the React namespace: Vite dev
+// pre-bundling can give two importers of one React copy different namespaces.
 const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
-if (!moduleSlot.has(React)) moduleSlot.set(React, React.createContext(undefined))
-const ModuleContext = moduleSlot.get(React)
+if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, React.createContext(undefined))
+const ModuleContext = moduleSlot.get(React.createContext)
 const rootMap = new Map()
+// A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
+const styleTargets = new Map()
+const stylisPlugins = new Map()
 const renderArgs = new Map()
+// On globalThis: every module embeds its own copy of this harness, and names must be page-unique.
+const stylisPluginCount = Symbol.for('sanity.os.stylisPluginCount')
+
+// Identical CSS gets an identical class in every sheet, so a later sheet overrides earlier rules.
+// StyleSheetManager hashes stylis plugin names into class names: a uniquely named no-op isolates a root.
+function uniqueStylisPlugin() {
+  globalThis[stylisPluginCount] = (globalThis[stylisPluginCount] ?? 0) + 1
+  return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
+}
 
 function mount(rootElement, args) {
   let root = rootMap.get(rootElement)
   if (!root) {
-    root = createRoot(rootElement)
+    root = createRoot(rootElement, args?.renderOptions?.rootOptions)
     rootMap.set(rootElement, root)
+    if (StyleSheetManager) {
+      const target = rootElement.ownerDocument.createElement('sanity-styles')
+      // React can replace the mount node's contents; keep its stylesheet outside that node.
+      rootElement.ownerDocument.head.appendChild(target)
+      styleTargets.set(rootElement, target)
+      stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
+    }
   }
-  const element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
-  root.render(args?.renderOptions?.reactStrictMode ? React.createElement(React.StrictMode, null, element) : element)
+  let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+  if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
+  // The host's React can't pause this root, so the host pauses the app through this Activity.
+  // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
+  element = React.createElement(React.Activity, { mode: args.lifecycle === 'background' ? 'hidden' : 'visible' }, element)
+  if (args?.renderOptions?.reactStrictMode) element = React.createElement(React.StrictMode, null, element)
+  root.render(element)
 }
 
 export function render(rootElement, props, renderOptions) {
-  const args = { props, renderOptions }
+  const args = { lifecycle: 'foreground', props, renderOptions }
   renderArgs.set(rootElement, args)
   mount(rootElement, args)
-  return () => {
-    const root = rootMap.get(rootElement)
-    rootMap.delete(rootElement)
-    renderArgs.delete(rootElement)
-    root?.unmount()
+  return {
+    dispose() {
+      const current = renderArgs.get(rootElement)
+      renderArgs.delete(rootElement)
+      if (current?.next) return current.next.dispose()
+      const root = rootMap.get(rootElement)
+      rootMap.delete(rootElement)
+      root?.unmount()
+      // Unmount first so effect cleanup can still reach this root's stylesheet.
+      styleTargets.get(rootElement)?.remove()
+      styleTargets.delete(rootElement)
+      stylisPlugins.delete(rootElement)
+    },
+    setLifecycle(state) {
+      const current = renderArgs.get(rootElement)
+      if (!current) return
+      if (current.next) return current.next.setLifecycle(state)
+      current.lifecycle = state
+      mount(rootElement, current)
+    },
   }
 }${hmr ? `\n\n${HMR_REMOUNT}` : ''}
 `

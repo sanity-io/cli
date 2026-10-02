@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "3.7.0",
+  "version": "3.8.2",
   "description": "Sanity CLI core package",
   "keywords": [
     "cli",
@@ -40,6 +40,10 @@
     "./browser": {
       "source": "./src/_exports/browser.ts",
       "default": "./dist/_exports/browser.js"
+    },
+    "./commandPolicy": {
+      "source": "./src/_exports/commandPolicy.ts",
+      "default": "./dist/_exports/commandPolicy.js"
     },
     "./config": {
       "source": "./src/_exports/config.ts",

@@ -1,5 +1,107 @@
 # @sanity/workbench-cli
 
+## 2.8.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.8.0...workbench-cli-v2.8.1)
+
+_2026-10-02_
+
+### Bug Fixes
+
+- **workbench-cli:** start the shell when the workbench remote runs first ([#1926](https://github.com/sanity-io/cli/pull/1926)) ([eef2e39](https://github.com/sanity-io/cli/commit/eef2e391247b8c19b16cfbb03b23c23367a42c59))
+- **workbench-cli:** wait for the shell's bound port before printing it ([#1927](https://github.com/sanity-io/cli/pull/1927)) ([8484fa6](https://github.com/sanity-io/cli/commit/8484fa6908ac4bd13066ec6c1fbe0ebc32aed488))
+- **deps:** update dependency @module-federation/runtime to v2.9.2 ([#1937](https://github.com/sanity-io/cli/pull/1937)) ([a700e6c](https://github.com/sanity-io/cli/commit/a700e6c268ecd9ad2e67d02498010ddbb0229a21))
+- **deps:** update dependency @module-federation/vite to v1.23.0 ([#1938](https://github.com/sanity-io/cli/pull/1938)) ([7cad210](https://github.com/sanity-io/cli/commit/7cad2108c464829f353533c70f5311eaa95c3d8b))
+- **workbench-cli:** isolate island styles ([#1939](https://github.com/sanity-io/cli/pull/1939)) ([b7262b2](https://github.com/sanity-io/cli/commit/b7262b252eadd062391112ad8e5a23ace349fe0a))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.2
+
+## 2.8.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.7.0...workbench-cli-v2.8.0)
+
+_2026-09-24_
+
+### Features
+
+- **workbench-cli:** share shell dependencies with federated apps ([#1917](https://github.com/sanity-io/cli/pull/1917)) ([33db2b8](https://github.com/sanity-io/cli/commit/33db2b808e2b7371f360f063a2450caa31f34fb8))
+
+### Bug Fixes
+
+- **workbench-cli:** build workbench apps into the requested output directory instead of always `dist`, so `sanity blueprints deploy` and `sanity build <outputDir>` ship the app's JavaScript, `index.html` and `mf-manifest.json` ([#1923](https://github.com/sanity-io/cli/pull/1923)) ([65f617f](https://github.com/sanity-io/cli/commit/65f617f6d0b8af5aa160877db6150b366801cb47))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.1
+
+## 2.7.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.6.0...workbench-cli-v2.7.0)
+
+_2026-09-23_
+
+### Features
+
+- **workbench-cli:** pause hidden federated apps through the render harness ([#1912](https://github.com/sanity-io/cli/pull/1912)) ([520651b](https://github.com/sanity-io/cli/commit/520651b8a6e22bb09f677dee90fbce131c964499))
+
+  The generated remote entry now wraps the app's tree in the remote's own React
+  `<Activity>` and exposes a lifecycle controller, so the workbench can pause a
+  federated app instead of just hiding it. `render()` now returns
+  `{dispose, setLifecycle}` instead of a disposer function — breaking for any host
+  that calls the return value directly — and the remote must bundle React ≥19.2
+  for `<Activity>`.
+
+## 2.6.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.5.2...workbench-cli-v2.6.0)
+
+_2026-09-22_
+
+### Features
+
+- **workbench-cli:** forward renderOptions.rootOptions to createRoot ([#1910](https://github.com/sanity-io/cli/pull/1910)) ([601ded1](https://github.com/sanity-io/cli/commit/601ded1c57d5173a329e578e77aaa510a7825f12))
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.22.1 ([#1907](https://github.com/sanity-io/cli/pull/1907)) ([9ac2c75](https://github.com/sanity-io/cli/commit/9ac2c752d97d4e3a59c9a30ca6455bbc47177464))
+- **workbench-cli:** let `sanity start` use the workbench remote override ([#1908](https://github.com/sanity-io/cli/pull/1908)) ([f15ca8a](https://github.com/sanity-io/cli/commit/f15ca8abb61add4329ecd1b2e9b125ac0bc2040d))
+- **deps:** update dependency @module-federation/vite to v1.22.0 ([#1892](https://github.com/sanity-io/cli/pull/1892)) ([fc1f318](https://github.com/sanity-io/cli/commit/fc1f318b2f7b4639e839a610d961fcbbdf51ac66))
+- **workbench-cli:** share compatible dependencies ([#1885](https://github.com/sanity-io/cli/pull/1885)) ([73392e6](https://github.com/sanity-io/cli/commit/73392e660a936f126df836e7fa6c0cf9613f1538))
+- **workbench-cli:** update workbench URLs ([#1909](https://github.com/sanity-io/cli/pull/1909)) ([c6290b7](https://github.com/sanity-io/cli/commit/c6290b75b8aed3d4524c419e63d762769f45c90a))
+
+## 2.5.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.5.1...workbench-cli-v2.5.2)
+
+_2026-09-18_
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.21.6 ([#1886](https://github.com/sanity-io/cli/pull/1886)) ([0dec8fb](https://github.com/sanity-io/cli/commit/0dec8fbbe2f814c80740f436f15abdb7daadfb8b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.0
+
+## 2.5.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.5.0...workbench-cli-v2.5.1)
+
+_2026-09-14_
+
+### Bug Fixes
+
+- **workbench-cli:** key the module identity context by `React.createContext` so the SDK resolves the same context ([#1878](https://github.com/sanity-io/cli/pull/1878)) ([2497267](https://github.com/sanity-io/cli/commit/24972671db3e6f99512a26b048fdbdc44643775b))
+- **workbench-cli:** reference `React.createElement` in the generated studio entry so the studio renders instead of throwing `createElement is not defined` ([#1880](https://github.com/sanity-io/cli/pull/1880)) ([9d4f10c](https://github.com/sanity-io/cli/commit/9d4f10ccfad4fc92d12486e7d0885a3ae8c0be59))
+
 ## 2.5.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.4.3...workbench-cli-v2.5.0)

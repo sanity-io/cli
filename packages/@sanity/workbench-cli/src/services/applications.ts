@@ -68,7 +68,7 @@ export function getWorkbenchUrl(organizationId: string): string {
 export function getApplicationUrl(
   application: Pick<Application, 'id' | 'organizationId' | 'type'>,
 ): string {
-  const segment = application.type === 'studio' ? 'studio' : 'application'
+  const segment = application.type === 'studio' ? 'studios' : 'applications'
   return `${getWorkbenchUrl(application.organizationId)}/${segment}/${application.id}`
 }
 

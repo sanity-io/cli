@@ -11,7 +11,7 @@
   "dependencies": {
     "@oclif/core": "catalog:",
     "@sanity/client": "catalog:",
-    "@sanity/id-utils": "^1.0.0",
+    "@sanity/id-utils": "^1.1.0",
     "lodash-es": "catalog:"
   },
   "devDependencies": {

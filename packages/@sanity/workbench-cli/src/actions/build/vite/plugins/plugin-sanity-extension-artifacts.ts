@@ -5,19 +5,29 @@ import {type Plugin} from 'vite'
 
 import {type GeneratedArtifact} from '../../artifact.js'
 import {RUNTIME_DIR} from '../constants.js'
+import {getFederationApi} from './plugin-module-federation.js'
 
 function relativeImport(fromFile: string, toFile: string): string {
   const rel = path.relative(path.dirname(fromFile), toFile).split(path.sep).join('/')
   return rel.startsWith('.') ? rel : `./${rel}`
 }
 
-function writeArtifacts(root: string, artifacts: readonly GeneratedArtifact[]): void {
+function writeArtifacts({
+  artifacts,
+  isolateStyles,
+  root,
+}: {
+  artifacts: readonly GeneratedArtifact[]
+  isolateStyles: boolean
+  root: string
+}): void {
   for (const artifact of artifacts) {
     const artifactPath = path.resolve(root, RUNTIME_DIR, artifact.path)
     fs.mkdirSync(path.dirname(artifactPath), {recursive: true})
     fs.writeFileSync(
       artifactPath,
       artifact.source({
+        isolateStyles,
         resolveImport: (src) => relativeImport(artifactPath, path.resolve(root, src)),
       }),
     )
@@ -35,7 +45,11 @@ export function sanityExtensionArtifacts(options: {
 }): Plugin {
   return {
     configResolved(config) {
-      writeArtifacts(config.root, options.artifacts)
+      writeArtifacts({
+        artifacts: options.artifacts,
+        isolateStyles: getFederationApi(config.plugins)?.isolateStyles ?? false,
+        root: config.root,
+      })
     },
     name: 'sanity/extension-artifacts',
   }

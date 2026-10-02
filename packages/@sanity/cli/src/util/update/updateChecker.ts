@@ -1,14 +1,15 @@
 import {spawn} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
-import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
+import {getUserConfig} from '@sanity/cli-core/config'
+import {subdebug} from '@sanity/cli-core/debug'
+import {isCi} from '@sanity/cli-core/util'
 import {gt as semverGt} from 'semver'
 
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 import {detectPackageRunner} from './packageRunner.js'
 import {resolveRunnerPackage} from './resolveRunnerPackage.js'
 import {resolveUpdateTarget} from './resolveUpdateTarget.js'
-import {showUpdateNotification} from './showNotificationUpdate.js'
 
 const debug = subdebug('updateChecker')
 
@@ -63,6 +64,10 @@ export async function updateChecker(config: {version: string}): Promise<void> {
         debug('Update is available (%s), already notified for this cache cycle', latestVersion)
       } else {
         debug('Update is available (%s)', latestVersion)
+        // Imported lazily: the notification pulls in the ux helpers, and this
+        // check runs on every invocation, including `--version` and `--help`.
+        // eslint-disable-next-line no-restricted-syntax -- static relative import, not a user file path
+        const {showUpdateNotification} = await import('./showNotificationUpdate.js')
         await showUpdateNotification(installedVersion, latestVersion, packageName, runner)
         store.set(notifiedKey, updatedAt)
       }

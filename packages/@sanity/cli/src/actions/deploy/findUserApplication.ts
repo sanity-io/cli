@@ -24,6 +24,7 @@ interface FindUserApplicationOptions {
   organizationId: string
   output: Output
 
+  create?: boolean
   title?: string
   unattended?: boolean
 }
@@ -31,12 +32,12 @@ interface FindUserApplicationOptions {
 export async function findUserApplication(
   options: FindUserApplicationOptions,
 ): Promise<UserApplicationResolved | null> {
-  const {cliConfig, organizationId, output, title, unattended = false} = options
+  const {cliConfig, create, organizationId, output, title, unattended = false} = options
   const spin = spinner('Checking application info...').start()
 
   let resolution
   try {
-    resolution = await resolveAppDeployTarget({appId: getAppId(cliConfig), organizationId})
+    resolution = await resolveAppDeployTarget({appId: getAppId(cliConfig), create, organizationId})
     deployDebug('Resolved app deploy target', resolution)
   } catch (error) {
     spin.clear()
@@ -51,7 +52,7 @@ export async function findUserApplication(
   }
 
   // null tells the caller to create. Unattended runs can only create with a
-  // --title; picking among existing apps (needs-input) always needs a prompt.
+  // title; picking among existing apps (needs-input) always needs a prompt.
   if (resolution.type === 'would-create' && (!unattended || title)) {
     spin.info('No application ID configured')
     return null

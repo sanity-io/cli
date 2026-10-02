@@ -46,65 +46,15 @@ describe('viewArtifacts', () => {
     )
   })
 
-  // Pin the whole emitted view module: it imports the view src, exposes the
-  // view's version, and renders behind an HMR boundary. A fragment check can't
-  // catch a broken join between those parts.
+  // The harness body itself is pinned by render-remote's own snapshot; here we
+  // only assert what the artifact emitter threads into it: the view import, the
+  // version export, and an HMR boundary. The App binding is covered above.
   test('emits a render-contract module bound to the view behind an HMR boundary', () => {
     const [title] = viewArtifacts([view({name: 'feed', src: './src/feed.tsx', surface: 'panel'})])
-    expect(title.source({resolveImport})).toMatchInlineSnapshot(`
-      "// This file is auto-generated on 'sanity build' / 'sanity dev'
-      // Modifications to this file are automatically discarded
-      import * as React from 'react'
-      import { createRoot } from 'react-dom/client'
-      import view from "../../src/feed.tsx"
-
-      const App = typeof view.components === 'function' ? view.components : view.components["title"]
-
-      export const version = view.version
-
-      // Module identity (the federation module id) is provided to App through a React
-      // context keyed per React copy on a global slot. The SDK reads this same slot
-      // via getDashboardModuleContext(), so the symbol and value type are a contract.
-      const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
-      if (!moduleSlot.has(React)) moduleSlot.set(React, React.createContext(undefined))
-      const ModuleContext = moduleSlot.get(React)
-      const rootMap = new Map()
-      const renderArgs = new Map()
-
-      function mount(rootElement, args) {
-        let root = rootMap.get(rootElement)
-        if (!root) {
-          root = createRoot(rootElement)
-          rootMap.set(rootElement, root)
-        }
-        const element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
-        root.render(args?.renderOptions?.reactStrictMode ? React.createElement(React.StrictMode, null, element) : element)
-      }
-
-      export function render(rootElement, props, renderOptions) {
-        const args = { props, renderOptions }
-        renderArgs.set(rootElement, args)
-        mount(rootElement, args)
-        return () => {
-          const root = rootMap.get(rootElement)
-          rootMap.delete(rootElement)
-          renderArgs.delete(rootElement)
-          root?.unmount()
-        }
-      }
-
-      if (import.meta.hot) {
-        import.meta.hot.accept((next) => {
-          if (!next) return
-          for (const [rootElement, args] of renderArgs) {
-            rootMap.get(rootElement)?.unmount()
-            rootMap.delete(rootElement)
-            next.render(rootElement, args.props, args.renderOptions)
-          }
-        })
-      }
-      "
-    `)
+    const source = title.source({resolveImport})
+    expect(source).toContain('import view from "../../src/feed.tsx"')
+    expect(source).toContain('export const version = view.version')
+    expect(source).toContain('if (import.meta.hot)')
   })
 
   test('expands a single-component surface into a lone artifact', () => {

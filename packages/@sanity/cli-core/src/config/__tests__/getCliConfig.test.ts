@@ -111,6 +111,25 @@ describe('getCliConfig', () => {
     await expect(getCliConfig(ROOT)).rejects.toThrow('Invalid CLI config')
   })
 
+  test('rejects a misplaced studioHost with instructions for fixing the config', async () => {
+    const getCliConfig = await freshImport()
+    setupSingleConfig()
+    mockImportModule.mockResolvedValue({deployment: {studioHost: 'my-studio'}})
+
+    await expect(getCliConfig(ROOT)).rejects.toThrow(
+      'deployment.studioHost is not supported. Move studioHost to the top level',
+    )
+  })
+
+  test('accepts a top-level studioHost alongside deployment settings', async () => {
+    const getCliConfig = await freshImport()
+    setupSingleConfig()
+    const config = {deployment: {autoUpdates: true}, studioHost: 'my-studio'}
+    mockImportModule.mockResolvedValue(config)
+
+    await expect(getCliConfig(ROOT)).resolves.toEqual(config)
+  })
+
   test('caches result — subsequent calls only import once', async () => {
     const getCliConfig = await freshImport()
     setupSingleConfig()

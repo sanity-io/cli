@@ -44,7 +44,9 @@ const errorHandlerScript = `
       // - If there are no subscribers, then we log the error to the console and render the error overlay.
       if (errorChannel.subscribers.length) {
         errorChannel.publish({error, params})
-      } else {
+      } else if (error) {
+        // Browsers fire some error events without an error object (a ResizeObserver loop,
+        // a cross-origin "Script error."), and there is nothing useful to show for them.
         console.error(error)
 
         _renderErrorOverlay(error, params)
@@ -82,12 +84,11 @@ const errorHandlerScript = `
     var colno = params.event.colno
     var lineno = params.event.lineno
     var filename = params.event.filename
-    // NOTE: error is null for cross-origin "Script error." events (and may be a non-Error value
-    // when something other than an Error instance is thrown), so every property read on it must
-    // be guarded. Otherwise the overlay itself throws, and the second pass renders that TypeError
-    // instead of the original error.
-    var message = error && error.message
-    var stack = error && error.stack
+    // NOTE: a thrown value is not always an Error, so message and stack can be undefined
+    // here. Fall back to the browser-supplied message rather than interpolating undefined
+    // into the overlay.
+    var message = error.message
+    var stack = error.stack
 
     if (!message) {
       // params.event is the raw message string when coming from window.onerror, and an

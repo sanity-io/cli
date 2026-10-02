@@ -134,7 +134,7 @@ describe('deployStudio (federated studio)', () => {
       application: {id: 'studio-1', slug: 'my-studio'},
       deployed: true,
       payload: {appId: null, slug: 'my-studio', type: 'studio'},
-      url: 'https://org-1.sanity.run/studio/studio-1',
+      url: 'https://org-1.sanity.run/studios/studio-1',
     })
     expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
       expect.objectContaining({applicationId: 'studio-1'}),

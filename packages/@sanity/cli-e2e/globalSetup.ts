@@ -68,7 +68,7 @@ export async function setup(project: TestProject): Promise<void> {
     console.log(`E2E_CREATE_SANITY_BINARY_PATH set to ${createSanityBinaryPath}`)
   }
 
-  await setupFixtures(project, {ignoreWorkspace: true})
+  await setupFixtures(project)
 }
 
 export async function teardown(): Promise<void> {

@@ -33,9 +33,11 @@ export interface SetupTestFixturesOptions {
   additionalFixtures?: string[]
 
   /**
-   * When true, creates an isolated pnpm workspace so fixtures get their own
-   * node_modules even when the temp directory is inside another pnpm workspace.
-   * Required for E2E tests that spawn the CLI binary against fixture directories.
+   * Creates an isolated pnpm workspace so fixtures get their own node_modules even
+   * when the temp directory is inside another pnpm workspace. Defaults to true:
+   * fixtures copied into this repository's tmp directory are not workspace members,
+   * so pnpm would otherwise resolve the install to the repository root and leave the
+   * fixture without node_modules.
    */
   ignoreWorkspace?: boolean
 
@@ -98,7 +100,7 @@ interface FixtureDetails {
  * ```
  */
 export async function setup(_: TestProject, options: SetupTestFixturesOptions = {}): Promise<void> {
-  const {additionalFixtures, ignoreWorkspace, tempDir} = options
+  const {additionalFixtures, ignoreWorkspace = true, tempDir} = options
   console.log('Initializing test environment...')
   const timerLabel = 'Test environment initialization'
   console.time(timerLabel)

@@ -25,6 +25,33 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
   })
 
+  test('extracts schema when ESM declarations shadow CommonJS bindings', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    const schemaIndexPath = join(cwd, 'schemaTypes', 'index.ts')
+    const content = await readFile(schemaIndexPath, 'utf8')
+    await writeFile(
+      schemaIndexPath,
+      `import {createRequire} from 'node:module'\n` +
+        `const require = createRequire(import.meta.url)\n` +
+        `const module = require('node:path')\n` +
+        `const exports = 'Bindings'\n` +
+        `const __dirname = 'scope'\n` +
+        `const __filename = '/schema/string'\n` +
+        `const scopedType = {name: __dirname + exports, type: module.basename(__filename)}\n` +
+        content.replace('schemaTypes = [', 'schemaTypes = [scopedType, '),
+    )
+
+    const {error} = await testCommand(ExtractSchemaCommand, [])
+
+    if (error) throw error
+    const schema = JSON.parse(await readFile(join(cwd, 'schema.json'), 'utf8'))
+    expect(schema).toEqual(
+      expect.arrayContaining([expect.objectContaining({name: 'scopeBindings'})]),
+    )
+  })
+
   test('should start watch mode and extract initial schema', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)

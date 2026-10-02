@@ -4,7 +4,9 @@ import {
   conditionalDenyFlags,
   conditionalPolicy,
   deny,
-} from './policy.js'
+} from '@sanity/cli-core/commandPolicy'
+
+import {isRemoteAssetSource} from '../../../util/isRemoteAssetSource.js'
 
 function apiValidator({
   args,
@@ -48,10 +50,14 @@ function apiValidator({
  * a usage error, but cannot cause local filesystem access. Destructive remote
  * operations are allowed and do not by themselves make a command unsafe.
  *
- * Every manifest command must have exactly one policy here:
+ * Every command this package contributes must have exactly one policy here:
  * - allow: every valid invocation is safe
  * - conditional: safety depends on parsed arguments or flags
  * - deny: no invocation is safe
+ *
+ * Commands contributed by plugins are not listed here. Each plugin declares
+ * policies for its own commands (see `PluginInvocationPolicies` in
+ * `@sanity/cli-core/commandPolicy`).
  */
 export const mcpPolicy: CommandPolicySet = {
   // Special exception, this can be very dangerous but is also super useful
@@ -65,8 +71,11 @@ export const mcpPolicy: CommandPolicySet = {
     validate: apiValidator,
   }),
 
-  // Reads a file from the machine running the command and must only run locally.
-  'assets:upload': deny,
+  // --file reads from the machine running the command and must only run locally.
+  'assets:upload': conditionalPolicy({
+    deniedFlags: ['content-type', 'file'],
+    validate: ({flags}) => typeof flags['from-url'] === 'string' && flags['from-url'].length > 0,
+  }),
 
   'backups:disable': allow,
   // Writes a downloaded backup to the local filesystem.
@@ -193,8 +202,15 @@ export const mcpPolicy: CommandPolicySet = {
   'media:deploy-aspect': deny,
   // Writes media assets to the local filesystem.
   'media:export': deny,
-  // Reads media assets from the local filesystem.
-  'media:import': deny,
+  // A directory or archive source reads media assets from the local
+  // filesystem. A URL source does not: Sanity fetches the asset itself, so the
+  // only local input is the URL. `--replace-aspects` is meaningless for a URL
+  // source (the command rejects the combination), so it is hidden here rather
+  // than advertised as usable surface.
+  'media:import': conditionalPolicy({
+    deniedFlags: ['replace-aspects'],
+    validate: ({args}) => typeof args.source === 'string' && isRemoteAssetSource(args.source),
+  }),
 
   // Creates migration source files in the local project.
   'migrations:create': deny,

@@ -101,6 +101,9 @@ const baseConfig = {
       entry: ['package.config.ts'],
       // System `ps` binary used to read process start times on Unix
       ignoreBinaries: ['ps'],
+      // Imported by the generated render-contract module the harness tests execute,
+      // not by any source file here.
+      ignoreDependencies: ['react-dom'],
       project,
     },
     'packages/create-sanity': {},
