@@ -1,5 +1,25 @@
 # @sanity/workbench-cli
 
+## 2.8.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.8.0...workbench-cli-v2.8.1)
+
+_2026-10-02_
+
+### Bug Fixes
+
+- **workbench-cli:** start the shell when the workbench remote runs first ([#1926](https://github.com/sanity-io/cli/pull/1926)) ([eef2e39](https://github.com/sanity-io/cli/commit/eef2e391247b8c19b16cfbb03b23c23367a42c59))
+- **workbench-cli:** wait for the shell's bound port before printing it ([#1927](https://github.com/sanity-io/cli/pull/1927)) ([8484fa6](https://github.com/sanity-io/cli/commit/8484fa6908ac4bd13066ec6c1fbe0ebc32aed488))
+- **deps:** update dependency @module-federation/runtime to v2.9.2 ([#1937](https://github.com/sanity-io/cli/pull/1937)) ([a700e6c](https://github.com/sanity-io/cli/commit/a700e6c268ecd9ad2e67d02498010ddbb0229a21))
+- **deps:** update dependency @module-federation/vite to v1.23.0 ([#1938](https://github.com/sanity-io/cli/pull/1938)) ([7cad210](https://github.com/sanity-io/cli/commit/7cad2108c464829f353533c70f5311eaa95c3d8b))
+- **workbench-cli:** isolate island styles ([#1939](https://github.com/sanity-io/cli/pull/1939)) ([b7262b2](https://github.com/sanity-io/cli/commit/b7262b252eadd062391112ad8e5a23ace349fe0a))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.2
+
 ## 2.8.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.7.0...workbench-cli-v2.8.0)

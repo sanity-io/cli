@@ -1,5 +1,22 @@
 # Change Log
 
+## 8.13.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.13.0...cli-v8.13.1)
+
+_2026-10-02_
+
+### Bug Fixes
+
+- **cli:** speed up startup by deferring heavy imports ([#1929](https://github.com/sanity-io/cli/pull/1929)) ([2d8c511](https://github.com/sanity-io/cli/commit/2d8c511936532b2cd9dfe9700afaa8a424785136))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.8.1
+    - @sanity/cli-core bumped to 3.8.2
+
 ## 8.13.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.12.0...cli-v8.13.0)
