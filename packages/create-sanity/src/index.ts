@@ -47,10 +47,13 @@ function delegateToCli(args: string[]): Promise<number> {
 const hasProxy = () =>
   ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy'].some((key) => process.env[key])
 
-/** Node's `fetch` honors proxy variables only with `NODE_USE_ENV_PROXY` (22.21+, 24.5+) */
-function supportsEnvProxy(): boolean {
-  const [major, minor] = process.versions.node.split('.').map(Number)
-  return major === 22 ? minor >= 21 : major > 24 || (major === 24 && minor >= 5)
+/**
+ * Node's `fetch` honors proxy variables only with `NODE_USE_ENV_PROXY`, added
+ * in 24.0.0 and backported to 22.21.0 (never to 23.x)
+ */
+export function supportsEnvProxy(version = process.versions.node): boolean {
+  const [major, minor] = version.split('.').map(Number)
+  return major === 22 ? minor >= 21 : major >= 24
 }
 
 function printError(message: string): void {

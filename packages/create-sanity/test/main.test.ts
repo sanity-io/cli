@@ -18,7 +18,7 @@ vi.mock('../src/init.js', async (importOriginal) => ({
 }))
 
 vi.stubGlobal('__SANITY_CLI_VERSION__', '9.9.9')
-const {main} = await import('../src/index.js')
+const {main, supportsEnvProxy} = await import('../src/index.js')
 const {InitError} = await import('../src/ui.js')
 
 function fakeChild(code: number) {
@@ -112,5 +112,18 @@ describe('main', () => {
     initStudioMock.mockRejectedValueOnce(abort)
     expect(await main([])).toBe(130)
     expect(stderr).toMatch(/Aborted by user/)
+  })
+})
+
+describe('supportsEnvProxy', () => {
+  test.each([
+    ['22.12.0', false],
+    ['22.20.9', false],
+    ['22.21.0', true],
+    ['23.11.0', false],
+    ['24.0.0', true],
+    ['25.1.0', true],
+  ])('%s', (version, supported) => {
+    expect(supportsEnvProxy(version)).toBe(supported)
   })
 })
