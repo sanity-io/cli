@@ -59,7 +59,17 @@ const ModuleContext = moduleSlot.get(React.createContext)
 const rootMap = new Map()
 // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
 const styleTargets = new Map()
+const stylisPlugins = new Map()
 const renderArgs = new Map()
+// On globalThis: every module embeds its own copy of this harness, and names must be page-unique.
+const stylisPluginCount = Symbol.for('sanity.os.stylisPluginCount')
+
+// Identical CSS gets an identical class in every sheet, so a later sheet overrides earlier rules.
+// StyleSheetManager hashes stylis plugin names into class names: a uniquely named no-op isolates a root.
+function uniqueStylisPlugin() {
+  globalThis[stylisPluginCount] = (globalThis[stylisPluginCount] ?? 0) + 1
+  return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
+}
 
 function mount(rootElement, args) {
   let root = rootMap.get(rootElement)
@@ -71,10 +81,11 @@ function mount(rootElement, args) {
       // React can replace the mount node's contents; keep its stylesheet outside that node.
       rootElement.ownerDocument.head.appendChild(target)
       styleTargets.set(rootElement, target)
+      stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
     }
   }
   let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
-  if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement) }, element)
+  if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
   // The host's React can't pause this root, so the host pauses the app through this Activity.
   // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
   element = React.createElement(React.Activity, { mode: args.lifecycle === 'background' ? 'hidden' : 'visible' }, element)
@@ -97,6 +108,7 @@ export function render(rootElement, props, renderOptions) {
       // Unmount first so effect cleanup can still reach this root's stylesheet.
       styleTargets.get(rootElement)?.remove()
       styleTargets.delete(rootElement)
+      stylisPlugins.delete(rootElement)
     },
     setLifecycle(state) {
       const current = renderArgs.get(rootElement)
