@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.8.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.1...cli-core-v3.8.2)
+
+_2026-10-02_
+
+### Bug Fixes
+
+- **cli:** speed up startup by deferring heavy imports ([#1929](https://github.com/sanity-io/cli/pull/1929)) ([2d8c511](https://github.com/sanity-io/cli/commit/2d8c511936532b2cd9dfe9700afaa8a424785136))
+
 ## 3.8.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.0...cli-core-v3.8.1)
