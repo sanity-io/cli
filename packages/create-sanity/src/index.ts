@@ -6,6 +6,7 @@ import {styleText} from 'node:util'
 import {parseInitArgs} from './flags.js'
 import {helpText} from './help.js'
 import {initStudio, isNextJsProject} from './init.js'
+import {pinnedCliCommand, spawnArgs} from './runner.js'
 import {exitCodes, InitError, isInteractive} from './ui.js'
 
 declare const __SANITY_CLI_VERSION__: string
@@ -16,9 +17,10 @@ const templatesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'te
 
 function runChild(command: string, args: string[], env = process.env): Promise<number> {
   return new Promise((resolve) => {
-    const child = spawn(command, args, {
+    const spawned = spawnArgs(command, args)
+    const child = spawn(spawned.command, spawned.args, {
       env,
-      shell: process.platform === 'win32' && command !== process.execPath,
+      shell: spawned.shell,
       stdio: 'inherit',
     })
     child.on('error', (error) => {
@@ -29,18 +31,17 @@ function runChild(command: string, args: string[], env = process.env): Promise<n
   })
 }
 
-/** Hand everything the built-in initializer doesn't cover to `sanity init` */
+/**
+ * Hand everything the built-in initializer doesn't cover to `sanity init`,
+ * through the same package runner (npx, pnpm dlx, …) that started us
+ */
 function delegateToCli(args: string[]): Promise<number> {
-  return runChild('npm', [
-    'exec',
-    '--yes',
-    `--package=@sanity/cli@${CLI_VERSION}`,
-    '--',
-    'sanity',
+  const [command, ...commandArgs] = pinnedCliCommand(CLI_VERSION, [
     'init',
     ...args,
     '--from-create',
   ])
+  return runChild(command, commandArgs)
 }
 
 const hasProxy = () =>

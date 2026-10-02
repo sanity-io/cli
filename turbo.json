@@ -36,7 +36,9 @@
         "$TURBO_ROOT$/packages/@sanity/cli/templates/**",
         "$TURBO_ROOT$/packages/@sanity/cli/src/actions/init/**",
         "$TURBO_ROOT$/packages/@sanity/cli/src/util/packageManager/preferredPm.ts",
-        "$TURBO_ROOT$/packages/@sanity/cli/src/util/toForwardSlashes.ts"
+        "$TURBO_ROOT$/packages/@sanity/cli/src/util/toForwardSlashes.ts",
+        "$TURBO_ROOT$/packages/@sanity/cli/src/util/update/packageRunner.ts",
+        "$TURBO_ROOT$/packages/@sanity/cli-core/src/util/packageManager.ts"
       ],
       "outputs": ["dist/**"]
     },

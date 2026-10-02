@@ -3,6 +3,7 @@ import {existsSync, rmSync} from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import {pinnedCliCommand, spawnArgs} from './runner.js'
 import {output} from './ui.js'
 
 const DEFAULT_COMMIT_MESSAGE = 'feat: bootstrap sanity studio'
@@ -64,16 +65,14 @@ export function runProjectCli(
     '.bin',
     process.platform === 'win32' ? 'sanity.cmd' : 'sanity',
   )
-  const [command, commandArgs] = existsSync(bin)
-    ? [bin, args]
-    : [
-        'npm',
-        ['exec', '--yes', `--package=@sanity/cli@${options.cliVersion}`, '--', 'sanity', ...args],
-      ]
+  const [command, ...commandArgs] = existsSync(bin)
+    ? [bin, ...args]
+    : pinnedCliCommand(options.cliVersion, args)
+  const spawned = spawnArgs(command, commandArgs)
   return new Promise((resolve) => {
-    const child = spawn(command, commandArgs, {
+    const child = spawn(spawned.command, spawned.args, {
       cwd: outputPath,
-      shell: process.platform === 'win32',
+      shell: spawned.shell,
       stdio: [options.interactive ? 'inherit' : 'ignore', 'inherit', 'inherit'],
     })
     child.on('error', (error) => {

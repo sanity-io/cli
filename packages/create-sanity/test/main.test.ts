@@ -62,22 +62,12 @@ describe('main', () => {
   })
 
   test('delegates unsupported flags to the pinned sanity CLI', async () => {
+    vi.stubEnv('npm_config_user_agent', 'pnpm/10.7.1 npm/? node/v22.14.0 linux x64')
     spawnMock.mockReturnValue(fakeChild(3))
     expect(await main(['--bare', '--project', 'p1'])).toBe(3)
     expect(spawnMock).toHaveBeenCalledWith(
-      'npm',
-      [
-        'exec',
-        '--yes',
-        '--package=@sanity/cli@9.9.9',
-        '--',
-        'sanity',
-        'init',
-        '--bare',
-        '--project',
-        'p1',
-        '--from-create',
-      ],
+      'pnpm',
+      ['dlx', '@sanity/cli@9.9.9', 'init', '--bare', '--project', 'p1', '--from-create'],
       expect.objectContaining({stdio: 'inherit'}),
     )
   })

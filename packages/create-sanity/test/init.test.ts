@@ -73,6 +73,7 @@ beforeEach(async () => {
   patches = []
   vi.stubEnv('SANITY_AUTH_TOKEN', 'token')
   vi.stubEnv('npm_config_registry', 'https://registry.example/')
+  vi.stubEnv('npm_config_user_agent', 'npm/10.9.0 node/v22.14.0 linux x64')
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => Response.json({'dist-tags': {latest: '5.1.0'}})),
@@ -173,13 +174,13 @@ describe('initStudio', () => {
 
     const commands = spawnMock.mock.calls.map(([command, args]) => [command, ...args].join(' '))
     expect(commands[0]).toBe('pnpm install')
-    // No installed project CLI in this test, so the pinned CLI is used
-    const cli = 'npm exec --yes --package=@sanity/cli@9.9.9 -- sanity'
+    // No installed project CLI in this test, so the pinned CLI runs through npx
+    const cli = 'npx --yes @sanity/cli@9.9.9'
     expect(commands).toContain(`${cli} mcp configure`)
     expect(commands).toContain(`${cli} skills install`)
     expect(commands).toContainEqual(
       expect.stringMatching(
-        /sanity datasets import https:\/\/public\.sanity\.io\/moviesdb.* --project-id p1 --dataset production --token token --missing$/,
+        /@sanity\/cli@9\.9\.9 datasets import https:\/\/public\.sanity\.io\/moviesdb.* --project-id p1 --dataset production --token token --missing$/,
       ),
     )
     expect(logs.join('\n')).toContain('npx sanity dataset delete production')

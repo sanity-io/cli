@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {detectPackageRunner} from '../packageRunner.js'
+import {detectPackageRunner, getRunnerCommand, type PackageRunner} from '../packageRunner.js'
 
 describe('detectPackageRunner', () => {
   test.each([
@@ -43,5 +43,30 @@ describe('detectPackageRunner', () => {
     } finally {
       process.argv[1] = original
     }
+  })
+})
+
+describe('getRunnerCommand', () => {
+  const cli = {bin: 'sanity', pkg: '@sanity/cli@1.2.3'}
+
+  test.each([
+    ['npx', ['npx', '--yes', '@sanity/cli@1.2.3', 'init', '-y']],
+    ['pnpm-dlx', ['pnpm', 'dlx', '@sanity/cli@1.2.3', 'init', '-y']],
+    ['yarn-dlx', ['yarn', 'dlx', '-p', '@sanity/cli@1.2.3', 'sanity', 'init', '-y']],
+    ['bunx', ['bunx', '@sanity/cli@1.2.3', 'init', '-y']],
+  ] as const)('%s', (runner, expected) => {
+    expect(getRunnerCommand(runner, cli, ['init', '-y'])).toEqual(expected)
+  })
+
+  test('yarn skips -p when the bin matches the package name', () => {
+    expect(getRunnerCommand('yarn-dlx', {bin: 'sanity', pkg: 'sanity@latest'})).toEqual([
+      'yarn',
+      'dlx',
+      'sanity@latest',
+    ])
+  })
+
+  test('throws for unknown runners', () => {
+    expect(() => getRunnerCommand('nope' as PackageRunner, cli)).toThrow('Unknown runner: nope')
   })
 })

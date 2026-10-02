@@ -5,6 +5,7 @@ import {styleText} from 'node:util'
 
 // Shared, dependency-free detection logic, bundled at build time
 import {preferredPm} from '../../@sanity/cli/src/util/packageManager/preferredPm.js'
+import {spawnArgs} from './runner.js'
 import {InitError, output, select, spinner} from './ui.js'
 
 export type PackageManager = 'bun' | 'manual' | 'npm' | 'pnpm' | 'yarn'
@@ -113,11 +114,11 @@ function run(
   cwd: string,
 ): Promise<{code: number; output: string}> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const spawned = spawnArgs(command, args)
+    const child = spawn(spawned.command, spawned.args, {
       cwd,
       env: {...process.env, [pathKey()]: npmRunPath(cwd)},
-      // npm/pnpm/yarn are `.cmd` shims on Windows
-      shell: process.platform === 'win32',
+      shell: spawned.shell,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     let text = ''
