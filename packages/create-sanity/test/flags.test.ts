@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {parseInitArgs} from '../src/flags.js'
+import {parseInitArgs, stripSeparators} from '../src/flags.js'
 
 describe('parseInitArgs', () => {
   test('parses the unattended Studio flags', () => {
@@ -89,14 +89,38 @@ describe('parseInitArgs', () => {
     [['--template', 'app-quickstart']],
     [['--template', 'sanity-io/sanity-template-nextjs-clean']],
     [['--provider', 'vercel']],
-    [['--package-manager', 'bun']],
-    [['--visibility', 'custom']],
-    [['--dataset', 'a', '--dataset-default']],
-    [['--project', 'a', '--project-name', 'b']],
-    [['--git', 'msg', '--no-git']],
-    [['plugin']],
-    [['--not-a-flag']],
   ])('delegates %j to sanity init', (args) => {
     expect(parseInitArgs(args, true).kind).toBe('delegate')
+  })
+
+  test.each([
+    [['--not-a-flag'], 'Nonexistent flag: --not-a-flag'],
+    [['--project'], 'Flag --project expects a value'],
+    [['--install=yes'], "Option '--install' does not take an argument"],
+    [['--package-manager', 'bun'], 'Expected --package-manager=bun to be one of: npm, yarn, pnpm'],
+    [['--visibility', 'custom'], 'Expected --visibility=custom to be one of: public, private'],
+    [
+      ['--dataset', 'a', '--dataset-default'],
+      '--dataset=a cannot also be provided when using --dataset-default',
+    ],
+    [['--project', 'a', '--project-name', 'b'], '--project=a cannot also be provided when using'],
+    [['--git', 'msg', '--no-git'], '--no-git cannot also be provided when using --git'],
+    [['a', 'b', 'c'], 'Unexpected arguments: b, c'],
+  ])('reports %j as a usage error', (args, message) => {
+    const parsed = parseInitArgs(args, true)
+    expect(parsed).toMatchObject({exitCode: 2, kind: 'error'})
+    expect(parsed.kind === 'error' && parsed.message).toContain(message)
+    expect(parsed.kind === 'error' && parsed.message).toMatch(/See more help with --help$/)
+  })
+
+  test.each([
+    ['plugin', 'Initializing plugins through the CLI is no longer supported'],
+    ['app', 'Unknown init type "app"'],
+  ])('rejects the %s init type', (type, message) => {
+    expect(parseInitArgs([type], true)).toEqual({exitCode: 1, kind: 'error', message})
+  })
+
+  test('drops argument separators', () => {
+    expect(stripSeparators(['--', '--project', 'p1', '--'])).toEqual(['--project', 'p1'])
   })
 })

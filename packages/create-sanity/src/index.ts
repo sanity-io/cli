@@ -3,7 +3,7 @@ import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {styleText} from 'node:util'
 
-import {parseInitArgs} from './flags.js'
+import {parseInitArgs, stripSeparators} from './flags.js'
 import {helpText} from './help.js'
 import {initStudio, isNextJsProject} from './init.js'
 import {pinnedCliCommand, spawnArgs} from './runner.js'
@@ -62,12 +62,17 @@ function printError(message: string): void {
   process.stderr.write(`${lines.map((line) => ` ${bang}   ${line}`).join('\n')}\n`)
 }
 
-export async function main(args: string[]): Promise<number> {
+export async function main(rawArgs: string[]): Promise<number> {
   const interactive = isInteractive()
+  const args = stripSeparators(rawArgs)
   const parsed = parseInitArgs(args, interactive)
   if (parsed.kind === 'help') {
     process.stdout.write(helpText())
     return 0
+  }
+  if (parsed.kind === 'error') {
+    printError(parsed.message)
+    return parsed.exitCode
   }
   if (parsed.kind === 'delegate' || isNextJsProject(process.cwd())) return delegateToCli(args)
   if (hasProxy() && process.env.NODE_USE_ENV_PROXY !== '1') {

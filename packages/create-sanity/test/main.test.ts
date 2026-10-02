@@ -72,6 +72,17 @@ describe('main', () => {
     )
   })
 
+  test('reports usage errors without the full CLI, ignoring separators', async () => {
+    expect(await main(['--', '--projct', 'p1'])).toBe(2)
+    expect(stderr).toMatch(/Error: Nonexistent flag: --projct/)
+    expect(spawnMock).not.toHaveBeenCalled()
+
+    vi.stubEnv('NODE_USE_ENV_PROXY', '1')
+    initStudioMock.mockResolvedValueOnce(undefined)
+    expect(await main(['--', '--project', 'p1'])).toBe(0)
+    expect(initStudioMock.mock.calls[0][0]).toMatchObject({project: 'p1'})
+  })
+
   test('delegates inside Next.js projects', async () => {
     await writeFile(join(cwd, 'package.json'), JSON.stringify({dependencies: {next: '16'}}))
     spawnMock.mockReturnValue(fakeChild(0))

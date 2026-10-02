@@ -76,9 +76,37 @@ export interface InitFlags {
 }
 
 export type ParsedArgs =
+  | {exitCode: number; kind: 'error'; message: string}
   | {flags: InitFlags; kind: 'init'}
   | {kind: 'delegate'; reason: string}
   | {kind: 'help'}
+
+const USAGE_ERROR = 2
+
+/** A usage error worded like `sanity init`'s, so either path reports it the same way */
+function usageError(message: string): ParsedArgs {
+  return {exitCode: USAGE_ERROR, kind: 'error', message: `${message}\nSee more help with --help`}
+}
+
+/**
+ * `npm create sanity -- <flags>` strips the separator, but other ways of
+ * running us may pass it through. `sanity init` takes no pass-through
+ * arguments, so separators carry no meaning and are dropped.
+ */
+export function stripSeparators(args: string[]): string[] {
+  return args.filter((arg) => arg !== '--')
+}
+
+function parseError(error: unknown): ParsedArgs {
+  const message = error instanceof Error ? error.message : String(error)
+  const code = (error as NodeJS.ErrnoException).code
+  const flag = message.match(/'(-[^' ]+)/)?.[1] ?? ''
+  if (code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION') return usageError(`Nonexistent flag: ${flag}`)
+  if (code === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE' && message.includes('argument missing')) {
+    return usageError(`Flag ${flag} expects a value`)
+  }
+  return usageError(message)
+}
 
 /** Flags that only the full `sanity init` implements */
 const DELEGATED_FLAGS = [
@@ -110,9 +138,10 @@ const STUDIO_TEMPLATES = new Set([
 ])
 
 /**
- * Parses `create-sanity` arguments. Anything outside what the built-in
- * initializer handles (including invalid input, so the user gets the canonical
- * error) is marked for delegation to `sanity init`.
+ * Parses `create-sanity` arguments (separators already stripped). Usage
+ * errors are reported directly, worded as `sanity init` does, rather than
+ * paying for the full CLI just to print them. Features only the full
+ * initializer implements are marked for delegation to `sanity init`.
  */
 export function parseInitArgs(args: string[], interactive: boolean): ParsedArgs {
   let values: Values
@@ -120,14 +149,22 @@ export function parseInitArgs(args: string[], interactive: boolean): ParsedArgs 
   try {
     ;({positionals, values} = parse(args))
   } catch (error) {
-    return {kind: 'delegate', reason: error instanceof Error ? error.message : String(error)}
+    return parseError(error)
   }
 
   if (values.help) return {kind: 'help'}
-  if (positionals.length > 0) return {kind: 'delegate', reason: 'positional argument'}
-
-  const delegated = DELEGATED_FLAGS.find((flag) => values[flag] !== undefined)
-  if (delegated) return {kind: 'delegate', reason: `--${delegated}`}
+  if (positionals.length > 1)
+    return usageError(`Unexpected arguments: ${positionals.slice(1).join(', ')}`)
+  if (positionals.length === 1) {
+    return {
+      exitCode: 1,
+      kind: 'error',
+      message:
+        positionals[0] === 'plugin'
+          ? 'Initializing plugins through the CLI is no longer supported'
+          : `Unknown init type "${positionals[0]}"`,
+    }
+  }
 
   const conflicts: [keyof Values, keyof Values][] = [
     ['dataset', 'dataset-default'],
@@ -136,23 +173,35 @@ export function parseInitArgs(args: string[], interactive: boolean): ParsedArgs 
     ['project', 'project-id'],
   ]
   const conflict = conflicts.find(([a, b]) => values[a] !== undefined && values[b] !== undefined)
-  if (conflict) return {kind: 'delegate', reason: `--${conflict[0]} with --${conflict[1]}`}
+  if (conflict) {
+    const [flag, other] = conflict
+    const value = values[flag]
+    const shown = typeof value === 'string' ? `--${flag}=${value}` : `--${flag}`
+    return usageError(
+      `The following error occurred:\n  ${shown} cannot also be provided when using --${other}`,
+    )
+  }
   // `--no-git` can be folded into `git`, so look at the raw arguments
   if (
     args.includes('--no-git') &&
     args.some((arg) => arg === '--git' || arg.startsWith('--git='))
   ) {
-    return {kind: 'delegate', reason: '--git with --no-git'}
+    return usageError(
+      'The following error occurred:\n  --no-git cannot also be provided when using --git',
+    )
   }
 
   const packageManager = values['package-manager']
   if (packageManager !== undefined && !['npm', 'pnpm', 'yarn'].includes(packageManager)) {
-    return {kind: 'delegate', reason: `--package-manager ${packageManager}`}
+    return usageError(`Expected --package-manager=${packageManager} to be one of: npm, yarn, pnpm`)
   }
   const visibility = values.visibility
   if (visibility !== undefined && visibility !== 'private' && visibility !== 'public') {
-    return {kind: 'delegate', reason: `--visibility ${visibility}`}
+    return usageError(`Expected --visibility=${visibility} to be one of: public, private`)
   }
+
+  const delegated = DELEGATED_FLAGS.find((flag) => values[flag] !== undefined)
+  if (delegated) return {kind: 'delegate', reason: `--${delegated}`}
   if (values.template !== undefined && !STUDIO_TEMPLATES.has(values.template)) {
     return {kind: 'delegate', reason: `--template ${values.template}`}
   }
