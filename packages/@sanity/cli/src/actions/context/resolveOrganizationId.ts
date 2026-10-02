@@ -8,14 +8,13 @@ export class MissingOrganizationError extends Error {}
  * then the CLI config's `app.organizationId`, then an interactive prompt.
  */
 export async function resolveOrganizationId(options: {
-  configuredOrganizationId: string | undefined
   flagOrganizationId: string | undefined
   unattended: boolean
 }): Promise<string> {
-  const {configuredOrganizationId, flagOrganizationId, unattended} = options
+  const {flagOrganizationId, unattended} = options
 
+  // The flag already carries the sanity.cli.ts fallback (fromCliConfig).
   if (flagOrganizationId) return flagOrganizationId
-  if (configuredOrganizationId) return configuredOrganizationId
 
   if (unattended) {
     throw new MissingOrganizationError(

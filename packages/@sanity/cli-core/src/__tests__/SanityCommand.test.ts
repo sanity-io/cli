@@ -76,13 +76,13 @@ describe('SanityCommand', () => {
     )
 
     test('requires the flag when invoked with --json', async () => {
-      const output: string[] = []
-
-      await runWithCliExecutionContext({stdout: (line) => output.push(line)}, () =>
-        createUnattendedRequiredCommand(true).run(['--json']),
-      )
-
-      expect(output.join('\n')).toContain('Missing required flag name')
+      // Under an execution context the error is rethrown (json mode included)
+      // so programmatic callers receive an exit code, not successful stdout.
+      await expect(
+        runWithCliExecutionContext({stdout: () => {}}, () =>
+          createUnattendedRequiredCommand(true).run(['--json']),
+        ),
+      ).rejects.toThrow('Missing required flag name')
     })
 
     test('requires the flag in a non-interactive environment', async () => {
@@ -350,8 +350,10 @@ describe('SanityCommand', () => {
       }
     })
 
-    test('under an execution context with --json, the error is logged as JSON instead of thrown', async () => {
-      const out: string[] = []
+    test('under an execution context with --json, the error is rethrown for the caller', async () => {
+      // Previously the error was logged as JSON and swallowed, which made
+      // failures look like exit-0 successes to programmatic callers. JSON
+      // error rendering is terminal-only; in-process callers get the error.
       const previousExitCode = process.exitCode
       const cmdClass = createMockedRunCommand({
         run: async () => {
@@ -360,11 +362,11 @@ describe('SanityCommand', () => {
       })
       cmdClass.enableJsonFlag = true
 
-      await runWithCliExecutionContext({stderr: () => {}, stdout: (line) => out.push(line)}, () =>
-        cmdClass.run(['--json']),
-      )
-
-      expect(out.join('\n')).toContain('kaboom')
+      await expect(
+        runWithCliExecutionContext({stderr: () => {}, stdout: () => {}}, () =>
+          cmdClass.run(['--json']),
+        ),
+      ).rejects.toThrow('kaboom')
       expect(process.exitCode).toBe(previousExitCode)
     })
   })

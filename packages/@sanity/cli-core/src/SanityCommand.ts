@@ -57,6 +57,13 @@ export abstract class SanityCommand<T extends typeof Command>
   extends Command
   implements SanityCommandInterface
 {
+  /**
+   * MCP-surface overrides for the command itself, the command-level
+   * counterpart of `mcpOverrides` from `@sanity/cli-core/flags`. Omitted
+   * fields inherit from the command.
+   */
+  static mcpOverrides?: {description?: string}
+
   protected args!: Args<T>
   protected flags!: Flags<T>
 
@@ -125,12 +132,10 @@ export abstract class SanityCommand<T extends typeof Command>
     reportCliTraceError(err)
 
     // oclif's base `catch` sets `process.exitCode` as a side effect
-    // we do not want to write to the host's own exit status.
+    // we do not want to write to the host's own exit status. Rethrowing
+    // (json mode included) keeps the error an exit code for the programmatic
+    // caller instead of turning it into successful stdout.
     if (getCliExecutionContext()) {
-      if (this.jsonEnabled()) {
-        this.logJson(this.toErrorJson(err))
-        return
-      }
       throw err
     }
 
@@ -279,6 +284,21 @@ export abstract class SanityCommand<T extends typeof Command>
   }
 
   /**
+   * Like oclif's, minus the `SANITY_CONTENT_TYPE` env check for programmatic
+   * invocations: the host process's environment must not flip output modes,
+   * only the invocation's own `--json` can. Terminal use keeps the env opt-in.
+   */
+  public override jsonEnabled(): boolean {
+    if (!getCliExecutionContext()) return super.jsonEnabled()
+    if (!this.ctor.enableJsonFlag) return false
+    const passThroughIndex = this.argv.indexOf('--')
+    const jsonIndex = this.argv.indexOf('--json')
+    return passThroughIndex === -1
+      ? jsonIndex !== -1
+      : jsonIndex !== -1 && jsonIndex < passThroughIndex
+  }
+
+  /**
    * Write to stdout — or, when running under an execution context (e.g. from
    * an MCP server), to the context's `stdout` sink. Mirrors oclif's `log`
    * semantics: suppressed when `--json` is enabled, printf-style formatting.
@@ -350,6 +370,16 @@ export abstract class SanityCommand<T extends typeof Command>
   }
 
   /**
+   * Narrowed from oclif's `Promise<any>`: a JSON-mode return value is a
+   * public contract (terminal `--json` output and the MCP tools'
+   * `structuredContent` are the same shape), and MCP requires structured
+   * results to be JSON objects. Return keyed arrays (`{imports}`), never
+   * bare ones — the compiler enforces it here. See CONTRIBUTING.md,
+   * "JSON Output".
+   */
+  public abstract run(): Promise<(object & {length?: never}) | void>
+
+  /**
    * Execute an already-constructed command without oclif's static runner:
    * `Command.run()` performs a full `Config.load()` — filesystem reads, env
    * consultation, and a process-global config cache write — on every call,
@@ -360,6 +390,15 @@ export abstract class SanityCommand<T extends typeof Command>
       throw new Error('runInExecutionContext requires a CLI execution context')
     }
     return this._run<TResult>()
+  }
+
+  /**
+   * Machine consumers get a stable error shape; oclif's default leaks
+   * internals like `oclif: {exit}` into the payload.
+   */
+  public override toErrorJson(err: unknown): unknown {
+    const error = err as {message?: string; name?: string} | null | undefined
+    return {error: {message: error?.message ?? String(err), name: error?.name ?? 'Error'}}
   }
 
   /**

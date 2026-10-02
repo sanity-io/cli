@@ -1,4 +1,5 @@
 import {Flags} from '@oclif/core'
+import {fromCliConfig} from '@sanity/cli-core/flags'
 
 /**
  * Controls how the flag relates to CLI configuration:
@@ -71,14 +72,16 @@ export function getProjectIdFlag(options: SharedFlagOptions) {
 export function getOrganizationFlag(options: SharedFlagOptions) {
   const {description: baseDescription, helpGroup, semantics, ...rest} = options
   const isOverride = semantics === 'override'
-  const description =
-    (baseDescription ?? 'Organization ID to use') + (isOverride ? OVERRIDE_SUFFIX : '')
+  const description = baseDescription ?? 'Organization ID to use'
 
   return {
     organization: Flags.string({
       description,
       helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
       helpValue: '<id>',
+      // Terminal help shows the resolved value as `[default: …]`; MCP schemas
+      // require the flag since programmatic runs never read local config.
+      ...(isOverride ? fromCliConfig((config) => config.app?.organizationId) : {}),
       ...rest,
       parse: async (input: string) => {
         const trimmed = input.trim()

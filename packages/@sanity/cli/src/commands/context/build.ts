@@ -21,6 +21,8 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
 
   static override description = 'Build a knowledge base from its imported content'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123',
@@ -48,23 +50,24 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
     }),
   } satisfies FlagInput
 
-  public async run(): Promise<void> {
+  public async run(): Promise<
+    {cancelled: boolean; knowledgeBaseId: string} | {jobId: string; knowledgeBaseId: string}
+  > {
     const {knowledgeBaseId} = this.args
     const {cancel, watch} = this.flags
 
     if (cancel) {
-      await this.cancelBuild(knowledgeBaseId)
-      return
+      return this.cancelBuild(knowledgeBaseId)
     }
 
     let jobId: string
-    const spin = spinner('Starting build').start()
+    const spin = this.jsonEnabled() ? undefined : spinner('Starting build').start()
     try {
       const accepted = await buildKnowledgeBase(knowledgeBaseId)
       jobId = accepted.jobId
-      spin.succeed('Build started')
+      spin?.succeed('Build started')
     } catch (error) {
-      spin.fail()
+      spin?.fail()
       buildContextDebug('Error starting build', error)
       if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Knowledge base "${knowledgeBaseId}" not found`, {
@@ -80,7 +83,7 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
     this.log(`Track it with: sanity context jobs get ${knowledgeBaseId} ${jobId}`)
 
     if (!watch) {
-      return
+      return {jobId, knowledgeBaseId}
     }
 
     let job
@@ -101,12 +104,16 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
+    return {jobId, knowledgeBaseId}
   }
 
-  private async cancelBuild(knowledgeBaseId: string): Promise<void> {
+  private async cancelBuild(
+    knowledgeBaseId: string,
+  ): Promise<{cancelled: boolean; knowledgeBaseId: string}> {
     try {
       const {cancelled} = await cancelKnowledgeBaseBuild(knowledgeBaseId)
       this.log(cancelled ? 'Build cancelled' : 'No running build to cancel')
+      return {cancelled, knowledgeBaseId}
     } catch (error) {
       buildContextDebug('Error cancelling build', error)
       if (isHttpError(error) && error.statusCode === 404) {

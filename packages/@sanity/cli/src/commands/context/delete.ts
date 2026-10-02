@@ -2,6 +2,7 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
@@ -19,6 +20,8 @@ export class DeleteKnowledgeBaseCommand extends SanityCommand<typeof DeleteKnowl
 
   static override description = 'Delete a knowledge base and its generated content'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123',
@@ -31,14 +34,16 @@ export class DeleteKnowledgeBaseCommand extends SanityCommand<typeof DeleteKnowl
   ]
 
   static override flags = {
-    yes: Flags.boolean({
-      char: 'y',
-      default: false,
-      description: 'Skip confirmation prompt (unattended mode)',
-    }),
+    yes: requiredWhenUnattended(
+      Flags.boolean({
+        char: 'y',
+        default: false,
+        description: 'Skip confirmation prompt (unattended mode)',
+      }),
+    ),
   } satisfies FlagInput
 
-  public async run(): Promise<void> {
+  public async run(): Promise<{deleted: boolean; knowledgeBaseId: string}> {
     const {knowledgeBaseId} = this.args
     const {yes: skipConfirmation} = this.flags
 
@@ -63,6 +68,7 @@ export class DeleteKnowledgeBaseCommand extends SanityCommand<typeof DeleteKnowl
     try {
       await deleteKnowledgeBase(knowledgeBaseId)
       this.log('Knowledge base deleted')
+      return {deleted: true, knowledgeBaseId}
     } catch (error) {
       deleteContextDebug('Error deleting knowledge base', error)
       if (isHttpError(error) && error.statusCode === 404) {

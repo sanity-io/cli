@@ -1,8 +1,7 @@
-import {Args, Flags} from '@oclif/core'
-import {type FlagInput} from '@oclif/core/interfaces'
+import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {isHttpError} from '@sanity/client'
+import {type Context, isHttpError} from '@sanity/client'
 
 import {formatKeyValue} from '../../../actions/debug/output.js'
 import {getImport} from '../../../services/context.js'
@@ -24,6 +23,8 @@ export class GetImportCommand extends SanityCommand<typeof GetImportCommand> {
 
   static override description = 'Get details of an import'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 import-def456',
@@ -35,16 +36,8 @@ export class GetImportCommand extends SanityCommand<typeof GetImportCommand> {
     },
   ]
 
-  static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output the import in JSON format',
-    }),
-  } satisfies FlagInput
-
-  public async run(): Promise<void> {
+  public async run(): Promise<Context.ImportDetail> {
     const {importId, knowledgeBaseId} = this.args
-    const {json} = this.flags
 
     let importDetail
     try {
@@ -59,11 +52,6 @@ export class GetImportCommand extends SanityCommand<typeof GetImportCommand> {
       this.error(`Failed to get import: ${getErrorMessage(error)}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
-    }
-
-    if (json) {
-      this.log(JSON.stringify(importDetail, null, 2))
-      return
     }
 
     const padTo = 9 // "Completed" is the longest key
@@ -83,5 +71,6 @@ export class GetImportCommand extends SanityCommand<typeof GetImportCommand> {
     )
     this.log(formatKeyValue('Created', importDetail.createdAt, {padTo}))
     this.log(formatKeyValue('Completed', importDetail.completedAt ?? '-', {padTo}))
+    return importDetail
   }
 }

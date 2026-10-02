@@ -84,6 +84,22 @@ describe('invokeSanityCli', () => {
     expect(policyIds).toEqual(commandIds)
   })
 
+  test('every policy-denied flag exists on its command', () => {
+    // Denies match by name: a flag rename would otherwise orphan the entry
+    // silently — the deny guards a ghost while the renamed flag is exposed.
+    for (const [commandId, policy] of Object.entries(commandPolicies.mcp)) {
+      if (!('deniedFlags' in policy) || !policy.deniedFlags) continue
+      const command = config.findCommand(commandId)
+      expect(command, commandId).toBeDefined()
+      for (const flagName of policy.deniedFlags) {
+        expect(
+          Object.hasOwn(command?.flags ?? {}, flagName),
+          `policy denies "${flagName}" on ${commandId}, but no such flag exists`,
+        ).toBe(true)
+      }
+    }
+  })
+
   test('resolves its own oclif config by default, without a config override', async () => {
     // Regression test: `loadCliCommandConfig` must resolve this package's own
     // root (where package.json and the oclif manifest live), not some other
@@ -207,6 +223,10 @@ describe('invokeSanityCli', () => {
       expect(result.output).toContain('Administrator')
       expect(result.output).toContain('user2')
       expect(result.output).toContain('2023-01-02')
+      // Real table output through the real sink: programmatic callers must
+      // never receive ANSI styling. Both test harnesses are otherwise blind
+      // to this (cli-test strips ANSI by default; Mellon mocks the invoker).
+      expect(result.output).not.toContain('\u001B')
       expect(stdout).not.toHaveBeenCalled()
     } finally {
       stdout.mockRestore()
