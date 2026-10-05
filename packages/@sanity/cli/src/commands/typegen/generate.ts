@@ -16,7 +16,16 @@ import {
 import omit from 'lodash-es/omit.js'
 import once from 'lodash-es/once.js'
 
+import {formatPath} from '../../actions/typegen/formatPath.js'
+import {
+  generateResourceTypes,
+  resolveResourceSchemas,
+} from '../../actions/typegen/generateResourceTypes.js'
 import {parseTypegenConfig} from '../../actions/typegen/parseTypegenConfig.js'
+import {
+  parseTypegenResources,
+  type TypegenResourcesConfig,
+} from '../../actions/typegen/parseTypegenResources.js'
 import {createTypegenProgressRenderer} from '../../actions/typegen/renderTypegenProgress.js'
 
 const description = `Sanity TypeGen
@@ -36,7 +45,8 @@ This command can utilize configuration settings defined in a \`sanity-typegen.js
 The default configuration values listed above are used if not overridden in your \`sanity-typegen.json\` configuration file. To customize the behavior of the type generation, adjust these properties in the configuration file according to your project's needs.
 
 ${styleText('bold', 'Note:')}
-- The \`sanity schema extract\` command is a prerequisite for extracting your Sanity Studio schema into a \`schema.json\` file, which is then used by the \`sanity typegen generate\` command to generate type definitions.`.trim()
+- The \`sanity schema extract\` command is a prerequisite for extracting your Sanity Studio schema into a \`schema.json\` file, which is then used by the \`sanity typegen generate\` command to generate type definitions.
+- To generate types for several datasets, list them in \`typegen.resources\` in \`sanity.cli.ts\` (beta). Each resource uses its own \`schema\` file, or the schema bound to its dataset when \`schema\` is omitted.`.trim()
 
 export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerateCommand> {
   static override description = description
@@ -75,6 +85,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
   private async getConfig(): Promise<{
     config: TypeGenConfig
     path?: string
+    resources?: TypegenResourcesConfig
     type: 'cli' | 'legacy'
     workDir: string
   }> {
@@ -121,9 +132,11 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
           ),
         )
 
+        const resources = parseTypegenResources(config.typegen, workDir)
         return {
-          config: parseTypegenConfig(config.typegen || {}),
+          config: resources?.config ?? parseTypegenConfig(config.typegen || {}),
           path: rootDir.path,
+          resources,
           type: 'cli',
           workDir,
         }
@@ -146,11 +159,13 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         }
       }
 
+      const resources = parseTypegenResources(config.typegen, workDir)
       spin.succeed(`Config loaded from sanity.cli.ts`)
 
       return {
-        config: parseTypegenConfig(config.typegen || {}),
+        config: resources?.config ?? parseTypegenConfig(config.typegen || {}),
         path: rootDir.path,
+        resources,
         type: 'cli',
         workDir,
       }
@@ -171,8 +186,64 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     let spin: SpinnerInstance | undefined
 
     try {
-      const {config: typegenConfig, type: typegenConfigMethod, workDir} = await this.getConfig()
+      const {
+        config: typegenConfig,
+        resources,
+        type: typegenConfigMethod,
+        workDir,
+      } = await this.getConfig()
       trace.start()
+
+      if (resources) {
+        for (const warning of resources.warnings) {
+          this.output.warn(warning)
+        }
+
+        const resourceSpin = spinner({})
+        spin = resourceSpin
+        const resolved = await resolveResourceSchemas({
+          onResolved: (entry) => {
+            resourceSpin.succeed(
+              'schemaPath' in entry
+                ? `Using ${formatPath(entry.schemaPath)} for ${entry.key}`
+                : `Fetched the schema bound to ${entry.key} (${entry.schemaVersion})`,
+            )
+          },
+          onResolving: (resource, key) => {
+            resourceSpin.start(
+              resource.schema === undefined
+                ? `Fetching the schema bound to ${key}…`
+                : `Checking the schema file for ${key}…`,
+            )
+          },
+          resources: resources.resources,
+          workDir,
+        })
+
+        const results = await generateResourceTypes({
+          config: typegenConfig,
+          onProgress: (entry) => {
+            resourceSpin.start(`Generating types for ${entry.key}…`)
+            return createTypegenProgressRenderer(resourceSpin, {
+              formatGeneratedCode: typegenConfig.formatGeneratedCode,
+              generates: entry.resource.generates,
+              schema: 'schemaPath' in entry ? entry.schemaPath : entry.key,
+            })
+          },
+          resolved,
+          workDir,
+        })
+
+        for (const {result} of results) {
+          trace.log({
+            configMethod: typegenConfigMethod,
+            configOverloadClientMethods: typegenConfig.overloadClientMethods,
+            ...omit(result, 'code', 'duration'),
+          })
+        }
+        trace.complete()
+        return
+      }
 
       spin = spinner({}).start('Loading schema…')
       const result = await runTypegenGenerate({
@@ -209,7 +280,13 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     let spin: SpinnerInstance | undefined
 
     try {
-      const {config: typegenConfig, workDir} = await this.getConfig()
+      const {config: typegenConfig, resources, workDir} = await this.getConfig()
+      if (resources) {
+        this.error(
+          'Watch mode does not support typegen.resources yet. Run "sanity typegen generate" without --watch.',
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
       trace.start()
 
       let resolve: () => void = () => {}
@@ -271,6 +348,8 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         spin.fail()
       }
       trace.error(error instanceof Error ? error : new Error(String(error)))
+      // Errors already reported with `this.error()` keep their own exit code.
+      if (error instanceof CLIError) throw error
       this.error(`${error instanceof Error ? error.message : 'Unknown error'}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })

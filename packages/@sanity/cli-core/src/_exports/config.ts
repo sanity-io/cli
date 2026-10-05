@@ -15,6 +15,7 @@ export {
   type CliConfig,
   type ConfigStore,
   type TypeGenConfig,
+  type TypeGenResource,
 } from '../config/cli/types/cliConfig.js'
 export {isWorkbenchApp, parseWorkbenchCliConfig} from '../config/cli/workbenchApp.js'
 export {findProjectRoot} from '../config/findProjectRoot.js'

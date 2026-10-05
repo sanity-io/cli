@@ -1,11 +1,6 @@
 import {z} from 'zod/mini'
 
-import {
-  APP_VISIBILITIES,
-  type CliConfig,
-  type ReactCompilerConfig,
-  type TypeGenConfig,
-} from './types/cliConfig.js'
+import {APP_VISIBILITIES, type CliConfig, type ReactCompilerConfig} from './types/cliConfig.js'
 import {type UserViteConfig} from './types/userViteConfig'
 
 /**
@@ -99,5 +94,5 @@ export const cliConfigSchema = z.object({
 
   vite: z.optional(z.custom<UserViteConfig>()),
 
-  typegen: z.optional(z.custom<Partial<TypeGenConfig> & {enabled?: boolean}>()),
+  typegen: z.optional(z.custom<NonNullable<CliConfig['typegen']>>()),
 }) satisfies z.core.$ZodType<CliConfig>
