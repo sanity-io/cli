@@ -1,5 +1,26 @@
 # Change Log
 
+## 8.14.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.13.1...cli-v8.14.0)
+
+_2026-10-05_
+
+### Features
+
+- **init:** add `--dashboard` (beta) and say Dashboard instead of workbench ([#1944](https://github.com/sanity-io/cli/pull/1944)) ([e57ee01](https://github.com/sanity-io/cli/commit/e57ee0119d8fcf80b3194d8993ed2f0a2d825308))
+
+### Bug Fixes
+
+- **init:** install App SDK v3, Sanity UI v4 and TypeScript 6 in new projects ([#1943](https://github.com/sanity-io/cli/pull/1943)) ([810de08](https://github.com/sanity-io/cli/commit/810de08ae1f0ec3e3a47e55265c7ae96f09b6d44))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 6.4.4
+    - @sanity/workbench-cli bumped to 2.8.3
+
 ## 8.13.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.13.0...cli-v8.13.1)

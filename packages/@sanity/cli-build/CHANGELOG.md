@@ -1,5 +1,21 @@
 # Changelog
 
+## 6.4.4
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.3...cli-build-v6.4.4)
+
+_2026-10-05_
+
+### Bug Fixes
+
+- **deps:** update dependency @rolldown/plugin-babel to ^0.2.4 ([#1948](https://github.com/sanity-io/cli/pull/1948)) ([7f01184](https://github.com/sanity-io/cli/commit/7f01184c332f0c52d2543cb51c08504fdcc17470))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.8.3
+
 ## 6.4.3
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.2...cli-build-v6.4.3)
