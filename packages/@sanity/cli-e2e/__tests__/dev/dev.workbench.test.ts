@@ -29,7 +29,7 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     // so it proves the real workbench dev orchestration ran — not just a build.
     await session.waitForText(
       new RegExp(
-        String.raw`Workbench dev server started at http://localhost:${port} \(app on port ${port + 1}\)`,
+        String.raw`Dashboard dev server started at http://localhost:${port} \(app on port ${port + 1}\)`,
         'i',
       ),
       {timeout: 90_000},

@@ -112,7 +112,7 @@ export async function startDevServerRegistration(
   if (id && devServer) {
     output.error(
       `"${id}" is already served by another dev server running on port ${devServer.port}, ` +
-        "so the workbench can't tell them apart and this one stays out of it. Stop that server first.",
+        "so the Dashboard can't tell them apart and this one stays out of it. Stop that server first.",
       {exit: false},
     )
     return {close: async () => {}}

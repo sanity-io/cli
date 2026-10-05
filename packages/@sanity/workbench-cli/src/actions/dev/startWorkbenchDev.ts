@@ -142,7 +142,7 @@ export async function startWorkbenchDev(
     const addr = supervisor.server.httpServer?.address()
     const port = typeof addr === 'object' && addr ? addr.port : supervisor.server.config.server.port
     output.log(
-      `Workbench dev server started at ${styleText(['blue', 'underline'], workbenchUrl)} (app on port ${port})`,
+      `Dashboard dev server started at ${styleText(['blue', 'underline'], workbenchUrl)} (app on port ${port})`,
     )
   }
 

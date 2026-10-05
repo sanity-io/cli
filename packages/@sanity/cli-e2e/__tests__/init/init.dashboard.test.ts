@@ -9,13 +9,13 @@ const orgId = getE2EOrganizationId()
 const projectId = getE2EProjectId()
 const dataset = getE2EDataset()
 
-// Workbench isn't on the published `latest` CLI yet, so skip against the registry.
+// `--dashboard` isn't on the published `latest` CLI yet, so skip against the registry.
 const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
-// `--unstable--workbench` swaps the scaffolded `sanity.cli.ts` over to the
+// `--dashboard` swaps the scaffolded `sanity.cli.ts` over to the
 // `defineApplication` variant (the sole federation opt-in). It applies to both
-// the studio and SDK-app templates, which use different workbench config shapes.
-describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, () => {
+// the studio and SDK-app templates, which use different config shapes.
+describe.skipIf(isRegistryMode)('sanity init - dashboard', {timeout: 120_000}, () => {
   let tmp: Awaited<ReturnType<typeof createTmpDir>>
 
   beforeEach(async () => {
@@ -26,7 +26,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     await tmp.cleanup()
   })
 
-  test('scaffolds a studio whose sanity.cli.ts opts into workbench', async () => {
+  test('scaffolds a studio whose sanity.cli.ts opts into the Dashboard', async () => {
     const {error, exitCode} = await runCli({
       args: [
         'init',
@@ -42,7 +42,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
         'pnpm',
         '--no-git',
         '--no-mcp',
-        '--unstable--workbench',
+        '--dashboard',
         '--no-install',
       ],
     })
@@ -53,7 +53,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     // Studio files are scaffolded as usual...
     expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
 
-    // ...but the CLI config is the workbench (`defineApplication`) variant,
+    // ...but the CLI config is the Dashboard (`defineApplication`) variant,
     // branded with the project's org id.
     const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
     expect(cliConfig).toContain('defineApplication')
@@ -63,7 +63,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     expect(cliConfig).toMatch(/slug: '[a-z0-9-]+'/)
   })
 
-  test('scaffolds an SDK app whose sanity.cli.ts opts into workbench', async () => {
+  test('scaffolds an SDK app whose sanity.cli.ts opts into the Dashboard', async () => {
     const {error, exitCode} = await runCli({
       args: [
         'init',
@@ -79,7 +79,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
         'pnpm',
         '--no-git',
         '--no-mcp',
-        '--unstable--workbench',
+        '--dashboard',
         '--no-install',
       ],
     })
@@ -91,7 +91,7 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     expect(existsSync(`${tmp.path}/src/App.tsx`)).toBe(true)
     expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(false)
 
-    // ...and its CLI config is the workbench app variant: `defineApplication`
+    // ...and its CLI config is the Dashboard app variant: `defineApplication`
     // with an `entry` (the navigable app view), branded with the org id.
     const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
     expect(cliConfig).toContain('defineApplication')
@@ -102,5 +102,8 @@ describe.skipIf(isRegistryMode)('sanity init - workbench', {timeout: 120_000}, (
     const pkgJson = JSON.parse(readFileSync(`${tmp.path}/package.json`, 'utf8'))
     expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
     expect(pkgJson.name).toMatch(/^[a-z0-9-]+$/)
+
+    // The agent docs are the Dashboard versions, not the template's standard ones
+    expect(readFileSync(`${tmp.path}/AGENTS.md`, 'utf8')).toContain('@sanity/sdk-react/dashboard')
   })
 })

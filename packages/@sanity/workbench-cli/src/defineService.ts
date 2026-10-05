@@ -43,7 +43,7 @@ export interface DefinedService<TType extends ServiceType = ServiceType> {
 }
 
 /**
- * Define a Sanity Workbench background service. The first argument narrows the
+ * Define a Sanity Dashboard background service. The first argument narrows the
  * callback shape — `"worker"` runs the callback inside a Web Worker, where it
  * can emit dock-badge updates and return a disposer.
  *

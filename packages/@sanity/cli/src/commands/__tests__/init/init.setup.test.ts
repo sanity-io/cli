@@ -64,6 +64,8 @@ describe('#init: oclif command setup', () => {
     {flag1: 'auto-updates', flag2: 'bare'},
     {flag1: 'coupon=123', flag2: 'project-plan=123'},
     {flag1: 'dataset="123', flag2: 'dataset-default'},
+    {flag1: 'dashboard', flag2: 'bare'},
+    {flag1: 'dashboard', flag2: 'env=.env'},
     {flag1: 'env=.env', flag2: 'bare'},
     {flag1: 'git=test', flag2: 'bare'},
     {flag1: 'no-git', flag2: 'git=test'},

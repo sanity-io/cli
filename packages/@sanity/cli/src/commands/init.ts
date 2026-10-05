@@ -58,6 +58,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<name>',
       hidden: true,
     }),
+    dashboard: Flags.boolean({
+      description: 'Set up the project to run in the Sanity Dashboard (beta)',
+      exclusive: ['bare', 'env'],
+    }),
     dataset: Flags.string({
       description: 'Dataset name for the studio',
       exclusive: ['dataset-default'],
@@ -206,13 +210,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       default: undefined,
       description: 'Enable TypeScript support',
       exclusive: ['bare'],
-    }),
-    'unstable--workbench': Flags.boolean({
-      allowNo: true,
-      default: undefined,
-      description: 'Opt into workbench: scaffolds the CLI config with defineApplication',
-      // Internal-only while workbench is unstable — keep it out of help/docs
-      hidden: true,
     }),
     visibility: Flags.string({
       description: 'Visibility mode for dataset',

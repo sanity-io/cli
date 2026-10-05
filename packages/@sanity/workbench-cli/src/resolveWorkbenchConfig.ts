@@ -33,7 +33,7 @@ export function resolveWorkbenchConfig(
 
   const result = ConfigSchema.safeParse({appType: app.appType, fields: app.fields})
   if (!result.success) {
-    throw new Error(`Invalid workbench config: ${result.error.message}`)
+    throw new Error(`Invalid Dashboard config: ${result.error.message}`)
   }
 
   return {appType: app.appType, fields: app.fields, organizationId: app.organizationId}

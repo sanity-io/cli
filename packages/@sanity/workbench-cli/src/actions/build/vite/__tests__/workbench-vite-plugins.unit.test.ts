@@ -58,7 +58,7 @@ describe('workbenchVitePlugins', () => {
   test('throws when a workbench studio has no sanity config', async () => {
     await expect(
       workbenchVitePlugins({cwd, entries: {relativeConfigLocation: null, relativeEntry: null}}),
-    ).rejects.toThrow('Workbench studios need a sanity.config')
+    ).rejects.toThrow('Dashboard studios need a sanity.config')
     expect(mockFederation).not.toHaveBeenCalled()
   })
 

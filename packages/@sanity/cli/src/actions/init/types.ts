@@ -31,6 +31,7 @@ export interface InitOptions {
 
   argType?: string
   coupon?: string
+  dashboard?: boolean
   dataset?: string
   env?: string
   git?: boolean | string
@@ -50,7 +51,6 @@ export interface InitOptions {
   template?: string
   templateToken?: string
   typescript?: boolean
-  unstableWorkbench?: boolean
   visibility?: 'private' | 'public'
 }
 
@@ -72,6 +72,7 @@ interface InitCommandFlags {
 
   coupon?: string
   'create-project'?: string
+  dashboard?: boolean
   dataset?: string
   env?: string
   git?: string
@@ -91,7 +92,6 @@ interface InitCommandFlags {
   template?: string
   'template-token'?: string
   typescript?: boolean
-  'unstable--workbench'?: boolean
   visibility?: string
 }
 
@@ -125,6 +125,7 @@ export function flagsToInitOptions(
     autoUpdates: flags['auto-updates'],
     bare: flags.bare,
     coupon: flags.coupon,
+    dashboard: flags.dashboard,
     dataset: flags.dataset,
     datasetDefault: flags['dataset-default'],
     env: flags.env,
@@ -150,7 +151,6 @@ export function flagsToInitOptions(
     templateToken: flags['template-token'],
     typescript: flags.typescript,
     unattended: isUnattended,
-    unstableWorkbench: flags['unstable--workbench'],
     visibility: narrowVisibility(flags.visibility),
   }
 }

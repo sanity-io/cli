@@ -53,7 +53,7 @@ export function createWorkbenchUndeployAdapter(options: {
   return {
     resolveTarget: async () => {
       if (!config) {
-        if (!workbench) throw new Error('No workbench app or config to undeploy')
+        if (!workbench) throw new Error('No Dashboard app or config to undeploy')
         return resolveApplicationTarget({appId, type, workbench})
       }
       const resolved = await resolveConfigTarget({config, organizationId})

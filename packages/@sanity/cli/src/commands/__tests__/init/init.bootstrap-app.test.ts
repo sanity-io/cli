@@ -7,11 +7,14 @@ import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures
 import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
+import {detectFrameworkRecord} from '../../../util/detectFramework.js'
 import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
   bootstrapTemplate: vi.fn(),
   createOrAppendEnvVars: vi.fn(),
+  getGitHubRepoInfo: vi.fn(),
+  initNextJs: vi.fn(),
   installDeclaredPackages: vi.fn(),
   select: vi.fn(),
   setupMCP: vi.fn(),
@@ -121,6 +124,19 @@ vi.mock('../../../actions/init/env/createOrAppendEnvVars.js', () => ({
 
 vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
   bootstrapTemplate: mocks.bootstrapTemplate,
+}))
+
+vi.mock('../../../actions/init/remoteTemplate.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../actions/init/remoteTemplate.js')>()),
+  getGitHubRepoInfo: mocks.getGitHubRepoInfo,
+}))
+
+vi.mock('../../../actions/init/initNextJs.js', () => ({
+  initNextJs: mocks.initNextJs,
+}))
+
+vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
+  checkNextJsReactCompatibility: vi.fn(),
 }))
 
 vi.mock('../../../actions/init/git.js', () => ({
@@ -236,7 +252,7 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(skillsOrder).toBeLessThan(bootstrapOrder)
   })
 
-  test('passes the workbench opt-in through to bootstrapTemplate', async () => {
+  test('passes --dashboard through to bootstrapTemplate as the workbench opt-in', async () => {
     setupInitSuccessMocks()
 
     mocks.select.mockResolvedValueOnce('blog') // template
@@ -268,7 +284,7 @@ describe('#init: bootstrap-app-initialization', () => {
         '--dataset=test',
         '--package-manager=npm',
         '--typescript',
-        '--unstable--workbench',
+        '--dashboard',
       ],
       {
         mocks: {
@@ -280,6 +296,85 @@ describe('#init: bootstrap-app-initialization', () => {
     if (error) throw error
 
     expect(mocks.bootstrapTemplate).toHaveBeenCalledWith(expect.objectContaining({workbench: true}))
+  })
+
+  test('warns that --dashboard is ignored for remote templates', async () => {
+    setupInitSuccessMocks()
+    mocks.getGitHubRepoInfo.mockResolvedValueOnce({
+      branch: 'main',
+      filePath: '',
+      name: 'template',
+      username: 'sanity-io',
+    })
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {})
+
+    const {error, stderr} = await testCommand(
+      InitCommand,
+      [
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+        '--template=sanity-io/template',
+        '--typescript',
+        '--dashboard',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+    if (error) throw error
+
+    expect(stderr).toContain('--dashboard is ignored for remote templates')
+  })
+
+  test('warns that --dashboard is ignored for Next.js projects', async () => {
+    setupInitSuccessMocks()
+    vi.mocked(detectFrameworkRecord).mockResolvedValueOnce({
+      name: 'Next.js',
+      slug: 'nextjs',
+    } as Awaited<ReturnType<typeof detectFrameworkRecord>>)
+
+    const {error, stderr} = await testCommand(
+      InitCommand,
+      [
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--nextjs-add-config-files',
+        '--dashboard',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+    if (error) throw error
+
+    expect(stderr).toContain('--dashboard is ignored for Next.js projects')
+    expect(mocks.initNextJs).toHaveBeenCalled()
+    expect(mocks.bootstrapTemplate).not.toHaveBeenCalled()
   })
 
   test('initializes app with env file', async () => {

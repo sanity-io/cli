@@ -61,6 +61,11 @@ export async function bootstrapLocalTemplate(
   })
   debug(`Copying shared template code from : ${sharedDir}`)
   await copy(path.join(sharedDir, 'gitignore.txt'), outputPath, {rename: () => '.gitignore'})
+  // Dashboard apps dev and deploy differently, so their docs replace the
+  // template's. Studio templates have no overlay.
+  if (isAppTemplate && variables.workbench) {
+    await copy(path.join(sharedDir, 'dashboard', templateName), outputPath)
+  }
 
   if (useTypeScript) {
     await fs.copyFile(path.join(sharedDir, 'tsconfig.json'), path.join(outputPath, 'tsconfig.json'))
