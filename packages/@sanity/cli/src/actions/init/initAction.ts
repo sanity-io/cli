@@ -83,6 +83,12 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     remoteTemplateInfo = await getGitHubRepoInfo(options.template, options.templateToken)
   }
 
+  // Warned before any setup so the user can cancel. Remote templates ship their
+  // own `sanity.cli.*`, so there is nothing to swap.
+  if (options.dashboard && remoteTemplateInfo) {
+    output.warn('--dashboard is ignored for remote templates')
+  }
+
   if (detectedFramework && detectedFramework.slug !== 'sanity' && remoteTemplateInfo) {
     throw new InitError(
       `A remote template cannot be used with a detected framework. Detected: ${detectedFramework.name}`,
@@ -266,6 +272,9 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   if (initNext) {
+    if (options.dashboard) {
+      output.warn('--dashboard is ignored for Next.js projects')
+    }
     await initNextJs({
       datasetName,
       detectedFramework,
@@ -298,10 +307,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     return
   }
 
-  // Workbench is opt-in (no prompt): the flag swaps the scaffolded
+  // The Dashboard is opt-in (no prompt): `--dashboard` swaps the scaffolded
   // `sanity.cli.*` over to `defineApplication` — the branded app is the sole
-  // workbench opt-in.
-  const workbench = flagOrDefault(options.unstableWorkbench, false)
+  // Dashboard opt-in.
+  const workbench = flagOrDefault(options.dashboard, false)
 
   const sharedParams = {
     defaults,

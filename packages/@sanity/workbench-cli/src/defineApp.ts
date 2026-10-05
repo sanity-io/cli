@@ -55,7 +55,7 @@ export const DefineAppInputSchema = z
           ),
         ),
     ),
-    /** Organization that owns the app — the workbench runs and deploys against it. */
+    /** Organization that owns the app — it runs in and deploys to this organization's Dashboard. */
     organizationId: z.string(
       "App `organizationId` is required — pass the owning organization's ID to `defineApplication`",
     ),
@@ -137,8 +137,8 @@ export function isWorkbenchApp(app: unknown): app is WorkbenchApp {
 }
 
 /**
- * Declare a Sanity Workbench application. Identity at runtime — returns the same
- * object reference, tagged with the workbench brand. Field validation (the
+ * Declare a Sanity Dashboard application. Identity at runtime — returns the same
+ * object reference, tagged with the Dashboard brand. Field validation (the
  * `slug` pattern etc.) runs at build time in the CLI via `DefineAppInputSchema`;
  * this helper stays a thin, pure identity wrapper.
  * @public

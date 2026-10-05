@@ -290,7 +290,7 @@ async function createWorkbenchViteServer(
   } catch (err) {
     await server.close()
     output.warn(
-      `Workbench dev server failed to start: ${err instanceof Error ? err.message : String(err)}`,
+      `Dashboard dev server failed to start: ${err instanceof Error ? err.message : String(err)}`,
     )
     return undefined
   }
@@ -329,7 +329,7 @@ const resolveOrganizationId = (cliConfig: CliConfig): string => {
   }
 
   throw new Error(
-    'Workbench requires an organization ID. Pass "organizationId" to defineApplication() in sanity.cli.ts.',
+    'The Dashboard requires an organization ID. Pass "organizationId" to defineApplication() in sanity.cli.ts.',
   )
 }
 

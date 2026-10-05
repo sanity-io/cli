@@ -32,6 +32,7 @@ describe('flagsToInitOptions', () => {
     const result = toOptions(
       defaultFlags({
         'auto-updates': false,
+        dashboard: true,
         dataset: 'staging',
         'dataset-default': true,
         'output-path': '/tmp/myproject',
@@ -40,13 +41,13 @@ describe('flagsToInitOptions', () => {
         'project-plan': 'enterprise',
         template: 'blog',
         'template-token': 'ghp_abc',
-        'unstable--workbench': true,
         visibility: 'private',
       }),
       false,
     )
 
     expect(result.autoUpdates).toBe(false)
+    expect(result.dashboard).toBe(true)
     expect(result.dataset).toBe('staging')
     expect(result.datasetDefault).toBe(true)
     expect(result.outputPath).toBe('/tmp/myproject')
@@ -55,7 +56,6 @@ describe('flagsToInitOptions', () => {
     expect(result.projectPlan).toBe('enterprise')
     expect(result.template).toBe('blog')
     expect(result.templateToken).toBe('ghp_abc')
-    expect(result.unstableWorkbench).toBe(true)
     expect(result.visibility).toBe('private')
   })
 

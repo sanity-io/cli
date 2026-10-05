@@ -124,9 +124,9 @@ export function registerStudioInitTests(yFlag: string[]): void {
     const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
     expect(cliConfig).toContain(projectId)
     expect(cliConfig).toContain('production')
-    // Inverse guard: a default studio init must not opt into workbench. The
-    // projectId/dataset above also appear in the `defineApplication` variant, so
-    // assert the brand is absent to catch workbench leaking in without the flag.
+    // Inverse guard: a studio init without `--dashboard` must not opt into the
+    // Dashboard. The projectId/dataset above also appear in the `defineApplication`
+    // variant, so assert the brand is absent to catch it leaking in without the flag.
     expect(cliConfig).not.toContain('defineApplication')
 
     const config = readFileSync(`${tmp.path}/sanity.config.ts`, 'utf8')

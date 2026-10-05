@@ -52,8 +52,8 @@ describe('sanity init - app', {timeout: 120_000}, () => {
       const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
       expect(cliConfig).toContain('organizationId')
       expect(cliConfig).toContain('entry')
-      // Inverse guard: without `--unstable--workbench` the app config is the plain
-      // `app: {}` literal, never the `defineApplication` (workbench) variant. The
+      // Inverse guard: without `--dashboard` the app config is the plain
+      // `app: {}` literal, never the `defineApplication` (Dashboard) variant. The
       // shared fields above don't distinguish the two, so assert the brand is absent.
       expect(cliConfig).not.toContain('defineApplication')
 

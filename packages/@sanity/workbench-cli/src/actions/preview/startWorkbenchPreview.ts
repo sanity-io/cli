@@ -97,7 +97,11 @@ export async function startWorkbenchPreview(
     const configPath = (await findProjectRoot(workDir)).path
     const workbench = resolveWorkbenchApp(cliConfig)
 
-    if (!workbench) throw new Error('`sanity start` was invoked in a non-workbench application')
+    if (!workbench) {
+      throw new Error(
+        '`sanity start` was invoked in an application that is not set up for the Dashboard',
+      )
+    }
     const inlinedId = await readInlinedAppId(outDir)
     const configs = await deriveConfigs(cliConfig)
     const id = inlinedId ?? (await buildAppId(workbench))
@@ -125,7 +129,7 @@ export async function startWorkbenchPreview(
   if (workbench.workbenchAvailable) {
     const workbenchUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}`
     output.log(
-      `Workbench preview server started at ${styleText(['blue', 'underline'], workbenchUrl)} (serving build on port ${remote.port})`,
+      `Dashboard preview server started at ${styleText(['blue', 'underline'], workbenchUrl)} (serving build on port ${remote.port})`,
     )
   } else {
     const remoteUrl = `http://${toDisplayHost(remote.host)}:${remote.port}`

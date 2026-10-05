@@ -11,7 +11,7 @@ import {runCli} from '../../helpers/runCli.js'
 // These double as the inverse workbench guard: a plain (non-`defineApplication`)
 // project must serve on the *configured* port. If a gating regression started the
 // workbench host, the studio/app would be pushed to port+1 — and the studio's
-// "running at" line suppressed in favour of "Workbench dev server started…" — so
+// "running at" line suppressed in favour of "Dashboard dev server started…" — so
 // the port-pinned `ready` assertion would time out instead of matching.
 describe('sanity dev', {timeout: 120_000}, () => {
   test.each([

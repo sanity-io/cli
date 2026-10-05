@@ -3001,11 +3001,11 @@ Initialize a new Sanity Studio, project and/or app
 
 ```
 USAGE
-  $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dataset
-    <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--import-dataset] [--install | ] [--mcp]
-    [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path
-    <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name <name>]
-    [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+  $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dashboard
+    |  | --env <filename>] [--dataset <name> | --dataset-default] [--git <message> | ] [--import-dataset] [--install | ]
+    [--mcp] [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>]
+    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name
+    <name>] [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
   -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
@@ -3013,6 +3013,7 @@ FLAGS
       --bare                       Skip the Studio initialization and only print the selected project ID and dataset
                                    name to stdout
       --coupon=<code>              Optionally select a coupon for a new project (cannot be used with --project-plan)
+      --dashboard                  Set up the project to run in the Sanity Dashboard (beta)
       --dataset=<name>             Dataset name for the studio
       --dataset-default            Set up a project with a public dataset named "production"
       --env=<filename>             Write environment variables to file
