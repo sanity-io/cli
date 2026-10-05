@@ -1,5 +1,21 @@
 # Changelog
 
+## 6.4.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.2...cli-build-v6.4.3)
+
+_2026-10-05_
+
+### Bug Fixes
+
+- **cli-build:** skip the error overlay for error events without an error ([#1940](https://github.com/sanity-io/cli/pull/1940)) ([e36d29a](https://github.com/sanity-io/cli/commit/e36d29af52c889933bf472ca8ee94dbb752dda92))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.8.2
+
 ## 6.4.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.1...cli-build-v6.4.2)
