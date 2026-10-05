@@ -20,6 +20,7 @@ export const studioDependencies = {
     '@types/react': '^19.2.14',
     eslint: '^10.8.1',
     prettier: '^3.5',
-    typescript: '^5.8', // Peer dependency of eslint-config-studio (implicitly)
+    // typescript-eslint (via eslint-config-studio) only supports TypeScript up to 6.0.x
+    typescript: '~6.0',
   },
 }
