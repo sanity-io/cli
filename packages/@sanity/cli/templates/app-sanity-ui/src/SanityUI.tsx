@@ -1,5 +1,7 @@
-import {ThemeProvider, ToastProvider} from '@sanity/ui'
+import '@sanity/ui/styles.css'
+import {ThemeProvider} from '@sanity/ui'
 import {buildTheme} from '@sanity/ui/theme'
+import {ToastProvider} from '@sanity/ui/toast'
 import {createGlobalStyle} from 'styled-components'
 
 const theme = buildTheme()
