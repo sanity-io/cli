@@ -2,6 +2,7 @@ import {type Context} from '@sanity/client'
 
 export const knowledgeBase: Context.KnowledgeBase = {
   activeJobId: null,
+  buildRestriction: null,
   buildStageState: null,
   createdAt: '2026-08-01T00:00:00.000Z',
   createdBy: null,
