@@ -282,6 +282,9 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "reason",
       "tag",
     ],
+    "workflows:blueprint:generate": [
+      "check",
+    ],
     "workflows:definition:delete": [
       "cascade",
       "deployment",
