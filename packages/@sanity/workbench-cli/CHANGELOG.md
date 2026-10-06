@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 2.8.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.8.2...workbench-cli-v2.8.3)
+
+_2026-10-05_
+
+### Bug Fixes
+
+- **init:** add `--dashboard` (beta) and say Dashboard instead of workbench ([#1944](https://github.com/sanity-io/cli/pull/1944)) ([e57ee01](https://github.com/sanity-io/cli/commit/e57ee0119d8fcf80b3194d8993ed2f0a2d825308))
+
 ## 2.8.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.8.1...workbench-cli-v2.8.2)
