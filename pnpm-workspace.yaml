@@ -2,9 +2,6 @@ linkWorkspacePackages: true
 overrides:
   '@sanity/cli': 'workspace:*'
   '@types/node': 'catalog:'
-  # Temporary: preview of sanity-io/codegen#170, which adds per-resource output.
-  # Replace with a catalog bump once that release is published.
-  '@sanity/codegen': 'https://pkg.pr.new/@sanity/codegen@bdbccf2'
 
 packages:
   - 'packages/@repo/*'
@@ -33,7 +30,7 @@ catalog:
   '@sanity/types': ^6.17.0
   '@sanity/schema': ^6.17.0
   '@sanity/client': ^8.9.0
-  '@sanity/codegen': ^8.1.1
+  '@sanity/codegen': ^8.2.0
   '@sanity/telemetry': ^1.1.0
 
   # React
