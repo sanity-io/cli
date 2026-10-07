@@ -38,13 +38,13 @@ const query = `import {defineQuery} from 'groq'
 export const bookTitleQuery = defineQuery('*[_type == "book"][0]{title}')
 `
 
-async function setUpProject(resources: unknown[]): Promise<string> {
+async function setUpProject(typegen: Record<string, unknown>): Promise<string> {
   const cwd = await testFixture('basic-app')
   process.chdir(cwd)
 
   await writeFile(
     join(cwd, 'sanity.cli.ts'),
-    `export default ${JSON.stringify({typegen: {formatGeneratedCode: false, resources}}, null, 2)}\n`,
+    `export default ${JSON.stringify({typegen: {formatGeneratedCode: false, ...typegen}}, null, 2)}\n`,
   )
   await writeFile(join(cwd, 'staging.schema.json'), JSON.stringify(stagingSchema))
   for (const dataset of ['production', 'staging']) {
@@ -82,7 +82,7 @@ describe('#typegen:generate with typegen.resources', {timeout: 60 * 1000}, () =>
   })
 
   test('generates a file per resource from a bound schema and a local schema', async () => {
-    const cwd = await setUpProject([production, staging])
+    const cwd = await setUpProject({resources: [production, staging]})
     mockBinding('abc123', 'production').reply(
       200,
       {
@@ -128,7 +128,7 @@ describe('#typegen:generate with typegen.resources', {timeout: 60 * 1000}, () =>
   })
 
   test('writes nothing when a dataset has no bound schema', async () => {
-    const cwd = await setUpProject([staging, production])
+    const cwd = await setUpProject({resources: [staging, production]})
     mockBinding('abc123', 'production').reply(404, {
       error: 'Not Found',
       message: 'No default schema binding found for dataset abc123.production',
@@ -144,7 +144,7 @@ describe('#typegen:generate with typegen.resources', {timeout: 60 * 1000}, () =>
   })
 
   test('writes nothing when a later local schema file is malformed', async () => {
-    const cwd = await setUpProject([production, staging])
+    const cwd = await setUpProject({resources: [production, staging]})
     await writeFile(join(cwd, 'staging.schema.json'), JSON.stringify(stagingSchema).slice(0, 40))
     mockBinding('abc123', 'production').reply(200, {
       _meta: {producer: 'api', schemaVersion: 'uEiB-test', source: null, sourceLabel: null},
@@ -162,5 +162,30 @@ describe('#typegen:generate with typegen.resources', {timeout: 60 * 1000}, () =>
     expect(error?.oclif?.exit).toBe(1)
     expect(existsSync(join(cwd, 'src', 'production.types.ts'))).toBe(false)
     expect(existsSync(join(cwd, 'src', 'staging.types.ts'))).toBe(false)
+  })
+})
+
+describe('#typegen:generate without typegen.resources', {timeout: 60 * 1000}, () => {
+  test('generates one file from a single schema, as before resources were added', async () => {
+    const cwd = await setUpProject({
+      generates: './src/sanity.types.ts',
+      path: './src/staging/*.ts',
+      schema: './staging.schema.json',
+    })
+
+    const {error} = await testCommand(TypegenGenerateCommand, [])
+    if (error) throw error
+
+    const types = await readFile(join(cwd, 'src', 'sanity.types.ts'), 'utf8')
+    expect(types).toMatch(/export type Book = \{[^}]*\btitle\?: number;/)
+    expect(types).toMatch(/export type BookTitleQueryResult = \{\s*title: number \| null;/)
+    // `overloadClientMethods` is on by default without resources, so the flat client query
+    // map is still written.
+    expect(types).toContain('declare module "@sanity/client"')
+    expect(types).toMatch(
+      /["']\*\[_type == \\?"book\\?"\]\[0\]\{title\}["']: BookTitleQueryResult;/,
+    )
+    expect(types).not.toContain('SanitySchemasByResource')
+    expect(types).not.toContain('SanityQueriesByResource')
   })
 })
