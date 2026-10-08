@@ -12,6 +12,7 @@ import {defineApplication, defineCliConfig} from 'sanity/cli'
 export default defineCliConfig({
   app: defineApplication({
     title: '%title%',
+    name: '%slug%',
     slug: '%slug%',
     organizationId: '%organizationId%',
     entry: '%entry%',
@@ -20,7 +21,7 @@ export default defineCliConfig({
 `
 
 /**
- * Studio scaffold — brands with slug/title only, no `entry` (studio app views
+ * Studio scaffold — brands with name/slug/title only, no `entry` (studio app views
  * aren't implemented yet).
  */
 export const workbenchStudioConfigTemplate = `
@@ -33,6 +34,7 @@ export default defineCliConfig({
   },
   app: defineApplication({
     title: '%title%',
+    name: '%slug%',
     slug: '%slug%',
     organizationId: '%organizationId%',
   }),
