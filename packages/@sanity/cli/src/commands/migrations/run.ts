@@ -74,8 +74,8 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging',
-      description: 'execute the migration using a dataset export as the source',
+        '<%= config.bin %> <%= command.id %> <id> --from-export=production.tar.gz --project xyz --dataset staging',
+      description: 'dry run the migration using a dataset export as the source',
     },
   ]
 
