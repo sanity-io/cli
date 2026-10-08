@@ -171,7 +171,7 @@ catch (error: any) { }
 - Command files: `src/commands/<topic>/<command-name>.ts`
   - Commands extend `SanityCommand` from `@sanity/cli-core`
 - Unit Test files: `__tests__/` folder relative to the file being tested (e.g., `src/commands/__tests__/<command-name>.test.ts`)
-  - Unit tests for `SanityCommands` should leverage `createMockSanityCommand()` test helper from `@sanity/cli/test/mockSanityCommand.ts`
+  - Unit tests for `SanityCommands` should use the `testCommand()` helper from `@sanity/cli-test`, which runs the real command and captures its output (see `src/commands/context/__tests__/` for examples)
 - Integration Test files: `test/integration` folder located in the root of the package and mirroring the `src/` path of the main module(s) under test (e.g. `test/integration/commands/__tests__/<command-name>.test.ts`)
 - When adding or migrating commands, check for existing utilities in `src/utils/` and `@sanity/cli-core`
 
@@ -308,6 +308,8 @@ describe('thingBeingTested', () => {
 For an example of a unit test employing solid mocking practices, see `packages/@sanity/cli/src/actions/telemetry/__tests__/resolveConsent.test.ts`. It mocks all imported modules but one (a dependency-less `isTrueish` helper method), and when the test is run with code coverage reporting enabled (`pnpm test:coverage packages/@sanity/cli/src/actions/telemetry/__tests__/resolveConsent.test.ts`) yields 100% code coverage on the module-under-test.
 
 ##### Writing Unit Tests for a `SanityCommand` Implementation
+
+> **Current standard:** new command tests should use `testCommand()` from `@sanity/cli-test`, which runs the real command and captures stdout/stderr (see `src/commands/context/__tests__/` for examples). The mock-based approach described below predates it and remains in older tests.
 
 OCLIF `Command` class implementations for the `packages/@sanity/cli` project should extend from the the `@sanity/cli` package's `SanityCommand.ts` class, which provides affordances like retrieving Sanity configurations, terminal output helper methods and automatic flag parsing (implementation of commands are described in more detail in [Command Implementation](#command-implementation)). To make testing of these CLI command entry points easier, there is a mock `SanityCommand` implementation that can be used as a module mock: `packages/@sanity/cli/test/mockSanityCommand.ts`. All other unit testing guidelines in the previous section should also be followed for unit testing `SanityCommand`-extended classes.
 
@@ -526,8 +528,8 @@ const spin = spinner('Loading...').start()
 await operation()
 spin.stop()
 
-// Tables
-import {Table} from 'console-table-printer'
+// Tables — use the local width-aware wrapper, not console-table-printer directly
+import {Table} from '../../util/responsiveTable.js'
 const table = new Table({
   columns: [
     {name: 'id', title: 'ID'},
@@ -537,6 +539,23 @@ const table = new Table({
 datasets.forEach((d) => table.addRow(d))
 this.output.log(table.render()) // allows for unit testing table contents via mock SanityCommand output log assertions
 ```
+
+### JSON Output (`--json`)
+
+Commands with machine-readable output declare `static override enableJsonFlag = true` and **return** their data from `run()` — never `this.log(JSON.stringify(...))`. oclif prints the return value when `--json` is passed and suppresses `this.log` output; without the flag, human rendering runs as normal. Guard spinners with `this.jsonEnabled() ? undefined : spinner(...)`.
+
+The return value is a public contract (terminal `--json` and the MCP tools' `structuredContent` share it): return keyed objects, never bare arrays (`return {imports}` — `SanityCommand`'s `run()` signature rejects arrays at compile time), and return the API response augmented with the caller's identifiers, never a subset.
+
+### Exposing a Command as an MCP Tool
+
+Sanity's remote MCP server derives its tools from this package — exposing a command needs no server-side changes. Everything lives in `src/exports/invokeSanityCli/`:
+
+1. **Policy** (`commandPolicies/mcpPolicy.ts`): every command must have exactly one entry (`allow`, `deny`, or conditional) — a test fails naming any unclassified command. Wrap read-only commands with `readOnly(...)`.
+2. **Curation** (`mcpToolCommands.ts`): add the command id to give it a dedicated generated tool (`context:jobs:list` → `context_jobs_list`). Policy says what _may_ run; this list says what gets a tool. Listed commands are excluded from the freeform `run_sanity_cli` tool.
+3. **Output**: the command must support `--json` per the section above — generated tools always invoke with it.
+4. **Verify**: run the unit tests. The tool-surface snapshot in `src/exports/__tests__/` fails until updated (`-u`) — read that diff; it is the agent-facing contract, not noise. Read-only tools also go in the read-only list in `getMcpToolDefinitions.test.ts`.
+
+Note: `src/actions/mcp/` is unrelated — it implements `sanity mcp configure`, which sets up MCP clients in a user's editor.
 
 ### Debug Logging
 

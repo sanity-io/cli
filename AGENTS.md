@@ -69,7 +69,7 @@ Always read results from the JSON file instead (see "Reading test results" below
 First, compute the output path (derived from cwd, matches `vitest.config.ts`):
 
 ```bash
-TEST_RESULTS="/tmp/test-results-$(echo -n "$(pwd)" | sha1sum | cut -c1-8).json"
+TEST_RESULTS="/tmp/test-results-$(echo -n "$(pwd)" | shasum | cut -c1-8).json"
 ```
 
 Next determine whether to run unit tests or integration tests. Start with unit tests as they take less time to complete. Depending on the available resources of the local machine, integration tests may experience failures like test worker deaths from OS signals. Older node versions, like node v22, experience these more frequently than newer versions. Export a `RUNTASK` variable choosing which tests to run:

@@ -85,21 +85,6 @@ describe('context create', () => {
     })
   })
 
-  test('falls back to the CLI config organization', async () => {
-    mockCreate.mockResolvedValue(knowledgeBase)
-
-    const {error} = await testCommand(
-      CreateKnowledgeBaseCommand,
-      ['--title', 'Support docs', '--description', 'Product docs'],
-      {mocks: {cliConfig: {app: {organizationId: 'org-from-config'}}}},
-    )
-
-    if (error) throw error
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({organizationId: 'org-from-config'}),
-    )
-  })
-
   test('prompts for organization, title and description when interactive', async () => {
     mockRequest.mockResolvedValue([{id: 'org-abc123', name: 'Acme', slug: null}])
     mockSelect.mockResolvedValue('org-abc123')

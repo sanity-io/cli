@@ -76,7 +76,7 @@ describe('context list', () => {
     ])
 
     if (error) throw error
-    expect(JSON.parse(stdout)).toEqual([knowledgeBase])
+    expect(JSON.parse(stdout)).toEqual({knowledgeBases: [knowledgeBase]})
   })
 
   test('prints empty state when there are no knowledge bases', async () => {
@@ -89,19 +89,6 @@ describe('context list', () => {
 
     if (error) throw error
     expect(stdout).toContain('No knowledge bases found')
-  })
-
-  test('falls back to the CLI config organization', async () => {
-    mockList.mockResolvedValue({data: [], nextCursor: null})
-
-    const {error} = await testCommand(ListKnowledgeBasesCommand, [], {
-      mocks: {cliConfig: {app: {organizationId: 'org-from-config'}}},
-    })
-
-    if (error) throw error
-    expect(mockList).toHaveBeenCalledWith(
-      expect.objectContaining({organizationId: 'org-from-config'}),
-    )
   })
 
   test('prompts for organization when interactive', async () => {

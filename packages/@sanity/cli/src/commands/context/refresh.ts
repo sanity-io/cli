@@ -19,6 +19,8 @@ export class RefreshKnowledgeBaseCommand extends SanityCommand<typeof RefreshKno
 
   static override description = 'Refresh a knowledge base: re-check sources and apply what changed'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123',
@@ -26,17 +28,15 @@ export class RefreshKnowledgeBaseCommand extends SanityCommand<typeof RefreshKno
     },
   ]
 
-  public async run(): Promise<void> {
+  public async run(): Promise<{jobId: string; knowledgeBaseId: string; started: boolean}> {
     const {knowledgeBaseId} = this.args
 
-    const spin = spinner('Starting refresh').start()
+    const spin = this.jsonEnabled() ? undefined : spinner('Starting refresh').start()
+    let result: {jobId: string; started: boolean}
     try {
-      const {jobId, started} = await refreshKnowledgeBase(knowledgeBaseId)
-      spin.succeed(started ? 'Refresh started' : 'Refresh already in progress')
-      this.log(formatKeyValue('Job ID', jobId))
-      this.log(`Check progress with: sanity context get ${knowledgeBaseId}`)
+      result = await refreshKnowledgeBase(knowledgeBaseId)
     } catch (error) {
-      spin.fail()
+      spin?.fail()
       refreshContextDebug('Error refreshing knowledge base', error)
       if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Knowledge base "${knowledgeBaseId}" not found`, {
@@ -47,5 +47,9 @@ export class RefreshKnowledgeBaseCommand extends SanityCommand<typeof RefreshKno
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
+    spin?.succeed(result.started ? 'Refresh started' : 'Refresh already in progress')
+    this.log(formatKeyValue('Job ID', result.jobId))
+    this.log(`Check progress with: sanity context get ${knowledgeBaseId}`)
+    return {...result, knowledgeBaseId}
   }
 }
