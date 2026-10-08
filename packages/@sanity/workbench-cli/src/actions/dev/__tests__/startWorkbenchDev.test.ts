@@ -1,3 +1,5 @@
+import {styleText} from 'node:util'
+
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startWorkbenchDev, type StartWorkbenchDevOptions} from '../startWorkbenchDev.js'
@@ -104,11 +106,28 @@ describe('startWorkbenchDev', () => {
       )
     })
 
-    test('logs the workbench URL with the app port when the workbench runs', async () => {
+    test('links straight to the registered app in the Dashboard', async () => {
+      mockStartDevServerRegistration.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        path: '/local/my-app',
+      })
       const output = createMockOutput()
+
       await run({output})
 
-      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3333'))
+      expect(output.log).toHaveBeenCalledWith(
+        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/local/my-app')}`,
+      )
+    })
+
+    test('links to the Dashboard root when the app has no path to open', async () => {
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(output.log).toHaveBeenCalledWith(
+        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333')}`,
+      )
     })
 
     test('shows the existing lock host in the URL, not the caller host', async () => {

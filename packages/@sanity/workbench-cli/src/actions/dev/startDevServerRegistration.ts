@@ -8,7 +8,12 @@ import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs} from './deriveConfigs.js'
 import {trackExposesSet} from './exposesSetId.js'
-import {type DevServerManifest, getRegisteredServers, registerDevServer} from './registry.js'
+import {
+  dashboardPath,
+  type DevServerManifest,
+  getRegisteredServers,
+  registerDevServer,
+} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
@@ -41,6 +46,9 @@ interface DevServerRegistrationOptions {
 
 interface DevServerRegistrationHandle {
   close: () => Promise<void>
+
+  /** Where the Dashboard opens this server; unset when it can't open it there. */
+  path?: string
 }
 
 /**
@@ -181,5 +189,6 @@ export async function startDevServerRegistration(
       registration.release()
       await watcher.close()
     },
+    path: dashboardPath({id, interfaces}),
   }
 }

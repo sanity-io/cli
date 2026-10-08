@@ -23,23 +23,22 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
       interactive: true,
     })
 
-    // The workbench host binds the configured port and the studio app is pushed
-    // to the next one. This line only prints when the workbench runtime resolves
+    // The workbench host binds the configured port and links straight to the
+    // studio it serves. This line only prints when the workbench runtime resolves
     // and the host vite server actually starts (lock acquired, runtime written),
     // so it proves the real workbench dev orchestration ran — not just a build.
     await session.waitForText(
       new RegExp(
-        String.raw`Dashboard dev server started at http://localhost:${port} \(app on port ${port + 1}\)`,
+        String.raw`Dashboard dev server started at http://localhost:${port}/local/federated-studio`,
         'i',
       ),
       {timeout: 90_000},
     )
 
-    // `getOutput()` keeps ANSI codes; neither the host URL nor the app-port label
-    // is split by color escapes, so assert them on the raw buffer too.
+    // `getOutput()` keeps ANSI codes; the URL isn't split by color escapes, so
+    // assert it on the raw buffer too.
     const output = session.getOutput()
-    expect(output).toContain(`http://localhost:${port}`)
-    expect(output).toContain(`app on port ${port + 1}`)
+    expect(output).toContain(`http://localhost:${port}/local/federated-studio`)
 
     // The app server carries the app's bus identity (`__SANITY_APP_ID__`) for
     // `@sanity/runtime` — its slug, so a running app never collides with its
