@@ -3,6 +3,7 @@ import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {bootstrapTemplate} from '../../../actions/init/bootstrapTemplate.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {CREATE_PROJECT_API_VERSION, PROJECTS_API_VERSION} from '../../../services/projects.js'
@@ -520,6 +521,105 @@ describe('#init: get project details', () => {
     expect(stdout).toContain('Below are your project details')
     expect(stdout).toContain('Project ID: new-project-456')
     expect(stdout).toContain('Dataset: production')
+  })
+
+  test('--dashboard passes the organization ID of the selected project to the scaffolded studio', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Project One',
+        id: 'project-1',
+        organizationId: 'org-of-project-1',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-of-project-1', name: 'Test Organization', slug: 'test-org'}])
+
+    mocks.select.mockResolvedValueOnce('project-1')
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+    setupInitSuccessMocks('project-1')
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--dashboard',
+        '--dataset=production',
+        '--template=clean',
+        '--output-path=./test-project',
+        '--typescript',
+        '--no-git',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+    if (error) throw error
+
+    expect(bootstrapTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({organizationId: 'org-of-project-1', workbench: true}),
+    )
+  })
+
+  test('--dashboard passes the chosen organization ID to the scaffolded studio for a new project', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Existing Project',
+        id: 'project-1',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations/org-123/grants',
+    }).reply(200, {'sanity.organization.projects': [{grants: [{name: 'attach'}]}]})
+
+    mocks.select.mockResolvedValueOnce('new')
+    mocks.input.mockResolvedValueOnce('New Project')
+    mocks.select.mockResolvedValueOnce('org-123')
+
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {displayName: 'New Project', projectId: 'new-project-456'})
+
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+    setupInitSuccessMocks('new-project-456')
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--dashboard',
+        '--dataset=production',
+        '--template=clean',
+        '--output-path=./test-project',
+        '--typescript',
+        '--no-git',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+    if (error) throw error
+
+    expect(bootstrapTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({organizationId: 'org-123', workbench: true}),
+    )
   })
 
   test('returns dataset if dataset flag is provided and in unattended mode', async () => {
