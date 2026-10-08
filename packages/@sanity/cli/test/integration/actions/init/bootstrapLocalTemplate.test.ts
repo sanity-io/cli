@@ -131,6 +131,8 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(cliConfig).toContain(`title: 'My Studio'`)
     // `slug` derives from the entered project name, slugified
     expect(cliConfig).toContain(`slug: 'my-studio'`)
+    // `name` pins the identity to the scaffolded slug, so renaming `slug` keeps it
+    expect(cliConfig).toContain(`name: 'my-studio'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`projectId: 'abc123'`)
     // Studios brand without an entry — studio app views aren't implemented yet
@@ -162,6 +164,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     // App init derives `slug` from the output directory, same as package.json's name
     const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
     expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
+    expect(cliConfig).toContain(`name: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`entry: './src/App.tsx'`)
   })
@@ -192,6 +195,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     // An empty `slug` would fail app config validation — the constant kicks in
     expect(cliConfig).not.toContain(`slug: ''`)
     expect(cliConfig).toContain(`slug: 'sanity-app'`)
+    expect(cliConfig).toContain(`name: 'sanity-app'`)
   })
 
   const templatesDir = path.resolve(import.meta.dirname, '../../../../templates')

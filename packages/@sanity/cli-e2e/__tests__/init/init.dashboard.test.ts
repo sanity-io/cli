@@ -59,8 +59,11 @@ describe.skipIf(isRegistryMode)('sanity init - dashboard', {timeout: 120_000}, (
     expect(cliConfig).toContain('defineApplication')
     expect(cliConfig).toContain(projectId)
     expect(cliConfig).toContain(`organizationId: '${orgId}'`)
-    // `slug` is pre-filled, defaulted from the name/title
-    expect(cliConfig).toMatch(/slug: '[a-z0-9-]+'/)
+    // `slug` is pre-filled, defaulted from the name/title, and `name` pins the
+    // identity to that same value
+    const slug = cliConfig.match(/slug: '([a-z0-9-]+)'/)?.[1]
+    expect(slug).toBeDefined()
+    expect(cliConfig).toContain(`name: '${slug}'`)
   })
 
   test('scaffolds an SDK app whose sanity.cli.ts opts into the Dashboard', async () => {
@@ -101,6 +104,7 @@ describe.skipIf(isRegistryMode)('sanity init - dashboard', {timeout: 120_000}, (
     // same as the package name
     const pkgJson = JSON.parse(readFileSync(`${tmp.path}/package.json`, 'utf8'))
     expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
+    expect(cliConfig).toContain(`name: '${pkgJson.name}'`)
     expect(pkgJson.name).toMatch(/^[a-z0-9-]+$/)
 
     // The agent docs are the Dashboard versions, not the template's standard ones
