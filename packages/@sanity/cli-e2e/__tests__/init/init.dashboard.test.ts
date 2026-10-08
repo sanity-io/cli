@@ -58,7 +58,7 @@ describe.skipIf(isRegistryMode)('sanity init - dashboard', {timeout: 120_000}, (
     const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
     expect(cliConfig).toContain('defineApplication')
     expect(cliConfig).toContain(projectId)
-    expect(cliConfig).toContain('organizationId')
+    expect(cliConfig).toContain(`organizationId: '${orgId}'`)
     // `slug` is pre-filled, defaulted from the name/title
     expect(cliConfig).toMatch(/slug: '[a-z0-9-]+'/)
   })

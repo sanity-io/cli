@@ -134,6 +134,7 @@ export async function getProjectDetails({
     datasetName: datasetResult.datasetName,
     displayName: projectResult.displayName,
     isFirstProject: projectResult.isFirstProject,
+    organizationId: projectResult.organizationId,
     projectId: projectResult.projectId,
   }
 }
