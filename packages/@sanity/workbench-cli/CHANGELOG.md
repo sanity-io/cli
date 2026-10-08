@@ -1,5 +1,16 @@
 # @sanity/workbench-cli
 
+## 2.8.4
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.8.3...workbench-cli-v2.8.4)
+
+_2026-10-08_
+
+### Bug Fixes
+
+- **init:** write `name` into the scaffolded `defineApplication` ([#1960](https://github.com/sanity-io/cli/pull/1960)) ([3860748](https://github.com/sanity-io/cli/commit/3860748873155ef8c0af90bb87650e760b069de6))
+- **dev:** link to the app in the Dashboard instead of its home ([#1961](https://github.com/sanity-io/cli/pull/1961)) ([6603765](https://github.com/sanity-io/cli/commit/66037650f7fd32f17ff5d14c08d7f0d5fba6efa9))
+
 ## 2.8.3
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.8.2...workbench-cli-v2.8.3)

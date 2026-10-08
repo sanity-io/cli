@@ -1,5 +1,22 @@
 # Changelog
 
+## 6.4.5
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.4...cli-build-v6.4.5)
+
+_2026-10-08_
+
+### Bug Fixes
+
+- **deps:** update react monorepo to ^19.3.0 ([#1954](https://github.com/sanity-io/cli/pull/1954)) ([1d8d74f](https://github.com/sanity-io/cli/commit/1d8d74f47fd234a3f6a545e14250b9c815f14b23))
+- **deps:** update sanity-tooling ([#1955](https://github.com/sanity-io/cli/pull/1955)) ([9a3cf63](https://github.com/sanity-io/cli/commit/9a3cf631d084ed36a1bdeea1584d6be86d911213))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.8.4
+
 ## 6.4.4
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.3...cli-build-v6.4.4)
