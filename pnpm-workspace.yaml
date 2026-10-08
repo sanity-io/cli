@@ -15,6 +15,7 @@ packages:
   - 'packages/create-sanity'
   - 'fixtures/*'
 
+catalogMode: prefer
 catalog:
   # Linting
   eslint: ^10.7.0
