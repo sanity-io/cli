@@ -1,5 +1,28 @@
 # Change Log
 
+## 8.15.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.14.0...cli-v8.15.0)
+
+_2026-10-08_
+
+### Features
+
+- **init:** write `name` into the scaffolded `defineApplication` ([#1960](https://github.com/sanity-io/cli/pull/1960)) ([3860748](https://github.com/sanity-io/cli/commit/3860748873155ef8c0af90bb87650e760b069de6))
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1955](https://github.com/sanity-io/cli/pull/1955)) ([9a3cf63](https://github.com/sanity-io/cli/commit/9a3cf631d084ed36a1bdeea1584d6be86d911213))
+- **init:** fill in the organization ID for `--dashboard` studio projects ([#1959](https://github.com/sanity-io/cli/pull/1959)) ([ed5cf6b](https://github.com/sanity-io/cli/commit/ed5cf6b9f08ebe199a390ddc562cb0795c7c506d))
+- **dev:** link to the app in the Dashboard instead of its home ([#1961](https://github.com/sanity-io/cli/pull/1961)) ([6603765](https://github.com/sanity-io/cli/commit/66037650f7fd32f17ff5d14c08d7f0d5fba6efa9))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 6.4.5
+    - @sanity/workbench-cli bumped to 2.8.4
+
 ## 8.14.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.13.1...cli-v8.14.0)
