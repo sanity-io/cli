@@ -57,6 +57,43 @@ export interface TypeGenConfig {
 }
 
 /**
+ * A dataset to generate types for. Each resource gets its own output file, with its schema
+ * and query types registered under its `projectId.dataset` key.
+ *
+ * @beta
+ */
+export interface TypeGenResource {
+  /** The dataset name. */
+  dataset: string
+
+  /** Where to write this resource's generated types. Must be unique across resources. */
+  generates: string
+
+  /** The project ID. */
+  projectId: string
+
+  /**
+   * Treat fields with a required rule as non-optional, like
+   * `sanity schema extract --enforce-required-fields`. Only applies to a schema fetched from
+   * the dataset; a local `schema` file already records this.
+   * Defaults to `false`
+   */
+  enforceRequiredFields?: boolean
+
+  /**
+   * Glob pattern(s) for the files whose queries belong to this resource.
+   * Defaults to the top-level `typegen.path`.
+   */
+  path?: string | string[]
+
+  /**
+   * Path to a schema extracted with `sanity schema extract`. When omitted, the schema bound to
+   * the dataset is fetched.
+   */
+  schema?: string
+}
+
+/**
  * Dashboard visibility an application can declare. Mirrors Brett's canonical
  * `VISIBILITIES` — the source of truth lives in the application service.
  * @public
@@ -205,6 +242,14 @@ export interface CliConfig {
      * Defaults to `false`
      */
     enabled?: boolean
+
+    /**
+     * Generate types separately for each listed dataset. When set, the top-level `schema` and
+     * `generates` are not used, and `overloadClientMethods` defaults to `false`.
+     *
+     * @beta
+     */
+    resources?: TypeGenResource[]
   }
 
   /**

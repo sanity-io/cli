@@ -1,7 +1,7 @@
 import {existsSync} from 'node:fs'
 import path from 'node:path'
 
-import {CLITelemetryStore} from '@sanity/cli-core'
+import {type CliConfig, CLITelemetryStore} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {
   type GenerationResult,
@@ -38,7 +38,7 @@ interface TypegenPluginOptions {
    * Typegen configuration from sanity.cli.ts.
    * All fields are optional and will use sensible defaults.
    */
-  config: Partial<TypeGenConfig>
+  config: Partial<TypeGenConfig> & Pick<NonNullable<CliConfig['typegen']>, 'resources'>
 
   /**
    * Working directory containing the Sanity configuration.
@@ -79,6 +79,20 @@ interface TypegenPluginOptions {
  */
 export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
   const {config: inputConfig, output = console, telemetryLogger, workDir} = options
+
+  // Generating per resource is not supported here yet. Without this check the plugin would
+  // generate from the top-level `schema`, which a resources config does not use.
+  if (inputConfig.resources !== undefined) {
+    return {
+      configResolved() {
+        output.log(
+          logSymbols.warning,
+          'Typegen during "sanity dev" does not support typegen.resources yet. Run "sanity typegen generate" instead.',
+        )
+      },
+      name: 'sanity/typegen',
+    } satisfies Plugin
+  }
 
   // Apply defaults through the same schema as `sanity typegen generate`,
   // so watch mode and manual generation produce identical output
