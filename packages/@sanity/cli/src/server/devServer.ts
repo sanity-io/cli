@@ -15,6 +15,7 @@ import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
 
 import {serverDebug} from './serverDebug.js'
+import {sanityBundledDevLoadingScreenPlugin} from './vite/plugin-sanity-bundled-dev-loading-screen.js'
 import {sanityTypegenPlugin} from './vite/plugin-typegen.js'
 
 const debug = serverDebug.extend('dev')
@@ -105,6 +106,8 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
             }),
           ]
         : []),
+      // Replace Vite's default "Bundling in progress" page in bundled dev mode
+      ...(bundledDev ? [sanityBundledDevLoadingScreenPlugin({title: appTitle})] : []),
     ],
     basePath,
     cwd,
