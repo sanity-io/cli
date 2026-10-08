@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.9.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.2...cli-core-v3.9.0)
+
+_2026-10-08_
+
+### Features
+
+- **typegen:** generate types per dataset with typegen.resources (beta) ([#1952](https://github.com/sanity-io/cli/pull/1952)) ([68a314c](https://github.com/sanity-io/cli/commit/68a314c10669e5e606fa19202753320a8e6c27f1))
+
 ## 3.8.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.1...cli-core-v3.8.2)
