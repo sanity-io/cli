@@ -9,7 +9,7 @@ import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {deriveConfigs} from '../dev/deriveConfigs.js'
-import {type DevServerManifest, registerDevServer} from '../dev/registry.js'
+import {dashboardPath, type DevServerManifest, registerDevServer} from '../dev/registry.js'
 import {startWorkbenchDevServer} from '../dev/startWorkbenchDevServer.js'
 import {serveBuiltApplication} from './serveBuiltApplication.js'
 
@@ -90,6 +90,7 @@ export async function startWorkbenchPreview(
   })
   closers.push(remote.close)
 
+  let dashboardAppPath: string | undefined
   try {
     // Callers provide CLI-only validation and manifest extraction to keep them
     // out of workbench-cli.
@@ -105,11 +106,12 @@ export async function startWorkbenchPreview(
     const inlinedId = await readInlinedAppId(outDir)
     const configs = await deriveConfigs(cliConfig)
     const id = inlinedId ?? (await buildAppId(workbench))
+    const interfaces = deriveInterfaces(cliConfig.app, {isApp})
     const registration = registerDevServer({
       configs,
       host: remote.host,
       id,
-      interfaces: deriveInterfaces(cliConfig.app, {isApp}),
+      interfaces,
       manifest: await extractManifest({applicationId: id, configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),
       organizationId: workbench.organizationId,
@@ -121,16 +123,15 @@ export async function startWorkbenchPreview(
       workDir,
     })
     closers.push(async () => registration.release())
+    dashboardAppPath = dashboardPath({id, interfaces})
   } catch (err) {
     await close()
     throw err
   }
 
   if (workbench.workbenchAvailable) {
-    const workbenchUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}`
-    output.log(
-      `Dashboard preview server started at ${styleText(['blue', 'underline'], workbenchUrl)} (serving build on port ${remote.port})`,
-    )
+    const appUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
+    output.log(`Dashboard preview server started at ${styleText(['blue', 'underline'], appUrl)}`)
   } else {
     const remoteUrl = `http://${toDisplayHost(remote.host)}:${remote.port}`
     output.log(`Serving build at ${styleText(['blue', 'underline'], remoteUrl)}`)

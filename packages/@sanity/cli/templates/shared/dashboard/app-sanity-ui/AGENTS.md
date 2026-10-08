@@ -16,7 +16,7 @@ The app is set up for the Sanity Dashboard beta: `sanity.cli.ts` declares it wit
 
 ## Commands
 
-- `npm run dev`: starts a local Sanity Dashboard on port 3333 and serves the app on the next port (3334), loaded into that Dashboard. The CLI prints the local Dashboard URL. The app only renders inside the Dashboard, and viewing it requires a signed-in Sanity account, so a human must complete authentication in the browser.
+- `npm run dev`: starts a local Sanity Dashboard on port 3333 and serves the app on the next port (3334), loaded into that Dashboard. The CLI prints a link that opens the app in the local Dashboard. The app only renders inside the Dashboard, and viewing it requires a signed-in Sanity account, so a human must complete authentication in the browser.
 - `npm run build`: production build.
 - `npm run deploy`: deploy to the organization's Sanity Dashboard.
 

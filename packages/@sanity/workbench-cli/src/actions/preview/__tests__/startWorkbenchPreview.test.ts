@@ -1,4 +1,5 @@
 import {join} from 'node:path'
+import {styleText} from 'node:util'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -7,6 +8,7 @@ import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
 import {
   createMockOutput,
   mockWorkbenchServer,
+  workbenchApp,
   workbenchCliConfig,
 } from '../../dev/__tests__/devTestHelpers.js'
 import {startWorkbenchPreview, type StartWorkbenchPreviewOptions} from '../startWorkbenchPreview.js'
@@ -226,11 +228,36 @@ describe('startWorkbenchPreview', () => {
   })
 
   describe('URL announcement', () => {
-    test('logs the workbench URL with the build port when the workbench runs', async () => {
+    test('links straight to a studio build in the Dashboard', async () => {
+      const output = createMockOutput()
+      await run({isApp: false, output})
+
+      expect(output.log).toHaveBeenCalledWith(
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], `http://localhost:3333/local/${readManifest().id}`)}`,
+      )
+    })
+
+    test('links to an app build with an app view under the id the build inlined', async () => {
+      mockReadFile.mockResolvedValue('app_deployed_id\n')
+      const output = createMockOutput()
+
+      await run({
+        cliConfig: workbenchCliConfig({app: workbenchApp({entry: './src/App.tsx'})}),
+        output,
+      })
+
+      expect(output.log).toHaveBeenCalledWith(
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/local/app_deployed_id')}`,
+      )
+    })
+
+    test('links to the Dashboard root when the app build has no app view', async () => {
       const output = createMockOutput()
       await run({output})
 
-      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3333'))
+      expect(output.log).toHaveBeenCalledWith(
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333')}`,
+      )
     })
 
     test('shows the existing lock host, not the caller host', async () => {

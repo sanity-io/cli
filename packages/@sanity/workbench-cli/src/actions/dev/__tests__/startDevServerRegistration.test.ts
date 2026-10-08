@@ -469,6 +469,66 @@ describe('startDevServerRegistration', () => {
     expect(readManifest().interfaces).toEqual([feed])
   })
 
+  describe('Dashboard path', () => {
+    test('opens a studio at its slug', async () => {
+      const {path} = await register({isApp: false})
+
+      expect(path).toBe('/local/test-app')
+    })
+
+    test('opens an app with an app view at its slug', async () => {
+      const {path} = await register({
+        cliConfig: workbenchCliConfig({app: workbenchApp({entry: './src/App.tsx'})}),
+        isApp: true,
+      })
+
+      expect(path).toBe('/local/test-app')
+    })
+
+    test('has no path for an app without an app view, which the Dashboard 404s', async () => {
+      const {path} = await register({cliConfig: workbenchCliConfig(), isApp: true})
+
+      expect(path).toBeUndefined()
+    })
+
+    test('has no path for a config, which the Dashboard does not open on its own', async () => {
+      const {path} = await register({
+        cliConfig: workbenchCliConfig({
+          app: unstable_defineMediaLibrary({organizationId: 'org-1'}),
+        }),
+        isApp: true,
+      })
+
+      expect(path).toBeUndefined()
+    })
+
+    test('has no path for a project without an app id', async () => {
+      const {path} = await register({cliConfig: workbenchCliConfig({app: undefined}), isApp: false})
+
+      expect(path).toBeUndefined()
+    })
+
+    test('has no path when another dev server already holds the id', async () => {
+      fsMock.files.set(
+        join(REGISTRY_DIR, '4242.json'),
+        JSON.stringify({
+          host: 'localhost',
+          id: 'test-app',
+          pid: process.pid,
+          port: 3334,
+          startedAt: new Date().toISOString(),
+          type: 'studio',
+          version: 2,
+          workDir: '/tmp/other',
+        }),
+      )
+
+      const {path} = await register()
+
+      expect(path).toBeUndefined()
+    })
+  })
+
   test('the registered server is discoverable through getRegisteredServers', async () => {
     await register()
 

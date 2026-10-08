@@ -6,7 +6,7 @@ This app is set up for the Sanity Dashboard beta: `sanity.cli.ts` declares it wi
 
 ## Commands
 
-- `npm run dev` starts a local Sanity Dashboard (by default at http://localhost:3333, with the app on port 3334) and loads your app into it. Open it and sign in with your Sanity account.
+- `npm run dev` starts a local Sanity Dashboard (by default at http://localhost:3333) and loads your app into it. Open the link the terminal prints to go straight to your app, and sign in with your Sanity account.
 - `npm run build` builds the app for production.
 - `npm run deploy` deploys the app to your organization's Sanity Dashboard. The first deploy creates the app.
 
