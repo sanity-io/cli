@@ -163,7 +163,7 @@
     "@types/node": "catalog:",
     "@types/picomatch": "^4.0.3",
     "@types/semver": "catalog:",
-    "@types/tar-stream": "^3.1.4",
+    "@types/tar-stream": "^3.1.5",
     "@types/which": "^3.0.4",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
