@@ -1,7 +1,13 @@
+import {getLocalPackageVersion as mockGetLocalPackageVersion} from '@sanity/cli-test/mocks/cli-core/package-manager'
 import {describe, expect, test, vi} from 'vitest'
 
+import {MIN_SANITY_VERSION_READING_AUTH_HASH_STASH} from '../../decorateIndexWithAuthHashScript.js'
 import {sanityBuildEntries} from '../plugin-sanity-build-entries.js'
 
+vi.mock(
+  '@sanity/cli-core/package-manager',
+  () => import('@sanity/cli-test/mocks/cli-core/package-manager'),
+)
 vi.mock('../../renderDocument.js', () => ({
   renderDocument: vi
     .fn()
@@ -52,8 +58,16 @@ describe('sanityBuildEntries index.html', () => {
   })
 
   test('injects the auth hash script first in head for studios', async () => {
+    mockGetLocalPackageVersion.mockResolvedValue(MIN_SANITY_VERSION_READING_AUTH_HASH_STASH)
     const html = await emitIndexHtml()
     expect(html).toMatch(/^<html><head>\n<script>[^<]*__SANITY_AUTH_HASH_PARAMS__/)
+  })
+
+  test("omits the auth hash script for sanity versions that don't read the stash", async () => {
+    mockGetLocalPackageVersion.mockResolvedValue('6.18.0')
+    const html = await emitIndexHtml()
+    expect(mockGetLocalPackageVersion).toHaveBeenCalledWith('sanity', '/project')
+    expect(html).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
   })
 
   test('omits the auth hash script for apps', async () => {

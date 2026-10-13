@@ -1,13 +1,19 @@
 // @vitest-environment jsdom
 import {afterEach, describe, expect, test} from 'vitest'
 
-import {decorateIndexWithAuthHashScript} from '../decorateIndexWithAuthHashScript'
+import {
+  decorateIndexWithAuthHashScript,
+  MIN_SANITY_VERSION_READING_AUTH_HASH_STASH,
+} from '../decorateIndexWithAuthHashScript'
 
 const sampleHtml = '<html><head><script src="app.js"></script></head><body></body></html>'
 
 function runScript(hash: string) {
   history.replaceState({key: 'state'}, '', `/studio/desk?foo=1${hash}`)
-  const html = decorateIndexWithAuthHashScript('<head></head>')
+  const html = decorateIndexWithAuthHashScript(
+    '<head></head>',
+    MIN_SANITY_VERSION_READING_AUTH_HASH_STASH,
+  )
   const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1]
   if (!script) throw new Error('script not found')
   globalThis.eval(script)
@@ -21,17 +27,40 @@ afterEach(() => {
 
 describe('decorateIndexWithAuthHashScript', () => {
   test('injects the script as the first child of head', () => {
-    const result = decorateIndexWithAuthHashScript(sampleHtml)
+    const result = decorateIndexWithAuthHashScript(
+      sampleHtml,
+      MIN_SANITY_VERSION_READING_AUTH_HASH_STASH,
+    )
 
     expect(result.startsWith('<html><head>\n<script>')).toBe(true)
     expect(result.indexOf('__SANITY_AUTH_HASH_PARAMS__')).toBeLessThan(result.indexOf('app.js'))
   })
 
   test('handles head tag with attributes', () => {
-    const result = decorateIndexWithAuthHashScript('<html><head lang="en"></head></html>')
+    const result = decorateIndexWithAuthHashScript(
+      '<html><head lang="en"></head></html>',
+      MIN_SANITY_VERSION_READING_AUTH_HASH_STASH,
+    )
 
     expect(result).toContain('<head lang="en">\n<script>')
   })
+
+  test.each([
+    ['an unknown version', null],
+    ['a version that only reads the hash', '6.18.0'],
+    ['a prerelease of the minimum version', `${MIN_SANITY_VERSION_READING_AUTH_HASH_STASH}-next.1`],
+  ])('returns the template unchanged for %s', (_, version) => {
+    expect(decorateIndexWithAuthHashScript(sampleHtml, version)).toBe(sampleHtml)
+  })
+
+  test.each([MIN_SANITY_VERSION_READING_AUTH_HASH_STASH, '7.0.0'])(
+    'injects the script for sanity %s',
+    (version) => {
+      expect(decorateIndexWithAuthHashScript(sampleHtml, version)).toContain(
+        '__SANITY_AUTH_HASH_PARAMS__',
+      )
+    },
+  )
 
   test('removes the sid from the hash and stashes it', () => {
     runScript('#sid=abc%2B123')

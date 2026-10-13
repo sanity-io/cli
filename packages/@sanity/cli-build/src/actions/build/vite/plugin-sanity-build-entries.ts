@@ -1,3 +1,4 @@
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {type ChunkMetadata, type Plugin} from 'vite'
 
 import {type AutoUpdatesBuildConfig} from '../autoUpdates.js'
@@ -125,7 +126,9 @@ export function sanityBuildEntries(options: {
 
       this.emitFile({
         fileName: 'index.html',
-        source: isApp ? source : decorateIndexWithAuthHashScript(source),
+        source: isApp
+          ? source
+          : decorateIndexWithAuthHashScript(source, await getLocalPackageVersion('sanity', cwd)),
         type: 'asset',
       })
     },

@@ -2,6 +2,7 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {tryFindStudioConfigPath} from '@sanity/cli-core/config'
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {
   RESOURCE_BINDINGS_FILENAME,
   RESOURCE_BINDINGS_MODULE_SOURCE,
@@ -59,6 +60,8 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
   buildDebug('Making runtime directory')
   await mkdir(runtimeDir, {recursive: true})
 
+  const sanityVersion = isApp ? null : await getLocalPackageVersion('sanity', cwd)
+
   async function renderAndWriteDocument() {
     buildDebug('Rendering document template')
     const html = decorateIndexWithStagingScript(
@@ -76,7 +79,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
         ),
       ),
     )
-    const indexHtml = isApp ? html : decorateIndexWithAuthHashScript(html)
+    const indexHtml = isApp ? html : decorateIndexWithAuthHashScript(html, sanityVersion)
 
     buildDebug('Writing index.html to runtime directory')
     await writeFile(path.join(runtimeDir, 'index.html'), indexHtml)
