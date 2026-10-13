@@ -1,24 +1,23 @@
-import {fileURLToPath, pathToFileURL} from 'node:url'
+import {realpath} from 'node:fs/promises'
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- `registerHooks()` needs Node.js 22.15
+import {register} from 'node:module'
+import {pathToFileURL} from 'node:url'
 import {isMainThread, parentPort} from 'node:worker_threads'
 
-import {
-  createServer,
-  createServerModuleRunner,
-  type InlineConfig,
-  isRunnableDevEnvironment,
-  loadEnv,
-  mergeConfig,
-} from 'vite'
+import {build, type InlineConfig, loadEnv, mergeConfig, resolveConfig} from 'vite'
 
 import {subdebug} from '../../_exports/debug.js'
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types/cliConfig.js'
+import {findStudioConfigPath} from '../../config/util/findStudioConfigPath.js'
 import {isNotFoundError} from '../../errors/NotFoundError.js'
+import {doImport} from '../../util/doImport.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'
-import {StudioModuleEvaluator} from './studioModuleEvaluator.js'
+import {httpsImportsPlugin, sanityExternalsPlugin} from './studioWorkerBundle.js'
 import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
+import {type StudioWorkerHooksData} from './studioWorkerLoader.hooks.js'
 
 if (isMainThread) {
   throw new Error('Should be child of thread, not the main thread')
@@ -52,31 +51,6 @@ try {
     // eslint-disable-next-line no-console
     console.warn('[warn] Failed to load CLI config:', err)
   }
-}
-
-/**
- * Fetches and caches modules from HTTP/HTTPS URLs.
- * Vite's SSR transform treats `https://` imports as external and bypasses the plugin
- * resolve pipeline entirely, so we intercept them at the module runner level instead.
- */
-const httpModuleCache = new Map<string, string>()
-async function fetchHttpModule(url: string): Promise<{code: string}> {
-  const cached = httpModuleCache.get(url)
-  if (cached) return {code: cached}
-
-  debug('Fetching HTTP import: %s', url)
-  const response = await fetch(url, {signal: AbortSignal.timeout(30_000)})
-  if (!response.ok) {
-    throw new Error(`Failed to fetch module from ${url}: ${response.status} ${response.statusText}`)
-  }
-
-  const code = await response.text()
-  httpModuleCache.set(url, code)
-  return {code}
-}
-
-function isHttpsUrl(id: string): boolean {
-  return id.startsWith('https://')
 }
 
 const defaultViteConfig: InlineConfig = {
@@ -133,98 +107,106 @@ if (typeof cliConfig?.vite === 'function') {
   viteConfig = mergeConfig(viteConfig, cliConfig.vite)
 }
 
-debug('Creating Vite server with config: %o', viteConfig)
-// Vite will build the files we give it - targetting Node.js instead of the browser.
-// We include the inject plugin in order to provide the stubs for the undefined global APIs.
-const server = await createServer(viteConfig)
+// Resolve the config like the Vite dev server used to, for the mode, the `.env`
+// directory and `process.env.NODE_ENV` (`development` unless set).
+debug('Resolving Vite config: %o', viteConfig)
+// (`resolveConfig()` modifies the config it is given, so give it a copy)
+const {envDir, mode} = await resolveConfig(mergeConfig({}, viteConfig), 'serve')
+
+// Load environment variables from `.env` files in the same way as Vite does.
+// Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
+// and so we need to do the same here.
+// Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
+// vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
+// The ??= on the next line prevents overwriting existing process.env values.
+const env = loadEnv(mode, envDir, '')
+for (const key in env) {
+  process.env[key] ??= env[key]
+}
+
+/**
+ * Bundles the studio config with Vite, the same way `sanity build` would, except
+ * that `sanity`, its dependencies and peers are left for Node.js to load. The
+ * user's files, aliases, `define`s, CSS/asset imports and third-party plugins are
+ * handled by the bundler, so the result is plain JavaScript that Node.js can run.
+ */
+async function bundleStudioConfig(studioRootPath: string, configPath: string): Promise<string> {
+  const result = await build(
+    mergeConfig(viteConfig, {
+      build: {
+        copyPublicDir: false,
+        rolldownOptions: {output: {codeSplitting: false}},
+        ssr: configPath,
+        // The bundle runs right away, in this very Node.js version
+        target: 'esnext',
+        write: false,
+      },
+      mode,
+      plugins: [sanityExternalsPlugin(studioRootPath), httpsImportsPlugin()],
+    } satisfies InlineConfig),
+  )
+
+  const entry = (Array.isArray(result) ? result : [result])
+    .flatMap((output) => ('output' in output ? output.output : []))
+    .find((chunk) => chunk.type === 'chunk' && chunk.isEntry)
+  if (entry?.type !== 'chunk') {
+    throw new Error(`Failed to bundle ${configPath}`)
+  }
+  return entry.code
+}
+
+/**
+ * Bundles the studio config ahead of the task, and returns the bundle (or the
+ * error to throw) keyed by the file URL the task will import it from.
+ */
+async function getStudioConfigBundles(studioRootPath: string): Promise<StudioWorkerHooksData> {
+  let configPath: string
+  try {
+    configPath = await realpath(await findStudioConfigPath(studioRootPath))
+  } catch (error) {
+    // Let the task report a missing config the way it always has
+    debug('No studio config to bundle: %o', error)
+    return {}
+  }
+
+  const url = pathToFileURL(configPath).href
+  debug('Bundling %s', configPath)
+  try {
+    return {[url]: {source: await bundleStudioConfig(studioRootPath, configPath)}}
+  } catch (error) {
+    // Thrown when the task imports the config, like errors from loading it always were.
+    // Copied, as Node.js clones it to the hooks thread and it may hold native objects.
+    const {message, name, stack} = error instanceof Error ? error : new Error(String(error))
+    return {[url]: {error: Object.assign(new Error(message), {name, stack})}}
+  }
+}
 
 // One-shot tasks (`studioWorkerTask`) resolve on their first message, and the
 // main thread historically terminate()d the worker right after — destroying
 // the worker's libuv loop while rolldown's native threads were still live.
 // The next `napi_call_threadsafe_function` then locked a destroyed mutex and
 // aborted the whole process (silent SIGABRT / exit code 134, reliably
-// reproduced on macOS). The lifecycle closes the Vite server BEFORE any
-// message reaches the main thread, and the main thread no longer terminates
-// one-shot workers at all (see `terminateOnSettle` in promisifyWorker).
+// reproduced on macOS). Rolldown is done bundling before the task starts, and
+// the main thread no longer terminates one-shot workers at all (see
+// `terminateOnSettle` in promisifyWorker).
+const bundles = await getStudioConfigBundles(rootPath)
 const lifecycle =
   process.env.STUDIO_WORKER_ONE_SHOT === '1' && parentPort
     ? createOneShotWorkerLifecycle({
-        closeServer: async () => {
-          debug('Closing Vite server')
-          await server.close()
-          debug('Vite server closed')
-        },
-        onCloseError: (error) => debug('Failed to close Vite server: %o', error),
+        // Bundling is over by now
+        closeServer: async () => {},
+        onCloseError: (error) => debug('Failed to close the studio worker: %o', error),
         parentPort,
       })
     : undefined
 
 try {
-  // Bit of a hack, but seems necessary based on the `node-vite` binary implementation
-  await server.pluginContainer.buildStart({})
-
-  // Load environment variables from `.env` files in the same way as Vite does.
-  // Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
-  // and so we need to do the same here.
-  // Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
-  // vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
-  // The ??= on the next line prevents overwriting existing process.env values.
-  const env = loadEnv(server.config.mode, server.config.envDir, '')
-  for (const key in env) {
-    process.env[key] ??= env[key]
-  }
-
-  const ssrEnvironment = server.environments.ssr
-  if (!isRunnableDevEnvironment(ssrEnvironment)) {
-    throw new Error('Expected SSR environment to be a runnable dev environment')
-  }
-
-  await ssrEnvironment.init()
-
-  // Override fetchModule to support https:// imports and resolve relative imports from
-  // remote modules (e.g. esm.sh re-exports with absolute paths).
-  const defaultFetchModule = ssrEnvironment.fetchModule.bind(ssrEnvironment)
-  ssrEnvironment.fetchModule = async (id, importer, options) => {
-    if (importer && isHttpsUrl(importer) && !isHttpsUrl(id)) {
-      id = new URL(id, importer).href
-    }
-    if (isHttpsUrl(id)) {
-      const {code: rawCode} = await fetchHttpModule(id)
-      const result = await server.ssrTransform(rawCode, null, id)
-      return {
-        code: result?.code || rawCode,
-        file: null,
-        id,
-        invalidate: false,
-        url: id,
-      }
-    }
-
-    // Module Runner's fetchModule skips Vite resolve for `file://` URLs, so TypeScript
-    // extension rewriting (`.js` → `.ts`/`.tsx`) never runs. vite-node always resolved
-    // through `resolveId` first; restore that for absolute file imports (e.g. lazy
-    // `doImport(new URL('iconResolver.js', import.meta.url))` in tests/source).
-    // Keep the result as `file://` — on Windows, bare `C:/...` paths are treated as
-    // package imports by Module Runner's fetchModule and fail to load.
-    if (id.startsWith('file://')) {
-      const resolved = await ssrEnvironment.pluginContainer.resolveId(
-        fileURLToPath(id),
-        importer ?? undefined,
-      )
-      if (resolved?.id && !resolved.id.startsWith('\0')) {
-        id = pathToFileURL(resolved.id).href
-      }
-    }
-
-    return defaultFetchModule(id, importer, options)
-  }
-
-  const runner = createServerModuleRunner(ssrEnvironment, {
-    evaluator: new StudioModuleEvaluator(),
-    hmr: false,
+  // Imports of the studio config get the bundle, see `studioWorkerLoader.hooks.ts`.
+  register<StudioWorkerHooksData>(new URL('studioWorkerLoader.hooks.js', import.meta.url), {
+    data: bundles,
   })
 
-  await runner.import(workerScriptPath)
+  await doImport(workerScriptPath)
 } catch (error) {
   // Long-lived workers keep the original behavior: the error surfaces as a
   // Worker 'error' event.
@@ -232,8 +214,7 @@ try {
     throw error
   }
 
-  // One-shot workers close the server first and post a serialized error the
-  // main thread rethrows, so the worker exits cleanly (code 0) and the real
+  // One-shot workers post a serialized error the main thread rethrows, so the worker exits cleanly (code 0) and the real
   // error (e.g. a broken `sanity.config.ts`) isn't masked by a teardown abort.
   await lifecycle.postError(error)
 } finally {
